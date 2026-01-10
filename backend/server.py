@@ -15085,62 +15085,61 @@ async def create_disponibilite(
     force: bool = False,
     current_user: User = Depends(get_current_user)
 ):
-    """Créer une disponibilité avec détection de conflits"""
+    """Créer une disponibilité avec détection de conflits
+    
+    RÈGLE: Premier arrivé, premier servi
+    - Si une indisponibilité existe → impossible d'ajouter une disponibilité sur la même période
+    - Si une disponibilité existe → impossible d'ajouter une indisponibilité sur la même période
+    """
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Détecter les conflits si force=False
-    if not force:
-        conflicts = await detect_conflicts(
-            tenant_id=tenant.id,
-            user_id=disponibilite.user_id,
-            date=disponibilite.date,
-            heure_debut=disponibilite.heure_debut,
-            heure_fin=disponibilite.heure_fin,
-            type_garde_id=disponibilite.type_garde_id,
-            element_type="disponibilite"
-        )
+    # TOUJOURS détecter les conflits incompatibles (dispo vs indispo)
+    conflicts = await detect_conflicts(
+        tenant_id=tenant.id,
+        user_id=disponibilite.user_id,
+        date=disponibilite.date,
+        heure_debut=disponibilite.heure_debut,
+        heure_fin=disponibilite.heure_fin,
+        type_garde_id=disponibilite.type_garde_id,
+        element_type="disponibilite"
+    )
+    
+    if conflicts:
+        # Séparer les conflits incompatibles des compatibles
+        incompatible_conflicts = [c for c in conflicts if c.get("conflict_severity") == "incompatible"]
+        compatible_conflicts = [c for c in conflicts if c.get("conflict_severity") in ["compatible_overlap", "compatible_covered"]]
         
-        if conflicts:
-            # Séparer les conflits incompatibles des compatibles
-            incompatible_conflicts = [c for c in conflicts if c.get("conflict_severity") == "incompatible"]
-            compatible_conflicts = [c for c in conflicts if c.get("conflict_severity") in ["compatible_overlap", "compatible_covered"]]
-            
-            # Si conflit couvert complètement, ne rien créer (déjà existe)
-            if any(c.get("conflict_severity") == "compatible_covered" for c in conflicts):
-                raise HTTPException(
-                    status_code=409,
-                    detail={
-                        "message": "Cette disponibilité est déjà couverte par une entrée existante",
-                        "conflicts": compatible_conflicts,
-                        "new_item": disponibilite.dict(),
-                        "action_required": "none"  # Aucune action nécessaire
-                    }
-                )
-            
-            # Si conflits incompatibles (dispo vs indispo), demander confirmation
-            if incompatible_conflicts:
-                raise HTTPException(
-                    status_code=409,
-                    detail={
-                        "message": "Conflits incompatibles détectés",
-                        "conflicts": incompatible_conflicts,
-                        "new_item": disponibilite.dict(),
-                        "action_required": "choose"  # L'utilisateur doit choisir
-                    }
-                )
-            
-            # Si seulement des conflits compatibles (chevauchement dispo-dispo), proposer fusion
-            if compatible_conflicts:
-                raise HTTPException(
-                    status_code=409,
-                    detail={
-                        "message": "Chevauchement détecté - Fusion possible",
-                        "conflicts": compatible_conflicts,
-                        "new_item": disponibilite.dict(),
-                        "action_required": "merge"  # Proposer la fusion automatique
-                    }
-                )
+        # RÈGLE STRICTE: Les conflits incompatibles (dispo vs indispo) sont TOUJOURS refusés
+        # Pas de possibilité de forcer - premier arrivé, premier servi
+        if incompatible_conflicts:
+            conflit = incompatible_conflicts[0]
+            statut_existant = "indisponibilité" if conflit.get("existing_disponible") == False else "disponibilité"
+            statut_nouveau = "disponibilité" if disponibilite.statut == "disponible" else "indisponibilité"
+            raise HTTPException(
+                status_code=409,
+                detail=f"Conflit détecté : Une {statut_existant} existe déjà pour cette période ({conflit.get('heure_debut', '?')} - {conflit.get('heure_fin', '?')}). "
+                       f"Impossible d'ajouter une {statut_nouveau} en conflit. Supprimez d'abord l'entrée existante si vous souhaitez la modifier."
+            )
+        
+        # Si conflit couvert complètement, ne rien créer (déjà existe)
+        if any(c.get("conflict_severity") == "compatible_covered" for c in conflicts):
+            raise HTTPException(
+                status_code=409,
+                detail="Cette disponibilité est déjà couverte par une entrée existante"
+            )
+        
+        # Si seulement des conflits compatibles (chevauchement dispo-dispo) et pas de force
+        if compatible_conflicts and not force:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "message": "Chevauchement détecté avec une disponibilité existante - Fusion possible",
+                    "conflicts": compatible_conflicts,
+                    "new_item": disponibilite.dict(),
+                    "action_required": "merge"  # Proposer la fusion automatique
+                }
+            )
     
     # Créer la disponibilité
     dispo_dict = disponibilite.dict()
