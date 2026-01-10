@@ -508,6 +508,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       let successCount = 0;
       let collectedConflicts = [];
       let errorCount = 0;
+      let errorMessages = []; // Pour collecter les messages d'erreur explicites
       
       for (let i = 0; i < disponibilitesACreer.length; i++) {
         const dispo = disponibilitesACreer[i];
@@ -520,18 +521,32 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
             const conflictDetails = error.response.data.detail;
             const typeGarde = typesGarde.find(t => t.id === dispo.type_garde_id);
             
-            // Ajouter à la liste des conflits (sans console.error car c'est un comportement attendu)
-            collectedConflicts.push({
-              newItem: dispo,
-              conflicts: conflictDetails.conflicts,
-              newType: typeGarde?.nom || 'Disponibilité',
-              existingType: conflictDetails.conflicts[0]?.statut === 'disponible' ? 'Disponibilité' : 'Indisponibilité',
-              existingHours: `${conflictDetails.conflicts[0]?.heure_debut}-${conflictDetails.conflicts[0]?.heure_fin}`,
-              existingOrigine: conflictDetails.conflicts[0]?.origine
-            });
+            // Si c'est un message string (conflit incompatible bloquant)
+            if (typeof conflictDetails === 'string') {
+              errorMessages.push({
+                date: dispo.date,
+                message: conflictDetails
+              });
+              errorCount++;
+            } 
+            // Si c'est un objet avec des conflits à résoudre
+            else if (conflictDetails.conflicts) {
+              collectedConflicts.push({
+                newItem: dispo,
+                conflicts: conflictDetails.conflicts,
+                newType: typeGarde?.nom || 'Disponibilité',
+                existingType: conflictDetails.conflicts[0]?.statut === 'disponible' ? 'Disponibilité' : 'Indisponibilité',
+                existingHours: `${conflictDetails.conflicts[0]?.heure_debut}-${conflictDetails.conflicts[0]?.heure_fin}`,
+                existingOrigine: conflictDetails.conflicts[0]?.origine
+              });
+            }
           } else {
             errorCount++;
-            console.error(`Erreur création disponibilité (${dispo.date}):`, error.response?.data?.detail || error.message || 'Erreur inconnue');
+            const errorMsg = error.response?.data?.detail || error.message || 'Erreur inconnue';
+            errorMessages.push({
+              date: dispo.date,
+              message: typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg)
+            });
           }
         }
         
@@ -544,7 +559,23 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       setSavingMessage('Finalisation...');
       setSavingDisponibilites(false);
       
-      // Si des conflits ont été détectés, afficher le modal
+      // Si des erreurs bloquantes ont été détectées, afficher le modal d'erreur
+      if (errorMessages.length > 0) {
+        setErrorModalContent({
+          title: `⚠️ ${errorMessages.length} conflit(s) détecté(s)`,
+          messages: errorMessages
+        });
+        setShowErrorModal(true);
+        setShowCalendarModal(false);
+        
+        // Quand même recharger les données pour voir ce qui a été créé
+        if (successCount > 0) {
+          fetchUserDisponibilites();
+        }
+        return;
+      }
+      
+      // Si des conflits résolvables ont été détectés, afficher le modal de résolution
       if (collectedConflicts.length > 0) {
         setBatchConflicts(collectedConflicts);
         setBatchConflictSelections({});
