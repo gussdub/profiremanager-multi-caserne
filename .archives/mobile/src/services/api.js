@@ -2,7 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 
-const API_URL = Constants.expoConfig.extra.apiUrl || 'https://rescue-dash-3.preview.emergentagent.com';
+const API_URL = Constants.expoConfig.extra.apiUrl || 'https://crew-rotation-app.preview.emergentagent.com';
 
 const api = axios.create({
   baseURL: API_URL,

@@ -9,7 +9,7 @@ CONTEXTE DU BUG CORRIGÉ:
 
 CREDENTIALS:
 - Tenant: pompiers-test
-- URL de connexion: https://rescue-dash-3.preview.emergentagent.com/pompiers-test
+- URL de connexion: https://crew-rotation-app.preview.emergentagent.com/pompiers-test
 - Email: admin@test.com
 - Password: Admin123!
 
@@ -36,7 +36,7 @@ import os
 
 class ExportFunctionalityTester:
     def __init__(self):
-        self.base_url = "https://rescue-dash-3.preview.emergentagent.com/api"
+        self.base_url = "https://crew-rotation-app.preview.emergentagent.com/api"
         self.headers = {}
         self.token = None
         self.tenant_slug = "pompiers-test"
