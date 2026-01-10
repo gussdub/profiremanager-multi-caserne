@@ -1,139 +1,74 @@
-# ProFireManager - Product Requirements Document
+# Crew Rotation App - PRD
 
 ## Application Overview
-Application de gestion de caserne de pompiers multi-tenant. Gère le personnel, les plannings, les remplacements, les disponibilités, les équipements (EPI), les formations et la prévention.
+Application de gestion de planning pour services d'incendie avec support multi-tenant.
 
-## User Preferences
-- **Langue**: Français
-- **Tests**: L'utilisateur effectue les tests lui-même. Ne PAS faire de tests manuels (curl, screenshots, etc.) - simplement implémenter et informer.
+## Core Features Implemented
+
+### Système d'équipes de garde (Nouveau - Janvier 2026)
+- **Backend**: Endpoints CRUD `/parametres/equipes-garde` et `/equipes-garde/equipe-du-jour`
+- **Frontend Paramètres**: Composant `ParametresEquipesGarde.jsx` pour configurer les rotations temps plein/temps partiel
+- **Frontend Personnel**: Champ "Équipe de garde" dans les fiches employés (visible selon configuration)
+- **Frontend Planning**: Affichage des équipes de garde du jour (temps plein ET temps partiel)
+- **Attribution automatique**: Bonus de priorité pour les temps partiels de l'équipe de garde
+
+### Type d'emploi "Temporaire"
+- Nouveau type d'emploi traité comme temps partiel
+- Badge violet distinct
+- Accès aux disponibilités comme les temps partiels
+- Abréviations: TP (temps plein), TPart (temps partiel), Tempo (temporaire)
+
+### Validation des conflits (Disponibilités/Indisponibilités)
+- **Backend**: Règle "Premier arrivé, premier servi" - impossible d'ajouter dispo si indispo existe et vice-versa
+- **Frontend**: Modal d'erreur centré avec détails explicites
+- Affiche le nombre de succès ET le nombre de conflits lors des créations en lot
+
+### Validation des assignations (Planning)
+- **Backend**: Vérifie les jours d'application des types de garde
+- Impossible d'assigner une "Garde WE" un jour de semaine
+- **Frontend**: Modal d'erreur explicite avec message détaillé
+
+### Super-Admin Multi-tenant
+- Les super-admins peuvent se connecter sur n'importe quel tenant
+- Obtiennent automatiquement les droits admin sur le tenant
+- **Sécurité**: Déconnexion automatique après 2h d'inactivité
+- Avertissement 5 minutes avant déconnexion
+
+### Corrections diverses
+- Export PDF du Planning: Noms complets affichés correctement
+- Horaire "Longueuil 7/24" implémenté
+- Module Maintenance supprimé (inutile)
+- Correction du format d'erreur API (error.status/error.data au lieu de error.response)
 
 ## Tech Stack
-- **Backend**: FastAPI (Python) avec MongoDB
-- **Frontend**: React avec Shadcn/UI
-- **Notifications**: Firebase Cloud Messaging (FCM) + Resend (emails)
-- **Scheduler**: APScheduler pour tâches planifiées
+- **Backend**: FastAPI + MongoDB
+- **Frontend**: React + Shadcn/UI
+- **Auth**: JWT avec expiration (24h users, 2h super-admins)
 
----
+## Database Schema (Collections clés)
+- `users`: + champ `equipe_garde: Optional[int]`
+- `parametres_equipes_garde`: Configuration des rotations par tenant
+- `disponibilites`: Disponibilités/indisponibilités des employés
+- `assignations`: Assignations de planning
+- `types_garde`: Types de garde avec `jours_application`
 
-## Completed Features (This Session - Jan 2025)
+## API Endpoints (Nouveaux)
+- `GET/PUT /api/{tenant}/parametres/equipes-garde`
+- `GET /api/{tenant}/equipes-garde/equipe-du-jour?date=&type_emploi=`
 
-### P0: Export PDF Planning - Correction Affichage Noms
-**Status**: TERMINÉ (9 Jan 2025)
-
-**Problème initial:**
-- Le PDF du planning n'affichait pas les noms des employés assignés
-- Les types de gardes étaient tronqués (ex: "Garde de nui" au lieu de "Garde de nuit")
-- Le format mois affichait des compteurs (1/4, 2/4) au lieu des noms
-
-**Solution implémentée (`server.py` - fonction `export_planning_pdf`):**
-- **Format MOIS refait complètement:**
-  - Suppression de la troncature `[:12]` sur les noms de garde
-  - Ajout de l'affichage des noms des pompiers (format "P. Nom") au lieu des compteurs
-  - Utilisation de `Paragraph` avec `wordWrap='CJK'` pour le retour à la ligne automatique
-  - Ajout des horaires sous le nom de garde
-  - Largeur de la première colonne augmentée à 1.6 inch
-  - Hauteurs de lignes fixes (0.4 inch en-tête, 0.6 inch données)
-  
-- **Format SEMAINE amélioré:**
-  - Styles avec `wordWrap='CJK'` ajoutés
-  - Taille de police augmentée de 7 à 8
-  - Hauteurs de lignes fixes pour afficher plusieurs noms
-  - Couleur de texte claire pour les cellules
-
-**Fichier modifié:** `backend/server.py` (lignes ~5710-6050)
-
-### P0: Système de Rappel et Blocage des Disponibilités
-**Status**: TERMINÉ
-
-**Backend (`server.py`):**
-- Nouvelle tâche planifiée `job_verifier_rappels_disponibilites` (tous les jours à 9h00)
-  - Vérifie les paramètres de chaque tenant
-  - Identifie les employés temps partiel sans disponibilités saisies pour le mois suivant
-  - Envoie notifications (in-app, push, email) X jours avant la date de blocage
-- Nouveau paramètre `blocage_dispos_active` ajouté aux valeurs par défaut
-- Nouvel endpoint `GET /{tenant}/disponibilites/statut-blocage?mois=YYYY-MM`
-  - Retourne l'état du blocage pour un mois donné
-  - Gère les exceptions admin/superviseur
-  - **CORRIGÉ (Jan 9, 2025)**: Déplacé AVANT l'endpoint `/{tenant}/disponibilites/{user_id}` pour éviter un conflit de routage FastAPI qui causait une erreur 403
-- Nouvel endpoint `POST /{tenant}/disponibilites/envoyer-rappels`
-  - Déclenche manuellement l'envoi des rappels (pour tests admin)
-
-**Frontend (`MesDisponibilites.jsx`):**
-- État `blocageInfo` pour stocker l'état du blocage
-- Vérification automatique du blocage quand le mois du calendrier change
-- Bannière d'alerte visuelle:
-  - Jaune = avertissement (jours restants affichés)
-  - Rouge = bloqué
-  - Message d'exception pour admin/superviseur
-- Boutons désactivés quand bloqué (sauf exception admin/superviseur)
-- Vérification dans `handleSaveAllConfigurations` avant sauvegarde
-
-### P1: Paramètres Remplacements - Cases à Cocher
-**Status**: TERMINÉ
-
-**Fonction `trouver_remplacants_potentiels` corrigée pour utiliser les paramètres:**
-- `privilegier_disponibles`: Si activé, FILTRE les remplaçants sans disponibilité déclarée (avant: juste un bonus de tri)
-- `grade_egal`: Si activé, exige un grade >= au demandeur (avant: ignoré)
-- `competences_egales`: Si activé, exige les mêmes compétences que le demandeur (avant: toujours vérifié avec les compétences du type de garde)
-- Les paramètres sont lus depuis `parametres_remplacements` collection
-
----
-
-## Paramètres Disponibilités (Collection: `parametres_disponibilites`)
-```json
-{
-  "tenant_id": "string",
-  "blocage_dispos_active": false,
-  "jour_blocage_dispos": 15,
-  "exceptions_admin_superviseur": true,
-  "admin_peut_modifier_temps_partiel": true,
-  "notifications_dispos_actives": true,
-  "jours_avance_notification": 3,
-  "dernier_rappel_disponibilites": "ISO datetime"
-}
-```
-
-## Paramètres Remplacements (Collection: `parametres_remplacements`)
-```json
-{
-  "tenant_id": "string",
-  "mode_notification": "simultane|sequentiel|groupe_sequentiel",
-  "taille_groupe": 3,
-  "delai_attente_minutes": 1440,
-  "max_personnes_contact": 5,
-  "privilegier_disponibles": false,
-  "grade_egal": false,
-  "competences_egales": false,
-  "activer_gestion_heures_sup": false
-}
-```
-
----
-
-## Scheduled Jobs (APScheduler)
-1. `job_verifier_notifications_planning` - Toutes les heures (minute 0)
-2. `job_verifier_alertes_equipements` - Tous les jours à 8h00
-3. `job_verifier_rappels_disponibilites` - Tous les jours à 9h00 (NEW)
-
----
-
-## Key Files Modified This Session
-- `backend/server.py` - Scheduler, endpoints blocage, fonction trouver_remplacants_potentiels, nouvel endpoint `mes-heures`, correction ordre routes `statut-blocage`
-- `frontend/src/components/MesDisponibilites.jsx` - Alerte blocage, vérification état
-- `frontend/src/components/Dashboard.jsx` - Utilise maintenant l'endpoint `mes-heures` pour tous les utilisateurs
-- `frontend/src/contexts/AuthContext.js` - Réinitialise `currentPage` à 'dashboard' après connexion
-- `frontend/src/components/ParametresDisponibilites.jsx` - UI paramètres (existait déjà)
-- `frontend/src/components/ParametresRemplacements.jsx` - UI paramètres (existait déjà)
-
----
+## Files Modified (Session Jan 2026)
+- `backend/server.py`: Équipes de garde, validation conflits, super-admin multi-tenant
+- `frontend/src/components/ParametresEquipesGarde.jsx`: Nouveau composant
+- `frontend/src/components/Parametres.js`: Ajout onglet Équipes
+- `frontend/src/components/Personnel.jsx`: Champ équipe + type temporaire
+- `frontend/src/components/Planning.jsx`: Affichage équipes + modal erreur
+- `frontend/src/components/MesDisponibilites.jsx`: Modal erreur conflits
+- `frontend/src/components/SuperAdminDashboard.js`: Timer inactivité 2h
+- `frontend/src/components/Sidebar.jsx`: Menu temporaires + suppression maintenance
 
 ## Backlog / Future Tasks
-1. Test de bout en bout du module Remplacement (flux complet avec 2 comptes)
-2. Migration vers architecture native (capacités hors ligne)
-3. Module Prévention
-4. Refactorisation du fichier monolithique `server.py`
-
----
-
-## Known Issues
-- Aucun issue bloquant connu après les corrections de cette session
+- **P1**: Pré-remplissage automatique temps plein selon équipe
+- **P1**: Phase 4 Planning - Intégration complète équipes de garde
+- **P2**: Refactoring server.py en modules
+- **P2**: Module Prévention (à développer)
+- **P3**: Migration architecture native (hors ligne)
