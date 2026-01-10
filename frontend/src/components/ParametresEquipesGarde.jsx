@@ -181,15 +181,15 @@ const ParametresEquipesGarde = ({ tenantSlug, toast }) => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Settings className="w-5 h-5" />
-            Activation du système d'équipes de garde
+            Activation du système d&apos;équipes de garde
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium">Activer le système d'équipes de garde</p>
+              <p className="font-medium">Activer le système d&apos;équipes de garde</p>
               <p className="text-sm text-gray-500">
-                Permet d'assigner des employés à des équipes et d'automatiser le planning
+                Permet d&apos;assigner des employés à des équipes et d&apos;automatiser le planning
               </p>
             </div>
             <Switch
