@@ -805,9 +805,15 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
         conserver_manuelles: generationConfig.conserver_manuelles
       });
       
+      const horaireNames = {
+        montreal: 'Montreal 7/24',
+        quebec: 'Quebec 10/14',
+        longueuil: 'Longueuil 7/24'
+      };
+      
       toast({
         title: "Génération réussie",
-        description: `${response.nombre_indisponibilites} indisponibilités générées pour ${generationConfig.horaire_type === 'montreal' ? 'Montreal 7/24' : 'Quebec 10/14'} - Équipe ${generationConfig.equipe} (${generationConfig.date_debut} au ${generationConfig.date_fin})`,
+        description: `${response.nombre_indisponibilites} indisponibilités générées pour ${horaireNames[generationConfig.horaire_type] || generationConfig.horaire_type} - Équipe ${generationConfig.equipe} (${generationConfig.date_debut} au ${generationConfig.date_fin})`,
         variant: "success"
       });
       
