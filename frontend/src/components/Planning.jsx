@@ -1269,40 +1269,89 @@ const Planning = () => {
         </div>
       </div>
 
-      {/* Affichage de l'équipe de garde du jour */}
-      {equipesGardeParams?.actif && equipeGardeInfo?.equipe && (
+      {/* Affichage des équipes de garde du jour */}
+      {equipesGardeParams?.actif && (
         <div style={{
           display: 'flex',
-          alignItems: 'center',
           gap: '1rem',
-          padding: '0.75rem 1rem',
           marginBottom: '1rem',
-          background: `linear-gradient(135deg, ${equipeGardeInfo.couleur}15 0%, ${equipeGardeInfo.couleur}05 100%)`,
-          border: `2px solid ${equipeGardeInfo.couleur}`,
-          borderRadius: '10px'
+          flexWrap: 'wrap'
         }}>
-          <div style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '50%',
-            background: equipeGardeInfo.couleur,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontWeight: 'bold',
-            fontSize: '1.2rem'
-          }}>
-            {equipeGardeInfo.equipe}
-          </div>
-          <div>
-            <div style={{ fontWeight: '600', color: '#1F2937' }}>
-              🔥 Équipe de garde aujourd&apos;hui : {equipeGardeInfo.nom}
+          {/* Équipe temps plein */}
+          {equipeGardeInfo?.temps_plein?.equipe && (
+            <div style={{
+              flex: 1,
+              minWidth: '280px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem',
+              padding: '0.75rem 1rem',
+              background: `linear-gradient(135deg, ${equipeGardeInfo.temps_plein.couleur}15 0%, ${equipeGardeInfo.temps_plein.couleur}05 100%)`,
+              border: `2px solid ${equipeGardeInfo.temps_plein.couleur}`,
+              borderRadius: '10px'
+            }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                background: equipeGardeInfo.temps_plein.couleur,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontWeight: 'bold',
+                fontSize: '1.2rem'
+              }}>
+                {equipeGardeInfo.temps_plein.equipe}
+              </div>
+              <div>
+                <div style={{ fontWeight: '600', color: '#1F2937' }}>
+                  🔥 Temps plein : {equipeGardeInfo.temps_plein.nom}
+                </div>
+                <div style={{ fontSize: '0.875rem', color: '#6B7280' }}>
+                  Équipe de garde aujourd&apos;hui
+                </div>
+              </div>
             </div>
-            <div style={{ fontSize: '0.875rem', color: '#6B7280' }}>
-              Temps plein • {equipeGardeInfo.date}
+          )}
+          
+          {/* Équipe temps partiel */}
+          {equipeGardeInfo?.temps_partiel?.equipe && (
+            <div style={{
+              flex: 1,
+              minWidth: '280px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem',
+              padding: '0.75rem 1rem',
+              background: `linear-gradient(135deg, ${equipeGardeInfo.temps_partiel.couleur}15 0%, ${equipeGardeInfo.temps_partiel.couleur}05 100%)`,
+              border: `2px solid ${equipeGardeInfo.temps_partiel.couleur}`,
+              borderRadius: '10px'
+            }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                background: equipeGardeInfo.temps_partiel.couleur,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontWeight: 'bold',
+                fontSize: '1.2rem'
+              }}>
+                {equipeGardeInfo.temps_partiel.equipe}
+              </div>
+              <div>
+                <div style={{ fontWeight: '600', color: '#1F2937' }}>
+                  ⏰ Temps partiel : {equipeGardeInfo.temps_partiel.nom}
+                </div>
+                <div style={{ fontSize: '0.875rem', color: '#6B7280' }}>
+                  Équipe de garde aujourd&apos;hui
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
