@@ -17590,7 +17590,7 @@ async def generer_justification_attribution(
                 raison_exclusion = f"Heures max atteintes ({heures_semaine_candidate}h/{heures_max_user}h)"
         
         # Vérifier disponibilité (temps partiel)
-        if not raison_exclusion and candidate.get("type_emploi") == "temps_partiel":
+        if not raison_exclusion and candidate.get("type_emploi") in ("temps_partiel", "temporaire"):
             # Vérifier s'il a déclaré une disponibilité (même logique que l'attribution)
             has_dispo = False
             if dispos_lookup and candidate["id"] in dispos_lookup and date_str in dispos_lookup[candidate["id"]]:
