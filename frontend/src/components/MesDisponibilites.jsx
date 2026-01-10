@@ -2225,7 +2225,11 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                 <div className="config-section" style={{ background: '#eff6ff', padding: '15px', borderRadius: '8px', border: '1px solid #3b82f6' }}>
                   <h4 style={{ color: '#1e40af', marginTop: 0 }}>📊 Résumé de la génération</h4>
                   <ul style={{ margin: '10px 0', paddingLeft: '20px', color: '#1e40af' }}>
-                    <li><strong>Horaire :</strong> {generationConfig.horaire_type === 'montreal' ? 'Montreal 7/24' : 'Quebec 10/14'}</li>
+                    <li><strong>Horaire :</strong> {
+                      generationConfig.horaire_type === 'montreal' ? 'Montreal 7/24' 
+                      : generationConfig.horaire_type === 'quebec' ? 'Quebec 10/14'
+                      : 'Longueuil 7/24'
+                    }</li>
                     <li><strong>Équipe :</strong> {generationConfig.equipe}</li>
                     <li><strong>Période :</strong> Du {new Date(generationConfig.date_debut).toLocaleDateString('fr-FR')} au {new Date(generationConfig.date_fin).toLocaleDateString('fr-FR')}</li>
                     <li><strong>Mode :</strong> {generationConfig.conserver_manuelles ? 'Conservation des modifications manuelles' : 'Remplacement total'}</li>
