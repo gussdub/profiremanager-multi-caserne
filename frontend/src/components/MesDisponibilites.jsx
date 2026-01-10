@@ -137,6 +137,10 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
   const [batchConflicts, setBatchConflicts] = useState([]);
   const [batchConflictSelections, setBatchConflictSelections] = useState({});
   
+  // État pour le modal d'erreur explicite
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorModalContent, setErrorModalContent] = useState({ title: '', messages: [] });
+  
   const { toast } = useToast();
 
   // Fonction pour vérifier le blocage pour un mois donné
