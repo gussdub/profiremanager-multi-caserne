@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
@@ -8,6 +8,11 @@ import Debogage from "./Debogage";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+// Durée d'inactivité avant déconnexion automatique (2 heures en ms)
+const INACTIVITY_TIMEOUT = 2 * 60 * 60 * 1000; // 2 heures
+// Avertissement 5 minutes avant déconnexion
+const WARNING_BEFORE_LOGOUT = 5 * 60 * 1000; // 5 minutes
 
 const SuperAdminDashboard = ({ onLogout }) => {
   const [activeTab, setActiveTab] = useState('tenants'); // tenants ou debogage
@@ -23,6 +28,8 @@ const SuperAdminDashboard = ({ onLogout }) => {
   const [superAdmins, setSuperAdmins] = useState([]);
   const [editingSuperAdmin, setEditingSuperAdmin] = useState(null);
   const [selectedTenant, setSelectedTenant] = useState(null);
+  const [showInactivityWarning, setShowInactivityWarning] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(0);
   const [newTenant, setNewTenant] = useState({
     nom: '',
     slug: '',
@@ -45,6 +52,68 @@ const SuperAdminDashboard = ({ onLogout }) => {
     mot_de_passe: ''
   });
   const { toast } = useToast();
+
+  // ==================== GESTION DE L'INACTIVITÉ ====================
+  const resetInactivityTimer = useCallback(() => {
+    setShowInactivityWarning(false);
+    localStorage.setItem('lastActivity', Date.now().toString());
+  }, []);
+
+  // Détecter l'activité utilisateur
+  useEffect(() => {
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    
+    const handleActivity = () => {
+      resetInactivityTimer();
+    };
+
+    events.forEach(event => {
+      document.addEventListener(event, handleActivity);
+    });
+
+    // Initialiser le timestamp
+    resetInactivityTimer();
+
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, handleActivity);
+      });
+    };
+  }, [resetInactivityTimer]);
+
+  // Vérifier l'inactivité périodiquement
+  useEffect(() => {
+    const checkInactivity = () => {
+      const lastActivity = parseInt(localStorage.getItem('lastActivity') || Date.now().toString());
+      const now = Date.now();
+      const timeSinceLastActivity = now - lastActivity;
+      
+      // Déconnexion après 2h d'inactivité
+      if (timeSinceLastActivity >= INACTIVITY_TIMEOUT) {
+        toast({
+          title: "Session expirée",
+          description: "Vous avez été déconnecté pour inactivité (2 heures)",
+          variant: "destructive"
+        });
+        onLogout();
+        return;
+      }
+      
+      // Avertissement 5 minutes avant
+      const timeUntilLogout = INACTIVITY_TIMEOUT - timeSinceLastActivity;
+      if (timeUntilLogout <= WARNING_BEFORE_LOGOUT && timeUntilLogout > 0) {
+        setShowInactivityWarning(true);
+        setTimeRemaining(Math.ceil(timeUntilLogout / 60000)); // en minutes
+      } else {
+        setShowInactivityWarning(false);
+      }
+    };
+
+    const interval = setInterval(checkInactivity, 30000); // Vérifier toutes les 30 secondes
+    checkInactivity(); // Vérifier immédiatement
+
+    return () => clearInterval(interval);
+  }, [onLogout, toast]);
 
   // Helper pour récupérer le token avec le bon préfixe
   const getToken = () => {
