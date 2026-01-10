@@ -86,6 +86,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     grade: '',
     fonction_superieur: false,
     type_emploi: '',
+    equipe_garde: null,
     numero_employe: '',
     date_embauche: '',
     taux_horaire: 0,
@@ -101,6 +102,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     taille_masque_apria: '',
     taille_cagoule: ''
   });
+  const [equipesGardeParams, setEquipesGardeParams] = useState(null);
   const { toast } = useToast();
   const { tenantSlug } = useTenant();
 
