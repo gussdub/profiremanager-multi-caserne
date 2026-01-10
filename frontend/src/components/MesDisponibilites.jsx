@@ -1146,8 +1146,9 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
           successCount++;
         } catch (error) {
           // Vérifier si c'est une erreur de conflit (409)
-          if (error.response && error.response.status === 409) {
-            const conflictDetails = error.response.data.detail;
+          // Le wrapper apiCall met le status dans error.status et les data dans error.data
+          if (error.status === 409) {
+            const conflictDetails = error.data?.detail;
             
             // Si c'est un message string (conflit incompatible bloquant)
             if (typeof conflictDetails === 'string') {
@@ -1158,7 +1159,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
               errorCount++;
             }
             // Si c'est un objet avec des conflits à résoudre
-            else if (conflictDetails.conflicts) {
+            else if (conflictDetails?.conflicts) {
               collectedConflicts.push({
                 newItem: indispo,
                 conflicts: conflictDetails.conflicts,
@@ -1171,7 +1172,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
           } else {
             // Autre erreur
             errorCount++;
-            const errorMsg = error.response?.data?.detail || error.message || 'Erreur inconnue';
+            const errorMsg = error.data?.detail || error.message || 'Erreur inconnue';
             errorMessages.push({
               date: indispo.date,
               message: typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg)
