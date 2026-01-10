@@ -16721,7 +16721,12 @@ async def generer_indisponibilites(
             })
         else:
             # Supprimer uniquement les disponibilités générées automatiquement (préserver manuelles)
-            origine_type = "montreal_7_24" if generation_data.horaire_type == "montreal" else "quebec_10_14"
+            origine_map = {
+                "montreal": "montreal_7_24",
+                "quebec": "quebec_10_14",
+                "longueuil": "longueuil_7_24"
+            }
+            origine_type = origine_map.get(generation_data.horaire_type, "montreal_7_24")
             await db.disponibilites.delete_many({
                 "user_id": generation_data.user_id,
                 "tenant_id": tenant.id,
