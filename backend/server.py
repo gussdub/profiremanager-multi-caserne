@@ -16773,7 +16773,12 @@ async def generer_indisponibilites(
             await db.disponibilites.insert_many(indispos)
         
         # Créer une activité
-        horaire_text = "Montréal 7/24" if generation_data.horaire_type == "montreal" else "Québec 10/14"
+        horaire_texts = {
+            "montreal": "Montréal 7/24",
+            "quebec": "Québec 10/14",
+            "longueuil": "Longueuil 7/24"
+        }
+        horaire_text = horaire_texts.get(generation_data.horaire_type, generation_data.horaire_type)
         user = await db.users.find_one({"id": generation_data.user_id, "tenant_id": tenant.id})
         if user:
             await creer_activite(
