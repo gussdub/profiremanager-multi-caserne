@@ -15114,7 +15114,7 @@ async def create_disponibilite(
         # Pas de possibilité de forcer - premier arrivé, premier servi
         if incompatible_conflicts:
             conflit = incompatible_conflicts[0]
-            statut_existant = "indisponibilité" if conflit.get("existing_disponible") == False else "disponibilité"
+            statut_existant = "indisponibilité" if conflit.get("statut") == "indisponible" else "disponibilité"
             statut_nouveau = "disponibilité" if disponibilite.statut == "disponible" else "indisponibilité"
             raise HTTPException(
                 status_code=409,
