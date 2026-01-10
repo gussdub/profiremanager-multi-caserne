@@ -3273,6 +3273,87 @@ const Planning = () => {
         onSaveNotes={handleSaveAuditNotes}
       />
 
+      {/* Modal d'erreur d'assignation */}
+      {showAssignErrorModal && (
+        <div 
+          className="modal-overlay" 
+          onClick={() => setShowAssignErrorModal(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 10000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: '0',
+              maxWidth: '500px',
+              width: '90%',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+              overflow: 'hidden'
+            }}
+          >
+            {/* Header rouge */}
+            <div style={{
+              background: 'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)',
+              padding: '1.5rem',
+              color: 'white'
+            }}>
+              <h2 style={{ 
+                margin: 0, 
+                fontSize: '1.25rem', 
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                🚫 {assignErrorContent.title}
+              </h2>
+            </div>
+            
+            {/* Contenu */}
+            <div style={{ padding: '1.5rem' }}>
+              <div style={{
+                background: '#FEF2F2',
+                border: '1px solid #FECACA',
+                borderRadius: '8px',
+                padding: '1rem',
+                color: '#7F1D1D',
+                fontSize: '0.95rem',
+                lineHeight: '1.5'
+              }}>
+                {assignErrorContent.message}
+              </div>
+            </div>
+            
+            {/* Footer */}
+            <div style={{
+              padding: '1rem 1.5rem',
+              borderTop: '1px solid #E5E7EB',
+              display: 'flex',
+              justifyContent: 'flex-end'
+            }}>
+              <Button 
+                onClick={() => setShowAssignErrorModal(false)}
+                style={{ background: '#DC2626', color: 'white' }}
+              >
+                Compris
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
