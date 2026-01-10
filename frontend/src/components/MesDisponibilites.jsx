@@ -1334,7 +1334,12 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       setShowQuickAddModal(false);
       
       // Recharger les disponibilités
-      fetchUserDisponibilites();
+      try {
+        const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
+        setUserDisponibilites(dispoData);
+      } catch (e) {
+        console.error('Erreur rechargement disponibilités:', e);
+      }
       
       // Réinitialiser le formulaire
       setQuickAddConfig({
