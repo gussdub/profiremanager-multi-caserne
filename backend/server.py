@@ -17561,7 +17561,7 @@ async def generer_justification_attribution(
             "heures_ce_mois": heures_selectionnee,
             "moyenne_equipe": round(moyenne_equipe, 1),
             "annees_service": round(annees_service, 1),
-            "disponibilite_declaree": selected_user.get("type_emploi") == "temps_partiel" and bool(disponibilites_evaluees),
+            "disponibilite_declaree": selected_user.get("type_emploi") in ("temps_partiel", "temporaire") and bool(disponibilites_evaluees),
             "heures_max_autorisees": selected_user.get("heures_max_semaine", 40) if not activer_heures_sup else None
         }
     }
