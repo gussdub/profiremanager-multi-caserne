@@ -2790,60 +2790,129 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
 
       {/* Modal d'erreur explicite pour les conflits bloquants */}
       {showErrorModal && (
-        <div className="modal-overlay" onClick={() => setShowErrorModal(false)}>
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            zIndex: 99999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem'
+          }}
+          onClick={() => setShowErrorModal(false)}
+        >
           <div 
-            className="modal-content" 
             onClick={(e) => e.stopPropagation()}
             style={{
-              maxWidth: '600px',
+              background: 'white',
+              borderRadius: '16px',
+              maxWidth: '550px',
+              width: '100%',
               maxHeight: '80vh',
-              overflow: 'auto'
+              overflow: 'hidden',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
+              animation: 'modalAppear 0.2s ease-out'
             }}
           >
-            <div className="modal-header" style={{ borderBottom: '2px solid #EF4444', paddingBottom: '1rem' }}>
-              <h2 style={{ color: '#DC2626', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: '1.5rem' }}>🚫</span>
+            {/* Header rouge */}
+            <div style={{ 
+              background: 'linear-gradient(135deg, #DC2626 0%, #991B1B 100%)',
+              padding: '1.5rem',
+              color: 'white'
+            }}>
+              <h2 style={{ 
+                margin: 0, 
+                fontSize: '1.5rem', 
+                fontWeight: '700',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem'
+              }}>
+                <span style={{ fontSize: '2rem' }}>🚫</span>
                 {errorModalContent.title}
               </h2>
             </div>
-            <div className="modal-body" style={{ padding: '1.5rem 0' }}>
-              <p style={{ marginBottom: '1rem', color: '#6B7280' }}>
-                Les entrées suivantes n'ont pas pu être créées car elles sont en conflit avec des données existantes.
-                <strong> Supprimez d'abord les entrées existantes si vous souhaitez les remplacer.</strong>
+            
+            {/* Corps */}
+            <div style={{ padding: '1.5rem' }}>
+              <p style={{ 
+                marginBottom: '1rem', 
+                color: '#4B5563',
+                fontSize: '0.95rem',
+                lineHeight: '1.5'
+              }}>
+                L'entrée n'a pas pu être créée car elle est en conflit avec des données existantes.
+                <strong style={{ color: '#1F2937' }}> Supprimez d'abord l'entrée existante si vous souhaitez la remplacer.</strong>
               </p>
+              
               <div style={{ 
                 background: '#FEF2F2', 
-                border: '1px solid #FECACA', 
-                borderRadius: '8px',
-                padding: '1rem',
-                maxHeight: '300px',
+                border: '2px solid #FECACA', 
+                borderRadius: '12px',
+                padding: '1.25rem',
+                maxHeight: '250px',
                 overflow: 'auto'
               }}>
                 {errorModalContent.messages.map((err, idx) => (
                   <div 
                     key={idx} 
                     style={{ 
-                      padding: '0.75rem',
-                      borderBottom: idx < errorModalContent.messages.length - 1 ? '1px solid #FECACA' : 'none',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.25rem'
+                      padding: '1rem',
+                      background: 'white',
+                      borderRadius: '8px',
+                      marginBottom: idx < errorModalContent.messages.length - 1 ? '0.75rem' : 0,
+                      border: '1px solid #FECACA'
                     }}
                   >
-                    <div style={{ fontWeight: '600', color: '#DC2626' }}>
+                    <div style={{ 
+                      fontWeight: '700', 
+                      color: '#DC2626',
+                      fontSize: '1rem',
+                      marginBottom: '0.5rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}>
                       📅 {err.date}
                     </div>
-                    <div style={{ color: '#7F1D1D', fontSize: '0.9rem' }}>
+                    <div style={{ 
+                      color: '#7F1D1D', 
+                      fontSize: '0.9rem',
+                      lineHeight: '1.4',
+                      background: '#FEE2E2',
+                      padding: '0.75rem',
+                      borderRadius: '6px'
+                    }}>
                       {err.message}
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="modal-footer" style={{ borderTop: '1px solid #E5E7EB', paddingTop: '1rem' }}>
+            
+            {/* Footer */}
+            <div style={{
+              padding: '1rem 1.5rem',
+              borderTop: '1px solid #E5E7EB',
+              display: 'flex',
+              justifyContent: 'flex-end',
+              background: '#F9FAFB'
+            }}>
               <Button 
                 onClick={() => setShowErrorModal(false)}
-                style={{ background: '#DC2626', color: 'white' }}
+                style={{ 
+                  background: '#DC2626', 
+                  color: 'white',
+                  padding: '0.75rem 2rem',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  borderRadius: '8px'
+                }}
               >
                 Compris
               </Button>
