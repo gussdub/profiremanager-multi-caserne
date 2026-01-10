@@ -17684,6 +17684,13 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         
         activer_heures_sup = parametres.get("activer_gestion_heures_sup", False)
         
+        # Récupérer les paramètres des équipes de garde
+        params_equipes_garde = await db.parametres_equipes_garde.find_one({"tenant_id": tenant.id})
+        equipes_garde_actif = params_equipes_garde.get("actif", False) if params_equipes_garde else False
+        privilegier_equipe_garde_tp = False
+        if equipes_garde_actif and params_equipes_garde:
+            privilegier_equipe_garde_tp = params_equipes_garde.get("temps_partiel", {}).get("privilegier_equipe_garde", False)
+        
         # CORRECTION CRITIQUE: Charger les paramètres des niveaux d'attribution
         niveaux_actifs = {
             "niveau_2": tenant.parametres.get("niveau_2_actif", True),
