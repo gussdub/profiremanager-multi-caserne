@@ -1709,7 +1709,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         {selectedUser.grade}
                       </span>
                       <span className="employment-badge">
-                        {selectedUser.type_emploi === 'temps_plein' ? 'Temps plein' : 'Temps partiel'}
+                        {selectedUser.type_emploi === 'temps_plein' ? 'Temps plein' : selectedUser.type_emploi === 'temporaire' ? 'Temporaire' : 'Temps partiel'}
                       </span>
                       <span className={`status-badge ${selectedUser.statut.toLowerCase()}`}>
                         {selectedUser.statut}
