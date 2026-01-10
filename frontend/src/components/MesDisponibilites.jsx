@@ -1337,8 +1337,9 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       console.error('Erreur sauvegarde rapide:', error);
       
       // Vérifier si c'est une erreur de conflit (409)
-      if (error.response && error.response.status === 409) {
-        const conflictDetails = error.response.data.detail;
+      // Le wrapper apiCall met le status dans error.status et les data dans error.data
+      if (error.status === 409) {
+        const conflictDetails = error.data?.detail;
         
         // Si c'est un message string (conflit incompatible bloquant)
         if (typeof conflictDetails === 'string') {
@@ -1360,9 +1361,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       
       toast({
         title: "Erreur",
-        description: typeof error.response?.data?.detail === 'string' 
-          ? error.response.data.detail 
-          : "Impossible d'enregistrer",
+        description: error.message || "Impossible d'enregistrer",
         variant: "destructive"
       });
     }
