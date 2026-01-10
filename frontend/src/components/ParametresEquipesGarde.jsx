@@ -411,8 +411,8 @@ const ParametresEquipesGarde = ({ tenantSlug, toast }) => {
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <Label>Privilégier l'équipe de garde</Label>
-                      <p className="text-xs text-gray-500">Bonus de score pour l'attribution automatique</p>
+                      <Label>Privilégier l&apos;équipe de garde</Label>
+                      <p className="text-xs text-gray-500">Bonus de score pour l&apos;attribution automatique</p>
                     </div>
                     <Switch
                       checked={params.temps_partiel.privilegier_equipe_garde}
@@ -435,8 +435,8 @@ const ParametresEquipesGarde = ({ tenantSlug, toast }) => {
             <div className="text-sm text-blue-800">
               <p className="font-medium mb-1">Comment ça fonctionne ?</p>
               <ul className="list-disc list-inside space-y-1 text-blue-700">
-                <li><strong>Temps plein</strong> : Le planning peut être pré-rempli automatiquement selon la rotation de l'équipe de chaque employé.</li>
-                <li><strong>Temps partiel</strong> : Les membres de l'équipe de garde reçoivent un bonus de priorité lors de l'attribution automatique des quarts.</li>
+                <li><strong>Temps plein</strong> : Le planning peut être pré-rempli automatiquement selon la rotation de l&apos;équipe de chaque employé.</li>
+                <li><strong>Temps partiel</strong> : Les membres de l&apos;équipe de garde reçoivent un bonus de priorité lors de l&apos;attribution automatique des quarts.</li>
                 <li>Assignez chaque employé à son équipe dans sa fiche personnelle (module Personnel).</li>
               </ul>
             </div>
