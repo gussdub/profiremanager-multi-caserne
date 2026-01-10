@@ -2127,11 +2127,14 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                   >
                     <option value="montreal">Montreal 7/24 (Cycle 28 jours)</option>
                     <option value="quebec">Quebec 10/14 (Cycle 28 jours)</option>
+                    <option value="longueuil">Longueuil 7/24 (Cycle 28 jours)</option>
                   </select>
                   <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
                     {generationConfig.horaire_type === 'montreal' 
                       ? 'Horaire Montreal 7/24 : Cycle de 28 jours commençant par lundi rouge. Vous serez INDISPONIBLE les 7 jours où votre équipe travaille.'
-                      : 'Horaire Quebec 10/14 : 2J + 1×24h + 3N + REPOS + 4J + 3N + REPOS (cycle 28 jours). Vous serez INDISPONIBLE les 13 jours travaillés par cycle (~169 jours/an).'}
+                      : generationConfig.horaire_type === 'quebec'
+                      ? 'Horaire Quebec 10/14 : 2J + 1×24h + 3N + REPOS + 4J + 3N + REPOS (cycle 28 jours). Vous serez INDISPONIBLE les 13 jours travaillés par cycle (~169 jours/an).'
+                      : 'Horaire Longueuil 7/24 : Cycle de 28 jours commençant par dimanche rouge. Vous serez INDISPONIBLE les 7 jours de 24h où votre équipe travaille.'}
                   </small>
                 </div>
 
