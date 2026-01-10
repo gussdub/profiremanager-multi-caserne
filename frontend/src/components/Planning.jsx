@@ -905,11 +905,14 @@ const Planning = () => {
       setShowAdvancedAssignModal(false);
       fetchPlanningData();
     } catch (error) {
-      toast({
-        title: "Erreur d'assignation",
-        description: error.response?.data?.detail || "Impossible de créer l'assignation avancée",
-        variant: "destructive"
+      const errorDetail = error.response?.data?.detail;
+      
+      // Afficher le modal d'erreur avec le message explicite
+      setAssignErrorContent({
+        title: "⚠️ Impossible de créer l'assignation",
+        message: typeof errorDetail === 'string' ? errorDetail : "Une erreur est survenue lors de la création de l'assignation avancée"
       });
+      setShowAssignErrorModal(true);
     }
   };
 
