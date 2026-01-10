@@ -17425,6 +17425,11 @@ body.mobile-menu-open .mobile-menu-toggle {
   color: #D97706;
 }
 
+.badge-emploi.temp {
+  background: #F3E8FF;
+  color: #7C3AED;
+}
+
 .actions-cell-modern {
   display: flex;
   gap: 0.5rem;
