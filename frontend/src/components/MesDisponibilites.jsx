@@ -1135,6 +1135,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       let successCount = 0;
       let collectedConflicts = [];
       let errorCount = 0;
+      let errorMessages = []; // Pour collecter les messages d'erreur explicites
       
       for (let i = 0; i < indisponibilitesACreer.length; i++) {
         const indispo = indisponibilitesACreer[i];
@@ -1147,19 +1148,33 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
           if (error.response && error.response.status === 409) {
             const conflictDetails = error.response.data.detail;
             
-            // Ajouter à la liste des conflits (sans console.error car c'est un comportement attendu)
-            collectedConflicts.push({
-              newItem: indispo,
-              conflicts: conflictDetails.conflicts,
-              newType: 'Indisponibilité',
-              existingType: conflictDetails.conflicts[0]?.statut === 'disponible' ? 'Disponibilité' : 'Indisponibilité',
-              existingHours: `${conflictDetails.conflicts[0]?.heure_debut}-${conflictDetails.conflicts[0]?.heure_fin}`,
-              existingOrigine: conflictDetails.conflicts[0]?.origine
-            });
+            // Si c'est un message string (conflit incompatible bloquant)
+            if (typeof conflictDetails === 'string') {
+              errorMessages.push({
+                date: indispo.date,
+                message: conflictDetails
+              });
+              errorCount++;
+            }
+            // Si c'est un objet avec des conflits à résoudre
+            else if (conflictDetails.conflicts) {
+              collectedConflicts.push({
+                newItem: indispo,
+                conflicts: conflictDetails.conflicts,
+                newType: 'Indisponibilité',
+                existingType: conflictDetails.conflicts[0]?.statut === 'disponible' ? 'Disponibilité' : 'Indisponibilité',
+                existingHours: `${conflictDetails.conflicts[0]?.heure_debut}-${conflictDetails.conflicts[0]?.heure_fin}`,
+                existingOrigine: conflictDetails.conflicts[0]?.origine
+              });
+            }
           } else {
             // Autre erreur
             errorCount++;
-            console.error(`Erreur création indisponibilité (${indispo.date}):`, error.response?.data?.detail || error.message || 'Erreur inconnue');
+            const errorMsg = error.response?.data?.detail || error.message || 'Erreur inconnue';
+            errorMessages.push({
+              date: indispo.date,
+              message: typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg)
+            });
           }
         }
         
@@ -1172,7 +1187,23 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       setSavingMessage('Finalisation...');
       setSavingDisponibilites(false);
       
-      // Si des conflits ont été détectés, afficher le modal
+      // Si des erreurs bloquantes ont été détectées, afficher le modal d'erreur
+      if (errorMessages.length > 0) {
+        setErrorModalContent({
+          title: `⚠️ ${errorMessages.length} conflit(s) détecté(s)`,
+          messages: errorMessages
+        });
+        setShowErrorModal(true);
+        setShowGenerationModal(false);
+        
+        // Quand même recharger les données pour voir ce qui a été créé
+        if (successCount > 0) {
+          fetchUserDisponibilites();
+        }
+        return;
+      }
+      
+      // Si des conflits résolvables ont été détectés, afficher le modal
       if (collectedConflicts.length > 0) {
         setBatchConflicts(collectedConflicts);
         setBatchConflictSelections({});
