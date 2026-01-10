@@ -100,6 +100,11 @@ const Planning = () => {
   const [auditNotesEdit, setAuditNotesEdit] = useState('');
   const [equipeGardeInfo, setEquipeGardeInfo] = useState(null);
   const [equipesGardeParams, setEquipesGardeParams] = useState(null);
+  
+  // État pour le modal d'erreur d'assignation
+  const [showAssignErrorModal, setShowAssignErrorModal] = useState(false);
+  const [assignErrorContent, setAssignErrorContent] = useState({ title: '', message: '' });
+  
   const { toast } = useToast();
 
   // Fonction pour calculer l'aperçu des dates de récurrence
