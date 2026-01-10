@@ -14090,10 +14090,17 @@ async def export_salaires_pdf(
     # Tableau détaillé
     table_data = [["Nom", "Matricule", "Type", "Heures", "Taux/h", "Coût"]]
     for emp in rapport:
+        type_emploi = emp.get("type_emploi", "temps_plein")
+        if type_emploi == "temps_plein":
+            type_abbr = "TP"
+        elif type_emploi == "temporaire":
+            type_abbr = "Tempo"
+        else:
+            type_abbr = "TPart"
         table_data.append([
             emp.get("nom", ""),
             emp.get("matricule", ""),
-            "TP" if emp.get("type_emploi", "temps_plein") == "temps_plein" else "TPa",
+            type_abbr,
             f"{emp.get('heures_travaillees', 0)}h",
             f"${emp.get('taux_horaire', 0)}",
             f"${emp.get('cout_total', 0):,.2f}"
