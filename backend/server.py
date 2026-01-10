@@ -16602,6 +16602,93 @@ def generer_indisponibilites_quebec(user_id: str, tenant_id: str, equipe: str, d
     logging.info(f"✅ Quebec 10/14 - {equipe} (#{config['numero']}): {len(indisponibilites)} indisponibilités générées de {date_debut} à {date_fin}")
     return indisponibilites
 
+def generer_indisponibilites_longueuil(user_id: str, tenant_id: str, equipe: str, date_debut: str, date_fin: str) -> List[Dict]:
+    """
+    Génère les indisponibilités pour l'horaire Longueuil 7/24
+    Cycle de 28 jours commençant le 1er dimanche rouge du calendrier
+    
+    Pattern Longueuil 7/24:
+    Chaque équipe travaille exactement 7 jours de 24h sur le cycle de 28 jours
+    
+    Équipes avec numéros et patterns:
+    - Vert (Équipe #1) : jours 2, 6, 8, 12, 18, 21, 24 du cycle
+    - Bleu (Équipe #2) : jours 3, 9, 13, 15, 19, 25, 28 du cycle
+    - Jaune (Équipe #3) : jours 4, 7, 10, 16, 20, 22, 26 du cycle
+    - Rouge (Équipe #4) : jours 1, 5, 11, 14, 17, 23, 27 du cycle
+    
+    Le jour 1 du cycle = 4 janvier 2026 (premier dimanche rouge)
+    
+    On génère les INDISPONIBILITÉS pour les jours où l'équipe TRAVAILLE à son emploi principal
+    """
+    
+    # Mapping équipe -> numéro -> jours de travail dans le cycle de 28 jours
+    equipes_config = {
+        "Vert": {
+            "numero": 1,
+            "jours_cycle": [2, 6, 8, 12, 18, 21, 24]
+        },
+        "Bleu": {
+            "numero": 2,
+            "jours_cycle": [3, 9, 13, 15, 19, 25, 28]
+        },
+        "Jaune": {
+            "numero": 3,
+            "jours_cycle": [4, 7, 10, 16, 20, 22, 26]
+        },
+        "Rouge": {
+            "numero": 4,
+            "jours_cycle": [1, 5, 11, 14, 17, 23, 27]
+        }
+    }
+    
+    if equipe not in equipes_config:
+        raise ValueError(f"Équipe invalide: {equipe}. Doit être Vert, Bleu, Jaune ou Rouge")
+    
+    config = equipes_config[equipe]
+    jours_travail_cycle = config["jours_cycle"]
+    
+    logging.info(f"Longueuil 7/24 - {equipe} (#{config['numero']}): jours de travail dans cycle = {jours_travail_cycle}")
+    
+    # Le jour 1 du cycle = 4 janvier 2026 (premier dimanche rouge)
+    jour_1_cycle = datetime(2026, 1, 4).date()
+    
+    # Parser les dates de début et fin
+    date_debut_obj = datetime.strptime(date_debut, "%Y-%m-%d").date()
+    date_fin_obj = datetime.strptime(date_fin, "%Y-%m-%d").date()
+    
+    indisponibilites = []
+    current_date = date_debut_obj
+    
+    while current_date <= date_fin_obj:
+        # Calculer le jour dans le cycle (1-28)
+        jours_depuis_jour1 = (current_date - jour_1_cycle).days
+        jour_cycle = (jours_depuis_jour1 % 28) + 1
+        
+        # Si négatif (avant le jour 1), calculer en arrière
+        if jours_depuis_jour1 < 0:
+            jour_cycle = 28 - ((-jours_depuis_jour1 - 1) % 28)
+        
+        # Si le jour EST dans les jours de travail de l'équipe, c'est une INDISPONIBILITÉ
+        if jour_cycle in jours_travail_cycle:
+            indispo = {
+                "id": str(uuid.uuid4()),
+                "tenant_id": tenant_id,
+                "user_id": user_id,
+                "date": current_date.isoformat(),
+                "type_garde_id": None,
+                "heure_debut": "00:00",
+                "heure_fin": "23:59",
+                "statut": "indisponible",
+                "origine": "longueuil_7_24",
+                "created_at": datetime.now(timezone.utc)
+            }
+            indisponibilites.append(indispo)
+        
+        current_date += timedelta(days=1)
+    
+    logging.info(f"✅ Longueuil 7/24 - {equipe} (#{config['numero']}): {len(indisponibilites)} indisponibilités générées de {date_debut} à {date_fin}")
+    return indisponibilites
+
 # ==================== ROUTE DE GÉNÉRATION D'INDISPONIBILITÉS ====================
 
 @api_router.post("/{tenant_slug}/disponibilites/generer")
