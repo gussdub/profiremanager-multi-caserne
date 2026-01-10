@@ -6826,7 +6826,13 @@ async def export_rapport_heures_pdf(
     ]
     
     for emp in rapport_response["employes"]:
-        type_emploi_abbr = "TP" if emp.get("type_emploi", "temps_plein") == "temps_partiel" else "TF"
+        type_emploi = emp.get("type_emploi", "temps_plein")
+        if type_emploi == "temps_plein":
+            type_emploi_abbr = "TP"
+        elif type_emploi == "temporaire":
+            type_emploi_abbr = "Tempo"
+        else:
+            type_emploi_abbr = "TPart"
         table_data.append([
             emp["nom_complet"],
             type_emploi_abbr,
