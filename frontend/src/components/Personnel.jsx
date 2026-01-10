@@ -2474,7 +2474,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       <Label>Type d'emploi *</Label>
                       <select
                         value={newUser.type_emploi}
-                        onChange={(e) => setNewUser({...newUser, type_emploi: e.target.value})}
+                        onChange={(e) => setNewUser({...newUser, type_emploi: e.target.value, equipe_garde: null})}
                         className="form-select"
                         data-testid="edit-user-employment-select"
                       >
@@ -2483,6 +2483,32 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       </select>
                     </div>
                   </div>
+
+                  {/* Sélection équipe de garde - affiché si le système est actif */}
+                  {equipesGardeParams?.actif && newUser.type_emploi && (
+                    <div className="form-field">
+                      <Label>Équipe de garde</Label>
+                      <select
+                        value={newUser.equipe_garde || ''}
+                        onChange={(e) => setNewUser({...newUser, equipe_garde: e.target.value ? parseInt(e.target.value) : null})}
+                        className="form-select"
+                        data-testid="edit-user-equipe-garde-select"
+                      >
+                        <option value="">Aucune équipe</option>
+                        {(newUser.type_emploi === 'temps_plein' 
+                          ? equipesGardeParams?.temps_plein?.equipes_config 
+                          : equipesGardeParams?.temps_partiel?.equipes_config
+                        )?.map((equipe) => (
+                          <option key={equipe.numero} value={equipe.numero}>
+                            {equipe.nom}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Équipe de garde pour le planning automatique
+                      </p>
+                    </div>
+                  )}
 
                   {/* Option fonction supérieur pour pompiers et officiers */}
                   {['Pompier', 'Lieutenant', 'Capitaine', 'Chef de division'].includes(newUser.grade) && (
