@@ -977,7 +977,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       console.error('Erreur réinitialisation:', error);
       toast({
         title: "Erreur",
-        description: error.response?.data?.detail || "Impossible de réinitialiser",
+        description: error.data?.detail || error.message || "Impossible de réinitialiser",
         variant: "destructive"
       });
     } finally {
