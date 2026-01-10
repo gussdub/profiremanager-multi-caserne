@@ -633,7 +633,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       
     } catch (error) {
       setSavingDisponibilites(false);
-      const errorMessage = error.response?.data?.detail || error.message || "Impossible d'enregistrer les disponibilités";
+      const errorMessage = error.data?.detail || error.message || "Impossible d'enregistrer les disponibilités";
       console.error('Erreur sauvegarde disponibilités:', errorMessage);
       toast({
         title: "Erreur",
