@@ -111,15 +111,19 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       if (!tenantSlug) return;
       
       try {
-        const [usersData, competencesData, gradesData] = await Promise.all([
+        const [usersData, competencesData, gradesData, equipesGardeData] = await Promise.all([
           apiGet(tenantSlug, '/users'),
           apiGet(tenantSlug, '/competences'),
-          apiGet(tenantSlug, '/grades')
+          apiGet(tenantSlug, '/grades'),
+          apiGet(tenantSlug, '/parametres/equipes-garde').catch(() => null)
         ]);
         setUsers(usersData);
         setFormations(competencesData);
         setCompetences(competencesData);
         setGrades(gradesData);
+        if (equipesGardeData) {
+          setEquipesGardeParams(equipesGardeData);
+        }
       } catch (error) {
         console.error('Erreur lors du chargement des données:', error);
       } finally {
