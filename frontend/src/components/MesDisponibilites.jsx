@@ -863,7 +863,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       console.error('Erreur génération:', error);
       toast({
         title: "Erreur",
-        description: error.response?.data?.detail || "Impossible de générer les indisponibilités",
+        description: error.data?.detail || error.message || "Impossible de générer les indisponibilités",
         variant: "destructive"
       });
     } finally {
