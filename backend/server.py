@@ -17527,7 +17527,7 @@ async def generer_justification_attribution(
         score_anciennete = 0
     
     # Score de disponibilité (0-100)
-    if selected_user.get("type_emploi") == "temps_partiel":
+    if selected_user.get("type_emploi") in ("temps_partiel", "temporaire"):
         score_disponibilite = 100 if disponibilites_evaluees else 50
     else:
         score_disponibilite = 75  # Temps plein toujours disponible
