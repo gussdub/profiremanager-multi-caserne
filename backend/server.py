@@ -11482,7 +11482,8 @@ async def get_current_tenant(tenant_slug: str) -> Tenant:
 
 @api_router.post("/{tenant_slug}/auth/login")
 async def tenant_login(tenant_slug: str, user_login: UserLogin):
-    """Login pour un tenant spécifique avec migration automatique SHA256 -> bcrypt"""
+    """Login pour un tenant spécifique avec migration automatique SHA256 -> bcrypt
+    Les super-admins peuvent aussi se connecter sur n'importe quel tenant avec leurs identifiants"""
     try:
         logging.info(f"🔑 Tentative de connexion pour {user_login.email} sur tenant {tenant_slug}")
         
@@ -11490,7 +11491,51 @@ async def tenant_login(tenant_slug: str, user_login: UserLogin):
         tenant = await get_tenant_from_slug(tenant_slug)
         logging.warning(f"✅ Tenant trouvé: {tenant.nom} (id: {tenant.id})")
         
-        # Chercher l'utilisateur dans ce tenant
+        # D'abord, vérifier si c'est un super-admin qui essaie de se connecter
+        super_admin_data = await db.super_admins.find_one({"email": user_login.email})
+        if super_admin_data:
+            logging.info(f"🔐 Super-Admin détecté: {user_login.email}")
+            
+            # Vérifier le mot de passe du super-admin
+            current_hash = super_admin_data.get("mot_de_passe_hash", "")
+            if verify_password(user_login.mot_de_passe, current_hash):
+                logging.info(f"✅ Super-Admin {user_login.email} authentifié sur tenant {tenant_slug}")
+                
+                # Créer un token avec les droits admin sur ce tenant
+                access_token = create_access_token(data={
+                    "sub": super_admin_data["id"],
+                    "email": super_admin_data["email"],
+                    "tenant_id": tenant.id,
+                    "tenant_slug": tenant.slug,
+                    "is_super_admin": True  # Flag pour identifier un super-admin
+                })
+                
+                return {
+                    "access_token": access_token,
+                    "token_type": "bearer",
+                    "tenant": {
+                        "id": tenant.id,
+                        "slug": tenant.slug,
+                        "nom": tenant.nom,
+                        "parametres": tenant.parametres
+                    },
+                    "user": {
+                        "id": super_admin_data["id"],
+                        "nom": super_admin_data["nom"],
+                        "prenom": "Super-Admin",
+                        "email": super_admin_data["email"],
+                        "role": "admin",  # Droits admin sur le tenant
+                        "grade": "Super-Administrateur",
+                        "type_emploi": "temps_plein",
+                        "photo_profil": None,
+                        "is_super_admin": True
+                    }
+                }
+            else:
+                logging.warning(f"❌ Mot de passe incorrect pour Super-Admin {user_login.email}")
+                raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+        
+        # Sinon, chercher l'utilisateur dans ce tenant
         logging.warning(f"🔍 Recherche utilisateur avec email={user_login.email} et tenant_id={tenant.id}")
         user_data = await db.users.find_one({
             "email": user_login.email,
