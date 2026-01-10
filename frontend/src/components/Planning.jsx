@@ -787,11 +787,14 @@ const Planning = () => {
       fetchPlanningData();
       setShowAssignModal(false);
     } catch (error) {
-      toast({
-        title: "Erreur d'attribution",
-        description: "Impossible de créer l'assignation",
-        variant: "destructive"
+      const errorDetail = error.response?.data?.detail;
+      
+      // Afficher le modal d'erreur avec le message explicite
+      setAssignErrorContent({
+        title: "⚠️ Impossible de créer l'assignation",
+        message: typeof errorDetail === 'string' ? errorDetail : "Une erreur est survenue lors de la création de l'assignation"
       });
+      setShowAssignErrorModal(true);
     }
   };
 
