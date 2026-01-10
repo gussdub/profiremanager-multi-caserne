@@ -2687,6 +2687,7 @@ class UserCreate(BaseModel):
     competences: List[str] = []  # Liste des compétences acquises
     accepte_gardes_externes: bool = True  # Accepte d'être assigné aux gardes externes
     est_preventionniste: bool = False  # Désigné comme préventionniste
+    equipe_garde: Optional[int] = None  # Équipe de garde (1, 2, 3, 4, 5 selon config)
     mot_de_passe: str = "TempPass123!"
 
 class UserUpdate(BaseModel):
