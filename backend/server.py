@@ -87,6 +87,17 @@ async def root_health_check():
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# ==================== HELPERS ====================
+
+def is_temps_partiel(user: dict) -> bool:
+    """Vérifie si un employé est temps partiel ou temporaire (traités de la même façon)"""
+    type_emploi = user.get("type_emploi", "temps_plein")
+    return type_emploi in ("temps_partiel", "temporaire")
+
+def is_temps_plein(user: dict) -> bool:
+    """Vérifie si un employé est temps plein"""
+    return user.get("type_emploi", "temps_plein") == "temps_plein"
+
 # ==================== FIREBASE INITIALIZATION ====================
 
 # Initialiser Firebase Admin
