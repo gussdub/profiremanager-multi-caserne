@@ -1966,7 +1966,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                       selected={selectedDates}
                       onSelect={setSelectedDates}
                       className="interactive-calendar"
-                      disabled={(date) => date < new Date().setHours(0,0,0,0)}
+                      disabled={false}
                       indisponibilites={userDisponibilites.filter(d => d.statut === 'indisponible')}
                     />
                     
