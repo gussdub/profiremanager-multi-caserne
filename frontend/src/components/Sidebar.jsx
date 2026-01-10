@@ -279,53 +279,47 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
 
   return (
     <>
-      {/* Notification bell icon */}
-      <div className="notification-bell-container">
-        <button 
-          className="notification-bell"
-          onClick={() => setShowNotifications(!showNotifications)}
-          data-testid="notification-bell"
-        >
-          <i className="fas fa-bell"></i>
-          {unreadCount > 0 && (
-            <span className="notification-badge">{unreadCount}</span>
-          )}
-        </button>
+      {/* Notifications dropdown - s'affiche depuis le bouton dans le sidebar */}
+      {showNotifications && (
+        <div 
+          className="notifications-overlay"
+          onClick={() => setShowNotifications(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 998
+          }}
+        />
+      )}
 
-        {showNotifications && (
-          <div 
-            className="notifications-overlay"
-            onClick={() => setShowNotifications(false)}
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              zIndex: 998
-            }}
-          />
-        )}
-
-        {showNotifications && (
-          <div className="notifications-dropdown" style={{ zIndex: 999 }}>
-            <div className="notifications-header">
-              <h3>Notifications</h3>
-              <div style={{display: 'flex', gap: '0.5rem'}}>
-                <button 
-                  onClick={() => setShowNotificationSettings(!showNotificationSettings)} 
-                  className="notification-settings-btn"
-                  title="Paramètres des notifications"
-                >
-                  ⚙️
+      {showNotifications && (
+        <div className="notifications-dropdown" style={{ 
+          zIndex: 999,
+          position: 'fixed',
+          bottom: '80px',
+          left: '20px',
+          maxHeight: '70vh'
+        }}>
+          <div className="notifications-header">
+            <h3>Notifications</h3>
+            <div style={{display: 'flex', gap: '0.5rem'}}>
+              <button 
+                onClick={() => setShowNotificationSettings(!showNotificationSettings)} 
+                className="notification-settings-btn"
+                title="Paramètres des notifications"
+              >
+                ⚙️
+              </button>
+              {unreadCount > 0 && (
+                <button onClick={marquerToutesLues} className="mark-all-read">
+                  Tout marquer comme lu
                 </button>
-                {unreadCount > 0 && (
-                  <button onClick={marquerToutesLues} className="mark-all-read">
-                    Tout marquer comme lu
-                  </button>
-                )}
-              </div>
+              )}
             </div>
+          </div>
             
             {showNotificationSettings && (
               <div className="notification-settings" style={{
