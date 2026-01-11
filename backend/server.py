@@ -2648,6 +2648,65 @@ class SuperAdminLogin(BaseModel):
     email: str
     mot_de_passe: str
 
+# ==================== AUDIT LOG MODELS ====================
+
+class AuditLog(BaseModel):
+    """Journal d'audit pour les actions super-admin"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    admin_id: str  # ID du super-admin
+    admin_email: str  # Email du super-admin
+    admin_nom: str  # Nom du super-admin
+    action: str  # Type d'action (login, tenant_access, tenant_create, etc.)
+    details: Dict[str, Any] = {}  # Détails spécifiques à l'action
+    tenant_id: Optional[str] = None  # Tenant concerné (si applicable)
+    tenant_slug: Optional[str] = None  # Slug du tenant (si applicable)
+    tenant_nom: Optional[str] = None  # Nom du tenant (si applicable)
+    ip_address: Optional[str] = None  # Adresse IP (si disponible)
+    user_agent: Optional[str] = None  # User agent (si disponible)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+async def log_super_admin_action(
+    admin: "SuperAdmin",
+    action: str,
+    details: Dict[str, Any] = None,
+    tenant_id: str = None,
+    tenant_slug: str = None,
+    tenant_nom: str = None,
+    ip_address: str = None,
+    user_agent: str = None
+):
+    """
+    Enregistre une action super-admin dans le journal d'audit
+    
+    Actions possibles:
+    - login: Connexion au dashboard super-admin
+    - tenant_access: Connexion à un tenant spécifique
+    - tenant_create: Création d'un nouveau tenant
+    - tenant_update: Modification d'un tenant
+    - tenant_delete: Suppression d'un tenant
+    - admin_create: Création d'un admin pour un tenant
+    - view_stats: Consultation des statistiques globales
+    """
+    try:
+        audit_entry = AuditLog(
+            admin_id=admin.id,
+            admin_email=admin.email,
+            admin_nom=admin.nom,
+            action=action,
+            details=details or {},
+            tenant_id=tenant_id,
+            tenant_slug=tenant_slug,
+            tenant_nom=tenant_nom,
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+        await db.audit_logs.insert_one(audit_entry.dict())
+        logging.info(f"📝 [AUDIT] {admin.email} - {action}" + (f" - Tenant: {tenant_slug}" if tenant_slug else ""))
+    except Exception as e:
+        logging.error(f"❌ Erreur enregistrement audit: {e}")
+        # Ne pas bloquer l'action principale si l'audit échoue
+
 # ==================== USER MODELS ====================
 
 class User(BaseModel):
