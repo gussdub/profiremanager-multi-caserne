@@ -414,6 +414,27 @@ const ParametresEquipesGarde = ({ tenantSlug, toast }) => {
                           data-testid="input-duree-cycle-temps-partiel"
                         />
                       </div>
+                      <div>
+                        <Label>Mode de rotation</Label>
+                        <Select
+                          value={params.temps_partiel.pattern_mode || "hebdomadaire"}
+                          onValueChange={(value) => updateTempsPartiel("pattern_mode", value)}
+                        >
+                          <SelectTrigger data-testid="select-pattern-mode-temps-partiel">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="hebdomadaire">Hebdomadaire (change chaque semaine)</SelectItem>
+                            <SelectItem value="quotidien">Quotidien (change chaque jour)</SelectItem>
+                            <SelectItem value="deux_jours">Aux 2 jours</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {params.temps_partiel.pattern_mode === "quotidien" && "L'équipe de garde change chaque jour"}
+                          {params.temps_partiel.pattern_mode === "deux_jours" && "L'équipe de garde change aux 2 jours"}
+                          {(!params.temps_partiel.pattern_mode || params.temps_partiel.pattern_mode === "hebdomadaire") && "L'équipe de garde change chaque semaine (7 jours)"}
+                        </p>
+                      </div>
                     </>
                   )}
 
