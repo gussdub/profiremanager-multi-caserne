@@ -432,6 +432,12 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
                           <option value="default">Son par défaut</option>
                           <option value="chime">Carillon</option>
                           <option value="bell">Cloche</option>
+                          <option value="doorbell">Sonnette</option>
+                          <option value="triple">Triple tonalité</option>
+                          <option value="alert">⚠️ Alerte</option>
+                          <option value="alarm">🔔 Alarme (fort)</option>
+                          <option value="siren">🚨 Sirène (long)</option>
+                          <option value="emergency">🚒 Urgence (très fort)</option>
                         </select>
                       </div>
                       
