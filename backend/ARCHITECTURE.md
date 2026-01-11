@@ -4,20 +4,22 @@
 
 ```
 /app/backend/
-├── server.py              # Fichier principal (en cours de refactoring)
-├── routes/                # Routes API (à venir)
+├── server.py              # Fichier principal (~35000 lignes)
+├── ARCHITECTURE.md        # Cette documentation
+├── routes/                # Routes API (documentation pour future extraction)
 │   └── __init__.py
 ├── models/                # Modèles Pydantic ✅
-│   ├── __init__.py        # Exports centralisés
+│   ├── __init__.py        # Exports centralisés (~40 modèles)
 │   ├── base.py            # Imports communs
 │   ├── tenant.py          # Tenant, SuperAdmin
 │   ├── user.py            # User, UserCreate, UserUpdate, etc.
 │   ├── planning.py        # TypeGarde, Assignation, Disponibilite, etc.
 │   └── formation.py       # Formation, Competence, Grade, etc.
 └── services/              # Services partagés ✅
-    ├── __init__.py
+    ├── __init__.py        # Exports centralisés
     ├── auth.py            # Authentification JWT, hashing
-    └── database.py        # Connexion MongoDB, helpers
+    ├── database.py        # Connexion MongoDB, helpers
+    └── helpers.py         # Utilitaires communs (validation, nettoyage, etc.)
 ```
 
 ## Modèles disponibles (models/)
