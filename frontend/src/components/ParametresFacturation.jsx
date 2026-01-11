@@ -80,7 +80,7 @@ const ParametresFacturation = ({ user, tenantSlug }) => {
 
   const fetchInvoices = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const response = await fetch(`${API}/billing/invoices`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -99,7 +99,7 @@ const ParametresFacturation = ({ user, tenantSlug }) => {
 
   const openBillingPortal = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const returnUrl = window.location.href;
       
       const response = await fetch(`${API}/billing/portal`, {
