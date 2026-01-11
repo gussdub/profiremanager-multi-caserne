@@ -50,10 +50,24 @@ const ParametresFacturation = ({ user, tenantSlug }) => {
       
       if (response.ok) {
         const data = await response.json();
+        console.log('Billing info received:', data);
         setBillingInfo(data);
+      } else {
+        const errorData = await response.json();
+        console.error('Billing API error:', response.status, errorData);
+        toast({
+          title: "Erreur",
+          description: errorData.detail || "Impossible de charger les informations de facturation",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error('Erreur chargement facturation:', error);
+      toast({
+        title: "Erreur",
+        description: "Erreur de connexion au serveur",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
