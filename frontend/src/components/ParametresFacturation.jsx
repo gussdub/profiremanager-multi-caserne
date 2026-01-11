@@ -239,14 +239,16 @@ const ParametresFacturation = ({ user, tenantSlug }) => {
             <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '8px' }}>
               <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '4px' }}>Utilisateurs actifs</div>
               <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#1e293b' }}>
-                {billingInfo?.user_count || 0}
+                {billingInfo?.user_count ?? 'N/A'}
               </div>
             </div>
             
             <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '8px' }}>
               <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '4px' }}>Prix par utilisateur</div>
               <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#1e293b' }}>
-                {billingInfo?.billing_info?.price_per_user_total || '-'}$/mois
+                {billingInfo?.billing_info?.price_per_user_total != null 
+                  ? `${billingInfo.billing_info.price_per_user_total}$/mois`
+                  : 'N/A'}
               </div>
               {billingInfo?.prevention_module && (
                 <div style={{ fontSize: '12px', color: '#f59e0b' }}>Inclut +3$ module Prévention</div>
@@ -256,7 +258,9 @@ const ParametresFacturation = ({ user, tenantSlug }) => {
             <div style={{ padding: '16px', background: billingInfo?.billing_status === 'active' ? '#d1fae5' : '#fef3c7', borderRadius: '8px' }}>
               <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '4px' }}>Total mensuel</div>
               <div style={{ fontSize: '28px', fontWeight: 'bold', color: billingInfo?.billing_status === 'active' ? '#065f46' : '#92400e' }}>
-                {billingInfo?.billing_info?.total_monthly_cost?.toFixed(2) || '-'}$
+                {billingInfo?.billing_info?.total_monthly_cost != null 
+                  ? `${billingInfo.billing_info.total_monthly_cost.toFixed(2)}$`
+                  : 'N/A'}
               </div>
             </div>
             
