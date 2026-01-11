@@ -36,15 +36,28 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
   const [remplacementCommentaire, setRemplacementCommentaire] = useState('');
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   
-  // Effet pour ajouter une classe au body quand le menu mobile est ouvert
+  // Effet pour bloquer le scroll du body quand le menu mobile est ouvert
   useEffect(() => {
+    let scrollY = 0;
+    
     if (isMobileMenuOpen) {
+      // Sauvegarder la position de scroll actuelle
+      scrollY = window.scrollY;
       document.body.classList.add('mobile-menu-open');
+      document.body.style.top = `-${scrollY}px`;
     } else {
+      // Restaurer la position de scroll
+      const savedScrollY = document.body.style.top;
       document.body.classList.remove('mobile-menu-open');
+      document.body.style.top = '';
+      if (savedScrollY) {
+        window.scrollTo(0, parseInt(savedScrollY || '0') * -1);
+      }
     }
+    
     return () => {
       document.body.classList.remove('mobile-menu-open');
+      document.body.style.top = '';
     };
   }, [isMobileMenuOpen]);
   
