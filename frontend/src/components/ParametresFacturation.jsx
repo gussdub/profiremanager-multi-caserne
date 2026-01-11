@@ -214,10 +214,42 @@ const ParametresFacturation = ({ user, tenantSlug }) => {
             </div>
           )}
 
-          {/* Bouton portail Stripe */}
+          {/* Bouton Payer / Configurer paiement - Si pas encore de customer Stripe */}
+          {!billingInfo?.stripe_customer_id && billingInfo?.billing_status !== 'active' && (
+            <div style={{ marginTop: '20px', textAlign: 'center' }}>
+              <div style={{
+                padding: '20px',
+                background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                borderRadius: '12px',
+                marginBottom: '16px'
+              }}>
+                <div style={{ fontSize: '24px', marginBottom: '8px' }}>💳</div>
+                <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#92400e', marginBottom: '8px' }}>
+                  Configurer votre abonnement
+                </h3>
+                <p style={{ color: '#78350f', marginBottom: '16px', fontSize: '14px' }}>
+                  Pour activer votre compte, veuillez configurer votre méthode de paiement.
+                </p>
+                <Button 
+                  onClick={openCheckout} 
+                  style={{ 
+                    padding: '14px 32px', 
+                    fontSize: '16px',
+                    background: '#16a34a',
+                    border: 'none'
+                  }}
+                  data-testid="setup-payment-btn"
+                >
+                  💳 Configurer le paiement
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Bouton portail Stripe - Si déjà client */}
           {billingInfo?.stripe_customer_id && (
             <div style={{ marginTop: '20px', textAlign: 'center' }}>
-              <Button onClick={openBillingPortal} style={{ padding: '12px 24px' }}>
+              <Button onClick={openBillingPortal} style={{ padding: '12px 24px' }} data-testid="manage-subscription-btn">
                 ⚙️ Gérer mon abonnement
               </Button>
               <p style={{ fontSize: '12px', color: '#64748b', marginTop: '8px' }}>
