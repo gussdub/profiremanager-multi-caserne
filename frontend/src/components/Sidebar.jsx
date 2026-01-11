@@ -470,86 +470,26 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
               </div>
             )}
 
-            {/* Boutons de filtre */}
-            <div style={{
-              display: 'flex',
-              gap: '8px',
-              padding: '10px 15px',
-              borderBottom: '1px solid #e5e7eb',
-              background: '#f9fafb'
-            }}>
-              <button
-                onClick={() => setShowAllNotifications(false)}
-                style={{
-                  flex: 1,
-                  padding: '8px 12px',
-                  background: !showAllNotifications ? '#1e3a5f' : '#e5e7eb',
-                  color: !showAllNotifications ? 'white' : '#374151',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontSize: '0.85rem',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px'
-                }}
-                data-testid="filter-unread-btn"
-              >
-                🔔 Non lues {unreadCount > 0 && `(${unreadCount})`}
-              </button>
-              <button
-                onClick={() => setShowAllNotifications(true)}
-                style={{
-                  flex: 1,
-                  padding: '8px 12px',
-                  background: showAllNotifications ? '#1e3a5f' : '#e5e7eb',
-                  color: showAllNotifications ? 'white' : '#374151',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontSize: '0.85rem',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px'
-                }}
-                data-testid="filter-all-btn"
-              >
-                📜 Historique
-              </button>
-            </div>
-
             <div className="notifications-list">
               {(() => {
                 const filteredNotifications = showAllNotifications 
                   ? notifications 
                   : notifications.filter(n => n.statut === 'non_lu');
                 
-                if (filteredNotifications.length === 0) {
+                if (filteredNotifications.length === 0 && !showAllNotifications) {
                   return (
                     <div className="no-notifications">
                       <i className="fas fa-inbox"></i>
-                      <p>{showAllNotifications ? 'Aucune notification dans l\'historique' : 'Aucune notification non lue'}</p>
-                      {!showAllNotifications && notifications.length > 0 && (
-                        <button
-                          onClick={() => setShowAllNotifications(true)}
-                          style={{
-                            marginTop: '10px',
-                            padding: '8px 16px',
-                            background: '#1e3a5f',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '6px',
-                            fontSize: '0.85rem',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          📜 Voir l'historique
-                        </button>
-                      )}
+                      <p>Aucune notification non lue</p>
+                    </div>
+                  );
+                }
+                
+                if (filteredNotifications.length === 0 && showAllNotifications) {
+                  return (
+                    <div className="no-notifications">
+                      <i className="fas fa-inbox"></i>
+                      <p>Aucune notification</p>
                     </div>
                   );
                 }
