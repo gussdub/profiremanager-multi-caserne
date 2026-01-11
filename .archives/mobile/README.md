@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://shiftmaster-37.preview.emergentagent.com
+- **URL** : https://secureshift-7.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://shiftmaster-37.preview.emergentagent.com"
+  "apiUrl": "https://secureshift-7.preview.emergentagent.com"
 }
 ```
 
