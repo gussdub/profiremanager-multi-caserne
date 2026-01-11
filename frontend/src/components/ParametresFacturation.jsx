@@ -98,10 +98,12 @@ const ParametresFacturation = ({ user, tenantSlug }) => {
   };
 
   const openBillingPortal = async () => {
+    console.log('openBillingPortal called');
     try {
       const token = getToken();
       const returnUrl = window.location.href;
       
+      console.log('Calling billing portal API...');
       const response = await fetch(`${API}/billing/portal`, {
         method: 'POST',
         headers: {
@@ -113,11 +115,15 @@ const ParametresFacturation = ({ user, tenantSlug }) => {
       
       if (response.ok) {
         const data = await response.json();
-        window.open(data.url, '_blank');
+        console.log('Portal URL received:', data.url);
+        // Ouvrir dans le même onglet pour éviter le blocage des popups
+        window.location.href = data.url;
       } else {
+        const errorData = await response.json();
+        console.error('Portal error:', errorData);
         toast({
           title: "Erreur",
-          description: "Impossible d'ouvrir le portail de facturation",
+          description: errorData.detail || "Impossible d'ouvrir le portail de facturation",
           variant: "destructive"
         });
       }
