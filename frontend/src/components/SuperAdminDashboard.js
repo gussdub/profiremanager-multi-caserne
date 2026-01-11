@@ -1127,18 +1127,25 @@ const SuperAdminDashboard = ({ onLogout }) => {
                         <div style={{ 
                           marginTop: '15px', 
                           padding: '15px', 
-                          background: '#f8fafc', 
+                          background: tenant.is_gratuit ? '#d1fae5' : (tenant.billing?.billing_status === 'past_due' ? '#fef2f2' : '#f8fafc'), 
                           borderRadius: '8px',
-                          border: '1px solid #e2e8f0'
+                          border: `1px solid ${tenant.is_gratuit ? '#10b981' : (tenant.billing?.billing_status === 'past_due' ? '#fecaca' : '#e2e8f0')}`
                         }}>
-                          <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#1e293b' }}>
-                            📊 Facturation
+                          <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span>📊 Facturation</span>
+                            {tenant.is_gratuit ? (
+                              <span style={{ fontSize: '12px', padding: '2px 8px', background: '#10b981', color: 'white', borderRadius: '4px' }}>🆓 GRATUIT</span>
+                            ) : tenant.billing?.billing_status === 'past_due' ? (
+                              <span style={{ fontSize: '12px', padding: '2px 8px', background: '#ef4444', color: 'white', borderRadius: '4px' }}>⚠️ IMPAYÉ</span>
+                            ) : tenant.billing?.billing_status === 'active' ? (
+                              <span style={{ fontSize: '12px', padding: '2px 8px', background: '#10b981', color: 'white', borderRadius: '4px' }}>✅ PAYÉ</span>
+                            ) : (
+                              <span style={{ fontSize: '12px', padding: '2px 8px', background: '#94a3b8', color: 'white', borderRadius: '4px' }}>⏳ EN ATTENTE</span>
+                            )}
                           </div>
                           <div style={{ display: 'grid', gap: '5px' }}>
                             <div>
-                              <strong>Personnel:</strong> {tenant.nombre_employes || 0} / {
-                                tenant.nombre_employes <= 30 ? 30 : tenant.nombre_employes <= 50 ? 50 : '∞'
-                              }
+                              <strong>Personnel:</strong> {tenant.billing?.user_count || tenant.nombre_employes || 0}
                             </div>
                             <div>
                               <strong>Palier:</strong>{' '}
@@ -1147,19 +1154,36 @@ const SuperAdminDashboard = ({ onLogout }) => {
                                 borderRadius: '4px',
                                 fontSize: '12px',
                                 fontWeight: 'bold',
-                                background: tenant.nombre_employes <= 30 ? '#dbeafe' : tenant.nombre_employes <= 50 ? '#fef3c7' : '#fecaca',
-                                color: tenant.nombre_employes <= 30 ? '#1e40af' : tenant.nombre_employes <= 50 ? '#92400e' : '#991b1b'
+                                background: (tenant.billing?.user_count || tenant.nombre_employes || 0) <= 30 ? '#dbeafe' : (tenant.billing?.user_count || tenant.nombre_employes || 0) <= 50 ? '#fef3c7' : '#dcfce7',
+                                color: (tenant.billing?.user_count || tenant.nombre_employes || 0) <= 30 ? '#1e40af' : (tenant.billing?.user_count || tenant.nombre_employes || 0) <= 50 ? '#92400e' : '#166534'
                               }}>
-                                {tenant.nombre_employes <= 30 ? 'Basic (1-30)' : tenant.nombre_employes <= 50 ? 'Standard (31-50)' : 'Premium (51+)'}
+                                {(tenant.billing?.user_count || tenant.nombre_employes || 0) <= 30 ? '12$/user' : (tenant.billing?.user_count || tenant.nombre_employes || 0) <= 50 ? '10$/user' : '9$/user'}
                               </span>
+                              {tenant.billing?.prevention_module && (
+                                <span style={{ marginLeft: '5px', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', background: '#fef3c7', color: '#92400e' }}>
+                                  +3$ Prévention
+                                </span>
+                              )}
                             </div>
-                            <div>
-                              <strong>Prix:</strong>{' '}
-                              <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#dc2626' }}>
-                                {tenant.nombre_employes <= 30 ? '12' : tenant.nombre_employes <= 50 ? '20' : '27'}$/mois
-                              </span>
-                            </div>
-                            {tenant.nombre_employes >= 30 && (
+                            {!tenant.is_gratuit && (
+                              <div>
+                                <strong>Total mensuel:</strong>{' '}
+                                <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#dc2626' }}>
+                                  {tenant.billing?.monthly_cost ? `${tenant.billing.monthly_cost.toFixed(0)}$` : '-'}
+                                </span>
+                              </div>
+                            )}
+                            {tenant.billing?.last_payment_date && (
+                              <div style={{ fontSize: '12px', color: '#64748b' }}>
+                                Dernier paiement: {tenant.billing.last_payment_date}
+                              </div>
+                            )}
+                            {tenant.billing?.next_billing_date && !tenant.is_gratuit && (
+                              <div style={{ fontSize: '12px', color: '#64748b' }}>
+                                Prochain: {tenant.billing.next_billing_date}
+                              </div>
+                            )}
+                            {tenant.billing?.payment_failed_date && (
                               <div style={{ 
                                 marginTop: '8px', 
                                 padding: '8px', 
@@ -1168,7 +1192,7 @@ const SuperAdminDashboard = ({ onLogout }) => {
                                 fontSize: '12px',
                                 color: '#991b1b'
                               }}>
-                                ⚠️ Limite de palier atteinte
+                                ⚠️ Échec paiement depuis le {tenant.billing.payment_failed_date}
                               </div>
                             )}
                           </div>
