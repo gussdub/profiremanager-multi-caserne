@@ -4428,7 +4428,42 @@ async def stripe_webhook(request: Request):
         
         tenant_id = data.get("metadata", {}).get("tenant_id")
         
-        if event_type == "invoice.paid":
+        # Gérer la fin d'une session Checkout
+        if event_type == "checkout.session.completed":
+            tenant_id = data.get("metadata", {}).get("tenant_id")
+            customer_id = data.get("customer")
+            subscription_id = data.get("subscription")
+            
+            if tenant_id and customer_id:
+                update_data = {
+                    "stripe_customer_id": customer_id,
+                    "billing_status": "active",
+                    "actif": True
+                }
+                if subscription_id:
+                    update_data["stripe_subscription_id"] = subscription_id
+                    # Récupérer les infos de l'abonnement
+                    try:
+                        sub = stripe.Subscription.retrieve(subscription_id)
+                        update_data["next_billing_date"] = datetime.fromtimestamp(sub.current_period_end).strftime("%Y-%m-%d")
+                    except:
+                        pass
+                
+                await db.tenants.update_one(
+                    {"id": tenant_id},
+                    {"$set": update_data}
+                )
+                logging.info(f"✅ Checkout complété pour tenant {tenant_id}, customer: {customer_id}")
+        
+        elif event_type == "invoice.paid":
+            # Récupérer le tenant_id depuis la subscription si pas dans metadata
+            if not tenant_id:
+                sub_id = data.get("subscription")
+                if sub_id:
+                    tenant = await db.tenants.find_one({"stripe_subscription_id": sub_id})
+                    if tenant:
+                        tenant_id = tenant.get("id")
+            
             if tenant_id:
                 await db.tenants.update_one(
                     {"id": tenant_id},
@@ -4443,6 +4478,14 @@ async def stripe_webhook(request: Request):
                 logging.info(f"✅ Paiement reçu pour tenant {tenant_id}")
                 
         elif event_type == "invoice.payment_failed":
+            # Récupérer le tenant_id depuis la subscription si pas dans metadata
+            if not tenant_id:
+                sub_id = data.get("subscription")
+                if sub_id:
+                    tenant = await db.tenants.find_one({"stripe_subscription_id": sub_id})
+                    if tenant:
+                        tenant_id = tenant.get("id")
+            
             if tenant_id:
                 tenant = await db.tenants.find_one({"id": tenant_id})
                 payment_failed_date = tenant.get("payment_failed_date") if tenant else None
@@ -4459,6 +4502,14 @@ async def stripe_webhook(request: Request):
                 logging.warning(f"⚠️ Échec paiement pour tenant {tenant_id}")
                 
         elif event_type == "customer.subscription.deleted":
+            # Récupérer le tenant_id depuis le customer si pas dans metadata
+            if not tenant_id:
+                customer_id = data.get("customer")
+                if customer_id:
+                    tenant = await db.tenants.find_one({"stripe_customer_id": customer_id})
+                    if tenant:
+                        tenant_id = tenant.get("id")
+            
             if tenant_id:
                 await db.tenants.update_one(
                     {"id": tenant_id},
