@@ -18094,6 +18094,215 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         
         # ==================== FIN PRIORISATION ====================
         
+        # ==================== PRÉ-REMPLISSAGE AUTOMATIQUE TEMPS PLEIN ====================
+        # Si activé, assigner automatiquement les temps plein de l'équipe de garde du jour
+        # AVANT l'attribution automatique standard (niveau prioritaire 0)
+        
+        pre_remplissage_actif_tp = False
+        if equipes_garde_actif and params_equipes_garde:
+            tpl_config = params_equipes_garde.get("temps_plein", {})
+            pre_remplissage_actif_tp = tpl_config.get("rotation_active", False) and tpl_config.get("pre_remplissage_auto", False)
+        
+        if pre_remplissage_actif_tp:
+            logging.info(f"🔥 [PRÉ-REMPLISSAGE T.PLEIN] Activation du pré-remplissage automatique pour temps plein")
+            tpl_config = params_equipes_garde.get("temps_plein", {})
+            type_rotation_tpl = tpl_config.get("type_rotation", "personnalisee")
+            date_reference_tpl = tpl_config.get("date_reference", "")
+            nombre_equipes_tpl = tpl_config.get("nombre_equipes", 4)
+            pattern_mode_tpl = tpl_config.get("pattern_mode", "hebdomadaire")
+            pattern_personnalise_tpl = tpl_config.get("pattern_personnalise", [])
+            duree_cycle_tpl = tpl_config.get("duree_cycle", 28)
+            
+            # Récupérer la liste des temps plein actifs
+            temps_plein_users = [u for u in users if u.get("type_emploi", "temps_plein") == "temps_plein" and u.get("statut") == "Actif"]
+            logging.info(f"🔥 [PRÉ-REMPLISSAGE] {len(temps_plein_users)} temps plein actifs trouvés")
+            
+            # Calculer le nombre de jours à traiter (de semaine_debut à semaine_fin)
+            start_date_pre = datetime.strptime(semaine_debut, "%Y-%m-%d")
+            end_date_pre = datetime.strptime(semaine_fin, "%Y-%m-%d")
+            nb_jours_pre = (end_date_pre - start_date_pre).days + 1
+            
+            # Pour chaque jour de la période
+            for day_offset_pre in range(nb_jours_pre):
+                current_date_pre = start_date_pre + timedelta(days=day_offset_pre)
+                date_str_pre = current_date_pre.strftime("%Y-%m-%d")
+                day_name_en_pre = current_date_pre.strftime("%A").lower()
+                
+                # Calculer l'équipe de garde du jour pour les temps plein
+                equipe_garde_jour_tpl = None
+                if type_rotation_tpl in ["montreal", "quebec", "longueuil"]:
+                    equipe_garde_jour_tpl = get_equipe_garde_rotation_standard(type_rotation_tpl, "", date_str_pre)
+                elif type_rotation_tpl == "personnalisee" and date_reference_tpl:
+                    equipe_garde_jour_tpl = get_equipe_garde_du_jour_sync(
+                        type_rotation=type_rotation_tpl,
+                        date_reference=date_reference_tpl,
+                        date_cible=date_str_pre,
+                        nombre_equipes=nombre_equipes_tpl,
+                        pattern_mode=pattern_mode_tpl,
+                        pattern_personnalise=pattern_personnalise_tpl,
+                        duree_cycle=duree_cycle_tpl
+                    )
+                
+                if equipe_garde_jour_tpl is None:
+                    continue
+                
+                logging.info(f"🔥 [PRÉ-REMPLISSAGE] {date_str_pre}: Équipe de garde temps plein = {equipe_garde_jour_tpl}")
+                
+                # Identifier les temps plein de cette équipe
+                temps_plein_equipe = [u for u in temps_plein_users if u.get("equipe_garde") == equipe_garde_jour_tpl]
+                if not temps_plein_equipe:
+                    logging.info(f"⚠️ [PRÉ-REMPLISSAGE] {date_str_pre}: Aucun temps plein assigné à l'équipe {equipe_garde_jour_tpl}")
+                    continue
+                
+                logging.info(f"🔥 [PRÉ-REMPLISSAGE] {date_str_pre}: {len(temps_plein_equipe)} temps plein dans l'équipe {equipe_garde_jour_tpl}")
+                
+                # Mapping jours anglais/français pour les jours d'application
+                day_name_mapping_pre = {
+                    'monday': 'lundi', 'tuesday': 'mardi', 'wednesday': 'mercredi',
+                    'thursday': 'jeudi', 'friday': 'vendredi', 'saturday': 'samedi', 'sunday': 'dimanche'
+                }
+                day_name_fr_pre = day_name_mapping_pre.get(day_name_en_pre, day_name_en_pre)
+                
+                # Pour chaque type de garde applicable ce jour-là (gardes internes uniquement)
+                for type_garde_pre in types_garde:
+                    # Skip les gardes externes (ne pas pré-remplir)
+                    if type_garde_pre.get("est_garde_externe", False):
+                        continue
+                    
+                    # Vérifier si cette garde s'applique ce jour-là
+                    jours_app_pre = type_garde_pre.get("jours_application", [])
+                    if jours_app_pre and len(jours_app_pre) > 0:
+                        jour_applicable_pre = day_name_en_pre in jours_app_pre or day_name_fr_pre in jours_app_pre
+                        if not jour_applicable_pre:
+                            continue
+                    
+                    # Vérifier combien de places sont déjà prises
+                    existing_for_garde_pre = [a for a in existing_assignations 
+                                              if a["date"] == date_str_pre and a["type_garde_id"] == type_garde_pre["id"]]
+                    personnel_requis_pre = type_garde_pre.get("personnel_requis", 1)
+                    personnel_assigne_pre = len(existing_for_garde_pre)
+                    
+                    if personnel_assigne_pre >= personnel_requis_pre:
+                        continue  # Garde déjà complète
+                    
+                    places_restantes_pre = personnel_requis_pre - personnel_assigne_pre
+                    
+                    # Assigner les temps plein de l'équipe (dans la limite des places)
+                    assignes_pre = 0
+                    for user_tpl in temps_plein_equipe:
+                        if assignes_pre >= places_restantes_pre:
+                            break
+                        
+                        # Vérifier si déjà assigné à cette garde
+                        deja_assigne_pre = any(
+                            a["user_id"] == user_tpl["id"] and 
+                            a["date"] == date_str_pre and 
+                            a["type_garde_id"] == type_garde_pre["id"]
+                            for a in existing_assignations + nouvelles_assignations
+                        )
+                        if deja_assigne_pre:
+                            continue
+                        
+                        # Vérifier conflits d'horaires avec autres gardes du même jour
+                        has_conflit_pre = False
+                        heure_debut_pre = type_garde_pre.get("heure_debut", "")
+                        heure_fin_pre = type_garde_pre.get("heure_fin", "")
+                        
+                        toutes_assign_pre = existing_assignations + nouvelles_assignations
+                        for assignation_check in toutes_assign_pre:
+                            if assignation_check["user_id"] == user_tpl["id"] and assignation_check["date"] == date_str_pre:
+                                garde_existante_pre = next((g for g in types_garde if g["id"] == assignation_check["type_garde_id"]), None)
+                                if garde_existante_pre and heure_debut_pre and heure_fin_pre:
+                                    heure_debut_ex = garde_existante_pre.get("heure_debut", "")
+                                    heure_fin_ex = garde_existante_pre.get("heure_fin", "")
+                                    if heure_debut_ex and heure_fin_ex:
+                                        # Vérification simple de chevauchement
+                                        if not (heure_fin_pre <= heure_debut_ex or heure_fin_ex <= heure_debut_pre):
+                                            has_conflit_pre = True
+                                            break
+                        
+                        if has_conflit_pre:
+                            logging.info(f"⏭️ [PRÉ-REMPLISSAGE] {user_tpl['prenom']} {user_tpl['nom']} a un conflit horaire pour {type_garde_pre['nom']} le {date_str_pre}")
+                            continue
+                        
+                        # Vérifier les compétences requises
+                        competences_requises_pre = type_garde_pre.get("competences_requises", [])
+                        if competences_requises_pre:
+                            user_competences_pre = user_tpl.get("competences", [])
+                            has_all_comp = all(comp_id in user_competences_pre for comp_id in competences_requises_pre)
+                            if not has_all_comp:
+                                logging.info(f"⏭️ [PRÉ-REMPLISSAGE] {user_tpl['prenom']} {user_tpl['nom']} n'a pas les compétences pour {type_garde_pre['nom']}")
+                                continue
+                        
+                        # Vérifier contrainte officier obligatoire
+                        if type_garde_pre.get("officier_obligatoire", False) and assignes_pre == 0:
+                            # Le premier poste doit être un officier
+                            grade_obj_pre = grades_map.get(user_tpl.get("grade"))
+                            is_officier_pre = (grade_obj_pre and grade_obj_pre.get("est_officier", False)) or user_tpl.get("fonction_superieur", False)
+                            if not is_officier_pre:
+                                # Chercher un officier dans l'équipe
+                                officier_dans_equipe = None
+                                for u_off in temps_plein_equipe:
+                                    grade_obj_off = grades_map.get(u_off.get("grade"))
+                                    if (grade_obj_off and grade_obj_off.get("est_officier", False)) or u_off.get("fonction_superieur", False):
+                                        # Vérifier qu'il n'est pas déjà assigné
+                                        deja_assigne_off = any(
+                                            a["user_id"] == u_off["id"] and 
+                                            a["date"] == date_str_pre and 
+                                            a["type_garde_id"] == type_garde_pre["id"]
+                                            for a in existing_assignations + nouvelles_assignations
+                                        )
+                                        if not deja_assigne_off:
+                                            officier_dans_equipe = u_off
+                                            break
+                                
+                                if officier_dans_equipe:
+                                    # Assigner d'abord l'officier
+                                    user_tpl = officier_dans_equipe
+                                else:
+                                    # Pas d'officier disponible, laisser la place vacante
+                                    logging.warning(f"⚠️ [PRÉ-REMPLISSAGE] Pas d'officier disponible pour {type_garde_pre['nom']} le {date_str_pre}")
+                                    break
+                        
+                        # Créer l'assignation
+                        justification_pre = {
+                            "raison_principale": f"Pré-remplissage automatique - Équipe de garde {equipe_garde_jour_tpl}",
+                            "type_attribution": "pre_remplissage_temps_plein",
+                            "equipe_garde": equipe_garde_jour_tpl,
+                            "date_attribution": datetime.now(timezone.utc).isoformat(),
+                            "criteres": {
+                                "membre_equipe_garde": True,
+                                "type_emploi": "temps_plein"
+                            }
+                        }
+                        
+                        assignation_obj_pre = Assignation(
+                            user_id=user_tpl["id"],
+                            type_garde_id=type_garde_pre["id"],
+                            date=date_str_pre,
+                            assignation_type="auto_pre_remplissage",
+                            tenant_id=tenant.id,
+                            justification=justification_pre,
+                            notes_admin=None,
+                            justification_historique=[]
+                        )
+                        
+                        await db.assignations.insert_one(assignation_obj_pre.dict())
+                        nouvelles_assignations.append(assignation_obj_pre.dict())
+                        existing_assignations.append(assignation_obj_pre.dict())
+                        assignes_pre += 1
+                        
+                        logging.info(f"✅ [PRÉ-REMPLISSAGE] {user_tpl['prenom']} {user_tpl['nom']} assigné à {type_garde_pre['nom']} le {date_str_pre} (équipe {equipe_garde_jour_tpl})")
+                    
+                    if assignes_pre > 0:
+                        logging.info(f"🔥 [PRÉ-REMPLISSAGE] {type_garde_pre['nom']} - {date_str_pre}: {assignes_pre} temps plein pré-assigné(s)")
+            
+            # Compter les assignations de pré-remplissage
+            nb_pre_remplissage = len([a for a in nouvelles_assignations if a.get("assignation_type") == "auto_pre_remplissage"])
+            logging.info(f"🔥 [PRÉ-REMPLISSAGE TERMINÉ] {nb_pre_remplissage} assignation(s) créée(s) par pré-remplissage temps plein")
+        
+        # ==================== FIN PRÉ-REMPLISSAGE TEMPS PLEIN ====================
+        
         for type_garde in types_garde_sorted:  # Utiliser la liste triée au lieu de types_garde
             # Check each day for this type de garde
             for day_offset in range(7):
