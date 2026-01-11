@@ -13,6 +13,11 @@ const ParametresFacturation = ({ user, tenantSlug }) => {
   const [billingInfo, setBillingInfo] = useState(null);
   const [invoices, setInvoices] = useState([]);
 
+  // Helper pour récupérer le token avec le bon préfixe
+  const getToken = () => {
+    return localStorage.getItem(`${tenantSlug}_token`) || localStorage.getItem('token');
+  };
+
   useEffect(() => {
     // Vérifier si retour de Stripe Checkout
     const urlParams = new URLSearchParams(window.location.search);
@@ -40,7 +45,7 @@ const ParametresFacturation = ({ user, tenantSlug }) => {
 
   const fetchBillingInfo = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const response = await fetch(`${API}/billing/info`, {
         headers: {
           'Authorization': `Bearer ${token}`,
