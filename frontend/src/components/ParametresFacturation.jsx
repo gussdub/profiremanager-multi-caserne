@@ -133,7 +133,7 @@ const ParametresFacturation = ({ user, tenantSlug }) => {
 
   const openCheckout = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const returnUrl = window.location.href.split('?')[0]; // URL sans paramètres
       
       const response = await fetch(`${API}/billing/checkout`, {
