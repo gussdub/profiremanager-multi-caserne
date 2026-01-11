@@ -1157,7 +1157,7 @@ const SuperAdminDashboard = ({ onLogout }) => {
                                 background: (tenant.billing?.user_count || tenant.nombre_employes || 0) <= 30 ? '#dbeafe' : (tenant.billing?.user_count || tenant.nombre_employes || 0) <= 50 ? '#fef3c7' : '#dcfce7',
                                 color: (tenant.billing?.user_count || tenant.nombre_employes || 0) <= 30 ? '#1e40af' : (tenant.billing?.user_count || tenant.nombre_employes || 0) <= 50 ? '#92400e' : '#166534'
                               }}>
-                                {(tenant.billing?.user_count || tenant.nombre_employes || 0) <= 30 ? '12$/user' : (tenant.billing?.user_count || tenant.nombre_employes || 0) <= 50 ? '20$/user' : '27$/user'}
+                                {(tenant.billing?.user_count || tenant.nombre_employes || 0) <= 30 ? '12$/utilisateur' : (tenant.billing?.user_count || tenant.nombre_employes || 0) <= 50 ? '20$/utilisateur' : '27$/utilisateur'}
                               </span>
                               {tenant.billing?.prevention_module && (
                                 <span style={{ marginLeft: '5px', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', background: '#fef3c7', color: '#92400e' }}>
