@@ -55,7 +55,7 @@ import os
 class P1FeaturesTester:
     def __init__(self):
         # Utiliser l'URL depuis frontend/.env comme spécifié
-        self.base_url = "https://crew-rotation-app.preview.emergentagent.com/api"
+        self.base_url = "https://shiftmaster-37.preview.emergentagent.com/api"
         self.headers = {}
         self.token = None
         self.tenant_slug = "shefford"

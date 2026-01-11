@@ -7,7 +7,7 @@ import requests
 import json
 
 # Configuration
-base_url = "https://crew-rotation-app.preview.emergentagent.com/api"
+base_url = "https://shiftmaster-37.preview.emergentagent.com/api"
 tenant_slug = "shefford"
 admin_credentials = {"email": "gussdub@gmail.com", "mot_de_passe": "230685Juin+"}
 
