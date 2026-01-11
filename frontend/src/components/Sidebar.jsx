@@ -810,6 +810,27 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
                 ));
               })()}
             </div>
+            
+            {/* Lien voir plus / voir moins en bas */}
+            {notifications.length > 0 && (
+              <div 
+                onClick={() => setShowAllNotifications(!showAllNotifications)}
+                style={{
+                  padding: '12px 15px',
+                  textAlign: 'center',
+                  borderTop: '1px solid #e5e7eb',
+                  cursor: 'pointer',
+                  color: '#6b7280',
+                  fontSize: '0.85rem',
+                  transition: 'color 0.2s'
+                }}
+                onMouseEnter={(e) => e.target.style.color = '#1e3a5f'}
+                onMouseLeave={(e) => e.target.style.color = '#6b7280'}
+                data-testid="toggle-history-link"
+              >
+                {showAllNotifications ? '← Voir moins' : 'Voir plus →'}
+              </div>
+            )}
           </div>
         )}
 
