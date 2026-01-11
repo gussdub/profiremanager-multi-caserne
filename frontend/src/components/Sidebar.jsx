@@ -30,6 +30,7 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showAllNotifications, setShowAllNotifications] = useState(false); // false = non lues seulement
   const [showRemplacementModal, setShowRemplacementModal] = useState(false);
   const [selectedDemandeRemplacement, setSelectedDemandeRemplacement] = useState(null);
   const [remplacementCommentaire, setRemplacementCommentaire] = useState('');
