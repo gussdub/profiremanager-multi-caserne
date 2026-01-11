@@ -92,6 +92,42 @@ const ParametresFacturation = ({ user, tenantSlug }) => {
     }
   };
 
+  const openCheckout = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const returnUrl = window.location.href.split('?')[0]; // URL sans paramètres
+      
+      const response = await fetch(`${API}/billing/checkout`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ return_url: returnUrl })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        // Rediriger vers Stripe Checkout
+        window.location.href = data.url;
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "Erreur",
+          description: errorData.detail || "Impossible de configurer le paiement",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Erreur checkout:', error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue",
+        variant: "destructive"
+      });
+    }
+  };
+
   const getStatusBadge = (status) => {
     const styles = {
       active: { bg: '#d1fae5', color: '#065f46', text: '✅ Actif' },
