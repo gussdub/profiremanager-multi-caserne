@@ -206,71 +206,70 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
       const gainNode = audioContext.createGain();
       gainNode.connect(audioContext.destination);
       
-      // Configuration des sonneries avec durée et volume personnalisés
+      // Configuration des sonneries - MINIMUM 2 secondes
       const soundConfigs = {
         default: { 
-          freqs: [523.25, 659.25, 783.99], 
-          duration: 0.4, 
-          noteLength: 0.1,
-          volumeMultiplier: 1 
-        },
-        chime: { 
-          freqs: [659.25, 783.99, 1046.50], 
-          duration: 0.5, 
-          noteLength: 0.15,
+          freqs: [523.25, 659.25, 783.99, 659.25, 523.25, 659.25, 783.99, 1046.50], 
+          duration: 2.0, 
+          noteLength: 0.25,
           volumeMultiplier: 1.2 
         },
-        bell: { 
-          freqs: [830.61, 987.77], 
-          duration: 0.4, 
-          noteLength: 0.2,
+        chime: { 
+          freqs: [659.25, 783.99, 1046.50, 783.99, 659.25, 783.99, 1046.50, 1318.51], 
+          duration: 2.0, 
+          noteLength: 0.25,
           volumeMultiplier: 1.3 
         },
-        // Nouvelles sonneries plus longues et fortes
-        alarm: { 
-          freqs: [880, 1100, 880, 1100, 880, 1100], 
-          duration: 1.5, 
+        bell: { 
+          freqs: [830.61, 987.77, 830.61, 987.77, 830.61, 987.77, 1174.66, 987.77], 
+          duration: 2.0, 
           noteLength: 0.25,
+          volumeMultiplier: 1.4 
+        },
+        doorbell: { 
+          freqs: [523, 659, 784, 1047, 784, 659, 523, 659, 784, 1047], 
+          duration: 2.5, 
+          noteLength: 0.25,
+          volumeMultiplier: 1.5 
+        },
+        triple: { 
+          freqs: [784, 988, 1175, 988, 784, 988, 1175, 1319, 1175, 988], 
+          duration: 2.5, 
+          noteLength: 0.25,
+          volumeMultiplier: 1.6 
+        },
+        alert: { 
+          freqs: [1000, 800, 1000, 800, 1000, 800, 1000, 800], 
+          duration: 2.4, 
+          noteLength: 0.3,
           volumeMultiplier: 1.8,
+          waveType: 'triangle'
+        },
+        alarm: { 
+          freqs: [880, 1100, 880, 1100, 880, 1100, 880, 1100, 880, 1100], 
+          duration: 3.0, 
+          noteLength: 0.3,
+          volumeMultiplier: 1.9,
           waveType: 'square'
         },
         siren: { 
-          freqs: [600, 900, 600, 900, 600, 900, 600, 900], 
-          duration: 2.0, 
-          noteLength: 0.25,
-          volumeMultiplier: 1.6,
+          freqs: [600, 900, 600, 900, 600, 900, 600, 900, 600, 900, 600, 900], 
+          duration: 3.5, 
+          noteLength: 0.28,
+          volumeMultiplier: 1.8,
           waveType: 'sawtooth'
         },
-        alert: { 
-          freqs: [1000, 800, 1000, 800, 1000], 
-          duration: 1.2, 
-          noteLength: 0.24,
-          volumeMultiplier: 1.7,
-          waveType: 'triangle'
-        },
         emergency: { 
-          freqs: [1200, 800, 1200, 800, 1200, 800, 1200, 800], 
-          duration: 2.5, 
-          noteLength: 0.3,
+          freqs: [1200, 800, 1200, 800, 1200, 800, 1200, 800, 1200, 800, 1200, 800, 1200, 800], 
+          duration: 4.0, 
+          noteLength: 0.28,
           volumeMultiplier: 2.0,
           waveType: 'square'
         },
-        triple: { 
-          freqs: [784, 988, 1175, 988, 784, 988, 1175], 
-          duration: 1.4, 
-          noteLength: 0.2,
-          volumeMultiplier: 1.5 
-        },
-        doorbell: { 
-          freqs: [523, 659, 784, 1047, 784, 659], 
-          duration: 1.0, 
-          noteLength: 0.16,
-          volumeMultiplier: 1.4 
-        },
         urgent: { 
-          freqs: [880, 1100, 880, 1100, 880, 1100, 880], 
-          duration: 1.8, 
-          noteLength: 0.25,
+          freqs: [880, 1100, 880, 1100, 880, 1100, 880, 1100, 880, 1100], 
+          duration: 3.0, 
+          noteLength: 0.3,
           volumeMultiplier: 2.0,
           waveType: 'square'
         }
