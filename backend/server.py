@@ -4617,10 +4617,10 @@ async def get_my_invoices(
 async def get_billing_portal(
     tenant_slug: str,
     return_url: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Crée une session du portail de facturation Stripe"""
-    if current_user.get("role") != "admin":
+    if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
     
     tenant = await db.tenants.find_one({"slug": tenant_slug})
@@ -4646,13 +4646,13 @@ async def get_billing_portal(
 async def create_checkout_session(
     tenant_slug: str,
     return_url: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Crée une session Stripe Checkout pour configurer le paiement.
     Utilisé quand le tenant n'a pas encore de stripe_customer_id.
     """
-    if current_user.get("role") != "admin":
+    if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
     
     tenant = await db.tenants.find_one({"slug": tenant_slug})
