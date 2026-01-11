@@ -53,3 +53,19 @@ class SuperAdmin(BaseModel):
 class SuperAdminLogin(BaseModel):
     email: str
     mot_de_passe: str
+
+
+class AuditLog(BaseModel):
+    """Journal d'audit pour les actions super-admin"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    admin_id: str
+    admin_email: str
+    admin_nom: str
+    action: str  # login, tenant_access, tenant_create, tenant_update, tenant_delete, admin_create
+    details: Dict[str, Any] = {}
+    tenant_id: Optional[str] = None
+    tenant_slug: Optional[str] = None
+    tenant_nom: Optional[str] = None
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
