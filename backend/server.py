@@ -2628,6 +2628,17 @@ class Tenant(BaseModel):
     logo_url: str = ""  # URL ou base64 du logo
     nom_service: str = ""  # Nom complet du service (ex: "Service Incendie de Ville-X")
     afficher_profiremanager: bool = True  # Afficher le branding ProFireManager
+    # Facturation Stripe
+    is_gratuit: bool = False  # Tenant gratuit (pas de facturation)
+    stripe_customer_id: Optional[str] = None
+    stripe_subscription_id: Optional[str] = None
+    billing_status: str = "inactive"  # inactive, active, past_due, cancelled, trial
+    billing_cycle: str = "monthly"  # monthly ou annual
+    last_payment_date: Optional[str] = None
+    last_payment_amount: Optional[float] = None
+    next_billing_date: Optional[str] = None
+    payment_failed_date: Optional[str] = None  # Date du premier échec de paiement
+    launch_offer_applied: bool = False  # Offre de lancement appliquée
 
 class TenantCreate(BaseModel):
     slug: str
