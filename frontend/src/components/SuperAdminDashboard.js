@@ -357,10 +357,12 @@ const SuperAdminDashboard = ({ onLogout }) => {
         },
         body: JSON.stringify({
           nom: newTenant.nom,
-          contact_email: newTenant.contact_email,
-          contact_telephone: newTenant.contact_telephone,
+          email_contact: newTenant.contact_email,
+          telephone: newTenant.contact_telephone,
           adresse: newTenant.adresse,
-          is_active: newTenant.is_active,
+          date_creation: newTenant.date_creation,
+          actif: newTenant.is_active,
+          is_gratuit: newTenant.is_gratuit,
           parametres: {
             module_prevention_active: newTenant.module_prevention_active
           }
