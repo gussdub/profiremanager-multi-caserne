@@ -63,7 +63,7 @@ from .formation import (
 
 __all__ = [
     # Tenant
-    'Tenant', 'TenantCreate', 'SuperAdmin', 'SuperAdminLogin',
+    'Tenant', 'TenantCreate', 'SuperAdmin', 'SuperAdminLogin', 'AuditLog',
     # User
     'User', 'UserCreate', 'UserUpdate', 'UserLogin',
     'ForgotPasswordRequest', 'ResetPasswordRequest', 'PasswordResetToken',
