@@ -326,10 +326,12 @@ const SuperAdminDashboard = ({ onLogout }) => {
     setNewTenant({
       nom: tenant.nom,
       slug: tenant.slug,
-      contact_email: tenant.contact_email,
-      contact_telephone: tenant.contact_telephone || '',
+      contact_email: tenant.contact_email || tenant.email_contact || '',
+      contact_telephone: tenant.contact_telephone || tenant.telephone || '',
       adresse: tenant.adresse || '',
-      is_active: tenant.is_active !== undefined ? tenant.is_active : true,
+      date_creation: tenant.date_creation || '',
+      is_active: tenant.actif !== undefined ? tenant.actif : (tenant.is_active !== undefined ? tenant.is_active : true),
+      is_gratuit: tenant.is_gratuit || false,
       module_prevention_active: tenant.parametres?.module_prevention_active || false
     });
     setShowEditModal(true);
