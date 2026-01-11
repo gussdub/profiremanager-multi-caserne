@@ -23,6 +23,15 @@ from .database import (
     is_temps_plein
 )
 
+from .helpers import (
+    get_password_hash,
+    clean_mongo_doc,
+    validate_complex_password,
+    normalize_string_for_matching,
+    create_user_matching_index,
+    calculate_name_similarity
+)
+
 __all__ = [
     # Auth
     'create_access_token',
@@ -39,5 +48,12 @@ __all__ = [
     'client',
     'db',
     'is_temps_partiel',
-    'is_temps_plein'
+    'is_temps_plein',
+    # Helpers
+    'get_password_hash',
+    'clean_mongo_doc',
+    'validate_complex_password',
+    'normalize_string_for_matching',
+    'create_user_matching_index',
+    'calculate_name_similarity'
 ]
