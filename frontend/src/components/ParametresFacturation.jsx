@@ -14,6 +14,26 @@ const ParametresFacturation = ({ user, tenantSlug }) => {
   const [invoices, setInvoices] = useState([]);
 
   useEffect(() => {
+    // Vérifier si retour de Stripe Checkout
+    const urlParams = new URLSearchParams(window.location.search);
+    const checkoutStatus = urlParams.get('checkout');
+    
+    if (checkoutStatus === 'success') {
+      toast({
+        title: "✅ Paiement configuré",
+        description: "Votre méthode de paiement a été configurée avec succès!",
+      });
+      // Nettoyer l'URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (checkoutStatus === 'cancelled') {
+      toast({
+        title: "Configuration annulée",
+        description: "Vous pouvez configurer votre paiement à tout moment.",
+        variant: "destructive"
+      });
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
     fetchBillingInfo();
     fetchInvoices();
   }, []);
