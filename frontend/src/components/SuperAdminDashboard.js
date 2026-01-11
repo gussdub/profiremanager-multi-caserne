@@ -1039,14 +1039,29 @@ const SuperAdminDashboard = ({ onLogout }) => {
 
           <Card style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', border: 'none' }}>
             <CardHeader style={{ padding: '12px 12px 4px' }}>
-              <CardTitle style={{ fontSize: '12px', color: 'white' }}>💰 Revenus</CardTitle>
+              <CardTitle style={{ fontSize: '12px', color: 'white' }}>💰 MRR</CardTitle>
             </CardHeader>
             <CardContent style={{ padding: '4px 12px 12px' }}>
               <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white' }}>
-                {stats.revenus_mensuels ? `${stats.revenus_mensuels}$` : '0$'}
+                {billingOverview?.summary?.total_mrr ? `${billingOverview.summary.total_mrr.toFixed(0)}$` : '0$'}
               </div>
               <small style={{ color: 'rgba(255,255,255,0.8)', fontSize: '10px' }}>
-                {stats.total_pompiers || 0} pompiers
+                /mois récurrent
+              </small>
+            </CardContent>
+          </Card>
+          <Card style={{ background: billingOverview?.summary?.past_due_tenants > 0 ? '#fef2f2' : '#f0fdf4', border: billingOverview?.summary?.past_due_tenants > 0 ? '1px solid #fecaca' : '1px solid #bbf7d0' }}>
+            <CardHeader style={{ padding: '12px 12px 4px' }}>
+              <CardTitle style={{ fontSize: '12px', color: billingOverview?.summary?.past_due_tenants > 0 ? '#dc2626' : '#16a34a' }}>
+                {billingOverview?.summary?.past_due_tenants > 0 ? '⚠️ Impayés' : '✅ Paiements'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent style={{ padding: '4px 12px 12px' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: billingOverview?.summary?.past_due_tenants > 0 ? '#dc2626' : '#16a34a' }}>
+                {billingOverview?.summary?.past_due_tenants || 0}
+              </div>
+              <small style={{ fontSize: '10px', color: '#64748b' }}>
+                {billingOverview?.summary?.paying_tenants || 0} payants | {billingOverview?.summary?.free_tenants || 0} gratuits
               </small>
             </CardContent>
           </Card>
