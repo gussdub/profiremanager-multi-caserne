@@ -1087,7 +1087,9 @@ const Parametres = ({ user, tenantSlug }) => {
           { id: 'disponibilites', icon: '📅', title: 'Disponibilités', desc: 'Configuration' },
           { id: 'formations', icon: '📚', title: 'Formations', desc: 'NFPA 1500' },
           { id: 'personnalisation', icon: '🎨', title: 'Personnalisation', desc: 'Logo et branding' },
-          { id: 'imports', icon: '📥', title: 'Imports CSV', desc: 'Import en masse' }
+          { id: 'imports', icon: '📥', title: 'Imports CSV', desc: 'Import en masse' },
+          // Onglet Facturation visible uniquement pour les admins
+          ...(user?.role === 'admin' ? [{ id: 'facturation', icon: '💳', title: 'Facturation', desc: 'Abonnement' }] : [])
         ].map(tab => (
           <button
             key={tab.id}
