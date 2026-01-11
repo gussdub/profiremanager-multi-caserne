@@ -730,6 +730,23 @@ const SuperAdminDashboard = ({ onLogout }) => {
         >
           🛠️ Débogage
         </button>
+        <button
+          onClick={() => setActiveTab('audit')}
+          style={{
+            padding: '0.75rem 1rem',
+            border: 'none',
+            backgroundColor: 'transparent',
+            color: activeTab === 'audit' ? '#7c3aed' : '#64748b',
+            fontWeight: 600,
+            cursor: 'pointer',
+            borderBottom: activeTab === 'audit' ? '2px solid #7c3aed' : '2px solid transparent',
+            marginBottom: '-2px',
+            fontSize: '0.875rem',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          📋 Journal d'audit
+        </button>
       </div>
 
       {/* Content based on active tab */}
