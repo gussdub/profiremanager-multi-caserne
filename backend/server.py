@@ -45,6 +45,9 @@ from PIL import Image as PILImage
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
+# Configuration Stripe
+stripe.api_key = os.environ.get('STRIPE_API_KEY', 'sk_test_emergent')
+
 # MongoDB connection avec configuration SSL pour production
 mongo_url = os.environ['MONGO_URL']
 
