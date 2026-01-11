@@ -1498,6 +1498,64 @@ const SuperAdminDashboard = ({ onLogout }) => {
                 </div>
               </div>
 
+              {/* Section Gratuit */}
+              <div style={{ 
+                padding: '20px', 
+                background: newTenant.is_gratuit ? '#d1fae5' : '#fef2f2', 
+                borderRadius: '8px',
+                border: `1px solid ${newTenant.is_gratuit ? '#10b981' : '#fecaca'}`
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <Label style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '5px', color: newTenant.is_gratuit ? '#065f46' : '#991b1b' }}>
+                      🆓 Compte Gratuit
+                    </Label>
+                    <p style={{ fontSize: '13px', color: newTenant.is_gratuit ? '#065f46' : '#991b1b', margin: '5px 0 0 0' }}>
+                      {newTenant.is_gratuit 
+                        ? "✅ Ce tenant ne sera pas facturé" 
+                        : "💳 Ce tenant sera facturé selon le nombre d'utilisateurs"}
+                    </p>
+                  </div>
+                  <label style={{ 
+                    position: 'relative', 
+                    display: 'inline-block', 
+                    width: '60px', 
+                    height: '34px',
+                    cursor: 'pointer'
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={newTenant.is_gratuit || false}
+                      onChange={(e) => setNewTenant({ ...newTenant, is_gratuit: e.target.checked })}
+                      style={{ opacity: 0, width: 0, height: 0 }}
+                    />
+                    <span style={{
+                      position: 'absolute',
+                      cursor: 'pointer',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: newTenant.is_gratuit ? '#10b981' : '#94a3b8',
+                      transition: '0.4s',
+                      borderRadius: '34px'
+                    }}>
+                      <span style={{
+                        position: 'absolute',
+                        content: '',
+                        height: '26px',
+                        width: '26px',
+                        left: newTenant.is_gratuit ? '30px' : '4px',
+                        bottom: '4px',
+                        backgroundColor: 'white',
+                        transition: '0.4s',
+                        borderRadius: '50%'
+                      }}></span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+
               {/* Section Module Prévention */}
               <div style={{ 
                 padding: '20px', 
