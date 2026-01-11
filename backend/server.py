@@ -2904,6 +2904,9 @@ class ResetPasswordRequest(BaseModel):
     token: str
     nouveau_mot_de_passe: str
 
+class BillingRequest(BaseModel):
+    return_url: str
+
 class PasswordResetToken(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     tenant_id: str
