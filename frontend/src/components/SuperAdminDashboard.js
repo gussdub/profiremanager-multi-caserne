@@ -15,7 +15,7 @@ const INACTIVITY_TIMEOUT = 2 * 60 * 60 * 1000; // 2 heures
 const WARNING_BEFORE_LOGOUT = 5 * 60 * 1000; // 5 minutes
 
 const SuperAdminDashboard = ({ onLogout }) => {
-  const [activeTab, setActiveTab] = useState('tenants'); // tenants ou debogage
+  const [activeTab, setActiveTab] = useState('tenants'); // tenants, debogage ou audit
   const [tenants, setTenants] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -30,6 +30,11 @@ const SuperAdminDashboard = ({ onLogout }) => {
   const [selectedTenant, setSelectedTenant] = useState(null);
   const [showInactivityWarning, setShowInactivityWarning] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(0);
+  // États pour le journal d'audit
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [auditSummary, setAuditSummary] = useState(null);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditFilter, setAuditFilter] = useState({ action: '', tenant_slug: '' });
   const [newTenant, setNewTenant] = useState({
     nom: '',
     slug: '',
