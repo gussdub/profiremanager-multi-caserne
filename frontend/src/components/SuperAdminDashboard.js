@@ -832,6 +832,144 @@ const SuperAdminDashboard = ({ onLogout }) => {
       {/* Content based on active tab */}
       {activeTab === 'debogage' ? (
         <Debogage />
+      ) : activeTab === 'audit' ? (
+        /* ==================== ONGLET JOURNAL D'AUDIT ==================== */
+        <div>
+          {/* Résumé */}
+          {auditSummary && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+              <Card>
+                <CardHeader style={{ padding: '12px 12px 4px' }}>
+                  <CardTitle style={{ fontSize: '12px', color: '#666' }}>Actions (24h)</CardTitle>
+                </CardHeader>
+                <CardContent style={{ padding: '4px 12px 12px' }}>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#7c3aed' }}>
+                    {auditSummary.counts?.last_24h || 0}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader style={{ padding: '12px 12px 4px' }}>
+                  <CardTitle style={{ fontSize: '12px', color: '#666' }}>Actions (7j)</CardTitle>
+                </CardHeader>
+                <CardContent style={{ padding: '4px 12px 12px' }}>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#2563eb' }}>
+                    {auditSummary.counts?.last_7d || 0}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader style={{ padding: '12px 12px 4px' }}>
+                  <CardTitle style={{ fontSize: '12px', color: '#666' }}>Actions (30j)</CardTitle>
+                </CardHeader>
+                <CardContent style={{ padding: '4px 12px 12px' }}>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#64748b' }}>
+                    {auditSummary.counts?.last_30d || 0}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Filtres */}
+          <Card style={{ marginBottom: '20px' }}>
+            <CardContent style={{ padding: '16px' }}>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <div>
+                  <label style={{ fontSize: '12px', color: '#666', display: 'block', marginBottom: '4px' }}>Type d'action</label>
+                  <select
+                    value={auditFilter.action}
+                    onChange={(e) => setAuditFilter({ ...auditFilter, action: e.target.value })}
+                    style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '14px' }}
+                  >
+                    <option value="">Toutes les actions</option>
+                    <option value="login">Connexion dashboard</option>
+                    <option value="tenant_access">Accès tenant</option>
+                    <option value="tenant_create">Création tenant</option>
+                    <option value="tenant_update">Modification tenant</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '12px', color: '#666', display: 'block', marginBottom: '4px' }}>Tenant</label>
+                  <select
+                    value={auditFilter.tenant_slug}
+                    onChange={(e) => setAuditFilter({ ...auditFilter, tenant_slug: e.target.value })}
+                    style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '14px' }}
+                  >
+                    <option value="">Tous les tenants</option>
+                    {tenants.map(t => (
+                      <option key={t.id} value={t.slug}>{t.nom}</option>
+                    ))}
+                  </select>
+                </div>
+                <Button
+                  onClick={() => setAuditFilter({ action: '', tenant_slug: '' })}
+                  variant="outline"
+                  style={{ marginTop: '18px' }}
+                >
+                  Réinitialiser
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Liste des logs */}
+          <Card>
+            <CardHeader>
+              <CardTitle style={{ fontSize: '16px' }}>📋 Historique des actions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {auditLoading ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+                  Chargement...
+                </div>
+              ) : auditLogs.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+                  Aucune action enregistrée
+                </div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
+                        <th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Date</th>
+                        <th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Admin</th>
+                        <th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Action</th>
+                        <th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Tenant</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {auditLogs.map((log, idx) => (
+                        <tr key={log.id || idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '12px 8px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                            {formatAuditDate(log.created_at)}
+                          </td>
+                          <td style={{ padding: '12px 8px' }}>
+                            <div style={{ fontWeight: '500' }}>{log.admin_nom}</div>
+                            <div style={{ fontSize: '12px', color: '#64748b' }}>{log.admin_email}</div>
+                          </td>
+                          <td style={{ padding: '12px 8px' }}>
+                            {getActionLabel(log.action)}
+                          </td>
+                          <td style={{ padding: '12px 8px' }}>
+                            {log.tenant_nom ? (
+                              <div>
+                                <div style={{ fontWeight: '500' }}>{log.tenant_nom}</div>
+                                <div style={{ fontSize: '12px', color: '#64748b' }}>{log.tenant_slug}</div>
+                              </div>
+                            ) : (
+                              <span style={{ color: '#94a3b8' }}>-</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       ) : (
         <>
           {/* Statistiques globales - Responsive */}
