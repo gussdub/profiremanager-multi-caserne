@@ -1169,7 +1169,13 @@ const SuperAdminDashboard = ({ onLogout }) => {
                               <div>
                                 <strong>Total mensuel:</strong>{' '}
                                 <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#dc2626' }}>
-                                  {tenant.billing?.monthly_cost ? `${tenant.billing.monthly_cost.toFixed(0)}$` : '-'}
+                                  {(() => {
+                                    const userCount = tenant.billing?.user_count || tenant.nombre_employes || 0;
+                                    const tierPrice = userCount <= 30 ? 12 : userCount <= 50 ? 20 : 27;
+                                    const preventionPrice = tenant.billing?.prevention_module ? 3 : 0;
+                                    const total = userCount * (tierPrice + preventionPrice);
+                                    return `${total}$/mois`;
+                                  })()}
                                 </span>
                               </div>
                             )}
