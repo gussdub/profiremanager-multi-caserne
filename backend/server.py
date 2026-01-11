@@ -477,6 +477,92 @@ async def start_notification_scheduler():
     scheduler.start()
     logging.info("✅ Scheduler de notifications automatiques démarré (planning + équipements + disponibilités + paiements)")
 
+
+async def job_check_overdue_payments():
+    """
+    Job qui vérifie les paiements en retard et suspend les tenants après 5 jours d'impayé.
+    S'exécute tous les jours à 8h00.
+    """
+    try:
+        logging.info("💰 Vérification des paiements en retard...")
+        
+        # Récupérer tous les tenants avec paiement en retard
+        tenants_past_due = await db.tenants.find({
+            "billing_status": "past_due",
+            "is_gratuit": {"$ne": True},
+            "payment_failed_date": {"$ne": None}
+        }).to_list(None)
+        
+        suspended_count = 0
+        reminder_count = 0
+        
+        for tenant in tenants_past_due:
+            try:
+                payment_failed_date = datetime.strptime(
+                    tenant["payment_failed_date"], "%Y-%m-%d"
+                ).replace(tzinfo=timezone.utc)
+                
+                days_overdue = (datetime.now(timezone.utc) - payment_failed_date).days
+                
+                if days_overdue >= 5:
+                    # Suspendre le tenant après 5 jours
+                    await db.tenants.update_one(
+                        {"id": tenant["id"]},
+                        {"$set": {"actif": False, "billing_status": "suspended"}}
+                    )
+                    logging.warning(f"⛔ Tenant {tenant['slug']} suspendu (impayé depuis {days_overdue} jours)")
+                    suspended_count += 1
+                    
+                    # Envoyer email de suspension
+                    if tenant.get("email_contact") and os.environ.get("RESEND_API_KEY"):
+                        try:
+                            resend.api_key = os.environ.get("RESEND_API_KEY")
+                            resend.Emails.send({
+                                "from": "ProFireManager <noreply@profiremanager.com>",
+                                "to": [tenant["email_contact"]],
+                                "subject": "⚠️ Compte suspendu - ProFireManager",
+                                "html": f"""
+                                <h2>Votre compte a été suspendu</h2>
+                                <p>Bonjour,</p>
+                                <p>Suite à un paiement non reçu depuis plus de 5 jours, votre compte ProFireManager pour <strong>{tenant.get('nom')}</strong> a été temporairement suspendu.</p>
+                                <p>Pour réactiver votre compte, veuillez régulariser votre paiement dans votre espace de facturation.</p>
+                                <p>Cordialement,<br>L'équipe ProFireManager</p>
+                                """
+                            })
+                        except Exception as e:
+                            logging.error(f"Erreur envoi email suspension: {e}")
+                            
+                elif days_overdue >= 3:
+                    # Envoyer rappel après 3 jours
+                    if tenant.get("email_contact") and os.environ.get("RESEND_API_KEY"):
+                        try:
+                            resend.api_key = os.environ.get("RESEND_API_KEY")
+                            resend.Emails.send({
+                                "from": "ProFireManager <noreply@profiremanager.com>",
+                                "to": [tenant["email_contact"]],
+                                "subject": "Dernier rappel de paiement - ProFireManager",
+                                "html": f"""
+                                <h2>Dernier rappel avant suspension</h2>
+                                <p>Bonjour,</p>
+                                <p>Votre paiement pour ProFireManager ({tenant.get('nom')}) est en retard depuis {days_overdue} jours.</p>
+                                <p><strong>Attention:</strong> Sans règlement dans les 2 prochains jours, votre compte sera automatiquement suspendu.</p>
+                                <p>Cordialement,<br>L'équipe ProFireManager</p>
+                                """
+                            })
+                            reminder_count += 1
+                        except Exception as e:
+                            logging.error(f"Erreur envoi rappel: {e}")
+                            
+            except Exception as e:
+                logging.error(f"Erreur traitement tenant {tenant.get('slug')}: {e}")
+                continue
+        
+        logging.info(f"💰 Vérification terminée: {suspended_count} suspendus, {reminder_count} rappels envoyés")
+        
+    except Exception as e:
+        logging.error(f"❌ Erreur job_check_overdue_payments: {e}")
+
+
 async def job_verifier_notifications_planning():
     """
     Job qui vérifie si des notifications de planning doivent être envoyées
