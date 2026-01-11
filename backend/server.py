@@ -4052,8 +4052,8 @@ async def get_audit_logs_summary(admin: SuperAdmin = Depends(get_super_admin)):
 # Configuration tarification
 PRICING_TIERS = [
     {"min": 1, "max": 30, "price_per_user": 12.00},
-    {"min": 31, "max": 50, "price_per_user": 10.00},
-    {"min": 51, "max": 999, "price_per_user": 9.00},
+    {"min": 31, "max": 50, "price_per_user": 20.00},
+    {"min": 51, "max": 999, "price_per_user": 27.00},
 ]
 PREVENTION_MODULE_PRICE = 3.00
 ANNUAL_DISCOUNT_PERCENT = 10
