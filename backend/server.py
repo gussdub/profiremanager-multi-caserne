@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, Body, UploadFile, File
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, Body, UploadFile, File, Request
 from fastapi.responses import Response, StreamingResponse, RedirectResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
@@ -18,6 +18,7 @@ import hashlib
 import re
 import bcrypt
 import time
+import stripe
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib import colors
 from reportlab.lib.units import inch
