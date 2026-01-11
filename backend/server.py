@@ -466,8 +466,16 @@ async def start_notification_scheduler():
         replace_existing=True
     )
     
+    # Job pour vérifier les paiements en retard et suspendre après 5 jours
+    scheduler.add_job(
+        job_check_overdue_payments,
+        CronTrigger(hour=8, minute=0),  # Tous les jours à 8h00
+        id='check_overdue_payments',
+        replace_existing=True
+    )
+    
     scheduler.start()
-    logging.info("✅ Scheduler de notifications automatiques démarré (planning + équipements + disponibilités)")
+    logging.info("✅ Scheduler de notifications automatiques démarré (planning + équipements + disponibilités + paiements)")
 
 async def job_verifier_notifications_planning():
     """
