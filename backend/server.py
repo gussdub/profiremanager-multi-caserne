@@ -4591,6 +4591,93 @@ async def get_billing_portal(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@api_router.post("/{tenant_slug}/billing/checkout")
+async def create_checkout_session(
+    tenant_slug: str,
+    return_url: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Crée une session Stripe Checkout pour configurer le paiement.
+    Utilisé quand le tenant n'a pas encore de stripe_customer_id.
+    """
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    
+    tenant = await db.tenants.find_one({"slug": tenant_slug})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # Si gratuit, pas besoin de checkout
+    if tenant.get("is_gratuit", False):
+        raise HTTPException(status_code=400, detail="Compte gratuit - pas de paiement requis")
+    
+    try:
+        # Compter les utilisateurs actifs
+        user_count = await db.users.count_documents({
+            "tenant_id": tenant["id"],
+            "statut": "Actif"
+        })
+        if user_count == 0:
+            user_count = 1  # Minimum 1 utilisateur
+        
+        prevention_active = tenant.get("parametres", {}).get("module_prevention_active", False)
+        billing_cycle = tenant.get("billing_cycle", "monthly")
+        
+        # Calculer le prix
+        billing_info = calculate_billing(user_count, prevention_active, billing_cycle)
+        unit_amount = int(billing_info["price_per_user_total"] * 100)  # En cents
+        interval = "month" if billing_cycle == "monthly" else "year"
+        
+        # Créer le prix dynamique
+        price = stripe.Price.create(
+            unit_amount=unit_amount,
+            currency="cad",
+            recurring={"interval": interval},
+            product_data={
+                "name": f"ProFireManager - {tenant.get('nom', tenant_slug)}",
+                "metadata": {"tenant_id": tenant["id"]}
+            }
+        )
+        
+        # Si le tenant a déjà un customer_id, l'utiliser
+        customer_id = tenant.get("stripe_customer_id")
+        
+        checkout_params = {
+            "mode": "subscription",
+            "line_items": [{
+                "price": price.id,
+                "quantity": user_count
+            }],
+            "success_url": return_url + "?checkout=success",
+            "cancel_url": return_url + "?checkout=cancelled",
+            "metadata": {
+                "tenant_id": tenant["id"],
+                "tenant_slug": tenant_slug
+            },
+            "subscription_data": {
+                "metadata": {
+                    "tenant_id": tenant["id"],
+                    "tenant_slug": tenant_slug
+                }
+            }
+        }
+        
+        if customer_id:
+            checkout_params["customer"] = customer_id
+        else:
+            # Créer un nouveau client
+            checkout_params["customer_email"] = tenant.get("email_contact", tenant.get("contact_email", ""))
+            checkout_params["customer_creation"] = "always"
+        
+        session = stripe.checkout.Session.create(**checkout_params)
+        
+        return {"url": session.url, "session_id": session.id}
+        
+    except stripe.error.StripeError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ==================== END BILLING ROUTES ====================
 
 @api_router.get("/admin/tenants/by-slug/{tenant_slug}")
