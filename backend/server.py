@@ -4532,10 +4532,10 @@ async def stripe_webhook(request: Request):
 @api_router.get("/{tenant_slug}/billing/info")
 async def get_tenant_billing_info(
     tenant_slug: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Récupère les informations de facturation pour un tenant (admin seulement)"""
-    if current_user.get("role") != "admin":
+    if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
     
     tenant = await db.tenants.find_one({"slug": tenant_slug})
