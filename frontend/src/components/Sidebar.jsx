@@ -867,8 +867,8 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
                       </div>
                     </div>
                   </div>
-                ))
-              )}
+                ));
+              })()}
             </div>
           </div>
         )}
