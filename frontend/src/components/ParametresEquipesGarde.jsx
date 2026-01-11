@@ -243,6 +243,18 @@ const ParametresEquipesGarde = ({ tenantSlug, toast }) => {
                   {params.temps_plein.type_rotation === "personnalisee" && (
                     <>
                       <div>
+                        <Label>Date de référence</Label>
+                        <Input
+                          type="date"
+                          value={params.temps_plein.date_reference || ""}
+                          onChange={(e) => updateTempsPlein("date_reference", e.target.value)}
+                          data-testid="input-date-ref-temps-plein"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Date où l&apos;équipe 1 commence un nouveau cycle
+                        </p>
+                      </div>
+                      <div>
                         <Label>Nombre d&apos;équipes</Label>
                         <Input
                           type="number"
