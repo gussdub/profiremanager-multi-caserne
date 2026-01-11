@@ -4698,11 +4698,31 @@ async def create_checkout_session(
             }
         )
         
-        # Si le tenant a déjà un customer_id, l'utiliser
+        # Si le tenant a déjà un customer_id, l'utiliser, sinon créer un nouveau client Stripe
         customer_id = tenant.get("stripe_customer_id")
+        
+        if not customer_id:
+            # Créer le client Stripe maintenant
+            customer_email = tenant.get("email_contact") or tenant.get("contact_email") or ""
+            customer = stripe.Customer.create(
+                email=customer_email,
+                name=tenant.get("nom", tenant_slug),
+                metadata={
+                    "tenant_id": tenant["id"],
+                    "tenant_slug": tenant_slug
+                }
+            )
+            customer_id = customer.id
+            
+            # Sauvegarder le customer_id dans la base de données
+            await db.tenants.update_one(
+                {"id": tenant["id"]},
+                {"$set": {"stripe_customer_id": customer_id}}
+            )
         
         checkout_params = {
             "mode": "subscription",
+            "customer": customer_id,
             "line_items": [{
                 "price": price.id,
                 "quantity": user_count
@@ -4720,13 +4740,6 @@ async def create_checkout_session(
                 }
             }
         }
-        
-        if customer_id:
-            checkout_params["customer"] = customer_id
-        else:
-            # Créer un nouveau client
-            checkout_params["customer_email"] = tenant.get("email_contact", tenant.get("contact_email", ""))
-            checkout_params["customer_creation"] = "always"
         
         session = stripe.checkout.Session.create(**checkout_params)
         
