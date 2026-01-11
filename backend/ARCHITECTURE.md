@@ -63,6 +63,14 @@
 - `is_temps_partiel(user)` - Vérifie si utilisateur temps partiel/temporaire
 - `is_temps_plein(user)` - Vérifie si utilisateur temps plein
 
+### services/helpers.py
+- `get_password_hash(password)` - Hash bcrypt d'un mot de passe
+- `clean_mongo_doc(doc)` - Supprime _id des documents MongoDB
+- `validate_complex_password(password)` - Valide complexité mot de passe
+- `normalize_string_for_matching(s)` - Normalise une chaîne (accents, casse)
+- `create_user_matching_index(users)` - Index de recherche rapide utilisateurs
+- `calculate_name_similarity(str1, str2)` - Score de similarité entre noms
+
 ## Utilisation
 
 ```python
