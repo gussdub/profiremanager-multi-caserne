@@ -4642,10 +4642,13 @@ async def get_billing_portal(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+class BillingRequest(BaseModel):
+    return_url: str
+
 @api_router.post("/{tenant_slug}/billing/checkout")
 async def create_checkout_session(
     tenant_slug: str,
-    return_url: str,
+    request: BillingRequest,
     current_user: User = Depends(get_current_user)
 ):
     """
@@ -4654,6 +4657,8 @@ async def create_checkout_session(
     """
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    
+    return_url = request.return_url
     
     tenant = await db.tenants.find_one({"slug": tenant_slug})
     if not tenant:
