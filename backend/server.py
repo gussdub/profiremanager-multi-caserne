@@ -4647,9 +4647,6 @@ async def get_billing_portal(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-class BillingRequest(BaseModel):
-    return_url: str
-
 @api_router.post("/{tenant_slug}/billing/checkout")
 async def create_checkout_session(
     tenant_slug: str,
