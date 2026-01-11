@@ -3844,6 +3844,16 @@ async def create_tenant(tenant_create: TenantCreate, admin: SuperAdmin = Depends
     tenant = Tenant(**tenant_data)
     await db.tenants.insert_one(tenant.dict())
     
+    # Enregistrer l'action dans le journal d'audit
+    await log_super_admin_action(
+        admin=admin,
+        action="tenant_create",
+        details={"tenant_slug": tenant.slug, "tenant_nom": tenant.nom},
+        tenant_id=tenant.id,
+        tenant_slug=tenant.slug,
+        tenant_nom=tenant.nom
+    )
+    
     return {"message": f"Caserne '{tenant.nom}' créée avec succès", "tenant": tenant}
 
 @api_router.put("/admin/tenants/{tenant_id}")
