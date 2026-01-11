@@ -167,6 +167,81 @@ const SuperAdminDashboard = ({ onLogout }) => {
     }
   };
 
+  // Fonction pour charger les logs d'audit
+  const fetchAuditLogs = async () => {
+    setAuditLoading(true);
+    try {
+      const token = localStorage.getItem('admin_token') || localStorage.getItem('token');
+      
+      // Construire l'URL avec les filtres
+      let url = `${API}/admin/audit-logs?limit=100`;
+      if (auditFilter.action) url += `&action=${auditFilter.action}`;
+      if (auditFilter.tenant_slug) url += `&tenant_slug=${auditFilter.tenant_slug}`;
+      
+      const [logsResponse, summaryResponse] = await Promise.all([
+        fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }),
+        fetch(`${API}/admin/audit-logs/summary`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+      ]);
+      
+      if (logsResponse.ok) {
+        const logsData = await logsResponse.json();
+        setAuditLogs(logsData.logs || []);
+      }
+      
+      if (summaryResponse.ok) {
+        const summaryData = await summaryResponse.json();
+        setAuditSummary(summaryData);
+      }
+    } catch (error) {
+      console.error('Erreur chargement audit:', error);
+    } finally {
+      setAuditLoading(false);
+    }
+  };
+
+  // Charger les logs d'audit quand on change d'onglet
+  useEffect(() => {
+    if (activeTab === 'audit') {
+      fetchAuditLogs();
+    }
+  }, [activeTab, auditFilter]);
+
+  // Formater la date pour l'affichage
+  const formatAuditDate = (dateStr) => {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr);
+    return date.toLocaleString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Traduire le type d'action
+  const getActionLabel = (action) => {
+    const labels = {
+      'login': '🔐 Connexion dashboard',
+      'tenant_access': '🏢 Accès tenant',
+      'tenant_create': '➕ Création tenant',
+      'tenant_update': '✏️ Modification tenant',
+      'tenant_delete': '🗑️ Suppression tenant',
+      'admin_create': '👤 Création admin'
+    };
+    return labels[action] || action;
+  };
+
   const handleCreateTenant = async () => {
     if (!newTenant.nom || !newTenant.slug) {
       toast({
