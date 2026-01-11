@@ -872,38 +872,43 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
             <Button 
               variant="outline" 
               onClick={() => setShowNotifications(!showNotifications)}
-              className="notification-sidebar-btn"
+              className={`notification-sidebar-btn ${unreadCount > 0 ? 'has-unread' : ''}`}
               data-testid="notification-bell"
               style={{ 
                 fontSize: '0.85rem', 
                 padding: '0.5rem 0.75rem',
-                background: 'rgba(255,255,255,0.1)',
-                border: '1px solid rgba(255,255,255,0.2)',
+                background: unreadCount > 0 ? 'rgba(239, 68, 68, 0.3)' : 'rgba(255,255,255,0.1)',
+                border: unreadCount > 0 ? '2px solid #EF4444' : '1px solid rgba(255,255,255,0.2)',
                 color: 'white',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between'
+                justifyContent: 'center',
+                gap: '0.5rem',
+                position: 'relative',
+                animation: unreadCount > 0 ? 'pulse-notification 2s infinite' : 'none'
               }}
             >
               <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 🔔 Notifications
+                {unreadCount > 0 && (
+                  <span style={{
+                    background: '#EF4444',
+                    color: 'white',
+                    borderRadius: '50%',
+                    minWidth: '22px',
+                    height: '22px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.75rem',
+                    fontWeight: 'bold',
+                    boxShadow: '0 0 8px rgba(239, 68, 68, 0.8)',
+                    animation: 'badge-pulse 1.5s infinite'
+                  }}>
+                    {unreadCount}
+                  </span>
+                )}
               </span>
-              {unreadCount > 0 && (
-                <span style={{
-                  background: '#EF4444',
-                  color: 'white',
-                  borderRadius: '50%',
-                  minWidth: '20px',
-                  height: '20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.75rem',
-                  fontWeight: 'bold'
-                }}>
-                  {unreadCount}
-                </span>
-              )}
             </Button>
             
             {isMobileDevice && (
