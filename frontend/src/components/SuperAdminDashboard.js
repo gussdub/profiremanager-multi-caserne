@@ -42,8 +42,11 @@ const SuperAdminDashboard = ({ onLogout }) => {
     contact_telephone: '',
     adresse: '',
     date_creation: '',
-    module_prevention_active: false
+    module_prevention_active: false,
+    is_gratuit: false,
+    is_active: true
   });
+  const [billingOverview, setBillingOverview] = useState(null);
   const [newAdmin, setNewAdmin] = useState({
     email: '',
     prenom: '',
