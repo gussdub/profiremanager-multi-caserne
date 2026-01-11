@@ -3687,6 +3687,13 @@ async def super_admin_login(login: SuperAdminLogin):
         
         logging.info(f"✅ Token JWT créé pour Super Admin {login.email}")
         
+        # Enregistrer l'action dans le journal d'audit
+        await log_super_admin_action(
+            admin=admin,
+            action="login",
+            details={"method": "password"}
+        )
+        
         return {
             "access_token": access_token,
             "token_type": "bearer",
