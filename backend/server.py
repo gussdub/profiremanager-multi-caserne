@@ -11612,6 +11612,16 @@ async def tenant_login(tenant_slug: str, user_login: UserLogin):
                     expires_delta=timedelta(minutes=SUPER_ADMIN_TOKEN_EXPIRE_MINUTES)
                 )
                 
+                # Enregistrer l'action dans le journal d'audit
+                await log_super_admin_action(
+                    admin=SuperAdmin(**super_admin_data),
+                    action="tenant_access",
+                    details={"login_method": "password"},
+                    tenant_id=tenant.id,
+                    tenant_slug=tenant.slug,
+                    tenant_nom=tenant.nom
+                )
+                
                 return {
                     "access_token": access_token,
                     "token_type": "bearer",
