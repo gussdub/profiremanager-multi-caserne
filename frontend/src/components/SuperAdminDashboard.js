@@ -138,7 +138,7 @@ const SuperAdminDashboard = ({ onLogout }) => {
       // Pour le tenant admin, le token est stocké avec le préfixe "admin_token"
       const token = localStorage.getItem('admin_token') || localStorage.getItem('token');
       
-      const [tenantsResponse, statsResponse] = await Promise.all([
+      const [tenantsResponse, statsResponse, billingResponse] = await Promise.all([
         fetch(`${API}/admin/tenants`, {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -150,13 +150,35 @@ const SuperAdminDashboard = ({ onLogout }) => {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
+        }),
+        fetch(`${API}/admin/billing/overview`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         })
       ]);
 
       const tenantsData = await tenantsResponse.json();
       const statsData = await statsResponse.json();
+      
+      // Merge billing data with tenants
+      let billingData = null;
+      if (billingResponse.ok) {
+        billingData = await billingResponse.json();
+        setBillingOverview(billingData);
+      }
 
-      setTenants(tenantsData || []);
+      // Enrichir les tenants avec les données de facturation
+      const enrichedTenants = tenantsData.map(tenant => {
+        const billingInfo = billingData?.tenants?.find(b => b.tenant_id === tenant.id);
+        return {
+          ...tenant,
+          billing: billingInfo || null
+        };
+      });
+
+      setTenants(enrichedTenants || []);
       setStats(statsData);
     } catch (error) {
       console.error('Erreur chargement données:', error);
