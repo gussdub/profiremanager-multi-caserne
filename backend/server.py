@@ -3865,6 +3865,9 @@ async def update_tenant(
     """Modifier une caserne"""
     update_data = tenant_update.copy()
     
+    # Récupérer le tenant avant modification pour l'audit
+    tenant_before = await db.tenants.find_one({"id": tenant_id})
+    
     # Supprimer les champs calculés qui ne doivent pas être sauvegardés
     if 'nombre_employes' in update_data:
         del update_data['nombre_employes']
@@ -3883,6 +3886,17 @@ async def update_tenant(
     
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Caserne non trouvée")
+    
+    # Enregistrer l'action dans le journal d'audit
+    if tenant_before:
+        await log_super_admin_action(
+            admin=admin,
+            action="tenant_update",
+            details={"fields_updated": list(update_data.keys())},
+            tenant_id=tenant_id,
+            tenant_slug=tenant_before.get("slug"),
+            tenant_nom=tenant_before.get("nom")
+        )
     
     return {"message": "Caserne mise à jour avec succès"}
 
