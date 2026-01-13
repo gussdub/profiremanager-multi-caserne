@@ -2743,7 +2743,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 9999,
+          zIndex: 100000,
           color: 'white'
         }}>
           <div style={{
@@ -2819,7 +2819,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
             right: 0,
             bottom: 0,
             backgroundColor: 'rgba(0, 0, 0, 0.6)',
-            zIndex: 99999,
+            zIndex: 1000009,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

@@ -413,7 +413,7 @@ const PointEauModal = ({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 9999,
+      zIndex: 100000,
       padding: '1rem'
     }}>
       <div style={{

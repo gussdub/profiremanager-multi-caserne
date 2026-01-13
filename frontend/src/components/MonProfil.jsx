@@ -855,7 +855,7 @@ const MonProfil = () => {
                     borderRadius: '8px',
                     boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
                     border: '1px solid #e5e7eb',
-                    zIndex: 9999,
+                    zIndex: 100000,
                     minWidth: '250px',
                     overflow: 'visible'
                   }}>
@@ -998,7 +998,7 @@ const MonProfil = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                zIndex: 9999,
+                zIndex: 100000,
                 padding: '20px'
               }}
               onMouseUp={handleCropMouseUp}

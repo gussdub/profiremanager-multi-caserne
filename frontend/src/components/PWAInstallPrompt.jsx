@@ -94,7 +94,7 @@ const PWAInstallPrompt = ({ tenantSlug, tenant }) => {
         backgroundColor: 'white',
         boxShadow: '0 -4px 12px rgba(0,0,0,0.15)',
         padding: '1.5rem',
-        zIndex: 9999,
+        zIndex: 100000,
         borderTopLeftRadius: '16px',
         borderTopRightRadius: '16px'
       }}>
@@ -177,7 +177,7 @@ const PWAInstallPrompt = ({ tenantSlug, tenant }) => {
       backgroundColor: 'white',
       boxShadow: '0 -4px 12px rgba(0,0,0,0.15)',
       padding: '1.5rem',
-      zIndex: 9999,
+      zIndex: 100000,
       borderTopLeftRadius: '16px',
       borderTopRightRadius: '16px',
       animation: 'slideUp 0.3s ease-out'

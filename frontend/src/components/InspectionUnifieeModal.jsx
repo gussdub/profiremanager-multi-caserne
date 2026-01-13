@@ -887,7 +887,7 @@ const InspectionUnifieeModal = ({
         right: 0,
         bottom: 0,
         backgroundColor: 'rgba(0,0,0,0.5)',
-        zIndex: 9999,
+        zIndex: 100000,
         display: 'flex',
         alignItems: 'flex-start',
         justifyContent: 'center',

@@ -293,7 +293,7 @@ const PhotoUploadModal = ({ onClose, onSave }) => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 9999,
+      zIndex: 100000,
       padding: '2rem'
     }}>
       <Card style={{
@@ -566,7 +566,7 @@ const PhotoEditModal = ({ photo, onClose, onSave }) => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 9999
+      zIndex: 100000
     }}>
       <Card style={{
         width: '90%',

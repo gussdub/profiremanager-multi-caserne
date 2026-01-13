@@ -573,7 +573,7 @@ const Login = () => {
       overflow: 'auto',
       fontSize: '0.75rem',
       fontFamily: 'monospace',
-      zIndex: 9999
+      zIndex: 100000
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
         <strong>🔧 Debug Storage</strong>

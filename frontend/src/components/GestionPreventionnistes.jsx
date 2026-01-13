@@ -823,7 +823,7 @@ const GestionPreventionnistes = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 99999
+          zIndex: 1000009
         }}>
           <div style={{
             backgroundColor: '#fff',
