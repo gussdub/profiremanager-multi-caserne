@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { apiGet, getTenantToken, buildApiUrl } from '../utils/api';
 
 const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
