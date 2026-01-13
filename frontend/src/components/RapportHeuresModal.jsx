@@ -485,7 +485,8 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
