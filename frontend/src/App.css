@@ -303,10 +303,15 @@ body.mobile-menu-open .sidebar {
   
   .sidebar .sidebar-logo {
     gap: 0.5rem;
+    overflow: visible;
   }
   
   .sidebar .sidebar-logo h2 {
-    font-size: 1.1rem;
+    font-size: 1rem;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.1;
   }
   
   .sidebar .sidebar-logo .version {
