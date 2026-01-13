@@ -570,7 +570,7 @@ const InspectionTerrain = ({ tenantSlug, grille, batiment, onComplete, onCancel 
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 2000,
+            zIndex: 100000,
             padding: '2rem'
           }}
         >

@@ -2163,7 +2163,7 @@ const Planning = () => {
                       border: '1px solid #cbd5e1',
                       borderRadius: '6px',
                       marginTop: '4px',
-                      zIndex: 1050,
+                      zIndex: 100000,
                       boxShadow: '0 10px 15px rgba(0,0,0,0.15)',
                       fontSize: '0.875rem',
                       color: '#1e293b'
