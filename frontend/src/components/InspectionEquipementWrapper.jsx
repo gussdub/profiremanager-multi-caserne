@@ -50,7 +50,7 @@ const InspectionEquipementWrapper = ({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 1000
+        zIndex: 100000
       }}>
         <div style={{
           backgroundColor: 'white',
@@ -75,7 +75,7 @@ const InspectionEquipementWrapper = ({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 1000
+        zIndex: 100000
       }}>
         <div style={{
           backgroundColor: 'white',

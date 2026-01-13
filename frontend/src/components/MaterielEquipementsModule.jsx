@@ -2047,7 +2047,7 @@ const ModalWrapper = ({ children, onClose, large }) => (
       display: 'flex',
       alignItems: 'flex-start',
       justifyContent: 'center',
-      zIndex: 1000,
+      zIndex: 100000,
       padding: '0.5rem',
       overflowY: 'auto'
     }}

@@ -153,7 +153,7 @@ const OfflineManager = ({ tenant }) => {
         position: 'fixed', 
         top: '70px', 
         right: '20px', 
-        zIndex: 1000,
+        zIndex: 100000,
         display: 'flex',
         gap: '8px',
         alignItems: 'center'

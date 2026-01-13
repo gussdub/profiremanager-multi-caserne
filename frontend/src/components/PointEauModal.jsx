@@ -102,7 +102,7 @@ const AddressSearch = ({ onLocationFound }) => {
       {suggestions.length > 0 && (
         <div style={{
           position: 'absolute',
-          zIndex: 1000,
+          zIndex: 100000,
           background: 'white',
           border: '1px solid #d1d5db',
           borderRadius: '6px',

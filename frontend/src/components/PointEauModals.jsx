@@ -73,7 +73,7 @@ const PointEauModal = ({ point, onClose, onSave }) => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 1000,
+      zIndex: 100000,
       padding: '1rem'
     }} onClick={onClose}>
       <div style={{
@@ -512,7 +512,7 @@ const InspectionModal = ({ point, onClose, onSave }) => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 1000,
+      zIndex: 100000,
       padding: '1rem'
     }} onClick={onClose}>
       <div style={{

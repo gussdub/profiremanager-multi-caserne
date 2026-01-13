@@ -863,7 +863,7 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              zIndex: 1000,
+              zIndex: 100000,
               padding: '20px'
             }}
             onClick={() => setShowTypeEPIModal(false)}

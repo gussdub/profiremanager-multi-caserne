@@ -95,7 +95,7 @@ const HistoriqueInventairesVehicule = ({ vehicule, onClose }) => {
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      zIndex: 1000,
+      zIndex: 100000,
       padding: '20px'
     }}>
       <div style={{

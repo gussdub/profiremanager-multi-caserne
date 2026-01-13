@@ -108,7 +108,7 @@ const SecteursMap = ({
         position: 'absolute', 
         top: '10px', 
         left: '10px', 
-        zIndex: 1000,
+        zIndex: 100000,
         display: 'flex',
         flexDirection: 'column',
         gap: '5px',

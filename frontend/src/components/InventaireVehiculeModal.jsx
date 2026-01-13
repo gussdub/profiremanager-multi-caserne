@@ -273,7 +273,7 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      zIndex: 1000,
+      zIndex: 100000,
       padding: '1rem'
     }}>
       <div style={{

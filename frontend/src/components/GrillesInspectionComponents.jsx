@@ -532,7 +532,7 @@ const TemplatePreviewModal = ({ template, onClose, onUse }) => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 1000,
+      zIndex: 100000,
       padding: '2rem'
     }}>
       <div style={{

@@ -784,7 +784,7 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
 
   if (loading) {
     return (
-      <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+      <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000 }}>
         <div style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '0.75rem', textAlign: 'center' }}>
           <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
           <p>Chargement du formulaire...</p>
@@ -794,7 +794,7 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 1000, padding: '0.5rem', overflowY: 'auto' }}>
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 100000, padding: '0.5rem', overflowY: 'auto' }}>
       <div style={{ backgroundColor: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '700px', maxHeight: '95vh', display: 'flex', flexDirection: 'column', marginTop: '0.5rem', marginBottom: '0.5rem' }}>
         {/* Header - Responsive */}
         <div style={{ padding: '1rem', borderBottom: '1px solid #e5e7eb', backgroundColor: '#dc2626', borderRadius: '0.75rem 0.75rem 0 0' }}>

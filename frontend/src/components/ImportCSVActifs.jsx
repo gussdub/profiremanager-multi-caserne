@@ -90,7 +90,7 @@ BF-003,2024-01-17,800,non_conforme,Débit faible`;
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 1000,
+      zIndex: 100000,
       padding: '20px'
     }} onClick={onClose}>
       <div style={{

@@ -721,7 +721,7 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
       right: 0,
       bottom: 0,
       backgroundColor: '#f9fafb',
-      zIndex: 10000,
+      zIndex: 1000000,
       display: 'flex',
       flexDirection: 'column'
     }}>
@@ -1164,7 +1164,7 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                   position: 'absolute', 
                   top: '10px', 
                   left: '10px', 
-                  zIndex: 1000,
+                  zIndex: 100000,
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '5px',
@@ -1210,7 +1210,7 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
                   position: 'absolute',
                   bottom: '10px',
                   left: '10px',
-                  zIndex: 1000,
+                  zIndex: 100000,
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   padding: '8px 12px',
                   borderRadius: '6px',
@@ -1584,7 +1584,7 @@ const EditCustomSymbolModal = ({ tenantSlug, symbol, onClose, onSymbolUpdated })
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 100000
+      zIndex: 10000000
     }}>
       <div style={{
         backgroundColor: '#fff',
@@ -1746,7 +1746,7 @@ const DeleteConfirmModal = ({ symbol, onConfirm, onCancel }) => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 100000
+      zIndex: 10000000
     }}>
       <div style={{
         backgroundColor: '#fff',
@@ -1907,7 +1907,7 @@ const EditPredefinedSymbolModal = ({ symbol, onClose, onSave }) => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 100000
+      zIndex: 10000000
     }}>
       <div style={{
         backgroundColor: '#fff',
@@ -2225,7 +2225,7 @@ const AddCustomSymbolModal = ({ tenantSlug, onClose, onSymbolAdded }) => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 100000
+      zIndex: 10000000
     }}>
       <div style={{
         backgroundColor: '#fff',

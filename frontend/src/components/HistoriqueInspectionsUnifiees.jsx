@@ -37,7 +37,7 @@ const HistoriqueInspectionsUnifiees = ({ isOpen, onClose, tenantSlug, assetId, a
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 1000,
+      zIndex: 100000,
       padding: '1rem'
     }}>
       <div style={{
