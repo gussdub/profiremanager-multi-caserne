@@ -321,7 +321,7 @@ body.mobile-menu-open .sidebar {
   .sidebar.mobile-open {
     transform: translateX(0);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    z-index: 99999 !important;
+    z-index: 1000 !important;
   }
   
   .sidebar.mobile-open .sidebar-nav {
