@@ -35,7 +35,7 @@ const Modal = ({ mode, type, formData, setFormData, onSubmit, onClose }) => {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        zIndex: 1000
+        zIndex: 100000
       }}
     >
       <div 
@@ -422,7 +422,7 @@ const QRCodeModal = ({ qrCodeData, onClose }) => (
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 1000
+    zIndex: 100000
   }}>
     <div style={{
       backgroundColor: 'white',
@@ -471,7 +471,7 @@ const FicheVieModal = ({ ficheVieData, onClose }) => (
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 1000
+    zIndex: 100000
   }}>
     <div style={{
       backgroundColor: 'white',
@@ -553,7 +553,7 @@ const InspectionHistoryModal = ({ vehicle, inspections, onClose }) => (
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 1000
+    zIndex: 100000
   }}>
     <div style={{
       backgroundColor: 'white',

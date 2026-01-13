@@ -479,7 +479,7 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 1000
+          zIndex: 100000
         }} onClick={() => setShowCreateModal(false)}>
           <div style={{
             background: 'white',

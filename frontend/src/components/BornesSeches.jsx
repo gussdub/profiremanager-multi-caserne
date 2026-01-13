@@ -208,7 +208,7 @@ const BorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess }) => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 1000,
+      zIndex: 100000,
       padding: '20px',
       overflowY: 'auto'
     }} onClick={onClose}>

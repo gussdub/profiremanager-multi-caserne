@@ -461,7 +461,7 @@ const ModeleModal = ({ modele, onClose, tenantSlug, fetchModeles }) => {
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      zIndex: 1000,
+      zIndex: 100000,
       overflow: 'auto',
       padding: '20px'
     }}>
@@ -744,7 +744,7 @@ const InspectionModal = ({ vehicules, modeles, onClose, tenantSlug, fetchInspect
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      zIndex: 1000
+      zIndex: 100000
     }}>
       <div style={{
         backgroundColor: 'white',

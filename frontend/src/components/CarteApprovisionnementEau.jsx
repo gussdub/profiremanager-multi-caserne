@@ -257,7 +257,7 @@ const CarteApprovisionnementEau = ({ user }) => {
         position: 'absolute',
         top: '10px',
         right: '10px',
-        zIndex: 1000,
+        zIndex: 100000,
         background: 'white',
         borderRadius: '8px',
         boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
