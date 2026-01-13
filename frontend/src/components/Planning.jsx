@@ -1450,7 +1450,7 @@ const Planning = () => {
                   boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
                   maxHeight: '300px',
                   overflowY: 'auto',
-                  zIndex: 1000,
+                  zIndex: 100000,
                   marginTop: '4px'
                 }}
               >
@@ -2430,7 +2430,7 @@ const Planning = () => {
                         border: '1px solid #cbd5e1',
                         borderRadius: '6px',
                         marginTop: '4px',
-                        zIndex: 1000,
+                        zIndex: 100000,
                         boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
                       }}>
                         {users
