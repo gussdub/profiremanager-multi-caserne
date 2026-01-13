@@ -1011,7 +1011,7 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
             left: 0,
             right: 0,
             bottom: 0,
-            zIndex: 99997,
+            zIndex: 999,
             background: 'rgba(0, 0, 0, 0.6)',
             cursor: 'pointer'
           }}
@@ -1020,7 +1020,7 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
 
       {/* Modal Remplacement */}
       {showRemplacementModal && selectedDemandeRemplacement && (
-        <div className="modal-overlay" style={{ zIndex: 10000 }}>
+        <div className="modal-overlay" style={{ zIndex: 100000 }}>
           <div className="modal-content" style={{ maxWidth: '500px' }}>
             <div className="modal-header">
               <h2>🔄 Détails du remplacement</h2>
