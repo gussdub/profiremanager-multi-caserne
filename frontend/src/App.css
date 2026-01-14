@@ -2832,6 +2832,10 @@ body.mobile-menu-open .sidebar {
   .modal-overlay {
     left: 280px; /* Largeur de la sidebar */
   }
+  
+  .rapport-heures-overlay {
+    left: 280px; /* Largeur de la sidebar */
+  }
 }
 
 .modal-content {
