@@ -234,21 +234,9 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
   
   return createPortal(
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" 
-      style={{
-        zIndex: 100000,
-        paddingLeft: 'max(1rem, calc((100vw - 280px) / 2 - 512px + 140px))'
-      }}
+      className="rapport-heures-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" 
+      style={{ zIndex: 100000 }}
     >
-      <style>
-        {`
-          @media (max-width: 768px) {
-            .rapport-heures-overlay {
-              padding-left: 1rem !important;
-            }
-          }
-        `}
-      </style>
       <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
