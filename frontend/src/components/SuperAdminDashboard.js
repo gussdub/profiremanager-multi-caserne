@@ -35,6 +35,11 @@ const SuperAdminDashboard = ({ onLogout }) => {
   const [auditSummary, setAuditSummary] = useState(null);
   const [auditLoading, setAuditLoading] = useState(false);
   const [auditFilter, setAuditFilter] = useState({ action: '', tenant_slug: '' });
+  // États pour les centrales 911
+  const [centrales, setCentrales] = useState([]);
+  const [centralesLoading, setCentralesLoading] = useState(false);
+  const [showCentraleModal, setShowCentraleModal] = useState(false);
+  const [editingCentrale, setEditingCentrale] = useState(null);
   const [newTenant, setNewTenant] = useState({
     nom: '',
     slug: '',
@@ -44,7 +49,8 @@ const SuperAdminDashboard = ({ onLogout }) => {
     date_creation: '',
     module_prevention_active: false,
     is_gratuit: false,
-    is_active: true
+    is_active: true,
+    centrale_911_id: ''
   });
   const [billingOverview, setBillingOverview] = useState(null);
   const [newAdmin, setNewAdmin] = useState({
