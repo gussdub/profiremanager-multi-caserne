@@ -636,36 +636,20 @@ const Formations = () => {
       {activeTab === 'rapports' && rapportConformite && (
         <div className="formations-rapports">
           {/* Sous-onglets Rapports */}
-          <div className="rapports-sub-tabs" style={{display: 'flex', gap: '1rem', marginBottom: '1.5rem', borderBottom: '2px solid #E5E7EB'}}>
+          <div className="flex gap-2 mb-4 flex-wrap">
             <button 
-              className={rapportTab === 'presence' ? 'active-sub-tab' : 'sub-tab'} 
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                rapportTab === 'presence' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
               onClick={() => setRapportTab('presence')}
-              style={{
-                padding: '0.75rem 1.5rem',
-                background: rapportTab === 'presence' ? '#FCA5A5' : 'transparent',
-                color: rapportTab === 'presence' ? 'white' : '#6B7280',
-                border: 'none',
-                borderRadius: '8px 8px 0 0',
-                cursor: 'pointer',
-                fontWeight: rapportTab === 'presence' ? 'bold' : 'normal',
-                fontSize: '1rem'
-              }}
             >
               📊 Taux de Présence
             </button>
             <button 
-              className={rapportTab === 'competences' ? 'active-sub-tab' : 'sub-tab'} 
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                rapportTab === 'competences' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
               onClick={() => setRapportTab('competences')}
-              style={{
-                padding: '0.75rem 1.5rem',
-                background: rapportTab === 'competences' ? '#FCA5A5' : 'transparent',
-                color: rapportTab === 'competences' ? 'white' : '#6B7280',
-                border: 'none',
-                borderRadius: '8px 8px 0 0',
-                cursor: 'pointer',
-                fontWeight: rapportTab === 'competences' ? 'bold' : 'normal',
-                fontSize: '1rem'
-              }}
             >
               📈 Par Compétences
             </button>
