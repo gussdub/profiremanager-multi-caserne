@@ -184,6 +184,7 @@ const PlansIntervention = lazy(() => import("./components/PlansIntervention"));
 const BatimentDetailModal = lazy(() => import("./components/BatimentDetailModalNew"));
 const ConflictResolutionModal = lazy(() => import("./components/ConflictResolutionModal"));
 const GestionActifs = lazy(() => import("./components/GestionActifs"));
+const GestionInterventions = lazy(() => import("./components/GestionInterventions"));
 const PlanInterventionViewer = lazy(() => import("./components/PlanInterventionViewer"));
 const ParametresPrevention = lazy(() => import("./components/ParametresPrevention"));
 const PlanificationView = lazy(() => import("./components/PlanificationView"));
