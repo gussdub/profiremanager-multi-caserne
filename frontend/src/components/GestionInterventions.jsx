@@ -560,6 +560,9 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
   const [resources, setResources] = useState([]);
   const [validationErrors, setValidationErrors] = useState([]);
 
+  // Bloquer le scroll du body
+  useModalScrollLock(true);
+
   const API = `${BACKEND_URL}/api/${tenantSlug}`;
 
   const getToken = () => {
