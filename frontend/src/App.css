@@ -26,6 +26,53 @@ div[style*="position: fixed"][style*="bottom: 20px"][style*="right: 20px"] {
   --header-offset: calc(60px + var(--safe-area-top));
 }
 
+/* ==================== MODAL SCROLL LOCK ==================== */
+/* Empêche le scroll du body lorsqu'une modale est ouverte */
+body.modal-open {
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100% !important;
+  height: 100% !important;
+  touch-action: none !important;
+}
+
+/* Overlay des modales - empêche la propagation du scroll */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Contenu de la modale - scroll interne uniquement */
+.modal-content {
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  max-height: 90vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Fix spécifique pour iOS/iPad - empêche le scroll du fond */
+@supports (-webkit-touch-callout: none) {
+  body.modal-open {
+    -webkit-overflow-scrolling: auto !important;
+  }
+  
+  .modal-overlay {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 /* Reset and base styles */
 * {
   margin: 0;
