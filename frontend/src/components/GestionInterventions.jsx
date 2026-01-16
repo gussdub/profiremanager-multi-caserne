@@ -374,6 +374,9 @@ const ImportXMLModal = ({ tenantSlug, onClose, onSuccess, toast }) => {
   const [uploading, setUploading] = useState(false);
   const [results, setResults] = useState(null);
 
+  // Bloquer le scroll du body
+  useModalScrollLock(true);
+
   const API = `${BACKEND_URL}/api/${tenantSlug}`;
 
   const getToken = () => {
@@ -427,8 +430,8 @@ const ImportXMLModal = ({ tenantSlug, onClose, onSuccess, toast }) => {
   };
 
   return createPortal(
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" style={{ zIndex: 100000 }}>
-      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+    <div className="modal-overlay" style={{ zIndex: 100000 }}>
+      <div className="modal-content max-w-lg w-full">
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold">📤 Importer fichiers XML</h2>
