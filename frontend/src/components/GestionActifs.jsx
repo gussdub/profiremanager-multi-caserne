@@ -919,19 +919,11 @@ const GestionActifs = ({ user, ModuleEPI }) => {
 const TabButton = ({ label, active, onClick }) => (
   <button
     onClick={onClick}
-    style={{
-      padding: '10px 14px',
-      backgroundColor: active ? '#e74c3c' : 'transparent',
-      color: active ? 'white' : '#333',
-      border: 'none',
-      borderBottom: active ? '3px solid #e74c3c' : 'none',
-      cursor: 'pointer',
-      fontSize: '14px',
-      fontWeight: active ? 'bold' : 'normal',
-      transition: 'all 0.3s',
-      whiteSpace: 'nowrap',
-      flexShrink: 0
-    }}
+    className={`px-4 py-2 rounded-t-lg font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+      active
+        ? 'bg-red-600 text-white'
+        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+    }`}
   >
     {label}
   </button>
