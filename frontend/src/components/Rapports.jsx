@@ -266,16 +266,20 @@ const Rapports = () => {
         </div>
       </div>
 
-      {/* Onglets principaux */}
-      <div className="rapports-tabs">
+      {/* Onglets principaux - Style unifié */}
+      <div className="flex gap-2 mb-6 border-b border-gray-200 pb-2 flex-wrap">
         <button 
-          className={activeTab === 'internes' ? 'active' : ''} 
+          className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
+            activeTab === 'internes' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
           onClick={() => { setActiveTab('internes'); setActiveRapport('dashboard'); }}
         >
           📊 Rapports Internes
         </button>
         <button 
-          className={activeTab === 'externes' ? 'active' : ''} 
+          className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
+            activeTab === 'externes' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
           onClick={() => { setActiveTab('externes'); setActiveRapport('budgetaire'); }}
         >
           📈 Rapports Externes
