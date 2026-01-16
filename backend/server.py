@@ -2722,6 +2722,8 @@ class Tenant(BaseModel):
     logo_url: str = ""  # URL ou base64 du logo
     nom_service: str = ""  # Nom complet du service (ex: "Service Incendie de Ville-X")
     afficher_profiremanager: bool = True  # Afficher le branding ProFireManager
+    # Centrale 911 associée
+    centrale_911_id: Optional[str] = None  # FK vers centrales_911
     # Facturation Stripe
     is_gratuit: bool = False  # Tenant gratuit (pas de facturation)
     stripe_customer_id: Optional[str] = None
