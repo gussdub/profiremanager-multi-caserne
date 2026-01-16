@@ -290,17 +290,37 @@ const Rapports = () => {
       {activeTab === 'internes' && (
         <div className="rapports-internes">
           {/* Sous-navigation */}
-          <div className="rapports-sub-nav">
-            <button className={activeRapport === 'dashboard' ? 'active' : ''} onClick={() => setActiveRapport('dashboard')}>
+          <div className="flex gap-2 mb-4 flex-wrap">
+            <button 
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                activeRapport === 'dashboard' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+              onClick={() => setActiveRapport('dashboard')}
+            >
               📊 Dashboard
             </button>
-            <button className={activeRapport === 'salaires' ? 'active' : ''} onClick={() => setActiveRapport('salaires')}>
+            <button 
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                activeRapport === 'salaires' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+              onClick={() => setActiveRapport('salaires')}
+            >
               💰 Coûts Salariaux
             </button>
-            <button className={activeRapport === 'disponibilite' ? 'active' : ''} onClick={() => setActiveRapport('disponibilite')}>
+            <button 
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                activeRapport === 'disponibilite' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+              onClick={() => setActiveRapport('disponibilite')}
+            >
               📅 Disponibilité
             </button>
-            <button className={activeRapport === 'formations' ? 'active' : ''} onClick={() => setActiveRapport('formations')}>
+            <button 
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                activeRapport === 'formations' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+              onClick={() => setActiveRapport('formations')}
+            >
               🎓 Formations
             </button>
           </div>
