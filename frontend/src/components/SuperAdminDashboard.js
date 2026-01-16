@@ -245,7 +245,64 @@ const SuperAdminDashboard = ({ onLogout }) => {
     if (activeTab === 'audit') {
       fetchAuditLogs();
     }
+    if (activeTab === 'centrales') {
+      fetchCentrales();
+    }
   }, [activeTab, auditFilter]);
+
+  // Fonction pour charger les centrales 911
+  const fetchCentrales = async () => {
+    setCentralesLoading(true);
+    try {
+      const token = localStorage.getItem('admin_token') || localStorage.getItem('token');
+      const response = await fetch(`${API}/admin/centrales-911`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setCentrales(data.centrales || []);
+      }
+    } catch (error) {
+      console.error('Erreur chargement centrales:', error);
+    } finally {
+      setCentralesLoading(false);
+    }
+  };
+
+  // Sauvegarder une centrale
+  const saveCentrale = async (centraleData) => {
+    try {
+      const token = localStorage.getItem('admin_token') || localStorage.getItem('token');
+      const isEdit = !!centraleData.id;
+      const url = isEdit 
+        ? `${API}/admin/centrales-911/${centraleData.id}`
+        : `${API}/admin/centrales-911`;
+      
+      const response = await fetch(url, {
+        method: isEdit ? 'PUT' : 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(centraleData)
+      });
+      
+      if (response.ok) {
+        toast({ title: "Succès", description: isEdit ? "Centrale mise à jour" : "Centrale créée" });
+        fetchCentrales();
+        setShowCentraleModal(false);
+        setEditingCentrale(null);
+      } else {
+        const error = await response.json();
+        toast({ title: "Erreur", description: error.detail || "Erreur", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Erreur", description: "Erreur de connexion", variant: "destructive" });
+    }
+  };
 
   // Formater la date pour l'affichage
   const formatAuditDate = (dateStr) => {
