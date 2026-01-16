@@ -737,7 +737,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
   const isLocked = formData.status === 'signed';
 
   return createPortal(
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" style={{ zIndex: 100000 }}>
+    <div className="modal-overlay" style={{ zIndex: 100000 }}>
       <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-4">
@@ -790,8 +790,8 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
           ))}
         </div>
 
-        {/* Contenu */}
-        <div className="flex-1 overflow-y-auto p-6">
+        {/* Contenu - scroll interne avec overscroll-behavior */}
+        <div className="flex-1 overflow-y-auto p-6" style={{ overscrollBehavior: 'contain' }}>
           {activeSection === 'identification' && (
             <SectionIdentification 
               formData={formData} 
