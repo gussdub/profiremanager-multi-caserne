@@ -856,6 +856,23 @@ const SuperAdminDashboard = ({ onLogout }) => {
         >
           📋 Journal d'audit
         </button>
+        <button
+          onClick={() => setActiveTab('centrales')}
+          style={{
+            padding: '0.75rem 1rem',
+            border: 'none',
+            backgroundColor: 'transparent',
+            color: activeTab === 'centrales' ? '#ea580c' : '#64748b',
+            fontWeight: 600,
+            cursor: 'pointer',
+            borderBottom: activeTab === 'centrales' ? '2px solid #ea580c' : '2px solid transparent',
+            marginBottom: '-2px',
+            fontSize: '0.875rem',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          🚨 Centrales 911
+        </button>
       </div>
 
       {/* Content based on active tab */}
