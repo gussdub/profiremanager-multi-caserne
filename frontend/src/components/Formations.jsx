@@ -475,9 +475,25 @@ const Formations = () => {
         </div>
       )}
       
-      <div className="formations-tabs">
-        <button className={activeTab === 'formations' ? 'active' : ''} onClick={() => setActiveTab('formations')}>📋 Formations ({formations.length})</button>
-        {!['employe', 'pompier'].includes(user?.role) && <button className={activeTab === 'rapports' ? 'active' : ''} onClick={() => setActiveTab('rapports')}>📊 Rapports</button>}
+      <div className="flex gap-2 mb-6 border-b border-gray-200 pb-2 flex-wrap">
+        <button 
+          className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
+            activeTab === 'formations' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+          onClick={() => setActiveTab('formations')}
+        >
+          📋 Formations ({formations.length})
+        </button>
+        {!['employe', 'pompier'].includes(user?.role) && (
+          <button 
+            className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
+              activeTab === 'rapports' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+            onClick={() => setActiveTab('rapports')}
+          >
+            📊 Rapports
+          </button>
+        )}
       </div>
       
       {activeTab === 'formations' && (
