@@ -2256,4 +2256,114 @@ const SuperAdminDashboard = ({ onLogout }) => {
   );
 };
 
+// ==================== COMPOSANT FORMULAIRE CENTRALE ====================
+const CentraleForm = ({ centrale, onSave, onCancel }) => {
+  const [formData, setFormData] = useState({
+    id: centrale?.id || '',
+    code: centrale?.code || '',
+    nom: centrale?.nom || '',
+    region: centrale?.region || '',
+    actif: centrale?.actif ?? true,
+    xml_encoding: centrale?.xml_encoding || 'utf-8',
+    xml_root_element: centrale?.xml_root_element || 'carteAppel',
+    notes: centrale?.notes || ''
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!formData.code || !formData.nom) {
+      alert('Le code et le nom sont requis');
+      return;
+    }
+    onSave(formData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div style={{ display: 'grid', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '12px' }}>
+          <div>
+            <Label>Code *</Label>
+            <Input
+              value={formData.code}
+              onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+              placeholder="CAUCA"
+              disabled={!!centrale}
+            />
+          </div>
+          <div>
+            <Label>Nom complet *</Label>
+            <Input
+              value={formData.nom}
+              onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
+              placeholder="Centre d'appels d'urgence..."
+            />
+          </div>
+        </div>
+
+        <div>
+          <Label>Région</Label>
+          <Input
+            value={formData.region}
+            onChange={(e) => setFormData({ ...formData, region: e.target.value })}
+            placeholder="Chaudière-Appalaches"
+          />
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div>
+            <Label>Encodage XML</Label>
+            <select
+              value={formData.xml_encoding}
+              onChange={(e) => setFormData({ ...formData, xml_encoding: e.target.value })}
+              style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #e2e8f0' }}
+            >
+              <option value="utf-8">UTF-8</option>
+              <option value="iso-8859-1">ISO-8859-1</option>
+              <option value="windows-1252">Windows-1252</option>
+            </select>
+          </div>
+          <div>
+            <Label>Élément racine XML</Label>
+            <Input
+              value={formData.xml_root_element}
+              onChange={(e) => setFormData({ ...formData, xml_root_element: e.target.value })}
+              placeholder="carteAppel"
+            />
+          </div>
+        </div>
+
+        <div>
+          <Label>Notes</Label>
+          <textarea
+            value={formData.notes}
+            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+            placeholder="Notes sur cette centrale..."
+            style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #e2e8f0', minHeight: '80px' }}
+          />
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <input
+            type="checkbox"
+            id="actif"
+            checked={formData.actif}
+            onChange={(e) => setFormData({ ...formData, actif: e.target.checked })}
+          />
+          <label htmlFor="actif">Centrale active</label>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: '10px', marginTop: '24px', justifyContent: 'flex-end' }}>
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Annuler
+        </Button>
+        <Button type="submit" style={{ background: '#ea580c' }}>
+          {centrale ? '✅ Enregistrer' : '➕ Créer'}
+        </Button>
+      </div>
+    </form>
+  );
+};
+
 export default SuperAdminDashboard;
