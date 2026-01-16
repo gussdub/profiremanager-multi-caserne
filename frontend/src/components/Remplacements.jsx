@@ -580,30 +580,15 @@ const Remplacements = () => {
         </div>
       </div>
 
-      {/* Onglets Remplacements / Congés / Propositions - Harmonisés */}
-      <div style={{
-        display: 'flex',
-        gap: '1rem',
-        marginBottom: '2rem',
-        borderBottom: '2px solid #E5E7EB',
-        paddingBottom: '0.5rem',
-        flexWrap: 'wrap'
-      }}>
+      {/* Onglets Remplacements / Congés / Propositions - Style unifié */}
+      <div className="flex gap-2 mb-6 border-b border-gray-200 pb-2 flex-wrap">
         {/* Onglet Propositions reçues - Affiché en premier pour attirer l'attention */}
         {propositionsRecues.length > 0 && (
           <button
-            style={{
-              padding: '0.75rem 1.5rem',
-              border: 'none',
-              background: activeTab === 'propositions' ? '#22c55e' : '#dcfce7',
-              color: activeTab === 'propositions' ? 'white' : '#166534',
-              borderRadius: '8px 8px 0 0',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              fontSize: '1rem',
-              transition: 'all 0.2s ease',
-              animation: 'pulse 2s infinite'
-            }}
+            className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
+              activeTab === 'propositions' ? 'bg-green-600 text-white' : 'bg-green-100 text-green-700 hover:bg-green-200'
+            }`}
+            style={{ animation: 'pulse 2s infinite' }}
             onClick={() => setActiveTab('propositions')}
             data-testid="tab-propositions"
           >
@@ -611,34 +596,18 @@ const Remplacements = () => {
           </button>
         )}
         <button
-          style={{
-            padding: '0.75rem 1.5rem',
-            border: 'none',
-            background: activeTab === 'remplacements' ? '#FCA5A5' : 'transparent',
-            color: activeTab === 'remplacements' ? 'white' : '#6B7280',
-            borderRadius: '8px 8px 0 0',
-            cursor: 'pointer',
-            fontWeight: activeTab === 'remplacements' ? 'bold' : 'normal',
-            fontSize: '1rem',
-            transition: 'all 0.2s ease'
-          }}
+          className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
+            activeTab === 'remplacements' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
           onClick={() => setActiveTab('remplacements')}
           data-testid="tab-remplacements"
         >
           🔄 Remplacements ({demandes.length})
         </button>
         <button
-          style={{
-            padding: '0.75rem 1.5rem',
-            border: 'none',
-            background: activeTab === 'conges' ? '#FCA5A5' : 'transparent',
-            color: activeTab === 'conges' ? 'white' : '#6B7280',
-            borderRadius: '8px 8px 0 0',
-            cursor: 'pointer',
-            fontWeight: activeTab === 'conges' ? 'bold' : 'normal',
-            fontSize: '1rem',
-            transition: 'all 0.2s ease'
-          }}
+          className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
+            activeTab === 'conges' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
           onClick={() => setActiveTab('conges')}
           data-testid="tab-conges"
         >
