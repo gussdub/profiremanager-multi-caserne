@@ -1704,6 +1704,21 @@ const SuperAdminDashboard = ({ onLogout }) => {
                 <small style={{ color: '#64748b' }}>Date d'activation de la caserne</small>
               </div>
 
+              <div>
+                <Label>🚨 Centrale 911</Label>
+                <select
+                  value={newTenant.centrale_911_id || ''}
+                  onChange={(e) => setNewTenant({ ...newTenant, centrale_911_id: e.target.value })}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '14px' }}
+                >
+                  <option value="">-- Aucune centrale --</option>
+                  {centrales.map(c => (
+                    <option key={c.id} value={c.id}>{c.code} - {c.nom}</option>
+                  ))}
+                </select>
+                <small style={{ color: '#64748b' }}>Centrale 911 associée pour l'import des interventions</small>
+              </div>
+
               <div style={{ 
                 padding: '20px', 
                 background: '#f8fafc', 
