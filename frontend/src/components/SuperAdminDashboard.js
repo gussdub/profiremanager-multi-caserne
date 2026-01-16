@@ -1079,6 +1079,125 @@ const SuperAdminDashboard = ({ onLogout }) => {
             </CardContent>
           </Card>
         </div>
+      ) : activeTab === 'centrales' ? (
+        /* ==================== ONGLET CENTRALES 911 ==================== */
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1e293b' }}>
+              🚨 Centrales 911 du Québec ({centrales.length})
+            </h2>
+            <Button
+              onClick={() => {
+                setEditingCentrale(null);
+                setShowCentraleModal(true);
+              }}
+              style={{ background: '#ea580c' }}
+            >
+              + Ajouter une centrale
+            </Button>
+          </div>
+
+          {centralesLoading ? (
+            <div style={{ textAlign: 'center', padding: '40px' }}>Chargement...</div>
+          ) : (
+            <Card>
+              <CardContent style={{ padding: '0', overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+                  <thead>
+                    <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                      <th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: '600', color: '#475569' }}>Code</th>
+                      <th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: '600', color: '#475569' }}>Nom</th>
+                      <th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: '600', color: '#475569' }}>Région</th>
+                      <th style={{ padding: '12px 8px', textAlign: 'center', fontWeight: '600', color: '#475569' }}>Profil XML</th>
+                      <th style={{ padding: '12px 8px', textAlign: 'center', fontWeight: '600', color: '#475569' }}>Statut</th>
+                      <th style={{ padding: '12px 8px', textAlign: 'center', fontWeight: '600', color: '#475569' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {centrales.map((centrale) => (
+                      <tr key={centrale.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '12px 8px', fontWeight: '600', color: '#ea580c' }}>{centrale.code}</td>
+                        <td style={{ padding: '12px 8px' }}>{centrale.nom}</td>
+                        <td style={{ padding: '12px 8px', color: '#64748b' }}>{centrale.region || '-'}</td>
+                        <td style={{ padding: '12px 8px', textAlign: 'center' }}>
+                          {Object.keys(centrale.field_mapping || {}).length > 0 ? (
+                            <span style={{ background: '#dcfce7', color: '#166534', padding: '2px 8px', borderRadius: '4px', fontSize: '12px' }}>
+                              ✓ Configuré
+                            </span>
+                          ) : (
+                            <span style={{ background: '#fef3c7', color: '#92400e', padding: '2px 8px', borderRadius: '4px', fontSize: '12px' }}>
+                              Non configuré
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ padding: '12px 8px', textAlign: 'center' }}>
+                          {centrale.actif ? (
+                            <span style={{ background: '#dcfce7', color: '#166534', padding: '2px 8px', borderRadius: '4px', fontSize: '12px' }}>Actif</span>
+                          ) : (
+                            <span style={{ background: '#fee2e2', color: '#991b1b', padding: '2px 8px', borderRadius: '4px', fontSize: '12px' }}>Inactif</span>
+                          )}
+                        </td>
+                        <td style={{ padding: '12px 8px', textAlign: 'center' }}>
+                          <button
+                            onClick={() => {
+                              setEditingCentrale(centrale);
+                              setShowCentraleModal(true);
+                            }}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: '#2563eb',
+                              cursor: 'pointer',
+                              padding: '4px 8px'
+                            }}
+                          >
+                            ✏️ Modifier
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Modale Centrale */}
+          {showCentraleModal && (
+            <div style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 100000,
+              padding: '1rem'
+            }}>
+              <div style={{
+                background: 'white',
+                borderRadius: '12px',
+                padding: '24px',
+                width: '100%',
+                maxWidth: '600px',
+                maxHeight: '90vh',
+                overflowY: 'auto'
+              }}>
+                <h3 style={{ marginBottom: '20px', fontSize: '1.25rem', fontWeight: '600' }}>
+                  {editingCentrale ? '✏️ Modifier la centrale' : '➕ Nouvelle centrale'}
+                </h3>
+                <CentraleForm
+                  centrale={editingCentrale}
+                  onSave={saveCentrale}
+                  onCancel={() => {
+                    setShowCentraleModal(false);
+                    setEditingCentrale(null);
+                  }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
       ) : (
         <>
           {/* Statistiques globales - Responsive */}
