@@ -679,11 +679,21 @@ const Rapports = () => {
       {activeTab === 'externes' && (
         <div className="rapports-externes">
           {/* Sous-navigation */}
-          <div className="rapports-sub-nav">
-            <button className={activeRapport === 'budgetaire' ? 'active' : ''} onClick={() => setActiveRapport('budgetaire')}>
+          <div className="flex gap-2 mb-4 flex-wrap">
+            <button 
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                activeRapport === 'budgetaire' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+              onClick={() => setActiveRapport('budgetaire')}
+            >
               💰 Tableau Budgétaire
             </button>
-            <button className={activeRapport === 'immobilisations' ? 'active' : ''} onClick={() => setActiveRapport('immobilisations')}>
+            <button 
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                activeRapport === 'immobilisations' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+              onClick={() => setActiveRapport('immobilisations')}
+            >
               🚒 Immobilisations
             </button>
           </div>
