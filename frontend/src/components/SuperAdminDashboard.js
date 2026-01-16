@@ -144,7 +144,7 @@ const SuperAdminDashboard = ({ onLogout }) => {
       // Pour le tenant admin, le token est stocké avec le préfixe "admin_token"
       const token = localStorage.getItem('admin_token') || localStorage.getItem('token');
       
-      const [tenantsResponse, statsResponse, billingResponse] = await Promise.all([
+      const [tenantsResponse, statsResponse, billingResponse, centralesResponse] = await Promise.all([
         fetch(`${API}/admin/tenants`, {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -162,11 +162,23 @@ const SuperAdminDashboard = ({ onLogout }) => {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
+        }),
+        fetch(`${API}/admin/centrales-911`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         })
       ]);
 
       const tenantsData = await tenantsResponse.json();
       const statsData = await statsResponse.json();
+      
+      // Charger les centrales 911
+      if (centralesResponse.ok) {
+        const centralesData = await centralesResponse.json();
+        setCentrales(centralesData.centrales || []);
+      }
       
       // Merge billing data with tenants
       let billingData = null;
