@@ -79,6 +79,39 @@ class CategorieBatiment(BaseModel):
 
 # ==================== MAPPING CODES 911 ====================
 
+class Centrale911(BaseModel):
+    """
+    Profil de centrale 911 du Québec
+    Géré par les super-admins, assigné aux tenants
+    """
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    code: str  # Code court (ex: "CAUCA", "LEVIS")
+    nom: str  # Nom complet (ex: "Centre d'appels d'urgence Chaudière-Appalaches")
+    region: Optional[str] = None  # Région administrative
+    actif: bool = True
+    
+    # Configuration du parsing XML
+    xml_encoding: str = "utf-8"  # Encodage du fichier XML
+    xml_root_element: str = "carteAppel"  # Élément racine
+    
+    # Mapping des champs XML vers les champs internes
+    # Format: { "champ_interne": "chemin.xpath.ou.nom.xml" }
+    field_mapping: Dict[str, str] = Field(default_factory=dict)
+    
+    # Mapping des valeurs (codes externes → codes internes)
+    # Format: { "type_mapping": { "code_externe": "valeur_interne" } }
+    value_mapping: Dict[str, Dict[str, str]] = Field(default_factory=dict)
+    
+    # Formats de date utilisés par la centrale
+    date_formats: List[str] = Field(default_factory=lambda: ["%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S"])
+    
+    # Métadonnées
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.utcnow())
+    updated_at: Optional[datetime] = None
+    created_by: Optional[str] = None
+
+
 class MappingCode911(BaseModel):
     """Table de mapping entre codes 911 et codes internes"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
