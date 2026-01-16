@@ -36085,6 +36085,804 @@ async def migrer_formulaires_existants(
 # ==================== FIN MODULE INSPECTIONS APRIA ====================
 
 
+# ==================== MODULE GESTION DES INTERVENTIONS ====================
+
+import xml.etree.ElementTree as ET
+
+def parse_xml_datetime_intervention(date_str: str, time_str: str):
+    """Parse date et heure du XML en datetime"""
+    if not date_str or not time_str or time_str == "00:00:00":
+        return None
+    try:
+        dt_str = f"{date_str} {time_str}"
+        dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
+        return dt
+    except:
+        try:
+            dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M")
+            return dt
+        except:
+            return None
+
+
+@api_router.get("/{tenant_slug}/interventions")
+async def list_interventions(
+    tenant_slug: str,
+    status: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
+    current_user: User = Depends(get_current_user)
+):
+    """Liste les interventions avec filtres"""
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    query = {"tenant_id": tenant["id"]}
+    
+    if status:
+        query["status"] = status
+    
+    if date_from:
+        try:
+            query["created_at"] = {"$gte": datetime.fromisoformat(date_from)}
+        except:
+            pass
+    if date_to:
+        try:
+            if "created_at" in query:
+                query["created_at"]["$lte"] = datetime.fromisoformat(date_to)
+            else:
+                query["created_at"] = {"$lte": datetime.fromisoformat(date_to)}
+        except:
+            pass
+    
+    total = await db.interventions.count_documents(query)
+    
+    interventions = await db.interventions.find(
+        query, {"_id": 0}
+    ).sort("created_at", -1).skip(offset).limit(limit).to_list(limit)
+    
+    return {
+        "interventions": interventions,
+        "total": total,
+        "limit": limit,
+        "offset": offset
+    }
+
+
+@api_router.get("/{tenant_slug}/interventions/dashboard")
+async def get_interventions_dashboard(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Retourne les interventions groupées par statut pour le dashboard"""
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    pipeline = [
+        {"$match": {"tenant_id": tenant["id"]}},
+        {"$group": {"_id": "$status", "count": {"$sum": 1}}},
+    ]
+    
+    status_counts = {}
+    async for doc in db.interventions.aggregate(pipeline):
+        status_counts[doc["_id"]] = doc["count"]
+    
+    # Récupérer les interventions par catégorie
+    new_interventions = await db.interventions.find(
+        {"tenant_id": tenant["id"], "status": "new"}, {"_id": 0}
+    ).sort("created_at", -1).limit(20).to_list(20)
+    
+    draft_interventions = await db.interventions.find(
+        {"tenant_id": tenant["id"], "status": {"$in": ["draft", "revision"]}}, {"_id": 0}
+    ).sort("updated_at", -1).limit(20).to_list(20)
+    
+    review_interventions = await db.interventions.find(
+        {"tenant_id": tenant["id"], "status": "review"}, {"_id": 0}
+    ).sort("updated_at", -1).limit(20).to_list(20)
+    
+    return {
+        "counts": status_counts,
+        "new": new_interventions,
+        "drafts": draft_interventions,
+        "review": review_interventions
+    }
+
+
+@api_router.get("/{tenant_slug}/interventions/reference-data")
+async def get_intervention_reference_data(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère les données de référence (natures, causes, etc.)"""
+    natures = await db.intervention_natures.find(
+        {"actif": True}, {"_id": 0}
+    ).to_list(200)
+    
+    causes = await db.intervention_causes.find(
+        {"actif": True}, {"_id": 0}
+    ).to_list(200)
+    
+    sources = await db.intervention_sources_chaleur.find(
+        {"actif": True}, {"_id": 0}
+    ).to_list(200)
+    
+    materiaux = await db.intervention_materiaux.find(
+        {"actif": True}, {"_id": 0}
+    ).to_list(200)
+    
+    categories = await db.intervention_categories_batiment.find(
+        {"actif": True}, {"_id": 0}
+    ).to_list(200)
+    
+    return {
+        "natures": natures,
+        "causes": causes,
+        "sources_chaleur": sources,
+        "materiaux": materiaux,
+        "categories_batiment": categories
+    }
+
+
+@api_router.get("/{tenant_slug}/interventions/settings")
+async def get_intervention_settings(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère les paramètres du module"""
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    settings = await db.intervention_settings.find_one(
+        {"tenant_id": tenant["id"]}, {"_id": 0}
+    )
+    
+    if not settings:
+        settings = {
+            "id": str(uuid.uuid4()),
+            "tenant_id": tenant["id"],
+            "supervisors_can_validate": True,
+            "auto_assign_officer": True,
+            "require_dsi_for_fire": True,
+            "require_narrative": True,
+            "alert_response_time_threshold": 480,
+            "alert_on_import": True,
+            "auto_archive_after_days": 365,
+            "created_at": datetime.now(timezone.utc)
+        }
+        await db.intervention_settings.insert_one(settings)
+        settings.pop("_id", None)
+    
+    return {"settings": settings}
+
+
+@api_router.put("/{tenant_slug}/interventions/settings")
+async def update_intervention_settings(
+    tenant_slug: str,
+    settings_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour les paramètres du module"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès admin requis")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    settings_data["updated_at"] = datetime.now(timezone.utc)
+    
+    await db.intervention_settings.update_one(
+        {"tenant_id": tenant["id"]},
+        {"$set": settings_data},
+        upsert=True
+    )
+    
+    return {"success": True}
+
+
+@api_router.get("/{tenant_slug}/interventions/detail/{intervention_id}")
+async def get_intervention_detail(
+    tenant_slug: str,
+    intervention_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère une intervention avec ses ressources"""
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    intervention = await db.interventions.find_one(
+        {"id": intervention_id, "tenant_id": tenant["id"]}, {"_id": 0}
+    )
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    # Récupérer les ressources
+    resources = await db.intervention_resources.find(
+        {"intervention_id": intervention_id}, {"_id": 0}
+    ).to_list(100)
+    
+    vehicles = await db.intervention_vehicles.find(
+        {"intervention_id": intervention_id}, {"_id": 0}
+    ).to_list(50)
+    
+    assistance = await db.intervention_assistance.find(
+        {"intervention_id": intervention_id}, {"_id": 0}
+    ).to_list(20)
+    
+    # Calculer les délais
+    response_time = None
+    if intervention.get("xml_time_dispatch") and intervention.get("xml_time_arrival_1st"):
+        dispatch = intervention["xml_time_dispatch"]
+        arrival = intervention["xml_time_arrival_1st"]
+        if isinstance(dispatch, str):
+            dispatch = datetime.fromisoformat(dispatch.replace('Z', '+00:00'))
+        if isinstance(arrival, str):
+            arrival = datetime.fromisoformat(arrival.replace('Z', '+00:00'))
+        if dispatch and arrival:
+            response_time = int((arrival - dispatch).total_seconds())
+    
+    return {
+        "intervention": intervention,
+        "resources": resources,
+        "vehicles": vehicles,
+        "assistance": assistance,
+        "response_time_seconds": response_time
+    }
+
+
+@api_router.put("/{tenant_slug}/interventions/{intervention_id}")
+async def update_intervention(
+    tenant_slug: str,
+    intervention_id: str,
+    update_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour une intervention"""
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    intervention = await db.interventions.find_one(
+        {"id": intervention_id, "tenant_id": tenant["id"]}
+    )
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    # Vérifier si l'intervention est signée - ajouter au journal d'audit
+    if intervention.get("status") == "signed":
+        audit_entry = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "user_id": current_user.id,
+            "user_name": f"{current_user.prenom} {current_user.nom}",
+            "action": "modification_post_signature",
+            "changes": {k: v for k, v in update_data.items() if k not in ["_id"]}
+        }
+        await db.interventions.update_one(
+            {"id": intervention_id},
+            {"$push": {"audit_log": audit_entry}}
+        )
+    
+    # Préparer les données de mise à jour
+    update_data.pop("_id", None)
+    update_data.pop("id", None)
+    update_data.pop("tenant_id", None)
+    update_data["updated_at"] = datetime.now(timezone.utc)
+    update_data["last_modified_by"] = current_user.id
+    update_data["last_modified_at"] = datetime.now(timezone.utc)
+    
+    await db.interventions.update_one(
+        {"id": intervention_id},
+        {"$set": update_data}
+    )
+    
+    updated = await db.interventions.find_one(
+        {"id": intervention_id}, {"_id": 0}
+    )
+    
+    return {"success": True, "intervention": updated}
+
+
+@api_router.post("/{tenant_slug}/interventions/{intervention_id}/validate")
+async def validate_intervention(
+    tenant_slug: str,
+    intervention_id: str,
+    validation_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Valide ou retourne une intervention"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Permission refusée")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    intervention = await db.interventions.find_one(
+        {"id": intervention_id, "tenant_id": tenant["id"]}
+    )
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    action = validation_data.get("action")
+    comment = validation_data.get("comment")
+    
+    update_data = {
+        "updated_at": datetime.now(timezone.utc),
+        "last_modified_by": current_user.id,
+        "last_modified_at": datetime.now(timezone.utc)
+    }
+    
+    if action == "submit":
+        update_data["status"] = "review"
+        
+    elif action == "return_for_revision":
+        update_data["status"] = "revision"
+        if comment:
+            audit_entry = {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "user_id": current_user.id,
+                "user_name": f"{current_user.prenom} {current_user.nom}",
+                "action": "return_for_revision",
+                "comment": comment
+            }
+            await db.interventions.update_one(
+                {"id": intervention_id},
+                {"$push": {"audit_log": audit_entry}}
+            )
+            
+    elif action == "sign":
+        # Vérifier les champs obligatoires pour incendie
+        type_intervention = (intervention.get("type_intervention") or "").lower()
+        if "incendie" in type_intervention and "alarme" not in type_intervention:
+            settings = await db.intervention_settings.find_one(
+                {"tenant_id": tenant["id"]}
+            )
+            if settings and settings.get("require_dsi_for_fire"):
+                required_fields = ["cause_id", "source_heat_id"]
+                missing = [f for f in required_fields if not intervention.get(f)]
+                if missing:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Champs DSI obligatoires manquants: {', '.join(missing)}"
+                    )
+        
+        update_data["status"] = "signed"
+        update_data["signed_at"] = datetime.now(timezone.utc)
+        update_data["signed_by"] = current_user.id
+    
+    await db.interventions.update_one(
+        {"id": intervention_id},
+        {"$set": update_data}
+    )
+    
+    updated = await db.interventions.find_one(
+        {"id": intervention_id}, {"_id": 0}
+    )
+    
+    return {"success": True, "intervention": updated}
+
+
+@api_router.post("/{tenant_slug}/interventions/import-xml")
+async def import_intervention_xml(
+    tenant_slug: str,
+    files: List[UploadFile] = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Importe des fichiers XML de la centrale 911"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Permission refusée")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    results = {
+        "imported": [],
+        "updated": [],
+        "errors": [],
+        "unmapped_codes": []
+    }
+    
+    # Grouper les fichiers par carte d'appel
+    files_by_call = {}
+    
+    for file in files:
+        filename = file.filename
+        # Extraire le numéro de carte d'appel du nom de fichier
+        match = re.search(r'_(\d+)_([^_]+)\.xml$', filename)
+        if match:
+            call_number = match.group(1)
+            file_type = match.group(2).lower()
+            
+            if call_number not in files_by_call:
+                files_by_call[call_number] = {}
+            
+            content = await file.read()
+            files_by_call[call_number][file_type] = content
+    
+    # Traiter chaque carte d'appel
+    for call_number, call_files in files_by_call.items():
+        intervention_id = None
+        try:
+            existing = await db.interventions.find_one({
+                "tenant_id": tenant["id"],
+                "external_call_id": call_number
+            })
+            
+            # Parser le fichier Details
+            if 'details' in call_files:
+                details_xml = ET.fromstring(call_files['details'])
+                table = details_xml.find('.//Table')
+                
+                if table is not None:
+                    intervention_data = {
+                        "tenant_id": tenant["id"],
+                        "external_call_id": call_number,
+                        "guid_carte": table.findtext('idCarteAppel'),
+                        "guid_municipalite": table.findtext('guidMun'),
+                        "no_sequentiel": int(table.findtext('noSequentiel') or 0),
+                        
+                        "address_civic": table.findtext('noPorte'),
+                        "address_street": table.findtext('rue'),
+                        "address_apartment": table.findtext('noAppart'),
+                        "address_city": table.findtext('villePourQui'),
+                        
+                        "caller_name": table.findtext('deQui'),
+                        "caller_phone": table.findtext('telDeQui'),
+                        "for_whom": table.findtext('pourQui'),
+                        "for_whom_phone": table.findtext('telPourQui'),
+                        
+                        "type_intervention": table.findtext('typeIntervention'),
+                        "code_feu": table.findtext('codeFeu'),
+                        "niveau_risque": table.findtext('niveauRisque'),
+                        "officer_in_charge_xml": table.findtext('officierCharge'),
+                        
+                        "xml_time_call_received": parse_xml_datetime_intervention(
+                            table.findtext('dateAppel'),
+                            table.findtext('heureAppel')
+                        ),
+                        "xml_time_911": parse_xml_datetime_intervention(
+                            table.findtext('dateHeure911'),
+                            table.findtext('heure911')
+                        ),
+                        "xml_time_dispatch": parse_xml_datetime_intervention(
+                            table.findtext('dateAlerte'),
+                            table.findtext('heureAlerte')
+                        ),
+                        "xml_time_en_route": parse_xml_datetime_intervention(
+                            table.findtext('date1016_1'),
+                            table.findtext('depCaserne')
+                        ),
+                        "xml_time_arrival_1st": parse_xml_datetime_intervention(
+                            table.findtext('date1018'),
+                            table.findtext('hre1018') or table.findtext('arrLieux')
+                        ),
+                        "xml_time_under_control": parse_xml_datetime_intervention(
+                            table.findtext('dateSousControle'),
+                            table.findtext('sousControle')
+                        ),
+                        "xml_time_1022": parse_xml_datetime_intervention(
+                            table.findtext('date1022'),
+                            table.findtext('heure1022')
+                        ),
+                        "xml_time_departure": parse_xml_datetime_intervention(
+                            table.findtext('dateDepLieux'),
+                            table.findtext('depLieux')
+                        ),
+                        "xml_time_terminated": parse_xml_datetime_intervention(
+                            table.findtext('dateDispFinale'),
+                            table.findtext('dispFinale')
+                        ),
+                        
+                        "imported_at": datetime.now(timezone.utc),
+                        "imported_by": current_user.id
+                    }
+                    
+                    # Construire l'adresse complète
+                    addr_parts = []
+                    if intervention_data.get("address_civic"):
+                        addr_parts.append(intervention_data["address_civic"])
+                    if intervention_data.get("address_street"):
+                        addr_parts.append(intervention_data["address_street"])
+                    if intervention_data.get("address_city"):
+                        addr_parts.append(intervention_data["address_city"])
+                    intervention_data["address_full"] = ", ".join(addr_parts)
+                    
+                    if existing:
+                        if existing.get("status") == "signed":
+                            results["errors"].append({
+                                "call_number": call_number,
+                                "error": "Intervention déjà signée"
+                            })
+                            continue
+                        
+                        intervention_data["updated_at"] = datetime.now(timezone.utc)
+                        await db.interventions.update_one(
+                            {"id": existing["id"]},
+                            {"$set": intervention_data}
+                        )
+                        intervention_id = existing["id"]
+                        results["updated"].append(call_number)
+                    else:
+                        intervention_data["id"] = str(uuid.uuid4())
+                        intervention_data["status"] = "new"
+                        intervention_data["created_at"] = datetime.now(timezone.utc)
+                        intervention_data["audit_log"] = []
+                        intervention_data["assigned_reporters"] = []
+                        await db.interventions.insert_one(intervention_data)
+                        intervention_id = intervention_data["id"]
+                        results["imported"].append(call_number)
+            
+            # Parser les Ressources (véhicules)
+            if 'ressources' in call_files and intervention_id:
+                resources_xml = ET.fromstring(call_files['ressources'])
+                
+                await db.intervention_vehicles.delete_many({
+                    "intervention_id": intervention_id
+                })
+                
+                vehicles_processed = set()
+                for table in resources_xml.findall('.//Table'):
+                    vehicle_number = table.findtext('noRessource')
+                    if vehicle_number and vehicle_number not in vehicles_processed:
+                        vehicle_data = {
+                            "id": str(uuid.uuid4()),
+                            "intervention_id": intervention_id,
+                            "tenant_id": tenant["id"],
+                            "xml_vehicle_number": vehicle_number,
+                            "xml_vehicle_id": table.findtext('idRessource'),
+                            "xml_status": table.findtext('disponibilite'),
+                            "crew_count": int(table.findtext('nbPompier') or 0),
+                            "created_at": datetime.now(timezone.utc)
+                        }
+                        
+                        mapping = await db.intervention_code_mappings.find_one({
+                            "tenant_id": tenant["id"],
+                            "type_mapping": "vehicule",
+                            "code_externe": vehicle_number
+                        })
+                        if mapping and mapping.get("code_interne"):
+                            vehicle_data["vehicle_id"] = mapping["code_interne"]
+                        else:
+                            results["unmapped_codes"].append({
+                                "type": "vehicule",
+                                "code": vehicle_number
+                            })
+                        
+                        await db.intervention_vehicles.insert_one(vehicle_data)
+                        vehicles_processed.add(vehicle_number)
+            
+            # Parser les Commentaires
+            if 'commentaires' in call_files and intervention_id:
+                comments_xml = ET.fromstring(call_files['commentaires'])
+                comments = []
+                for table in comments_xml.findall('.//Table'):
+                    comment = {
+                        "id": table.findtext('idCommentaire'),
+                        "timestamp": table.findtext('timestampDetail'),
+                        "detail": table.findtext('detail'),
+                        "type": table.findtext('type'),
+                        "repartiteur": table.findtext('repartiteur')
+                    }
+                    comments.append(comment)
+                
+                await db.interventions.update_one(
+                    {"id": intervention_id},
+                    {"$set": {"xml_comments": comments}}
+                )
+            
+            # Parser l'Assistance
+            if 'assistance' in call_files and intervention_id:
+                assistance_xml = ET.fromstring(call_files['assistance'])
+                
+                await db.intervention_assistance.delete_many({
+                    "intervention_id": intervention_id
+                })
+                
+                for table in assistance_xml.findall('.//Table'):
+                    assistance_data = {
+                        "id": str(uuid.uuid4()),
+                        "intervention_id": intervention_id,
+                        "tenant_id": tenant["id"],
+                        "xml_assistance_id": table.findtext('idAssistance'),
+                        "no_carte_entraide": table.findtext('noCarteEntraide'),
+                        "municipalite": table.findtext('municipalite'),
+                        "type_equipement": table.findtext('typeEquipement'),
+                        "time_called": parse_xml_datetime_intervention(
+                            table.findtext('dateAppel'),
+                            table.findtext('heureAppel')
+                        ),
+                        "time_en_route": parse_xml_datetime_intervention(
+                            table.findtext('dateDirection'),
+                            table.findtext('heureDirection')
+                        ),
+                        "time_on_scene": parse_xml_datetime_intervention(
+                            table.findtext('dateLieux'),
+                            table.findtext('heureLieux')
+                        ),
+                        "time_released": parse_xml_datetime_intervention(
+                            table.findtext('dateLiberee'),
+                            table.findtext('heureLiberee')
+                        ),
+                        "created_at": datetime.now(timezone.utc)
+                    }
+                    await db.intervention_assistance.insert_one(assistance_data)
+                    
+        except Exception as e:
+            logging.error(f"Erreur import XML {call_number}: {e}")
+            results["errors"].append({
+                "call_number": call_number,
+                "error": str(e)
+            })
+    
+    return results
+
+
+@api_router.get("/{tenant_slug}/interventions/mappings")
+async def get_intervention_mappings(
+    tenant_slug: str,
+    type_mapping: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Liste les mappings de codes 911"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès admin requis")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    query = {"tenant_id": tenant["id"]}
+    if type_mapping:
+        query["type_mapping"] = type_mapping
+    
+    mappings = await db.intervention_code_mappings.find(
+        query, {"_id": 0}
+    ).to_list(500)
+    
+    return {"mappings": mappings}
+
+
+@api_router.post("/{tenant_slug}/interventions/mappings")
+async def create_intervention_mapping(
+    tenant_slug: str,
+    mapping_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Crée ou met à jour un mapping de code"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès admin requis")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    existing = await db.intervention_code_mappings.find_one({
+        "tenant_id": tenant["id"],
+        "type_mapping": mapping_data["type_mapping"],
+        "code_externe": mapping_data["code_externe"]
+    })
+    
+    if existing:
+        await db.intervention_code_mappings.update_one(
+            {"id": existing["id"]},
+            {"$set": {
+                "code_interne": mapping_data.get("code_interne"),
+                "libelle_interne": mapping_data.get("libelle_interne"),
+                "updated_at": datetime.now(timezone.utc)
+            }}
+        )
+        return {"success": True, "action": "updated"}
+    else:
+        new_mapping = {
+            "id": str(uuid.uuid4()),
+            "tenant_id": tenant["id"],
+            "type_mapping": mapping_data["type_mapping"],
+            "code_externe": mapping_data["code_externe"],
+            "libelle_externe": mapping_data.get("libelle_externe", ""),
+            "code_interne": mapping_data.get("code_interne"),
+            "libelle_interne": mapping_data.get("libelle_interne"),
+            "auto_mapped": False,
+            "created_at": datetime.now(timezone.utc)
+        }
+        await db.intervention_code_mappings.insert_one(new_mapping)
+        return {"success": True, "action": "created"}
+
+
+@api_router.post("/{tenant_slug}/interventions/{intervention_id}/resources")
+async def add_intervention_resource(
+    tenant_slug: str,
+    intervention_id: str,
+    resource_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Ajoute une ressource humaine à l'intervention"""
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    intervention = await db.interventions.find_one({
+        "id": intervention_id,
+        "tenant_id": tenant["id"]
+    })
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    resource = {
+        "id": str(uuid.uuid4()),
+        "intervention_id": intervention_id,
+        "tenant_id": tenant["id"],
+        "user_id": resource_data.get("user_id"),
+        "role_on_scene": resource_data.get("role_on_scene", "Pompier"),
+        "datetime_start": resource_data.get("datetime_start"),
+        "datetime_end": resource_data.get("datetime_end"),
+        "is_remunerated": resource_data.get("is_remunerated", True),
+        "is_manually_added": True,
+        "created_at": datetime.now(timezone.utc)
+    }
+    
+    await db.intervention_resources.insert_one(resource)
+    
+    return {"success": True, "resource": {k: v for k, v in resource.items() if k != "_id"}}
+
+
+@api_router.delete("/{tenant_slug}/interventions/{intervention_id}/resources/{resource_id}")
+async def remove_intervention_resource(
+    tenant_slug: str,
+    intervention_id: str,
+    resource_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprime une ressource de l'intervention"""
+    result = await db.intervention_resources.delete_one({
+        "id": resource_id,
+        "intervention_id": intervention_id
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Ressource non trouvée")
+    
+    return {"success": True}
+
+
+@api_router.put("/{tenant_slug}/interventions/{intervention_id}/assign-reporters")
+async def assign_intervention_reporters(
+    tenant_slug: str,
+    intervention_id: str,
+    reporters_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Assigne des personnes pour remplir le rapport"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès admin requis")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    user_ids = reporters_data.get("user_ids", [])
+    
+    await db.interventions.update_one(
+        {"id": intervention_id, "tenant_id": tenant["id"]},
+        {"$set": {
+            "assigned_reporters": user_ids,
+            "updated_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    return {"success": True}
+
+
+# ==================== FIN MODULE GESTION DES INTERVENTIONS ====================
+
+
 # Include routers in the main app
 app.include_router(api_router)
 app.include_router(pwa_router, prefix="/api")
