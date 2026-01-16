@@ -407,7 +407,8 @@ const SuperAdminDashboard = ({ onLogout }) => {
       date_creation: tenant.date_creation || '',
       is_active: tenant.actif !== undefined ? tenant.actif : (tenant.is_active !== undefined ? tenant.is_active : true),
       is_gratuit: tenant.is_gratuit || false,
-      module_prevention_active: tenant.parametres?.module_prevention_active || false
+      module_prevention_active: tenant.parametres?.module_prevention_active || false,
+      centrale_911_id: tenant.centrale_911_id || ''
     });
     setShowEditModal(true);
   };
