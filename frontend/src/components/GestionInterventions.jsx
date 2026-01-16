@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { useToast } from '../hooks/use-toast';
+import useModalScrollLock from '../hooks/useModalScrollLock';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
