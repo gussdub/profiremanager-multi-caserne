@@ -608,12 +608,8 @@ const GestionActifs = ({ user, ModuleEPI }) => {
         )}
       </div>
 
-      {/* Desktop Tabs - Horizontal scrollable on tablet */}
-      <div className="desktop-tabs" style={{ 
-        display: 'flex', 
-        gap: '4px', 
-        marginBottom: '20px', 
-        borderBottom: '2px solid #ddd',
+      {/* Desktop Tabs - Style unifié avec module Interventions */}
+      <div className="desktop-tabs flex gap-2 mb-6 border-b border-gray-200 pb-2 flex-wrap" style={{ 
         overflowX: 'auto',
         WebkitOverflowScrolling: 'touch',
         scrollbarWidth: 'none',
