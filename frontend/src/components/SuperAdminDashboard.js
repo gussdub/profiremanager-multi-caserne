@@ -439,6 +439,7 @@ const SuperAdminDashboard = ({ onLogout }) => {
           date_creation: newTenant.date_creation,
           actif: newTenant.is_active,
           is_gratuit: newTenant.is_gratuit,
+          centrale_911_id: newTenant.centrale_911_id || null,
           parametres: {
             module_prevention_active: newTenant.module_prevention_active
           }
