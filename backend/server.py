@@ -36253,10 +36253,15 @@ async def get_intervention_settings(
             "alert_response_time_threshold": 480,
             "alert_on_import": True,
             "auto_archive_after_days": 365,
+            "personnes_ressources": [],
             "created_at": datetime.now(timezone.utc)
         }
         await db.intervention_settings.insert_one(settings)
         settings.pop("_id", None)
+    
+    # S'assurer que personnes_ressources existe toujours
+    if "personnes_ressources" not in settings:
+        settings["personnes_ressources"] = []
     
     return {"settings": settings}
 
