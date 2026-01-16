@@ -2746,6 +2746,7 @@ class TenantCreate(BaseModel):
     telephone: str = ""
     email_contact: str = ""
     date_creation: Optional[str] = None  # Date optionnelle
+    centrale_911_id: Optional[str] = None  # Centrale 911 associée
 
 class SuperAdmin(BaseModel):
     """Super administrateur gérant toutes les casernes"""
