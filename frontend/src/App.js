@@ -1282,6 +1282,12 @@ const AppLayout = () => {
             <GestionActifs user={user} ModuleEPI={ModuleEPI} />
           </Suspense>
         );
+      case 'interventions':
+        return (
+          <Suspense fallback={<LoadingComponent />}>
+            <GestionInterventions user={user} tenantSlug={tenantSlug} />
+          </Suspense>
+        );
       case 'planning':
         return <Planning />;
       case 'remplacements':
