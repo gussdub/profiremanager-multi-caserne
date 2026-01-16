@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { apiGet, getTenantToken, buildApiUrl } from '../utils/api';
+import useModalScrollLock from '../hooks/useModalScrollLock';
 
 const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   
+  // Bloquer le scroll du body quand la modale est ouverte
+  useModalScrollLock(isOpen);
   // États pour les filtres
   const [modeSelection, setModeSelection] = useState('mois'); // 'mois' ou 'periode'
   const [moisSelectionne, setMoisSelectionne] = useState(() => {
