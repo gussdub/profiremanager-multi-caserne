@@ -2054,7 +2054,9 @@ const SectionPertes = ({ formData, setFormData, editMode }) => {
 const SectionNarratif = ({ formData, setFormData, editMode, settings }) => {
   const [isListening, setIsListening] = useState(false);
   const [activeField, setActiveField] = useState(null);
+  const [interimText, setInterimText] = useState('');
   const recognitionRef = useRef(null);
+  const baseTextRef = useRef(''); // Texte de base avant la dictée
   
   // Template - utiliser celui des settings s'il existe
   const template = settings?.template_narratif?.length > 0 
@@ -2106,9 +2108,9 @@ const SectionNarratif = ({ formData, setFormData, editMode, settings }) => {
       recognitionRef.current = null;
     }
     
-    // Réinitialiser l'état avant de démarrer
-    setIsListening(false);
-    setActiveField(null);
+    // Sauvegarder le texte actuel comme base
+    baseTextRef.current = formData.narratif_structure?.[fieldId] || '';
+    setInterimText('');
     
     // Petit délai pour s'assurer que l'ancienne instance est bien nettoyée
     setTimeout(() => {
@@ -2130,6 +2132,7 @@ const SectionNarratif = ({ formData, setFormData, editMode, settings }) => {
         recognition.onend = () => {
           setIsListening(false);
           setActiveField(null);
+          setInterimText('');
           recognitionRef.current = null;
         };
         
@@ -2137,19 +2140,31 @@ const SectionNarratif = ({ formData, setFormData, editMode, settings }) => {
           console.error('Erreur reconnaissance vocale:', event.error);
           setIsListening(false);
           setActiveField(null);
+          setInterimText('');
           recognitionRef.current = null;
         };
         
         recognition.onresult = (event) => {
           let finalTranscript = '';
+          let interimTranscript = '';
+          
           for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
             if (event.results[i].isFinal) {
-              finalTranscript += event.results[i][0].transcript;
+              finalTranscript += transcript;
+            } else {
+              interimTranscript += transcript;
             }
           }
+          
+          // Afficher le texte intermédiaire en temps réel
+          setInterimText(interimTranscript);
+          
+          // Quand un segment est finalisé, l'ajouter au texte de base
           if (finalTranscript) {
-            const currentText = formData.narratif_structure?.[fieldId] || '';
-            updateNarratifField(fieldId, (currentText + ' ' + finalTranscript).trim());
+            const newBase = (baseTextRef.current + ' ' + finalTranscript).trim();
+            baseTextRef.current = newBase;
+            updateNarratifField(fieldId, newBase);
           }
         };
         
@@ -2165,12 +2180,21 @@ const SectionNarratif = ({ formData, setFormData, editMode, settings }) => {
   const stopDictation = () => {
     if (recognitionRef.current) {
       try {
-        recognitionRef.current.abort();
+        recognitionRef.current.stop(); // Utiliser stop() au lieu de abort() pour finaliser le dernier segment
       } catch (e) {}
       recognitionRef.current = null;
     }
     setIsListening(false);
     setActiveField(null);
+    setInterimText('');
+  };
+  
+  // Obtenir le texte affiché (texte de base + texte intermédiaire en cours)
+  const getDisplayText = (fieldId) => {
+    if (activeField === fieldId && interimText) {
+      return (narratifData[fieldId] || '') + ' ' + interimText;
+    }
+    return narratifData[fieldId] || '';
   };
 
   return (
