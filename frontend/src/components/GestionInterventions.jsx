@@ -981,7 +981,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
               <>
                 {(formData.status === 'draft' || formData.status === 'new' || formData.status === 'revision') ? (
                   <Button 
-                    onClick={() => openSubmitModal('submit')}
+                    onClick={() => handleValidate('submit')}
                     disabled={loading}
                     className="bg-purple-600 hover:bg-purple-700"
                   >
@@ -1011,25 +1011,37 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
           </div>
         </div>
 
-        {/* Modal de soumission avec raison */}
+        {/* Historique des commentaires de révision */}
+        {formData.audit_log && formData.audit_log.length > 0 && (
+          <div className="bg-yellow-50 border-t border-yellow-200 p-3">
+            <p className="font-medium text-yellow-800 mb-2">📋 Historique des révisions:</p>
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              {formData.audit_log
+                .filter(log => log.action === 'return_for_revision')
+                .map((log, i) => (
+                  <div key={i} className="text-sm bg-white p-2 rounded border border-yellow-200">
+                    <span className="text-gray-500">{log.timestamp}</span>
+                    <span className="mx-2">-</span>
+                    <span className="font-medium">{log.user_name}:</span>
+                    <span className="ml-1">{log.comment}</span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+
+        {/* Modal pour retourner pour révision */}
         {showSubmitModal && createPortal(
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" style={{ zIndex: 100002 }}>
             <div className="bg-white rounded-lg p-6 max-w-md w-full">
-              <h3 className="text-lg font-bold mb-4">
-                {submitAction === 'submit' ? '📤 Soumettre pour validation' : '↩️ Retourner pour révision'}
-              </h3>
+              <h3 className="text-lg font-bold mb-4">↩️ Retourner pour révision</h3>
               
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">
-                  {submitAction === 'submit' ? 'Commentaire (optionnel)' : 'Raison du retour *'}
-                </label>
+                <label className="block text-sm font-medium mb-2">Raison du retour *</label>
                 <textarea
                   value={submitReason}
                   onChange={(e) => setSubmitReason(e.target.value)}
-                  placeholder={submitAction === 'submit' 
-                    ? "Ajoutez un commentaire pour le validateur..." 
-                    : "Expliquez pourquoi le rapport doit être révisé..."
-                  }
+                  placeholder="Expliquez pourquoi le rapport doit être révisé..."
                   className="w-full border border-gray-300 rounded-lg p-3 min-h-[100px] resize-y"
                 />
               </div>
@@ -1044,8 +1056,8 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
                 </Button>
                 <Button 
                   onClick={confirmSubmit}
-                  disabled={submitAction === 'return_for_revision' && !submitReason.trim()}
-                  className={`flex-1 ${submitAction === 'submit' ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
+                  disabled={!submitReason.trim()}
+                  className="flex-1"
                 >
                   Confirmer
                 </Button>
