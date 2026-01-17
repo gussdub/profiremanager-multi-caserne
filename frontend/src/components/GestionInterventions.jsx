@@ -2199,56 +2199,62 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
         </CardContent>
       </Card>
 
-      {/* Modèles de narratif */}
+      {/* Template du narratif */}
       <Card>
         <CardHeader className="bg-green-50">
           <CardTitle className="text-green-800">
-            📝 Modèles de narratif
+            📝 Template du narratif
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-4">
           <p className="text-gray-600 mb-4">
-            Créez des modèles de texte pré-rédigés pour guider les pompiers lors de la rédaction des rapports.
+            Définissez les sections qui apparaîtront dans tous les rapports d'intervention. 
+            Chaque section aura son propre champ à remplir.
           </p>
           
-          {/* Liste des modèles existants */}
+          {/* Liste des sections du template */}
           <div className="space-y-3 mb-4">
-            {(settings.modeles_narratif || []).map((modele, index) => (
-              <div key={index} className="bg-gray-50 p-3 rounded-lg border">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <input
-                      type="text"
-                      value={modele.titre}
-                      onChange={(e) => {
-                        const updated = [...(settings.modeles_narratif || [])];
-                        updated[index] = { ...modele, titre: e.target.value };
-                        setSettings({ ...settings, modeles_narratif: updated });
-                      }}
-                      className="font-medium w-full bg-transparent border-b border-transparent hover:border-gray-300 focus:border-green-500 focus:outline-none"
-                      placeholder="Titre du modèle"
-                    />
-                    <textarea
-                      value={modele.contenu}
-                      onChange={(e) => {
-                        const updated = [...(settings.modeles_narratif || [])];
-                        updated[index] = { ...modele, contenu: e.target.value };
-                        setSettings({ ...settings, modeles_narratif: updated });
-                      }}
-                      className="w-full mt-2 text-sm text-gray-600 bg-white border border-gray-200 rounded p-2 min-h-[60px]"
-                      placeholder="Contenu du modèle..."
-                    />
-                  </div>
-                  <button
-                    onClick={() => {
-                      const updated = (settings.modeles_narratif || []).filter((_, i) => i !== index);
-                      setSettings({ ...settings, modeles_narratif: updated });
+            {(settings.template_narratif || [
+              { id: 'arrivee', label: 'Arrivée sur les lieux (360)', placeholder: 'Décrivez la situation à votre arrivée...' },
+              { id: 'actions', label: 'Actions entreprises', placeholder: 'Décrivez les actions effectuées...' },
+              { id: 'observations', label: 'Observations', placeholder: 'Notez vos observations...' },
+              { id: 'conclusion', label: 'Conclusion', placeholder: 'Résumez la conclusion...' },
+            ]).map((section, index) => (
+              <div key={index} className="bg-gray-50 p-3 rounded-lg border flex items-start gap-3">
+                <span className="text-gray-400 font-mono mt-2">{index + 1}.</span>
+                <div className="flex-1 space-y-2">
+                  <input
+                    type="text"
+                    value={section.label}
+                    onChange={(e) => {
+                      const updated = [...(settings.template_narratif || [])];
+                      updated[index] = { ...section, label: e.target.value };
+                      setSettings({ ...settings, template_narratif: updated });
                     }}
-                    className="ml-2 text-red-500 hover:text-red-700 p-1"
-                  >
-                    🗑️
-                  </button>
+                    className="font-medium w-full bg-white border border-gray-200 rounded p-2"
+                    placeholder="Titre de la section"
+                  />
+                  <input
+                    type="text"
+                    value={section.placeholder || ''}
+                    onChange={(e) => {
+                      const updated = [...(settings.template_narratif || [])];
+                      updated[index] = { ...section, placeholder: e.target.value };
+                      setSettings({ ...settings, template_narratif: updated });
+                    }}
+                    className="w-full text-sm text-gray-600 bg-white border border-gray-200 rounded p-2"
+                    placeholder="Texte indicatif (placeholder)"
+                  />
                 </div>
+                <button
+                  onClick={() => {
+                    const updated = (settings.template_narratif || []).filter((_, i) => i !== index);
+                    setSettings({ ...settings, template_narratif: updated });
+                  }}
+                  className="text-red-500 hover:text-red-700 p-2"
+                >
+                  🗑️
+                </button>
               </div>
             ))}
           </div>
@@ -2257,19 +2263,25 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
           <Button
             variant="outline"
             onClick={() => {
-              const newModele = {
-                id: Date.now().toString(),
-                titre: 'Nouveau modèle',
-                contenu: ''
+              const currentTemplate = settings.template_narratif || [
+                { id: 'arrivee', label: 'Arrivée sur les lieux (360)', placeholder: 'Décrivez la situation à votre arrivée...' },
+                { id: 'actions', label: 'Actions entreprises', placeholder: 'Décrivez les actions effectuées...' },
+                { id: 'observations', label: 'Observations', placeholder: 'Notez vos observations...' },
+                { id: 'conclusion', label: 'Conclusion', placeholder: 'Résumez la conclusion...' },
+              ];
+              const newSection = {
+                id: `section_${Date.now()}`,
+                label: 'Nouvelle section',
+                placeholder: ''
               };
               setSettings({
                 ...settings,
-                modeles_narratif: [...(settings.modeles_narratif || []), newModele]
+                template_narratif: [...currentTemplate, newSection]
               });
             }}
             className="w-full"
           >
-            + Ajouter un modèle de narratif
+            + Ajouter une section au template
           </Button>
         </CardContent>
       </Card>
