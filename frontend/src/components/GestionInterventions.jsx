@@ -2031,20 +2031,17 @@ const SectionPertes = ({ formData, setFormData, editMode }) => {
 const SectionNarratif = ({ formData, setFormData, editMode, settings }) => {
   const [isListening, setIsListening] = useState(false);
   const [activeField, setActiveField] = useState(null);
+  const recognitionRef = useRef(null);
   
-  // API Web Speech Recognition
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const recognition = SpeechRecognition ? new SpeechRecognition() : null;
-  
-  // Template par défaut si pas configuré
-  const defaultTemplate = [
-    { id: 'arrivee', label: 'Arrivée sur les lieux (360)', placeholder: 'Décrivez la situation à votre arrivée...' },
-    { id: 'actions', label: 'Actions entreprises', placeholder: 'Décrivez les actions effectuées...' },
-    { id: 'observations', label: 'Observations', placeholder: 'Notez vos observations...' },
-    { id: 'conclusion', label: 'Conclusion', placeholder: 'Résumez la conclusion de l\'intervention...' },
-  ];
-  
-  const template = settings?.template_narratif || defaultTemplate;
+  // Template - utiliser celui des settings s'il existe
+  const template = settings?.template_narratif?.length > 0 
+    ? settings.template_narratif 
+    : [
+        { id: 'arrivee', label: 'Arrivée sur les lieux (360)', placeholder: 'Décrivez la situation à votre arrivée...' },
+        { id: 'actions', label: 'Actions entreprises', placeholder: 'Décrivez les actions effectuées...' },
+        { id: 'observations', label: 'Observations', placeholder: 'Notez vos observations...' },
+        { id: 'conclusion', label: 'Conclusion', placeholder: 'Résumez la conclusion de l\'intervention...' },
+      ];
   
   // Récupérer les valeurs du narratif structuré
   const narratifData = formData.narratif_structure || {};
@@ -2060,37 +2057,66 @@ const SectionNarratif = ({ formData, setFormData, editMode, settings }) => {
   };
   
   const startDictation = (fieldId) => {
-    if (!recognition) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
       alert("La dictée vocale n'est pas supportée par votre navigateur. Utilisez Chrome ou Edge.");
       return;
     }
     
-    setActiveField(fieldId);
+    // Arrêter toute reconnaissance en cours
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
+    }
+    
+    // Créer une nouvelle instance
+    const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+    
     recognition.lang = 'fr-CA';
     recognition.continuous = true;
     recognition.interimResults = true;
     
-    recognition.onstart = () => setIsListening(true);
+    setActiveField(fieldId);
+    
+    recognition.onstart = () => {
+      setIsListening(true);
+    };
+    
     recognition.onend = () => {
       setIsListening(false);
       setActiveField(null);
     };
     
+    recognition.onerror = (event) => {
+      console.error('Erreur reconnaissance vocale:', event.error);
+      setIsListening(false);
+      setActiveField(null);
+    };
+    
     recognition.onresult = (event) => {
-      let transcript = '';
+      let finalTranscript = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        }
       }
-      const currentText = narratifData[fieldId] || '';
-      updateNarratifField(fieldId, currentText + ' ' + transcript);
+      if (finalTranscript) {
+        const currentText = formData.narratif_structure?.[fieldId] || '';
+        updateNarratifField(fieldId, (currentText + ' ' + finalTranscript).trim());
+      }
     };
     
     recognition.start();
   };
   
   const stopDictation = () => {
-    if (recognition) {
-      recognition.stop();
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
+      recognitionRef.current = null;
     }
     setIsListening(false);
     setActiveField(null);
