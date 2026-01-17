@@ -794,7 +794,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
           'Authorization': `Bearer ${getToken()}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ action, reason })
+        body: JSON.stringify({ action, comment: reason })
       });
 
       if (response.ok) {
