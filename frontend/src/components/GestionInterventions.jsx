@@ -1076,7 +1076,14 @@ const SectionIdentification = ({ formData, setFormData, editMode, formatDateTime
           </CardHeader>
           <CardContent className="pt-4">
             <div className="space-y-2 max-h-48 overflow-y-auto">
-              {formData.xml_comments.map((comment, i) => (
+              {[...formData.xml_comments]
+                .sort((a, b) => {
+                  // Trier par timestamp chronologique
+                  const dateA = a.timestamp ? new Date(a.timestamp) : new Date(0);
+                  const dateB = b.timestamp ? new Date(b.timestamp) : new Date(0);
+                  return dateA - dateB;
+                })
+                .map((comment, i) => (
                 <div key={i} className="bg-gray-50 p-2 rounded text-sm">
                   <span className="text-gray-500">{comment.timestamp}</span>
                   <span className="mx-2">-</span>
