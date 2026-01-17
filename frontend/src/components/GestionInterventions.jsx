@@ -1646,9 +1646,10 @@ const SectionPertes = ({ formData, setFormData, editMode }) => {
               </label>
               <input
                 type="number"
-                value={formData.evacuated_count || 0}
-                onChange={(e) => setFormData({ ...formData, evacuated_count: parseInt(e.target.value) || 0 })}
+                value={getNumberValue(formData.evacuated_count)}
+                onChange={(e) => handleNumberChange('evacuated_count', e.target.value)}
                 disabled={!editMode}
+                placeholder="0"
                 className="w-full border border-gray-300 rounded-lg p-2"
               />
             </div>
@@ -1682,9 +1683,10 @@ const SectionPertes = ({ formData, setFormData, editMode }) => {
               <label className="block text-sm text-gray-600 mb-1">Blessés légers</label>
               <input
                 type="number"
-                value={formData.civilian_injuries_minor || 0}
-                onChange={(e) => setFormData({ ...formData, civilian_injuries_minor: parseInt(e.target.value) || 0 })}
+                value={getNumberValue(formData.civilian_injuries_minor)}
+                onChange={(e) => handleNumberChange('civilian_injuries_minor', e.target.value)}
                 disabled={!editMode}
+                placeholder="0"
                 min="0"
                 className="w-full border border-gray-300 rounded-lg p-2"
               />
@@ -1693,9 +1695,10 @@ const SectionPertes = ({ formData, setFormData, editMode }) => {
               <label className="block text-sm text-gray-600 mb-1">Blessés graves</label>
               <input
                 type="number"
-                value={formData.civilian_injuries_major || 0}
-                onChange={(e) => setFormData({ ...formData, civilian_injuries_major: parseInt(e.target.value) || 0 })}
+                value={getNumberValue(formData.civilian_injuries_major)}
+                onChange={(e) => handleNumberChange('civilian_injuries_major', e.target.value)}
                 disabled={!editMode}
+                placeholder="0"
                 min="0"
                 className="w-full border border-gray-300 rounded-lg p-2"
               />
@@ -1704,9 +1707,10 @@ const SectionPertes = ({ formData, setFormData, editMode }) => {
               <label className="block text-sm text-gray-600 mb-1">Décès</label>
               <input
                 type="number"
-                value={formData.civilian_deaths || 0}
-                onChange={(e) => setFormData({ ...formData, civilian_deaths: parseInt(e.target.value) || 0 })}
+                value={getNumberValue(formData.civilian_deaths)}
+                onChange={(e) => handleNumberChange('civilian_deaths', e.target.value)}
                 disabled={!editMode}
+                placeholder="0"
                 min="0"
                 className="w-full border border-gray-300 rounded-lg p-2 bg-red-50"
               />
