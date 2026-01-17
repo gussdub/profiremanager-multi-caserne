@@ -1579,6 +1579,16 @@ const SectionProtection = ({ formData, setFormData, editMode }) => {
 // ==================== SECTION PERTES ET VICTIMES ====================
 
 const SectionPertes = ({ formData, setFormData, editMode }) => {
+  // Helper pour gérer les inputs numériques (permet d'effacer le 0)
+  const handleNumberChange = (field, value) => {
+    const numValue = value === '' ? '' : parseFloat(value);
+    setFormData({ ...formData, [field]: numValue });
+  };
+  
+  const getNumberValue = (value) => {
+    return value === '' || value === null || value === undefined ? '' : value;
+  };
+
   return (
     <div className="space-y-6">
       {/* Pertes matérielles */}
@@ -1594,9 +1604,10 @@ const SectionPertes = ({ formData, setFormData, editMode }) => {
               </label>
               <input
                 type="number"
-                value={formData.estimated_loss_building || 0}
-                onChange={(e) => setFormData({ ...formData, estimated_loss_building: parseFloat(e.target.value) || 0 })}
+                value={getNumberValue(formData.estimated_loss_building)}
+                onChange={(e) => handleNumberChange('estimated_loss_building', e.target.value)}
                 disabled={!editMode}
+                placeholder="0"
                 className="w-full border border-gray-300 rounded-lg p-2"
               />
             </div>
@@ -1606,15 +1617,16 @@ const SectionPertes = ({ formData, setFormData, editMode }) => {
               </label>
               <input
                 type="number"
-                value={formData.estimated_loss_content || 0}
-                onChange={(e) => setFormData({ ...formData, estimated_loss_content: parseFloat(e.target.value) || 0 })}
+                value={getNumberValue(formData.estimated_loss_content)}
+                onChange={(e) => handleNumberChange('estimated_loss_content', e.target.value)}
                 disabled={!editMode}
+                placeholder="0"
                 className="w-full border border-gray-300 rounded-lg p-2"
               />
             </div>
             <div className="md:col-span-2 bg-gray-50 p-3 rounded-lg">
               <p className="text-lg font-bold text-gray-800">
-                Total des pertes: {((formData.estimated_loss_building || 0) + (formData.estimated_loss_content || 0)).toLocaleString('fr-CA')} $
+                Total des pertes: {((parseFloat(formData.estimated_loss_building) || 0) + (parseFloat(formData.estimated_loss_content) || 0)).toLocaleString('fr-CA')} $
               </p>
             </div>
           </div>
