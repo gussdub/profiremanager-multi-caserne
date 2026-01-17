@@ -979,9 +979,9 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
           <div className="flex gap-2 flex-wrap">
             {canValidate && !isLocked && (
               <>
-                {formData.status === 'draft' || formData.status === 'new' ? (
+                {(formData.status === 'draft' || formData.status === 'new' || formData.status === 'revision') ? (
                   <Button 
-                    onClick={() => handleValidate('submit')}
+                    onClick={() => openSubmitModal('submit')}
                     disabled={loading}
                     className="bg-purple-600 hover:bg-purple-700"
                   >
@@ -991,7 +991,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
                   <>
                     <Button 
                       variant="outline"
-                      onClick={() => handleValidate('return_for_revision')}
+                      onClick={() => openSubmitModal('return_for_revision')}
                       disabled={loading}
                     >
                       ↩️ Retourner pour révision
@@ -1010,6 +1010,50 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
             <Button variant="outline" onClick={onClose}>Fermer</Button>
           </div>
         </div>
+
+        {/* Modal de soumission avec raison */}
+        {showSubmitModal && createPortal(
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" style={{ zIndex: 100002 }}>
+            <div className="bg-white rounded-lg p-6 max-w-md w-full">
+              <h3 className="text-lg font-bold mb-4">
+                {submitAction === 'submit' ? '📤 Soumettre pour validation' : '↩️ Retourner pour révision'}
+              </h3>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">
+                  {submitAction === 'submit' ? 'Commentaire (optionnel)' : 'Raison du retour *'}
+                </label>
+                <textarea
+                  value={submitReason}
+                  onChange={(e) => setSubmitReason(e.target.value)}
+                  placeholder={submitAction === 'submit' 
+                    ? "Ajoutez un commentaire pour le validateur..." 
+                    : "Expliquez pourquoi le rapport doit être révisé..."
+                  }
+                  className="w-full border border-gray-300 rounded-lg p-3 min-h-[100px] resize-y"
+                />
+              </div>
+              
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowSubmitModal(false)} 
+                  className="flex-1"
+                >
+                  Annuler
+                </Button>
+                <Button 
+                  onClick={confirmSubmit}
+                  disabled={submitAction === 'return_for_revision' && !submitReason.trim()}
+                  className={`flex-1 ${submitAction === 'submit' ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
+                >
+                  Confirmer
+                </Button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
       </div>
     </div>,
     document.body
