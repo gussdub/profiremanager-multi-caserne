@@ -2073,6 +2073,18 @@ const SectionNarratif = ({ formData, setFormData, editMode, settings }) => {
     });
   };
   
+  // Nettoyer la reconnaissance vocale au démontage du composant
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch (e) {}
+        recognitionRef.current = null;
+      }
+    };
+  }, []);
+  
   const startDictation = (fieldId) => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -2080,52 +2092,68 @@ const SectionNarratif = ({ formData, setFormData, editMode, settings }) => {
       return;
     }
     
-    // Arrêter toute reconnaissance en cours
+    // Arrêter et nettoyer toute reconnaissance en cours
     if (recognitionRef.current) {
       try {
-        recognitionRef.current.stop();
+        recognitionRef.current.abort();
       } catch (e) {}
+      recognitionRef.current = null;
     }
     
-    // Créer une nouvelle instance
-    const recognition = new SpeechRecognition();
-    recognitionRef.current = recognition;
+    // Réinitialiser l'état avant de démarrer
+    setIsListening(false);
+    setActiveField(null);
     
-    recognition.lang = 'fr-CA';
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    
-    setActiveField(fieldId);
-    
-    recognition.onstart = () => {
-      setIsListening(true);
-    };
-    
-    recognition.onend = () => {
-      setIsListening(false);
-      setActiveField(null);
-    };
-    
-    recognition.onerror = (event) => {
-      console.error('Erreur reconnaissance vocale:', event.error);
-      setIsListening(false);
-      setActiveField(null);
-    };
-    
-    recognition.onresult = (event) => {
-      let finalTranscript = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript;
-        }
+    // Petit délai pour s'assurer que l'ancienne instance est bien nettoyée
+    setTimeout(() => {
+      try {
+        // Créer une nouvelle instance
+        const recognition = new SpeechRecognition();
+        recognitionRef.current = recognition;
+        
+        recognition.lang = 'fr-CA';
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        
+        setActiveField(fieldId);
+        
+        recognition.onstart = () => {
+          setIsListening(true);
+        };
+        
+        recognition.onend = () => {
+          setIsListening(false);
+          setActiveField(null);
+          recognitionRef.current = null;
+        };
+        
+        recognition.onerror = (event) => {
+          console.error('Erreur reconnaissance vocale:', event.error);
+          setIsListening(false);
+          setActiveField(null);
+          recognitionRef.current = null;
+        };
+        
+        recognition.onresult = (event) => {
+          let finalTranscript = '';
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            if (event.results[i].isFinal) {
+              finalTranscript += event.results[i][0].transcript;
+            }
+          }
+          if (finalTranscript) {
+            const currentText = formData.narratif_structure?.[fieldId] || '';
+            updateNarratifField(fieldId, (currentText + ' ' + finalTranscript).trim());
+          }
+        };
+        
+        recognition.start();
+      } catch (error) {
+        console.error('Erreur démarrage dictée:', error);
+        setIsListening(false);
+        setActiveField(null);
       }
-      if (finalTranscript) {
-        const currentText = formData.narratif_structure?.[fieldId] || '';
-        updateNarratifField(fieldId, (currentText + ' ' + finalTranscript).trim());
-      }
-    };
-    
-    recognition.start();
+    }, 100);
   };
   
   const stopDictation = () => {
