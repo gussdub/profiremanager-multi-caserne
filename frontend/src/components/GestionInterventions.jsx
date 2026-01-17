@@ -675,7 +675,15 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
   };
 
   // Déterminer si c'est un incendie (pour afficher les champs DSI)
+  // Inclut les alarmes incendie pour permettre de remplir les DSI si nécessaire
   const isFireIncident = () => {
+    const nature = (formData.type_intervention || '').toLowerCase();
+    // Afficher DSI pour tout ce qui contient "incendie" (y compris alarmes)
+    return nature.includes('incendie');
+  };
+  
+  // Vrai incendie (pas une alarme) - pour la validation obligatoire
+  const isRealFire = () => {
     const nature = (formData.type_intervention || '').toLowerCase();
     return nature.includes('incendie') && !nature.includes('alarme');
   };
@@ -691,7 +699,8 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
   const validateDSI = () => {
     const errors = [];
     
-    if (isFireIncident()) {
+    // Validation obligatoire uniquement pour les vrais incendies (pas les alarmes)
+    if (isRealFire()) {
       if (!formData.cause_id) {
         errors.push("Cause probable obligatoire pour les incendies");
       }
