@@ -1775,33 +1775,59 @@ const SectionPertes = ({ formData, setFormData, editMode }) => {
 
 const SectionNarratif = ({ formData, setFormData, editMode, settings }) => {
   const [isListening, setIsListening] = useState(false);
-  const [showModeles, setShowModeles] = useState(false);
+  const [activeField, setActiveField] = useState(null);
   
   // API Web Speech Recognition
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const recognition = SpeechRecognition ? new SpeechRecognition() : null;
   
-  const startDictation = () => {
+  // Template par défaut si pas configuré
+  const defaultTemplate = [
+    { id: 'arrivee', label: 'Arrivée sur les lieux (360)', placeholder: 'Décrivez la situation à votre arrivée...' },
+    { id: 'actions', label: 'Actions entreprises', placeholder: 'Décrivez les actions effectuées...' },
+    { id: 'observations', label: 'Observations', placeholder: 'Notez vos observations...' },
+    { id: 'conclusion', label: 'Conclusion', placeholder: 'Résumez la conclusion de l\'intervention...' },
+  ];
+  
+  const template = settings?.template_narratif || defaultTemplate;
+  
+  // Récupérer les valeurs du narratif structuré
+  const narratifData = formData.narratif_structure || {};
+  
+  const updateNarratifField = (fieldId, value) => {
+    setFormData({
+      ...formData,
+      narratif_structure: {
+        ...narratifData,
+        [fieldId]: value
+      }
+    });
+  };
+  
+  const startDictation = (fieldId) => {
     if (!recognition) {
       alert("La dictée vocale n'est pas supportée par votre navigateur. Utilisez Chrome ou Edge.");
       return;
     }
     
+    setActiveField(fieldId);
     recognition.lang = 'fr-CA';
     recognition.continuous = true;
     recognition.interimResults = true;
     
     recognition.onstart = () => setIsListening(true);
-    recognition.onend = () => setIsListening(false);
+    recognition.onend = () => {
+      setIsListening(false);
+      setActiveField(null);
+    };
     
     recognition.onresult = (event) => {
       let transcript = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
         transcript += event.results[i][0].transcript;
       }
-      // Ajouter au texte existant
-      const currentText = formData.narrative || '';
-      setFormData({ ...formData, narrative: currentText + ' ' + transcript });
+      const currentText = narratifData[fieldId] || '';
+      updateNarratifField(fieldId, currentText + ' ' + transcript);
     };
     
     recognition.start();
@@ -1812,90 +1838,79 @@ const SectionNarratif = ({ formData, setFormData, editMode, settings }) => {
       recognition.stop();
     }
     setIsListening(false);
+    setActiveField(null);
   };
-  
-  const insertModele = (modele) => {
-    const currentText = formData.narrative || '';
-    const newText = currentText ? currentText + '\n\n' + modele.contenu : modele.contenu;
-    setFormData({ ...formData, narrative: newText });
-    setShowModeles(false);
-  };
-  
-  // Modèles par défaut si settings non fourni
-  const modeles = settings?.modeles_narratif || [
-    { id: '1', titre: 'Arrivée sur les lieux', contenu: 'À notre arrivée sur les lieux, nous avons constaté...' },
-    { id: '2', titre: 'Intervention standard', contenu: 'L\'intervention s\'est déroulée sans incident. Les opérations ont consisté en...' },
-    { id: '3', titre: 'Fausse alerte', contenu: 'Suite à notre investigation, il s\'agit d\'une fausse alerte causée par...' },
-  ];
-  
+
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="bg-gray-50">
-          <CardTitle className="text-lg flex justify-between items-center">
-            <span>📝 Rapport narratif</span>
-            {editMode && (
-              <div className="flex gap-2">
+    <div className="space-y-4">
+      {/* Instructions */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+        <p className="text-sm text-blue-800">
+          📝 Remplissez chaque section du rapport. Utilisez le bouton 🎤 pour dicter votre texte.
+        </p>
+      </div>
+      
+      {/* Champs structurés du template */}
+      {template.map((field) => (
+        <Card key={field.id}>
+          <CardHeader className="bg-gray-50 py-3">
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-base font-medium">{field.label}</CardTitle>
+              {editMode && (
                 <Button
                   type="button"
-                  variant="outline"
+                  variant={isListening && activeField === field.id ? "destructive" : "outline"}
                   size="sm"
-                  onClick={() => setShowModeles(!showModeles)}
+                  onClick={() => isListening && activeField === field.id ? stopDictation() : startDictation(field.id)}
                 >
-                  📋 Modèles
+                  {isListening && activeField === field.id ? '🛑 Stop' : '🎤'}
                 </Button>
-                <Button
-                  type="button"
-                  variant={isListening ? "destructive" : "outline"}
-                  size="sm"
-                  onClick={isListening ? stopDictation : startDictation}
-                >
-                  {isListening ? '🛑 Arrêter' : '🎤 Dictée'}
-                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="pt-3">
+            {isListening && activeField === field.id && (
+              <div className="bg-red-50 border border-red-200 rounded p-2 mb-2 flex items-center gap-2 text-sm">
+                <span className="animate-pulse">🔴</span>
+                <span className="text-red-800">Dictée en cours...</span>
               </div>
             )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-4">
-          {/* Indicateur de dictée */}
-          {isListening && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 flex items-center gap-2">
-              <span className="animate-pulse">🔴</span>
-              <span className="text-red-800">Dictée en cours... Parlez clairement.</span>
-            </div>
-          )}
-          
-          {/* Modèles de texte */}
-          {showModeles && editMode && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-              <h4 className="font-medium text-blue-800 mb-3">📋 Insérer un modèle</h4>
-              <div className="space-y-2">
-                {modeles.map(modele => (
-                  <button
-                    key={modele.id}
-                    onClick={() => insertModele(modele)}
-                    className="w-full text-left p-2 bg-white rounded border border-blue-200 hover:bg-blue-100 transition-colors"
-                  >
-                    <span className="font-medium">{modele.titre}</span>
-                    <p className="text-sm text-gray-600 truncate">{modele.contenu}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          <textarea
-            value={formData.narrative || ''}
-            onChange={(e) => setFormData({ ...formData, narrative: e.target.value })}
-            disabled={!editMode}
-            placeholder="Décrivez le déroulement de l'intervention..."
-            className="w-full border border-gray-300 rounded-lg p-3 min-h-[300px]"
-          />
-          
-          {/* Compteur de mots */}
-          <div className="text-sm text-gray-500 mt-2">
-            {(formData.narrative || '').split(/\s+/).filter(w => w).length} mots
+            <textarea
+              value={narratifData[field.id] || ''}
+              onChange={(e) => updateNarratifField(field.id, e.target.value)}
+              disabled={!editMode}
+              placeholder={field.placeholder}
+              className="w-full border border-gray-300 rounded-lg p-3 min-h-[100px] resize-y"
+            />
+          </CardContent>
+        </Card>
+      ))}
+      
+      {/* Notes additionnelles (libre) */}
+      <Card>
+        <CardHeader className="bg-gray-50 py-3">
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-base font-medium">📋 Notes additionnelles (optionnel)</CardTitle>
+            {editMode && (
+              <Button
+                type="button"
+                variant={isListening && activeField === 'notes' ? "destructive" : "outline"}
+                size="sm"
+                onClick={() => isListening && activeField === 'notes' ? stopDictation() : startDictation('notes')}
+              >
+                {isListening && activeField === 'notes' ? '🛑 Stop' : '🎤'}
+              </Button>
+            )}
           </div>
+        </CardHeader>
+        <CardContent className="pt-3">
+          <textarea
+            value={narratifData.notes || ''}
+            onChange={(e) => updateNarratifField('notes', e.target.value)}
+            disabled={!editMode}
+            placeholder="Ajoutez toute information supplémentaire..."
+            className="w-full border border-gray-300 rounded-lg p-3 min-h-[80px] resize-y"
+          />
         </CardContent>
       </Card>
     </div>
