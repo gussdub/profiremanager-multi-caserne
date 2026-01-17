@@ -1926,7 +1926,6 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
         <CardContent className="pt-4">
           <p className="text-gray-600 mb-4">
             Sélectionnez les administrateurs et superviseurs autorisés à <strong>valider et signer</strong> les rapports d'intervention.
-            Tous les admins/superviseurs ont accès au module, mais seuls les validateurs désignés peuvent approuver les rapports.
           </p>
 
           <div className="space-y-6">
@@ -1942,13 +1941,13 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
                   <label key={u.id} className="flex items-center gap-3 cursor-pointer hover:bg-gray-100 p-2 rounded">
                     <input
                       type="checkbox"
-                      checked={(settings.personnes_ressources || []).includes(u.id)}
-                      onChange={() => togglePersonneRessource(u.id)}
+                      checked={(settings.validateurs || []).includes(u.id)}
+                      onChange={() => toggleValidateur(u.id)}
                       className="w-5 h-5 rounded"
                     />
                     <span className="font-medium">{u.prenom} {u.nom}</span>
                     <span className="text-gray-500 text-sm">({u.email})</span>
-                    {(settings.personnes_ressources || []).includes(u.id) && (
+                    {(settings.validateurs || []).includes(u.id) && (
                       <span className="ml-auto text-green-600 text-sm">✓ Validateur</span>
                     )}
                   </label>
@@ -1967,13 +1966,13 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
                     <label key={u.id} className="flex items-center gap-3 cursor-pointer hover:bg-gray-100 p-2 rounded">
                       <input
                         type="checkbox"
-                        checked={(settings.personnes_ressources || []).includes(u.id)}
-                        onChange={() => togglePersonneRessource(u.id)}
+                        checked={(settings.validateurs || []).includes(u.id)}
+                        onChange={() => toggleValidateur(u.id)}
                         className="w-5 h-5 rounded"
                       />
                       <span className="font-medium">{u.prenom} {u.nom}</span>
                       <span className="text-gray-500 text-sm">({u.email})</span>
-                      {(settings.personnes_ressources || []).includes(u.id) && (
+                      {(settings.validateurs || []).includes(u.id) && (
                         <span className="ml-auto text-green-600 text-sm">✓ Validateur</span>
                       )}
                     </label>
@@ -1986,7 +1985,51 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
           {/* Résumé */}
           <div className="mt-4 p-3 bg-blue-50 rounded-lg">
             <p className="text-sm text-blue-800">
-              <strong>{(settings.personnes_ressources || []).length}</strong> validateur(s) désigné(s)
+              <strong>{(settings.validateurs || []).length}</strong> validateur(s) désigné(s)
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Personnes ressources (accès au module) */}
+      <Card>
+        <CardHeader className="bg-yellow-50">
+          <CardTitle className="text-yellow-800">
+            👥 Personnes ressources (accès au module)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <p className="text-gray-600 mb-4">
+            Ces employés auront accès au module Interventions pour <strong>rédiger les rapports</strong>.
+            Les administrateurs et superviseurs y ont accès automatiquement.
+          </p>
+
+          {usersByRole.employe.length > 0 ? (
+            <div className="bg-gray-50 rounded-lg p-3 space-y-2 max-h-64 overflow-y-auto">
+              {usersByRole.employe.map(u => (
+                <label key={u.id} className="flex items-center gap-3 cursor-pointer hover:bg-gray-100 p-2 rounded">
+                  <input
+                    type="checkbox"
+                    checked={(settings.personnes_ressources || []).includes(u.id)}
+                    onChange={() => togglePersonneRessource(u.id)}
+                    className="w-5 h-5 rounded"
+                  />
+                  <span className="font-medium">{u.prenom} {u.nom}</span>
+                  <span className="text-gray-500 text-sm">({u.email})</span>
+                  {(settings.personnes_ressources || []).includes(u.id) && (
+                    <span className="ml-auto text-yellow-600 text-sm">✓ Accès</span>
+                  )}
+                </label>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 italic">Aucun employé/pompier dans le système</p>
+          )}
+
+          {/* Résumé */}
+          <div className="mt-4 p-3 bg-yellow-50 rounded-lg">
+            <p className="text-sm text-yellow-800">
+              <strong>{(settings.personnes_ressources || []).length}</strong> personne(s) ressource(s) désignée(s)
             </p>
           </div>
         </CardContent>
