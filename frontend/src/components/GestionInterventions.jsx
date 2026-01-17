@@ -1531,8 +1531,10 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
               <p>Chargement...</p>
             ) : (
               <div className="space-y-1 overflow-y-auto flex-1" style={{ maxHeight: '300px' }}>
-                {users
-                  .filter(u => u.statut === 'Actif')
+                {users.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">Aucun utilisateur trouvé</p>
+                ) : users
+                  .filter(u => (u.statut || '').toLowerCase() === 'actif')
                   .filter(u => {
                     if (!searchPersonnel) return true;
                     const search = searchPersonnel.toLowerCase();
