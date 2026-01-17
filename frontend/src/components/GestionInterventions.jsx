@@ -815,6 +815,10 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
               vehicles={vehicles}
               resources={resources}
               formData={formData}
+              editMode={editMode && !isLocked}
+              tenantSlug={tenantSlug}
+              interventionId={formData.id}
+              onRefresh={fetchDetails}
             />
           )}
           {activeSection === 'dsi' && (
