@@ -815,6 +815,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
               vehicles={vehicles}
               resources={resources}
               formData={formData}
+              setFormData={setFormData}
               editMode={editMode && !isLocked}
               tenantSlug={tenantSlug}
               interventionId={formData.id}
