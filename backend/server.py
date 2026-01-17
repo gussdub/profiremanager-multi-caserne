@@ -36361,14 +36361,17 @@ async def get_intervention_settings(
             "alert_on_import": True,
             "auto_archive_after_days": 365,
             "personnes_ressources": [],
+            "validateurs": [],
             "created_at": datetime.now(timezone.utc)
         }
         await db.intervention_settings.insert_one(settings)
         settings.pop("_id", None)
     
-    # S'assurer que personnes_ressources existe toujours
+    # S'assurer que les champs existent toujours
     if "personnes_ressources" not in settings:
         settings["personnes_ressources"] = []
+    if "validateurs" not in settings:
+        settings["validateurs"] = []
     
     return {"settings": settings}
 
