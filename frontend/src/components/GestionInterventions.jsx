@@ -1291,7 +1291,7 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
     return allPersonnel.filter(r => r.vehicle_number === vehicleNumber);
   };
   
-  // Personnel sans véhicule
+  // Personnel supplémentaire
   const personnelSansVehicule = allPersonnel.filter(r => !r.vehicle_number);
   
   return (
@@ -1368,11 +1368,11 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
         </CardContent>
       </Card>
 
-      {/* Personnel sans véhicule */}
+      {/* Personnel supplémentaire */}
       <Card>
         <CardHeader className="bg-orange-50">
           <CardTitle className="text-lg text-orange-800 flex justify-between items-center">
-            <span>🚶 Personnel sans véhicule ({personnelSansVehicule.length})</span>
+            <span>🚶 Personnel supplémentaire ({personnelSansVehicule.length})</span>
             {editMode && (
               <Button size="sm" variant="outline" onClick={() => openAddPersonnel(null)}>
                 + Ajouter
