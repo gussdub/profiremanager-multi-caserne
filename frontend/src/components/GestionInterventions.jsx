@@ -1447,35 +1447,32 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
             <h3 className="text-lg font-bold mb-4">🚒 Ajouter un véhicule</h3>
             
-            {tenantVehicles.length > 0 && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">Sélectionner un véhicule existant</label>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Sélectionner un véhicule du tenant *</label>
                 <select 
+                  value={newVehicle.number}
                   onChange={(e) => {
-                    const v = tenantVehicles.find(tv => tv.id === e.target.value);
-                    if (v) setNewVehicle({ number: v.numero || v.nom, crew_count: '' });
+                    const v = tenantVehicles.find(tv => (tv.numero || tv.nom) === e.target.value);
+                    setNewVehicle({ 
+                      number: e.target.value, 
+                      crew_count: v?.capacite || '' 
+                    });
                   }}
                   className="w-full border rounded p-2"
                 >
-                  <option value="">-- Ou saisir manuellement --</option>
+                  <option value="">-- Sélectionner un véhicule --</option>
                   {tenantVehicles.map(v => (
-                    <option key={v.id} value={v.id}>{v.numero || v.nom}</option>
+                    <option key={v.id} value={v.numero || v.nom}>
+                      {v.numero || v.nom} {v.type ? `(${v.type})` : ''}
+                    </option>
                   ))}
                 </select>
+                {tenantVehicles.length === 0 && (
+                  <p className="text-xs text-gray-500 mt-1">Aucun véhicule trouvé. Ajoutez des véhicules dans Gestion des Actifs.</p>
+                )}
               </div>
-            )}
-            
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium mb-1">Numéro du véhicule *</label>
-                <input
-                  type="text"
-                  value={newVehicle.number}
-                  onChange={(e) => setNewVehicle({ ...newVehicle, number: e.target.value })}
-                  className="w-full border rounded p-2"
-                  placeholder="Ex: 372, Échelle 1, etc."
-                />
-              </div>
+              
               <div>
                 <label className="block text-sm font-medium mb-1">Nombre de pompiers</label>
                 <input
