@@ -2260,12 +2260,18 @@ const SectionNarratif = ({ formData, setFormData, editMode, settings }) => {
           </div>
         </CardHeader>
         <CardContent className="pt-3">
+          {isListening && activeField === 'notes' && (
+            <div className="bg-red-50 border border-red-200 rounded p-2 mb-2 flex items-center gap-2 text-sm">
+              <span className="animate-pulse">🔴</span>
+              <span className="text-red-800">Dictée en cours... {interimText && <span className="italic text-red-600">"{interimText}"</span>}</span>
+            </div>
+          )}
           <textarea
-            value={narratifData.notes || ''}
+            value={getDisplayText('notes')}
             onChange={(e) => updateNarratifField('notes', e.target.value)}
-            disabled={!editMode}
+            disabled={!editMode || (isListening && activeField === 'notes')}
             placeholder="Ajoutez toute information supplémentaire..."
-            className="w-full border border-gray-300 rounded-lg p-3 min-h-[80px] resize-y"
+            className={`w-full border rounded-lg p-3 min-h-[80px] resize-y ${isListening && activeField === 'notes' ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
           />
         </CardContent>
       </Card>
