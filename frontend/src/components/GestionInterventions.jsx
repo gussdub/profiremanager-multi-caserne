@@ -2034,10 +2034,10 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
             <p className="text-gray-500 italic">Aucun employé/pompier dans le système</p>
           )}
 
-          {/* Résumé */}
+          {/* Résumé - Ne compter que les employés sélectionnés */}
           <div className="mt-4 p-3 bg-yellow-50 rounded-lg">
             <p className="text-sm text-yellow-800">
-              <strong>{(settings.personnes_ressources || []).length}</strong> personne(s) ressource(s) désignée(s)
+              <strong>{(settings.personnes_ressources || []).filter(id => usersByRole.employe.some(u => u.id === id)).length}</strong> personne(s) ressource(s) désignée(s)
             </p>
           </div>
         </CardContent>
