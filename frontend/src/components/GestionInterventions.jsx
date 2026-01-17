@@ -559,6 +559,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
   const [vehicles, setVehicles] = useState([]);
   const [resources, setResources] = useState([]);
   const [validationErrors, setValidationErrors] = useState([]);
+  const [interventionSettings, setInterventionSettings] = useState(null);
 
   // Bloquer le scroll du body
   useModalScrollLock(true);
@@ -569,9 +570,25 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
     return localStorage.getItem(`${tenantSlug}_token`) || localStorage.getItem('token');
   };
 
+  // Charger les settings du module interventions (pour le template narratif)
+  const fetchInterventionSettings = async () => {
+    try {
+      const response = await fetch(`${API}/interventions/settings`, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setInterventionSettings(data.settings);
+      }
+    } catch (error) {
+      console.error('Erreur chargement settings:', error);
+    }
+  };
+
   useEffect(() => {
     fetchDetails();
     fetchReferenceData();
+    fetchInterventionSettings();
   }, []);
 
   const fetchDetails = async () => {
