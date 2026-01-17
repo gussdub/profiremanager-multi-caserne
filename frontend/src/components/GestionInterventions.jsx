@@ -866,7 +866,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
               formData={formData} 
               setFormData={setFormData}
               editMode={editMode && !isLocked}
-              settings={null}
+              settings={interventionSettings}
             />
           )}
         </div>
