@@ -1557,7 +1557,7 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                           className="w-4 h-4" 
                         />
                         <span className="flex-1">{user.prenom} {user.nom}</span>
-                        <span className="text-gray-500 text-sm">({user.role})</span>
+                        <span className="text-gray-500 text-sm">({user.grade || user.grade_nom || 'Pompier'})</span>
                         {isGardeInterne && <span className="text-xs bg-blue-200 text-blue-800 px-1 rounded">Garde</span>}
                       </label>
                     );
