@@ -1973,34 +1973,21 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
                       />
                       <span className="font-medium">{u.prenom} {u.nom}</span>
                       <span className="text-gray-500 text-sm">({u.email})</span>
+                      {(settings.personnes_ressources || []).includes(u.id) && (
+                        <span className="ml-auto text-green-600 text-sm">✓ Validateur</span>
+                      )}
                     </label>
                   ))}
                 </div>
               </div>
             )}
+          </div>
 
-            {/* Employés */}
-            {usersByRole.employe.length > 0 && (
-              <div>
-                <h4 className="font-medium text-gray-700 mb-2 flex items-center gap-2">
-                  <span>👤</span> Employés / Pompiers
-                </h4>
-                <div className="bg-gray-50 rounded-lg p-3 space-y-2 max-h-64 overflow-y-auto">
-                  {usersByRole.employe.map(u => (
-                    <label key={u.id} className="flex items-center gap-3 cursor-pointer hover:bg-gray-100 p-2 rounded">
-                      <input
-                        type="checkbox"
-                        checked={(settings.personnes_ressources || []).includes(u.id)}
-                        onChange={() => togglePersonneRessource(u.id)}
-                        className="w-5 h-5 rounded"
-                      />
-                      <span className="font-medium">{u.prenom} {u.nom}</span>
-                      <span className="text-gray-500 text-sm">({u.email})</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
+          {/* Résumé */}
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>{(settings.personnes_ressources || []).length}</strong> validateur(s) désigné(s)
+            </p>
           </div>
         </CardContent>
       </Card>
