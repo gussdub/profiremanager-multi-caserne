@@ -88,7 +88,7 @@ Seulement 1/2 super admins copiés. Si vous avez besoin du deuxième compte, cop
 
 ### Test Rapide (5 minutes)
 
-1. **Sur Preview** : https://responder-5.preview.emergentagent.com/shefford
+1. **Sur Preview** : https://incident-manager-12.preview.emergentagent.com/shefford
    - Créer une assignation test (ex: 1er janvier 2026)
    - Noter le nom et la date
 

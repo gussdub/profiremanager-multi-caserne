@@ -7,7 +7,7 @@ import requests
 import json
 
 # Configuration
-base_url = "https://responder-5.preview.emergentagent.com/api"
+base_url = "https://incident-manager-12.preview.emergentagent.com/api"
 tenant_slug = "shefford"
 admin_credentials = {"email": "gussdub@gmail.com", "mot_de_passe": "230685Juin+"}
 
