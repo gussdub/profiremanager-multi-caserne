@@ -1202,15 +1202,15 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
     }
   };
   
-  // Charger les véhicules du tenant
+  // Charger les véhicules du tenant (depuis Gestion des Actifs)
   const loadTenantVehicles = async () => {
     try {
-      const response = await fetch(`${API}/vehicles`, {
+      const response = await fetch(`${API}/actifs/vehicules`, {
         headers: { 'Authorization': `Bearer ${getToken()}` }
       });
       if (response.ok) {
         const data = await response.json();
-        setTenantVehicles(data.vehicles || data || []);
+        setTenantVehicles(data || []);
       }
     } catch (error) {
       console.error('Erreur chargement véhicules:', error);
