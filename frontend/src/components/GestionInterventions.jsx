@@ -2228,15 +2228,15 @@ const SectionNarratif = ({ formData, setFormData, editMode, settings }) => {
             {isListening && activeField === field.id && (
               <div className="bg-red-50 border border-red-200 rounded p-2 mb-2 flex items-center gap-2 text-sm">
                 <span className="animate-pulse">🔴</span>
-                <span className="text-red-800">Dictée en cours...</span>
+                <span className="text-red-800">Dictée en cours... {interimText && <span className="italic text-red-600">"{interimText}"</span>}</span>
               </div>
             )}
             <textarea
-              value={narratifData[field.id] || ''}
+              value={getDisplayText(field.id)}
               onChange={(e) => updateNarratifField(field.id, e.target.value)}
-              disabled={!editMode}
+              disabled={!editMode || (isListening && activeField === field.id)}
               placeholder={field.placeholder}
-              className="w-full border border-gray-300 rounded-lg p-3 min-h-[100px] resize-y"
+              className={`w-full border rounded-lg p-3 min-h-[100px] resize-y ${isListening && activeField === field.id ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
             />
           </CardContent>
         </Card>
