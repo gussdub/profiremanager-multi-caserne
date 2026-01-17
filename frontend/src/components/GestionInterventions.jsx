@@ -1844,6 +1844,14 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
     setSettings({ ...settings, personnes_ressources: updated });
   };
 
+  const toggleValidateur = (userId) => {
+    const current = settings?.validateurs || [];
+    const updated = current.includes(userId)
+      ? current.filter(id => id !== userId)
+      : [...current, userId];
+    setSettings({ ...settings, validateurs: updated });
+  };
+
   if (loading) {
     return <div className="text-center py-8">Chargement...</div>;
   }
