@@ -2581,8 +2581,37 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
               { id: 'actions', label: 'Actions entreprises', placeholder: 'Décrivez les actions effectuées...' },
               { id: 'observations', label: 'Observations', placeholder: 'Notez vos observations...' },
               { id: 'conclusion', label: 'Conclusion', placeholder: 'Résumez la conclusion...' },
-            ]).map((section, index) => (
+            ]).map((section, index, arr) => (
               <div key={index} className="bg-gray-50 p-3 rounded-lg border flex items-start gap-3">
+                {/* Boutons de réorganisation */}
+                <div className="flex flex-col gap-1">
+                  <button
+                    onClick={() => {
+                      if (index === 0) return;
+                      const updated = [...(settings.template_narratif || arr)];
+                      [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+                      setSettings({ ...settings, template_narratif: updated });
+                    }}
+                    disabled={index === 0}
+                    className={`p-1 rounded text-sm ${index === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:bg-gray-200 hover:text-gray-700'}`}
+                    title="Monter"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (index === arr.length - 1) return;
+                      const updated = [...(settings.template_narratif || arr)];
+                      [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
+                      setSettings({ ...settings, template_narratif: updated });
+                    }}
+                    disabled={index === arr.length - 1}
+                    className={`p-1 rounded text-sm ${index === arr.length - 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:bg-gray-200 hover:text-gray-700'}`}
+                    title="Descendre"
+                  >
+                    ↓
+                  </button>
+                </div>
                 <span className="text-gray-400 font-mono mt-2">{index + 1}.</span>
                 <div className="flex-1 space-y-2">
                   <input
