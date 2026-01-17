@@ -762,7 +762,20 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
     }
   };
 
-  const handleValidate = async (action) => {
+  // Ouvrir le modal de soumission
+  const openSubmitModal = (action) => {
+    setSubmitAction(action);
+    setSubmitReason('');
+    setShowSubmitModal(true);
+  };
+
+  // Confirmer la soumission avec raison
+  const confirmSubmit = async () => {
+    setShowSubmitModal(false);
+    await handleValidate(submitAction, submitReason);
+  };
+
+  const handleValidate = async (action, reason = '') => {
     // Validation avant signature
     if (action === 'sign' && !validateDSI()) {
       toast({ 
@@ -781,11 +794,17 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
           'Authorization': `Bearer ${getToken()}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ action })
+        body: JSON.stringify({ action, reason })
       });
 
       if (response.ok) {
-        toast({ title: "Succès", description: action === 'sign' ? "Intervention signée" : "Statut mis à jour" });
+        const messages = {
+          'submit': "Intervention soumise pour validation",
+          'sign': "Intervention signée",
+          'return_for_revision': "Intervention retournée pour révision"
+        };
+        toast({ title: "Succès", description: messages[action] || "Statut mis à jour" });
+        fetchDetails(); // Rafraîchir les données
         onUpdate();
       } else {
         const error = await response.json();
