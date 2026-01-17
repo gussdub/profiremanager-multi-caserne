@@ -1136,6 +1136,8 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [newVehicle, setNewVehicle] = useState({ number: '', crew_count: '' });
   const [selectedPersonnel, setSelectedPersonnel] = useState([]);
+  const [searchPersonnel, setSearchPersonnel] = useState('');
+  const [gardeInterneUsers, setGardeInterneUsers] = useState([]);
   
   const API = `${BACKEND_URL}/api/${tenantSlug}`;
   
@@ -1147,20 +1149,37 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
   const [manualVehicles, setManualVehicles] = useState(formData.manual_vehicles || []);
   const [manualPersonnel, setManualPersonnel] = useState(formData.manual_personnel || []);
   
-  // Charger la liste des utilisateurs
+  // Charger la liste des utilisateurs et le planning
   const loadUsers = async () => {
     if (users.length > 0) return;
     setLoadingUsers(true);
     try {
-      const response = await fetch(`${API}/users`, {
-        headers: { 'Authorization': `Bearer ${getToken()}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
+      const [usersResponse, planningResponse] = await Promise.all([
+        fetch(`${API}/users`, { headers: { 'Authorization': `Bearer ${getToken()}` } }),
+        fetch(`${API}/plannings?date=${formData.xml_time_call_received?.split('T')[0] || new Date().toISOString().split('T')[0]}`, { 
+          headers: { 'Authorization': `Bearer ${getToken()}` } 
+        }).catch(() => ({ ok: false }))
+      ]);
+      
+      if (usersResponse.ok) {
+        const data = await usersResponse.json();
         setUsers(data.users || data || []);
       }
+      
+      // Récupérer le personnel en garde interne
+      if (planningResponse.ok) {
+        const planningData = await planningResponse.json();
+        const gardeInterne = (planningData.affectations || [])
+          .filter(a => a.type_affectation === 'garde_interne' || a.type === 'garde_interne')
+          .map(a => ({ id: a.user_id, ...a }));
+        setGardeInterneUsers(gardeInterne);
+        // Pré-sélectionner le personnel en garde
+        if (gardeInterne.length > 0 && selectedPersonnel.length === 0) {
+          setSelectedPersonnel(gardeInterne.map(g => g.id));
+        }
+      }
     } catch (error) {
-      console.error('Erreur chargement utilisateurs:', error);
+      console.error('Erreur chargement:', error);
     } finally {
       setLoadingUsers(false);
     }
@@ -1181,10 +1200,11 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
     }
   };
   
-  const openAddPersonnel = (vehicle) => {
+  const openAddPersonnel = (vehicle = null) => {
     setSelectedVehicle(vehicle);
     loadUsers();
     setSelectedPersonnel([]);
+    setSearchPersonnel('');
     setShowAddPersonnel(true);
   };
   
@@ -1210,7 +1230,7 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
   };
   
   const addPersonnelToVehicle = () => {
-    if (selectedPersonnel.length === 0 || !selectedVehicle) return;
+    if (selectedPersonnel.length === 0) return;
     
     const newPersonnel = selectedPersonnel.map(userId => {
       const user = users.find(u => u.id === userId);
@@ -1218,7 +1238,7 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
         id: `manual_${Date.now()}_${userId}`,
         user_id: userId,
         user_name: user ? `${user.prenom} ${user.nom}` : userId,
-        vehicle_number: selectedVehicle.xml_vehicle_number,
+        vehicle_number: selectedVehicle?.xml_vehicle_number || null,
         role_on_scene: 'Pompier',
         is_manual: true
       };
@@ -1229,6 +1249,7 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
     setFormData({ ...formData, manual_personnel: updated });
     setShowAddPersonnel(false);
     setSelectedPersonnel([]);
+    setSearchPersonnel('');
   };
   
   const removePersonnel = (personnelId) => {
@@ -1245,6 +1266,9 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
   const getVehiclePersonnel = (vehicleNumber) => {
     return allPersonnel.filter(r => r.vehicle_number === vehicleNumber);
   };
+  
+  // Personnel sans véhicule
+  const personnelSansVehicule = allPersonnel.filter(r => !r.vehicle_number);
   
   return (
     <div className="space-y-6">
@@ -1320,9 +1344,39 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
         </CardContent>
       </Card>
 
+      {/* Personnel sans véhicule (arrivé par ses propres moyens) */}
+      <Card>
+        <CardHeader className="bg-orange-50">
+          <CardTitle className="text-lg text-orange-800 flex justify-between items-center">
+            <span>🚶 Personnel sans véhicule ({personnelSansVehicule.length})</span>
+            {editMode && (
+              <Button size="sm" variant="outline" onClick={() => openAddPersonnel(null)}>
+                + Ajouter
+              </Button>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4">
+          {personnelSansVehicule.length === 0 ? (
+            <p className="text-gray-500 text-sm">Personnel arrivé par ses propres moyens</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {personnelSansVehicule.map(p => (
+                <span key={p.id} className="bg-orange-100 text-orange-800 px-3 py-1 rounded text-sm flex items-center gap-1">
+                  {p.user_name || p.user_id}
+                  {editMode && p.is_manual && (
+                    <button onClick={() => removePersonnel(p.id)} className="ml-1 text-red-500 hover:text-red-700">×</button>
+                  )}
+                </span>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader className="bg-blue-50">
-          <CardTitle className="text-lg text-blue-800">👥 Tout le personnel sur les lieux ({allPersonnel.length})</CardTitle>
+          <CardTitle className="text-lg text-blue-800">👥 Récapitulatif du personnel ({allPersonnel.length})</CardTitle>
         </CardHeader>
         <CardContent className="pt-4">
           {allPersonnel.length === 0 ? (
@@ -1343,7 +1397,7 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                   {allPersonnel.map(resource => (
                     <tr key={resource.id} className="border-b">
                       <td className="p-2 font-medium">{resource.user_name || resource.user_id || 'Non assigné'}</td>
-                      <td className="p-2">{resource.vehicle_number || '-'}</td>
+                      <td className="p-2">{resource.vehicle_number || <span className="text-orange-600">Propres moyens</span>}</td>
                       <td className="p-2">
                         <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
                           {resource.role_on_scene || 'Pompier'}
