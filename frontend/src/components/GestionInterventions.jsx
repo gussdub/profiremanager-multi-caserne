@@ -2165,6 +2165,81 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
         </CardContent>
       </Card>
 
+      {/* Modèles de narratif */}
+      <Card>
+        <CardHeader className="bg-green-50">
+          <CardTitle className="text-green-800">
+            📝 Modèles de narratif
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <p className="text-gray-600 mb-4">
+            Créez des modèles de texte pré-rédigés pour guider les pompiers lors de la rédaction des rapports.
+          </p>
+          
+          {/* Liste des modèles existants */}
+          <div className="space-y-3 mb-4">
+            {(settings.modeles_narratif || []).map((modele, index) => (
+              <div key={index} className="bg-gray-50 p-3 rounded-lg border">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      value={modele.titre}
+                      onChange={(e) => {
+                        const updated = [...(settings.modeles_narratif || [])];
+                        updated[index] = { ...modele, titre: e.target.value };
+                        setSettings({ ...settings, modeles_narratif: updated });
+                      }}
+                      className="font-medium w-full bg-transparent border-b border-transparent hover:border-gray-300 focus:border-green-500 focus:outline-none"
+                      placeholder="Titre du modèle"
+                    />
+                    <textarea
+                      value={modele.contenu}
+                      onChange={(e) => {
+                        const updated = [...(settings.modeles_narratif || [])];
+                        updated[index] = { ...modele, contenu: e.target.value };
+                        setSettings({ ...settings, modeles_narratif: updated });
+                      }}
+                      className="w-full mt-2 text-sm text-gray-600 bg-white border border-gray-200 rounded p-2 min-h-[60px]"
+                      placeholder="Contenu du modèle..."
+                    />
+                  </div>
+                  <button
+                    onClick={() => {
+                      const updated = (settings.modeles_narratif || []).filter((_, i) => i !== index);
+                      setSettings({ ...settings, modeles_narratif: updated });
+                    }}
+                    className="ml-2 text-red-500 hover:text-red-700 p-1"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Bouton ajouter */}
+          <Button
+            variant="outline"
+            onClick={() => {
+              const newModele = {
+                id: Date.now().toString(),
+                titre: 'Nouveau modèle',
+                contenu: ''
+              };
+              setSettings({
+                ...settings,
+                modeles_narratif: [...(settings.modeles_narratif || []), newModele]
+              });
+            }}
+            className="w-full"
+          >
+            + Ajouter un modèle de narratif
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* Validateurs de rapports */}
       <Card>
         <CardHeader className="bg-blue-50">
