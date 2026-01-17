@@ -666,18 +666,25 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
   const handleSave = async () => {
     setLoading(true);
     try {
+      // Si le statut est "new", le passer en "draft" lors de la première modification
+      const dataToSave = { ...formData };
+      if (dataToSave.status === 'new') {
+        dataToSave.status = 'draft';
+      }
+      
       const response = await fetch(`${API}/interventions/${intervention.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${getToken()}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(dataToSave)
       });
 
       if (response.ok) {
         toast({ title: "Succès", description: "Intervention mise à jour" });
         setEditMode(false);
+        setFormData(dataToSave); // Mettre à jour le formData local avec le nouveau statut
         fetchDetails();
       } else {
         const error = await response.json();
