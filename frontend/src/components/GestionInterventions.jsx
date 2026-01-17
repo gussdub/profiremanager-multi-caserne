@@ -773,21 +773,23 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
           </div>
         )}
 
-        {/* Navigation - Style distinct du header */}
-        <div className="flex gap-2 px-4 py-3 border-b border-gray-200 bg-white overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-          {visibleSections.map(section => (
-            <button
-              key={section.id}
-              onClick={() => setActiveSection(section.id)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap text-sm flex-shrink-0 ${
-                activeSection === section.id
-                  ? 'bg-red-600 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {section.icon} {section.label}
-            </button>
-          ))}
+        {/* Navigation - Style bien visible */}
+        <div className="bg-gray-100 px-4 py-3 border-b border-gray-300">
+          <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+            {visibleSections.map(section => (
+              <button
+                key={section.id}
+                onClick={() => setActiveSection(section.id)}
+                className={`px-4 py-2.5 rounded-lg font-medium transition-all whitespace-nowrap text-sm flex-shrink-0 border ${
+                  activeSection === section.id
+                    ? 'bg-red-600 text-white border-red-700 shadow-lg'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                }`}
+              >
+                {section.icon} {section.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Contenu - scroll interne avec overscroll-behavior */}
