@@ -1916,17 +1916,17 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
         </CardContent>
       </Card>
 
-      {/* Personnes ressources */}
+      {/* Validateurs de rapports */}
       <Card>
-        <CardHeader className="bg-yellow-50">
-          <CardTitle className="text-yellow-800">
-            👥 Personnes ressources (accès au module)
+        <CardHeader className="bg-blue-50">
+          <CardTitle className="text-blue-800">
+            ✅ Validateurs de rapports
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-4">
           <p className="text-gray-600 mb-4">
-            Ces personnes auront accès au module Interventions et recevront les notifications.
-            Les administrateurs et superviseurs y ont accès automatiquement.
+            Sélectionnez les administrateurs et superviseurs autorisés à <strong>valider et signer</strong> les rapports d'intervention.
+            Tous les admins/superviseurs ont accès au module, mais seuls les validateurs désignés peuvent approuver les rapports.
           </p>
 
           <div className="space-y-6">
@@ -1936,7 +1936,9 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
                 <span>👑</span> Administrateurs
               </h4>
               <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-                {usersByRole.admin.map(u => (
+                {usersByRole.admin.length === 0 ? (
+                  <p className="text-gray-500 italic">Aucun administrateur</p>
+                ) : usersByRole.admin.map(u => (
                   <label key={u.id} className="flex items-center gap-3 cursor-pointer hover:bg-gray-100 p-2 rounded">
                     <input
                       type="checkbox"
@@ -1946,6 +1948,9 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
                     />
                     <span className="font-medium">{u.prenom} {u.nom}</span>
                     <span className="text-gray-500 text-sm">({u.email})</span>
+                    {(settings.personnes_ressources || []).includes(u.id) && (
+                      <span className="ml-auto text-green-600 text-sm">✓ Validateur</span>
+                    )}
                   </label>
                 ))}
               </div>
