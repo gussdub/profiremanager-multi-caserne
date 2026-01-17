@@ -2159,7 +2159,7 @@ const SectionNarratif = ({ formData, setFormData, editMode, settings }) => {
   const stopDictation = () => {
     if (recognitionRef.current) {
       try {
-        recognitionRef.current.stop();
+        recognitionRef.current.abort();
       } catch (e) {}
       recognitionRef.current = null;
     }
