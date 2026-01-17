@@ -773,16 +773,16 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
           </div>
         )}
 
-        {/* Navigation */}
-        <div className="flex border-b border-gray-200 bg-gray-50 overflow-x-auto">
+        {/* Navigation - Style unifié avec les autres modules */}
+        <div className="flex gap-2 px-4 py-2 border-b border-gray-200 bg-gray-50 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
           {visibleSections.map(section => (
             <button
               key={section.id}
               onClick={() => setActiveSection(section.id)}
-              className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+              className={`px-4 py-2 rounded-t-lg font-medium transition-colors whitespace-nowrap text-sm flex-shrink-0 ${
                 activeSection === section.id
-                  ? 'border-b-2 border-red-600 text-red-600 bg-white'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-red-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
               {section.icon} {section.label}
