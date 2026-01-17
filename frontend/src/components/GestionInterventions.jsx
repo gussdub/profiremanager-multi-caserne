@@ -1126,17 +1126,25 @@ const SectionBatiment = ({ formData, setFormData, editMode, referenceData }) => 
 
 // ==================== SECTION RESSOURCES ====================
 
-const SectionRessources = ({ vehicles, resources, formData, editMode, tenantSlug, interventionId, onRefresh }) => {
+const SectionRessources = ({ vehicles, resources, formData, setFormData, editMode, tenantSlug, interventionId, onRefresh }) => {
+  const [showAddVehicle, setShowAddVehicle] = useState(false);
   const [showAddPersonnel, setShowAddPersonnel] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [users, setUsers] = useState([]);
+  const [tenantVehicles, setTenantVehicles] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [newVehicle, setNewVehicle] = useState({ number: '', crew_count: '' });
+  const [selectedPersonnel, setSelectedPersonnel] = useState([]);
   
   const API = `${BACKEND_URL}/api/${tenantSlug}`;
   
   const getToken = () => {
     return localStorage.getItem(`${tenantSlug}_token`) || localStorage.getItem('token');
   };
+  
+  // Véhicules manuels ajoutés localement
+  const [manualVehicles, setManualVehicles] = useState(formData.manual_vehicles || []);
+  const [manualPersonnel, setManualPersonnel] = useState(formData.manual_personnel || []);
   
   // Charger la liste des utilisateurs
   const loadUsers = async () => {
@@ -1157,62 +1165,147 @@ const SectionRessources = ({ vehicles, resources, formData, editMode, tenantSlug
     }
   };
   
+  // Charger les véhicules du tenant
+  const loadTenantVehicles = async () => {
+    try {
+      const response = await fetch(`${API}/vehicles`, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setTenantVehicles(data.vehicles || data || []);
+      }
+    } catch (error) {
+      console.error('Erreur chargement véhicules:', error);
+    }
+  };
+  
   const openAddPersonnel = (vehicle) => {
     setSelectedVehicle(vehicle);
     loadUsers();
+    setSelectedPersonnel([]);
     setShowAddPersonnel(true);
   };
   
+  const addVehicle = () => {
+    if (!newVehicle.number) return;
+    const vehicle = {
+      id: `manual_${Date.now()}`,
+      xml_vehicle_number: newVehicle.number,
+      crew_count: parseInt(newVehicle.crew_count) || 0,
+      is_manual: true
+    };
+    const updated = [...manualVehicles, vehicle];
+    setManualVehicles(updated);
+    setFormData({ ...formData, manual_vehicles: updated });
+    setNewVehicle({ number: '', crew_count: '' });
+    setShowAddVehicle(false);
+  };
+  
+  const removeVehicle = (vehicleId) => {
+    const updated = manualVehicles.filter(v => v.id !== vehicleId);
+    setManualVehicles(updated);
+    setFormData({ ...formData, manual_vehicles: updated });
+  };
+  
+  const addPersonnelToVehicle = () => {
+    if (selectedPersonnel.length === 0 || !selectedVehicle) return;
+    
+    const newPersonnel = selectedPersonnel.map(userId => {
+      const user = users.find(u => u.id === userId);
+      return {
+        id: `manual_${Date.now()}_${userId}`,
+        user_id: userId,
+        user_name: user ? `${user.prenom} ${user.nom}` : userId,
+        vehicle_number: selectedVehicle.xml_vehicle_number,
+        role_on_scene: 'Pompier',
+        is_manual: true
+      };
+    });
+    
+    const updated = [...manualPersonnel, ...newPersonnel];
+    setManualPersonnel(updated);
+    setFormData({ ...formData, manual_personnel: updated });
+    setShowAddPersonnel(false);
+    setSelectedPersonnel([]);
+  };
+  
+  const removePersonnel = (personnelId) => {
+    const updated = manualPersonnel.filter(p => p.id !== personnelId);
+    setManualPersonnel(updated);
+    setFormData({ ...formData, manual_personnel: updated });
+  };
+  
+  // Combiner véhicules XML et manuels
+  const allVehicles = [...vehicles, ...manualVehicles];
+  const allPersonnel = [...resources, ...manualPersonnel];
+  
   // Obtenir le personnel assigné à un véhicule
   const getVehiclePersonnel = (vehicleNumber) => {
-    return resources.filter(r => r.vehicle_number === vehicleNumber);
+    return allPersonnel.filter(r => r.vehicle_number === vehicleNumber);
   };
   
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader className="bg-blue-50">
-          <CardTitle className="text-lg text-blue-800">🚒 Véhicules déployés ({vehicles.length})</CardTitle>
+          <CardTitle className="text-lg text-blue-800 flex justify-between items-center">
+            <span>🚒 Véhicules déployés ({allVehicles.length})</span>
+            {editMode && (
+              <Button size="sm" variant="outline" onClick={() => { loadTenantVehicles(); setShowAddVehicle(true); }}>
+                + Ajouter véhicule
+              </Button>
+            )}
+          </CardTitle>
         </CardHeader>
         <CardContent className="pt-4">
-          {vehicles.length === 0 ? (
+          {allVehicles.length === 0 ? (
             <p className="text-gray-500">Aucun véhicule enregistré</p>
           ) : (
             <div className="space-y-4">
-              {vehicles.map(vehicle => {
+              {allVehicles.map(vehicle => {
                 const personnel = getVehiclePersonnel(vehicle.xml_vehicle_number);
                 return (
-                  <div key={vehicle.id} className="bg-gray-50 p-4 rounded-lg border">
+                  <div key={vehicle.id} className={`p-4 rounded-lg border ${vehicle.is_manual ? 'bg-green-50 border-green-200' : 'bg-gray-50'}`}>
                     <div className="flex justify-between items-start mb-3">
                       <div>
-                        <div className="font-bold text-xl">{vehicle.xml_vehicle_number}</div>
+                        <div className="font-bold text-xl flex items-center gap-2">
+                          {vehicle.xml_vehicle_number}
+                          {vehicle.is_manual && <span className="text-xs bg-green-200 text-green-800 px-2 py-0.5 rounded">Manuel</span>}
+                        </div>
                         <div className="text-sm text-gray-600">
-                          👥 {vehicle.crew_count} pompier(s) selon la centrale
+                          👥 {vehicle.crew_count || 0} pompier(s) {!vehicle.is_manual && 'selon la centrale'}
                         </div>
-                        <div className="text-xs text-gray-500">
-                          Statut: {vehicle.xml_status || 'Non renseigné'}
-                        </div>
+                        {vehicle.xml_status && (
+                          <div className="text-xs text-gray-500">Statut: {vehicle.xml_status}</div>
+                        )}
                       </div>
-                      {editMode && (
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => openAddPersonnel(vehicle)}
-                        >
-                          + Ajouter personnel
-                        </Button>
-                      )}
+                      <div className="flex gap-2">
+                        {editMode && (
+                          <Button size="sm" variant="outline" onClick={() => openAddPersonnel(vehicle)}>
+                            + Personnel
+                          </Button>
+                        )}
+                        {editMode && vehicle.is_manual && (
+                          <Button size="sm" variant="destructive" onClick={() => removeVehicle(vehicle.id)}>
+                            🗑️
+                          </Button>
+                        )}
+                      </div>
                     </div>
                     
-                    {/* Personnel assigné à ce véhicule */}
+                    {/* Personnel assigné */}
                     {personnel.length > 0 && (
                       <div className="mt-3 pt-3 border-t border-gray-200">
                         <p className="text-sm font-medium text-gray-700 mb-2">Personnel assigné:</p>
                         <div className="flex flex-wrap gap-2">
                           {personnel.map(p => (
-                            <span key={p.id} className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
-                              {p.user_name || p.user_id} 
-                              {p.role_on_scene && <span className="text-blue-600 ml-1">({p.role_on_scene})</span>}
+                            <span key={p.id} className={`px-2 py-1 rounded text-sm flex items-center gap-1 ${p.is_manual ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
+                              {p.user_name || p.user_id}
+                              {p.role_on_scene && <span className="opacity-75">({p.role_on_scene})</span>}
+                              {editMode && p.is_manual && (
+                                <button onClick={() => removePersonnel(p.id)} className="ml-1 text-red-500 hover:text-red-700">×</button>
+                              )}
                             </span>
                           ))}
                         </div>
@@ -1228,10 +1321,10 @@ const SectionRessources = ({ vehicles, resources, formData, editMode, tenantSlug
 
       <Card>
         <CardHeader className="bg-blue-50">
-          <CardTitle className="text-lg text-blue-800">👥 Tout le personnel sur les lieux ({resources.length})</CardTitle>
+          <CardTitle className="text-lg text-blue-800">👥 Tout le personnel sur les lieux ({allPersonnel.length})</CardTitle>
         </CardHeader>
         <CardContent className="pt-4">
-          {resources.length === 0 ? (
+          {allPersonnel.length === 0 ? (
             <p className="text-gray-500">Aucune ressource humaine enregistrée</p>
           ) : (
             <div className="overflow-x-auto">
@@ -1241,12 +1334,12 @@ const SectionRessources = ({ vehicles, resources, formData, editMode, tenantSlug
                     <th className="p-2 text-left">Nom</th>
                     <th className="p-2 text-left">Véhicule</th>
                     <th className="p-2 text-left">Rôle</th>
-                    <th className="p-2 text-left">Arrivée</th>
-                    <th className="p-2 text-left">Départ</th>
+                    <th className="p-2 text-left">Source</th>
+                    {editMode && <th className="p-2 text-left">Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {resources.map(resource => (
+                  {allPersonnel.map(resource => (
                     <tr key={resource.id} className="border-b">
                       <td className="p-2 font-medium">{resource.user_name || resource.user_id || 'Non assigné'}</td>
                       <td className="p-2">{resource.vehicle_number || '-'}</td>
@@ -1255,8 +1348,18 @@ const SectionRessources = ({ vehicles, resources, formData, editMode, tenantSlug
                           {resource.role_on_scene || 'Pompier'}
                         </span>
                       </td>
-                      <td className="p-2 text-gray-600">{resource.datetime_start ? new Date(resource.datetime_start).toLocaleTimeString('fr-CA') : '-'}</td>
-                      <td className="p-2 text-gray-600">{resource.datetime_end ? new Date(resource.datetime_end).toLocaleTimeString('fr-CA') : '-'}</td>
+                      <td className="p-2">
+                        <span className={`px-2 py-1 rounded text-xs ${resource.is_manual ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                          {resource.is_manual ? 'Manuel' : 'XML'}
+                        </span>
+                      </td>
+                      {editMode && (
+                        <td className="p-2">
+                          {resource.is_manual && (
+                            <button onClick={() => removePersonnel(resource.id)} className="text-red-500 hover:text-red-700">🗑️</button>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -1266,12 +1369,72 @@ const SectionRessources = ({ vehicles, resources, formData, editMode, tenantSlug
         </CardContent>
       </Card>
       
-      {/* Modal Ajout Personnel - à implémenter côté backend */}
+      {/* Modal Ajout Véhicule */}
+      {showAddVehicle && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-bold mb-4">🚒 Ajouter un véhicule</h3>
+            
+            {tenantVehicles.length > 0 && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">Sélectionner un véhicule existant</label>
+                <select 
+                  onChange={(e) => {
+                    const v = tenantVehicles.find(tv => tv.id === e.target.value);
+                    if (v) setNewVehicle({ number: v.numero || v.nom, crew_count: '' });
+                  }}
+                  className="w-full border rounded p-2"
+                >
+                  <option value="">-- Ou saisir manuellement --</option>
+                  {tenantVehicles.map(v => (
+                    <option key={v.id} value={v.id}>{v.numero || v.nom}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">Numéro du véhicule *</label>
+                <input
+                  type="text"
+                  value={newVehicle.number}
+                  onChange={(e) => setNewVehicle({ ...newVehicle, number: e.target.value })}
+                  className="w-full border rounded p-2"
+                  placeholder="Ex: 372, Échelle 1, etc."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Nombre de pompiers</label>
+                <input
+                  type="number"
+                  value={newVehicle.crew_count}
+                  onChange={(e) => setNewVehicle({ ...newVehicle, crew_count: e.target.value })}
+                  className="w-full border rounded p-2"
+                  placeholder="0"
+                  min="0"
+                />
+              </div>
+            </div>
+            
+            <div className="flex gap-2 mt-4">
+              <Button variant="outline" onClick={() => setShowAddVehicle(false)} className="flex-1">
+                Annuler
+              </Button>
+              <Button onClick={addVehicle} disabled={!newVehicle.number} className="flex-1">
+                Ajouter
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal Ajout Personnel */}
       {showAddPersonnel && selectedVehicle && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
             <h3 className="text-lg font-bold mb-4">
-              Ajouter personnel au véhicule {selectedVehicle.xml_vehicle_number}
+              👥 Ajouter personnel au véhicule {selectedVehicle.xml_vehicle_number}
             </h3>
             {loadingUsers ? (
               <p>Chargement...</p>
@@ -1279,7 +1442,18 @@ const SectionRessources = ({ vehicles, resources, formData, editMode, tenantSlug
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {users.filter(u => u.statut === 'Actif').map(user => (
                   <label key={user.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                    <input type="checkbox" className="w-4 h-4" />
+                    <input 
+                      type="checkbox"
+                      checked={selectedPersonnel.includes(user.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedPersonnel([...selectedPersonnel, user.id]);
+                        } else {
+                          setSelectedPersonnel(selectedPersonnel.filter(id => id !== user.id));
+                        }
+                      }}
+                      className="w-4 h-4" 
+                    />
                     <span>{user.prenom} {user.nom}</span>
                     <span className="text-gray-500 text-sm">({user.role})</span>
                   </label>
@@ -1290,12 +1464,8 @@ const SectionRessources = ({ vehicles, resources, formData, editMode, tenantSlug
               <Button variant="outline" onClick={() => setShowAddPersonnel(false)} className="flex-1">
                 Annuler
               </Button>
-              <Button onClick={() => {
-                // TODO: Implémenter la sauvegarde côté backend
-                setShowAddPersonnel(false);
-                alert('Fonctionnalité en cours de développement');
-              }} className="flex-1">
-                Ajouter
+              <Button onClick={addPersonnelToVehicle} disabled={selectedPersonnel.length === 0} className="flex-1">
+                Ajouter ({selectedPersonnel.length})
               </Button>
             </div>
           </div>
