@@ -613,6 +613,9 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
   const [resources, setResources] = useState([]);
   const [validationErrors, setValidationErrors] = useState([]);
   const [interventionSettings, setInterventionSettings] = useState(null);
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [submitReason, setSubmitReason] = useState('');
+  const [submitAction, setSubmitAction] = useState(null);
 
   // Bloquer le scroll du body
   useModalScrollLock(true);
