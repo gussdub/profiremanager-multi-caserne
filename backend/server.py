@@ -36362,6 +36362,11 @@ async def get_intervention_settings(
             "auto_archive_after_days": 365,
             "personnes_ressources": [],
             "validateurs": [],
+            "modeles_narratif": [
+                {"id": "1", "titre": "Arrivée sur les lieux", "contenu": "À notre arrivée sur les lieux, nous avons constaté..."},
+                {"id": "2", "titre": "Intervention standard", "contenu": "L'intervention s'est déroulée sans incident. Les opérations ont consisté en..."},
+                {"id": "3", "titre": "Fausse alerte", "contenu": "Suite à notre investigation, il s'agit d'une fausse alerte causée par..."},
+            ],
             "created_at": datetime.now(timezone.utc)
         }
         await db.intervention_settings.insert_one(settings)
@@ -36372,6 +36377,8 @@ async def get_intervention_settings(
         settings["personnes_ressources"] = []
     if "validateurs" not in settings:
         settings["validateurs"] = []
+    if "modeles_narratif" not in settings:
+        settings["modeles_narratif"] = []
     
     return {"settings": settings}
 
