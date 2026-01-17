@@ -4,8 +4,61 @@ import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { useToast } from '../hooks/use-toast';
 import useModalScrollLock from '../hooks/useModalScrollLock';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+
+// Composant draggable pour les sections du template narratif
+const SortableNarratifSection = ({ section, index, children }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: section.id || `section-${index}` });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <div className={`bg-gray-50 p-3 rounded-lg border flex items-start gap-3 ${isDragging ? 'border-blue-500 border-dashed border-2' : ''}`}>
+        {/* Handle de drag */}
+        <button
+          {...attributes}
+          {...listeners}
+          type="button"
+          className="cursor-grab p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded mt-2"
+          title="Glisser pour réorganiser"
+        >
+          ⠿
+        </button>
+        {children}
+      </div>
+    </div>
+  );
+};
 
 // ==================== COMPOSANT PRINCIPAL ====================
 
