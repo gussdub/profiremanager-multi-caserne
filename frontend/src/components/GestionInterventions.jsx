@@ -1431,38 +1431,68 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
       )}
       
       {/* Modal Ajout Personnel */}
-      {showAddPersonnel && selectedVehicle && (
+      {showAddPersonnel && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col">
             <h3 className="text-lg font-bold mb-4">
-              👥 Ajouter personnel au véhicule {selectedVehicle.xml_vehicle_number}
+              👥 {selectedVehicle ? `Ajouter personnel au véhicule ${selectedVehicle.xml_vehicle_number}` : 'Ajouter personnel (arrivé par ses propres moyens)'}
             </h3>
+            
+            {/* Barre de recherche */}
+            <div className="mb-3">
+              <input
+                type="text"
+                placeholder="🔍 Rechercher par nom..."
+                value={searchPersonnel}
+                onChange={(e) => setSearchPersonnel(e.target.value)}
+                className="w-full border rounded-lg p-2"
+              />
+            </div>
+            
+            {/* Info garde interne */}
+            {gardeInterneUsers.length > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded p-2 mb-3 text-sm text-blue-800">
+                ℹ️ {gardeInterneUsers.length} personne(s) en garde interne pré-sélectionnée(s)
+              </div>
+            )}
+            
             {loadingUsers ? (
               <p>Chargement...</p>
             ) : (
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {users.filter(u => u.statut === 'Actif').map(user => (
-                  <label key={user.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                    <input 
-                      type="checkbox"
-                      checked={selectedPersonnel.includes(user.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedPersonnel([...selectedPersonnel, user.id]);
-                        } else {
-                          setSelectedPersonnel(selectedPersonnel.filter(id => id !== user.id));
-                        }
-                      }}
-                      className="w-4 h-4" 
-                    />
-                    <span>{user.prenom} {user.nom}</span>
-                    <span className="text-gray-500 text-sm">({user.role})</span>
-                  </label>
-                ))}
+              <div className="space-y-1 overflow-y-auto flex-1" style={{ maxHeight: '300px' }}>
+                {users
+                  .filter(u => u.statut === 'Actif')
+                  .filter(u => {
+                    if (!searchPersonnel) return true;
+                    const search = searchPersonnel.toLowerCase();
+                    return `${u.prenom} ${u.nom}`.toLowerCase().includes(search);
+                  })
+                  .map(user => {
+                    const isGardeInterne = gardeInterneUsers.some(g => g.id === user.id);
+                    return (
+                      <label key={user.id} className={`flex items-center gap-2 p-2 rounded cursor-pointer ${isGardeInterne ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
+                        <input 
+                          type="checkbox"
+                          checked={selectedPersonnel.includes(user.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedPersonnel([...selectedPersonnel, user.id]);
+                            } else {
+                              setSelectedPersonnel(selectedPersonnel.filter(id => id !== user.id));
+                            }
+                          }}
+                          className="w-4 h-4" 
+                        />
+                        <span className="flex-1">{user.prenom} {user.nom}</span>
+                        <span className="text-gray-500 text-sm">({user.role})</span>
+                        {isGardeInterne && <span className="text-xs bg-blue-200 text-blue-800 px-1 rounded">Garde</span>}
+                      </label>
+                    );
+                  })}
               </div>
             )}
-            <div className="flex gap-2 mt-4">
-              <Button variant="outline" onClick={() => setShowAddPersonnel(false)} className="flex-1">
+            <div className="flex gap-2 mt-4 pt-3 border-t">
+              <Button variant="outline" onClick={() => { setShowAddPersonnel(false); setSearchPersonnel(''); }} className="flex-1">
                 Annuler
               </Button>
               <Button onClick={addPersonnelToVehicle} disabled={selectedPersonnel.length === 0} className="flex-1">
