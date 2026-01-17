@@ -1723,9 +1723,10 @@ const SectionPertes = ({ formData, setFormData, editMode }) => {
               <label className="block text-sm text-gray-600 mb-1">Blessés légers</label>
               <input
                 type="number"
-                value={formData.firefighter_injuries_minor || 0}
-                onChange={(e) => setFormData({ ...formData, firefighter_injuries_minor: parseInt(e.target.value) || 0 })}
+                value={getNumberValue(formData.firefighter_injuries_minor)}
+                onChange={(e) => handleNumberChange('firefighter_injuries_minor', e.target.value)}
                 disabled={!editMode}
+                placeholder="0"
                 min="0"
                 className="w-full border border-gray-300 rounded-lg p-2"
               />
@@ -1734,9 +1735,10 @@ const SectionPertes = ({ formData, setFormData, editMode }) => {
               <label className="block text-sm text-gray-600 mb-1">Blessés graves</label>
               <input
                 type="number"
-                value={formData.firefighter_injuries_major || 0}
-                onChange={(e) => setFormData({ ...formData, firefighter_injuries_major: parseInt(e.target.value) || 0 })}
+                value={getNumberValue(formData.firefighter_injuries_major)}
+                onChange={(e) => handleNumberChange('firefighter_injuries_major', e.target.value)}
                 disabled={!editMode}
+                placeholder="0"
                 min="0"
                 className="w-full border border-gray-300 rounded-lg p-2"
               />
@@ -1745,16 +1747,17 @@ const SectionPertes = ({ formData, setFormData, editMode }) => {
               <label className="block text-sm text-gray-600 mb-1">Décès</label>
               <input
                 type="number"
-                value={formData.firefighter_deaths || 0}
-                onChange={(e) => setFormData({ ...formData, firefighter_deaths: parseInt(e.target.value) || 0 })}
+                value={getNumberValue(formData.firefighter_deaths)}
+                onChange={(e) => handleNumberChange('firefighter_deaths', e.target.value)}
                 disabled={!editMode}
+                placeholder="0"
                 min="0"
                 className="w-full border border-gray-300 rounded-lg p-2 bg-red-50"
               />
             </div>
           </div>
 
-          {(formData.civilian_deaths > 0 || formData.firefighter_deaths > 0) && (
+          {(parseFloat(formData.civilian_deaths) > 0 || parseFloat(formData.firefighter_deaths) > 0) && (
             <div className="mt-4 bg-red-100 p-4 rounded-lg border border-red-300">
               <p className="text-red-800 font-medium">
                 ⚠️ En cas de décès, le rapport sera transmis à la SQ/Coroner pour enquête.
