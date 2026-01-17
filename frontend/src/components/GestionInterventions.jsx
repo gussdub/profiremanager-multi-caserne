@@ -2655,84 +2655,66 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
         <CardContent className="pt-4">
           <p className="text-gray-600 mb-4">
             Définissez les sections qui apparaîtront dans tous les rapports d'intervention. 
-            Chaque section aura son propre champ à remplir.
+            Glissez-déposez pour réorganiser les sections.
           </p>
           
-          {/* Liste des sections du template */}
-          <div className="space-y-3 mb-4">
-            {(settings.template_narratif || [
-              { id: 'arrivee', label: 'Arrivée sur les lieux (360)', placeholder: 'Décrivez la situation à votre arrivée...' },
-              { id: 'actions', label: 'Actions entreprises', placeholder: 'Décrivez les actions effectuées...' },
-              { id: 'observations', label: 'Observations', placeholder: 'Notez vos observations...' },
-              { id: 'conclusion', label: 'Conclusion', placeholder: 'Résumez la conclusion...' },
-            ]).map((section, index, arr) => (
-              <div key={index} className="bg-gray-50 p-3 rounded-lg border flex items-start gap-3">
-                {/* Boutons de réorganisation */}
-                <div className="flex flex-col gap-1">
-                  <button
-                    onClick={() => {
-                      if (index === 0) return;
-                      const updated = [...(settings.template_narratif || arr)];
-                      [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
-                      setSettings({ ...settings, template_narratif: updated });
-                    }}
-                    disabled={index === 0}
-                    className={`p-1 rounded text-sm ${index === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:bg-gray-200 hover:text-gray-700'}`}
-                    title="Monter"
-                  >
-                    ↑
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (index === arr.length - 1) return;
-                      const updated = [...(settings.template_narratif || arr)];
-                      [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
-                      setSettings({ ...settings, template_narratif: updated });
-                    }}
-                    disabled={index === arr.length - 1}
-                    className={`p-1 rounded text-sm ${index === arr.length - 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:bg-gray-200 hover:text-gray-700'}`}
-                    title="Descendre"
-                  >
-                    ↓
-                  </button>
-                </div>
-                <span className="text-gray-400 font-mono mt-2">{index + 1}.</span>
-                <div className="flex-1 space-y-2">
-                  <input
-                    type="text"
-                    value={section.label}
-                    onChange={(e) => {
-                      const updated = [...(settings.template_narratif || [])];
-                      updated[index] = { ...section, label: e.target.value };
-                      setSettings({ ...settings, template_narratif: updated });
-                    }}
-                    className="font-medium w-full bg-white border border-gray-200 rounded p-2"
-                    placeholder="Titre de la section"
-                  />
-                  <input
-                    type="text"
-                    value={section.placeholder || ''}
-                    onChange={(e) => {
-                      const updated = [...(settings.template_narratif || [])];
-                      updated[index] = { ...section, placeholder: e.target.value };
-                      setSettings({ ...settings, template_narratif: updated });
-                    }}
-                    className="w-full text-sm text-gray-600 bg-white border border-gray-200 rounded p-2"
-                    placeholder="Texte indicatif (placeholder)"
-                  />
-                </div>
-                <button
-                  onClick={() => {
-                    const updated = (settings.template_narratif || []).filter((_, i) => i !== index);
-                    setSettings({ ...settings, template_narratif: updated });
-                  }}
-                  className="text-red-500 hover:text-red-700 p-2"
-                >
-                  🗑️
-                </button>
+          {/* Liste des sections du template avec drag & drop */}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleNarratifDragEnd}
+          >
+            <SortableContext
+              items={(settings.template_narratif || []).map((s, i) => s.id || `section-${i}`)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-3 mb-4">
+                {(settings.template_narratif || [
+                  { id: 'arrivee', label: 'Arrivée sur les lieux (360)', placeholder: 'Décrivez la situation à votre arrivée...' },
+                  { id: 'actions', label: 'Actions entreprises', placeholder: 'Décrivez les actions effectuées...' },
+                  { id: 'observations', label: 'Observations', placeholder: 'Notez vos observations...' },
+                  { id: 'conclusion', label: 'Conclusion', placeholder: 'Résumez la conclusion...' },
+                ]).map((section, index) => (
+                  <SortableNarratifSection key={section.id || `section-${index}`} section={section} index={index}>
+                    <span className="text-gray-400 font-mono mt-2">{index + 1}.</span>
+                    <div className="flex-1 space-y-2">
+                      <input
+                        type="text"
+                        value={section.label}
+                        onChange={(e) => {
+                          const updated = [...(settings.template_narratif || [])];
+                          updated[index] = { ...section, label: e.target.value };
+                          setSettings({ ...settings, template_narratif: updated });
+                        }}
+                        className="font-medium w-full bg-white border border-gray-200 rounded p-2"
+                        placeholder="Titre de la section"
+                      />
+                      <input
+                        type="text"
+                        value={section.placeholder || ''}
+                        onChange={(e) => {
+                          const updated = [...(settings.template_narratif || [])];
+                          updated[index] = { ...section, placeholder: e.target.value };
+                          setSettings({ ...settings, template_narratif: updated });
+                        }}
+                        className="w-full text-sm text-gray-600 bg-white border border-gray-200 rounded p-2"
+                        placeholder="Texte indicatif (placeholder)"
+                      />
+                    </div>
+                    <button
+                      onClick={() => {
+                        const updated = (settings.template_narratif || []).filter((_, i) => i !== index);
+                        setSettings({ ...settings, template_narratif: updated });
+                      }}
+                      className="text-red-500 hover:text-red-700 p-2"
+                    >
+                      🗑️
+                    </button>
+                  </SortableNarratifSection>
+                ))}
               </div>
-            ))}
-          </div>
+            </SortableContext>
+          </DndContext>
           
           {/* Bouton ajouter */}
           <Button
