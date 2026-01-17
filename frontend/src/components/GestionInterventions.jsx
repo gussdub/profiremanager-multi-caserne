@@ -1361,7 +1361,7 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
         </CardContent>
       </Card>
 
-      {/* Personnel sans véhicule (arrivé par ses propres moyens) */}
+      {/* Personnel sans véhicule */}
       <Card>
         <CardHeader className="bg-orange-50">
           <CardTitle className="text-lg text-orange-800 flex justify-between items-center">
@@ -1375,7 +1375,7 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
         </CardHeader>
         <CardContent className="pt-4">
           {personnelSansVehicule.length === 0 ? (
-            <p className="text-gray-500 text-sm">Personnel arrivé par ses propres moyens</p>
+            <p className="text-gray-500 text-sm">Ajouter du personnel</p>
           ) : (
             <div className="flex flex-wrap gap-2">
               {personnelSansVehicule.map(p => (
