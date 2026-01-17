@@ -1122,7 +1122,48 @@ const SectionBatiment = ({ formData, setFormData, editMode, referenceData }) => 
 
 // ==================== SECTION RESSOURCES ====================
 
-const SectionRessources = ({ vehicles, resources, formData }) => {
+const SectionRessources = ({ vehicles, resources, formData, editMode, tenantSlug, interventionId, onRefresh }) => {
+  const [showAddPersonnel, setShowAddPersonnel] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  
+  const API = `${BACKEND_URL}/api/${tenantSlug}`;
+  
+  const getToken = () => {
+    return localStorage.getItem(`${tenantSlug}_token`) || localStorage.getItem('token');
+  };
+  
+  // Charger la liste des utilisateurs
+  const loadUsers = async () => {
+    if (users.length > 0) return;
+    setLoadingUsers(true);
+    try {
+      const response = await fetch(`${API}/users`, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data.users || data || []);
+      }
+    } catch (error) {
+      console.error('Erreur chargement utilisateurs:', error);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+  
+  const openAddPersonnel = (vehicle) => {
+    setSelectedVehicle(vehicle);
+    loadUsers();
+    setShowAddPersonnel(true);
+  };
+  
+  // Obtenir le personnel assigné à un véhicule
+  const getVehiclePersonnel = (vehicleNumber) => {
+    return resources.filter(r => r.vehicle_number === vehicleNumber);
+  };
+  
   return (
     <div className="space-y-6">
       <Card>
@@ -1133,18 +1174,49 @@ const SectionRessources = ({ vehicles, resources, formData }) => {
           {vehicles.length === 0 ? (
             <p className="text-gray-500">Aucun véhicule enregistré</p>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {vehicles.map(vehicle => (
-                <div key={vehicle.id} className="bg-gray-50 p-3 rounded-lg border">
-                  <div className="font-bold text-lg">{vehicle.xml_vehicle_number}</div>
-                  <div className="text-sm text-gray-600">
-                    👥 {vehicle.crew_count} pompier(s)
+            <div className="space-y-4">
+              {vehicles.map(vehicle => {
+                const personnel = getVehiclePersonnel(vehicle.xml_vehicle_number);
+                return (
+                  <div key={vehicle.id} className="bg-gray-50 p-4 rounded-lg border">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <div className="font-bold text-xl">{vehicle.xml_vehicle_number}</div>
+                        <div className="text-sm text-gray-600">
+                          👥 {vehicle.crew_count} pompier(s) selon la centrale
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Statut: {vehicle.xml_status || 'Non renseigné'}
+                        </div>
+                      </div>
+                      {editMode && (
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => openAddPersonnel(vehicle)}
+                        >
+                          + Ajouter personnel
+                        </Button>
+                      )}
+                    </div>
+                    
+                    {/* Personnel assigné à ce véhicule */}
+                    {personnel.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <p className="text-sm font-medium text-gray-700 mb-2">Personnel assigné:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {personnel.map(p => (
+                            <span key={p.id} className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+                              {p.user_name || p.user_id} 
+                              {p.role_on_scene && <span className="text-blue-600 ml-1">({p.role_on_scene})</span>}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div className="text-xs text-gray-500">
-                    {vehicle.xml_status || 'Statut inconnu'}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
@@ -1152,25 +1224,79 @@ const SectionRessources = ({ vehicles, resources, formData }) => {
 
       <Card>
         <CardHeader className="bg-blue-50">
-          <CardTitle className="text-lg text-blue-800">👥 Personnel sur les lieux ({resources.length})</CardTitle>
+          <CardTitle className="text-lg text-blue-800">👥 Tout le personnel sur les lieux ({resources.length})</CardTitle>
         </CardHeader>
         <CardContent className="pt-4">
           {resources.length === 0 ? (
             <p className="text-gray-500">Aucune ressource humaine enregistrée</p>
           ) : (
-            <div className="space-y-2">
-              {resources.map(resource => (
-                <div key={resource.id} className="flex justify-between items-center bg-gray-50 p-2 rounded">
-                  <span>{resource.user_id || 'Non assigné'}</span>
-                  <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                    {resource.role_on_scene}
-                  </span>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="p-2 text-left">Nom</th>
+                    <th className="p-2 text-left">Véhicule</th>
+                    <th className="p-2 text-left">Rôle</th>
+                    <th className="p-2 text-left">Arrivée</th>
+                    <th className="p-2 text-left">Départ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {resources.map(resource => (
+                    <tr key={resource.id} className="border-b">
+                      <td className="p-2 font-medium">{resource.user_name || resource.user_id || 'Non assigné'}</td>
+                      <td className="p-2">{resource.vehicle_number || '-'}</td>
+                      <td className="p-2">
+                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                          {resource.role_on_scene || 'Pompier'}
+                        </span>
+                      </td>
+                      <td className="p-2 text-gray-600">{resource.datetime_start ? new Date(resource.datetime_start).toLocaleTimeString('fr-CA') : '-'}</td>
+                      <td className="p-2 text-gray-600">{resource.datetime_end ? new Date(resource.datetime_end).toLocaleTimeString('fr-CA') : '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </CardContent>
       </Card>
+      
+      {/* Modal Ajout Personnel - à implémenter côté backend */}
+      {showAddPersonnel && selectedVehicle && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-bold mb-4">
+              Ajouter personnel au véhicule {selectedVehicle.xml_vehicle_number}
+            </h3>
+            {loadingUsers ? (
+              <p>Chargement...</p>
+            ) : (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {users.filter(u => u.statut === 'Actif').map(user => (
+                  <label key={user.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                    <input type="checkbox" className="w-4 h-4" />
+                    <span>{user.prenom} {user.nom}</span>
+                    <span className="text-gray-500 text-sm">({user.role})</span>
+                  </label>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2 mt-4">
+              <Button variant="outline" onClick={() => setShowAddPersonnel(false)} className="flex-1">
+                Annuler
+              </Button>
+              <Button onClick={() => {
+                // TODO: Implémenter la sauvegarde côté backend
+                setShowAddPersonnel(false);
+                alert('Fonctionnalité en cours de développement');
+              }} className="flex-1">
+                Ajouter
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
