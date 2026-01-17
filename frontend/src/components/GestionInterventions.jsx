@@ -1623,14 +1623,117 @@ const SectionPertes = ({ formData, setFormData, editMode }) => {
 
 // ==================== SECTION NARRATIF ====================
 
-const SectionNarratif = ({ formData, setFormData, editMode }) => {
+const SectionNarratif = ({ formData, setFormData, editMode, settings }) => {
+  const [isListening, setIsListening] = useState(false);
+  const [showModeles, setShowModeles] = useState(false);
+  
+  // API Web Speech Recognition
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const recognition = SpeechRecognition ? new SpeechRecognition() : null;
+  
+  const startDictation = () => {
+    if (!recognition) {
+      alert("La dictée vocale n'est pas supportée par votre navigateur. Utilisez Chrome ou Edge.");
+      return;
+    }
+    
+    recognition.lang = 'fr-CA';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    
+    recognition.onresult = (event) => {
+      let transcript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      // Ajouter au texte existant
+      const currentText = formData.narrative || '';
+      setFormData({ ...formData, narrative: currentText + ' ' + transcript });
+    };
+    
+    recognition.start();
+  };
+  
+  const stopDictation = () => {
+    if (recognition) {
+      recognition.stop();
+    }
+    setIsListening(false);
+  };
+  
+  const insertModele = (modele) => {
+    const currentText = formData.narrative || '';
+    const newText = currentText ? currentText + '\n\n' + modele.contenu : modele.contenu;
+    setFormData({ ...formData, narrative: newText });
+    setShowModeles(false);
+  };
+  
+  // Modèles par défaut si settings non fourni
+  const modeles = settings?.modeles_narratif || [
+    { id: '1', titre: 'Arrivée sur les lieux', contenu: 'À notre arrivée sur les lieux, nous avons constaté...' },
+    { id: '2', titre: 'Intervention standard', contenu: 'L\'intervention s\'est déroulée sans incident. Les opérations ont consisté en...' },
+    { id: '3', titre: 'Fausse alerte', contenu: 'Suite à notre investigation, il s\'agit d\'une fausse alerte causée par...' },
+  ];
+  
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader className="bg-gray-50">
-          <CardTitle className="text-lg">📝 Rapport narratif</CardTitle>
+          <CardTitle className="text-lg flex justify-between items-center">
+            <span>📝 Rapport narratif</span>
+            {editMode && (
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowModeles(!showModeles)}
+                >
+                  📋 Modèles
+                </Button>
+                <Button
+                  type="button"
+                  variant={isListening ? "destructive" : "outline"}
+                  size="sm"
+                  onClick={isListening ? stopDictation : startDictation}
+                >
+                  {isListening ? '🛑 Arrêter' : '🎤 Dictée'}
+                </Button>
+              </div>
+            )}
+          </CardTitle>
         </CardHeader>
         <CardContent className="pt-4">
+          {/* Indicateur de dictée */}
+          {isListening && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 flex items-center gap-2">
+              <span className="animate-pulse">🔴</span>
+              <span className="text-red-800">Dictée en cours... Parlez clairement.</span>
+            </div>
+          )}
+          
+          {/* Modèles de texte */}
+          {showModeles && editMode && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <h4 className="font-medium text-blue-800 mb-3">📋 Insérer un modèle</h4>
+              <div className="space-y-2">
+                {modeles.map(modele => (
+                  <button
+                    key={modele.id}
+                    onClick={() => insertModele(modele)}
+                    className="w-full text-left p-2 bg-white rounded border border-blue-200 hover:bg-blue-100 transition-colors"
+                  >
+                    <span className="font-medium">{modele.titre}</span>
+                    <p className="text-sm text-gray-600 truncate">{modele.contenu}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          
           <textarea
             value={formData.narrative || ''}
             onChange={(e) => setFormData({ ...formData, narrative: e.target.value })}
@@ -1638,6 +1741,11 @@ const SectionNarratif = ({ formData, setFormData, editMode }) => {
             placeholder="Décrivez le déroulement de l'intervention..."
             className="w-full border border-gray-300 rounded-lg p-3 min-h-[300px]"
           />
+          
+          {/* Compteur de mots */}
+          <div className="text-sm text-gray-500 mt-2">
+            {(formData.narrative || '').split(/\s+/).filter(w => w).length} mots
+          </div>
         </CardContent>
       </Card>
     </div>
