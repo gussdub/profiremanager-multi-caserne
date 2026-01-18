@@ -831,6 +831,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
     { id: 'identification', label: 'Identification & Chrono', icon: '📋' },
     { id: 'batiment', label: 'Bâtiment', icon: '🏠', showIf: isBuildingFire },
     { id: 'ressources', label: 'Ressources', icon: '👥' },
+    { id: 'materiel', label: 'Matériel utilisé', icon: '🧰' },
     { id: 'dsi', label: 'Détails DSI', icon: '🔥', showIf: isFireIncident },
     { id: 'protection', label: 'Protection incendie', icon: '🚨', showIf: isFireIncident },
     { id: 'pertes', label: 'Pertes & Victimes', icon: '💰' },
