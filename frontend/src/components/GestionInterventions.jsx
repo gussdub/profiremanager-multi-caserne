@@ -1769,18 +1769,77 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-4">
+          {/* Bouton Import équipe de garde */}
+          {editMode && (
+            <div className="mb-4 flex gap-2 flex-wrap">
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => { loadEquipesGarde(); setShowImportEquipe(true); }}
+                className="bg-purple-50 border-purple-300 text-purple-700 hover:bg-purple-100"
+              >
+                📋 Importer équipe de garde
+              </Button>
+              <label className="flex items-center gap-2 ml-auto">
+                <input
+                  type="checkbox"
+                  checked={primeRepasGlobale}
+                  onChange={(e) => togglePrimeRepasGlobale(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm font-medium">🍽️ Prime de repas pour tous</span>
+              </label>
+            </div>
+          )}
+          
           {personnelSansVehicule.length === 0 ? (
             <p className="text-gray-500 text-sm">Ajouter du personnel</p>
           ) : (
-            <div className="flex flex-wrap gap-2">
-              {personnelSansVehicule.map(p => (
-                <span key={p.id} className="bg-orange-100 text-orange-800 px-3 py-1 rounded text-sm flex items-center gap-1">
-                  {p.user_name || p.user_id}
-                  {editMode && p.is_manual && (
-                    <button onClick={() => removePersonnel(p.id)} className="ml-1 text-red-500 hover:text-red-700">×</button>
-                  )}
-                </span>
-              ))}
+            <div className="space-y-2">
+              {personnelSansVehicule.map(p => {
+                const statut = statutsPresence.find(s => s.value === (p.statut_presence || 'present'));
+                return (
+                  <div key={p.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded border">
+                    <span className="font-medium flex-1">
+                      {p.user_name || p.prenom + ' ' + p.nom || p.user_id}
+                      {p.grade && <span className="text-gray-500 text-sm ml-1">({p.grade})</span>}
+                      {p.equipe_origine && <span className="text-purple-600 text-xs ml-2">[{p.equipe_origine}]</span>}
+                    </span>
+                    {editMode ? (
+                      <>
+                        <select
+                          value={p.statut_presence || 'present'}
+                          onChange={(e) => updateStatutPresence(p.id, e.target.value)}
+                          className={`text-xs rounded px-2 py-1 border ${statut?.color || ''}`}
+                        >
+                          {statutsPresence.map(s => (
+                            <option key={s.value} value={s.value}>{s.label}</option>
+                          ))}
+                        </select>
+                        <label className="flex items-center gap-1">
+                          <input
+                            type="checkbox"
+                            checked={p.prime_repas ?? true}
+                            onChange={(e) => updatePrimeRepas(p.id, e.target.checked)}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-xs">🍽️</span>
+                        </label>
+                        {p.is_manual && (
+                          <button onClick={() => removePersonnel(p.id)} className="text-red-500 hover:text-red-700">×</button>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <span className={`text-xs px-2 py-1 rounded ${statut?.color || 'bg-gray-100'}`}>
+                          {statut?.label || 'Présent'}
+                        </span>
+                        {(p.prime_repas ?? true) && <span className="text-xs">🍽️</span>}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </CardContent>
@@ -1800,34 +1859,120 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                   <tr>
                     <th className="p-2 text-left">Nom</th>
                     <th className="p-2 text-left">Véhicule</th>
-                    <th className="p-2 text-left">Rôle</th>
+                    <th className="p-2 text-left">Statut</th>
+                    <th className="p-2 text-left">Prime</th>
                     <th className="p-2 text-left">Source</th>
                     {editMode && <th className="p-2 text-left">Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {allPersonnel.map(resource => (
-                    <tr key={resource.id} className="border-b">
-                      <td className="p-2 font-medium">{resource.user_name || resource.user_id || 'Non assigné'}</td>
-                      <td className="p-2">{resource.vehicle_number || <span className="text-orange-600">Propres moyens</span>}</td>
-                      <td className="p-2">
-                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-                          {resource.role_on_scene || 'Pompier'}
-                        </span>
-                      </td>
-                      <td className="p-2">
-                        <span className={`px-2 py-1 rounded text-xs ${resource.is_manual ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
-                          {resource.is_manual ? 'Manuel' : 'XML'}
-                        </span>
-                      </td>
-                      {editMode && (
+                  {allPersonnel.map(resource => {
+                    const statut = statutsPresence.find(s => s.value === (resource.statut_presence || 'present'));
+                    return (
+                      <tr key={resource.id} className="border-b">
+                        <td className="p-2 font-medium">
+                          {resource.user_name || resource.prenom + ' ' + resource.nom || resource.user_id || 'Non assigné'}
+                          {resource.grade && <span className="text-gray-500 text-xs ml-1">({resource.grade})</span>}
+                        </td>
+                        <td className="p-2">{resource.vehicle_number || <span className="text-orange-600">Supplémentaire</span>}</td>
                         <td className="p-2">
-                          {resource.is_manual && (
-                            <button onClick={() => removePersonnel(resource.id)} className="text-red-500 hover:text-red-700">🗑️</button>
+                          {editMode ? (
+                            <select
+                              value={resource.statut_presence || 'present'}
+                              onChange={(e) => updateStatutPresence(resource.id, e.target.value)}
+                              className={`text-xs rounded px-2 py-1 border ${statut?.color || ''}`}
+                            >
+                              {statutsPresence.map(s => (
+                                <option key={s.value} value={s.value}>{s.label}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className={`px-2 py-1 rounded text-xs ${statut?.color || 'bg-gray-100'}`}>
+                              {statut?.label || 'Présent'}
+                            </span>
                           )}
                         </td>
-                      )}
-                    </tr>
+                        <td className="p-2 text-center">
+                          {editMode ? (
+                            <input
+                              type="checkbox"
+                              checked={resource.prime_repas ?? true}
+                              onChange={(e) => updatePrimeRepas(resource.id, e.target.checked)}
+                              className="w-4 h-4"
+                            />
+                          ) : (
+                            (resource.prime_repas ?? true) ? '🍽️' : '-'
+                          )}
+                        </td>
+                        <td className="p-2">
+                          <span className={`px-2 py-1 rounded text-xs ${resource.is_manual ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                            {resource.is_manual ? 'Manuel' : 'XML'}
+                          </span>
+                        </td>
+                        {editMode && (
+                          <td className="p-2">
+                            {resource.is_manual && (
+                              <button onClick={() => removePersonnel(resource.id)} className="text-red-500 hover:text-red-700">🗑️</button>
+                            )}
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Modal Import Équipe de garde */}
+      {showImportEquipe && createPortal(
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" style={{ zIndex: 100001 }}>
+          <div className="bg-white rounded-lg p-6 max-w-lg w-full">
+            <h3 className="text-lg font-bold mb-4">📋 Importer équipe de garde</h3>
+            
+            {equipesGarde.length === 0 ? (
+              <p className="text-gray-500 text-center py-4">
+                Aucune équipe de garde trouvée pour cette date.<br/>
+                <span className="text-sm">Vérifiez les paramètres d'équipes dans le module Planning.</span>
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {equipesGarde.map(equipe => (
+                  <div key={equipe.type_emploi} className="border rounded-lg p-4" style={{ borderColor: equipe.couleur }}>
+                    <div className="flex justify-between items-center mb-3">
+                      <div>
+                        <span className="font-bold" style={{ color: equipe.couleur }}>{equipe.equipe_nom}</span>
+                        <span className="text-gray-500 text-sm ml-2">
+                          ({equipe.type_emploi === 'temps_plein' ? 'Temps plein' : 'Temps partiel'})
+                        </span>
+                      </div>
+                      <Button size="sm" onClick={() => importerEquipe(equipe)}>
+                        Importer ({equipe.membres.length})
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {equipe.membres.map(m => (
+                        <span key={m.id} className="bg-gray-100 px-2 py-1 rounded text-xs">
+                          {m.prenom} {m.nom} {m.grade && `(${m.grade})`}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            <div className="flex justify-end mt-4">
+              <Button variant="outline" onClick={() => setShowImportEquipe(false)}>
+                Fermer
+              </Button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
                   ))}
                 </tbody>
               </table>
