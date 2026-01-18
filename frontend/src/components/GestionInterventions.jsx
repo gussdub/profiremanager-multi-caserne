@@ -1576,6 +1576,15 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
     setFormData({ ...formData, manual_personnel: updated });
   };
   
+  // Mettre à jour le statut payé du remplaçant
+  const updateRemplacantPaye = (personnelId, paye) => {
+    const updated = manualPersonnel.map(p => 
+      p.id === personnelId ? { ...p, remplacant_paye: paye } : p
+    );
+    setManualPersonnel(updated);
+    setFormData({ ...formData, manual_personnel: updated });
+  };
+  
   // Mettre à jour la prime de repas d'un membre
   const updatePrimeRepas = (personnelId, checked) => {
     const updated = manualPersonnel.map(p => 
