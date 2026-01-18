@@ -1482,13 +1482,14 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
   const [showImportEquipe, setShowImportEquipe] = useState(false);
   const [primeRepasGlobale, setPrimeRepasGlobale] = useState(formData.prime_repas_globale ?? false);
   
-  // Statuts de présence disponibles
+  // Statuts de présence disponibles avec leur impact sur les statistiques
   const statutsPresence = [
-    { value: 'present', label: 'Présent', color: 'bg-green-100 text-green-800' },
-    { value: 'absent_non_paye', label: 'Absent (non-payé)', color: 'bg-red-100 text-red-800' },
-    { value: 'absent_paye', label: 'Absent (payé/maladie)', color: 'bg-orange-100 text-orange-800' },
-    { value: 'rappele', label: 'Rappelé', color: 'bg-blue-100 text-blue-800' },
-    { value: 'non_disponible', label: 'Non-disponible', color: 'bg-gray-100 text-gray-800' }
+    { value: 'present', label: 'Présent', color: 'bg-green-100 text-green-800', impact: '+1' },
+    { value: 'absent_non_paye', label: 'Absent (non-payé)', color: 'bg-red-100 text-red-800', impact: '-1' },
+    { value: 'absent_paye', label: 'Absent (payé/maladie)', color: 'bg-orange-100 text-orange-800', impact: '0' },
+    { value: 'remplace', label: 'Remplacé par...', color: 'bg-yellow-100 text-yellow-800', impact: '0' },
+    { value: 'rappele', label: 'Rappelé', color: 'bg-blue-100 text-blue-800', impact: '+1' },
+    { value: 'non_disponible', label: 'Non-disponible', color: 'bg-gray-100 text-gray-800', impact: '-1' }
   ];
   
   const API = `${BACKEND_URL}/api/${tenantSlug}`;
