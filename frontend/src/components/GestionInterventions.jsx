@@ -1859,19 +1859,32 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                         </select>
                         {/* Sélecteur de remplaçant si statut = remplacé */}
                         {p.statut_presence === 'remplace' && (
-                          <select
-                            value={p.remplace_par || ''}
-                            onChange={(e) => updateRemplacant(p.id, e.target.value)}
-                            className="text-xs rounded px-2 py-1 border bg-yellow-50"
-                          >
-                            <option value="">-- Choisir remplaçant --</option>
-                            {users
-                              .filter(u => (u.statut || '').toLowerCase() === 'actif' && u.id !== p.id)
-                              .map(u => (
-                                <option key={u.id} value={u.id}>{u.prenom} {u.nom}</option>
-                              ))
-                            }
-                          </select>
+                          <>
+                            <select
+                              value={p.remplace_par || ''}
+                              onChange={(e) => updateRemplacant(p.id, e.target.value)}
+                              className="text-xs rounded px-2 py-1 border bg-yellow-50"
+                            >
+                              <option value="">-- Choisir remplaçant --</option>
+                              {users
+                                .filter(u => (u.statut || '').toLowerCase() === 'actif' && u.id !== p.id)
+                                .map(u => (
+                                  <option key={u.id} value={u.id}>{u.prenom} {u.nom}</option>
+                                ))
+                              }
+                            </select>
+                            {p.remplace_par && (
+                              <label className="flex items-center gap-1 text-xs bg-green-50 px-2 py-1 rounded border border-green-200">
+                                <input
+                                  type="checkbox"
+                                  checked={p.remplacant_paye ?? true}
+                                  onChange={(e) => updateRemplacantPaye(p.id, e.target.checked)}
+                                  className="w-3 h-3"
+                                />
+                                <span>Payé</span>
+                              </label>
+                            )}
+                          </>
                         )}
                         <label className="flex items-center gap-1">
                           <input
