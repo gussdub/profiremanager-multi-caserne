@@ -908,6 +908,9 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
               setFormData={setFormData}
               editMode={editMode && !isLocked}
               formatDateTime={formatDateTime}
+              tenantSlug={tenantSlug}
+              getToken={getToken}
+              toast={toast}
             />
           )}
           {activeSection === 'batiment' && (
