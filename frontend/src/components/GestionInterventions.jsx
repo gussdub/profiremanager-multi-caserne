@@ -1570,7 +1570,6 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
         remplace_par_nom: remplacant ? `${remplacant.prenom} ${remplacant.nom}` : null,
         remplacant_paye: true // Par défaut payé
       } : p
-      } : p
     );
     setManualPersonnel(updated);
     setFormData({ ...formData, manual_personnel: updated });
