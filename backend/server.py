@@ -36591,6 +36591,196 @@ async def validate_intervention(
     return {"success": True, "intervention": updated}
 
 
+# ==================== MÉTÉO AUTOMATIQUE ====================
+
+@api_router.get("/{tenant_slug}/interventions/weather")
+async def get_weather_for_intervention(
+    tenant_slug: str,
+    lat: float,
+    lon: float,
+    datetime_str: str,  # Format ISO
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Récupère les conditions météo pour un lieu et une date/heure donnés.
+    Utilise Open-Meteo (gratuit, sans clé API).
+    """
+    import httpx
+    
+    try:
+        # Parser la date
+        target_date = datetime.fromisoformat(datetime_str.replace('Z', '+00:00'))
+        date_str = target_date.strftime('%Y-%m-%d')
+        hour = target_date.hour
+        
+        # Appeler l'API Open-Meteo pour l'historique météo
+        url = f"https://archive-api.open-meteo.com/v1/archive"
+        params = {
+            "latitude": lat,
+            "longitude": lon,
+            "start_date": date_str,
+            "end_date": date_str,
+            "hourly": "temperature_2m,precipitation,rain,snowfall,weathercode,windspeed_10m,visibility",
+            "timezone": "America/Montreal"
+        }
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, params=params, timeout=10.0)
+            
+            if response.status_code == 200:
+                data = response.json()
+                hourly = data.get("hourly", {})
+                
+                # Obtenir les valeurs pour l'heure cible
+                idx = min(hour, len(hourly.get("temperature_2m", [])) - 1)
+                
+                temperature = hourly.get("temperature_2m", [None])[idx]
+                precipitation = hourly.get("precipitation", [0])[idx] or 0
+                rain = hourly.get("rain", [0])[idx] or 0
+                snowfall = hourly.get("snowfall", [0])[idx] or 0
+                weathercode = hourly.get("weathercode", [0])[idx] or 0
+                windspeed = hourly.get("windspeed_10m", [0])[idx] or 0
+                visibility = hourly.get("visibility", [10000])[idx] or 10000
+                
+                # Déterminer les conditions
+                conditions = []
+                if snowfall > 0:
+                    conditions.append("neige")
+                if rain > 0:
+                    conditions.append("pluie")
+                if weathercode in [0, 1]:
+                    conditions.append("soleil")
+                elif weathercode in [2, 3]:
+                    conditions.append("nuageux")
+                elif weathercode in [45, 48]:
+                    conditions.append("brouillard")
+                
+                # Déterminer l'état de la chaussée
+                chaussee = "sec"
+                if temperature is not None and temperature < 0 and (precipitation > 0 or snowfall > 0):
+                    chaussee = "glissante"
+                elif rain > 0 or snowfall > 0:
+                    chaussee = "mouillée"
+                elif temperature is not None and temperature < -5:
+                    chaussee = "potentiellement_glacée"
+                
+                return {
+                    "temperature": round(temperature, 1) if temperature else None,
+                    "conditions": conditions if conditions else ["inconnu"],
+                    "precipitation_mm": round(precipitation, 1),
+                    "neige_cm": round(snowfall, 1),
+                    "vent_kmh": round(windspeed, 1),
+                    "visibilite_m": round(visibility),
+                    "chaussee": chaussee,
+                    "code_meteo": weathercode
+                }
+            else:
+                # Fallback: retourner des valeurs par défaut modifiables
+                return {
+                    "temperature": None,
+                    "conditions": ["inconnu"],
+                    "precipitation_mm": 0,
+                    "neige_cm": 0,
+                    "vent_kmh": 0,
+                    "visibilite_m": 10000,
+                    "chaussee": "inconnu",
+                    "code_meteo": None,
+                    "error": "Données météo non disponibles"
+                }
+                
+    except Exception as e:
+        logging.error(f"Erreur météo: {e}")
+        return {
+            "temperature": None,
+            "conditions": ["inconnu"],
+            "chaussee": "inconnu",
+            "error": str(e)
+        }
+
+
+# ==================== ÉQUIPES DE GARDE POUR INTERVENTIONS ====================
+
+@api_router.get("/{tenant_slug}/interventions/equipes-garde")
+async def get_equipes_garde_for_intervention(
+    tenant_slug: str,
+    date: str,  # Format YYYY-MM-DD
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Récupère les équipes de garde et leurs membres pour une date donnée.
+    Utilisé pour importer rapidement une équipe dans une intervention.
+    """
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    params = await db.parametres_equipes_garde.find_one({"tenant_id": tenant["id"]})
+    
+    if not params or not params.get("actif", False):
+        return {"equipes": [], "message": "Système d'équipes de garde non activé"}
+    
+    result = {"equipes": []}
+    
+    # Pour chaque type d'emploi (temps plein et temps partiel)
+    for type_emploi in ["temps_plein", "temps_partiel"]:
+        config = params.get(type_emploi, {})
+        
+        if not config.get("rotation_active", False):
+            continue
+        
+        type_rotation = config.get("type_rotation", "aucun")
+        if type_rotation == "aucun":
+            continue
+        
+        # Déterminer l'équipe de garde
+        if type_rotation in ["montreal", "quebec", "longueuil"]:
+            equipe_num = get_equipe_garde_rotation_standard(type_rotation, "", date)
+        else:
+            date_reference = config.get("date_reference")
+            if not date_reference:
+                continue
+            equipe_num = get_equipe_garde_du_jour_sync(
+                type_rotation=type_rotation,
+                date_reference=date_reference,
+                date_cible=date,
+                nombre_equipes=config.get("nombre_equipes", 4),
+                pattern_mode=config.get("pattern_mode", "hebdomadaire"),
+                pattern_personnalise=config.get("pattern_personnalise", []),
+                duree_cycle=config.get("duree_cycle", 28)
+            )
+        
+        if equipe_num is None:
+            continue
+        
+        # Récupérer la config de l'équipe
+        equipes_config = config.get("equipes_config", [])
+        equipe_info = next((e for e in equipes_config if e.get("numero") == equipe_num), None)
+        
+        # Récupérer les membres de cette équipe
+        membres = await db.users.find({
+            "tenant_id": tenant["id"],
+            "equipe_garde": equipe_num,
+            "type_emploi": type_emploi.replace("_", " "),
+            "statut": "Actif"
+        }, {"_id": 0, "mot_de_passe_hash": 0}).to_list(100)
+        
+        result["equipes"].append({
+            "type_emploi": type_emploi,
+            "equipe_numero": equipe_num,
+            "equipe_nom": equipe_info.get("nom", f"Équipe {equipe_num}") if equipe_info else f"Équipe {equipe_num}",
+            "couleur": equipe_info.get("couleur", "#3B82F6") if equipe_info else "#3B82F6",
+            "membres": [{
+                "id": m.get("id"),
+                "nom": m.get("nom"),
+                "prenom": m.get("prenom"),
+                "grade": m.get("grade"),
+                "type_emploi": m.get("type_emploi")
+            } for m in membres]
+        })
+    
+    return result
+
+
 @api_router.post("/{tenant_slug}/interventions/import-xml")
 async def import_intervention_xml(
     tenant_slug: str,
