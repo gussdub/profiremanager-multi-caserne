@@ -1091,7 +1091,45 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
 
 // ==================== SECTIONS DU FORMULAIRE DSI ====================
 
-const SectionIdentification = ({ formData, setFormData, editMode, formatDateTime }) => {
+const SectionIdentification = ({ formData, setFormData, editMode, formatDateTime, tenantSlug, getToken, toast }) => {
+  // Charger la météo automatiquement si pas encore chargée
+  useEffect(() => {
+    const loadWeatherAuto = async () => {
+      // Ne charger que si on a les coordonnées et la date, et que la météo n'est pas déjà chargée
+      if (formData.coordinates?.lat && formData.coordinates?.lon && formData.xml_time_call_received && !formData.meteo?.temperature) {
+        try {
+          const response = await fetch(
+            `${BACKEND_URL}/api/${tenantSlug}/interventions/weather?lat=${formData.coordinates.lat}&lon=${formData.coordinates.lon}&datetime_str=${formData.xml_time_call_received}`,
+            { headers: { 'Authorization': `Bearer ${getToken()}` } }
+          );
+          if (response.ok) {
+            const weather = await response.json();
+            if (weather.temperature !== null) {
+              setFormData(prev => ({
+                ...prev,
+                meteo: {
+                  temperature: weather.temperature,
+                  conditions: weather.conditions?.[0] || 'inconnu',
+                  chaussee: weather.chaussee,
+                  precipitation_mm: weather.precipitation_mm,
+                  neige_cm: weather.neige_cm,
+                  vent_kmh: weather.vent_kmh,
+                  visibilite_m: weather.visibilite_m
+                }
+              }));
+            }
+          }
+        } catch (e) {
+          console.error('Erreur chargement météo:', e);
+        }
+      }
+    };
+    
+    if (tenantSlug && getToken) {
+      loadWeatherAuto();
+    }
+  }, [formData.coordinates, formData.xml_time_call_received, tenantSlug]);
+
   return (
     <div className="space-y-6">
       {/* Bloc Général (Obligatoire pour TOUS les appels) */}
