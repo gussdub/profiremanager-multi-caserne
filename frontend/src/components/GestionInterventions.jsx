@@ -1185,49 +1185,13 @@ const SectionIdentification = ({ formData, setFormData, editMode, formatDateTime
         </CardContent>
       </Card>
 
-      {/* Météo */}
+      {/* Météo - Chargée automatiquement */}
       <Card>
         <CardHeader className="bg-blue-50">
-          <CardTitle className="text-lg text-blue-800 flex justify-between items-center">
+          <CardTitle className="text-lg text-blue-800">
             <span>🌤️ Conditions météo</span>
-            {editMode && (
-              <Button 
-                size="sm" 
-                variant="outline"
-                onClick={async () => {
-                  // Charger la météo automatiquement
-                  if (formData.coordinates?.lat && formData.coordinates?.lon && formData.xml_time_call_received) {
-                    try {
-                      const response = await fetch(
-                        `${BACKEND_URL}/api/${tenantSlug}/interventions/weather?lat=${formData.coordinates.lat}&lon=${formData.coordinates.lon}&datetime_str=${formData.xml_time_call_received}`,
-                        { headers: { 'Authorization': `Bearer ${getToken()}` } }
-                      );
-                      if (response.ok) {
-                        const weather = await response.json();
-                        setFormData({
-                          ...formData,
-                          meteo: {
-                            temperature: weather.temperature,
-                            conditions: weather.conditions?.[0] || 'inconnu',
-                            chaussee: weather.chaussee,
-                            precipitation_mm: weather.precipitation_mm,
-                            neige_cm: weather.neige_cm,
-                            vent_kmh: weather.vent_kmh,
-                            visibilite_m: weather.visibilite_m
-                          }
-                        });
-                        toast({ title: "Météo chargée", description: "Conditions météo récupérées automatiquement" });
-                      }
-                    } catch (e) {
-                      toast({ title: "Erreur", description: "Impossible de charger la météo", variant: "destructive" });
-                    }
-                  } else {
-                    toast({ title: "Info manquante", description: "Coordonnées ou date manquantes pour récupérer la météo", variant: "destructive" });
-                  }
-                }}
-              >
-                🔄 Charger auto
-              </Button>
+            {formData.meteo?.temperature != null && (
+              <span className="text-sm font-normal ml-2 text-blue-600">(chargé automatiquement)</span>
             )}
           </CardTitle>
         </CardHeader>
