@@ -934,6 +934,15 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
               onRefresh={fetchDetails}
             />
           )}
+          {activeSection === 'materiel' && (
+            <SectionMateriel 
+              formData={formData}
+              setFormData={setFormData}
+              editMode={editMode && !isLocked}
+              tenantSlug={tenantSlug}
+              getToken={getToken}
+            />
+          )}
           {activeSection === 'dsi' && (
             <SectionDSI 
               formData={formData} 
