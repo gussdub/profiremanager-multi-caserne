@@ -1473,6 +1473,18 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
   const [selectedPersonnel, setSelectedPersonnel] = useState([]);
   const [searchPersonnel, setSearchPersonnel] = useState('');
   const [gardeInterneUsers, setGardeInterneUsers] = useState([]);
+  const [equipesGarde, setEquipesGarde] = useState([]);
+  const [showImportEquipe, setShowImportEquipe] = useState(false);
+  const [primeRepasGlobale, setPrimeRepasGlobale] = useState(formData.prime_repas_globale ?? false);
+  
+  // Statuts de présence disponibles
+  const statutsPresence = [
+    { value: 'present', label: 'Présent', color: 'bg-green-100 text-green-800' },
+    { value: 'absent_non_paye', label: 'Absent (non-payé)', color: 'bg-red-100 text-red-800' },
+    { value: 'absent_paye', label: 'Absent (payé/maladie)', color: 'bg-orange-100 text-orange-800' },
+    { value: 'rappele', label: 'Rappelé', color: 'bg-blue-100 text-blue-800' },
+    { value: 'non_disponible', label: 'Non-disponible', color: 'bg-gray-100 text-gray-800' }
+  ];
   
   const API = `${BACKEND_URL}/api/${tenantSlug}`;
   
@@ -1483,6 +1495,71 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
   // Véhicules manuels ajoutés localement
   const [manualVehicles, setManualVehicles] = useState(formData.manual_vehicles || []);
   const [manualPersonnel, setManualPersonnel] = useState(formData.manual_personnel || []);
+  
+  // Charger les équipes de garde
+  const loadEquipesGarde = async () => {
+    try {
+      const dateIntervention = formData.xml_time_call_received?.split('T')[0] || new Date().toISOString().split('T')[0];
+      const response = await fetch(`${API}/interventions/equipes-garde?date=${dateIntervention}`, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setEquipesGarde(data.equipes || []);
+      }
+    } catch (error) {
+      console.error('Erreur chargement équipes:', error);
+    }
+  };
+  
+  // Importer une équipe complète
+  const importerEquipe = (equipe) => {
+    const membresAImporter = equipe.membres.map(m => ({
+      id: m.id,
+      nom: m.nom,
+      prenom: m.prenom,
+      grade: m.grade,
+      type_emploi: m.type_emploi,
+      statut_presence: 'present',
+      prime_repas: true,
+      equipe_origine: equipe.equipe_nom
+    }));
+    
+    // Fusionner avec le personnel existant (éviter les doublons)
+    const personnelExistant = manualPersonnel.map(p => p.id);
+    const nouveauxMembres = membresAImporter.filter(m => !personnelExistant.includes(m.id));
+    
+    const updated = [...manualPersonnel, ...nouveauxMembres];
+    setManualPersonnel(updated);
+    setFormData({ ...formData, manual_personnel: updated });
+    setShowImportEquipe(false);
+  };
+  
+  // Mettre à jour le statut de présence d'un membre
+  const updateStatutPresence = (personnelId, statut) => {
+    const updated = manualPersonnel.map(p => 
+      p.id === personnelId ? { ...p, statut_presence: statut } : p
+    );
+    setManualPersonnel(updated);
+    setFormData({ ...formData, manual_personnel: updated });
+  };
+  
+  // Mettre à jour la prime de repas d'un membre
+  const updatePrimeRepas = (personnelId, checked) => {
+    const updated = manualPersonnel.map(p => 
+      p.id === personnelId ? { ...p, prime_repas: checked } : p
+    );
+    setManualPersonnel(updated);
+    setFormData({ ...formData, manual_personnel: updated });
+  };
+  
+  // Appliquer/retirer la prime de repas globale
+  const togglePrimeRepasGlobale = (checked) => {
+    setPrimeRepasGlobale(checked);
+    const updated = manualPersonnel.map(p => ({ ...p, prime_repas: checked }));
+    setManualPersonnel(updated);
+    setFormData({ ...formData, manual_personnel: updated, prime_repas_globale: checked });
+  };
   
   // Charger la liste des utilisateurs et le planning
   const loadUsers = async () => {
