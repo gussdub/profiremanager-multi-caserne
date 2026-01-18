@@ -1899,6 +1899,7 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                     <th className="p-2 text-left">Nom</th>
                     <th className="p-2 text-left">Véhicule</th>
                     <th className="p-2 text-left">Statut</th>
+                    <th className="p-2 text-left">Remplaçant</th>
                     <th className="p-2 text-left">Prime</th>
                     <th className="p-2 text-left">Source</th>
                     {editMode && <th className="p-2 text-left">Actions</th>}
@@ -1929,6 +1930,29 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                             <span className={`px-2 py-1 rounded text-xs ${statut?.color || 'bg-gray-100'}`}>
                               {statut?.label || 'Présent'}
                             </span>
+                          )}
+                        </td>
+                        <td className="p-2">
+                          {resource.statut_presence === 'remplace' ? (
+                            editMode ? (
+                              <select
+                                value={resource.remplace_par || ''}
+                                onChange={(e) => updateRemplacant(resource.id, e.target.value)}
+                                className="text-xs rounded px-2 py-1 border bg-yellow-50 w-full"
+                              >
+                                <option value="">-- Choisir --</option>
+                                {users
+                                  .filter(u => (u.statut || '').toLowerCase() === 'actif' && u.id !== resource.id)
+                                  .map(u => (
+                                    <option key={u.id} value={u.id}>{u.prenom} {u.nom}</option>
+                                  ))
+                                }
+                              </select>
+                            ) : (
+                              <span className="text-yellow-700 text-xs">{resource.remplace_par_nom || '-'}</span>
+                            )
+                          ) : (
+                            <span className="text-gray-400 text-xs">-</span>
                           )}
                         </td>
                         <td className="p-2 text-center">
