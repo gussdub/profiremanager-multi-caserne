@@ -1560,14 +1560,16 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
     setFormData({ ...formData, manual_personnel: updated });
   };
   
-  // Mettre à jour le remplaçant
+  // Mettre à jour le remplaçant et son statut payé
   const updateRemplacant = (personnelId, remplacantId) => {
     const remplacant = users.find(u => u.id === remplacantId);
     const updated = manualPersonnel.map(p => 
       p.id === personnelId ? { 
         ...p, 
         remplace_par: remplacantId,
-        remplace_par_nom: remplacant ? `${remplacant.prenom} ${remplacant.nom}` : null
+        remplace_par_nom: remplacant ? `${remplacant.prenom} ${remplacant.nom}` : null,
+        remplacant_paye: true // Par défaut payé
+      } : p
       } : p
     );
     setManualPersonnel(updated);
