@@ -1541,9 +1541,23 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
   };
   
   // Mettre à jour le statut de présence d'un membre
-  const updateStatutPresence = (personnelId, statut) => {
+  const updateStatutPresence = (personnelId, statut, remplacePar = null) => {
     const updated = manualPersonnel.map(p => 
-      p.id === personnelId ? { ...p, statut_presence: statut } : p
+      p.id === personnelId ? { ...p, statut_presence: statut, remplace_par: remplacePar } : p
+    );
+    setManualPersonnel(updated);
+    setFormData({ ...formData, manual_personnel: updated });
+  };
+  
+  // Mettre à jour le remplaçant
+  const updateRemplacant = (personnelId, remplacantId) => {
+    const remplacant = users.find(u => u.id === remplacantId);
+    const updated = manualPersonnel.map(p => 
+      p.id === personnelId ? { 
+        ...p, 
+        remplace_par: remplacantId,
+        remplace_par_nom: remplacant ? `${remplacant.prenom} ${remplacant.nom}` : null
+      } : p
     );
     setManualPersonnel(updated);
     setFormData({ ...formData, manual_personnel: updated });
