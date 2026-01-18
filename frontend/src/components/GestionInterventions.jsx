@@ -1973,13 +1973,6 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
         </div>,
         document.body
       )}
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
       
       {/* Modal Ajout Véhicule */}
       {showAddVehicle && createPortal(
