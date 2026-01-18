@@ -3695,6 +3695,520 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
         </CardContent>
       </Card>
 
+      {/* Paramètres Primes de repas */}
+      <Card>
+        <CardHeader className="bg-orange-50">
+          <CardTitle className="text-orange-800">
+            🍽️ Primes de repas
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <p className="text-gray-600 mb-4">
+            Configurez les règles pour le paiement automatique des primes de repas sur les feuilles de temps.
+          </p>
+          
+          <div className="space-y-6">
+            {/* Déjeuner */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <input
+                  type="checkbox"
+                  checked={settings.repas_dejeuner?.actif ?? false}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    repas_dejeuner: { ...settings.repas_dejeuner, actif: e.target.checked }
+                  })}
+                  className="w-5 h-5"
+                />
+                <h4 className="font-medium text-gray-700">🌅 Déjeuner</h4>
+              </div>
+              {(settings.repas_dejeuner?.actif) && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 ml-8">
+                  <div>
+                    <label className="text-xs text-gray-500">Montant ($)</label>
+                    <input
+                      type="number"
+                      value={settings.repas_dejeuner?.montant ?? 15}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        repas_dejeuner: { ...settings.repas_dejeuner, montant: parseFloat(e.target.value) }
+                      })}
+                      className="w-full border rounded p-2"
+                      step="0.5"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500">Heure début</label>
+                    <input
+                      type="time"
+                      value={settings.repas_dejeuner?.heure_debut ?? '06:00'}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        repas_dejeuner: { ...settings.repas_dejeuner, heure_debut: e.target.value }
+                      })}
+                      className="w-full border rounded p-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500">Heure fin</label>
+                    <input
+                      type="time"
+                      value={settings.repas_dejeuner?.heure_fin ?? '09:00'}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        repas_dejeuner: { ...settings.repas_dejeuner, heure_fin: e.target.value }
+                      })}
+                      className="w-full border rounded p-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500">Durée min. (h)</label>
+                    <input
+                      type="number"
+                      value={settings.repas_dejeuner?.duree_minimum ?? 2}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        repas_dejeuner: { ...settings.repas_dejeuner, duree_minimum: parseFloat(e.target.value) }
+                      })}
+                      className="w-full border rounded p-2"
+                      step="0.5"
+                      min="0"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Dîner */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <input
+                  type="checkbox"
+                  checked={settings.repas_diner?.actif ?? false}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    repas_diner: { ...settings.repas_diner, actif: e.target.checked }
+                  })}
+                  className="w-5 h-5"
+                />
+                <h4 className="font-medium text-gray-700">☀️ Dîner</h4>
+              </div>
+              {(settings.repas_diner?.actif) && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 ml-8">
+                  <div>
+                    <label className="text-xs text-gray-500">Montant ($)</label>
+                    <input
+                      type="number"
+                      value={settings.repas_diner?.montant ?? 18}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        repas_diner: { ...settings.repas_diner, montant: parseFloat(e.target.value) }
+                      })}
+                      className="w-full border rounded p-2"
+                      step="0.5"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500">Heure début</label>
+                    <input
+                      type="time"
+                      value={settings.repas_diner?.heure_debut ?? '11:30'}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        repas_diner: { ...settings.repas_diner, heure_debut: e.target.value }
+                      })}
+                      className="w-full border rounded p-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500">Heure fin</label>
+                    <input
+                      type="time"
+                      value={settings.repas_diner?.heure_fin ?? '14:00'}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        repas_diner: { ...settings.repas_diner, heure_fin: e.target.value }
+                      })}
+                      className="w-full border rounded p-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500">Durée min. (h)</label>
+                    <input
+                      type="number"
+                      value={settings.repas_diner?.duree_minimum ?? 3}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        repas_diner: { ...settings.repas_diner, duree_minimum: parseFloat(e.target.value) }
+                      })}
+                      className="w-full border rounded p-2"
+                      step="0.5"
+                      min="0"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Souper */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <input
+                  type="checkbox"
+                  checked={settings.repas_souper?.actif ?? false}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    repas_souper: { ...settings.repas_souper, actif: e.target.checked }
+                  })}
+                  className="w-5 h-5"
+                />
+                <h4 className="font-medium text-gray-700">🌙 Souper</h4>
+              </div>
+              {(settings.repas_souper?.actif) && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 ml-8">
+                  <div>
+                    <label className="text-xs text-gray-500">Montant ($)</label>
+                    <input
+                      type="number"
+                      value={settings.repas_souper?.montant ?? 20}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        repas_souper: { ...settings.repas_souper, montant: parseFloat(e.target.value) }
+                      })}
+                      className="w-full border rounded p-2"
+                      step="0.5"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500">Heure début</label>
+                    <input
+                      type="time"
+                      value={settings.repas_souper?.heure_debut ?? '17:00'}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        repas_souper: { ...settings.repas_souper, heure_debut: e.target.value }
+                      })}
+                      className="w-full border rounded p-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500">Heure fin</label>
+                    <input
+                      type="time"
+                      value={settings.repas_souper?.heure_fin ?? '20:00'}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        repas_souper: { ...settings.repas_souper, heure_fin: e.target.value }
+                      })}
+                      className="w-full border rounded p-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500">Durée min. (h)</label>
+                    <input
+                      type="number"
+                      value={settings.repas_souper?.duree_minimum ?? 3}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        repas_souper: { ...settings.repas_souper, duree_minimum: parseFloat(e.target.value) }
+                      })}
+                      className="w-full border rounded p-2"
+                      step="0.5"
+                      min="0"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Facturation Entraide */}
+      <Card>
+        <CardHeader className="bg-purple-50">
+          <CardTitle className="text-purple-800">
+            💰 Facturation Entraide
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <p className="text-gray-600 mb-4">
+            Configurez les ententes tarifaires avec les municipalités voisines pour les services d'entraide.
+          </p>
+          
+          <div className="space-y-4">
+            {/* Liste des ententes */}
+            <div className="space-y-3">
+              {(settings.ententes_entraide || []).map((entente, index) => (
+                <div key={index} className="bg-gray-50 rounded-lg p-4 border">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        value={entente.municipalite || ''}
+                        onChange={(e) => {
+                          const updated = [...(settings.ententes_entraide || [])];
+                          updated[index] = { ...entente, municipalite: e.target.value };
+                          setSettings({ ...settings, ententes_entraide: updated });
+                        }}
+                        className="font-medium text-lg border-b border-transparent hover:border-gray-300 focus:border-purple-500 bg-transparent outline-none w-full"
+                        placeholder="Nom de la municipalité"
+                      />
+                    </div>
+                    <button
+                      onClick={() => {
+                        const updated = (settings.ententes_entraide || []).filter((_, i) => i !== index);
+                        setSettings({ ...settings, ententes_entraide: updated });
+                      }}
+                      className="text-red-500 hover:text-red-700 ml-2"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={entente.facturer_vehicules ?? true}
+                        onChange={(e) => {
+                          const updated = [...(settings.ententes_entraide || [])];
+                          updated[index] = { ...entente, facturer_vehicules: e.target.checked };
+                          setSettings({ ...settings, ententes_entraide: updated });
+                        }}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm">🚒 Véhicules</span>
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={entente.facturer_personnel ?? true}
+                        onChange={(e) => {
+                          const updated = [...(settings.ententes_entraide || [])];
+                          updated[index] = { ...entente, facturer_personnel: e.target.checked };
+                          setSettings({ ...settings, ententes_entraide: updated });
+                        }}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm">👥 Personnel</span>
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={entente.facturer_repas ?? true}
+                        onChange={(e) => {
+                          const updated = [...(settings.ententes_entraide || [])];
+                          updated[index] = { ...entente, facturer_repas: e.target.checked };
+                          setSettings({ ...settings, ententes_entraide: updated });
+                        }}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm">🍽️ Repas</span>
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={entente.facturer_apria ?? true}
+                        onChange={(e) => {
+                          const updated = [...(settings.ententes_entraide || [])];
+                          updated[index] = { ...entente, facturer_apria: e.target.checked };
+                          setSettings({ ...settings, ententes_entraide: updated });
+                        }}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm">🫁 APRIA</span>
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={entente.facturer_materiel ?? true}
+                        onChange={(e) => {
+                          const updated = [...(settings.ententes_entraide || [])];
+                          updated[index] = { ...entente, facturer_materiel: e.target.checked };
+                          setSettings({ ...settings, ententes_entraide: updated });
+                        }}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm">🧰 Matériel</span>
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={entente.facturer_specialites ?? true}
+                        onChange={(e) => {
+                          const updated = [...(settings.ententes_entraide || [])];
+                          updated[index] = { ...entente, facturer_specialites: e.target.checked };
+                          setSettings({ ...settings, ententes_entraide: updated });
+                        }}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm">⭐ Spécialités</span>
+                    </label>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div>
+                      <label className="text-xs text-gray-500">Tarif horaire véhicule ($)</label>
+                      <input
+                        type="number"
+                        value={entente.tarif_vehicule ?? 150}
+                        onChange={(e) => {
+                          const updated = [...(settings.ententes_entraide || [])];
+                          updated[index] = { ...entente, tarif_vehicule: parseFloat(e.target.value) };
+                          setSettings({ ...settings, ententes_entraide: updated });
+                        }}
+                        className="w-full border rounded p-2"
+                        step="5"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500">Tarif horaire pompier ($)</label>
+                      <input
+                        type="number"
+                        value={entente.tarif_pompier ?? 35}
+                        onChange={(e) => {
+                          const updated = [...(settings.ententes_entraide || [])];
+                          updated[index] = { ...entente, tarif_pompier: parseFloat(e.target.value) };
+                          setSettings({ ...settings, ententes_entraide: updated });
+                        }}
+                        className="w-full border rounded p-2"
+                        step="1"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500">Tarif recharge APRIA ($)</label>
+                      <input
+                        type="number"
+                        value={entente.tarif_apria ?? 25}
+                        onChange={(e) => {
+                          const updated = [...(settings.ententes_entraide || [])];
+                          updated[index] = { ...entente, tarif_apria: parseFloat(e.target.value) };
+                          setSettings({ ...settings, ententes_entraide: updated });
+                        }}
+                        className="w-full border rounded p-2"
+                        step="1"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500">Minimum facturable (h)</label>
+                      <input
+                        type="number"
+                        value={entente.minimum_heures ?? 1}
+                        onChange={(e) => {
+                          const updated = [...(settings.ententes_entraide || [])];
+                          updated[index] = { ...entente, minimum_heures: parseFloat(e.target.value) };
+                          setSettings({ ...settings, ententes_entraide: updated });
+                        }}
+                        className="w-full border rounded p-2"
+                        step="0.5"
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="mt-3">
+                    <label className="text-xs text-gray-500">Notes sur l'entente</label>
+                    <textarea
+                      value={entente.notes || ''}
+                      onChange={(e) => {
+                        const updated = [...(settings.ententes_entraide || [])];
+                        updated[index] = { ...entente, notes: e.target.value };
+                        setSettings({ ...settings, ententes_entraide: updated });
+                      }}
+                      className="w-full border rounded p-2 text-sm"
+                      rows="2"
+                      placeholder="Conditions particulières, dates de validité, etc."
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <Button
+              variant="outline"
+              onClick={() => {
+                const nouvelle = {
+                  municipalite: '',
+                  facturer_vehicules: true,
+                  facturer_personnel: true,
+                  facturer_repas: true,
+                  facturer_apria: true,
+                  facturer_materiel: true,
+                  facturer_specialites: true,
+                  tarif_vehicule: 150,
+                  tarif_pompier: 35,
+                  tarif_apria: 25,
+                  minimum_heures: 1,
+                  notes: ''
+                };
+                setSettings({
+                  ...settings,
+                  ententes_entraide: [...(settings.ententes_entraide || []), nouvelle]
+                });
+              }}
+              className="w-full"
+            >
+              + Ajouter une entente avec une municipalité
+            </Button>
+            
+            <div className="p-3 bg-purple-50 rounded-lg text-sm">
+              <p className="text-purple-800">
+                <strong>💡 Note :</strong> Si aucune entente n'existe pour une municipalité, tous les services seront facturés selon les tarifs par défaut.
+              </p>
+            </div>
+            
+            {/* Tarifs par défaut */}
+            <div className="border-t pt-4 mt-4">
+              <h4 className="font-medium text-gray-700 mb-3">📋 Tarifs par défaut (sans entente)</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div>
+                  <label className="text-xs text-gray-500">Tarif véhicule/h ($)</label>
+                  <input
+                    type="number"
+                    value={settings.tarif_defaut_vehicule ?? 200}
+                    onChange={(e) => setSettings({ ...settings, tarif_defaut_vehicule: parseFloat(e.target.value) })}
+                    className="w-full border rounded p-2"
+                    step="5"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">Tarif pompier/h ($)</label>
+                  <input
+                    type="number"
+                    value={settings.tarif_defaut_pompier ?? 45}
+                    onChange={(e) => setSettings({ ...settings, tarif_defaut_pompier: parseFloat(e.target.value) })}
+                    className="w-full border rounded p-2"
+                    step="1"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">Tarif APRIA ($)</label>
+                  <input
+                    type="number"
+                    value={settings.tarif_defaut_apria ?? 30}
+                    onChange={(e) => setSettings({ ...settings, tarif_defaut_apria: parseFloat(e.target.value) })}
+                    className="w-full border rounded p-2"
+                    step="1"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">Minimum heures (h)</label>
+                  <input
+                    type="number"
+                    value={settings.minimum_heures_defaut ?? 2}
+                    onChange={(e) => setSettings({ ...settings, minimum_heures_defaut: parseFloat(e.target.value) })}
+                    className="w-full border rounded p-2"
+                    step="0.5"
+                    min="0"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Button onClick={handleSave} disabled={saving} className="w-full md:w-auto">
         {saving ? '⏳ Enregistrement...' : '💾 Enregistrer les paramètres'}
       </Button>
