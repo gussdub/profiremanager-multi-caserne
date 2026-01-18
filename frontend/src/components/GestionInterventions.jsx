@@ -1819,8 +1819,8 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
               {personnelSansVehicule.map(p => {
                 const statut = statutsPresence.find(s => s.value === (p.statut_presence || 'present'));
                 return (
-                  <div key={p.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded border">
-                    <span className="font-medium flex-1">
+                  <div key={p.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded border flex-wrap">
+                    <span className="font-medium flex-1 min-w-[150px]">
                       {p.user_name || p.prenom + ' ' + p.nom || p.user_id}
                       {p.grade && <span className="text-gray-500 text-sm ml-1">({p.grade})</span>}
                       {p.equipe_origine && <span className="text-purple-600 text-xs ml-2">[{p.equipe_origine}]</span>}
@@ -1836,6 +1836,22 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                             <option key={s.value} value={s.value}>{s.label}</option>
                           ))}
                         </select>
+                        {/* Sélecteur de remplaçant si statut = remplacé */}
+                        {p.statut_presence === 'remplace' && (
+                          <select
+                            value={p.remplace_par || ''}
+                            onChange={(e) => updateRemplacant(p.id, e.target.value)}
+                            className="text-xs rounded px-2 py-1 border bg-yellow-50"
+                          >
+                            <option value="">-- Choisir remplaçant --</option>
+                            {users
+                              .filter(u => (u.statut || '').toLowerCase() === 'actif' && u.id !== p.id)
+                              .map(u => (
+                                <option key={u.id} value={u.id}>{u.prenom} {u.nom}</option>
+                              ))
+                            }
+                          </select>
+                        )}
                         <label className="flex items-center gap-1">
                           <input
                             type="checkbox"
@@ -1853,6 +1869,9 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                       <>
                         <span className={`text-xs px-2 py-1 rounded ${statut?.color || 'bg-gray-100'}`}>
                           {statut?.label || 'Présent'}
+                          {p.statut_presence === 'remplace' && p.remplace_par_nom && (
+                            <span className="ml-1">→ {p.remplace_par_nom}</span>
+                          )}
                         </span>
                         {(p.prime_repas ?? true) && <span className="text-xs">🍽️</span>}
                       </>
