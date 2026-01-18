@@ -1018,14 +1018,30 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
             <div className="space-y-2 max-h-32 overflow-y-auto">
               {formData.audit_log
                 .filter(log => log.action === 'return_for_revision')
-                .map((log, i) => (
-                  <div key={i} className="text-sm bg-white p-2 rounded border border-yellow-200">
-                    <span className="text-gray-500">{log.timestamp}</span>
-                    <span className="mx-2">-</span>
-                    <span className="font-medium">{log.user_name}:</span>
-                    <span className="ml-1">{log.comment}</span>
-                  </div>
-                ))}
+                .map((log, i) => {
+                  // Formater la date en fuseau horaire local (Eastern Canada)
+                  let formattedDate = log.timestamp;
+                  try {
+                    const date = new Date(log.timestamp);
+                    formattedDate = date.toLocaleString('fr-CA', { 
+                      timeZone: 'America/Montreal',
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    });
+                  } catch (e) {}
+                  
+                  return (
+                    <div key={i} className="text-sm bg-white p-2 rounded border border-yellow-200">
+                      <span className="text-gray-500">{formattedDate}</span>
+                      <span className="mx-2">-</span>
+                      <span className="font-medium">{log.user_name}:</span>
+                      <span className="ml-1">{log.comment}</span>
+                    </div>
+                  );
+                })}
             </div>
           </div>
         )}
