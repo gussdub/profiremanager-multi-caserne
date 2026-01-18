@@ -1144,6 +1144,154 @@ const SectionIdentification = ({ formData, setFormData, editMode, formatDateTime
         </CardContent>
       </Card>
 
+      {/* Météo */}
+      <Card>
+        <CardHeader className="bg-blue-50">
+          <CardTitle className="text-lg text-blue-800 flex justify-between items-center">
+            <span>🌤️ Conditions météo</span>
+            {editMode && (
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={async () => {
+                  // Charger la météo automatiquement
+                  if (formData.coordinates?.lat && formData.coordinates?.lon && formData.xml_time_call_received) {
+                    try {
+                      const response = await fetch(
+                        `${BACKEND_URL}/api/${tenantSlug}/interventions/weather?lat=${formData.coordinates.lat}&lon=${formData.coordinates.lon}&datetime_str=${formData.xml_time_call_received}`,
+                        { headers: { 'Authorization': `Bearer ${getToken()}` } }
+                      );
+                      if (response.ok) {
+                        const weather = await response.json();
+                        setFormData({
+                          ...formData,
+                          meteo: {
+                            temperature: weather.temperature,
+                            conditions: weather.conditions?.[0] || 'inconnu',
+                            chaussee: weather.chaussee,
+                            precipitation_mm: weather.precipitation_mm,
+                            neige_cm: weather.neige_cm,
+                            vent_kmh: weather.vent_kmh,
+                            visibilite_m: weather.visibilite_m
+                          }
+                        });
+                        toast({ title: "Météo chargée", description: "Conditions météo récupérées automatiquement" });
+                      }
+                    } catch (e) {
+                      toast({ title: "Erreur", description: "Impossible de charger la météo", variant: "destructive" });
+                    }
+                  } else {
+                    toast({ title: "Info manquante", description: "Coordonnées ou date manquantes pour récupérer la météo", variant: "destructive" });
+                  }
+                }}
+              >
+                🔄 Charger auto
+              </Button>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <label className="text-sm text-gray-500">Température</label>
+              {editMode ? (
+                <input
+                  type="number"
+                  value={formData.meteo?.temperature ?? ''}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    meteo: { ...formData.meteo, temperature: e.target.value ? parseFloat(e.target.value) : null }
+                  })}
+                  className="w-full border rounded p-2"
+                  placeholder="°C"
+                />
+              ) : (
+                <p className="font-medium">{formData.meteo?.temperature != null ? `${formData.meteo.temperature}°C` : '-'}</p>
+              )}
+            </div>
+            <div>
+              <label className="text-sm text-gray-500">Conditions</label>
+              {editMode ? (
+                <select
+                  value={formData.meteo?.conditions || ''}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    meteo: { ...formData.meteo, conditions: e.target.value }
+                  })}
+                  className="w-full border rounded p-2"
+                >
+                  <option value="">-- Sélectionner --</option>
+                  <option value="soleil">☀️ Soleil</option>
+                  <option value="nuageux">☁️ Nuageux</option>
+                  <option value="pluie">🌧️ Pluie</option>
+                  <option value="neige">🌨️ Neige</option>
+                  <option value="brouillard">🌫️ Brouillard</option>
+                  <option value="orage">⛈️ Orage</option>
+                  <option value="verglas">🧊 Verglas</option>
+                </select>
+              ) : (
+                <p className="font-medium">{
+                  formData.meteo?.conditions === 'soleil' ? '☀️ Soleil' :
+                  formData.meteo?.conditions === 'nuageux' ? '☁️ Nuageux' :
+                  formData.meteo?.conditions === 'pluie' ? '🌧️ Pluie' :
+                  formData.meteo?.conditions === 'neige' ? '🌨️ Neige' :
+                  formData.meteo?.conditions === 'brouillard' ? '🌫️ Brouillard' :
+                  formData.meteo?.conditions === 'orage' ? '⛈️ Orage' :
+                  formData.meteo?.conditions === 'verglas' ? '🧊 Verglas' :
+                  '-'
+                }</p>
+              )}
+            </div>
+            <div>
+              <label className="text-sm text-gray-500">État chaussée</label>
+              {editMode ? (
+                <select
+                  value={formData.meteo?.chaussee || ''}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    meteo: { ...formData.meteo, chaussee: e.target.value }
+                  })}
+                  className="w-full border rounded p-2"
+                >
+                  <option value="">-- Sélectionner --</option>
+                  <option value="sec">🛣️ Sec</option>
+                  <option value="mouillée">💧 Mouillée</option>
+                  <option value="glissante">⚠️ Glissante</option>
+                  <option value="enneigée">❄️ Enneigée</option>
+                  <option value="glacée">🧊 Glacée</option>
+                </select>
+              ) : (
+                <p className="font-medium">{
+                  formData.meteo?.chaussee === 'sec' ? '🛣️ Sec' :
+                  formData.meteo?.chaussee === 'mouillée' ? '💧 Mouillée' :
+                  formData.meteo?.chaussee === 'glissante' ? '⚠️ Glissante' :
+                  formData.meteo?.chaussee === 'enneigée' ? '❄️ Enneigée' :
+                  formData.meteo?.chaussee === 'glacée' ? '🧊 Glacée' :
+                  '-'
+                }</p>
+              )}
+            </div>
+            <div>
+              <label className="text-sm text-gray-500">Vent</label>
+              {editMode ? (
+                <input
+                  type="number"
+                  value={formData.meteo?.vent_kmh ?? ''}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    meteo: { ...formData.meteo, vent_kmh: e.target.value ? parseFloat(e.target.value) : null }
+                  })}
+                  className="w-full border rounded p-2"
+                  placeholder="km/h"
+                />
+              ) : (
+                <p className="font-medium">{formData.meteo?.vent_kmh != null ? `${formData.meteo.vent_kmh} km/h` : '-'}</p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Appelant */}
       <Card>
         <CardHeader className="bg-gray-50">
