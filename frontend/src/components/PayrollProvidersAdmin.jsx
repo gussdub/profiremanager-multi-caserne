@@ -594,6 +594,89 @@ const PayrollProvidersAdmin = ({ token }) => {
                   <span>Actif</span>
                 </label>
               </div>
+
+              {/* Section API */}
+              <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '16px', marginTop: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h4 style={{ margin: 0, fontSize: '0.95rem' }}>🔗 Intégration API</h4>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <Button size="sm" variant="outline" onClick={() => applyApiTemplate('nethris')}>
+                      Config Nethris
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => applyApiTemplate('employeur_d')}>
+                      Config Employeur D
+                    </Button>
+                  </div>
+                </div>
+                
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                  <input
+                    type="checkbox"
+                    checked={formData.api_available}
+                    onChange={(e) => setFormData({...formData, api_available: e.target.checked})}
+                  />
+                  <span style={{ fontWeight: '500' }}>API disponible pour ce fournisseur</span>
+                </label>
+
+                {formData.api_available && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: '#f8fafc', padding: '16px', borderRadius: '8px' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>URL de base</label>
+                      <Input
+                        value={formData.api_base_url}
+                        onChange={(e) => setFormData({...formData, api_base_url: e.target.value})}
+                        placeholder="https://api.exemple.com"
+                      />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>URL Token OAuth2</label>
+                        <Input
+                          value={formData.api_token_url}
+                          onChange={(e) => setFormData({...formData, api_token_url: e.target.value})}
+                          placeholder="https://api.../oauth/token"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>Endpoint Upload</label>
+                        <Input
+                          value={formData.api_upload_endpoint}
+                          onChange={(e) => setFormData({...formData, api_upload_endpoint: e.target.value})}
+                          placeholder="https://api.../import"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>Endpoint Configuration (codes gains)</label>
+                      <Input
+                        value={formData.api_config_endpoint}
+                        onChange={(e) => setFormData({...formData, api_config_endpoint: e.target.value})}
+                        placeholder="https://api.../configuration"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>URL Documentation</label>
+                      <Input
+                        value={formData.api_documentation_url}
+                        onChange={(e) => setFormData({...formData, api_documentation_url: e.target.value})}
+                        placeholder="https://..."
+                      />
+                    </div>
+                    <div style={{ background: '#dbeafe', padding: '12px', borderRadius: '6px', fontSize: '0.8rem' }}>
+                      <strong>Champs requis pour le tenant :</strong><br/>
+                      {formData.api_required_fields?.length > 0 ? (
+                        formData.api_required_fields.map((f, i) => (
+                          <span key={i} style={{ display: 'inline-block', background: '#bfdbfe', padding: '2px 8px', borderRadius: '4px', margin: '4px 4px 0 0' }}>
+                            {f.label}
+                          </span>
+                        ))
+                      ) : (
+                        <span style={{ color: '#64748b' }}>Utilisez un template ou configurez manuellement</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             <div style={{ padding: '16px 20px', borderTop: '1px solid #e5e7eb', display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
               <Button variant="outline" onClick={() => setShowModal(false)}>Annuler</Button>
