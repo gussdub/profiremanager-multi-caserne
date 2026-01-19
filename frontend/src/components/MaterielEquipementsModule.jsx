@@ -1661,6 +1661,27 @@ const EquipementModal = ({ mode, equipement, categories, tenantSlug, onClose, on
             </div>
           </div>
           
+          {/* Gestion des quantités */}
+          <div style={{ 
+            backgroundColor: '#f0fdf4', 
+            border: '1px solid #bbf7d0', 
+            borderRadius: '0.5rem', 
+            padding: '0.75rem' 
+          }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={formData.gerer_quantite || false}
+                onChange={(e) => setFormData({ ...formData, gerer_quantite: e.target.checked })}
+                style={{ width: '1.25rem', height: '1.25rem' }}
+              />
+              <span style={{ fontWeight: '500' }}>📦 Gérer les quantités (consommable)</span>
+            </label>
+            <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem', marginLeft: '1.75rem' }}>
+              Si coché, la quantité sera automatiquement déduite lors de l'utilisation en intervention.
+            </p>
+          </div>
+          
           {/* Localisation */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
