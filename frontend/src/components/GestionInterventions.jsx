@@ -3282,6 +3282,7 @@ const TabHistorique = ({ user, tenantSlug, toast }) => {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ status: 'signed', dateFrom: '', dateTo: '' });
   const [selectedIntervention, setSelectedIntervention] = useState(null);
+  const [unlocking, setUnlocking] = useState(null);
 
   const API = `${BACKEND_URL}/api/${tenantSlug}`;
 
@@ -3310,6 +3311,33 @@ const TabHistorique = ({ user, tenantSlug, toast }) => {
     }
   };
 
+  // Déverrouiller une intervention (admin seulement)
+  const handleUnlock = async (interventionId) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir déverrouiller cette intervention pour modification ?')) {
+      return;
+    }
+    
+    setUnlocking(interventionId);
+    try {
+      const response = await fetch(`${API}/interventions/${interventionId}/unlock`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      
+      if (response.ok) {
+        toast({ title: "Succès", description: "Intervention déverrouillée. Elle est maintenant en brouillon." });
+        fetchInterventions();
+      } else {
+        const error = await response.json();
+        toast({ title: "Erreur", description: error.detail || "Impossible de déverrouiller", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Erreur", description: "Erreur de connexion", variant: "destructive" });
+    } finally {
+      setUnlocking(null);
+    }
+  };
+
   useEffect(() => {
     fetchInterventions();
   }, [filters]);
@@ -3335,6 +3363,8 @@ const TabHistorique = ({ user, tenantSlug, toast }) => {
     };
     return labels[status] || status;
   };
+
+  const isAdmin = user.role === 'admin';
 
   return (
     <div>
