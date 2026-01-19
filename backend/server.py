@@ -38627,6 +38627,13 @@ class TenantPayrollConfig(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     tenant_id: str
     provider_id: Optional[str] = None  # Fournisseur de paie sélectionné
+    
+    # Credentials API du tenant (chiffrés/sécurisés)
+    api_credentials: dict = {}  # {client_id, client_secret, business_id, company_number, etc.}
+    api_connection_tested: bool = False
+    api_last_test_date: Optional[datetime] = None
+    api_last_test_result: Optional[str] = None
+    
     # Champs personnalisables
     champs_supplementaires: List[dict] = []  # [{nom, type, valeur_defaut}]
     # Options d'export
