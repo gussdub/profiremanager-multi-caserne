@@ -142,6 +142,101 @@ const ModulePaie = ({ tenant }) => {
     fetchCodeMappings();
   }, [fetchParametres, fetchFeuilles, fetchEmployes, fetchPayrollConfig, fetchCodeMappings]);
 
+  // Charger les credentials quand le config change
+  useEffect(() => {
+    if (payrollConfig?.api_credentials) {
+      setApiCredentials(payrollConfig.api_credentials);
+    }
+  }, [payrollConfig]);
+
+  // Trouver le fournisseur sélectionné
+  const selectedProvider = providersDisponibles.find(p => p.id === payrollConfig?.provider_id);
+
+  const handleSaveApiCredentials = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/${tenant}/paie/api/save-credentials`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(apiCredentials)
+      });
+      
+      if (response.ok) {
+        toast.success('Credentials API enregistrés');
+        fetchPayrollConfig();
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Erreur');
+      }
+    } catch (error) {
+      toast.error('Erreur de connexion');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTestApiConnection = async () => {
+    setTestingConnection(true);
+    try {
+      const response = await fetch(`${API_URL}/api/${tenant}/paie/api/test-connection`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        toast.success(data.message);
+      } else {
+        toast.error(data.message);
+      }
+      
+      fetchPayrollConfig();
+    } catch (error) {
+      toast.error('Erreur de connexion');
+    } finally {
+      setTestingConnection(false);
+    }
+  };
+
+  const handleSendToApi = async () => {
+    const feuillesAExporter = feuilles.filter(f => f.statut === 'valide');
+    if (feuillesAExporter.length === 0) {
+      toast.error('Aucune feuille validée à exporter');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/${tenant}/paie/api/send`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          feuille_ids: feuillesAExporter.map(f => f.id)
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        toast.success(data.message);
+        fetchFeuilles();
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error('Erreur de connexion');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSaveParametres = async () => {
     setLoading(true);
     try {
