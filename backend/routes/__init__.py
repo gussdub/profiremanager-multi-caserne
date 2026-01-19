@@ -12,11 +12,21 @@ Structure des routes (à extraire progressivement de server.py):
 /api/{tenant}/disponibilites/... - Disponibilités
 /api/{tenant}/actifs/...  - Gestion des actifs (véhicules, EPI, etc.)
 /api/{tenant}/notifications/... - Notifications
+/api/{tenant}/paie/...   - Module Paie (feuilles de temps, export)
+/api/{tenant}/prevention/... - Module Prévention (bâtiments)
 
 MIGRATION PROGRESSIVE
 ---------------------
 Les routes restent dans server.py pour l'instant.
 Ce fichier sert de documentation et de point d'entrée futur.
+
+MODÈLES EXTRAITS
+----------------
+- models/paie.py : ParametresPaie, FeuilleTemps, TenantPayrollConfig, PayrollProvider, etc.
+- models/formation.py : Formation, InscriptionFormation, Competence, Grade, etc.
+- models/planning.py : TypeGarde, Planning, Assignation, Disponibilite, etc.
+- models/user.py : User, UserCreate, UserUpdate, etc.
+- models/tenant.py : Tenant, SuperAdmin, AuditLog
 
 Pour créer une nouvelle route de manière modulaire:
 1. Créer le fichier dans routes/ (ex: routes/nouvelle_feature.py)
@@ -51,3 +61,4 @@ api_router.include_router(ma_feature_router)
 # from .users import router as users_router
 # from .planning import router as planning_router
 # from .formations import router as formations_router
+# from .paie import router as paie_router
