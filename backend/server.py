@@ -36771,6 +36771,138 @@ async def unlock_intervention(
     return {"success": True, "message": "Intervention déverrouillée avec succès"}
 
 
+# ==================== FACTURES ENTRAIDE ====================
+
+@api_router.post("/{tenant_slug}/interventions/{intervention_id}/facture-entraide")
+async def generer_facture_entraide(
+    tenant_slug: str,
+    intervention_id: str,
+    facture_data: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Génère et enregistre une facture d'entraide pour une intervention.
+    Incrémente automatiquement le numéro de facture.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que l'intervention existe
+    intervention = await db.interventions.find_one({
+        "id": intervention_id,
+        "tenant_id": tenant.id
+    })
+    
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    # Récupérer les settings pour la numérotation
+    settings = await db.intervention_settings.find_one({"tenant_id": tenant.id})
+    if not settings:
+        settings = {}
+    
+    # Générer le numéro de facture
+    prefixe = settings.get("facture_prefixe", str(datetime.now().year))
+    prochain_numero = settings.get("facture_prochain_numero", 1)
+    numero_facture = f"{prefixe}-{str(prochain_numero).zfill(3)}"
+    
+    # Créer la facture
+    facture = {
+        "id": str(uuid.uuid4()),
+        "tenant_id": tenant.id,
+        "intervention_id": intervention_id,
+        "numero_facture": numero_facture,
+        "date_facture": datetime.now(timezone.utc).isoformat(),
+        "municipalite_facturation": facture_data.get("municipalite_facturation"),
+        "entente_utilisee": facture_data.get("entente_utilisee"),
+        "lignes": facture_data.get("lignes", []),
+        "total": facture_data.get("total", 0),
+        "duree_heures": facture_data.get("duree_heures", 0),
+        "coordonnees_facturation": facture_data.get("coordonnees_facturation", {}),
+        "intervention_info": {
+            "external_call_id": intervention.get("external_call_id"),
+            "type_intervention": intervention.get("type_intervention"),
+            "address_full": intervention.get("address_full"),
+            "municipality": intervention.get("municipality"),
+            "date_intervention": intervention.get("xml_time_call_received"),
+        },
+        "statut": "generee",
+        "created_at": datetime.now(timezone.utc),
+        "created_by": current_user.id,
+        "created_by_name": f"{current_user.prenom} {current_user.nom}"
+    }
+    
+    # Enregistrer la facture
+    await db.factures_entraide.insert_one(facture)
+    
+    # Incrémenter le numéro de facture
+    await db.intervention_settings.update_one(
+        {"tenant_id": tenant.id},
+        {"$set": {"facture_prochain_numero": prochain_numero + 1}},
+        upsert=True
+    )
+    
+    # Mettre à jour l'intervention avec la référence de facture
+    await db.interventions.update_one(
+        {"id": intervention_id},
+        {
+            "$set": {
+                "facture_entraide_id": facture["id"],
+                "facture_entraide_numero": numero_facture,
+                "updated_at": datetime.now(timezone.utc)
+            }
+        }
+    )
+    
+    logging.info(f"🧾 Facture entraide {numero_facture} générée pour intervention {intervention.get('external_call_id')}")
+    
+    # Retourner la facture sans _id
+    facture.pop("_id", None)
+    facture["created_at"] = facture["created_at"].isoformat()
+    
+    return {"success": True, "facture": facture}
+
+
+@api_router.get("/{tenant_slug}/factures-entraide")
+async def lister_factures_entraide(
+    tenant_slug: str,
+    limit: int = 100,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Liste les factures d'entraide du tenant.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    factures = await db.factures_entraide.find(
+        {"tenant_id": tenant.id},
+        {"_id": 0}
+    ).sort("date_facture", -1).limit(limit).to_list(limit)
+    
+    return {"factures": factures}
+
+
+@api_router.get("/{tenant_slug}/factures-entraide/{facture_id}")
+async def get_facture_entraide(
+    tenant_slug: str,
+    facture_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Récupère une facture d'entraide spécifique.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    facture = await db.factures_entraide.find_one(
+        {"id": facture_id, "tenant_id": tenant.id},
+        {"_id": 0}
+    )
+    
+    if not facture:
+        raise HTTPException(status_code=404, detail="Facture non trouvée")
+    
+    return facture
+
+
 # ==================== MÉTÉO AUTOMATIQUE ====================
 
 @api_router.get("/{tenant_slug}/interventions/weather")
