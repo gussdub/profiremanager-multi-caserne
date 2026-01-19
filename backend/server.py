@@ -39912,6 +39912,41 @@ async def test_api_connection(
                     result = "error"
                     message = f"Erreur Employeur D: {response.status_code} - {response.text[:200]}"
         
+        elif "ceridian" in provider_name:
+            # Test connexion SFTP pour Ceridian
+            import paramiko
+            
+            sftp_host = credentials.get("sftp_host", "")
+            sftp_port = int(credentials.get("sftp_port", 22) or 22)
+            sftp_username = credentials.get("sftp_username", "")
+            sftp_password = credentials.get("sftp_password", "")
+            
+            if not sftp_host or not sftp_username or not sftp_password:
+                raise HTTPException(status_code=400, detail="Credentials SFTP incomplets (host, username, password requis)")
+            
+            try:
+                transport = paramiko.Transport((sftp_host, sftp_port))
+                transport.connect(username=sftp_username, password=sftp_password)
+                sftp = paramiko.SFTPClient.from_transport(transport)
+                
+                # Lister le dossier racine pour vérifier la connexion
+                files = sftp.listdir('.')
+                
+                sftp.close()
+                transport.close()
+                
+                result = "success"
+                message = f"Connexion SFTP réussie à {sftp_host}. {len(files)} éléments trouvés dans le dossier racine."
+            except paramiko.AuthenticationException:
+                result = "error"
+                message = "Authentification SFTP échouée. Vérifiez le nom d'utilisateur et mot de passe."
+            except paramiko.SSHException as e:
+                result = "error"
+                message = f"Erreur SSH: {str(e)}"
+            except Exception as e:
+                result = "error"
+                message = f"Erreur connexion SFTP: {str(e)}"
+        
         else:
             # Fournisseur générique - test basique
             result = "unknown"
