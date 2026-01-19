@@ -36704,6 +36704,65 @@ async def validate_intervention(
     return {"success": True, "intervention": updated}
 
 
+@api_router.post("/{tenant_slug}/interventions/{intervention_id}/unlock")
+async def unlock_intervention(
+    tenant_slug: str,
+    intervention_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Déverrouille une intervention signée pour permettre des modifications.
+    Réservé aux administrateurs uniquement.
+    Remet l'intervention en statut 'draft' (brouillon).
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que c'est un admin
+    if current_user.role != 'admin':
+        raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent déverrouiller une intervention")
+    
+    # Récupérer l'intervention
+    intervention = await db.interventions.find_one({
+        "id": intervention_id,
+        "tenant_id": tenant["id"]
+    })
+    
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    if intervention.get("status") != "signed":
+        raise HTTPException(status_code=400, detail="Seules les interventions signées peuvent être déverrouillées")
+    
+    # Créer une entrée d'audit
+    audit_entry = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "user_id": current_user.id,
+        "user_name": f"{current_user.prenom} {current_user.nom}",
+        "action": "unlock",
+        "comment": "Intervention déverrouillée pour modification"
+    }
+    
+    # Mettre à jour l'intervention
+    update_data = {
+        "status": "draft",
+        "signed_at": None,
+        "signed_by": None,
+        "updated_at": datetime.now(timezone.utc)
+    }
+    
+    await db.interventions.update_one(
+        {"id": intervention_id},
+        {
+            "$set": update_data,
+            "$push": {"audit_log": audit_entry}
+        }
+    )
+    
+    logging.info(f"🔓 Intervention {intervention_id} déverrouillée par {current_user.email}")
+    
+    return {"success": True, "message": "Intervention déverrouillée avec succès"}
+
+
 # ==================== MÉTÉO AUTOMATIQUE ====================
 
 @api_router.get("/{tenant_slug}/interventions/weather")
