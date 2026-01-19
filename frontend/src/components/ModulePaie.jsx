@@ -1375,12 +1375,31 @@ const ModulePaie = ({ tenant }) => {
         >
           <Link size={18} /> Export
         </button>
+        <button
+          onClick={() => setActiveTab('matricules')}
+          style={{
+            padding: '10px 20px',
+            border: 'none',
+            background: activeTab === 'matricules' ? '#10b981' : 'transparent',
+            color: activeTab === 'matricules' ? 'white' : '#64748b',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontWeight: '500',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+          data-testid="matricules-tab"
+        >
+          <Users size={18} /> Matricules
+        </button>
       </div>
 
       {/* Contenu */}
       {activeTab === 'feuilles' && renderFeuilles()}
       {activeTab === 'parametres' && renderParametres()}
       {activeTab === 'export' && renderExportConfig()}
+      {activeTab === 'matricules' && renderMatricules()}
     </div>
   );
 };
