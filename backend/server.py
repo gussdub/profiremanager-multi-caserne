@@ -38867,22 +38867,25 @@ async def get_pay_code_mappings(
         {"_id": 0}
     ).to_list(100)
     
-    # Liste des types d'événements internes disponibles (basé sur talon Nethris)
-    internal_event_types = [
-        {"code": "H_GARDE_INTERNE", "label": "H.Garde i - Heures garde interne (caserne)"},
-        {"code": "H_GARDE_EXTERNE", "label": "H.Garde e - Heures garde externe (astreinte)"},
-        {"code": "H_INTERVENTION", "label": "H. Interve - Heures d'intervention"},
-        {"code": "H_REPONDANT", "label": "H. Réponda - Heures répondant"},
-        {"code": "H_PRATIQUE", "label": "H.Pratiqu - Heures pratique/formation"},
-        {"code": "H_AUTRE", "label": "H.Autre - Autres heures"},
-        {"code": "PR_REPAS", "label": "Pr.Repas - Prime repas"},
-        {"code": "PR_GARDE_CITERNE", "label": "Pr.Gard.C - Prime garde citerne"},
-        {"code": "GARDE_CITERNE", "label": "Gard.Cit. - Garde citerne"},
-        {"code": "FERIE", "label": "Férié - Heures fériées"},
-        {"code": "HEURES_SUP", "label": "Heures supplémentaires"},
-        {"code": "KILOMETRAGE", "label": "Kilométrage"},
-        {"code": "AJUST_SAL", "label": "Ajust.sal - Ajustement salarial"}
-    ]
+    # Récupérer les types d'heures personnalisés du tenant
+    custom_event_types = await db.tenant_payroll_event_types.find(
+        {"tenant_id": tenant["id"]},
+        {"_id": 0}
+    ).to_list(100)
+    
+    # Si pas de types personnalisés, utiliser les types par défaut
+    if not custom_event_types:
+        # Types par défaut (exemples génériques)
+        default_event_types = [
+            {"code": "HEURES_REGULIERES", "label": "Heures régulières", "category": "heures"},
+            {"code": "HEURES_SUP", "label": "Heures supplémentaires", "category": "heures"},
+            {"code": "FORMATION", "label": "Formation", "category": "heures"},
+            {"code": "PRIME_REPAS", "label": "Prime repas", "category": "prime"},
+            {"code": "KILOMETRAGE", "label": "Kilométrage", "category": "frais"},
+        ]
+        internal_event_types = default_event_types
+    else:
+        internal_event_types = custom_event_types
     
     return {"mappings": mappings, "event_types": internal_event_types}
 
