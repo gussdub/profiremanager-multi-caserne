@@ -5,21 +5,36 @@ Application de gestion de planning pour services d'incendie avec support multi-t
 
 ## Core Features Implemented
 
-### Module Paie (Nouveau - Janvier 2026)
-- **Backend**: 
-  - Modèles `ParametresPaie` et `FeuilleTemps`
-  - Endpoints CRUD `/paie/parametres` et `/paie/feuilles-temps`
-  - Calcul automatique des heures: gardes internes/externes, rappels, formations, interventions
-  - Logique de rémunération: temps plein (salaire fixe) vs temps partiel (heures payées)
-  - Heures minimum configurables pour rappels et gardes externes
-  - Support des heures supplémentaires (lié aux paramètres Planning)
-  - Primes de repas intégrées depuis le module Interventions
-- **Frontend**: 
-  - Composant `ModulePaie.jsx` avec onglets Feuilles de temps et Paramètres
-  - Génération de feuilles de temps par employé/période
-  - Workflow: Brouillon → Validé → Exporté
-  - Détail des entrées avec ventilation par type
-- **Types de garde**: Ajout du champ `montant_garde` pour prime fixe par garde
+### Module Paie - Système Complet (Janvier 2026)
+
+#### Gestion des feuilles de temps
+- **Génération en lot**: Un clic génère les feuilles pour TOUS les employés actifs
+- **Calcul automatique**: Agrège gardes planifiées, interventions, formations
+- **Logique de rémunération**:
+  - Garde interne (temps plein): Comptabilisé en stats, non payé en plus (déjà inclus dans salaire)
+  - Garde externe: Payé avec heures minimum configurables + prime fixe (configurée par type de garde)
+  - Rappel: Payé avec heures minimum configurables
+  - Formation: Payé selon taux configurable
+- **Workflow**: Brouillon → Validé → Exporté
+
+#### Système d'export configurable (Super Admin + Tenant)
+- **PayrollProvider** (Global): Définit les logiciels de paie (Nethris, Employeur D, Ceridian, My People Doc)
+- **ProviderColumnDefinition** (Global): Structure des fichiers par fournisseur (colonnes, ordre, format)
+- **ClientPayCodeMapping** (Tenant): Mapping des événements internes vers codes du logiciel de paie
+- **TenantPayrollConfig** (Tenant): Sélection du fournisseur + champs supplémentaires
+
+#### Endpoints
+- `POST /paie/feuilles-temps/generer-lot` - Génération pour tous les employés
+- `POST /paie/export` - Export vers le logiciel de paie configuré
+- `GET/PUT /{tenant}/paie/config` - Configuration fournisseur du tenant
+- `GET/POST/DELETE /{tenant}/paie/code-mappings` - Mappings de codes
+- `GET/POST/PUT/DELETE /super-admin/payroll-providers` - CRUD fournisseurs
+- `GET/POST/PUT/DELETE /super-admin/payroll-providers/{id}/columns` - CRUD colonnes
+
+#### Frontend (ModulePaie.jsx)
+- **Onglet Feuilles de temps**: Génération en lot, liste, filtres, validation, détail
+- **Onglet Paramètres**: Période de paie, taux garde externe/rappel/formation, heures sup
+- **Onglet Export**: Sélection fournisseur, mapping des codes de paie
 
 ### Correction Calcul Primes de Repas (Janvier 2026)
 - Calcul déplacé de `validate_intervention` vers `import-xml`
