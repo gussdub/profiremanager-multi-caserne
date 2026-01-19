@@ -9,7 +9,7 @@ CONTEXTE DU BUG CORRIGÉ:
 
 CREDENTIALS:
 - Tenant: pompiers-test
-- URL de connexion: https://sos-dispatch-1.preview.emergentagent.com/pompiers-test
+- URL de connexion: https://emergency-911.preview.emergentagent.com/pompiers-test
 - Email: admin@test.com
 - Password: Admin123!
 
@@ -36,7 +36,7 @@ import os
 
 class ExportFunctionalityTester:
     def __init__(self):
-        self.base_url = "https://sos-dispatch-1.preview.emergentagent.com/api"
+        self.base_url = "https://emergency-911.preview.emergentagent.com/api"
         self.headers = {}
         self.token = None
         self.tenant_slug = "pompiers-test"

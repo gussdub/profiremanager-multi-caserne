@@ -9,7 +9,7 @@ import json
 
 def analyze_assignments():
     # Authentification
-    auth_url = "https://sos-dispatch-1.preview.emergentagent.com/api/demo/auth/login"
+    auth_url = "https://emergency-911.preview.emergentagent.com/api/demo/auth/login"
     credentials = {"email": "gussdub@gmail.com", "mot_de_passe": "230685Juin+"}
     
     response = requests.post(auth_url, json=credentials)
@@ -20,21 +20,21 @@ def analyze_assignments():
     print("="*60)
     
     # 1. Récupérer les assignations existantes
-    assignations_url = "https://sos-dispatch-1.preview.emergentagent.com/api/demo/planning/assignations/2025-12-01"
+    assignations_url = "https://emergency-911.preview.emergentagent.com/api/demo/planning/assignations/2025-12-01"
     response = requests.get(assignations_url, headers=headers)
     assignations = response.json()
     
     print(f"📅 Assignations pour 2025-12-01: {len(assignations)}")
     
     # 2. Récupérer tous les utilisateurs
-    users_url = "https://sos-dispatch-1.preview.emergentagent.com/api/demo/users"
+    users_url = "https://emergency-911.preview.emergentagent.com/api/demo/users"
     response = requests.get(users_url, headers=headers)
     users = response.json()
     
     user_map = {u['id']: u for u in users}
     
     # 3. Récupérer les types de garde
-    types_url = "https://sos-dispatch-1.preview.emergentagent.com/api/demo/types-garde"
+    types_url = "https://emergency-911.preview.emergentagent.com/api/demo/types-garde"
     response = requests.get(types_url, headers=headers)
     types_garde = response.json()
     
@@ -80,7 +80,7 @@ def analyze_assignments():
     print(f"   - Actif: {guillaume.get('actif', 'N/A')}")
     
     # 6. Vérifier les disponibilités de Guillaume pour le 2025-12-01
-    dispo_url = f"https://sos-dispatch-1.preview.emergentagent.com/api/demo/disponibilites/{guillaume_id}"
+    dispo_url = f"https://emergency-911.preview.emergentagent.com/api/demo/disponibilites/{guillaume_id}"
     params = {"date_debut": "2025-12-01", "date_fin": "2025-12-01"}
     response = requests.get(dispo_url, headers=headers, params=params)
     
@@ -114,7 +114,7 @@ def analyze_assignments():
         print(f"   - Actif: {guillaume.get('actif')} vs {user.get('actif')}")
         
         # Vérifier les disponibilités de cet utilisateur
-        dispo_url = f"https://sos-dispatch-1.preview.emergentagent.com/api/demo/disponibilites/{user_id}"
+        dispo_url = f"https://emergency-911.preview.emergentagent.com/api/demo/disponibilites/{user_id}"
         params = {"date_debut": "2025-12-01", "date_fin": "2025-12-01"}
         response = requests.get(dispo_url, headers=headers, params=params)
         
@@ -133,7 +133,7 @@ def analyze_assignments():
     # 8. Vérifier les paramètres d'attribution
     print(f"\n⚙️ PARAMÈTRES D'ATTRIBUTION:")
     
-    params_url = "https://sos-dispatch-1.preview.emergentagent.com/api/demo/parametres/remplacements"
+    params_url = "https://emergency-911.preview.emergentagent.com/api/demo/parametres/remplacements"
     response = requests.get(params_url, headers=headers)
     
     if response.status_code == 200:
