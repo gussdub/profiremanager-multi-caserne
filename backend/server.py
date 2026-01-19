@@ -36400,6 +36400,77 @@ def parse_xml_datetime_intervention(date_str: str, time_str: str):
             return None
 
 
+async def calculate_meal_primes_for_intervention(intervention: dict, settings: dict) -> dict:
+    """
+    Calcule automatiquement les primes de repas en fonction des heures d'intervention.
+    Retourne un dict avec les informations de primes à appliquer.
+    """
+    if not settings:
+        return None
+    
+    # Récupérer les heures de l'intervention
+    time_start = intervention.get("xml_time_call_received")
+    time_end = intervention.get("xml_time_call_closed") or intervention.get("xml_time_terminated")
+    
+    if not time_start or not time_end:
+        return None
+    
+    try:
+        # Convertir en datetime
+        if isinstance(time_start, str):
+            start_dt = datetime.fromisoformat(time_start.replace('Z', '+00:00'))
+        else:
+            start_dt = time_start
+        
+        if isinstance(time_end, str):
+            end_dt = datetime.fromisoformat(time_end.replace('Z', '+00:00'))
+        else:
+            end_dt = time_end
+        
+        # Calculer la durée en heures
+        duree_heures = (end_dt - start_dt).total_seconds() / 3600
+        
+        # Fonction pour vérifier si une période est couverte
+        def check_meal_period(config, start_dt, end_dt, duree):
+            if not config or not config.get("actif"):
+                return False
+            
+            heure_debut = config.get("heure_debut", "00:00")
+            heure_fin = config.get("heure_fin", "23:59")
+            duree_min = config.get("duree_minimum", 0)
+            
+            # Vérifier la durée minimum
+            if duree < duree_min:
+                return False
+            
+            # Parser les heures de la période
+            h_debut, m_debut = map(int, heure_debut.split(':'))
+            h_fin, m_fin = map(int, heure_fin.split(':'))
+            
+            # Créer les datetimes pour la période du repas le jour de l'intervention
+            periode_debut = start_dt.replace(hour=h_debut, minute=m_debut, second=0, microsecond=0)
+            periode_fin = start_dt.replace(hour=h_fin, minute=m_fin, second=0, microsecond=0)
+            
+            # Vérifier si l'intervention chevauche la période du repas
+            return start_dt < periode_fin and end_dt > periode_debut
+        
+        # Calculer les primes pour chaque repas
+        prime_dejeuner = check_meal_period(settings.get("repas_dejeuner"), start_dt, end_dt, duree_heures)
+        prime_diner = check_meal_period(settings.get("repas_diner"), start_dt, end_dt, duree_heures)
+        prime_souper = check_meal_period(settings.get("repas_souper"), start_dt, end_dt, duree_heures)
+        
+        return {
+            "prime_dejeuner": prime_dejeuner,
+            "prime_diner": prime_diner,
+            "prime_souper": prime_souper,
+            "duree_heures": round(duree_heures, 2)
+        }
+        
+    except Exception as e:
+        logging.error(f"Erreur calcul primes repas: {e}")
+        return None
+
+
 @api_router.get("/{tenant_slug}/interventions")
 async def list_interventions(
     tenant_slug: str,
