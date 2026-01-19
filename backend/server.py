@@ -38626,12 +38626,9 @@ class TenantPayrollConfig(BaseModel):
 
 @api_router.get("/super-admin/payroll-providers")
 async def list_payroll_providers(
-    current_user: User = Depends(get_current_user)
+    admin: SuperAdmin = Depends(get_super_admin)
 ):
     """Liste tous les fournisseurs de paie (Super Admin)"""
-    if not current_user.is_super_admin:
-        raise HTTPException(status_code=403, detail="Accès Super Admin requis")
-    
     providers = await db.payroll_providers.find({}, {"_id": 0}).to_list(100)
     return {"providers": providers}
 
@@ -38639,12 +38636,9 @@ async def list_payroll_providers(
 @api_router.post("/super-admin/payroll-providers")
 async def create_payroll_provider(
     provider_data: dict = Body(...),
-    current_user: User = Depends(get_current_user)
+    admin: SuperAdmin = Depends(get_super_admin)
 ):
     """Crée un nouveau fournisseur de paie (Super Admin)"""
-    if not current_user.is_super_admin:
-        raise HTTPException(status_code=403, detail="Accès Super Admin requis")
-    
     provider = PayrollProvider(**provider_data)
     await db.payroll_providers.insert_one(provider.dict())
     
@@ -38655,12 +38649,9 @@ async def create_payroll_provider(
 async def update_payroll_provider(
     provider_id: str,
     provider_data: dict = Body(...),
-    current_user: User = Depends(get_current_user)
+    admin: SuperAdmin = Depends(get_super_admin)
 ):
     """Met à jour un fournisseur de paie (Super Admin)"""
-    if not current_user.is_super_admin:
-        raise HTTPException(status_code=403, detail="Accès Super Admin requis")
-    
     provider_data["updated_at"] = datetime.now(timezone.utc)
     
     await db.payroll_providers.update_one(
@@ -38674,12 +38665,9 @@ async def update_payroll_provider(
 @api_router.delete("/super-admin/payroll-providers/{provider_id}")
 async def delete_payroll_provider(
     provider_id: str,
-    current_user: User = Depends(get_current_user)
+    admin: SuperAdmin = Depends(get_super_admin)
 ):
     """Supprime un fournisseur de paie (Super Admin)"""
-    if not current_user.is_super_admin:
-        raise HTTPException(status_code=403, detail="Accès Super Admin requis")
-    
     # Supprimer aussi les colonnes associées
     await db.provider_column_definitions.delete_many({"provider_id": provider_id})
     await db.payroll_providers.delete_one({"id": provider_id})
@@ -38692,11 +38680,8 @@ async def delete_payroll_provider(
 @api_router.get("/super-admin/payroll-providers/{provider_id}/columns")
 async def get_provider_columns(
     provider_id: str,
-    current_user: User = Depends(get_current_user)
+    admin: SuperAdmin = Depends(get_super_admin)
 ):
-    """Récupère les colonnes d'un fournisseur (Super Admin)"""
-    if not current_user.is_super_admin:
-        raise HTTPException(status_code=403, detail="Accès Super Admin requis")
     
     columns = await db.provider_column_definitions.find(
         {"provider_id": provider_id},
