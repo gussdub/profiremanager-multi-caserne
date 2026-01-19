@@ -905,23 +905,35 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
           </div>
         </div>
 
-        <nav className="sidebar-nav">
-          {filteredMenuItems.map(item => (
-            <button
-              key={item.id}
-              type="button"
-              className={`nav-item ${currentPage === item.id ? 'active' : ''}`}
-              onClick={() => {
-                setCurrentPage(item.id);
-                setIsMobileMenuOpen(false);
-              }}
-              data-testid={`nav-${item.id}-btn`}
-            >
-              <span className="nav-icon">{item.icon}</span>
-              {item.label}
-            </button>
-          ))}
-        </nav>
+        <div className="sidebar-nav-wrapper">
+          {/* Indicateur scroll haut */}
+          <div className={`scroll-indicator-top ${canScrollUp ? 'visible' : ''}`}>
+            <span className="scroll-arrow scroll-arrow-up">▲</span>
+          </div>
+          
+          <nav className="sidebar-nav" ref={navRef}>
+            {filteredMenuItems.map(item => (
+              <button
+                key={item.id}
+                type="button"
+                className={`nav-item ${currentPage === item.id ? 'active' : ''}`}
+                onClick={() => {
+                  setCurrentPage(item.id);
+                  setIsMobileMenuOpen(false);
+                }}
+                data-testid={`nav-${item.id}-btn`}
+              >
+                <span className="nav-icon">{item.icon}</span>
+                {item.label}
+              </button>
+            ))}
+          </nav>
+          
+          {/* Indicateur scroll bas */}
+          <div className={`scroll-indicator-bottom ${!canScrollDown ? 'hidden' : ''}`}>
+            <span className="scroll-arrow">▼</span>
+          </div>
+        </div>
 
         <div className="sidebar-user">
           <div className="user-info">
