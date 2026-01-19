@@ -26,7 +26,16 @@ const PayrollProvidersAdmin = ({ token }) => {
     date_format: '%Y-%m-%d',
     decimal_separator: '.',
     include_header: true,
-    is_active: true
+    is_active: true,
+    // Configuration API
+    api_available: false,
+    api_base_url: '',
+    api_auth_type: 'oauth2',
+    api_token_url: '',
+    api_upload_endpoint: '',
+    api_config_endpoint: '',
+    api_documentation_url: '',
+    api_required_fields: []
   });
 
   const [columnForm, setColumnForm] = useState({
@@ -38,6 +47,44 @@ const PayrollProvidersAdmin = ({ token }) => {
     default_value: '',
     format_pattern: ''
   });
+
+  // Templates API pré-configurés pour les fournisseurs connus
+  const apiTemplates = {
+    nethris: {
+      api_available: true,
+      api_base_url: 'https://api.nethris.com',
+      api_auth_type: 'oauth2',
+      api_token_url: 'https://api.nethris.com/OAuth/Token',
+      api_upload_endpoint: 'https://api.nethris.com/V2.00/CCC/ImportFileUpload',
+      api_config_endpoint: 'https://api.nethris.com/V2.00/Configuration/EarnDeduction',
+      api_documentation_url: 'https://api.nethris.com/swagger/ui/index',
+      api_required_fields: [
+        { name: 'client_id', label: 'Client ID', type: 'text', required: true, help_text: 'Fourni par Nethris' },
+        { name: 'client_secret', label: 'Client Secret', type: 'password', required: true, help_text: 'Fourni par Nethris' },
+        { name: 'business_id', label: 'Business ID', type: 'text', required: true, help_text: 'Identifiant de votre entreprise chez Nethris' },
+        { name: 'company_number', label: 'Numéro de compagnie', type: 'text', required: true, help_text: 'Numéro de compagnie (noCie)' }
+      ]
+    },
+    employeur_d: {
+      api_available: true,
+      api_base_url: 'https://api.employeurd.com',
+      api_auth_type: 'oauth2',
+      api_token_url: 'https://api.employeurd.com/oauth/token',
+      api_upload_endpoint: 'https://api.employeurd.com/v1/payroll/import',
+      api_config_endpoint: 'https://api.employeurd.com/v1/config/earnings',
+      api_documentation_url: 'https://dev.employeurd.com',
+      api_required_fields: [
+        { name: 'client_id', label: 'Client ID', type: 'text', required: true, help_text: 'Fourni par Employeur D' },
+        { name: 'client_secret', label: 'Client Secret', type: 'password', required: true, help_text: 'Fourni par Employeur D' },
+        { name: 'company_id', label: 'ID Compagnie', type: 'text', required: true, help_text: 'Identifiant de votre compagnie' }
+      ]
+    },
+    ceridian: {
+      api_available: false, // SFTP seulement
+      api_documentation_url: 'https://developer.dayforce.com',
+      api_required_fields: []
+    }
+  };
 
   const dataSourceTypes = [
     { value: 'fixed_value', label: 'Valeur fixe' },
