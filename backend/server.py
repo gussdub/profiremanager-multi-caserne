@@ -38579,6 +38579,20 @@ class PayrollProvider(BaseModel):
     decimal_separator: str = "."
     include_header: bool = True
     is_active: bool = True
+    
+    # Configuration API (si disponible)
+    api_available: bool = False  # True si ce fournisseur supporte l'envoi direct via API
+    api_base_url: str = ""  # URL de base de l'API (ex: https://api.nethris.com)
+    api_auth_type: str = "oauth2"  # oauth2, api_key, basic
+    api_token_url: str = ""  # URL pour obtenir le token OAuth2
+    api_upload_endpoint: str = ""  # Endpoint pour uploader les fichiers
+    api_config_endpoint: str = ""  # Endpoint pour récupérer la configuration (codes gains/déductions)
+    api_scopes: List[str] = []  # Scopes OAuth2 requis
+    api_documentation_url: str = ""  # Lien vers la documentation
+    
+    # Champs requis pour la configuration du tenant
+    api_required_fields: List[dict] = []  # [{name, label, type, required, help_text}]
+    
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
