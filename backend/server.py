@@ -37097,16 +37097,13 @@ async def import_intervention_xml(
                         "imported_by": current_user.id
                     }
                     
-                    # Construire l'adresse complète
+                    # Construire l'adresse complète (SANS la municipalité car elle est affichée séparément)
                     addr_parts = []
                     if intervention_data.get("address_civic"):
                         addr_parts.append(intervention_data["address_civic"])
                     if intervention_data.get("address_street"):
                         addr_parts.append(intervention_data["address_street"])
-                    # Utiliser la municipalité si disponible, sinon address_city
-                    city_or_muni = intervention_data.get("municipality") or intervention_data.get("address_city")
-                    if city_or_muni:
-                        addr_parts.append(city_or_muni)
+                    # Ne PAS inclure la municipalité dans address_full car elle est affichée séparément
                     intervention_data["address_full"] = ", ".join(addr_parts)
                     
                     if existing:
