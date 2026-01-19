@@ -3665,8 +3665,13 @@ const SectionFacturation = ({ formData, setFormData, editMode, tenantSlug, getTo
     }
     
     const numeroFacture = facture.numero_facture || formData.facture_entraide_numero;
+    const nomService = personnalisation?.nom_service || 'Service de Sécurité Incendie';
+    const logoUrl = personnalisation?.logo_url || '';
+    const adresseService = personnalisation?.adresse || '';
+    const telService = personnalisation?.telephone || '';
+    const emailService = personnalisation?.email || '';
     
-    // Générer le HTML de la facture
+    // Générer le HTML de la facture avec logo et infos du tenant
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -3675,69 +3680,98 @@ const SectionFacturation = ({ formData, setFormData, editMode, tenantSlug, getTo
         <title>Facture ${numeroFacture}</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; color: #333; }
-          .header { display: flex; justify-content: space-between; margin-bottom: 40px; border-bottom: 3px solid #dc2626; padding-bottom: 20px; }
-          .logo { font-size: 24px; font-weight: bold; color: #dc2626; }
+          body { font-family: Arial, sans-serif; padding: 30px; max-width: 800px; margin: 0 auto; color: #333; font-size: 12px; }
+          .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; border-bottom: 3px solid #dc2626; padding-bottom: 20px; }
+          .header-left { display: flex; align-items: center; gap: 15px; }
+          .logo-img { max-height: 70px; max-width: 150px; object-fit: contain; }
+          .logo-placeholder { width: 60px; height: 60px; background: linear-gradient(135deg, #dc2626, #f97316); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 30px; }
+          .service-info { }
+          .service-name { font-size: 18px; font-weight: bold; color: #dc2626; margin-bottom: 3px; }
+          .service-details { font-size: 10px; color: #666; line-height: 1.4; }
           .facture-info { text-align: right; }
-          .facture-numero { font-size: 20px; font-weight: bold; color: #dc2626; }
-          .section { margin-bottom: 30px; }
-          .section-title { font-size: 14px; font-weight: bold; color: #666; margin-bottom: 10px; text-transform: uppercase; }
-          .client-info { background: #f5f5f5; padding: 15px; border-radius: 8px; }
-          .intervention-info { background: #fef3c7; padding: 15px; border-radius: 8px; }
-          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-          th { background: #374151; color: white; padding: 12px; text-align: left; }
-          td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; }
-          tr:hover { background: #f9fafb; }
-          .text-right { text-align: right; }
-          .text-center { text-align: center; }
-          .total-row { background: #dc2626; color: white; font-weight: bold; }
-          .total-row td { padding: 15px 12px; font-size: 16px; }
-          .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #666; font-size: 12px; }
-          @media print { body { padding: 20px; } }
+          .facture-titre { font-size: 24px; font-weight: bold; color: #dc2626; }
+          .facture-numero { font-size: 16px; color: #333; margin-top: 5px; }
+          .facture-date { font-size: 11px; color: #666; margin-top: 3px; }
+          .section { margin-bottom: 20px; }
+          .section-title { font-size: 11px; font-weight: bold; color: #666; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+          .client-box { background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid #dc2626; }
+          .client-name { font-size: 14px; font-weight: bold; color: #333; margin-bottom: 5px; }
+          .intervention-box { background: #fff8e1; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b; }
+          .intervention-title { font-weight: bold; color: #92400e; margin-bottom: 8px; }
+          .intervention-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+          .intervention-item { font-size: 11px; }
+          .intervention-label { color: #666; }
+          table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+          th { background: #1f2937; color: white; padding: 10px 8px; text-align: left; font-size: 11px; text-transform: uppercase; }
+          th.text-center { text-align: center; }
+          th.text-right { text-align: right; }
+          td { padding: 8px; border-bottom: 1px solid #e5e7eb; font-size: 11px; }
+          td.text-center { text-align: center; }
+          td.text-right { text-align: right; }
+          tbody tr:nth-child(even) { background: #f9fafb; }
+          .total-row { background: #dc2626 !important; color: white; font-weight: bold; }
+          .total-row td { padding: 12px 8px; font-size: 14px; border: none; }
+          .footer { margin-top: 30px; padding-top: 15px; border-top: 2px solid #e5e7eb; }
+          .footer-thanks { text-align: center; font-style: italic; color: #666; margin-bottom: 15px; }
+          .footer-info { display: flex; justify-content: space-between; font-size: 10px; color: #999; }
+          @media print { 
+            body { padding: 15px; } 
+            @page { margin: 1cm; }
+          }
         </style>
       </head>
       <body>
         <div class="header">
-          <div>
-            <div class="logo">🚒 Service Incendie</div>
-            <p style="margin-top: 5px; color: #666;">Facturation Entraide</p>
+          <div class="header-left">
+            ${logoUrl ? `<img src="${logoUrl}" class="logo-img" alt="Logo"/>` : '<div class="logo-placeholder">🚒</div>'}
+            <div class="service-info">
+              <div class="service-name">${nomService}</div>
+              <div class="service-details">
+                ${adresseService ? adresseService + '<br/>' : ''}
+                ${telService ? 'Tél: ' + telService : ''} ${emailService ? ' | ' + emailService : ''}
+              </div>
+            </div>
           </div>
           <div class="facture-info">
-            <div class="facture-numero">FACTURE ${numeroFacture}</div>
-            <p style="margin-top: 5px;">Date: ${new Date().toLocaleDateString('fr-CA')}</p>
+            <div class="facture-titre">FACTURE</div>
+            <div class="facture-numero">${numeroFacture}</div>
+            <div class="facture-date">Date: ${new Date().toLocaleDateString('fr-CA')}</div>
           </div>
         </div>
         
         <div class="section">
           <div class="section-title">Facturé à</div>
-          <div class="client-info">
-            <strong>${facturation.info.municipalite_facturation}</strong>
-            ${facturation.info.entente?.adresse_facturation ? `<br/>${facturation.info.entente.adresse_facturation}` : ''}
-            ${facturation.info.entente?.contact_nom ? `<br/>Att: ${facturation.info.entente.contact_nom}` : ''}
-            ${facturation.info.entente?.contact_email ? `<br/>Courriel: ${facturation.info.entente.contact_email}` : ''}
+          <div class="client-box">
+            <div class="client-name">${facturation.info.municipalite_facturation}</div>
+            ${facturation.info.entente?.adresse_facturation ? `<div>${facturation.info.entente.adresse_facturation}</div>` : ''}
+            ${facturation.info.entente?.contact_nom ? `<div>Att: ${facturation.info.entente.contact_nom}</div>` : ''}
+            ${facturation.info.entente?.contact_email ? `<div>Courriel: ${facturation.info.entente.contact_email}</div>` : ''}
           </div>
         </div>
         
         <div class="section">
           <div class="section-title">Détails de l'intervention</div>
-          <div class="intervention-info">
-            <strong>Dossier #${formData.external_call_id}</strong><br/>
-            Type: ${formData.type_intervention || 'N/A'}<br/>
-            Adresse: ${formData.address_full || 'N/A'}, ${formData.municipality || ''}<br/>
-            Date: ${formData.xml_time_call_received ? new Date(formData.xml_time_call_received).toLocaleString('fr-CA') : 'N/A'}<br/>
-            Durée: ${facturation.duree_heures} heure(s)
+          <div class="intervention-box">
+            <div class="intervention-title">Dossier #${formData.external_call_id}</div>
+            <div class="intervention-grid">
+              <div class="intervention-item"><span class="intervention-label">Type:</span> ${formData.type_intervention || 'N/A'}</div>
+              <div class="intervention-item"><span class="intervention-label">Durée:</span> ${facturation.duree_heures} heure(s)</div>
+              <div class="intervention-item"><span class="intervention-label">Adresse:</span> ${formData.address_full || 'N/A'}</div>
+              <div class="intervention-item"><span class="intervention-label">Municipalité:</span> ${formData.municipality || ''}</div>
+              <div class="intervention-item" style="grid-column: span 2;"><span class="intervention-label">Date:</span> ${formData.xml_time_call_received ? new Date(formData.xml_time_call_received).toLocaleString('fr-CA') : 'N/A'}</div>
+            </div>
           </div>
         </div>
         
         <div class="section">
-          <div class="section-title">Détail des services</div>
+          <div class="section-title">Détail des services rendus</div>
           <table>
             <thead>
               <tr>
-                <th>Description</th>
-                <th class="text-center">Quantité</th>
-                <th class="text-right">Tarif</th>
-                <th class="text-right">Montant</th>
+                <th style="width: 50%;">Description</th>
+                <th class="text-center" style="width: 15%;">Quantité</th>
+                <th class="text-right" style="width: 17%;">Tarif</th>
+                <th class="text-right" style="width: 18%;">Montant</th>
               </tr>
             </thead>
             <tbody>
@@ -3752,7 +3786,7 @@ const SectionFacturation = ({ formData, setFormData, editMode, tenantSlug, getTo
             </tbody>
             <tfoot>
               <tr class="total-row">
-                <td colspan="3" class="text-right">TOTAL</td>
+                <td colspan="3" class="text-right">TOTAL À PAYER</td>
                 <td class="text-right">${facturation.total.toFixed(2)} $</td>
               </tr>
             </tfoot>
@@ -3760,8 +3794,11 @@ const SectionFacturation = ({ formData, setFormData, editMode, tenantSlug, getTo
         </div>
         
         <div class="footer">
-          <p>Merci pour votre collaboration dans le cadre de l'entraide municipale.</p>
-          <p style="margin-top: 10px;">Facture générée le ${new Date().toLocaleString('fr-CA')}</p>
+          <div class="footer-thanks">Merci pour votre collaboration dans le cadre de l'entraide municipale.</div>
+          <div class="footer-info">
+            <div>${nomService}</div>
+            <div>Facture générée le ${new Date().toLocaleString('fr-CA')}</div>
+          </div>
         </div>
       </body>
       </html>
@@ -3771,7 +3808,7 @@ const SectionFacturation = ({ formData, setFormData, editMode, tenantSlug, getTo
     setTimeout(() => printWindow.print(), 500);
   };
   
-  // Exporter en Excel
+  // Exporter en Excel avec mise en page
   const exporterExcel = async () => {
     if (!facturation) return;
     
