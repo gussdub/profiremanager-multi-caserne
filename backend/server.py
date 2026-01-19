@@ -38450,6 +38450,159 @@ async def valider_feuille_temps(
     return {"success": True}
 
 
+@api_router.put("/{tenant_slug}/paie/feuilles-temps/{feuille_id}")
+async def modifier_feuille_temps(
+    tenant_slug: str,
+    feuille_id: str,
+    data: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Modifie une feuille de temps (uniquement si en brouillon)"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    feuille = await db.feuilles_temps.find_one({
+        "id": feuille_id,
+        "tenant_id": tenant["id"]
+    })
+    
+    if not feuille:
+        raise HTTPException(status_code=404, detail="Feuille de temps non trouvée")
+    
+    if feuille.get("statut") != "brouillon":
+        raise HTTPException(status_code=400, detail="Seules les feuilles en brouillon peuvent être modifiées")
+    
+    # Mettre à jour les lignes si fournies
+    update_data = {"updated_at": datetime.now(timezone.utc)}
+    
+    if "lignes" in data:
+        lignes = data["lignes"]
+        update_data["lignes"] = lignes
+        
+        # Recalculer les totaux
+        totaux = {
+            "gardes_internes": 0.0,
+            "gardes_externes": 0.0,
+            "rappels": 0.0,
+            "formations": 0.0,
+            "interventions": 0.0,
+            "heures_sup": 0.0,
+            "heures_payees": 0.0,
+            "montant_brut": 0.0,
+            "primes_repas": 0.0
+        }
+        
+        for ligne in lignes:
+            type_ligne = ligne.get("type", "")
+            heures = float(ligne.get("heures_payees", 0) or 0)
+            montant = float(ligne.get("montant", 0) or 0)
+            
+            if type_ligne == "garde_interne":
+                totaux["gardes_internes"] += heures
+            elif type_ligne == "garde_externe":
+                totaux["gardes_externes"] += heures
+            elif type_ligne == "rappel":
+                totaux["rappels"] += heures
+            elif type_ligne == "formation":
+                totaux["formations"] += heures
+            elif type_ligne == "intervention":
+                totaux["interventions"] += heures
+            elif type_ligne == "heures_supplementaires":
+                totaux["heures_sup"] += heures
+            elif type_ligne == "prime_repas":
+                totaux["primes_repas"] += montant
+            
+            totaux["heures_payees"] += heures
+            totaux["montant_brut"] += montant
+        
+        update_data["total_heures_gardes_internes"] = round(totaux["gardes_internes"], 2)
+        update_data["total_heures_gardes_externes"] = round(totaux["gardes_externes"], 2)
+        update_data["total_heures_rappels"] = round(totaux["rappels"], 2)
+        update_data["total_heures_formations"] = round(totaux["formations"], 2)
+        update_data["total_heures_interventions"] = round(totaux.get("interventions", 0), 2)
+        update_data["total_heures_supplementaires"] = round(totaux["heures_sup"], 2)
+        update_data["total_heures_payees"] = round(totaux["heures_payees"], 2)
+        update_data["total_montant_brut"] = round(totaux["montant_brut"], 2)
+        update_data["total_primes_repas"] = round(totaux["primes_repas"], 2)
+        update_data["total_montant_final"] = round(totaux["montant_brut"] + totaux["primes_repas"], 2)
+    
+    update_data["modifie_par"] = current_user.id
+    update_data["modifie_le"] = datetime.now(timezone.utc)
+    
+    await db.feuilles_temps.update_one(
+        {"id": feuille_id},
+        {"$set": update_data}
+    )
+    
+    # Récupérer la feuille mise à jour
+    feuille_updated = await db.feuilles_temps.find_one(
+        {"id": feuille_id},
+        {"_id": 0}
+    )
+    
+    return {"success": True, "feuille": feuille_updated}
+
+
+@api_router.post("/{tenant_slug}/paie/feuilles-temps/{feuille_id}/lignes")
+async def ajouter_ligne_feuille_temps(
+    tenant_slug: str,
+    feuille_id: str,
+    ligne: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Ajoute une ligne manuelle à une feuille de temps"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    feuille = await db.feuilles_temps.find_one({
+        "id": feuille_id,
+        "tenant_id": tenant["id"]
+    })
+    
+    if not feuille:
+        raise HTTPException(status_code=404, detail="Feuille de temps non trouvée")
+    
+    if feuille.get("statut") != "brouillon":
+        raise HTTPException(status_code=400, detail="Seules les feuilles en brouillon peuvent être modifiées")
+    
+    # Préparer la nouvelle ligne
+    nouvelle_ligne = {
+        "id": str(uuid.uuid4()),
+        "date": ligne.get("date", ""),
+        "type": ligne.get("type", "autre"),
+        "description": ligne.get("description", "Ajout manuel"),
+        "heures_brutes": float(ligne.get("heures_brutes", 0) or 0),
+        "heures_payees": float(ligne.get("heures_payees", 0) or 0),
+        "taux": float(ligne.get("taux", 1) or 1),
+        "montant": float(ligne.get("montant", 0) or 0),
+        "source_type": "manuel",
+        "ajoute_par": current_user.id,
+        "ajoute_le": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Ajouter la ligne
+    lignes = feuille.get("lignes", []) or []
+    lignes.append(nouvelle_ligne)
+    lignes.sort(key=lambda x: x.get("date", ""))
+    
+    # Recalculer les totaux
+    await db.feuilles_temps.update_one(
+        {"id": feuille_id},
+        {"$set": {"lignes": lignes, "updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    # Utiliser l'endpoint de modification pour recalculer les totaux
+    return await modifier_feuille_temps(tenant_slug, feuille_id, {"lignes": lignes}, current_user)
+
+
 @api_router.delete("/{tenant_slug}/paie/feuilles-temps/{feuille_id}")
 async def supprimer_feuille_temps(
     tenant_slug: str,
