@@ -3821,41 +3821,65 @@ const SectionFacturation = ({ formData, setFormData, editMode, tenantSlug, getTo
       numeroFacture = facture.numero_facture;
     }
     
+    const nomService = personnalisation?.nom_service || 'Service de Sécurité Incendie';
+    
     // Charger dynamiquement xlsx
     const XLSX = await import('xlsx');
     
-    // Créer les données pour Excel
+    // Créer les données pour Excel avec meilleure mise en page
     const wsData = [
-      ['FACTURE D\'ENTRAIDE'],
+      [nomService],
+      ['FACTURE D\'ENTRAIDE MUNICIPALE'],
       [],
-      ['Numéro de facture:', numeroFacture],
-      ['Date:', new Date().toLocaleDateString('fr-CA')],
+      ['N° Facture:', numeroFacture, '', 'Date:', new Date().toLocaleDateString('fr-CA')],
       [],
+      ['═══════════════════════════════════════════════════════════════════════════'],
       ['FACTURÉ À'],
+      ['═══════════════════════════════════════════════════════════════════════════'],
       ['Municipalité:', facturation.info.municipalite_facturation],
-      ['Contact:', facturation.info.entente?.contact_nom || ''],
-      ['Courriel:', facturation.info.entente?.contact_email || ''],
-      ['Adresse:', facturation.info.entente?.adresse_facturation || ''],
+      ['Contact:', facturation.info.entente?.contact_nom || '-'],
+      ['Courriel:', facturation.info.entente?.contact_email || '-'],
+      ['Adresse:', facturation.info.entente?.adresse_facturation || '-'],
       [],
+      ['═══════════════════════════════════════════════════════════════════════════'],
       ['INTERVENTION'],
-      ['Dossier:', formData.external_call_id],
-      ['Type:', formData.type_intervention || ''],
-      ['Adresse:', formData.address_full || ''],
-      ['Municipalité:', formData.municipality || ''],
-      ['Date intervention:', formData.xml_time_call_received ? new Date(formData.xml_time_call_received).toLocaleString('fr-CA') : ''],
-      ['Durée:', facturation.duree_heures + ' heure(s)'],
+      ['═══════════════════════════════════════════════════════════════════════════'],
+      ['N° Dossier:', formData.external_call_id],
+      ['Type:', formData.type_intervention || '-'],
+      ['Adresse:', formData.address_full || '-'],
+      ['Municipalité:', formData.municipality || '-'],
+      ['Date/Heure:', formData.xml_time_call_received ? new Date(formData.xml_time_call_received).toLocaleString('fr-CA') : '-'],
+      ['Durée totale:', facturation.duree_heures + ' heure(s)'],
       [],
-      ['DÉTAIL DES SERVICES'],
-      ['Description', 'Quantité', 'Tarif', 'Montant'],
+      ['═══════════════════════════════════════════════════════════════════════════'],
+      ['DÉTAIL DES SERVICES RENDUS'],
+      ['═══════════════════════════════════════════════════════════════════════════'],
+      [],
+      ['Description', 'Quantité', 'Tarif unitaire', 'Montant'],
+      ['───────────────────────────────────────', '─────────', '─────────────', '─────────'],
       ...facturation.lignes.map(l => [l.description, l.quantite, l.tarif, l.montant.toFixed(2) + ' $']),
+      ['───────────────────────────────────────', '─────────', '─────────────', '─────────'],
       [],
-      ['', '', 'TOTAL:', facturation.total.toFixed(2) + ' $']
+      ['', '', 'TOTAL À PAYER:', facturation.total.toFixed(2) + ' $'],
+      [],
+      ['═══════════════════════════════════════════════════════════════════════════'],
+      [],
+      ['Merci pour votre collaboration dans le cadre de l\'entraide municipale.'],
+      [],
+      ['Facture générée le ' + new Date().toLocaleString('fr-CA')],
+      [nomService]
     ];
     
     const ws = XLSX.utils.aoa_to_sheet(wsData);
     
     // Ajuster les largeurs de colonnes
-    ws['!cols'] = [{ wch: 40 }, { wch: 15 }, { wch: 15 }, { wch: 15 }];
+    ws['!cols'] = [{ wch: 45 }, { wch: 15 }, { wch: 18 }, { wch: 15 }];
+    
+    // Fusionner les cellules pour le titre
+    ws['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } }, // Nom du service
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } }, // Titre facture
+    ];
     
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Facture');
