@@ -138,6 +138,17 @@ const ModulePaie = ({ tenant }) => {
     }
   }, [tenant, token]);
 
+  // Charger les matricules employés (depuis les profils employés)
+  useEffect(() => {
+    if (employes.length > 0) {
+      const matriculesInit = {};
+      employes.forEach(emp => {
+        matriculesInit[emp.id] = emp.matricule_paie || emp.numero_employe || '';
+      });
+      setMatriculesEmployes(matriculesInit);
+    }
+  }, [employes]);
+
   useEffect(() => {
     fetchParametres();
     fetchFeuilles();
