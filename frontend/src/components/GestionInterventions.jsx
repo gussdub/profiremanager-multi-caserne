@@ -923,6 +923,8 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
               setFormData={setFormData}
               editMode={editMode && !isLocked}
               referenceData={referenceData}
+              tenantSlug={tenantSlug}
+              getToken={getToken}
             />
           )}
           {activeSection === 'ressources' && (
