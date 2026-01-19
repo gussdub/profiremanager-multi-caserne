@@ -27093,6 +27093,52 @@ async def get_batiments(tenant_slug: str, current_user: User = Depends(get_curre
     ).to_list(1000)
     return [clean_mongo_doc(batiment) for batiment in batiments]
 
+
+@api_router.get("/{tenant_slug}/prevention/batiments/search")
+async def search_batiments(
+    tenant_slug: str, 
+    q: str = "",
+    adresse: str = "",
+    current_user: User = Depends(get_current_user)
+):
+    """Rechercher des bâtiments par adresse ou nom (pour les interventions)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Construire le filtre de recherche
+    filters = {"tenant_id": tenant.id}
+    
+    search_term = q or adresse
+    if search_term and len(search_term) >= 2:
+        filters["$or"] = [
+            {"adresse_civique": {"$regex": search_term, "$options": "i"}},
+            {"nom_etablissement": {"$regex": search_term, "$options": "i"}},
+            {"ville": {"$regex": search_term, "$options": "i"}}
+        ]
+    
+    # Projection légère pour la recherche
+    projection = {
+        "_id": 0,
+        "id": 1,
+        "nom_etablissement": 1,
+        "adresse_civique": 1,
+        "ville": 1,
+        "code_postal": 1,
+        "type_batiment": 1,
+        "groupe_occupation": 1,
+        "nombre_etages": 1,
+        "annee_construction": 1,
+        "niveau_risque": 1,
+        "proprietaire_nom": 1,
+        "proprietaire_telephone": 1,
+        "superficie_totale_m2": 1,
+        "risques_identifies": 1,
+        "latitude": 1,
+        "longitude": 1
+    }
+    
+    batiments = await db.batiments.find(filters, projection).limit(20).to_list(20)
+    return [clean_mongo_doc(b) for b in batiments]
+
 @api_router.post("/{tenant_slug}/prevention/batiments")
 async def create_batiment(
     tenant_slug: str, 
