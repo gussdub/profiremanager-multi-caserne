@@ -1589,7 +1589,7 @@ const ModulePaie = ({ tenant }) => {
     <div className="p-6" data-testid="module-paie">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-          <DollarSign size={28} className="text-emerald-500" />
+          <DollarSign size={28} className="text-red-500" />
           Module Paie
         </h1>
         <p className="text-gray-600">Gestion des feuilles de temps et configuration de l'export vers votre logiciel de paie</p>
