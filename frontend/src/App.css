@@ -503,6 +503,94 @@ body.mobile-menu-open .sidebar {
   z-index: 1;
 }
 
+/* Conteneur pour les indicateurs de scroll */
+.sidebar-nav-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Indicateur de scroll en bas */
+.scroll-indicator-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(to top, rgba(30, 41, 59, 1) 0%, rgba(30, 41, 59, 0.8) 40%, transparent 100%);
+  pointer-events: none;
+  z-index: 10;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 8px;
+  transition: opacity 0.3s ease;
+}
+
+.scroll-indicator-bottom.hidden {
+  opacity: 0;
+}
+
+/* Indicateur de scroll en haut */
+.scroll-indicator-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: linear-gradient(to bottom, rgba(30, 41, 59, 1) 0%, rgba(30, 41, 59, 0.8) 40%, transparent 100%);
+  pointer-events: none;
+  z-index: 10;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 8px;
+  transition: opacity 0.3s ease;
+  opacity: 0;
+}
+
+.scroll-indicator-top.visible {
+  opacity: 1;
+}
+
+/* Flèche animée */
+.scroll-arrow {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1.2rem;
+  animation: bounce 1.5s infinite;
+}
+
+.scroll-arrow-up {
+  animation: bounceUp 1.5s infinite;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(6px);
+  }
+  60% {
+    transform: translateY(3px);
+  }
+}
+
+@keyframes bounceUp {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-6px);
+  }
+  60% {
+    transform: translateY(-3px);
+  }
+}
+
 .nav-item {
   display: flex;
   align-items: center;
