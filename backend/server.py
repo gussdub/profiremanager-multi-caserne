@@ -37006,6 +37006,17 @@ async def import_intervention_xml(
                 table = details_xml.find('.//Table')
                 
                 if table is not None:
+                    # Extraire la municipalité depuis villePourQui ou service
+                    municipality_raw = table.findtext('villePourQui') or ''
+                    # Si vide, essayer d'extraire depuis le champ service (ex: "Wentworth (SI)" -> "Wentworth")
+                    if not municipality_raw:
+                        service = table.findtext('service') or ''
+                        # Extraire le nom avant les parenthèses
+                        if '(' in service:
+                            municipality_raw = service.split('(')[0].strip()
+                        else:
+                            municipality_raw = service
+                    
                     intervention_data = {
                         "tenant_id": tenant["id"],
                         "external_call_id": call_number,
@@ -37018,9 +37029,10 @@ async def import_intervention_xml(
                         "address_apartment": table.findtext('noAppart'),
                         "address_city": table.findtext('villePourQui'),
                         
-                        # Municipalité - plusieurs sources possibles selon le format XML
-                        "municipality": table.findtext('municipalite') or table.findtext('nomMunicipalite') or table.findtext('ville') or table.findtext('villePourQui'),
-                        "xml_municipality": table.findtext('municipalite') or table.findtext('nomMunicipalite') or table.findtext('ville'),
+                        # Municipalité - villePourQui contient la municipalité (ex: WENTWORTH)
+                        "municipality": municipality_raw.title() if municipality_raw else None,
+                        "xml_municipality": municipality_raw,
+                        "xml_service": table.findtext('service'),  # Ex: "Wentworth (SI)"
                         
                         "caller_name": table.findtext('deQui'),
                         "caller_phone": table.findtext('telDeQui'),
@@ -37032,7 +37044,7 @@ async def import_intervention_xml(
                         "niveau_risque": table.findtext('niveauRisque'),
                         "officer_in_charge_xml": table.findtext('officierCharge'),
                         
-                        # Coordonnées GPS pour la météo
+                        # Coordonnées GPS pour la météo (si disponibles dans le XML)
                         "latitude": float(table.findtext('latitude') or 0) if table.findtext('latitude') else None,
                         "longitude": float(table.findtext('longitude') or 0) if table.findtext('longitude') else None,
                         
