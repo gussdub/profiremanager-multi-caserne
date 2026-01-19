@@ -38480,6 +38480,781 @@ async def supprimer_feuille_temps(
     return {"success": True}
 
 
+# ==================== GÉNÉRATION EN LOT DES FEUILLES DE TEMPS ====================
+
+@api_router.post("/{tenant_slug}/paie/feuilles-temps/generer-lot")
+async def generer_feuilles_temps_lot(
+    tenant_slug: str,
+    params: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Génère les feuilles de temps pour TOUS les employés actifs sur une période"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    periode_debut = params.get("periode_debut")
+    periode_fin = params.get("periode_fin")
+    
+    if not periode_debut or not periode_fin:
+        raise HTTPException(status_code=400, detail="periode_debut et periode_fin sont requis")
+    
+    # Récupérer les paramètres
+    params_paie = await db.parametres_paie.find_one({"tenant_id": tenant["id"]}) or {}
+    params_planning = await db.parametres_attribution.find_one({"tenant_id": tenant["id"]}) or {}
+    
+    # Récupérer tous les employés actifs
+    employes = await db.users.find({
+        "tenant_id": tenant["id"],
+        "statut": "Actif"
+    }, {"_id": 0, "mot_de_passe_hash": 0}).to_list(1000)
+    
+    results = {
+        "generees": 0,
+        "mises_a_jour": 0,
+        "erreurs": [],
+        "feuilles_ids": []
+    }
+    
+    for employe in employes:
+        try:
+            # Vérifier si une feuille existe déjà
+            existing = await db.feuilles_temps.find_one({
+                "tenant_id": tenant["id"],
+                "user_id": employe["id"],
+                "periode_debut": periode_debut,
+                "periode_fin": periode_fin
+            })
+            
+            if existing and existing.get("statut") != "brouillon":
+                continue  # Ne pas écraser les feuilles validées
+            
+            # Calculer la feuille
+            feuille = await calculer_feuille_temps(
+                tenant_id=tenant["id"],
+                user_id=employe["id"],
+                periode_debut=periode_debut,
+                periode_fin=periode_fin,
+                params_paie=params_paie,
+                params_planning=params_planning,
+                current_user_id=current_user.id
+            )
+            
+            if existing:
+                await db.feuilles_temps.delete_one({"id": existing["id"]})
+                results["mises_a_jour"] += 1
+            else:
+                results["generees"] += 1
+            
+            await db.feuilles_temps.insert_one(feuille)
+            results["feuilles_ids"].append(feuille["id"])
+            
+        except Exception as e:
+            results["erreurs"].append({
+                "employe": f"{employe.get('prenom')} {employe.get('nom')}",
+                "erreur": str(e)
+            })
+    
+    return {
+        "success": True,
+        "message": f"{results['generees']} feuilles générées, {results['mises_a_jour']} mises à jour",
+        **results
+    }
+
+
+# ==================== SYSTÈME D'EXPORTATION DE PAIE CONFIGURABLE ====================
+
+class PayrollProvider(BaseModel):
+    """Fournisseur de paie (géré par Super Admin)"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str  # Nethris, Employeur D, Ceridian, My People Doc
+    description: str = ""
+    export_format: str = "xlsx"  # csv, xlsx, xml, txt
+    delimiter: str = ";"  # Pour CSV
+    encoding: str = "utf-8"
+    date_format: str = "%Y-%m-%d"
+    decimal_separator: str = "."
+    include_header: bool = True
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class ProviderColumnDefinition(BaseModel):
+    """Définition des colonnes pour un fournisseur (géré par Super Admin)"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    provider_id: str
+    position: int  # Ordre de la colonne (1, 2, 3...)
+    header_name: str  # Nom de l'en-tête dans le fichier
+    data_source_type: str  # fixed_value, employee_attribute, mapped_code, calculated_value
+    static_value: Optional[str] = None  # Valeur fixe si type = fixed_value
+    internal_field_reference: Optional[str] = None  # Champ interne (employee_matricule, hours_regular, etc.)
+    default_value: Optional[str] = None  # Valeur par défaut si mapping non trouvé
+    format_pattern: Optional[str] = None  # Format spécifique (ex: pour les dates)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class ClientPayCodeMapping(BaseModel):
+    """Mapping des codes internes vers codes du logiciel de paie (par Tenant)"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    internal_event_type: str  # INTERVENTION, TRAINING, STATION_DUTY, EXTERNAL_DUTY, CALLBACK, MEAL_PRIME, MILEAGE
+    external_pay_code: str  # Code attendu par le logiciel de paie (ex: '105', 'REG', 'T-FEU')
+    description: str = ""
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class TenantPayrollConfig(BaseModel):
+    """Configuration de paie spécifique au tenant"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    provider_id: Optional[str] = None  # Fournisseur de paie sélectionné
+    # Champs personnalisables
+    champs_supplementaires: List[dict] = []  # [{nom, type, valeur_defaut}]
+    # Options d'export
+    inclure_employes_sans_heures: bool = False
+    grouper_par_code: bool = False
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+# ==================== ENDPOINTS SUPER ADMIN - FOURNISSEURS DE PAIE ====================
+
+@api_router.get("/super-admin/payroll-providers")
+async def list_payroll_providers(
+    current_user: User = Depends(get_current_user)
+):
+    """Liste tous les fournisseurs de paie (Super Admin)"""
+    if not current_user.is_super_admin:
+        raise HTTPException(status_code=403, detail="Accès Super Admin requis")
+    
+    providers = await db.payroll_providers.find({}, {"_id": 0}).to_list(100)
+    return {"providers": providers}
+
+
+@api_router.post("/super-admin/payroll-providers")
+async def create_payroll_provider(
+    provider_data: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Crée un nouveau fournisseur de paie (Super Admin)"""
+    if not current_user.is_super_admin:
+        raise HTTPException(status_code=403, detail="Accès Super Admin requis")
+    
+    provider = PayrollProvider(**provider_data)
+    await db.payroll_providers.insert_one(provider.dict())
+    
+    return {"success": True, "provider": provider.dict()}
+
+
+@api_router.put("/super-admin/payroll-providers/{provider_id}")
+async def update_payroll_provider(
+    provider_id: str,
+    provider_data: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour un fournisseur de paie (Super Admin)"""
+    if not current_user.is_super_admin:
+        raise HTTPException(status_code=403, detail="Accès Super Admin requis")
+    
+    provider_data["updated_at"] = datetime.now(timezone.utc)
+    
+    await db.payroll_providers.update_one(
+        {"id": provider_id},
+        {"$set": provider_data}
+    )
+    
+    return {"success": True}
+
+
+@api_router.delete("/super-admin/payroll-providers/{provider_id}")
+async def delete_payroll_provider(
+    provider_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprime un fournisseur de paie (Super Admin)"""
+    if not current_user.is_super_admin:
+        raise HTTPException(status_code=403, detail="Accès Super Admin requis")
+    
+    # Supprimer aussi les colonnes associées
+    await db.provider_column_definitions.delete_many({"provider_id": provider_id})
+    await db.payroll_providers.delete_one({"id": provider_id})
+    
+    return {"success": True}
+
+
+# ==================== ENDPOINTS SUPER ADMIN - COLONNES DES FOURNISSEURS ====================
+
+@api_router.get("/super-admin/payroll-providers/{provider_id}/columns")
+async def get_provider_columns(
+    provider_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère les colonnes d'un fournisseur (Super Admin)"""
+    if not current_user.is_super_admin:
+        raise HTTPException(status_code=403, detail="Accès Super Admin requis")
+    
+    columns = await db.provider_column_definitions.find(
+        {"provider_id": provider_id},
+        {"_id": 0}
+    ).sort("position", 1).to_list(100)
+    
+    return {"columns": columns}
+
+
+@api_router.post("/super-admin/payroll-providers/{provider_id}/columns")
+async def create_provider_column(
+    provider_id: str,
+    column_data: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Ajoute une colonne à un fournisseur (Super Admin)"""
+    if not current_user.is_super_admin:
+        raise HTTPException(status_code=403, detail="Accès Super Admin requis")
+    
+    column_data["provider_id"] = provider_id
+    column = ProviderColumnDefinition(**column_data)
+    await db.provider_column_definitions.insert_one(column.dict())
+    
+    return {"success": True, "column": column.dict()}
+
+
+@api_router.put("/super-admin/payroll-providers/{provider_id}/columns/{column_id}")
+async def update_provider_column(
+    provider_id: str,
+    column_id: str,
+    column_data: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour une colonne (Super Admin)"""
+    if not current_user.is_super_admin:
+        raise HTTPException(status_code=403, detail="Accès Super Admin requis")
+    
+    await db.provider_column_definitions.update_one(
+        {"id": column_id, "provider_id": provider_id},
+        {"$set": column_data}
+    )
+    
+    return {"success": True}
+
+
+@api_router.delete("/super-admin/payroll-providers/{provider_id}/columns/{column_id}")
+async def delete_provider_column(
+    provider_id: str,
+    column_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprime une colonne (Super Admin)"""
+    if not current_user.is_super_admin:
+        raise HTTPException(status_code=403, detail="Accès Super Admin requis")
+    
+    await db.provider_column_definitions.delete_one({"id": column_id, "provider_id": provider_id})
+    
+    return {"success": True}
+
+
+@api_router.post("/super-admin/payroll-providers/{provider_id}/columns/reorder")
+async def reorder_provider_columns(
+    provider_id: str,
+    order_data: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Réordonne les colonnes d'un fournisseur (Super Admin)"""
+    if not current_user.is_super_admin:
+        raise HTTPException(status_code=403, detail="Accès Super Admin requis")
+    
+    column_ids = order_data.get("column_ids", [])
+    
+    for i, col_id in enumerate(column_ids, start=1):
+        await db.provider_column_definitions.update_one(
+            {"id": col_id, "provider_id": provider_id},
+            {"$set": {"position": i}}
+        )
+    
+    return {"success": True}
+
+
+# ==================== ENDPOINTS TENANT - CONFIGURATION PAIE ====================
+
+@api_router.get("/{tenant_slug}/paie/config")
+async def get_tenant_payroll_config(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère la configuration de paie du tenant"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès admin requis")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    config = await db.tenant_payroll_config.find_one({"tenant_id": tenant["id"]}, {"_id": 0})
+    
+    if not config:
+        config = TenantPayrollConfig(tenant_id=tenant["id"]).dict()
+        await db.tenant_payroll_config.insert_one(config)
+    
+    # Récupérer les fournisseurs actifs pour le dropdown
+    providers = await db.payroll_providers.find({"is_active": True}, {"_id": 0}).to_list(50)
+    
+    return {"config": config, "providers_disponibles": providers}
+
+
+@api_router.put("/{tenant_slug}/paie/config")
+async def update_tenant_payroll_config(
+    tenant_slug: str,
+    config_data: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour la configuration de paie du tenant"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès admin requis")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    config_data["updated_at"] = datetime.now(timezone.utc)
+    config_data["tenant_id"] = tenant["id"]
+    
+    existing = await db.tenant_payroll_config.find_one({"tenant_id": tenant["id"]})
+    
+    if existing:
+        await db.tenant_payroll_config.update_one(
+            {"tenant_id": tenant["id"]},
+            {"$set": config_data}
+        )
+    else:
+        config_data["id"] = str(uuid.uuid4())
+        config_data["created_at"] = datetime.now(timezone.utc)
+        await db.tenant_payroll_config.insert_one(config_data)
+    
+    return {"success": True}
+
+
+# ==================== ENDPOINTS TENANT - MAPPING DES CODES ====================
+
+@api_router.get("/{tenant_slug}/paie/code-mappings")
+async def get_pay_code_mappings(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère les mappings de codes de paie du tenant"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    mappings = await db.client_pay_code_mappings.find(
+        {"tenant_id": tenant["id"]},
+        {"_id": 0}
+    ).to_list(100)
+    
+    # Liste des types d'événements internes disponibles
+    internal_event_types = [
+        {"code": "GARDE_INTERNE", "label": "Garde interne (caserne)"},
+        {"code": "GARDE_EXTERNE", "label": "Garde externe (astreinte)"},
+        {"code": "INTERVENTION_RAPPEL", "label": "Intervention - Rappel"},
+        {"code": "INTERVENTION_GARDE", "label": "Intervention - En garde"},
+        {"code": "FORMATION", "label": "Formation"},
+        {"code": "HEURES_SUP", "label": "Heures supplémentaires"},
+        {"code": "PRIME_DEJEUNER", "label": "Prime déjeuner"},
+        {"code": "PRIME_DINER", "label": "Prime dîner"},
+        {"code": "PRIME_SOUPER", "label": "Prime souper"},
+        {"code": "PRIME_GARDE", "label": "Prime de garde"},
+        {"code": "KILOMETRAGE", "label": "Kilométrage"},
+        {"code": "FRAIS_REMBOURSEMENT", "label": "Remboursement de frais"}
+    ]
+    
+    return {"mappings": mappings, "event_types": internal_event_types}
+
+
+@api_router.post("/{tenant_slug}/paie/code-mappings")
+async def create_pay_code_mapping(
+    tenant_slug: str,
+    mapping_data: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Crée un mapping de code de paie"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès admin requis")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    mapping_data["tenant_id"] = tenant["id"]
+    mapping = ClientPayCodeMapping(**mapping_data)
+    
+    # Vérifier si un mapping existe déjà pour ce type
+    existing = await db.client_pay_code_mappings.find_one({
+        "tenant_id": tenant["id"],
+        "internal_event_type": mapping.internal_event_type
+    })
+    
+    if existing:
+        await db.client_pay_code_mappings.update_one(
+            {"id": existing["id"]},
+            {"$set": mapping.dict()}
+        )
+    else:
+        await db.client_pay_code_mappings.insert_one(mapping.dict())
+    
+    return {"success": True, "mapping": mapping.dict()}
+
+
+@api_router.delete("/{tenant_slug}/paie/code-mappings/{mapping_id}")
+async def delete_pay_code_mapping(
+    tenant_slug: str,
+    mapping_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprime un mapping de code de paie"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès admin requis")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    await db.client_pay_code_mappings.delete_one({
+        "id": mapping_id,
+        "tenant_id": tenant["id"]
+    })
+    
+    return {"success": True}
+
+
+# ==================== SERVICE D'EXPORTATION DE PAIE ====================
+
+async def build_payroll_export_data(
+    tenant_id: str,
+    feuilles: List[dict],
+    provider: dict,
+    columns: List[dict],
+    code_mappings: List[dict]
+) -> List[dict]:
+    """
+    Construit les données d'export selon la configuration du fournisseur.
+    Retourne une liste de lignes à exporter.
+    """
+    # Créer un dictionnaire de mapping pour accès rapide
+    mapping_dict = {m["internal_event_type"]: m["external_pay_code"] for m in code_mappings}
+    
+    export_rows = []
+    
+    for feuille in feuilles:
+        # Récupérer les infos employé
+        employe = await db.users.find_one({"id": feuille["user_id"]}, {"_id": 0, "mot_de_passe_hash": 0})
+        if not employe:
+            continue
+        
+        # Pour chaque ligne de la feuille de temps
+        for ligne in feuille.get("lignes", []):
+            if ligne.get("montant", 0) == 0 and ligne.get("heures_payees", 0) == 0:
+                continue  # Ignorer les lignes sans valeur
+            
+            row = {}
+            
+            # Construire la ligne selon les colonnes définies
+            for col in columns:
+                col_name = col["header_name"]
+                source_type = col["data_source_type"]
+                
+                if source_type == "fixed_value":
+                    row[col_name] = col.get("static_value", "")
+                    
+                elif source_type == "employee_attribute":
+                    field_ref = col.get("internal_field_reference", "")
+                    if field_ref == "employee_matricule":
+                        row[col_name] = employe.get("numero_employe", "")
+                    elif field_ref == "employee_nom":
+                        row[col_name] = employe.get("nom", "")
+                    elif field_ref == "employee_prenom":
+                        row[col_name] = employe.get("prenom", "")
+                    elif field_ref == "employee_email":
+                        row[col_name] = employe.get("email", "")
+                    elif field_ref == "employee_grade":
+                        row[col_name] = employe.get("grade", "")
+                    elif field_ref == "employee_type_emploi":
+                        row[col_name] = employe.get("type_emploi", "")
+                    else:
+                        row[col_name] = employe.get(field_ref, col.get("default_value", ""))
+                        
+                elif source_type == "mapped_code":
+                    # Déterminer le type d'événement interne
+                    ligne_type = ligne.get("type", "")
+                    internal_code = None
+                    
+                    if ligne_type == "garde_interne":
+                        internal_code = "GARDE_INTERNE"
+                    elif ligne_type == "garde_externe":
+                        internal_code = "GARDE_EXTERNE"
+                    elif ligne_type == "rappel":
+                        internal_code = "INTERVENTION_RAPPEL"
+                    elif ligne_type == "intervention":
+                        internal_code = "INTERVENTION_GARDE"
+                    elif ligne_type == "formation":
+                        internal_code = "FORMATION"
+                    elif ligne_type == "heures_supplementaires":
+                        internal_code = "HEURES_SUP"
+                    elif ligne_type == "prime_repas":
+                        if "déjeuner" in ligne.get("description", "").lower():
+                            internal_code = "PRIME_DEJEUNER"
+                        elif "dîner" in ligne.get("description", "").lower():
+                            internal_code = "PRIME_DINER"
+                        elif "souper" in ligne.get("description", "").lower():
+                            internal_code = "PRIME_SOUPER"
+                    
+                    # Chercher le code externe
+                    if internal_code and internal_code in mapping_dict:
+                        row[col_name] = mapping_dict[internal_code]
+                    else:
+                        row[col_name] = col.get("default_value", "")
+                        
+                elif source_type == "calculated_value":
+                    field_ref = col.get("internal_field_reference", "")
+                    if field_ref == "hours":
+                        row[col_name] = ligne.get("heures_payees", 0)
+                    elif field_ref == "amount":
+                        row[col_name] = ligne.get("montant", 0)
+                    elif field_ref == "rate":
+                        row[col_name] = ligne.get("taux", 1)
+                    elif field_ref == "date":
+                        date_val = ligne.get("date", "")
+                        if col.get("format_pattern"):
+                            try:
+                                dt = datetime.strptime(date_val, "%Y-%m-%d")
+                                row[col_name] = dt.strftime(col["format_pattern"])
+                            except:
+                                row[col_name] = date_val
+                        else:
+                            row[col_name] = date_val
+                    elif field_ref == "description":
+                        row[col_name] = ligne.get("description", "")
+                    elif field_ref == "periode_debut":
+                        row[col_name] = feuille.get("periode_debut", "")
+                    elif field_ref == "periode_fin":
+                        row[col_name] = feuille.get("periode_fin", "")
+                    else:
+                        row[col_name] = col.get("default_value", "")
+            
+            export_rows.append(row)
+    
+    return export_rows
+
+
+@api_router.post("/{tenant_slug}/paie/export")
+async def export_payroll(
+    tenant_slug: str,
+    export_params: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Exporte les données de paie selon le format du fournisseur configuré.
+    Retourne un fichier Excel, CSV ou autre selon la configuration.
+    """
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # Récupérer la configuration du tenant
+    config = await db.tenant_payroll_config.find_one({"tenant_id": tenant["id"]})
+    if not config or not config.get("provider_id"):
+        raise HTTPException(status_code=400, detail="Aucun fournisseur de paie configuré. Allez dans Paramètres > Paie.")
+    
+    # Récupérer le fournisseur
+    provider = await db.payroll_providers.find_one({"id": config["provider_id"]})
+    if not provider:
+        raise HTTPException(status_code=404, detail="Fournisseur de paie non trouvé")
+    
+    # Récupérer les colonnes du fournisseur
+    columns = await db.provider_column_definitions.find(
+        {"provider_id": provider["id"]}
+    ).sort("position", 1).to_list(100)
+    
+    if not columns:
+        raise HTTPException(status_code=400, detail="Le fournisseur n'a pas de colonnes configurées")
+    
+    # Récupérer les mappings de codes
+    code_mappings = await db.client_pay_code_mappings.find(
+        {"tenant_id": tenant["id"], "is_active": True}
+    ).to_list(100)
+    
+    # Récupérer les feuilles de temps à exporter
+    feuille_ids = export_params.get("feuille_ids", [])
+    periode_debut = export_params.get("periode_debut")
+    periode_fin = export_params.get("periode_fin")
+    
+    query = {"tenant_id": tenant["id"], "statut": {"$in": ["valide", "brouillon"]}}
+    
+    if feuille_ids:
+        query["id"] = {"$in": feuille_ids}
+    elif periode_debut and periode_fin:
+        query["periode_debut"] = periode_debut
+        query["periode_fin"] = periode_fin
+    else:
+        raise HTTPException(status_code=400, detail="Spécifiez feuille_ids ou periode_debut/periode_fin")
+    
+    feuilles = await db.feuilles_temps.find(query, {"_id": 0}).to_list(1000)
+    
+    if not feuilles:
+        raise HTTPException(status_code=404, detail="Aucune feuille de temps trouvée")
+    
+    # Construire les données d'export
+    export_rows = await build_payroll_export_data(
+        tenant_id=tenant["id"],
+        feuilles=feuilles,
+        provider=provider,
+        columns=columns,
+        code_mappings=code_mappings
+    )
+    
+    if not export_rows:
+        raise HTTPException(status_code=404, detail="Aucune donnée à exporter")
+    
+    # Générer le fichier selon le format
+    export_format = provider.get("export_format", "xlsx")
+    
+    if export_format == "xlsx":
+        import pandas as pd
+        from io import BytesIO
+        
+        df = pd.DataFrame(export_rows)
+        # Réordonner les colonnes selon l'ordre défini
+        ordered_cols = [c["header_name"] for c in columns if c["header_name"] in df.columns]
+        df = df[ordered_cols]
+        
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Paie')
+        output.seek(0)
+        
+        filename = f"export_paie_{tenant_slug}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        
+        # Marquer les feuilles comme exportées
+        for feuille in feuilles:
+            await db.feuilles_temps.update_one(
+                {"id": feuille["id"]},
+                {"$set": {
+                    "statut": "exporte",
+                    "exporte_le": datetime.now(timezone.utc),
+                    "format_export": provider["name"]
+                }}
+            )
+        
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+        
+    elif export_format == "csv":
+        import csv
+        from io import StringIO
+        
+        output = StringIO()
+        delimiter = provider.get("delimiter", ";")
+        
+        if export_rows:
+            fieldnames = [c["header_name"] for c in columns]
+            writer = csv.DictWriter(output, fieldnames=fieldnames, delimiter=delimiter)
+            
+            if provider.get("include_header", True):
+                writer.writeheader()
+            
+            for row in export_rows:
+                writer.writerow({k: row.get(k, "") for k in fieldnames})
+        
+        output.seek(0)
+        filename = f"export_paie_{tenant_slug}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        
+        # Marquer les feuilles comme exportées
+        for feuille in feuilles:
+            await db.feuilles_temps.update_one(
+                {"id": feuille["id"]},
+                {"$set": {
+                    "statut": "exporte",
+                    "exporte_le": datetime.now(timezone.utc),
+                    "format_export": provider["name"]
+                }}
+            )
+        
+        return StreamingResponse(
+            iter([output.getvalue()]),
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    
+    else:
+        raise HTTPException(status_code=400, detail=f"Format d'export non supporté: {export_format}")
+
+
+# ==================== CHAMPS SUPPLÉMENTAIRES PARAMÉTRABLES ====================
+
+@api_router.get("/{tenant_slug}/paie/champs-supplementaires")
+async def get_champs_supplementaires(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère les champs supplémentaires configurés (kilométrage, frais, etc.)"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    config = await db.tenant_payroll_config.find_one({"tenant_id": tenant["id"]})
+    
+    champs = config.get("champs_supplementaires", []) if config else []
+    
+    # Champs par défaut suggérés
+    champs_suggeres = [
+        {"nom": "kilometrage", "label": "Kilométrage", "type": "number", "unite": "km", "taux_par_unite": 0.58},
+        {"nom": "frais_repas", "label": "Frais de repas", "type": "number", "unite": "$"},
+        {"nom": "frais_equipement", "label": "Frais d'équipement", "type": "number", "unite": "$"},
+        {"nom": "prime_specialite", "label": "Prime de spécialité", "type": "number", "unite": "$"}
+    ]
+    
+    return {"champs": champs, "champs_suggeres": champs_suggeres}
+
+
+@api_router.put("/{tenant_slug}/paie/champs-supplementaires")
+async def update_champs_supplementaires(
+    tenant_slug: str,
+    champs_data: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour les champs supplémentaires"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès admin requis")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    champs = champs_data.get("champs", [])
+    
+    await db.tenant_payroll_config.update_one(
+        {"tenant_id": tenant["id"]},
+        {"$set": {"champs_supplementaires": champs, "updated_at": datetime.now(timezone.utc)}},
+        upsert=True
+    )
+    
+    return {"success": True}
+
+
 # ==================== FIN MODULE PAIE ====================
 
 
