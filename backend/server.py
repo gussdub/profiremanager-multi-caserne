@@ -38867,20 +38867,21 @@ async def get_pay_code_mappings(
         {"_id": 0}
     ).to_list(100)
     
-    # Liste des types d'événements internes disponibles
+    # Liste des types d'événements internes disponibles (basé sur talon Nethris)
     internal_event_types = [
-        {"code": "GARDE_INTERNE", "label": "Garde interne (caserne)"},
-        {"code": "GARDE_EXTERNE", "label": "Garde externe (astreinte)"},
-        {"code": "INTERVENTION_RAPPEL", "label": "Intervention - Rappel"},
-        {"code": "INTERVENTION_GARDE", "label": "Intervention - En garde"},
-        {"code": "FORMATION", "label": "Formation"},
+        {"code": "H_GARDE_INTERNE", "label": "H.Garde i - Heures garde interne (caserne)"},
+        {"code": "H_GARDE_EXTERNE", "label": "H.Garde e - Heures garde externe (astreinte)"},
+        {"code": "H_INTERVENTION", "label": "H. Interve - Heures d'intervention"},
+        {"code": "H_REPONDANT", "label": "H. Réponda - Heures répondant"},
+        {"code": "H_PRATIQUE", "label": "H.Pratiqu - Heures pratique/formation"},
+        {"code": "H_AUTRE", "label": "H.Autre - Autres heures"},
+        {"code": "PR_REPAS", "label": "Pr.Repas - Prime repas"},
+        {"code": "PR_GARDE_CITERNE", "label": "Pr.Gard.C - Prime garde citerne"},
+        {"code": "GARDE_CITERNE", "label": "Gard.Cit. - Garde citerne"},
+        {"code": "FERIE", "label": "Férié - Heures fériées"},
         {"code": "HEURES_SUP", "label": "Heures supplémentaires"},
-        {"code": "PRIME_DEJEUNER", "label": "Prime déjeuner"},
-        {"code": "PRIME_DINER", "label": "Prime dîner"},
-        {"code": "PRIME_SOUPER", "label": "Prime souper"},
-        {"code": "PRIME_GARDE", "label": "Prime de garde"},
         {"code": "KILOMETRAGE", "label": "Kilométrage"},
-        {"code": "FRAIS_REMBOURSEMENT", "label": "Remboursement de frais"}
+        {"code": "AJUST_SAL", "label": "Ajust.sal - Ajustement salarial"}
     ]
     
     return {"mappings": mappings, "event_types": internal_event_types}
