@@ -1402,52 +1402,42 @@ const ModulePaie = ({ tenant }) => {
     </div>
   );
 
+  // Définition des onglets (même style que GestionInterventions)
+  const tabs = [
+    { id: 'feuilles', label: 'Feuilles de temps', icon: '📄' },
+    { id: 'parametres', label: 'Paramètres', icon: '⚙️' },
+    { id: 'export', label: 'Export', icon: '🔗' },
+    { id: 'matricules', label: 'Matricules', icon: '👥' },
+  ];
+
   return (
-    <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <DollarSign size={28} style={{ color: '#10b981' }} />
+    <div className="p-6" data-testid="module-paie">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+          <DollarSign size={28} className="text-emerald-500" />
           Module Paie
         </h1>
-        <p style={{ margin: 0, color: '#64748b' }}>
-          Gestion des feuilles de temps et configuration de l'export vers votre logiciel de paie
-        </p>
+        <p className="text-gray-600">Gestion des feuilles de temps et configuration de l'export vers votre logiciel de paie</p>
       </div>
 
-      {/* Onglets */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', borderBottom: '2px solid #e5e7eb', paddingBottom: '8px' }}>
-        <button
-          onClick={() => setActiveTab('feuilles')}
-          style={{
-            padding: '10px 20px',
-            border: 'none',
-            background: activeTab === 'feuilles' ? '#10b981' : 'transparent',
-            color: activeTab === 'feuilles' ? 'white' : '#64748b',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontWeight: '500',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}
-        >
-          <FileText size={18} /> Feuilles de temps
-        </button>
-        <button
-          onClick={() => setActiveTab('parametres')}
-          style={{
-            padding: '10px 20px',
-            border: 'none',
-            background: activeTab === 'parametres' ? '#10b981' : 'transparent',
-            color: activeTab === 'parametres' ? 'white' : '#64748b',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontWeight: '500',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}
-        >
+      {/* Onglets - même style que GestionInterventions */}
+      <div className="flex gap-2 mb-6 border-b border-gray-200 pb-2 flex-wrap">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
+              activeTab === tab.id
+                ? 'bg-emerald-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+            data-testid={`tab-${tab.id}`}
+          >
+            <span className="mr-2">{tab.icon}</span>
+            {tab.label}
+          </button>
+        ))}
+      </div>
           <Settings size={18} /> Paramètres
         </button>
         <button
