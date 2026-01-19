@@ -31430,6 +31430,51 @@ async def delete_vehicule(
     
     return {"message": "Véhicule supprimé avec succès"}
 
+
+# ==================== GESTION DES ACTIFS - MATÉRIELS POUR INTERVENTIONS ====================
+
+@api_router.get("/{tenant_slug}/actifs/materiels")
+async def get_materiels_pour_interventions(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Récupère la liste des équipements/matériels pour utilisation dans les interventions.
+    Retourne les équipements avec leurs informations de stock et si la quantité est gérée.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer tous les équipements actifs
+    equipements = await db.equipements.find(
+        {"tenant_id": tenant.id},
+        {"_id": 0}
+    ).sort("nom", 1).to_list(10000)
+    
+    # Formater pour le frontend de gestion des interventions
+    materiels = []
+    for eq in equipements:
+        materiel = {
+            "id": eq.get("id"),
+            "nom": eq.get("nom", ""),
+            "designation": eq.get("nom", ""),  # Alias pour compatibilité
+            "type": eq.get("categorie_nom", ""),
+            "categorie": eq.get("categorie_nom", ""),  # Alias pour compatibilité
+            "numero_serie": eq.get("code_unique", ""),
+            "code_unique": eq.get("code_unique", ""),
+            "etat": eq.get("etat", "bon"),
+            "quantite": eq.get("quantite", 1),
+            "quantite_disponible": eq.get("quantite", 1),  # Alias pour compatibilité
+            "gerer_quantite": eq.get("gerer_quantite", False),  # Indique si c'est un consommable
+            "est_consommable": eq.get("gerer_quantite", False),  # Alias pour compatibilité
+            "emplacement_nom": eq.get("emplacement_nom", ""),
+            "vehicule_nom": eq.get("vehicule_nom", ""),
+            "description": eq.get("description", ""),
+        }
+        materiels.append(materiel)
+    
+    return materiels
+
+
 # ==================== GESTION DES ACTIFS - BORNES D'INCENDIE ENDPOINTS ====================
 
 @api_router.get("/{tenant_slug}/actifs/bornes", response_model=List[BorneIncendie])
