@@ -991,136 +991,122 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
             <Button
               variant="outline"
               onClick={() => {
-                // Ouvrir une fenêtre d'impression avec le contenu du rapport
+                // Construire le contenu HTML pour l'impression
+                const getMunicipality = () => {
+                  return formData.municipality || formData.xml_municipality || formData.address_city || '-';
+                };
+                
+                const getDuration = () => {
+                  if (formData.xml_time_call_received && formData.xml_time_call_closed) {
+                    const start = new Date(formData.xml_time_call_received);
+                    const end = new Date(formData.xml_time_call_closed);
+                    const diff = Math.floor((end - start) / 60000);
+                    const hours = Math.floor(diff / 60);
+                    const mins = diff % 60;
+                    return hours > 0 ? hours + 'h ' + mins + 'min' : mins + ' min';
+                  }
+                  return '-';
+                };
+                
+                const formatDate = (dateStr) => {
+                  if (!dateStr) return '-';
+                  try {
+                    return new Date(dateStr).toLocaleString('fr-CA', {timeZone: 'America/Montreal'});
+                  } catch { return dateStr; }
+                };
+                
+                const getVehicles = () => {
+                  const vehicles = formData.assigned_vehicles || [];
+                  if (vehicles.length === 0) return '<p><em>Aucun véhicule assigné</em></p>';
+                  return '<p><strong>Véhicules:</strong> ' + vehicles.map(v => v.numero_unite || v.numero || v.nom || v.id).join(', ') + '</p>';
+                };
+                
+                const getPersonnel = () => {
+                  const personnel = formData.personnel_present || [];
+                  if (personnel.length === 0) return '<p><em>Aucun personnel</em></p>';
+                  let html = '<table><tr><th>Nom</th><th>Matricule</th><th>Statut</th><th>Prime repas</th></tr>';
+                  personnel.forEach(p => {
+                    const primes = [p.prime_dejeuner && 'Déjeuner', p.prime_diner && 'Dîner', p.prime_souper && 'Souper'].filter(Boolean).join(', ') || '-';
+                    const statut = (p.statut_presence || 'Présent') + (p.remplace_par_nom ? ' (par ' + p.remplace_par_nom + ')' : '');
+                    html += '<tr><td>' + (p.prenom || '') + ' ' + (p.nom || '') + '</td><td>' + (p.matricule || '-') + '</td><td>' + statut + '</td><td>' + primes + '</td></tr>';
+                  });
+                  html += '</table>';
+                  return html;
+                };
+                
+                const getMateriel = () => {
+                  const materiel = formData.materiel_utilise || [];
+                  if (materiel.length === 0) return '';
+                  let html = '<h2>🧰 Matériel utilisé</h2><div class="section"><table><tr><th>Matériel</th><th>Type</th><th>Quantité</th><th>Notes</th></tr>';
+                  materiel.forEach(m => {
+                    html += '<tr><td>' + (m.nom || '-') + '</td><td>' + (m.type || '-') + '</td><td>' + (m.quantite || 1) + '</td><td>' + (m.notes || '-') + '</td></tr>';
+                  });
+                  html += '</table></div>';
+                  return html;
+                };
+                
+                const getMeteo = () => {
+                  if (!formData.meteo) return '';
+                  const m = formData.meteo;
+                  return '<h2>🌤️ Conditions météo</h2><div class="section"><div class="two-cols">' +
+                    '<div class="field"><span class="label">Température:</span><span class="value">' + (m.temperature != null ? m.temperature + '°C' : '-') + '</span></div>' +
+                    '<div class="field"><span class="label">Humidité:</span><span class="value">' + (m.humidity != null ? m.humidity + '%' : '-') + '</span></div>' +
+                    '</div><div class="two-cols">' +
+                    '<div class="field"><span class="label">Vent:</span><span class="value">' + (m.wind_speed != null ? m.wind_speed + ' km/h' : '-') + '</span></div>' +
+                    '<div class="field"><span class="label">Conditions:</span><span class="value">' + (m.conditions || m.description || '-') + '</span></div>' +
+                    '</div></div>';
+                };
+                
+                const getSignature = () => {
+                  if (!formData.signed_at) return '';
+                  return '<div style="margin-top: 30px; padding: 15px; background: #d1fae5; border-radius: 8px;"><strong>✅ Rapport signé le:</strong> ' + formatDate(formData.signed_at) + '</div>';
+                };
+
                 const printWindow = window.open('', '_blank');
-                printWindow.document.write(`
-                  <html>
-                    <head>
-                      <title>Rapport d'intervention #${formData.external_call_id}</title>
-                      <style>
-                        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
-                        h1 { color: #dc2626; border-bottom: 2px solid #dc2626; padding-bottom: 10px; }
-                        h2 { color: #374151; border-bottom: 1px solid #d1d5db; padding-bottom: 5px; margin-top: 20px; }
-                        .section { margin-bottom: 20px; }
-                        .field { margin: 8px 0; }
-                        .label { font-weight: bold; color: #6b7280; }
-                        .value { margin-left: 10px; }
-                        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-                        th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }
-                        th { background: #f3f4f6; }
-                        .header-info { display: flex; justify-content: space-between; margin-bottom: 20px; }
-                        .status { padding: 4px 12px; border-radius: 4px; background: #d1fae5; color: #065f46; }
-                        .two-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-                        @media print { body { padding: 0; } }
-                      </style>
-                    </head>
-                    <body>
-                      <h1>📋 Rapport d'intervention #${formData.external_call_id}</h1>
-                      <div class="header-info">
-                        <div><strong>Type:</strong> ${formData.type_intervention || 'Non défini'}</div>
-                        <div class="status">${formData.status === 'signed' ? '✅ Signé' : formData.status}</div>
-                      </div>
-                      
-                      <h2>📍 Identification</h2>
-                      <div class="section">
-                        <div class="two-cols">
-                          <div class="field"><span class="label">Adresse:</span><span class="value">${formData.address_full || '-'}</span></div>
-                          <div class="field"><span class="label">Municipalité:</span><span class="value">${formData.municipality || formData.xml_municipality || (formData.address_full ? formData.address_full.split(',').pop()?.trim() : '-') || '-'}</span></div>
-                        </div>
-                        <div class="two-cols">
-                          <div class="field"><span class="label">No carte appel:</span><span class="value">${formData.external_call_id || '-'}</span></div>
-                          <div class="field"><span class="label">Priorité:</span><span class="value">${formData.priority || formData.xml_priority || '-'}</span></div>
-                        </div>
-                        <div class="two-cols">
-                          <div class="field"><span class="label">Date/Heure appel:</span><span class="value">${formData.xml_time_call_received ? new Date(formData.xml_time_call_received).toLocaleString('fr-CA', {timeZone: 'America/Montreal'}) : '-'}</span></div>
-                          <div class="field"><span class="label">Arrivée sur les lieux:</span><span class="value">${formData.xml_time_first_unit_arrived ? new Date(formData.xml_time_first_unit_arrived).toLocaleString('fr-CA', {timeZone: 'America/Montreal'}) : '-'}</span></div>
-                        </div>
-                        <div class="two-cols">
-                          <div class="field"><span class="label">Fin intervention:</span><span class="value">${formData.xml_time_call_closed ? new Date(formData.xml_time_call_closed).toLocaleString('fr-CA', {timeZone: 'America/Montreal'}) : '-'}</span></div>
-                          <div class="field"><span class="label">Durée totale:</span><span class="value">${
-                            formData.xml_time_call_received && formData.xml_time_call_closed 
-                              ? (() => {
-                                  const start = new Date(formData.xml_time_call_received);
-                                  const end = new Date(formData.xml_time_call_closed);
-                                  const diff = Math.floor((end - start) / 60000);
-                                  const hours = Math.floor(diff / 60);
-                                  const mins = diff % 60;
-                                  return hours > 0 ? hours + 'h ' + mins + 'min' : mins + ' min';
-                                })()
-                              : '-'
-                          }</span></div>
-                        </div>
-                      </div>
-                      
-                      ${formData.meteo ? \`
-                      <h2>🌤️ Conditions météo</h2>
-                      <div class="section">
-                        <div class="two-cols">
-                          <div class="field"><span class="label">Température:</span><span class="value">\${formData.meteo.temperature != null ? formData.meteo.temperature + '°C' : '-'}</span></div>
-                          <div class="field"><span class="label">Humidité:</span><span class="value">\${formData.meteo.humidity != null ? formData.meteo.humidity + '%' : '-'}</span></div>
-                        </div>
-                        <div class="two-cols">
-                          <div class="field"><span class="label">Vent:</span><span class="value">\${formData.meteo.wind_speed != null ? formData.meteo.wind_speed + ' km/h' : '-'}</span></div>
-                          <div class="field"><span class="label">Conditions:</span><span class="value">\${formData.meteo.conditions || formData.meteo.description || '-'}</span></div>
-                        </div>
-                      </div>
-                      \` : ''}
-                      
-                      <h2>👥 Ressources</h2>
-                      <div class="section">
-                        ${(formData.assigned_vehicles || []).length > 0 ? \`
-                          <p><strong>Véhicules:</strong> \${(formData.assigned_vehicles || []).map(v => v.numero_unite || v.numero || v.nom || v.id).join(', ')}</p>
-                        \` : '<p><em>Aucun véhicule assigné</em></p>'}
-                        ${(formData.personnel_present || []).length > 0 ? \`
-                          <table>
-                            <tr><th>Nom</th><th>Matricule</th><th>Statut</th><th>Prime repas</th></tr>
-                            \${(formData.personnel_present || []).map(p => \`
-                              <tr>
-                                <td>\${p.prenom || ''} \${p.nom || ''}</td>
-                                <td>\${p.matricule || '-'}</td>
-                                <td>\${p.statut_presence || 'Présent'}\${p.remplace_par_nom ? ' (par ' + p.remplace_par_nom + ')' : ''}</td>
-                                <td>\${[p.prime_dejeuner && 'Déjeuner', p.prime_diner && 'Dîner', p.prime_souper && 'Souper'].filter(Boolean).join(', ') || '-'}</td>
-                              </tr>
-                            \`).join('')}
-                          </table>
-                        \` : '<p><em>Aucun personnel</em></p>'}
-                      </div>
-                      
-                      ${(formData.materiel_utilise || []).length > 0 ? \`
-                      <h2>🧰 Matériel utilisé</h2>
-                      <div class="section">
-                        <table>
-                          <tr><th>Matériel</th><th>Type</th><th>Quantité</th><th>Notes</th></tr>
-                          \${(formData.materiel_utilise || []).map(m => \`
-                            <tr>
-                              <td>\${m.nom || '-'}</td>
-                              <td>\${m.type || '-'}</td>
-                              <td>\${m.quantite || 1}</td>
-                              <td>\${m.notes || '-'}</td>
-                            </tr>
-                          \`).join('')}
-                        </table>
-                      </div>
-                      \` : ''}
-                      
-                      <h2>📝 Narratif</h2>
-                      <div class="section">
-                        <p style="white-space: pre-wrap; background: #f9fafb; padding: 15px; border-radius: 8px;">${formData.narratif || 'Aucun narratif'}</p>
-                      </div>
-                      
-                      ${formData.signed_at ? \`
-                      <div style="margin-top: 30px; padding: 15px; background: #d1fae5; border-radius: 8px;">
-                        <strong>✅ Rapport signé le:</strong> \${new Date(formData.signed_at).toLocaleString('fr-CA', {timeZone: 'America/Montreal'})}
-                      </div>
-                      \` : ''}
-                      
-                      <hr style="margin-top: 30px;" />
-                      <p style="color: #6b7280; font-size: 12px;">
-                        Imprimé le ${new Date().toLocaleString('fr-CA')} | ProFireManager
-                      </p>
-                    </body>
-                  </html>
-                \`);
+                printWindow.document.write(
+                  '<html><head><title>Rapport d\'intervention #' + formData.external_call_id + '</title>' +
+                  '<style>' +
+                  'body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }' +
+                  'h1 { color: #dc2626; border-bottom: 2px solid #dc2626; padding-bottom: 10px; }' +
+                  'h2 { color: #374151; border-bottom: 1px solid #d1d5db; padding-bottom: 5px; margin-top: 20px; }' +
+                  '.section { margin-bottom: 20px; }' +
+                  '.field { margin: 8px 0; }' +
+                  '.label { font-weight: bold; color: #6b7280; }' +
+                  '.value { margin-left: 10px; }' +
+                  'table { width: 100%; border-collapse: collapse; margin: 10px 0; }' +
+                  'th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }' +
+                  'th { background: #f3f4f6; }' +
+                  '.header-info { display: flex; justify-content: space-between; margin-bottom: 20px; }' +
+                  '.status { padding: 4px 12px; border-radius: 4px; background: #d1fae5; color: #065f46; }' +
+                  '.two-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }' +
+                  '@media print { body { padding: 0; } }' +
+                  '</style></head><body>' +
+                  '<h1>📋 Rapport d\'intervention #' + formData.external_call_id + '</h1>' +
+                  '<div class="header-info"><div><strong>Type:</strong> ' + (formData.type_intervention || 'Non défini') + '</div>' +
+                  '<div class="status">' + (formData.status === 'signed' ? '✅ Signé' : formData.status) + '</div></div>' +
+                  '<h2>📍 Identification</h2><div class="section">' +
+                  '<div class="two-cols">' +
+                  '<div class="field"><span class="label">Adresse:</span><span class="value">' + (formData.address_full || '-') + '</span></div>' +
+                  '<div class="field"><span class="label">Municipalité:</span><span class="value">' + getMunicipality() + '</span></div>' +
+                  '</div><div class="two-cols">' +
+                  '<div class="field"><span class="label">No carte appel:</span><span class="value">' + (formData.external_call_id || '-') + '</span></div>' +
+                  '<div class="field"><span class="label">Niveau risque:</span><span class="value">' + (formData.niveau_risque || '-') + '</span></div>' +
+                  '</div><div class="two-cols">' +
+                  '<div class="field"><span class="label">Date/Heure appel:</span><span class="value">' + formatDate(formData.xml_time_call_received) + '</span></div>' +
+                  '<div class="field"><span class="label">Arrivée sur les lieux:</span><span class="value">' + formatDate(formData.xml_time_arrival_1st) + '</span></div>' +
+                  '</div><div class="two-cols">' +
+                  '<div class="field"><span class="label">Fin intervention:</span><span class="value">' + formatDate(formData.xml_time_terminated || formData.xml_time_departure) + '</span></div>' +
+                  '<div class="field"><span class="label">Durée totale:</span><span class="value">' + getDuration() + '</span></div>' +
+                  '</div></div>' +
+                  getMeteo() +
+                  '<h2>👥 Ressources</h2><div class="section">' + getVehicles() + getPersonnel() + '</div>' +
+                  getMateriel() +
+                  '<h2>📝 Narratif</h2><div class="section"><p style="white-space: pre-wrap; background: #f9fafb; padding: 15px; border-radius: 8px;">' + (formData.narratif || 'Aucun narratif') + '</p></div>' +
+                  getSignature() +
+                  '<hr style="margin-top: 30px;" />' +
+                  '<p style="color: #6b7280; font-size: 12px;">Imprimé le ' + new Date().toLocaleString('fr-CA') + ' | ProFireManager</p>' +
+                  '</body></html>'
+                );
                 printWindow.document.close();
                 printWindow.focus();
                 setTimeout(() => printWindow.print(), 500);
