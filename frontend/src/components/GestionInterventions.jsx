@@ -1235,11 +1235,48 @@ const SectionIdentification = ({ formData, setFormData, editMode, formatDateTime
   // Charger la météo automatiquement si pas encore chargée
   useEffect(() => {
     const loadWeatherAuto = async () => {
-      // Ne charger que si on a les coordonnées et la date, et que la météo n'est pas déjà chargée
-      if (formData.coordinates?.lat && formData.coordinates?.lon && formData.xml_time_call_received && !formData.meteo?.temperature) {
+      // Ne charger que si la météo n'est pas déjà chargée et qu'on a une date d'appel
+      if (formData.meteo?.temperature != null || !formData.xml_time_call_received) {
+        return;
+      }
+      
+      let lat = formData.coordinates?.lat || formData.latitude;
+      let lon = formData.coordinates?.lon || formData.longitude;
+      
+      // Si pas de coordonnées, essayer de les obtenir via geocoding de l'adresse
+      if (!lat || !lon) {
+        const addressToGeocode = [
+          formData.address_full,
+          formData.municipality || formData.xml_municipality || formData.address_city,
+          'Québec, Canada'
+        ].filter(Boolean).join(', ');
+        
+        if (!addressToGeocode || addressToGeocode === 'Québec, Canada') return;
+        
+        try {
+          // Utiliser Nominatim pour le geocoding
+          const geoResponse = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressToGeocode)}&limit=1`,
+            { headers: { 'Accept': 'application/json' } }
+          );
+          if (geoResponse.ok) {
+            const geoData = await geoResponse.json();
+            if (geoData && geoData.length > 0) {
+              lat = parseFloat(geoData[0].lat);
+              lon = parseFloat(geoData[0].lon);
+              console.log('📍 Coordonnées trouvées pour météo:', lat, lon);
+            }
+          }
+        } catch (e) {
+          console.error('Erreur geocoding:', e);
+        }
+      }
+      
+      // Si on a maintenant des coordonnées, charger la météo
+      if (lat && lon) {
         try {
           const response = await fetch(
-            `${BACKEND_URL}/api/${tenantSlug}/interventions/weather?lat=${formData.coordinates.lat}&lon=${formData.coordinates.lon}&datetime_str=${formData.xml_time_call_received}`,
+            `${BACKEND_URL}/api/${tenantSlug}/interventions/weather?lat=${lat}&lon=${lon}&datetime_str=${formData.xml_time_call_received}`,
             { headers: { 'Authorization': `Bearer ${getToken()}` } }
           );
           if (response.ok) {
@@ -1247,6 +1284,7 @@ const SectionIdentification = ({ formData, setFormData, editMode, formatDateTime
             if (weather.temperature !== null) {
               setFormData(prev => ({
                 ...prev,
+                coordinates: { lat, lon },
                 meteo: {
                   temperature: weather.temperature,
                   conditions: weather.conditions?.[0] || 'inconnu',
@@ -1257,6 +1295,7 @@ const SectionIdentification = ({ formData, setFormData, editMode, formatDateTime
                   visibilite_m: weather.visibilite_m
                 }
               }));
+              console.log('🌤️ Météo chargée automatiquement:', weather.temperature + '°C');
             }
           }
         } catch (e) {
@@ -1268,7 +1307,7 @@ const SectionIdentification = ({ formData, setFormData, editMode, formatDateTime
     if (tenantSlug && getToken) {
       loadWeatherAuto();
     }
-  }, [formData.coordinates, formData.xml_time_call_received, tenantSlug]);
+  }, [formData.address_full, formData.municipality, formData.xml_time_call_received, tenantSlug]);
 
   return (
     <div className="space-y-6">
