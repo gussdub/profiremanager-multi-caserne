@@ -419,6 +419,7 @@ const Parametres = ({ user, tenantSlug }) => {
       officier_obligatoire: type.officier_obligatoire || false,
       est_garde_externe: type.est_garde_externe || false,
       taux_horaire_externe: type.taux_horaire_externe || null,
+      montant_garde: type.montant_garde || null,
       competences_requises: type.competences_requises || []
     });
     setShowEditTypeModal(true);
