@@ -3580,6 +3580,7 @@ const SectionFacturation = ({ formData, setFormData, editMode, tenantSlug, getTo
   
   const facturation = calculerFacture();
   const facturationInfo = determinerFacturation();
+  const [generatingFacture, setGeneratingFacture] = useState(false);
   
   // Sauvegarder les données de facturation
   const sauvegarderFacturation = () => {
@@ -3597,6 +3598,228 @@ const SectionFacturation = ({ formData, setFormData, editMode, tenantSlug, getTo
       });
       toast({ title: "Succès", description: "Données de facturation enregistrées" });
     }
+  };
+  
+  // Générer et enregistrer la facture officielle
+  const genererFactureOfficielle = async () => {
+    if (!facturation) return;
+    
+    setGeneratingFacture(true);
+    try {
+      const response = await fetch(`${API}/interventions/${formData.id}/facture-entraide`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${getToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          municipalite_facturation: facturation.info.municipalite_facturation,
+          entente_utilisee: facturation.info.entente?.municipalite_facturation || null,
+          lignes: facturation.lignes,
+          total: facturation.total,
+          duree_heures: facturation.duree_heures,
+          coordonnees_facturation: facturation.info.entente ? {
+            contact_nom: facturation.info.entente.contact_nom,
+            contact_email: facturation.info.entente.contact_email,
+            adresse: facturation.info.entente.adresse_facturation
+          } : {}
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setFormData({
+          ...formData,
+          facture_entraide_id: data.facture.id,
+          facture_entraide_numero: data.facture.numero_facture
+        });
+        toast({ title: "Succès", description: `Facture ${data.facture.numero_facture} générée avec succès` });
+        return data.facture;
+      } else {
+        const error = await response.json();
+        toast({ title: "Erreur", description: error.detail || "Erreur lors de la génération", variant: "destructive" });
+      }
+    } catch (e) {
+      toast({ title: "Erreur", description: "Erreur de connexion", variant: "destructive" });
+    } finally {
+      setGeneratingFacture(false);
+    }
+    return null;
+  };
+  
+  // Générer le PDF de la facture
+  const genererPDF = async () => {
+    let facture = formData.facture_entraide_numero ? { numero_facture: formData.facture_entraide_numero } : null;
+    
+    // Si pas encore de facture officielle, en générer une
+    if (!facture) {
+      facture = await genererFactureOfficielle();
+      if (!facture) return;
+    }
+    
+    const numeroFacture = facture.numero_facture || formData.facture_entraide_numero;
+    
+    // Générer le HTML de la facture
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Facture ${numeroFacture}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; color: #333; }
+          .header { display: flex; justify-content: space-between; margin-bottom: 40px; border-bottom: 3px solid #dc2626; padding-bottom: 20px; }
+          .logo { font-size: 24px; font-weight: bold; color: #dc2626; }
+          .facture-info { text-align: right; }
+          .facture-numero { font-size: 20px; font-weight: bold; color: #dc2626; }
+          .section { margin-bottom: 30px; }
+          .section-title { font-size: 14px; font-weight: bold; color: #666; margin-bottom: 10px; text-transform: uppercase; }
+          .client-info { background: #f5f5f5; padding: 15px; border-radius: 8px; }
+          .intervention-info { background: #fef3c7; padding: 15px; border-radius: 8px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th { background: #374151; color: white; padding: 12px; text-align: left; }
+          td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; }
+          tr:hover { background: #f9fafb; }
+          .text-right { text-align: right; }
+          .text-center { text-align: center; }
+          .total-row { background: #dc2626; color: white; font-weight: bold; }
+          .total-row td { padding: 15px 12px; font-size: 16px; }
+          .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #666; font-size: 12px; }
+          @media print { body { padding: 20px; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div>
+            <div class="logo">🚒 Service Incendie</div>
+            <p style="margin-top: 5px; color: #666;">Facturation Entraide</p>
+          </div>
+          <div class="facture-info">
+            <div class="facture-numero">FACTURE ${numeroFacture}</div>
+            <p style="margin-top: 5px;">Date: ${new Date().toLocaleDateString('fr-CA')}</p>
+          </div>
+        </div>
+        
+        <div class="section">
+          <div class="section-title">Facturé à</div>
+          <div class="client-info">
+            <strong>${facturation.info.municipalite_facturation}</strong>
+            ${facturation.info.entente?.adresse_facturation ? `<br/>${facturation.info.entente.adresse_facturation}` : ''}
+            ${facturation.info.entente?.contact_nom ? `<br/>Att: ${facturation.info.entente.contact_nom}` : ''}
+            ${facturation.info.entente?.contact_email ? `<br/>Courriel: ${facturation.info.entente.contact_email}` : ''}
+          </div>
+        </div>
+        
+        <div class="section">
+          <div class="section-title">Détails de l'intervention</div>
+          <div class="intervention-info">
+            <strong>Dossier #${formData.external_call_id}</strong><br/>
+            Type: ${formData.type_intervention || 'N/A'}<br/>
+            Adresse: ${formData.address_full || 'N/A'}, ${formData.municipality || ''}<br/>
+            Date: ${formData.xml_time_call_received ? new Date(formData.xml_time_call_received).toLocaleString('fr-CA') : 'N/A'}<br/>
+            Durée: ${facturation.duree_heures} heure(s)
+          </div>
+        </div>
+        
+        <div class="section">
+          <div class="section-title">Détail des services</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th class="text-center">Quantité</th>
+                <th class="text-right">Tarif</th>
+                <th class="text-right">Montant</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${facturation.lignes.map(l => `
+                <tr>
+                  <td>${l.description}</td>
+                  <td class="text-center">${l.quantite}</td>
+                  <td class="text-right">${l.tarif}</td>
+                  <td class="text-right">${l.montant.toFixed(2)} $</td>
+                </tr>
+              `).join('')}
+            </tbody>
+            <tfoot>
+              <tr class="total-row">
+                <td colspan="3" class="text-right">TOTAL</td>
+                <td class="text-right">${facturation.total.toFixed(2)} $</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        
+        <div class="footer">
+          <p>Merci pour votre collaboration dans le cadre de l'entraide municipale.</p>
+          <p style="margin-top: 10px;">Facture générée le ${new Date().toLocaleString('fr-CA')}</p>
+        </div>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => printWindow.print(), 500);
+  };
+  
+  // Exporter en Excel
+  const exporterExcel = async () => {
+    if (!facturation) return;
+    
+    let numeroFacture = formData.facture_entraide_numero;
+    
+    // Si pas encore de facture officielle, en générer une
+    if (!numeroFacture) {
+      const facture = await genererFactureOfficielle();
+      if (!facture) return;
+      numeroFacture = facture.numero_facture;
+    }
+    
+    // Charger dynamiquement xlsx
+    const XLSX = await import('xlsx');
+    
+    // Créer les données pour Excel
+    const wsData = [
+      ['FACTURE D\'ENTRAIDE'],
+      [],
+      ['Numéro de facture:', numeroFacture],
+      ['Date:', new Date().toLocaleDateString('fr-CA')],
+      [],
+      ['FACTURÉ À'],
+      ['Municipalité:', facturation.info.municipalite_facturation],
+      ['Contact:', facturation.info.entente?.contact_nom || ''],
+      ['Courriel:', facturation.info.entente?.contact_email || ''],
+      ['Adresse:', facturation.info.entente?.adresse_facturation || ''],
+      [],
+      ['INTERVENTION'],
+      ['Dossier:', formData.external_call_id],
+      ['Type:', formData.type_intervention || ''],
+      ['Adresse:', formData.address_full || ''],
+      ['Municipalité:', formData.municipality || ''],
+      ['Date intervention:', formData.xml_time_call_received ? new Date(formData.xml_time_call_received).toLocaleString('fr-CA') : ''],
+      ['Durée:', facturation.duree_heures + ' heure(s)'],
+      [],
+      ['DÉTAIL DES SERVICES'],
+      ['Description', 'Quantité', 'Tarif', 'Montant'],
+      ...facturation.lignes.map(l => [l.description, l.quantite, l.tarif, l.montant.toFixed(2) + ' $']),
+      [],
+      ['', '', 'TOTAL:', facturation.total.toFixed(2) + ' $']
+    ];
+    
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    
+    // Ajuster les largeurs de colonnes
+    ws['!cols'] = [{ wch: 40 }, { wch: 15 }, { wch: 15 }, { wch: 15 }];
+    
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Facture');
+    
+    // Télécharger le fichier
+    XLSX.writeFile(wb, `Facture_${numeroFacture}_${formData.external_call_id}.xlsx`);
+    
+    toast({ title: "Succès", description: "Fichier Excel téléchargé" });
   };
   
   if (loading) {
