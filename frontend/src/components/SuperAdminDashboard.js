@@ -5,6 +5,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { useToast } from "../hooks/use-toast";
 import Debogage from "./Debogage";
+import PayrollProvidersAdmin from "./PayrollProvidersAdmin";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
