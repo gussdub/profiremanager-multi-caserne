@@ -1844,60 +1844,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                   >
                     ✏️ Modifier ce profil
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={async () => {
-                      try {
-                        const stats = await apiGet(tenantSlug, `/users/${selectedUser.id}/statistiques-interventions`);
-                        const statsHtml = `
-                          <h3>📊 Statistiques ${stats.annee} - ${stats.user_name}</h3>
-                          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 20px 0;">
-                            <div style="background: #f0fdf4; padding: 15px; border-radius: 8px; text-align: center;">
-                              <div style="font-size: 24px; font-weight: bold; color: #16a34a;">${stats.statistiques.total_interventions}</div>
-                              <div style="font-size: 12px; color: #666;">Interventions</div>
-                            </div>
-                            <div style="background: #eff6ff; padding: 15px; border-radius: 8px; text-align: center;">
-                              <div style="font-size: 24px; font-weight: bold; color: #2563eb;">${stats.statistiques.taux_presence}%</div>
-                              <div style="font-size: 12px; color: #666;">Taux présence</div>
-                            </div>
-                            <div style="background: #fef3c7; padding: 15px; border-radius: 8px; text-align: center;">
-                              <div style="font-size: 24px; font-weight: bold; color: #d97706;">${stats.statistiques.duree_totale_heures}h</div>
-                              <div style="font-size: 12px; color: #666;">Heures totales</div>
-                            </div>
-                          </div>
-                          <h4 style="margin-top: 20px;">🍽️ Primes de repas</h4>
-                          <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-                            <tr style="background: #f1f5f9;">
-                              <th style="padding: 8px; text-align: left;">Type</th>
-                              <th style="padding: 8px; text-align: center;">Nombre</th>
-                              <th style="padding: 8px; text-align: right;">Montant</th>
-                            </tr>
-                            <tr><td style="padding: 8px;">🌅 Déjeuner</td><td style="padding: 8px; text-align: center;">${stats.statistiques.primes_repas.dejeuner.count}</td><td style="padding: 8px; text-align: right;">${stats.statistiques.primes_repas.dejeuner.montant.toFixed(2)} $</td></tr>
-                            <tr><td style="padding: 8px;">☀️ Dîner</td><td style="padding: 8px; text-align: center;">${stats.statistiques.primes_repas.diner.count}</td><td style="padding: 8px; text-align: right;">${stats.statistiques.primes_repas.diner.montant.toFixed(2)} $</td></tr>
-                            <tr><td style="padding: 8px;">🌙 Souper</td><td style="padding: 8px; text-align: center;">${stats.statistiques.primes_repas.souper.count}</td><td style="padding: 8px; text-align: right;">${stats.statistiques.primes_repas.souper.montant.toFixed(2)} $</td></tr>
-                            <tr style="background: #fef3c7; font-weight: bold;"><td style="padding: 8px;">TOTAL</td><td style="padding: 8px; text-align: center;">${stats.statistiques.primes_repas.dejeuner.count + stats.statistiques.primes_repas.diner.count + stats.statistiques.primes_repas.souper.count}</td><td style="padding: 8px; text-align: right;">${stats.statistiques.primes_repas.total.toFixed(2)} $</td></tr>
-                          </table>
-                        `;
-                        
-                        // Afficher dans une alert ou un nouveau modal
-                        const statsWindow = window.open('', '_blank', 'width=600,height=500');
-                        statsWindow.document.write(\`
-                          <html>
-                            <head><title>Statistiques - \${stats.user_name}</title>
-                            <style>body { font-family: Arial, sans-serif; padding: 20px; }</style></head>
-                            <body>\${statsHtml}</body>
-                          </html>
-                        \`);
-                        statsWindow.document.close();
-                      } catch (error) {
-                        console.error('Erreur chargement statistiques:', error);
-                        toast({ title: "Erreur", description: "Impossible de charger les statistiques", variant: "destructive" });
-                      }
-                    }}
-                    data-testid="view-stats-btn"
-                  >
-                    📊 Statistiques interventions
-                  </Button>
                 </div>
               </div>
             </div>
