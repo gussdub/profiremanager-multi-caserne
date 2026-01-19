@@ -323,7 +323,15 @@ const PayrollProvidersAdmin = ({ token }) => {
       date_format: provider.date_format || '%Y-%m-%d',
       decimal_separator: provider.decimal_separator || '.',
       include_header: provider.include_header !== false,
-      is_active: provider.is_active !== false
+      is_active: provider.is_active !== false,
+      api_available: provider.api_available || false,
+      api_base_url: provider.api_base_url || '',
+      api_auth_type: provider.api_auth_type || 'oauth2',
+      api_token_url: provider.api_token_url || '',
+      api_upload_endpoint: provider.api_upload_endpoint || '',
+      api_config_endpoint: provider.api_config_endpoint || '',
+      api_documentation_url: provider.api_documentation_url || '',
+      api_required_fields: provider.api_required_fields || []
     });
     setShowModal(true);
   };
