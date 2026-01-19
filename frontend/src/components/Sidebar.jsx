@@ -341,6 +341,7 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
     { id: 'personnel', label: 'Personnel', icon: '👥', roles: ['admin', 'superviseur'] },
     { id: 'actifs', label: 'Gestion des Actifs', icon: '🚒', roles: ['admin', 'superviseur', 'employe', 'pompier'] },
     { id: 'interventions', label: 'Interventions', icon: '🚨', roles: ['admin', 'superviseur'] },
+    { id: 'paie', label: 'Paie', icon: '💰', roles: ['admin', 'superviseur'] },
     { id: 'planning', label: 'Planning', icon: '📅', roles: ['admin', 'superviseur', 'employe', 'pompier'] },
     { id: 'disponibilites', label: 'Mes disponibilités', icon: '📋', roles: ['admin', 'superviseur', 'employe', 'pompier'] },
     { id: 'remplacements', label: 'Remplacements', icon: '🔄', roles: ['admin', 'superviseur', 'employe', 'pompier'] },
