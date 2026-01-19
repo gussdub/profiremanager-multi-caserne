@@ -40126,12 +40126,74 @@ async def send_payroll_to_api(
                     }
         
         elif "employeur" in provider_name:
-            # Envoi vers Employeur D
-            # Logique similaire à Nethris - à adapter selon leur API
-            return {
-                "success": False,
-                "message": "L'envoi direct vers Employeur D sera disponible prochainement. Utilisez l'export fichier pour l'instant."
-            }
+            # Envoi vers Employeur D (OAuth2 client_credentials)
+            client_id = credentials.get("client_id", "")
+            client_secret = credentials.get("client_secret", "")
+            company_id = credentials.get("company_id", "")
+            
+            if not client_id or not client_secret or not company_id:
+                raise HTTPException(status_code=400, detail="Credentials Employeur D incomplets")
+            
+            token_url = provider.get("api_token_url", "https://api.employeurd.com/connect/token")
+            upload_url = provider.get("api_upload_endpoint", "https://api.employeurd.com/api/v1/timesheets/import")
+            
+            async with httpx.AsyncClient() as client:
+                # 1. Obtenir le token OAuth2
+                token_response = await client.post(
+                    token_url,
+                    data={
+                        "grant_type": "client_credentials",
+                        "client_id": client_id,
+                        "client_secret": client_secret,
+                        "scope": "payroll.write"
+                    },
+                    headers={"Content-Type": "application/x-www-form-urlencoded"},
+                    timeout=30.0
+                )
+                
+                if token_response.status_code != 200:
+                    raise HTTPException(status_code=400, detail=f"Erreur d'authentification Employeur D: {token_response.text[:200]}")
+                
+                token_data = token_response.json()
+                access_token = token_data.get("access_token")
+                
+                # 2. Envoyer le fichier d'import
+                filename = f"paie_{tenant_slug}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{file_extension}"
+                
+                files = {"file": (filename, file_content, content_type)}
+                
+                upload_response = await client.post(
+                    f"{upload_url}",
+                    headers={
+                        "Authorization": f"Bearer {access_token}",
+                        "X-Company-Id": company_id
+                    },
+                    files=files,
+                    timeout=60.0
+                )
+                
+                if upload_response.status_code in [200, 201, 202]:
+                    # Succès - marquer les feuilles comme exportées
+                    for feuille in feuilles:
+                        await db.feuilles_temps.update_one(
+                            {"id": feuille["id"]},
+                            {"$set": {
+                                "statut": "exporte",
+                                "exporte_le": datetime.now(timezone.utc),
+                                "format_export": f"API {provider['name']}"
+                            }}
+                        )
+                    
+                    return {
+                        "success": True,
+                        "message": f"{len(feuilles)} feuilles envoyées vers Employeur D",
+                        "details": upload_response.json() if upload_response.text else {}
+                    }
+                else:
+                    return {
+                        "success": False,
+                        "message": f"Erreur Employeur D: {upload_response.status_code} - {upload_response.text[:300]}"
+                    }
         
         else:
             return {
