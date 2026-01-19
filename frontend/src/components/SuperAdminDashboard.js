@@ -950,6 +950,23 @@ const SuperAdminDashboard = ({ onLogout }) => {
         >
           🚨 Centrales 911
         </button>
+        <button
+          onClick={() => setActiveTab('paie')}
+          style={{
+            padding: '0.75rem 1rem',
+            border: 'none',
+            backgroundColor: 'transparent',
+            color: activeTab === 'paie' ? '#10b981' : '#64748b',
+            fontWeight: 600,
+            cursor: 'pointer',
+            borderBottom: activeTab === 'paie' ? '2px solid #10b981' : '2px solid transparent',
+            marginBottom: '-2px',
+            fontSize: '0.875rem',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          💰 Fournisseurs Paie
+        </button>
       </div>
 
       {/* Content based on active tab */}
