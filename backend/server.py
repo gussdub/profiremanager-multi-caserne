@@ -39249,6 +39249,428 @@ async def update_champs_supplementaires(
     return {"success": True}
 
 
+# ==================== INTÉGRATION API FOURNISSEURS DE PAIE ====================
+
+@api_router.post("/{tenant_slug}/paie/api/save-credentials")
+async def save_api_credentials(
+    tenant_slug: str,
+    credentials: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Enregistre les credentials API du fournisseur de paie pour ce tenant"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès admin requis")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    await db.tenant_payroll_config.update_one(
+        {"tenant_id": tenant["id"]},
+        {"$set": {
+            "api_credentials": credentials,
+            "api_connection_tested": False,
+            "updated_at": datetime.now(timezone.utc)
+        }},
+        upsert=True
+    )
+    
+    return {"success": True}
+
+
+@api_router.post("/{tenant_slug}/paie/api/test-connection")
+async def test_api_connection(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Teste la connexion API avec le fournisseur de paie"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès admin requis")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # Récupérer la config du tenant
+    config = await db.tenant_payroll_config.find_one({"tenant_id": tenant["id"]})
+    if not config or not config.get("provider_id"):
+        raise HTTPException(status_code=400, detail="Aucun fournisseur de paie configuré")
+    
+    # Récupérer le fournisseur
+    provider = await db.payroll_providers.find_one({"id": config["provider_id"]})
+    if not provider:
+        raise HTTPException(status_code=404, detail="Fournisseur non trouvé")
+    
+    if not provider.get("api_available"):
+        raise HTTPException(status_code=400, detail="Ce fournisseur ne supporte pas l'intégration API")
+    
+    credentials = config.get("api_credentials", {})
+    if not credentials:
+        raise HTTPException(status_code=400, detail="Credentials API non configurés")
+    
+    # Tester la connexion selon le fournisseur
+    import httpx
+    
+    try:
+        provider_name = provider.get("name", "").lower()
+        
+        if "nethris" in provider_name:
+            # Test connexion Nethris (OAuth2)
+            token_url = provider.get("api_token_url", "https://api.nethris.com/OAuth/Token")
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    token_url,
+                    data={
+                        "grant_type": "client_credentials",
+                        "client_id": credentials.get("client_id"),
+                        "client_secret": credentials.get("client_secret")
+                    },
+                    timeout=30.0
+                )
+                
+                if response.status_code == 200:
+                    result = "success"
+                    message = "Connexion réussie à Nethris"
+                else:
+                    result = "error"
+                    message = f"Erreur Nethris: {response.status_code} - {response.text[:200]}"
+        
+        elif "employeur" in provider_name:
+            # Test connexion Employeur D (OAuth2)
+            token_url = provider.get("api_token_url", "https://api.employeurd.com/oauth/token")
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    token_url,
+                    data={
+                        "grant_type": "client_credentials",
+                        "client_id": credentials.get("client_id"),
+                        "client_secret": credentials.get("client_secret")
+                    },
+                    timeout=30.0
+                )
+                
+                if response.status_code == 200:
+                    result = "success"
+                    message = "Connexion réussie à Employeur D"
+                else:
+                    result = "error"
+                    message = f"Erreur Employeur D: {response.status_code} - {response.text[:200]}"
+        
+        else:
+            # Fournisseur générique - test basique
+            result = "unknown"
+            message = "Test non implémenté pour ce fournisseur. Les credentials ont été sauvegardés."
+        
+        # Enregistrer le résultat du test
+        await db.tenant_payroll_config.update_one(
+            {"tenant_id": tenant["id"]},
+            {"$set": {
+                "api_connection_tested": result == "success",
+                "api_last_test_date": datetime.now(timezone.utc),
+                "api_last_test_result": message
+            }}
+        )
+        
+        return {
+            "success": result == "success",
+            "result": result,
+            "message": message
+        }
+        
+    except httpx.TimeoutException:
+        message = "Timeout lors de la connexion à l'API"
+        await db.tenant_payroll_config.update_one(
+            {"tenant_id": tenant["id"]},
+            {"$set": {
+                "api_connection_tested": False,
+                "api_last_test_date": datetime.now(timezone.utc),
+                "api_last_test_result": message
+            }}
+        )
+        return {"success": False, "result": "error", "message": message}
+        
+    except Exception as e:
+        message = f"Erreur de connexion: {str(e)}"
+        await db.tenant_payroll_config.update_one(
+            {"tenant_id": tenant["id"]},
+            {"$set": {
+                "api_connection_tested": False,
+                "api_last_test_date": datetime.now(timezone.utc),
+                "api_last_test_result": message
+            }}
+        )
+        return {"success": False, "result": "error", "message": message}
+
+
+@api_router.post("/{tenant_slug}/paie/api/send")
+async def send_payroll_to_api(
+    tenant_slug: str,
+    export_params: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Envoie les données de paie directement au fournisseur via API"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # Récupérer la config du tenant
+    config = await db.tenant_payroll_config.find_one({"tenant_id": tenant["id"]})
+    if not config or not config.get("provider_id"):
+        raise HTTPException(status_code=400, detail="Aucun fournisseur de paie configuré")
+    
+    # Récupérer le fournisseur
+    provider = await db.payroll_providers.find_one({"id": config["provider_id"]})
+    if not provider:
+        raise HTTPException(status_code=404, detail="Fournisseur non trouvé")
+    
+    if not provider.get("api_available"):
+        raise HTTPException(status_code=400, detail="Ce fournisseur ne supporte pas l'envoi via API. Utilisez l'export fichier.")
+    
+    credentials = config.get("api_credentials", {})
+    if not credentials:
+        raise HTTPException(status_code=400, detail="Credentials API non configurés")
+    
+    if not config.get("api_connection_tested"):
+        raise HTTPException(status_code=400, detail="Veuillez d'abord tester la connexion API")
+    
+    # Récupérer les feuilles de temps à envoyer
+    feuille_ids = export_params.get("feuille_ids", [])
+    if not feuille_ids:
+        raise HTTPException(status_code=400, detail="Aucune feuille de temps sélectionnée")
+    
+    feuilles = await db.feuilles_temps.find({
+        "id": {"$in": feuille_ids},
+        "tenant_id": tenant["id"],
+        "statut": "valide"
+    }, {"_id": 0}).to_list(1000)
+    
+    if not feuilles:
+        raise HTTPException(status_code=404, detail="Aucune feuille de temps validée trouvée")
+    
+    # Récupérer les colonnes et mappings
+    columns = await db.provider_column_definitions.find(
+        {"provider_id": provider["id"]}
+    ).sort("position", 1).to_list(100)
+    
+    code_mappings = await db.client_pay_code_mappings.find(
+        {"tenant_id": tenant["id"], "is_active": True}
+    ).to_list(100)
+    
+    # Construire les données d'export
+    export_rows = await build_payroll_export_data(
+        tenant_id=tenant["id"],
+        feuilles=feuilles,
+        provider=provider,
+        columns=columns,
+        code_mappings=code_mappings
+    )
+    
+    if not export_rows:
+        raise HTTPException(status_code=404, detail="Aucune donnée à exporter")
+    
+    # Générer le fichier temporaire
+    import pandas as pd
+    from io import BytesIO
+    
+    df = pd.DataFrame(export_rows)
+    ordered_cols = [c["header_name"] for c in columns if c["header_name"] in df.columns]
+    df = df[ordered_cols]
+    
+    file_buffer = BytesIO()
+    
+    export_format = provider.get("export_format", "csv")
+    if export_format == "xlsx":
+        with pd.ExcelWriter(file_buffer, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Paie')
+        file_extension = "xlsx"
+        content_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    else:
+        delimiter = provider.get("delimiter", ";")
+        df.to_csv(file_buffer, index=False, sep=delimiter)
+        file_extension = "csv"
+        content_type = "text/csv"
+    
+    file_buffer.seek(0)
+    file_content = file_buffer.read()
+    
+    # Envoyer à l'API du fournisseur
+    import httpx
+    
+    try:
+        provider_name = provider.get("name", "").lower()
+        
+        if "nethris" in provider_name:
+            # Envoi vers Nethris
+            token_url = provider.get("api_token_url", "https://api.nethris.com/OAuth/Token")
+            upload_url = provider.get("api_upload_endpoint", "https://api.nethris.com/V2.00/CCC/ImportFileUpload")
+            
+            async with httpx.AsyncClient() as client:
+                # 1. Obtenir le token
+                token_response = await client.post(
+                    token_url,
+                    data={
+                        "grant_type": "client_credentials",
+                        "client_id": credentials.get("client_id"),
+                        "client_secret": credentials.get("client_secret")
+                    },
+                    timeout=30.0
+                )
+                
+                if token_response.status_code != 200:
+                    raise HTTPException(status_code=400, detail=f"Erreur d'authentification Nethris: {token_response.text[:200]}")
+                
+                token_data = token_response.json()
+                access_token = token_data.get("access_token")
+                
+                # 2. Envoyer le fichier
+                business_id = credentials.get("business_id")
+                filename = f"paie_{tenant_slug}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{file_extension}"
+                
+                files = {"file": (filename, file_content, content_type)}
+                
+                upload_response = await client.post(
+                    f"{upload_url}/{business_id}",
+                    headers={"Authorization": f"Bearer {access_token}"},
+                    files=files,
+                    timeout=60.0
+                )
+                
+                if upload_response.status_code in [200, 201]:
+                    # Succès - marquer les feuilles comme exportées
+                    for feuille in feuilles:
+                        await db.feuilles_temps.update_one(
+                            {"id": feuille["id"]},
+                            {"$set": {
+                                "statut": "exporte",
+                                "exporte_le": datetime.now(timezone.utc),
+                                "format_export": f"API {provider['name']}"
+                            }}
+                        )
+                    
+                    return {
+                        "success": True,
+                        "message": f"Données envoyées avec succès à {provider['name']}",
+                        "feuilles_exportees": len(feuilles)
+                    }
+                else:
+                    return {
+                        "success": False,
+                        "message": f"Erreur lors de l'envoi: {upload_response.status_code} - {upload_response.text[:300]}"
+                    }
+        
+        elif "employeur" in provider_name:
+            # Envoi vers Employeur D
+            # Logique similaire à Nethris - à adapter selon leur API
+            return {
+                "success": False,
+                "message": "L'envoi direct vers Employeur D sera disponible prochainement. Utilisez l'export fichier pour l'instant."
+            }
+        
+        else:
+            return {
+                "success": False,
+                "message": "Envoi API non supporté pour ce fournisseur. Utilisez l'export fichier."
+            }
+            
+    except httpx.TimeoutException:
+        return {"success": False, "message": "Timeout lors de l'envoi vers l'API"}
+    except Exception as e:
+        logging.error(f"Erreur envoi API paie: {e}")
+        return {"success": False, "message": f"Erreur: {str(e)}"}
+
+
+@api_router.get("/{tenant_slug}/paie/api/fetch-codes")
+async def fetch_pay_codes_from_api(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère les codes de gains/déductions depuis l'API du fournisseur"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès admin requis")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # Récupérer la config du tenant
+    config = await db.tenant_payroll_config.find_one({"tenant_id": tenant["id"]})
+    if not config or not config.get("provider_id"):
+        raise HTTPException(status_code=400, detail="Aucun fournisseur de paie configuré")
+    
+    # Récupérer le fournisseur
+    provider = await db.payroll_providers.find_one({"id": config["provider_id"]})
+    if not provider or not provider.get("api_available"):
+        raise HTTPException(status_code=400, detail="Ce fournisseur ne supporte pas la récupération des codes via API")
+    
+    credentials = config.get("api_credentials", {})
+    if not credentials:
+        raise HTTPException(status_code=400, detail="Credentials API non configurés")
+    
+    import httpx
+    
+    try:
+        provider_name = provider.get("name", "").lower()
+        
+        if "nethris" in provider_name:
+            token_url = provider.get("api_token_url", "https://api.nethris.com/OAuth/Token")
+            config_url = provider.get("api_config_endpoint", "https://api.nethris.com/V2.00/Configuration/EarnDeduction")
+            
+            async with httpx.AsyncClient() as client:
+                # Obtenir le token
+                token_response = await client.post(
+                    token_url,
+                    data={
+                        "grant_type": "client_credentials",
+                        "client_id": credentials.get("client_id"),
+                        "client_secret": credentials.get("client_secret")
+                    },
+                    timeout=30.0
+                )
+                
+                if token_response.status_code != 200:
+                    raise HTTPException(status_code=400, detail="Erreur d'authentification")
+                
+                token_data = token_response.json()
+                access_token = token_data.get("access_token")
+                
+                # Récupérer les codes
+                business_id = credentials.get("business_id")
+                company_number = credentials.get("company_number")
+                
+                codes_response = await client.get(
+                    f"{config_url}/{business_id}/{company_number}",
+                    headers={"Authorization": f"Bearer {access_token}"},
+                    timeout=30.0
+                )
+                
+                if codes_response.status_code == 200:
+                    codes_data = codes_response.json()
+                    return {
+                        "success": True,
+                        "codes": codes_data,
+                        "message": "Codes récupérés avec succès"
+                    }
+                else:
+                    return {
+                        "success": False,
+                        "message": f"Erreur lors de la récupération: {codes_response.status_code}"
+                    }
+        
+        else:
+            return {
+                "success": False,
+                "message": "Récupération des codes non supportée pour ce fournisseur"
+            }
+            
+    except Exception as e:
+        return {"success": False, "message": f"Erreur: {str(e)}"}
+
+
 # ==================== FIN MODULE PAIE ====================
 
 
