@@ -38943,6 +38943,62 @@ async def delete_pay_code_mapping(
     return {"success": True}
 
 
+@api_router.put("/{tenant_slug}/paie/matricules")
+async def update_employee_matricules(
+    tenant_slug: str,
+    data: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour les matricules de paie pour tous les employés (Nethris)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès admin requis")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    matricules = data.get("matricules", {})
+    updated_count = 0
+    
+    for user_id, matricule in matricules.items():
+        result = await db.users.update_one(
+            {"id": user_id, "tenant_id": tenant["id"]},
+            {"$set": {"matricule_paie": matricule}}
+        )
+        if result.modified_count > 0:
+            updated_count += 1
+    
+    return {"success": True, "updated_count": updated_count}
+
+
+@api_router.put("/{tenant_slug}/users/{user_id}/matricule-paie")
+async def update_single_employee_matricule(
+    tenant_slug: str,
+    user_id: str,
+    data: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour le matricule de paie pour un seul employé"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès admin requis")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    matricule_paie = data.get("matricule_paie", "")
+    
+    result = await db.users.update_one(
+        {"id": user_id, "tenant_id": tenant["id"]},
+        {"$set": {"matricule_paie": matricule_paie}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    return {"success": True}
+
+
 # ==================== SERVICE D'EXPORTATION DE PAIE ====================
 
 async def build_payroll_export_data(
