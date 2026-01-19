@@ -2530,9 +2530,10 @@ const SectionMateriel = ({ formData, setFormData, editMode, tenantSlug, getToken
         id: materiel.id,
         nom: materiel.nom || materiel.designation,
         type: materiel.type || materiel.categorie,
-        numero_serie: materiel.numero_serie,
+        numero_serie: materiel.numero_serie || materiel.code_unique,
         quantite: 1,
-        est_consommable: materiel.est_consommable || false,
+        gerer_quantite: materiel.gerer_quantite || materiel.est_consommable || false,
+        stock_disponible: materiel.quantite || materiel.quantite_disponible,
         est_apria: (materiel.nom || materiel.designation || '').toLowerCase().includes('apria'),
         notes: ''
       };
