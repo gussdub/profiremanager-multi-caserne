@@ -36724,7 +36724,7 @@ async def unlock_intervention(
     # Récupérer l'intervention
     intervention = await db.interventions.find_one({
         "id": intervention_id,
-        "tenant_id": tenant["id"]
+        "tenant_id": tenant.id
     })
     
     if not intervention:
