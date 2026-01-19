@@ -1350,7 +1350,7 @@ const ModulePaie = ({ tenant }) => {
                       {f.statut === 'brouillon' && (
                         <>
                           <Button variant="ghost" size="sm" onClick={() => handleValiderFeuille(f.id)}>
-                            <Check size={16} style={{ color: '#10b981' }} />
+                            <Check size={16} style={{ color: '#dc2626' }} />
                           </Button>
                           <Button variant="ghost" size="sm" onClick={() => handleSupprimerFeuille(f.id)}>
                             <Trash2 size={16} style={{ color: '#ef4444' }} />
