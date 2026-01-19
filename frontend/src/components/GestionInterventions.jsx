@@ -827,6 +827,8 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
     }
   };
 
+  const isAdmin = user.role === 'admin';
+  
   const sections = [
     { id: 'identification', label: 'Identification & Chrono', icon: '📋' },
     { id: 'batiment', label: 'Bâtiment', icon: '🏠', showIf: isBuildingFire },
@@ -836,7 +838,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
     { id: 'protection', label: 'Protection incendie', icon: '🚨', showIf: isFireIncident },
     { id: 'pertes', label: 'Pertes & Victimes', icon: '💰' },
     { id: 'narratif', label: 'Narratif', icon: '📝' },
-    { id: 'facturation', label: 'Facturation', icon: '🧾' },
+    { id: 'facturation', label: 'Facturation', icon: '🧾', showIf: () => isAdmin },
   ];
 
   const visibleSections = sections.filter(s => !s.showIf || s.showIf());
