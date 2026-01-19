@@ -432,6 +432,78 @@ const ModulePaie = ({ tenant }) => {
     }
   };
 
+  // Entrer en mode édition d'une feuille
+  const handleStartEdit = () => {
+    setEditedLignes([...(selectedFeuille.lignes || [])]);
+    setEditMode(true);
+  };
+
+  // Sauvegarder les modifications de la feuille
+  const handleSaveFeuille = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/${tenant}/paie/feuilles-temps/${selectedFeuille.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ lignes: editedLignes })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        toast.success('Feuille de temps mise à jour');
+        setSelectedFeuille(data.feuille);
+        setEditMode(false);
+        fetchFeuilles();
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Erreur lors de la sauvegarde');
+      }
+    } catch (error) {
+      toast.error('Erreur de connexion');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Ajouter une nouvelle ligne
+  const handleAddLigne = () => {
+    if (!newLigne.date || !newLigne.type) {
+      toast.error('Date et type requis');
+      return;
+    }
+    
+    const ligne = {
+      id: `manual-${Date.now()}`,
+      ...newLigne,
+      heures_brutes: parseFloat(newLigne.heures_payees) || 0,
+      heures_payees: parseFloat(newLigne.heures_payees) || 0,
+      montant: parseFloat(newLigne.montant) || 0,
+      taux: 1,
+      source_type: 'manuel'
+    };
+    
+    setEditedLignes([...editedLignes, ligne].sort((a, b) => (a.date || '').localeCompare(b.date || '')));
+    setNewLigne({ date: '', type: '', description: '', heures_payees: 0, montant: 0 });
+  };
+
+  // Supprimer une ligne
+  const handleDeleteLigne = (ligneId) => {
+    setEditedLignes(editedLignes.filter(l => l.id !== ligneId));
+  };
+
+  // Modifier une ligne existante
+  const handleUpdateLigne = (ligneId, field, value) => {
+    setEditedLignes(editedLignes.map(l => {
+      if (l.id === ligneId) {
+        return { ...l, [field]: value };
+      }
+      return l;
+    }));
+  };
+
   const handleSavePayrollConfig = async () => {
     setLoading(true);
     try {
