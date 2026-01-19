@@ -680,7 +680,9 @@ const ModulePaie = ({ tenant }) => {
           >
             <option value="">-- Sélectionner un fournisseur --</option>
             {providersDisponibles.map(p => (
-              <option key={p.id} value={p.id}>{p.name} ({p.export_format?.toUpperCase()})</option>
+              <option key={p.id} value={p.id}>
+                {p.name} ({p.export_format?.toUpperCase()}) {p.api_available && '⚡ API'}
+              </option>
             ))}
           </select>
         </div>
@@ -688,6 +690,80 @@ const ModulePaie = ({ tenant }) => {
           <Check size={16} /> Enregistrer
         </Button>
       </div>
+
+      {/* Configuration API (si disponible pour le fournisseur sélectionné) */}
+      {selectedProvider?.api_available && (
+        <div style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', borderRadius: '12px', padding: '24px', border: '1px solid #86efac' }}>
+          <h3 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', color: '#166534' }}>
+            <Zap size={20} /> Intégration API {selectedProvider.name}
+          </h3>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+            {payrollConfig?.api_connection_tested ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#16a34a' }}>
+                <CheckCircle size={20} />
+                <span style={{ fontWeight: '600' }}>Connexion vérifiée</span>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#dc2626' }}>
+                <XCircle size={20} />
+                <span style={{ fontWeight: '600' }}>Connexion non testée</span>
+              </div>
+            )}
+            {payrollConfig?.api_last_test_result && (
+              <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                ({payrollConfig.api_last_test_result})
+              </span>
+            )}
+          </div>
+
+          <p style={{ color: '#166534', fontSize: '0.875rem', marginBottom: '16px' }}>
+            Entrez vos credentials API pour activer l'envoi direct des données de paie.
+            {selectedProvider.api_documentation_url && (
+              <a 
+                href={selectedProvider.api_documentation_url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{ marginLeft: '8px', color: '#2563eb' }}
+              >
+                📖 Documentation
+              </a>
+            )}
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+            {selectedProvider.api_required_fields?.map((field) => (
+              <div key={field.name}>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
+                  {field.label} {field.required && <span style={{ color: '#ef4444' }}>*</span>}
+                </label>
+                <Input
+                  type={field.type || 'text'}
+                  value={apiCredentials[field.name] || ''}
+                  onChange={(e) => setApiCredentials({...apiCredentials, [field.name]: e.target.value})}
+                  placeholder={field.help_text}
+                  style={{ background: 'white' }}
+                />
+              </div>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <Button onClick={handleSaveApiCredentials} disabled={loading}>
+              <Check size={16} /> Enregistrer les credentials
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={handleTestApiConnection} 
+              disabled={testingConnection}
+              style={{ background: 'white' }}
+            >
+              {testingConnection ? <RefreshCw className="animate-spin" size={16} /> : <Zap size={16} />}
+              <span style={{ marginLeft: '8px' }}>Tester la connexion</span>
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Mapping des codes */}
       <div style={{ background: 'white', borderRadius: '12px', padding: '24px', border: '1px solid #e5e7eb' }}>
