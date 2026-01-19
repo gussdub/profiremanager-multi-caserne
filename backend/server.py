@@ -38633,6 +38633,137 @@ async def supprimer_feuille_temps(
     return {"success": True}
 
 
+# ==================== EXPORT FICHIER PAIE (FORMAT NETHRIS/EXCEL) ====================
+
+@api_router.post("/{tenant_slug}/paie/export")
+async def export_feuilles_temps(
+    tenant_slug: str,
+    params: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Exporte les feuilles de temps validées au format Nethris (Excel)"""
+    from fastapi.responses import StreamingResponse
+    import pandas as pd
+    from io import BytesIO
+    
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent exporter les feuilles de temps")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    feuille_ids = params.get("feuille_ids", [])
+    
+    # Récupérer les feuilles à exporter
+    if feuille_ids:
+        feuilles = await db.feuilles_temps.find({
+            "id": {"$in": feuille_ids},
+            "tenant_id": tenant["id"]
+        }, {"_id": 0}).to_list(500)
+    else:
+        # Exporter toutes les feuilles validées si aucun ID spécifié
+        feuilles = await db.feuilles_temps.find({
+            "tenant_id": tenant["id"],
+            "statut": "valide"
+        }, {"_id": 0}).to_list(500)
+    
+    if not feuilles:
+        raise HTTPException(status_code=400, detail="Aucune feuille à exporter")
+    
+    # Récupérer la config du tenant
+    config = await db.tenant_payroll_config.find_one({"tenant_id": tenant["id"]})
+    company_number = config.get("company_number", "") if config else ""
+    code_mappings = await db.client_pay_code_mappings.find(
+        {"tenant_id": tenant["id"]},
+        {"_id": 0}
+    ).to_list(100)
+    
+    # Créer un mapping interne -> code externe
+    type_to_code = {m["internal_event_type"]: m["external_pay_code"] for m in code_mappings}
+    
+    # Préparer les données pour le format Nethris
+    export_rows = []
+    
+    for feuille in feuilles:
+        employe = await db.users.find_one({"id": feuille.get("user_id")}, {"_id": 0})
+        if not employe:
+            continue
+        
+        matricule = employe.get("matricule_paie") or employe.get("numero_employe") or ""
+        
+        # Grouper les lignes par semaine (Nethris importe par semaine)
+        lignes = feuille.get("lignes", []) or []
+        
+        for ligne in lignes:
+            # Déterminer le code de gain
+            type_ligne = ligne.get("type", "").upper()
+            # Convertir le type interne vers le code Nethris
+            type_mapping = {
+                "GARDE_INTERNE": "H_GARDE_INTERNE",
+                "GARDE_EXTERNE": "H_GARDE_EXTERNE",
+                "RAPPEL": "H_INTERVENTION",
+                "FORMATION": "H_PRATIQUE",
+                "INTERVENTION": "H_INTERVENTION",
+                "PRIME_REPAS": "PR_REPAS",
+                "AUTRE": "H_AUTRE"
+            }
+            internal_type = type_mapping.get(type_ligne, type_ligne)
+            code_gain = type_to_code.get(internal_type, "")
+            
+            heures = ligne.get("heures_payees", 0) or 0
+            montant = ligne.get("montant", 0) or 0
+            
+            if heures > 0 or montant > 0:
+                row = {
+                    "Matricule": matricule,
+                    "Code de gain": code_gain,
+                    "Heures": round(heures, 2) if heures > 0 else "",
+                    "Montant": round(montant, 2) if montant > 0 else "",
+                    "Date": ligne.get("date", ""),
+                    "Description": ligne.get("description", ""),
+                    "Division": "",  # À remplir si mapping configuré
+                    "Département": ""
+                }
+                export_rows.append(row)
+    
+    if not export_rows:
+        raise HTTPException(status_code=400, detail="Aucune donnée à exporter")
+    
+    # Créer le fichier Excel
+    df = pd.DataFrame(export_rows)
+    
+    # Réordonner les colonnes pour Nethris
+    column_order = ["Matricule", "Code de gain", "Heures", "Montant", "Date", "Description", "Division", "Département"]
+    df = df[[col for col in column_order if col in df.columns]]
+    
+    file_buffer = BytesIO()
+    with pd.ExcelWriter(file_buffer, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Import Paie')
+    
+    file_buffer.seek(0)
+    
+    # Marquer les feuilles comme exportées
+    for feuille in feuilles:
+        await db.feuilles_temps.update_one(
+            {"id": feuille["id"]},
+            {"$set": {
+                "statut": "exporte",
+                "exporte_le": datetime.now(timezone.utc),
+                "format_export": "Excel Nethris",
+                "exporte_par": current_user.id
+            }}
+        )
+    
+    filename = f"export_paie_nethris_{tenant_slug}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    
+    return StreamingResponse(
+        file_buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
 # ==================== GÉNÉRATION EN LOT DES FEUILLES DE TEMPS ====================
 
 @api_router.post("/{tenant_slug}/paie/feuilles-temps/generer-lot")
