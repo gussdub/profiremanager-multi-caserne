@@ -16,7 +16,10 @@ import {
   Eye,
   Users,
   Link,
-  Plus
+  Plus,
+  Zap,
+  CheckCircle,
+  XCircle
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -35,6 +38,10 @@ const ModulePaie = ({ tenant }) => {
   const [providersDisponibles, setProvidersDisponibles] = useState([]);
   const [codeMappings, setCodeMappings] = useState([]);
   const [eventTypes, setEventTypes] = useState([]);
+  
+  // API Credentials
+  const [apiCredentials, setApiCredentials] = useState({});
+  const [testingConnection, setTestingConnection] = useState(false);
   
   // Filtres
   const [filtreAnnee, setFiltreAnnee] = useState(new Date().getFullYear());
