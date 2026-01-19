@@ -40230,6 +40230,57 @@ async def send_payroll_to_api(
                         "message": f"Erreur Employeur D: {upload_response.status_code} - {upload_response.text[:300]}"
                     }
         
+        elif "ceridian" in provider_name:
+            # Envoi via SFTP pour Ceridian
+            import paramiko
+            
+            sftp_host = credentials.get("sftp_host", "")
+            sftp_port = int(credentials.get("sftp_port", 22) or 22)
+            sftp_username = credentials.get("sftp_username", "")
+            sftp_password = credentials.get("sftp_password", "")
+            sftp_upload_path = credentials.get("sftp_upload_path", "/upload")
+            
+            if not sftp_host or not sftp_username or not sftp_password:
+                raise HTTPException(status_code=400, detail="Credentials SFTP incomplets")
+            
+            try:
+                transport = paramiko.Transport((sftp_host, sftp_port))
+                transport.connect(username=sftp_username, password=sftp_password)
+                sftp = paramiko.SFTPClient.from_transport(transport)
+                
+                # Créer le nom de fichier
+                filename = f"paie_{tenant_slug}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{file_extension}"
+                remote_path = f"{sftp_upload_path.rstrip('/')}/{filename}"
+                
+                # Écrire le fichier sur le serveur SFTP
+                from io import BytesIO
+                file_obj = BytesIO(file_content)
+                sftp.putfo(file_obj, remote_path)
+                
+                sftp.close()
+                transport.close()
+                
+                # Marquer les feuilles comme exportées
+                for feuille in feuilles:
+                    await db.feuilles_temps.update_one(
+                        {"id": feuille["id"]},
+                        {"$set": {
+                            "statut": "exporte",
+                            "exporte_le": datetime.now(timezone.utc),
+                            "format_export": f"SFTP {provider['name']}"
+                        }}
+                    )
+                
+                return {
+                    "success": True,
+                    "message": f"{len(feuilles)} feuilles envoyées via SFTP vers {sftp_host}",
+                    "details": {"filename": filename, "remote_path": remote_path}
+                }
+            except paramiko.AuthenticationException:
+                return {"success": False, "message": "Authentification SFTP échouée"}
+            except Exception as e:
+                return {"success": False, "message": f"Erreur SFTP: {str(e)}"}
+        
         else:
             return {
                 "success": False,
