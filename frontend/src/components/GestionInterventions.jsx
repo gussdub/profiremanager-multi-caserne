@@ -1291,9 +1291,13 @@ const SectionIdentification = ({ formData, setFormData, editMode, formatDateTime
               <label className="text-sm text-gray-500">Code Feu</label>
               <p>{formData.code_feu || '-'}</p>
             </div>
-            <div className="col-span-2">
+            <div>
               <label className="text-sm text-gray-500">Adresse complète</label>
               <p className="font-medium">{formData.address_full || '-'}</p>
+            </div>
+            <div>
+              <label className="text-sm text-gray-500">Municipalité</label>
+              <p className="font-medium">{formData.municipality || formData.xml_municipality || formData.address_city || '-'}</p>
             </div>
             <div>
               <label className="text-sm text-gray-500">Niveau de risque</label>
