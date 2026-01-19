@@ -4184,277 +4184,518 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
         </CardHeader>
         <CardContent className="pt-4">
           <p className="text-gray-600 mb-4">
-            Configurez les ententes tarifaires avec les municipalités voisines pour les services d'entraide.
+            Configurez les municipalités desservies par votre service, les ententes tarifaires, et les tarifs par défaut.
           </p>
           
-          <div className="space-y-4">
-            {/* Liste des ententes */}
-            <div className="space-y-3">
-              {(settings.ententes_entraide || []).map((entente, index) => (
-                <div key={index} className="bg-gray-50 rounded-lg p-4 border">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex-1">
-                      <input
-                        type="text"
-                        value={entente.municipalite || ''}
-                        onChange={(e) => {
-                          const updated = [...(settings.ententes_entraide || [])];
-                          updated[index] = { ...entente, municipalite: e.target.value };
-                          setSettings({ ...settings, ententes_entraide: updated });
-                        }}
-                        className="font-medium text-lg border-b border-transparent hover:border-gray-300 focus:border-purple-500 bg-transparent outline-none w-full"
-                        placeholder="Nom de la municipalité"
-                      />
-                    </div>
+          <div className="space-y-6">
+            {/* 1. Municipalités couvertes par le tenant (PAS de facturation) */}
+            <div className="border rounded-lg p-4 bg-blue-50">
+              <h4 className="font-medium text-blue-800 mb-3 flex items-center gap-2">
+                🏠 Municipalités desservies par notre service (pas de facturation)
+              </h4>
+              <p className="text-sm text-blue-600 mb-3">
+                Ajoutez toutes les municipalités que votre service incendie couvre. Aucune facture ne sera générée pour ces municipalités.
+              </p>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {(settings.municipalites_couvertes || []).map((mun, idx) => (
+                  <span key={idx} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                    {mun}
                     <button
                       onClick={() => {
-                        const updated = (settings.ententes_entraide || []).filter((_, i) => i !== index);
-                        setSettings({ ...settings, ententes_entraide: updated });
+                        const updated = (settings.municipalites_couvertes || []).filter((_, i) => i !== idx);
+                        setSettings({ ...settings, municipalites_couvertes: updated });
                       }}
-                      className="text-red-500 hover:text-red-700 ml-2"
+                      className="text-blue-600 hover:text-red-600"
                     >
-                      🗑️
+                      ×
                     </button>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={entente.facturer_vehicules ?? true}
-                        onChange={(e) => {
-                          const updated = [...(settings.ententes_entraide || [])];
-                          updated[index] = { ...entente, facturer_vehicules: e.target.checked };
-                          setSettings({ ...settings, ententes_entraide: updated });
-                        }}
-                        className="w-4 h-4"
-                      />
-                      <span className="text-sm">🚒 Véhicules</span>
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={entente.facturer_personnel ?? true}
-                        onChange={(e) => {
-                          const updated = [...(settings.ententes_entraide || [])];
-                          updated[index] = { ...entente, facturer_personnel: e.target.checked };
-                          setSettings({ ...settings, ententes_entraide: updated });
-                        }}
-                        className="w-4 h-4"
-                      />
-                      <span className="text-sm">👥 Personnel</span>
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={entente.facturer_repas ?? true}
-                        onChange={(e) => {
-                          const updated = [...(settings.ententes_entraide || [])];
-                          updated[index] = { ...entente, facturer_repas: e.target.checked };
-                          setSettings({ ...settings, ententes_entraide: updated });
-                        }}
-                        className="w-4 h-4"
-                      />
-                      <span className="text-sm">🍽️ Repas</span>
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={entente.facturer_apria ?? true}
-                        onChange={(e) => {
-                          const updated = [...(settings.ententes_entraide || [])];
-                          updated[index] = { ...entente, facturer_apria: e.target.checked };
-                          setSettings({ ...settings, ententes_entraide: updated });
-                        }}
-                        className="w-4 h-4"
-                      />
-                      <span className="text-sm">🫁 APRIA</span>
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={entente.facturer_materiel ?? true}
-                        onChange={(e) => {
-                          const updated = [...(settings.ententes_entraide || [])];
-                          updated[index] = { ...entente, facturer_materiel: e.target.checked };
-                          setSettings({ ...settings, ententes_entraide: updated });
-                        }}
-                        className="w-4 h-4"
-                      />
-                      <span className="text-sm">🧰 Matériel</span>
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={entente.facturer_specialites ?? true}
-                        onChange={(e) => {
-                          const updated = [...(settings.ententes_entraide || [])];
-                          updated[index] = { ...entente, facturer_specialites: e.target.checked };
-                          setSettings({ ...settings, ententes_entraide: updated });
-                        }}
-                        className="w-4 h-4"
-                      />
-                      <span className="text-sm">⭐ Spécialités</span>
-                    </label>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div>
-                      <label className="text-xs text-gray-500">Tarif horaire véhicule ($)</label>
-                      <input
-                        type="number"
-                        value={entente.tarif_vehicule ?? 150}
-                        onChange={(e) => {
-                          const updated = [...(settings.ententes_entraide || [])];
-                          updated[index] = { ...entente, tarif_vehicule: parseFloat(e.target.value) };
-                          setSettings({ ...settings, ententes_entraide: updated });
-                        }}
-                        className="w-full border rounded p-2"
-                        step="5"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-500">Tarif horaire pompier ($)</label>
-                      <input
-                        type="number"
-                        value={entente.tarif_pompier ?? 35}
-                        onChange={(e) => {
-                          const updated = [...(settings.ententes_entraide || [])];
-                          updated[index] = { ...entente, tarif_pompier: parseFloat(e.target.value) };
-                          setSettings({ ...settings, ententes_entraide: updated });
-                        }}
-                        className="w-full border rounded p-2"
-                        step="1"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-500">Tarif recharge APRIA ($)</label>
-                      <input
-                        type="number"
-                        value={entente.tarif_apria ?? 25}
-                        onChange={(e) => {
-                          const updated = [...(settings.ententes_entraide || [])];
-                          updated[index] = { ...entente, tarif_apria: parseFloat(e.target.value) };
-                          setSettings({ ...settings, ententes_entraide: updated });
-                        }}
-                        className="w-full border rounded p-2"
-                        step="1"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-500">Minimum facturable (h)</label>
-                      <input
-                        type="number"
-                        value={entente.minimum_heures ?? 1}
-                        onChange={(e) => {
-                          const updated = [...(settings.ententes_entraide || [])];
-                          updated[index] = { ...entente, minimum_heures: parseFloat(e.target.value) };
-                          setSettings({ ...settings, ententes_entraide: updated });
-                        }}
-                        className="w-full border rounded p-2"
-                        step="0.5"
-                        min="0"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="mt-3">
-                    <label className="text-xs text-gray-500">Notes sur l'entente</label>
-                    <textarea
-                      value={entente.notes || ''}
-                      onChange={(e) => {
-                        const updated = [...(settings.ententes_entraide || [])];
-                        updated[index] = { ...entente, notes: e.target.value };
-                        setSettings({ ...settings, ententes_entraide: updated });
-                      }}
-                      className="w-full border rounded p-2 text-sm"
-                      rows="2"
-                      placeholder="Conditions particulières, dates de validité, etc."
+                  </span>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  id="nouvelle_mun_couverte"
+                  placeholder="Nom de la municipalité"
+                  className="flex-1 border rounded p-2"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && e.target.value.trim()) {
+                      const newMun = e.target.value.trim();
+                      if (!(settings.municipalites_couvertes || []).includes(newMun)) {
+                        setSettings({
+                          ...settings,
+                          municipalites_couvertes: [...(settings.municipalites_couvertes || []), newMun]
+                        });
+                      }
+                      e.target.value = '';
+                    }
+                  }}
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const input = document.getElementById('nouvelle_mun_couverte');
+                    if (input.value.trim()) {
+                      const newMun = input.value.trim();
+                      if (!(settings.municipalites_couvertes || []).includes(newMun)) {
+                        setSettings({
+                          ...settings,
+                          municipalites_couvertes: [...(settings.municipalites_couvertes || []), newMun]
+                        });
+                      }
+                      input.value = '';
+                    }
+                  }}
+                >
+                  + Ajouter
+                </Button>
+              </div>
+            </div>
+
+            {/* 2. Tarifs par défaut (types de véhicules) */}
+            <div className="border rounded-lg p-4">
+              <h4 className="font-medium text-gray-700 mb-3">🚒 Tarifs par défaut - Types de véhicules ($/heure)</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { key: 'autopompe', label: 'Autopompe', default: 150 },
+                  { key: 'citerne', label: 'Citerne', default: 125 },
+                  { key: 'echelle', label: 'Échelle/Plateforme', default: 200 },
+                  { key: 'vehicule_chef', label: 'Véhicule chef', default: 75 },
+                  { key: 'unite_secours', label: 'Unité de secours', default: 100 },
+                  { key: 'vtt_motoneige', label: 'VTT/Motoneige', default: 50 },
+                  { key: 'bateau', label: 'Bateau', default: 100 },
+                  { key: 'autre_vehicule', label: 'Autre véhicule', default: 100 },
+                ].map(item => (
+                  <div key={item.key}>
+                    <label className="text-xs text-gray-500">{item.label}</label>
+                    <input
+                      type="number"
+                      value={settings.tarifs_vehicules?.[item.key] ?? item.default}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        tarifs_vehicules: {
+                          ...settings.tarifs_vehicules,
+                          [item.key]: parseFloat(e.target.value) || 0
+                        }
+                      })}
+                      className="w-full border rounded p-2"
+                      step="5"
+                      min="0"
                     />
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-            
-            <Button
-              variant="outline"
-              onClick={() => {
-                const nouvelle = {
-                  municipalite: '',
-                  facturer_vehicules: true,
-                  facturer_personnel: true,
-                  facturer_repas: true,
-                  facturer_apria: true,
-                  facturer_materiel: true,
-                  facturer_specialites: true,
-                  tarif_vehicule: 150,
-                  tarif_pompier: 35,
-                  tarif_apria: 25,
-                  minimum_heures: 1,
-                  notes: ''
-                };
-                setSettings({
-                  ...settings,
-                  ententes_entraide: [...(settings.ententes_entraide || []), nouvelle]
-                });
-              }}
-              className="w-full"
-            >
-              + Ajouter une entente avec une municipalité
-            </Button>
-            
-            <div className="p-3 bg-purple-50 rounded-lg text-sm">
-              <p className="text-purple-800">
-                <strong>💡 Note :</strong> Si aucune entente n'existe pour une municipalité, tous les services seront facturés selon les tarifs par défaut.
-              </p>
-            </div>
-            
-            {/* Tarifs par défaut */}
-            <div className="border-t pt-4 mt-4">
-              <h4 className="font-medium text-gray-700 mb-3">📋 Tarifs par défaut (sans entente)</h4>
+
+            {/* 3. Tarifs par défaut (grades personnel) */}
+            <div className="border rounded-lg p-4">
+              <h4 className="font-medium text-gray-700 mb-3">👥 Tarifs par défaut - Personnel ($/heure)</h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { key: 'pompier', label: 'Pompier', default: 30 },
+                  { key: 'pompier_1ere_classe', label: 'Pompier 1ère classe', default: 32 },
+                  { key: 'lieutenant', label: 'Lieutenant', default: 38 },
+                  { key: 'capitaine', label: 'Capitaine', default: 45 },
+                  { key: 'directeur_adjoint', label: 'Directeur adjoint', default: 55 },
+                  { key: 'directeur', label: 'Directeur', default: 65 },
+                ].map(item => (
+                  <div key={item.key}>
+                    <label className="text-xs text-gray-500">{item.label}</label>
+                    <input
+                      type="number"
+                      value={settings.tarifs_grades?.[item.key] ?? item.default}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        tarifs_grades: {
+                          ...settings.tarifs_grades,
+                          [item.key]: parseFloat(e.target.value) || 0
+                        }
+                      })}
+                      className="w-full border rounded p-2"
+                      step="1"
+                      min="0"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 4. Tarifs par défaut (spécialités & autres) */}
+            <div className="border rounded-lg p-4">
+              <h4 className="font-medium text-gray-700 mb-3">⭐ Tarifs par défaut - Spécialités & Autres</h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {[
+                  { key: 'sauvetage_hauteur', label: 'Sauvetage en hauteur ($/interv.)', default: 500 },
+                  { key: 'espace_clos', label: 'Espace clos ($/interv.)', default: 500 },
+                  { key: 'nautique', label: 'Sauvetage nautique ($/interv.)', default: 400 },
+                  { key: 'sumi', label: 'SUMI - Mat. dangereuses ($/interv.)', default: 750 },
+                  { key: 'autre_specialite', label: 'Autre spécialité ($/interv.)', default: 300 },
+                  { key: 'remplissage_cylindre', label: 'Remplissage cylindre ($/unité)', default: 25 },
+                  { key: 'frais_admin', label: 'Frais d\'administration ($)', default: 50 },
+                ].map(item => (
+                  <div key={item.key}>
+                    <label className="text-xs text-gray-500">{item.label}</label>
+                    <input
+                      type="number"
+                      value={settings.tarifs_specialites?.[item.key] ?? item.default}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        tarifs_specialites: {
+                          ...settings.tarifs_specialites,
+                          [item.key]: parseFloat(e.target.value) || 0
+                        }
+                      })}
+                      className="w-full border rounded p-2"
+                      step="5"
+                      min="0"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 5. Ententes avec municipalités */}
+            <div className="border-t pt-4">
+              <h4 className="font-medium text-gray-700 mb-3">📝 Ententes d'entraide municipales</h4>
+              <p className="text-sm text-gray-500 mb-4">
+                Pour chaque entente, définissez la municipalité à facturer, les municipalités couvertes par cette entente, 
+                les coordonnées de facturation et les tarifs spécifiques (si différents des tarifs par défaut).
+              </p>
+              
+              <div className="space-y-4">
+                {(settings.ententes_entraide || []).map((entente, index) => (
+                  <div key={index} className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex-1">
+                        <label className="text-xs text-purple-600 font-medium">Municipalité à facturer</label>
+                        <input
+                          type="text"
+                          value={entente.municipalite_facturation || ''}
+                          onChange={(e) => {
+                            const updated = [...(settings.ententes_entraide || [])];
+                            updated[index] = { ...entente, municipalite_facturation: e.target.value };
+                            setSettings({ ...settings, ententes_entraide: updated });
+                          }}
+                          className="font-medium text-lg border rounded p-2 w-full bg-white"
+                          placeholder="Ex: Ville de Waterloo"
+                        />
+                      </div>
+                      <button
+                        onClick={() => {
+                          const updated = (settings.ententes_entraide || []).filter((_, i) => i !== index);
+                          setSettings({ ...settings, ententes_entraide: updated });
+                        }}
+                        className="text-red-500 hover:text-red-700 ml-3 p-2"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                    
+                    {/* Municipalités couvertes par cette entente */}
+                    <div className="mb-4">
+                      <label className="text-xs text-purple-600 font-medium">Municipalités couvertes par cette entente</label>
+                      <p className="text-xs text-gray-500 mb-2">Si l'adresse de l'intervention est dans une de ces municipalités, facturer à "{entente.municipalite_facturation || '...'}"</p>
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {(entente.municipalites_couvertes || []).map((mun, idx) => (
+                          <span key={idx} className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-sm flex items-center gap-1">
+                            {mun}
+                            <button
+                              onClick={() => {
+                                const updated = [...(settings.ententes_entraide || [])];
+                                updated[index] = {
+                                  ...entente,
+                                  municipalites_couvertes: (entente.municipalites_couvertes || []).filter((_, i) => i !== idx)
+                                };
+                                setSettings({ ...settings, ententes_entraide: updated });
+                              }}
+                              className="text-purple-600 hover:text-red-600"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          id={`mun_couverte_${index}`}
+                          placeholder="Ajouter une municipalité"
+                          className="flex-1 border rounded p-1 text-sm"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && e.target.value.trim()) {
+                              const updated = [...(settings.ententes_entraide || [])];
+                              const newMun = e.target.value.trim();
+                              if (!(entente.municipalites_couvertes || []).includes(newMun)) {
+                                updated[index] = {
+                                  ...entente,
+                                  municipalites_couvertes: [...(entente.municipalites_couvertes || []), newMun]
+                                };
+                                setSettings({ ...settings, ententes_entraide: updated });
+                              }
+                              e.target.value = '';
+                            }
+                          }}
+                        />
+                        <button
+                          onClick={() => {
+                            const input = document.getElementById(`mun_couverte_${index}`);
+                            if (input.value.trim()) {
+                              const updated = [...(settings.ententes_entraide || [])];
+                              const newMun = input.value.trim();
+                              if (!(entente.municipalites_couvertes || []).includes(newMun)) {
+                                updated[index] = {
+                                  ...entente,
+                                  municipalites_couvertes: [...(entente.municipalites_couvertes || []), newMun]
+                                };
+                                setSettings({ ...settings, ententes_entraide: updated });
+                              }
+                              input.value = '';
+                            }
+                          }}
+                          className="text-purple-600 hover:text-purple-800 text-sm px-2"
+                        >
+                          + Ajouter
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* Coordonnées de facturation */}
+                    <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-gray-500">Contact facturation</label>
+                        <input
+                          type="text"
+                          value={entente.contact_nom || ''}
+                          onChange={(e) => {
+                            const updated = [...(settings.ententes_entraide || [])];
+                            updated[index] = { ...entente, contact_nom: e.target.value };
+                            setSettings({ ...settings, ententes_entraide: updated });
+                          }}
+                          className="w-full border rounded p-2 text-sm"
+                          placeholder="Nom du contact"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500">Courriel facturation</label>
+                        <input
+                          type="email"
+                          value={entente.contact_email || ''}
+                          onChange={(e) => {
+                            const updated = [...(settings.ententes_entraide || [])];
+                            updated[index] = { ...entente, contact_email: e.target.value };
+                            setSettings({ ...settings, ententes_entraide: updated });
+                          }}
+                          className="w-full border rounded p-2 text-sm"
+                          placeholder="facturation@ville.ca"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="text-xs text-gray-500">Adresse de facturation</label>
+                        <input
+                          type="text"
+                          value={entente.adresse_facturation || ''}
+                          onChange={(e) => {
+                            const updated = [...(settings.ententes_entraide || [])];
+                            updated[index] = { ...entente, adresse_facturation: e.target.value };
+                            setSettings({ ...settings, ententes_entraide: updated });
+                          }}
+                          className="w-full border rounded p-2 text-sm"
+                          placeholder="123, rue Principale, Ville, QC J0E 1X0"
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Éléments facturables (ce qui est inclus dans l'entente) */}
+                    <div className="mb-4">
+                      <label className="text-xs text-purple-600 font-medium mb-2 block">Éléments à facturer selon cette entente</label>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        {[
+                          { key: 'facturer_vehicules', label: '🚒 Véhicules', default: true },
+                          { key: 'facturer_personnel', label: '👥 Personnel', default: true },
+                          { key: 'facturer_cylindres', label: '🫁 Cylindres', default: true },
+                          { key: 'facturer_consommables', label: '🧰 Consommables', default: true },
+                          { key: 'facturer_specialites', label: '⭐ Spécialités', default: true },
+                          { key: 'facturer_frais_admin', label: '📋 Frais admin', default: true },
+                        ].map(item => (
+                          <label key={item.key} className="flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={entente[item.key] ?? item.default}
+                              onChange={(e) => {
+                                const updated = [...(settings.ententes_entraide || [])];
+                                updated[index] = { ...entente, [item.key]: e.target.checked };
+                                setSettings({ ...settings, ententes_entraide: updated });
+                              }}
+                              className="w-4 h-4"
+                            />
+                            {item.label}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Tarifs spécifiques (accordéon) */}
+                    <details className="bg-white rounded p-3">
+                      <summary className="cursor-pointer text-sm font-medium text-purple-700">
+                        ⚙️ Tarifs spécifiques à cette entente (optionnel - laisser vide pour utiliser les tarifs par défaut)
+                      </summary>
+                      <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div>
+                          <label className="text-xs text-gray-500">Autopompe ($/h)</label>
+                          <input
+                            type="number"
+                            value={entente.tarifs?.autopompe || ''}
+                            onChange={(e) => {
+                              const updated = [...(settings.ententes_entraide || [])];
+                              updated[index] = { 
+                                ...entente, 
+                                tarifs: { ...entente.tarifs, autopompe: e.target.value ? parseFloat(e.target.value) : null }
+                              };
+                              setSettings({ ...settings, ententes_entraide: updated });
+                            }}
+                            className="w-full border rounded p-1 text-sm"
+                            placeholder="Défaut"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-500">Citerne ($/h)</label>
+                          <input
+                            type="number"
+                            value={entente.tarifs?.citerne || ''}
+                            onChange={(e) => {
+                              const updated = [...(settings.ententes_entraide || [])];
+                              updated[index] = { 
+                                ...entente, 
+                                tarifs: { ...entente.tarifs, citerne: e.target.value ? parseFloat(e.target.value) : null }
+                              };
+                              setSettings({ ...settings, ententes_entraide: updated });
+                            }}
+                            className="w-full border rounded p-1 text-sm"
+                            placeholder="Défaut"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-500">Pompier ($/h)</label>
+                          <input
+                            type="number"
+                            value={entente.tarifs?.pompier || ''}
+                            onChange={(e) => {
+                              const updated = [...(settings.ententes_entraide || [])];
+                              updated[index] = { 
+                                ...entente, 
+                                tarifs: { ...entente.tarifs, pompier: e.target.value ? parseFloat(e.target.value) : null }
+                              };
+                              setSettings({ ...settings, ententes_entraide: updated });
+                            }}
+                            className="w-full border rounded p-1 text-sm"
+                            placeholder="Défaut"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-500">Remplissage cylindre ($)</label>
+                          <input
+                            type="number"
+                            value={entente.tarifs?.remplissage_cylindre || ''}
+                            onChange={(e) => {
+                              const updated = [...(settings.ententes_entraide || [])];
+                              updated[index] = { 
+                                ...entente, 
+                                tarifs: { ...entente.tarifs, remplissage_cylindre: e.target.value ? parseFloat(e.target.value) : null }
+                              };
+                              setSettings({ ...settings, ententes_entraide: updated });
+                            }}
+                            className="w-full border rounded p-1 text-sm"
+                            placeholder="Défaut"
+                          />
+                        </div>
+                      </div>
+                    </details>
+                    
+                    {/* Notes */}
+                    <div className="mt-3">
+                      <label className="text-xs text-gray-500">Notes sur l'entente</label>
+                      <textarea
+                        value={entente.notes || ''}
+                        onChange={(e) => {
+                          const updated = [...(settings.ententes_entraide || [])];
+                          updated[index] = { ...entente, notes: e.target.value };
+                          setSettings({ ...settings, ententes_entraide: updated });
+                        }}
+                        className="w-full border rounded p-2 text-sm"
+                        rows="2"
+                        placeholder="Conditions particulières, dates de validité, etc."
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const nouvelle = {
+                    municipalite_facturation: '',
+                    municipalites_couvertes: [],
+                    contact_nom: '',
+                    contact_email: '',
+                    adresse_facturation: '',
+                    facturer_vehicules: true,
+                    facturer_personnel: true,
+                    facturer_cylindres: true,
+                    facturer_consommables: true,
+                    facturer_specialites: true,
+                    facturer_frais_admin: true,
+                    tarifs: {},
+                    notes: ''
+                  };
+                  setSettings({
+                    ...settings,
+                    ententes_entraide: [...(settings.ententes_entraide || []), nouvelle]
+                  });
+                }}
+                className="w-full mt-4"
+              >
+                + Ajouter une nouvelle entente d'entraide
+              </Button>
+            </div>
+
+            {/* Numérotation des factures */}
+            <div className="border rounded-lg p-4">
+              <h4 className="font-medium text-gray-700 mb-3">🔢 Numérotation des factures</h4>
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-gray-500">Tarif véhicule/h ($)</label>
+                  <label className="text-xs text-gray-500">Préfixe (année)</label>
                   <input
-                    type="number"
-                    value={settings.tarif_defaut_vehicule ?? 200}
-                    onChange={(e) => setSettings({ ...settings, tarif_defaut_vehicule: parseFloat(e.target.value) })}
+                    type="text"
+                    value={settings.facture_prefixe ?? new Date().getFullYear().toString()}
+                    onChange={(e) => setSettings({ ...settings, facture_prefixe: e.target.value })}
                     className="w-full border rounded p-2"
-                    step="5"
+                    placeholder="2024"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500">Tarif pompier/h ($)</label>
+                  <label className="text-xs text-gray-500">Prochain numéro</label>
                   <input
                     type="number"
-                    value={settings.tarif_defaut_pompier ?? 45}
-                    onChange={(e) => setSettings({ ...settings, tarif_defaut_pompier: parseFloat(e.target.value) })}
+                    value={settings.facture_prochain_numero ?? 1}
+                    onChange={(e) => setSettings({ ...settings, facture_prochain_numero: parseInt(e.target.value) || 1 })}
                     className="w-full border rounded p-2"
-                    step="1"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500">Tarif APRIA ($)</label>
-                  <input
-                    type="number"
-                    value={settings.tarif_defaut_apria ?? 30}
-                    onChange={(e) => setSettings({ ...settings, tarif_defaut_apria: parseFloat(e.target.value) })}
-                    className="w-full border rounded p-2"
-                    step="1"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500">Minimum heures (h)</label>
-                  <input
-                    type="number"
-                    value={settings.minimum_heures_defaut ?? 2}
-                    onChange={(e) => setSettings({ ...settings, minimum_heures_defaut: parseFloat(e.target.value) })}
-                    className="w-full border rounded p-2"
-                    step="0.5"
-                    min="0"
+                    min="1"
                   />
                 </div>
               </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Prochaine facture: <strong>{settings.facture_prefixe || new Date().getFullYear()}-{String(settings.facture_prochain_numero || 1).padStart(3, '0')}</strong>
+              </p>
+            </div>
+            
+            <div className="p-3 bg-purple-50 rounded-lg text-sm">
+              <p className="text-purple-800">
+                <strong>💡 Logique de facturation :</strong><br/>
+                1. Si la municipalité de l'intervention est dans "Municipalités desservies" → Pas de facture<br/>
+                2. Si la municipalité est couverte par une entente → Facturer selon les termes de l'entente<br/>
+                3. Sinon → Facturer tout selon les tarifs par défaut
+              </p>
             </div>
           </div>
         </CardContent>
