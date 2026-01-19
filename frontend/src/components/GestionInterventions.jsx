@@ -601,7 +601,7 @@ const ImportXMLModal = ({ tenantSlug, onClose, onSuccess, toast }) => {
 
 // ==================== MODAL DÉTAIL INTERVENTION (DSI COMPLET) ====================
 
-const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUpdate, toast }) => {
+const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUpdate, toast, readOnly = false }) => {
   const [activeSection, setActiveSection] = useState('identification');
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({ ...intervention });
