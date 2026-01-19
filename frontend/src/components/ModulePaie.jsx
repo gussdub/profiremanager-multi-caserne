@@ -948,14 +948,15 @@ const ModulePaie = ({ tenant }) => {
                 <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Code</th>
                 <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Libellé</th>
                 <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Catégorie</th>
+                <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Unité</th>
                 <th style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid #e5e7eb', width: '80px' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {eventTypes.length === 0 ? (
                 <tr>
-                  <td colSpan="4" style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>
-                    Aucun type d'heure configuré. Cliquez sur "Ajouter" pour en créer.
+                  <td colSpan="5" style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>
+                    Aucun type configuré. Cliquez sur "Ajouter" pour en créer.
                   </td>
                 </tr>
               ) : (
@@ -968,11 +969,22 @@ const ModulePaie = ({ tenant }) => {
                         padding: '2px 8px',
                         borderRadius: '4px',
                         fontSize: '0.75rem',
-                        background: et.category === 'heures' ? '#dbeafe' : et.category === 'prime' ? '#fef3c7' : '#dcfce7',
-                        color: et.category === 'heures' ? '#1e40af' : et.category === 'prime' ? '#92400e' : '#166534'
+                        background: et.category === 'heures' ? '#dbeafe' : 
+                                   et.category === 'prime' ? '#fef3c7' : 
+                                   et.category === 'deduction' ? '#fee2e2' : '#dcfce7',
+                        color: et.category === 'heures' ? '#1e40af' : 
+                               et.category === 'prime' ? '#92400e' : 
+                               et.category === 'deduction' ? '#991b1b' : '#166534'
                       }}>
-                        {et.category === 'heures' ? 'Heures' : et.category === 'prime' ? 'Prime' : 'Frais'}
+                        {et.category === 'heures' ? 'Heures' : 
+                         et.category === 'prime' ? 'Prime' : 
+                         et.category === 'deduction' ? 'Déduction' : 'Frais'}
                       </span>
+                    </td>
+                    <td style={{ padding: '10px', color: '#64748b', fontSize: '0.8rem' }}>
+                      {et.unit === 'km' ? 'km' : 
+                       et.unit === 'montant' ? '$' : 
+                       et.unit === 'quantite' ? 'qté' : 'h'}
                     </td>
                     <td style={{ padding: '10px', textAlign: 'center' }}>
                       {et.id && (
