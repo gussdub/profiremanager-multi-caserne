@@ -1010,6 +1010,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
                         th { background: #f3f4f6; }
                         .header-info { display: flex; justify-content: space-between; margin-bottom: 20px; }
                         .status { padding: 4px 12px; border-radius: 4px; background: #d1fae5; color: #065f46; }
+                        .two-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
                         @media print { body { padding: 0; } }
                       </style>
                     </head>
@@ -1022,61 +1023,96 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
                       
                       <h2>📍 Identification</h2>
                       <div class="section">
-                        <div class="field"><span class="label">Adresse:</span><span class="value">${formData.address_full || '-'}</span></div>
-                        <div class="field"><span class="label">Municipalité:</span><span class="value">${formData.municipality || '-'}</span></div>
-                        <div class="field"><span class="label">Date appel:</span><span class="value">${formData.xml_time_call_received ? new Date(formData.xml_time_call_received).toLocaleString('fr-CA') : '-'}</span></div>
-                        <div class="field"><span class="label">Arrivée sur les lieux:</span><span class="value">${formData.xml_time_first_unit_arrived ? new Date(formData.xml_time_first_unit_arrived).toLocaleString('fr-CA') : '-'}</span></div>
-                        <div class="field"><span class="label">Fin intervention:</span><span class="value">${formData.xml_time_call_closed ? new Date(formData.xml_time_call_closed).toLocaleString('fr-CA') : '-'}</span></div>
+                        <div class="two-cols">
+                          <div class="field"><span class="label">Adresse:</span><span class="value">${formData.address_full || '-'}</span></div>
+                          <div class="field"><span class="label">Municipalité:</span><span class="value">${formData.municipality || formData.xml_municipality || (formData.address_full ? formData.address_full.split(',').pop()?.trim() : '-') || '-'}</span></div>
+                        </div>
+                        <div class="two-cols">
+                          <div class="field"><span class="label">No carte appel:</span><span class="value">${formData.external_call_id || '-'}</span></div>
+                          <div class="field"><span class="label">Priorité:</span><span class="value">${formData.priority || formData.xml_priority || '-'}</span></div>
+                        </div>
+                        <div class="two-cols">
+                          <div class="field"><span class="label">Date/Heure appel:</span><span class="value">${formData.xml_time_call_received ? new Date(formData.xml_time_call_received).toLocaleString('fr-CA', {timeZone: 'America/Montreal'}) : '-'}</span></div>
+                          <div class="field"><span class="label">Arrivée sur les lieux:</span><span class="value">${formData.xml_time_first_unit_arrived ? new Date(formData.xml_time_first_unit_arrived).toLocaleString('fr-CA', {timeZone: 'America/Montreal'}) : '-'}</span></div>
+                        </div>
+                        <div class="two-cols">
+                          <div class="field"><span class="label">Fin intervention:</span><span class="value">${formData.xml_time_call_closed ? new Date(formData.xml_time_call_closed).toLocaleString('fr-CA', {timeZone: 'America/Montreal'}) : '-'}</span></div>
+                          <div class="field"><span class="label">Durée totale:</span><span class="value">${
+                            formData.xml_time_call_received && formData.xml_time_call_closed 
+                              ? (() => {
+                                  const start = new Date(formData.xml_time_call_received);
+                                  const end = new Date(formData.xml_time_call_closed);
+                                  const diff = Math.floor((end - start) / 60000);
+                                  const hours = Math.floor(diff / 60);
+                                  const mins = diff % 60;
+                                  return hours > 0 ? hours + 'h ' + mins + 'min' : mins + ' min';
+                                })()
+                              : '-'
+                          }</span></div>
+                        </div>
                       </div>
                       
-                      ${formData.meteo ? `
-                      <h2>🌤️ Météo</h2>
+                      ${formData.meteo ? \`
+                      <h2>🌤️ Conditions météo</h2>
                       <div class="section">
-                        <div class="field"><span class="label">Température:</span><span class="value">${formData.meteo.temperature || '-'}°C</span></div>
-                        <div class="field"><span class="label">Humidité:</span><span class="value">${formData.meteo.humidity || '-'}%</span></div>
-                        <div class="field"><span class="label">Vent:</span><span class="value">${formData.meteo.wind_speed || '-'} km/h</span></div>
+                        <div class="two-cols">
+                          <div class="field"><span class="label">Température:</span><span class="value">\${formData.meteo.temperature != null ? formData.meteo.temperature + '°C' : '-'}</span></div>
+                          <div class="field"><span class="label">Humidité:</span><span class="value">\${formData.meteo.humidity != null ? formData.meteo.humidity + '%' : '-'}</span></div>
+                        </div>
+                        <div class="two-cols">
+                          <div class="field"><span class="label">Vent:</span><span class="value">\${formData.meteo.wind_speed != null ? formData.meteo.wind_speed + ' km/h' : '-'}</span></div>
+                          <div class="field"><span class="label">Conditions:</span><span class="value">\${formData.meteo.conditions || formData.meteo.description || '-'}</span></div>
+                        </div>
                       </div>
-                      ` : ''}
+                      \` : ''}
                       
                       <h2>👥 Ressources</h2>
                       <div class="section">
-                        ${(formData.assigned_vehicles || []).length > 0 ? `
-                          <p><strong>Véhicules:</strong> ${(formData.assigned_vehicles || []).map(v => v.numero_unite || v.id).join(', ')}</p>
-                        ` : '<p>Aucun véhicule assigné</p>'}
-                        ${(formData.personnel_present || []).length > 0 ? `
+                        ${(formData.assigned_vehicles || []).length > 0 ? \`
+                          <p><strong>Véhicules:</strong> \${(formData.assigned_vehicles || []).map(v => v.numero_unite || v.numero || v.nom || v.id).join(', ')}</p>
+                        \` : '<p><em>Aucun véhicule assigné</em></p>'}
+                        ${(formData.personnel_present || []).length > 0 ? \`
                           <table>
-                            <tr><th>Nom</th><th>Statut</th><th>Prime repas</th></tr>
-                            ${(formData.personnel_present || []).map(p => `
+                            <tr><th>Nom</th><th>Matricule</th><th>Statut</th><th>Prime repas</th></tr>
+                            \${(formData.personnel_present || []).map(p => \`
                               <tr>
-                                <td>${p.nom || ''} ${p.prenom || ''}</td>
-                                <td>${p.statut_presence || 'Présent'}</td>
-                                <td>${[p.prime_dejeuner && 'Déjeuner', p.prime_diner && 'Dîner', p.prime_souper && 'Souper'].filter(Boolean).join(', ') || '-'}</td>
+                                <td>\${p.prenom || ''} \${p.nom || ''}</td>
+                                <td>\${p.matricule || '-'}</td>
+                                <td>\${p.statut_presence || 'Présent'}\${p.remplace_par_nom ? ' (par ' + p.remplace_par_nom + ')' : ''}</td>
+                                <td>\${[p.prime_dejeuner && 'Déjeuner', p.prime_diner && 'Dîner', p.prime_souper && 'Souper'].filter(Boolean).join(', ') || '-'}</td>
                               </tr>
-                            `).join('')}
+                            \`).join('')}
                           </table>
-                        ` : '<p>Aucun personnel</p>'}
+                        \` : '<p><em>Aucun personnel</em></p>'}
                       </div>
                       
-                      ${(formData.materiel_utilise || []).length > 0 ? `
+                      ${(formData.materiel_utilise || []).length > 0 ? \`
                       <h2>🧰 Matériel utilisé</h2>
                       <div class="section">
                         <table>
-                          <tr><th>Matériel</th><th>Quantité</th><th>Notes</th></tr>
-                          ${(formData.materiel_utilise || []).map(m => `
+                          <tr><th>Matériel</th><th>Type</th><th>Quantité</th><th>Notes</th></tr>
+                          \${(formData.materiel_utilise || []).map(m => \`
                             <tr>
-                              <td>${m.nom || '-'}</td>
-                              <td>${m.quantite || 1}</td>
-                              <td>${m.notes || '-'}</td>
+                              <td>\${m.nom || '-'}</td>
+                              <td>\${m.type || '-'}</td>
+                              <td>\${m.quantite || 1}</td>
+                              <td>\${m.notes || '-'}</td>
                             </tr>
-                          `).join('')}
+                          \`).join('')}
                         </table>
                       </div>
-                      ` : ''}
+                      \` : ''}
                       
                       <h2>📝 Narratif</h2>
                       <div class="section">
-                        <p style="white-space: pre-wrap;">${formData.narratif || 'Aucun narratif'}</p>
+                        <p style="white-space: pre-wrap; background: #f9fafb; padding: 15px; border-radius: 8px;">${formData.narratif || 'Aucun narratif'}</p>
                       </div>
+                      
+                      ${formData.signed_at ? \`
+                      <div style="margin-top: 30px; padding: 15px; background: #d1fae5; border-radius: 8px;">
+                        <strong>✅ Rapport signé le:</strong> \${new Date(formData.signed_at).toLocaleString('fr-CA', {timeZone: 'America/Montreal'})}
+                      </div>
+                      \` : ''}
                       
                       <hr style="margin-top: 30px;" />
                       <p style="color: #6b7280; font-size: 12px;">
@@ -1084,7 +1120,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
                       </p>
                     </body>
                   </html>
-                `);
+                \`);
                 printWindow.document.close();
                 printWindow.focus();
                 setTimeout(() => printWindow.print(), 500);
