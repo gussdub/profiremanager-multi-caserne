@@ -3176,6 +3176,7 @@ const TabHistorique = ({ user, tenantSlug, toast }) => {
   const [interventions, setInterventions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ status: 'signed', dateFrom: '', dateTo: '' });
+  const [selectedIntervention, setSelectedIntervention] = useState(null);
 
   const API = `${BACKEND_URL}/api/${tenantSlug}`;
 
@@ -3217,6 +3218,19 @@ const TabHistorique = ({ user, tenantSlug, toast }) => {
     }
   };
 
+  // Traduction des statuts en français
+  const getStatusLabel = (status) => {
+    const labels = {
+      'new': 'Nouveau',
+      'draft': 'Brouillon',
+      'revision': 'À réviser',
+      'review': 'À valider',
+      'signed': 'Signé',
+      'archived': 'Archivé'
+    };
+    return labels[status] || status;
+  };
+
   return (
     <div>
       <div className="flex gap-4 mb-6 flex-wrap">
@@ -3255,18 +3269,19 @@ const TabHistorique = ({ user, tenantSlug, toast }) => {
                 <th className="text-left p-3 border-b">Type</th>
                 <th className="text-left p-3 border-b">Adresse</th>
                 <th className="text-left p-3 border-b">Statut</th>
+                <th className="text-left p-3 border-b">Actions</th>
               </tr>
             </thead>
             <tbody>
               {interventions.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-8 text-gray-500">
+                  <td colSpan={6} className="text-center py-8 text-gray-500">
                     Aucune intervention trouvée
                   </td>
                 </tr>
               ) : (
                 interventions.map(intervention => (
-                  <tr key={intervention.id} className="hover:bg-gray-50">
+                  <tr key={intervention.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setSelectedIntervention(intervention)}>
                     <td className="p-3 border-b font-mono">{intervention.external_call_id}</td>
                     <td className="p-3 border-b">{formatDate(intervention.xml_time_call_received || intervention.created_at)}</td>
                     <td className="p-3 border-b">{intervention.type_intervention || '-'}</td>
@@ -3275,8 +3290,16 @@ const TabHistorique = ({ user, tenantSlug, toast }) => {
                       <span className={`px-2 py-1 rounded text-sm ${
                         intervention.status === 'signed' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                       }`}>
-                        {intervention.status}
+                        {getStatusLabel(intervention.status)}
                       </span>
+                    </td>
+                    <td className="p-3 border-b">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setSelectedIntervention(intervention); }}
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      >
+                        👁️ Consulter
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -3284,6 +3307,19 @@ const TabHistorique = ({ user, tenantSlug, toast }) => {
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Modal de consultation (lecture seule) */}
+      {selectedIntervention && (
+        <InterventionDetailModal
+          intervention={selectedIntervention}
+          tenantSlug={tenantSlug}
+          user={user}
+          onClose={() => setSelectedIntervention(null)}
+          onUpdate={() => setSelectedIntervention(null)}
+          toast={toast}
+          readOnly={true}
+        />
       )}
     </div>
   );
