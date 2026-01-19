@@ -977,8 +977,8 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
 
         {/* Footer Actions */}
         <div className="border-t border-gray-200 p-4 bg-gray-50 flex justify-between flex-wrap gap-2">
-          <div>
-            {canEdit && !isLocked && (
+          <div className="flex gap-2">
+            {canEdit && !isLocked && !readOnly && (
               <Button
                 variant={editMode ? "default" : "outline"}
                 onClick={() => editMode ? handleSave() : setEditMode(true)}
@@ -987,10 +987,115 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
                 {editMode ? '💾 Enregistrer' : '✏️ Modifier'}
               </Button>
             )}
+            {/* Bouton d'impression */}
+            <Button
+              variant="outline"
+              onClick={() => {
+                // Ouvrir une fenêtre d'impression avec le contenu du rapport
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(`
+                  <html>
+                    <head>
+                      <title>Rapport d'intervention #${formData.external_call_id}</title>
+                      <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+                        h1 { color: #dc2626; border-bottom: 2px solid #dc2626; padding-bottom: 10px; }
+                        h2 { color: #374151; border-bottom: 1px solid #d1d5db; padding-bottom: 5px; margin-top: 20px; }
+                        .section { margin-bottom: 20px; }
+                        .field { margin: 8px 0; }
+                        .label { font-weight: bold; color: #6b7280; }
+                        .value { margin-left: 10px; }
+                        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+                        th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }
+                        th { background: #f3f4f6; }
+                        .header-info { display: flex; justify-content: space-between; margin-bottom: 20px; }
+                        .status { padding: 4px 12px; border-radius: 4px; background: #d1fae5; color: #065f46; }
+                        @media print { body { padding: 0; } }
+                      </style>
+                    </head>
+                    <body>
+                      <h1>📋 Rapport d'intervention #${formData.external_call_id}</h1>
+                      <div class="header-info">
+                        <div><strong>Type:</strong> ${formData.type_intervention || 'Non défini'}</div>
+                        <div class="status">${formData.status === 'signed' ? '✅ Signé' : formData.status}</div>
+                      </div>
+                      
+                      <h2>📍 Identification</h2>
+                      <div class="section">
+                        <div class="field"><span class="label">Adresse:</span><span class="value">${formData.address_full || '-'}</span></div>
+                        <div class="field"><span class="label">Municipalité:</span><span class="value">${formData.municipality || '-'}</span></div>
+                        <div class="field"><span class="label">Date appel:</span><span class="value">${formData.xml_time_call_received ? new Date(formData.xml_time_call_received).toLocaleString('fr-CA') : '-'}</span></div>
+                        <div class="field"><span class="label">Arrivée sur les lieux:</span><span class="value">${formData.xml_time_first_unit_arrived ? new Date(formData.xml_time_first_unit_arrived).toLocaleString('fr-CA') : '-'}</span></div>
+                        <div class="field"><span class="label">Fin intervention:</span><span class="value">${formData.xml_time_call_closed ? new Date(formData.xml_time_call_closed).toLocaleString('fr-CA') : '-'}</span></div>
+                      </div>
+                      
+                      ${formData.meteo ? `
+                      <h2>🌤️ Météo</h2>
+                      <div class="section">
+                        <div class="field"><span class="label">Température:</span><span class="value">${formData.meteo.temperature || '-'}°C</span></div>
+                        <div class="field"><span class="label">Humidité:</span><span class="value">${formData.meteo.humidity || '-'}%</span></div>
+                        <div class="field"><span class="label">Vent:</span><span class="value">${formData.meteo.wind_speed || '-'} km/h</span></div>
+                      </div>
+                      ` : ''}
+                      
+                      <h2>👥 Ressources</h2>
+                      <div class="section">
+                        ${(formData.assigned_vehicles || []).length > 0 ? `
+                          <p><strong>Véhicules:</strong> ${(formData.assigned_vehicles || []).map(v => v.numero_unite || v.id).join(', ')}</p>
+                        ` : '<p>Aucun véhicule assigné</p>'}
+                        ${(formData.personnel_present || []).length > 0 ? `
+                          <table>
+                            <tr><th>Nom</th><th>Statut</th><th>Prime repas</th></tr>
+                            ${(formData.personnel_present || []).map(p => `
+                              <tr>
+                                <td>${p.nom || ''} ${p.prenom || ''}</td>
+                                <td>${p.statut_presence || 'Présent'}</td>
+                                <td>${[p.prime_dejeuner && 'Déjeuner', p.prime_diner && 'Dîner', p.prime_souper && 'Souper'].filter(Boolean).join(', ') || '-'}</td>
+                              </tr>
+                            `).join('')}
+                          </table>
+                        ` : '<p>Aucun personnel</p>'}
+                      </div>
+                      
+                      ${(formData.materiel_utilise || []).length > 0 ? `
+                      <h2>🧰 Matériel utilisé</h2>
+                      <div class="section">
+                        <table>
+                          <tr><th>Matériel</th><th>Quantité</th><th>Notes</th></tr>
+                          ${(formData.materiel_utilise || []).map(m => `
+                            <tr>
+                              <td>${m.nom || '-'}</td>
+                              <td>${m.quantite || 1}</td>
+                              <td>${m.notes || '-'}</td>
+                            </tr>
+                          `).join('')}
+                        </table>
+                      </div>
+                      ` : ''}
+                      
+                      <h2>📝 Narratif</h2>
+                      <div class="section">
+                        <p style="white-space: pre-wrap;">${formData.narratif || 'Aucun narratif'}</p>
+                      </div>
+                      
+                      <hr style="margin-top: 30px;" />
+                      <p style="color: #6b7280; font-size: 12px;">
+                        Imprimé le ${new Date().toLocaleString('fr-CA')} | ProFireManager
+                      </p>
+                    </body>
+                  </html>
+                `);
+                printWindow.document.close();
+                printWindow.focus();
+                setTimeout(() => printWindow.print(), 500);
+              }}
+            >
+              🖨️ Imprimer
+            </Button>
           </div>
           
           <div className="flex gap-2 flex-wrap">
-            {canValidate && !isLocked && (
+            {canValidate && !isLocked && !readOnly && (
               <>
                 {(formData.status === 'draft' || formData.status === 'new' || formData.status === 'revision') ? (
                   <Button 
