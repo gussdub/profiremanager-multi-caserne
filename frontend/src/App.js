@@ -191,6 +191,7 @@ const PlanificationView = lazy(() => import("./components/PlanificationView"));
 const CartePlanification = lazy(() => import("./components/CartePlanification"));
 const NonConformites = lazy(() => import("./components/NonConformites"));
 const InspectionTerrain = lazy(() => import("./components/InspectionTerrain"));
+const ModulePaie = lazy(() => import("./components/ModulePaie"));
 import OfflineManager from "./components/OfflineManager";
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
