@@ -21,20 +21,38 @@ Application de gestion de planning pour services d'incendie avec support multi-t
 - **PayrollProvider** (Global): Définit les logiciels de paie (Nethris, Employeur D, Ceridian, My People Doc)
 - **ProviderColumnDefinition** (Global): Structure des fichiers par fournisseur (colonnes, ordre, format)
 - **ClientPayCodeMapping** (Tenant): Mapping des événements internes vers codes du logiciel de paie
-- **TenantPayrollConfig** (Tenant): Sélection du fournisseur + champs supplémentaires
+- **TenantPayrollConfig** (Tenant): Sélection du fournisseur + credentials API
+
+#### Intégration API Fournisseurs de Paie (Nouveau)
+- **Fournisseurs supportés**:
+  - **Nethris**: OAuth2 + Upload fichier (API complète)
+  - **Employeur D**: OAuth2 + API User (en cours)
+  - **Ceridian Dayforce**: SFTP uniquement (pas d'API REST directe)
+- **Configuration Super Admin** (`PayrollProvidersAdmin.jsx`):
+  - Templates pré-configurés (URLs, endpoints)
+  - Champs requis pour les tenants (client_id, client_secret, business_id, etc.)
+- **Configuration Tenant** (`ModulePaie.jsx > Export`):
+  - Saisie des credentials API personnels
+  - Bouton "Tester la connexion"
+  - Bouton "Envoyer via API" (si connexion testée)
+- **Endpoints API**:
+  - `POST /{tenant}/paie/api/save-credentials` - Sauvegarder credentials
+  - `POST /{tenant}/paie/api/test-connection` - Tester la connexion
+  - `POST /{tenant}/paie/api/send` - Envoyer données via API
+  - `GET /{tenant}/paie/api/fetch-codes` - Récupérer codes gains/déductions
 
 #### Endpoints
 - `POST /paie/feuilles-temps/generer-lot` - Génération pour tous les employés
-- `POST /paie/export` - Export vers le logiciel de paie configuré
+- `POST /paie/export` - Export fichier vers le logiciel de paie
 - `GET/PUT /{tenant}/paie/config` - Configuration fournisseur du tenant
 - `GET/POST/DELETE /{tenant}/paie/code-mappings` - Mappings de codes
 - `GET/POST/PUT/DELETE /super-admin/payroll-providers` - CRUD fournisseurs
 - `GET/POST/PUT/DELETE /super-admin/payroll-providers/{id}/columns` - CRUD colonnes
 
 #### Frontend (ModulePaie.jsx)
-- **Onglet Feuilles de temps**: Génération en lot, liste, filtres, validation, détail
+- **Onglet Feuilles de temps**: Génération en lot, liste, filtres, validation, détail, envoi API
 - **Onglet Paramètres**: Période de paie, taux garde externe/rappel/formation, heures sup
-- **Onglet Export**: Sélection fournisseur, mapping des codes de paie
+- **Onglet Export**: Sélection fournisseur, credentials API, mapping des codes de paie
 
 ### Correction Calcul Primes de Repas (Janvier 2026)
 - Calcul déplacé de `validate_intervention` vers `import-xml`
