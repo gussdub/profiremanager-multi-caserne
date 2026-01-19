@@ -868,7 +868,7 @@ const ModulePaie = ({ tenant }) => {
           </Button>
         </div>
         <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '16px' }}>
-          Créez vos propres types d'heures pour les associer aux codes de gains de votre logiciel de paie.
+          Créez vos propres types d'heures, primes ou frais pour les associer aux codes de gains de votre logiciel de paie.
         </p>
 
         {/* Formulaire d'ajout */}
@@ -882,7 +882,7 @@ const ModulePaie = ({ tenant }) => {
                 <Input
                   value={newEventType.code}
                   onChange={(e) => setNewEventType({...newEventType, code: e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, '_')})}
-                  placeholder="Ex: H_GARDE_INTERNE"
+                  placeholder="Ex: KILOMETRAGE"
                   style={{ fontFamily: 'monospace' }}
                   data-testid="new-event-code"
                 />
@@ -894,7 +894,7 @@ const ModulePaie = ({ tenant }) => {
                 <Input
                   value={newEventType.label}
                   onChange={(e) => setNewEventType({...newEventType, label: e.target.value})}
-                  placeholder="Ex: Heures garde interne"
+                  placeholder="Ex: Kilométrage"
                   data-testid="new-event-label"
                 />
               </div>
@@ -907,9 +907,25 @@ const ModulePaie = ({ tenant }) => {
                   onChange={(e) => setNewEventType({...newEventType, category: e.target.value})}
                   style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db' }}
                 >
-                  <option value="heures">Heures</option>
-                  <option value="prime">Prime</option>
-                  <option value="frais">Frais</option>
+                  <option value="heures">Heures travaillées</option>
+                  <option value="prime">Prime / Bonus</option>
+                  <option value="frais">Frais / Remboursement</option>
+                  <option value="deduction">Déduction</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
+                  Unité
+                </label>
+                <select
+                  value={newEventType.unit || 'heures'}
+                  onChange={(e) => setNewEventType({...newEventType, unit: e.target.value})}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db' }}
+                >
+                  <option value="heures">Heures (h)</option>
+                  <option value="km">Kilomètres (km)</option>
+                  <option value="montant">Montant ($)</option>
+                  <option value="quantite">Quantité</option>
                 </select>
               </div>
             </div>
