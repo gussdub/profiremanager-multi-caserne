@@ -3542,6 +3542,7 @@ const TabHistorique = ({ user, tenantSlug, toast }) => {
 const TabParametres = ({ user, tenantSlug, toast }) => {
   const [settings, setSettings] = useState(null);
   const [users, setUsers] = useState([]);
+  const [grades, setGrades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -3554,6 +3555,7 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
   useEffect(() => {
     fetchSettings();
     fetchUsers();
+    fetchGrades();
   }, []);
 
   const fetchSettings = async () => {
@@ -3583,6 +3585,20 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
       }
     } catch (error) {
       console.error('Erreur chargement utilisateurs:', error);
+    }
+  };
+
+  const fetchGrades = async () => {
+    try {
+      const response = await fetch(`${API}/grades`, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setGrades(data || []);
+      }
+    } catch (error) {
+      console.error('Erreur chargement grades:', error);
     }
   };
 
