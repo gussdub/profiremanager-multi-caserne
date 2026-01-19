@@ -4303,37 +4303,34 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
               </div>
             </div>
 
-            {/* 3. Tarifs par défaut (grades personnel) */}
+            {/* 3. Tarifs par défaut (grades personnel) - Dynamique */}
             <div className="border rounded-lg p-4">
               <h4 className="font-medium text-gray-700 mb-3">👥 Tarifs par défaut - Personnel ($/heure)</h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {[
-                  { key: 'pompier', label: 'Pompier', default: 30 },
-                  { key: 'pompier_1ere_classe', label: 'Pompier 1ère classe', default: 32 },
-                  { key: 'lieutenant', label: 'Lieutenant', default: 38 },
-                  { key: 'capitaine', label: 'Capitaine', default: 45 },
-                  { key: 'directeur_adjoint', label: 'Directeur adjoint', default: 55 },
-                  { key: 'directeur', label: 'Directeur', default: 65 },
-                ].map(item => (
-                  <div key={item.key}>
-                    <label className="text-xs text-gray-500">{item.label}</label>
-                    <input
-                      type="number"
-                      value={settings.tarifs_grades?.[item.key] ?? item.default}
-                      onChange={(e) => setSettings({
-                        ...settings,
-                        tarifs_grades: {
-                          ...settings.tarifs_grades,
-                          [item.key]: parseFloat(e.target.value) || 0
-                        }
-                      })}
-                      className="w-full border rounded p-2"
-                      step="1"
-                      min="0"
-                    />
-                  </div>
-                ))}
-              </div>
+              {grades.length === 0 ? (
+                <p className="text-gray-500 italic text-sm">Aucun grade configuré. Allez dans Paramètres → Grades pour en créer.</p>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {grades.sort((a, b) => (a.niveau_hierarchique || 0) - (b.niveau_hierarchique || 0)).map(grade => (
+                    <div key={grade.id}>
+                      <label className="text-xs text-gray-500">{grade.nom}</label>
+                      <input
+                        type="number"
+                        value={settings.tarifs_grades?.[grade.id] ?? settings.tarifs_grades?.[grade.nom] ?? 30}
+                        onChange={(e) => setSettings({
+                          ...settings,
+                          tarifs_grades: {
+                            ...settings.tarifs_grades,
+                            [grade.id]: parseFloat(e.target.value) || 0
+                          }
+                        })}
+                        className="w-full border rounded p-2"
+                        step="1"
+                        min="0"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* 4. Tarifs par défaut (spécialités & autres) */}
