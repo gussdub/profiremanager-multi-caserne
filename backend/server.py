@@ -2934,6 +2934,7 @@ class TypeGarde(BaseModel):
     competences_requises: List[str] = []  # Liste des formations/compétences requises pour cette garde
     est_garde_externe: bool = False  # True si c'est une garde externe (astreinte à domicile)
     taux_horaire_externe: Optional[float] = None  # Taux horaire spécifique pour garde externe
+    montant_garde: Optional[float] = None  # Montant fixe de la garde (prime)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class TypeGardeCreate(BaseModel):
@@ -2948,6 +2949,7 @@ class TypeGardeCreate(BaseModel):
     competences_requises: List[str] = []
     est_garde_externe: bool = False
     taux_horaire_externe: Optional[float] = None
+    montant_garde: Optional[float] = None  # Montant fixe de la garde (prime)
 
 class Planning(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
