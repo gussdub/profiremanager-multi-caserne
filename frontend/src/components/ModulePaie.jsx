@@ -33,6 +33,11 @@ const ModulePaie = ({ tenant }) => {
   const [selectedFeuille, setSelectedFeuille] = useState(null);
   const [showDetail, setShowDetail] = useState(false);
   
+  // Mode édition feuille
+  const [editMode, setEditMode] = useState(false);
+  const [editedLignes, setEditedLignes] = useState([]);
+  const [newLigne, setNewLigne] = useState({ date: '', type: '', description: '', heures_payees: 0, montant: 0 });
+  
   // Config export
   const [payrollConfig, setPayrollConfig] = useState(null);
   const [providersDisponibles, setProvidersDisponibles] = useState([]);
