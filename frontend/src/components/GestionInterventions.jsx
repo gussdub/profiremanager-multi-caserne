@@ -3873,14 +3873,27 @@ const SectionFacturation = ({ formData, setFormData, editMode, tenantSlug, getTo
       {facturationInfo?.facturable && facturation && (
         <Card>
           <CardHeader className="bg-purple-50">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center flex-wrap gap-2">
               <CardTitle className="text-lg">📋 Détail de la facture</CardTitle>
-              {editMode && (
-                <Button onClick={sauvegarderFacturation} size="sm">
-                  💾 Enregistrer la facturation
+              <div className="flex gap-2 flex-wrap">
+                {editMode && (
+                  <Button onClick={sauvegarderFacturation} size="sm" variant="outline">
+                    💾 Sauvegarder
+                  </Button>
+                )}
+                <Button onClick={genererPDF} size="sm" disabled={generatingFacture} className="bg-red-600 hover:bg-red-700">
+                  {generatingFacture ? '⏳' : '📄'} PDF
                 </Button>
-              )}
+                <Button onClick={exporterExcel} size="sm" disabled={generatingFacture} className="bg-green-600 hover:bg-green-700">
+                  {generatingFacture ? '⏳' : '📊'} Excel
+                </Button>
+              </div>
             </div>
+            {formData.facture_entraide_numero && (
+              <p className="text-sm text-purple-700 mt-2">
+                ✅ Facture officielle: <strong>{formData.facture_entraide_numero}</strong>
+              </p>
+            )}
           </CardHeader>
           <CardContent className="pt-4">
             <div className="mb-4 p-3 bg-gray-50 rounded">
