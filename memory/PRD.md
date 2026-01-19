@@ -66,9 +66,39 @@ Application de gestion de planning pour services d'incendie avec support multi-t
 - `frontend/src/components/SuperAdminDashboard.js`: Timer inactivité 2h
 - `frontend/src/components/Sidebar.jsx`: Menu temporaires + suppression maintenance
 
+## Module Gestion des Interventions (Décembre 2025)
+
+### Fonctionnalités Complétées
+- **Import XML 911**: Parsing des fichiers XML CAUCA (Details, Ressources, Commentaires, Assistance)
+- **Tableau Kanban**: File d'attente, Brouillon, À valider, À réviser, Signé
+- **Météo automatique**: Via Open-Meteo + Geocoding si coordonnées GPS absentes
+- **Gestion du Personnel**: Import équipes de garde, statuts de présence détaillés
+- **Gestion du Matériel**: Suivi équipements, déduction automatique des stocks consommables à la signature
+- **Module Facturation Entraide**: Paramètres avancés (tarifs par défaut, ententes spécifiques), détection automatique, génération PDF/Excel avec logo
+
+### Calcul des Primes de Repas (Corrigé - Décembre 2025)
+- **Avant**: Calcul à la signature (trop tard pour modification)
+- **Après**: Calcul à l'import XML dans `primes_suggerees`
+- **Champs**: `dejeuner`, `diner`, `souper`, `duree_heures`, `calculees_a_import`
+- **Workflow**: Import → Primes suggérées calculées → Modification manuelle possible → Validation
+
+### Schéma Base de Données (Interventions)
+- `interventions`: + `primes_suggerees`, `primes_calculees`, `stock_deductions`, `facturation_details`, `facture_id`
+- `intervention_settings`: + `repas_dejeuner`, `repas_diner`, `repas_souper`, `municipalites_desservies`, `tarifs_defaut_*`, `ententes_entraide`
+- `factures_entraide`: Nouvelle collection pour les factures générées
+
+### API Endpoints Clés
+- `POST /api/{tenant}/interventions/import-xml` - Import avec calcul des primes
+- `POST /api/{tenant}/interventions/{id}/validate` - Validation + déduction stock
+- `POST /api/{tenant}/interventions/{id}/facture-entraide` - Génération facture
+- `GET /api/users/{user_id}/statistiques-interventions` - Stats employé (backend prêt)
+
 ## Backlog / Future Tasks
+- **P1**: Module Paie - Interface pour statistiques employés (backend prêt)
 - **P1**: Pré-remplissage automatique temps plein selon équipe
-- **P1**: Phase 4 Planning - Intégration complète équipes de garde
-- **P2**: Refactoring server.py en modules
+- **P2**: Feuille de temps automatisée
+- **P2**: Surveillance SFTP pour import XML automatique
+- **P2**: Refactoring `server.py` en modules (dette technique importante)
+- **P2**: Refactoring `GestionInterventions.jsx` (>4700 lignes)
 - **P2**: Module Prévention (à développer)
 - **P3**: Migration architecture native (hors ligne)
