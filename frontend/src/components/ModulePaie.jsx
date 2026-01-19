@@ -548,6 +548,61 @@ const ModulePaie = ({ tenant }) => {
     }
   };
 
+  // Ajouter un nouveau type d'heure
+  const handleAddEventType = async () => {
+    if (!newEventType.code || !newEventType.label) {
+      toast.error('Le code et le libellé sont requis');
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${API_URL}/api/${tenant}/paie/event-types`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newEventType)
+      });
+      
+      if (response.ok) {
+        toast.success('Type d\'heure ajouté');
+        setNewEventType({ code: '', label: '', category: 'heures' });
+        setShowEventTypeForm(false);
+        fetchCodeMappings(); // Rafraîchit aussi les eventTypes
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Erreur');
+      }
+    } catch (error) {
+      toast.error('Erreur de connexion');
+    }
+  };
+
+  // Supprimer un type d'heure
+  const handleDeleteEventType = async (eventTypeId) => {
+    if (!window.confirm('Supprimer ce type d\'heure ? Les mappings associés seront aussi supprimés.')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${API_URL}/api/${tenant}/paie/event-types/${eventTypeId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        toast.success('Type d\'heure supprimé');
+        fetchCodeMappings();
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Erreur');
+      }
+    } catch (error) {
+      toast.error('Erreur de connexion');
+    }
+  };
+
   const getStatutBadge = (statut) => {
     const styles = {
       brouillon: { bg: '#fef3c7', color: '#92400e', text: 'Brouillon' },
