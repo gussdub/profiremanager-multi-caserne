@@ -3359,16 +3359,19 @@ const SectionFacturation = ({ formData, setFormData, editMode, tenantSlug, getTo
   const [grades, setGrades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [calculating, setCalculating] = useState(false);
+  const [tenantInfo, setTenantInfo] = useState(null);
+  const [personnalisation, setPersonnalisation] = useState(null);
   
   const API = `${BACKEND_URL}/api/${tenantSlug}`;
   
-  // Charger les paramètres et les grades
+  // Charger les paramètres, grades et infos du tenant
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [settingsRes, gradesRes] = await Promise.all([
+        const [settingsRes, gradesRes, persoRes] = await Promise.all([
           fetch(`${API}/interventions/settings`, { headers: { 'Authorization': `Bearer ${getToken()}` } }),
-          fetch(`${API}/grades`, { headers: { 'Authorization': `Bearer ${getToken()}` } })
+          fetch(`${API}/grades`, { headers: { 'Authorization': `Bearer ${getToken()}` } }),
+          fetch(`${API}/personnalisation`, { headers: { 'Authorization': `Bearer ${getToken()}` } })
         ]);
         
         if (settingsRes.ok) {
@@ -3378,6 +3381,10 @@ const SectionFacturation = ({ formData, setFormData, editMode, tenantSlug, getTo
         if (gradesRes.ok) {
           const data = await gradesRes.json();
           setGrades(data || []);
+        }
+        if (persoRes.ok) {
+          const data = await persoRes.json();
+          setPersonnalisation(data);
         }
       } catch (e) {
         console.error('Erreur chargement paramètres facturation:', e);
