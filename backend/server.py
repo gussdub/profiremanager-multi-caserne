@@ -38695,12 +38695,9 @@ async def get_provider_columns(
 async def create_provider_column(
     provider_id: str,
     column_data: dict = Body(...),
-    current_user: User = Depends(get_current_user)
+    admin: SuperAdmin = Depends(get_super_admin)
 ):
     """Ajoute une colonne à un fournisseur (Super Admin)"""
-    if not current_user.is_super_admin:
-        raise HTTPException(status_code=403, detail="Accès Super Admin requis")
-    
     column_data["provider_id"] = provider_id
     column = ProviderColumnDefinition(**column_data)
     await db.provider_column_definitions.insert_one(column.dict())
@@ -38713,12 +38710,9 @@ async def update_provider_column(
     provider_id: str,
     column_id: str,
     column_data: dict = Body(...),
-    current_user: User = Depends(get_current_user)
+    admin: SuperAdmin = Depends(get_super_admin)
 ):
     """Met à jour une colonne (Super Admin)"""
-    if not current_user.is_super_admin:
-        raise HTTPException(status_code=403, detail="Accès Super Admin requis")
-    
     await db.provider_column_definitions.update_one(
         {"id": column_id, "provider_id": provider_id},
         {"$set": column_data}
@@ -38731,12 +38725,9 @@ async def update_provider_column(
 async def delete_provider_column(
     provider_id: str,
     column_id: str,
-    current_user: User = Depends(get_current_user)
+    admin: SuperAdmin = Depends(get_super_admin)
 ):
     """Supprime une colonne (Super Admin)"""
-    if not current_user.is_super_admin:
-        raise HTTPException(status_code=403, detail="Accès Super Admin requis")
-    
     await db.provider_column_definitions.delete_one({"id": column_id, "provider_id": provider_id})
     
     return {"success": True}
@@ -38746,12 +38737,9 @@ async def delete_provider_column(
 async def reorder_provider_columns(
     provider_id: str,
     order_data: dict = Body(...),
-    current_user: User = Depends(get_current_user)
+    admin: SuperAdmin = Depends(get_super_admin)
 ):
     """Réordonne les colonnes d'un fournisseur (Super Admin)"""
-    if not current_user.is_super_admin:
-        raise HTTPException(status_code=403, detail="Accès Super Admin requis")
-    
     column_ids = order_data.get("column_ids", [])
     
     for i, col_id in enumerate(column_ids, start=1):
