@@ -1246,7 +1246,7 @@ const ModulePaie = ({ tenant }) => {
               style={{ background: 'white', color: '#1e293b' }}
             />
           </div>
-          <Button onClick={handleGenererLot} disabled={loading} style={{ background: 'white', color: '#059669' }}>
+          <Button onClick={handleGenererLot} disabled={loading} style={{ background: 'white', color: '#dc2626' }}>
             {loading ? <RefreshCw className="animate-spin" size={16} /> : <FileText size={16} />}
             <span style={{ marginLeft: '8px' }}>Générer pour tous</span>
           </Button>
