@@ -37018,6 +37018,10 @@ async def import_intervention_xml(
                         "address_apartment": table.findtext('noAppart'),
                         "address_city": table.findtext('villePourQui'),
                         
+                        # Municipalité - plusieurs sources possibles selon le format XML
+                        "municipality": table.findtext('municipalite') or table.findtext('nomMunicipalite') or table.findtext('ville') or table.findtext('villePourQui'),
+                        "xml_municipality": table.findtext('municipalite') or table.findtext('nomMunicipalite') or table.findtext('ville'),
+                        
                         "caller_name": table.findtext('deQui'),
                         "caller_phone": table.findtext('telDeQui'),
                         "for_whom": table.findtext('pourQui'),
@@ -37027,6 +37031,10 @@ async def import_intervention_xml(
                         "code_feu": table.findtext('codeFeu'),
                         "niveau_risque": table.findtext('niveauRisque'),
                         "officer_in_charge_xml": table.findtext('officierCharge'),
+                        
+                        # Coordonnées GPS pour la météo
+                        "latitude": float(table.findtext('latitude') or 0) if table.findtext('latitude') else None,
+                        "longitude": float(table.findtext('longitude') or 0) if table.findtext('longitude') else None,
                         
                         "xml_time_call_received": parse_xml_datetime_intervention(
                             table.findtext('dateAppel'),
