@@ -1219,7 +1219,7 @@ const ModulePaie = ({ tenant }) => {
   const renderFeuilles = () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Section génération en lot */}
-      <div style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', borderRadius: '12px', padding: '24px', color: 'white' }}>
+      <div style={{ background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)', borderRadius: '12px', padding: '24px', color: 'white' }}>
         <h3 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Users size={20} /> Générer les feuilles de temps (tous les employés)
         </h3>
