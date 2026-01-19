@@ -37559,6 +37559,38 @@ async def import_intervention_xml(
                         intervention_id = intervention_data["id"]
                         results["imported"].append(call_number)
             
+            # ==================== CALCUL AUTOMATIQUE DES PRIMES DE REPAS À L'IMPORT ====================
+            if intervention_id:
+                # Charger les paramètres du tenant pour les primes de repas
+                settings = await db.intervention_settings.find_one({"tenant_id": tenant["id"]})
+                
+                if settings:
+                    # Récupérer l'intervention fraîchement importée/mise à jour
+                    intervention_for_primes = await db.interventions.find_one({"id": intervention_id})
+                    
+                    if intervention_for_primes:
+                        # Calculer les primes
+                        primes_result = await calculate_meal_primes_for_intervention(intervention_for_primes, settings)
+                        
+                        if primes_result:
+                            # Appliquer les primes suggérées (modifiables par l'utilisateur avant validation)
+                            update_primes = {
+                                "primes_suggerees": {
+                                    "dejeuner": primes_result["prime_dejeuner"],
+                                    "diner": primes_result["prime_diner"],
+                                    "souper": primes_result["prime_souper"],
+                                    "duree_heures": primes_result["duree_heures"],
+                                    "calculees_a_import": True
+                                }
+                            }
+                            
+                            await db.interventions.update_one(
+                                {"id": intervention_id},
+                                {"$set": update_primes}
+                            )
+                            
+                            logging.info(f"🍽️ Primes suggérées à l'import - Déjeuner: {primes_result['prime_dejeuner']}, Dîner: {primes_result['prime_diner']}, Souper: {primes_result['prime_souper']} (durée: {primes_result['duree_heures']:.1f}h)")
+            
             # Parser les Ressources (véhicules)
             if 'ressources' in call_files and intervention_id:
                 resources_xml = ET.fromstring(call_files['ressources'])
