@@ -55,7 +55,8 @@ const ModulePaie = ({ tenant }) => {
   // Nouveau mapping
   const [newMapping, setNewMapping] = useState({ internal_event_type: '', external_pay_code: '', description: '' });
 
-  const token = localStorage.getItem('token');
+  // Récupérer le token avec le bon préfixe tenant
+  const token = localStorage.getItem(`${tenant}_token`);
 
   const fetchParametres = useCallback(async () => {
     try {
