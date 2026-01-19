@@ -493,6 +493,57 @@ const ModulePaie = ({ tenant }) => {
     }
   };
 
+  // Sauvegarder un matricule employé
+  const handleSaveMatricule = async (employeId, matricule) => {
+    try {
+      const response = await fetch(`${API_URL}/api/${tenant}/users/${employeId}/matricule-paie`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ matricule_paie: matricule })
+      });
+      
+      if (response.ok) {
+        toast.success('Matricule enregistré');
+        setMatriculesEmployes(prev => ({...prev, [employeId]: matricule}));
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Erreur');
+      }
+    } catch (error) {
+      toast.error('Erreur de connexion');
+    }
+  };
+
+  // Sauvegarder tous les matricules
+  const handleSaveAllMatricules = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/${tenant}/paie/matricules`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ matricules: matriculesEmployes })
+      });
+      
+      if (response.ok) {
+        toast.success('Tous les matricules ont été enregistrés');
+        fetchEmployes(); // Rafraîchir
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Erreur');
+      }
+    } catch (error) {
+      toast.error('Erreur de connexion');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getStatutBadge = (statut) => {
     const styles = {
       brouillon: { bg: '#fef3c7', color: '#92400e', text: 'Brouillon' },
