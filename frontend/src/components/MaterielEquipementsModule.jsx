@@ -1472,6 +1472,7 @@ const EquipementModal = ({ mode, equipement, categories, tenantSlug, onClose, on
     description: equipement?.description || '',
     etat: equipement?.etat || 'bon',
     quantite: equipement?.quantite || 1,
+    gerer_quantite: equipement?.gerer_quantite || false,
     emplacement_type: equipement?.emplacement_type || '',
     emplacement_nom: equipement?.emplacement_nom || '',
     vehicule_id: equipement?.vehicule_id || '',
