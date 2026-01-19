@@ -2117,7 +2117,7 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                     <th className="p-2 text-left">Véhicule</th>
                     <th className="p-2 text-left">Statut</th>
                     <th className="p-2 text-left">Remplaçant</th>
-                    <th className="p-2 text-left">Prime</th>
+                    <th className="p-2 text-left">Primes repas</th>
                     <th className="p-2 text-left">Source</th>
                     {editMode && <th className="p-2 text-left">Actions</th>}
                   </tr>
@@ -2172,16 +2172,59 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                             <span className="text-gray-400 text-xs">-</span>
                           )}
                         </td>
-                        <td className="p-2 text-center">
+                        <td className="p-2">
                           {editMode ? (
-                            <input
-                              type="checkbox"
-                              checked={resource.prime_repas ?? true}
-                              onChange={(e) => updatePrimeRepas(resource.id, e.target.checked)}
-                              className="w-4 h-4"
-                            />
+                            <div className="flex gap-1 flex-wrap">
+                              <label className="flex items-center gap-1 text-xs bg-orange-50 px-2 py-1 rounded cursor-pointer" title="Déjeuner">
+                                <input
+                                  type="checkbox"
+                                  checked={resource.prime_dejeuner ?? false}
+                                  onChange={(e) => {
+                                    const updated = allPersonnel.map(p => 
+                                      p.id === resource.id ? { ...p, prime_dejeuner: e.target.checked } : p
+                                    );
+                                    setFormData({ ...formData, personnel_present: updated });
+                                  }}
+                                  className="w-3 h-3"
+                                />
+                                <span>🌅</span>
+                              </label>
+                              <label className="flex items-center gap-1 text-xs bg-yellow-50 px-2 py-1 rounded cursor-pointer" title="Dîner">
+                                <input
+                                  type="checkbox"
+                                  checked={resource.prime_diner ?? false}
+                                  onChange={(e) => {
+                                    const updated = allPersonnel.map(p => 
+                                      p.id === resource.id ? { ...p, prime_diner: e.target.checked } : p
+                                    );
+                                    setFormData({ ...formData, personnel_present: updated });
+                                  }}
+                                  className="w-3 h-3"
+                                />
+                                <span>☀️</span>
+                              </label>
+                              <label className="flex items-center gap-1 text-xs bg-indigo-50 px-2 py-1 rounded cursor-pointer" title="Souper">
+                                <input
+                                  type="checkbox"
+                                  checked={resource.prime_souper ?? false}
+                                  onChange={(e) => {
+                                    const updated = allPersonnel.map(p => 
+                                      p.id === resource.id ? { ...p, prime_souper: e.target.checked } : p
+                                    );
+                                    setFormData({ ...formData, personnel_present: updated });
+                                  }}
+                                  className="w-3 h-3"
+                                />
+                                <span>🌙</span>
+                              </label>
+                            </div>
                           ) : (
-                            (resource.prime_repas ?? true) ? '🍽️' : '-'
+                            <div className="flex gap-1">
+                              {resource.prime_dejeuner && <span title="Déjeuner" className="text-xs bg-orange-100 px-1 rounded">🌅</span>}
+                              {resource.prime_diner && <span title="Dîner" className="text-xs bg-yellow-100 px-1 rounded">☀️</span>}
+                              {resource.prime_souper && <span title="Souper" className="text-xs bg-indigo-100 px-1 rounded">🌙</span>}
+                              {!resource.prime_dejeuner && !resource.prime_diner && !resource.prime_souper && <span className="text-gray-400">-</span>}
+                            </div>
                           )}
                         </td>
                         <td className="p-2">
