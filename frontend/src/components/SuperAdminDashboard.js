@@ -1229,6 +1229,9 @@ const SuperAdminDashboard = ({ onLogout }) => {
             </div>
           )}
         </div>
+      ) : activeTab === 'paie' ? (
+        /* ==================== ONGLET FOURNISSEURS DE PAIE ==================== */
+        <PayrollProvidersAdmin token={token} />
       ) : (
         <>
           {/* Statistiques globales - Responsive */}
