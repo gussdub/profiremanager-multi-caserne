@@ -58,6 +58,10 @@ const ModulePaie = ({ tenant }) => {
   // Matricules employés pour Nethris
   const [matriculesEmployes, setMatriculesEmployes] = useState({});
 
+  // Nouveau type d'heure
+  const [newEventType, setNewEventType] = useState({ code: '', label: '', category: 'heures' });
+  const [showEventTypeForm, setShowEventTypeForm] = useState(false);
+
   // Récupérer le token avec le bon préfixe tenant
   const token = localStorage.getItem(`${tenant}_token`);
 
