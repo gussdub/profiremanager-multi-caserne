@@ -898,6 +898,31 @@ const EquipementCard = ({ equipement, onEdit, onDelete, onMaintenance, onInspect
       {expanded && (
         <div style={{ padding: '1rem', borderTop: '1px solid #e5e7eb', background: '#f9fafb' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+            {/* Quantité - Toujours afficher */}
+            <div>
+              <Label style={{ fontSize: '0.75rem', color: '#6b7280' }}>Quantité en stock</Label>
+              <p style={{ color: '#374151', fontWeight: 'bold', fontSize: '1.125rem' }}>
+                {equipement.quantite || 0}
+                {equipement.quantite_minimum > 0 && equipement.quantite <= equipement.quantite_minimum && (
+                  <span style={{ color: '#dc2626', marginLeft: '0.5rem', fontSize: '0.75rem' }}>⚠️ Stock bas</span>
+                )}
+              </p>
+            </div>
+            {/* Gérer les quantités */}
+            <div>
+              <Label style={{ fontSize: '0.75rem', color: '#6b7280' }}>Type d'équipement</Label>
+              <p style={{ color: '#374151' }}>
+                {equipement.gerer_quantite ? (
+                  <span style={{ background: '#dcfce7', color: '#166534', padding: '0.25rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.875rem' }}>
+                    📦 Consommable (stock géré)
+                  </span>
+                ) : (
+                  <span style={{ background: '#f3f4f6', color: '#6b7280', padding: '0.25rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.875rem' }}>
+                    🔧 Non-consommable
+                  </span>
+                )}
+              </p>
+            </div>
             {equipement.description && (
               <div>
                 <Label style={{ fontSize: '0.75rem', color: '#6b7280' }}>Description</Label>
