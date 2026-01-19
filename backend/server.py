@@ -37083,8 +37083,10 @@ async def import_intervention_xml(
                         addr_parts.append(intervention_data["address_civic"])
                     if intervention_data.get("address_street"):
                         addr_parts.append(intervention_data["address_street"])
-                    if intervention_data.get("address_city"):
-                        addr_parts.append(intervention_data["address_city"])
+                    # Utiliser la municipalité si disponible, sinon address_city
+                    city_or_muni = intervention_data.get("municipality") or intervention_data.get("address_city")
+                    if city_or_muni:
+                        addr_parts.append(city_or_muni)
                     intervention_data["address_full"] = ", ".join(addr_parts)
                     
                     if existing:
