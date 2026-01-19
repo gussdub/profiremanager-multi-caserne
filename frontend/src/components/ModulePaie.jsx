@@ -1603,7 +1603,7 @@ const ModulePaie = ({ tenant }) => {
             onClick={() => setActiveTab(tab.id)}
             className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
               activeTab === tab.id
-                ? 'bg-emerald-600 text-white'
+                ? 'bg-red-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
             data-testid={`tab-${tab.id}`}
