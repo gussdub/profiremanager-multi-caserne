@@ -277,8 +277,27 @@ const PayrollProvidersAdmin = ({ token }) => {
       date_format: '%Y-%m-%d',
       decimal_separator: '.',
       include_header: true,
-      is_active: true
+      is_active: true,
+      api_available: false,
+      api_base_url: '',
+      api_auth_type: 'oauth2',
+      api_token_url: '',
+      api_upload_endpoint: '',
+      api_config_endpoint: '',
+      api_documentation_url: '',
+      api_required_fields: []
     });
+  };
+
+  const applyApiTemplate = (templateKey) => {
+    const template = apiTemplates[templateKey];
+    if (template) {
+      setFormData(prev => ({
+        ...prev,
+        ...template
+      }));
+      toast.success(`Configuration API ${templateKey} appliquée`);
+    }
   };
 
   const resetColumnForm = () => {
