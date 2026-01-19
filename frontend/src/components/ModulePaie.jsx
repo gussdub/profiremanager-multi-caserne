@@ -18,6 +18,7 @@ import {
   Link,
   Plus,
   Zap,
+  Edit,
   CheckCircle,
   XCircle
 } from 'lucide-react';
