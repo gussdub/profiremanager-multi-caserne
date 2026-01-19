@@ -5,7 +5,28 @@ Application de gestion de planning pour services d'incendie avec support multi-t
 
 ## Core Features Implemented
 
-### Système d'équipes de garde (Nouveau - Janvier 2026)
+### Module Paie (Nouveau - Janvier 2026)
+- **Backend**: 
+  - Modèles `ParametresPaie` et `FeuilleTemps`
+  - Endpoints CRUD `/paie/parametres` et `/paie/feuilles-temps`
+  - Calcul automatique des heures: gardes internes/externes, rappels, formations, interventions
+  - Logique de rémunération: temps plein (salaire fixe) vs temps partiel (heures payées)
+  - Heures minimum configurables pour rappels et gardes externes
+  - Support des heures supplémentaires (lié aux paramètres Planning)
+  - Primes de repas intégrées depuis le module Interventions
+- **Frontend**: 
+  - Composant `ModulePaie.jsx` avec onglets Feuilles de temps et Paramètres
+  - Génération de feuilles de temps par employé/période
+  - Workflow: Brouillon → Validé → Exporté
+  - Détail des entrées avec ventilation par type
+- **Types de garde**: Ajout du champ `montant_garde` pour prime fixe par garde
+
+### Correction Calcul Primes de Repas (Janvier 2026)
+- Calcul déplacé de `validate_intervention` vers `import-xml`
+- Nouveau champ `primes_suggerees` calculé à l'import
+- Permet la modification manuelle avant validation
+
+### Système d'équipes de garde (Janvier 2026)
 - **Backend**: Endpoints CRUD `/parametres/equipes-garde` et `/equipes-garde/equipe-du-jour`
 - **Frontend Paramètres**: Composant `ParametresEquipesGarde.jsx` pour configurer les rotations temps plein/temps partiel
 - **Frontend Personnel**: Champ "Équipe de garde" dans les fiches employés (visible selon configuration)
