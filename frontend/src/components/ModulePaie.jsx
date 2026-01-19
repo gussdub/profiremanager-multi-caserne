@@ -1296,7 +1296,7 @@ const ModulePaie = ({ tenant }) => {
           <Button 
             onClick={handleSendToApi} 
             disabled={loading}
-            style={{ background: '#10b981' }}
+            style={{ background: '#dc2626' }}
           >
             <Zap size={16} /> Envoyer via API
           </Button>
