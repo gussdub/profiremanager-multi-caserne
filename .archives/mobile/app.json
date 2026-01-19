@@ -54,7 +54,7 @@
       "color": "#D9072B"
     },
     "extra": {
-      "apiUrl": "https://incident-manager-12.preview.emergentagent.com",
+      "apiUrl": "https://sos-dispatch-1.preview.emergentagent.com",
       "eas": {
         "projectId": "2fe5afe1-2ea3-447c-9350-9e4920ec940c"
       }
