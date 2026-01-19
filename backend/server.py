@@ -39662,23 +39662,45 @@ async def test_api_connection(
         provider_name = provider.get("name", "").lower()
         
         if "nethris" in provider_name:
-            # Test connexion Nethris (OAuth2)
+            # Test connexion Nethris
+            # Nethris utilise Basic Auth avec un utilisateur service
+            # Format: user_code:password encodé en Base64
+            user_code = credentials.get("user_code", "")
+            company_code = credentials.get("company_code", "")
+            password = credentials.get("password", "")
+            
+            if not user_code or not company_code or not password:
+                raise HTTPException(status_code=400, detail="Credentials incomplets. Requis: user_code, company_code, password")
+            
+            # Nethris API utilise OAuth2 avec les credentials de l'utilisateur service
             token_url = provider.get("api_token_url", "https://api.nethris.com/OAuth/Token")
             
             async with httpx.AsyncClient() as client:
+                # Essayer d'obtenir un token OAuth2
                 response = await client.post(
                     token_url,
                     data={
-                        "grant_type": "client_credentials",
-                        "client_id": credentials.get("client_id"),
-                        "client_secret": credentials.get("client_secret")
+                        "grant_type": "password",
+                        "username": f"{company_code}/{user_code}",
+                        "password": password,
+                        "scope": "api"
+                    },
+                    headers={
+                        "Content-Type": "application/x-www-form-urlencoded"
                     },
                     timeout=30.0
                 )
                 
                 if response.status_code == 200:
+                    token_data = response.json()
                     result = "success"
-                    message = "Connexion réussie à Nethris"
+                    message = f"Connexion réussie à Nethris. Token valide pour {token_data.get('expires_in', 'N/A')} secondes."
+                elif response.status_code == 401:
+                    result = "error"
+                    message = "Authentification échouée. Vérifiez vos credentials (user_code, company_code, password)."
+                elif response.status_code == 400:
+                    result = "error"
+                    message = f"Requête invalide: {response.text[:200]}"
                 else:
                     result = "error"
                     message = f"Erreur Nethris: {response.status_code} - {response.text[:200]}"
