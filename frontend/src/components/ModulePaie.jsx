@@ -55,6 +55,9 @@ const ModulePaie = ({ tenant }) => {
   // Nouveau mapping
   const [newMapping, setNewMapping] = useState({ internal_event_type: '', external_pay_code: '', description: '' });
 
+  // Matricules employés pour Nethris
+  const [matriculesEmployes, setMatriculesEmployes] = useState({});
+
   // Récupérer le token avec le bon préfixe tenant
   const token = localStorage.getItem(`${tenant}_token`);
 
