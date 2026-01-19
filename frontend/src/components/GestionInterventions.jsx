@@ -3429,12 +3429,23 @@ const TabHistorique = ({ user, tenantSlug, toast }) => {
                       </span>
                     </td>
                     <td className="p-3 border-b">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); setSelectedIntervention(intervention); }}
-                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                      >
-                        👁️ Consulter
-                      </button>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setSelectedIntervention(intervention); }}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        >
+                          👁️ Consulter
+                        </button>
+                        {isAdmin && intervention.status === 'signed' && (
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleUnlock(intervention.id); }}
+                            disabled={unlocking === intervention.id}
+                            className="text-orange-600 hover:text-orange-800 text-sm font-medium disabled:opacity-50"
+                          >
+                            {unlocking === intervention.id ? '⏳' : '🔓'} Déverrouiller
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
