@@ -974,6 +974,17 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
               settings={interventionSettings}
             />
           )}
+          
+          {activeSection === 'facturation' && (
+            <SectionFacturation 
+              formData={formData} 
+              setFormData={setFormData}
+              editMode={editMode && !isLocked && !readOnly}
+              tenantSlug={tenantSlug}
+              getToken={getToken}
+              toast={toast}
+            />
+          )}
         </div>
 
         {/* Footer Actions */}
