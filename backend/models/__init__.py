@@ -61,6 +61,17 @@ from .formation import (
     ValidationCompetenceCreate
 )
 
+# Paie
+from .paie import (
+    ParametresPaie,
+    FeuilleTemps,
+    TenantPayrollConfig,
+    PayrollProvider,
+    ProviderColumnDefinition,
+    ClientPayCodeMapping,
+    PayrollExportConfig
+)
+
 __all__ = [
     # Tenant
     'Tenant', 'TenantCreate', 'SuperAdmin', 'SuperAdminLogin', 'AuditLog',
@@ -78,5 +89,9 @@ __all__ = [
     'InscriptionFormation', 'InscriptionFormationCreate', 'InscriptionFormationUpdate',
     'Competence', 'CompetenceCreate', 'CompetenceUpdate',
     'Grade', 'GradeCreate', 'GradeUpdate',
-    'ParametresFormations', 'ValidationCompetence', 'ValidationCompetenceCreate'
+    'ParametresFormations', 'ValidationCompetence', 'ValidationCompetenceCreate',
+    # Paie
+    'ParametresPaie', 'FeuilleTemps', 'TenantPayrollConfig',
+    'PayrollProvider', 'ProviderColumnDefinition', 'ClientPayCodeMapping',
+    'PayrollExportConfig'
 ]
