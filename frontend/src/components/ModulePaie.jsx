@@ -1511,10 +1511,12 @@ const ModulePaie = ({ tenant }) => {
                       <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Description</th>
                       <th style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #e5e7eb' }}>Heures</th>
                       <th style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #e5e7eb' }}>Montant</th>
+                      {editMode && <th style={{ padding: '8px', textAlign: 'center', borderBottom: '1px solid #e5e7eb' }}>Actions</th>}
                     </tr>
                   </thead>
                   <tbody>
-                    {selectedFeuille.lignes?.map((ligne, idx) => (
+                    {/* Mode lecture */}
+                    {!editMode && selectedFeuille.lignes?.map((ligne, idx) => (
                       <tr key={idx} style={{ borderBottom: '1px solid #e5e7eb' }}>
                         <td style={{ padding: '8px' }}>{ligne.date}</td>
                         <td style={{ padding: '8px' }}>
@@ -1543,18 +1545,147 @@ const ModulePaie = ({ tenant }) => {
                         </td>
                       </tr>
                     ))}
+                    
+                    {/* Mode édition */}
+                    {editMode && editedLignes.map((ligne, idx) => (
+                      <tr key={ligne.id || idx} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                        <td style={{ padding: '8px' }}>{ligne.date}</td>
+                        <td style={{ padding: '8px' }}>
+                          <select 
+                            value={ligne.type}
+                            onChange={(e) => handleUpdateLigne(ligne.id, 'type', e.target.value)}
+                            style={{ padding: '4px', borderRadius: '4px', border: '1px solid #d1d5db', fontSize: '0.75rem' }}
+                          >
+                            <option value="garde_interne">Garde interne</option>
+                            <option value="garde_externe">Garde externe</option>
+                            <option value="rappel">Rappel</option>
+                            <option value="formation">Formation</option>
+                            <option value="intervention">Intervention</option>
+                            <option value="prime_repas">Prime repas</option>
+                            <option value="autre">Autre</option>
+                          </select>
+                        </td>
+                        <td style={{ padding: '8px' }}>
+                          <Input
+                            value={ligne.description || ''}
+                            onChange={(e) => handleUpdateLigne(ligne.id, 'description', e.target.value)}
+                            style={{ padding: '4px', fontSize: '0.75rem' }}
+                          />
+                        </td>
+                        <td style={{ padding: '8px' }}>
+                          <Input
+                            type="number"
+                            step="0.5"
+                            value={ligne.heures_payees || 0}
+                            onChange={(e) => handleUpdateLigne(ligne.id, 'heures_payees', parseFloat(e.target.value) || 0)}
+                            style={{ width: '70px', padding: '4px', fontSize: '0.75rem', textAlign: 'right' }}
+                          />
+                        </td>
+                        <td style={{ padding: '8px' }}>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={ligne.montant || 0}
+                            onChange={(e) => handleUpdateLigne(ligne.id, 'montant', parseFloat(e.target.value) || 0)}
+                            style={{ width: '80px', padding: '4px', fontSize: '0.75rem', textAlign: 'right' }}
+                          />
+                        </td>
+                        <td style={{ padding: '8px', textAlign: 'center' }}>
+                          <Button variant="ghost" size="sm" onClick={() => handleDeleteLigne(ligne.id)}>
+                            <Trash2 size={14} style={{ color: '#ef4444' }} />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                    
+                    {/* Formulaire ajout nouvelle ligne (mode édition) */}
+                    {editMode && (
+                      <tr style={{ background: '#f8fafc' }}>
+                        <td style={{ padding: '8px' }}>
+                          <Input
+                            type="date"
+                            value={newLigne.date}
+                            onChange={(e) => setNewLigne({...newLigne, date: e.target.value})}
+                            style={{ padding: '4px', fontSize: '0.75rem' }}
+                          />
+                        </td>
+                        <td style={{ padding: '8px' }}>
+                          <select 
+                            value={newLigne.type}
+                            onChange={(e) => setNewLigne({...newLigne, type: e.target.value})}
+                            style={{ padding: '4px', borderRadius: '4px', border: '1px solid #d1d5db', fontSize: '0.75rem' }}
+                          >
+                            <option value="">-- Type --</option>
+                            <option value="garde_interne">Garde interne</option>
+                            <option value="garde_externe">Garde externe</option>
+                            <option value="rappel">Rappel</option>
+                            <option value="formation">Formation</option>
+                            <option value="intervention">Intervention</option>
+                            <option value="prime_repas">Prime repas</option>
+                            <option value="autre">Autre</option>
+                          </select>
+                        </td>
+                        <td style={{ padding: '8px' }}>
+                          <Input
+                            value={newLigne.description}
+                            onChange={(e) => setNewLigne({...newLigne, description: e.target.value})}
+                            placeholder="Description"
+                            style={{ padding: '4px', fontSize: '0.75rem' }}
+                          />
+                        </td>
+                        <td style={{ padding: '8px' }}>
+                          <Input
+                            type="number"
+                            step="0.5"
+                            value={newLigne.heures_payees}
+                            onChange={(e) => setNewLigne({...newLigne, heures_payees: e.target.value})}
+                            style={{ width: '70px', padding: '4px', fontSize: '0.75rem', textAlign: 'right' }}
+                          />
+                        </td>
+                        <td style={{ padding: '8px' }}>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={newLigne.montant}
+                            onChange={(e) => setNewLigne({...newLigne, montant: e.target.value})}
+                            style={{ width: '80px', padding: '4px', fontSize: '0.75rem', textAlign: 'right' }}
+                          />
+                        </td>
+                        <td style={{ padding: '8px', textAlign: 'center' }}>
+                          <Button size="sm" onClick={handleAddLigne}>
+                            <Plus size={14} />
+                          </Button>
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
 
             <div style={{ padding: '16px 24px', borderTop: '1px solid #e5e7eb', display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-              {selectedFeuille.statut === 'brouillon' && (
-                <Button onClick={() => handleValiderFeuille(selectedFeuille.id)}>
-                  <Check size={16} /> Valider
-                </Button>
+              {selectedFeuille.statut === 'brouillon' && !editMode && (
+                <>
+                  <Button variant="outline" onClick={handleStartEdit} data-testid="edit-feuille-btn">
+                    <Edit size={16} /> Modifier
+                  </Button>
+                  <Button onClick={() => handleValiderFeuille(selectedFeuille.id)}>
+                    <Check size={16} /> Valider
+                  </Button>
+                </>
               )}
-              <Button variant="outline" onClick={() => setShowDetail(false)}>Fermer</Button>
+              {editMode && (
+                <>
+                  <Button variant="outline" onClick={() => setEditMode(false)}>
+                    Annuler
+                  </Button>
+                  <Button onClick={handleSaveFeuille} disabled={loading}>
+                    {loading ? <RefreshCw className="animate-spin" size={16} /> : <Check size={16} />}
+                    <span style={{ marginLeft: '8px' }}>Enregistrer</span>
+                  </Button>
+                </>
+              )}
+              {!editMode && <Button variant="outline" onClick={() => setShowDetail(false)}>Fermer</Button>}
             </div>
           </div>
         </div>
