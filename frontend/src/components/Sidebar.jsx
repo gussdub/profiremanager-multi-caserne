@@ -342,7 +342,7 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
     { id: 'actifs', label: 'Gestion des Actifs', icon: '🚒', roles: ['admin', 'superviseur', 'employe', 'pompier'] },
     { id: 'interventions', label: 'Interventions', icon: '🚨', roles: ['admin', 'superviseur'] },
     { id: 'paie', label: 'Paie', icon: '💰', roles: ['admin', 'superviseur'] },
-    { id: 'planning', label: 'Planning', icon: '📅', roles: ['admin', 'superviseur', 'employe', 'pompier'] },
+    { id: 'planning', label: 'Horaire', icon: '📅', roles: ['admin', 'superviseur', 'employe', 'pompier'] },
     { id: 'disponibilites', label: 'Mes disponibilités', icon: '📋', roles: ['admin', 'superviseur', 'employe', 'pompier'] },
     { id: 'remplacements', label: 'Remplacements', icon: '🔄', roles: ['admin', 'superviseur', 'employe', 'pompier'] },
     { id: 'formations', label: 'Formations', icon: '📚', roles: ['admin', 'superviseur', 'employe', 'pompier'] },
