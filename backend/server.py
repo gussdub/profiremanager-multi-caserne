@@ -38790,8 +38790,12 @@ async def generer_feuilles_temps_lot(
     if not periode_debut or not periode_fin:
         raise HTTPException(status_code=400, detail="periode_debut et periode_fin sont requis")
     
-    # Récupérer les paramètres
-    params_paie = await db.parametres_paie.find_one({"tenant_id": tenant["id"]}) or {}
+    # Récupérer les paramètres de paie (dans collection parametres avec type=paie ou parametres_paie)
+    params_paie = await db.parametres.find_one({"tenant_id": tenant["id"], "type": "paie"})
+    if not params_paie:
+        params_paie = await db.parametres_paie.find_one({"tenant_id": tenant["id"]})
+    params_paie = params_paie or {}
+    
     params_planning = await db.parametres_attribution.find_one({"tenant_id": tenant["id"]}) or {}
     
     # Récupérer tous les employés actifs
