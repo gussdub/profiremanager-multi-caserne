@@ -37773,6 +37773,714 @@ async def assign_intervention_reporters(
 # ==================== FIN MODULE GESTION DES INTERVENTIONS ====================
 
 
+# ==================== MODULE PAIE ====================
+
+class ParametresPaie(BaseModel):
+    """Paramètres de paie basés sur la convention collective du tenant"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    
+    # Période de paie
+    periode_paie_jours: int = 14  # 7, 14, 30 jours
+    jour_debut_periode: str = "lundi"  # lundi, dimanche, etc.
+    
+    # Configuration par type de présence
+    # Garde interne: déjà payé via salaire, stats seulement
+    garde_interne_taux: float = 0.0  # Multiplicateur (0 = pas de paiement supplémentaire)
+    garde_interne_minimum_heures: float = 0.0
+    
+    # Garde externe (astreinte à domicile)
+    garde_externe_taux: float = 1.0  # Multiplicateur du taux horaire
+    garde_externe_minimum_heures: float = 3.0  # Minimum payé même si intervention plus courte
+    garde_externe_montant_fixe: float = 0.0  # Montant fixe par garde (alternative au taux)
+    
+    # Rappel (hors garde planifiée)
+    rappel_taux: float = 1.0  # Multiplicateur du taux horaire
+    rappel_minimum_heures: float = 3.0  # Minimum payé
+    
+    # Formations
+    formation_taux: float = 1.0  # Multiplicateur pour les formations
+    formation_taux_specifique: bool = False  # Si True, utiliser un taux différent
+    formation_taux_horaire: float = 0.0  # Taux horaire spécifique pour formations
+    
+    # Heures supplémentaires (lié au paramètre Planning)
+    heures_sup_seuil_hebdo: int = 40  # Seuil pour heures supplémentaires
+    heures_sup_taux: float = 1.5  # Multiplicateur pour heures sup
+    
+    # Primes de repas (lié aux paramètres interventions)
+    inclure_primes_repas: bool = True
+    
+    # Formats d'export
+    formats_export_actifs: List[str] = ["pdf", "excel"]  # pdf, excel, employeur_d, nethris, mypeopledoc
+    
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class FeuilleTemps(BaseModel):
+    """Feuille de temps générée pour un employé sur une période"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    user_id: str
+    
+    # Période
+    annee: int
+    periode_debut: str  # Format YYYY-MM-DD
+    periode_fin: str  # Format YYYY-MM-DD
+    numero_periode: int  # Numéro de la période dans l'année
+    
+    # Informations employé (snapshot au moment de la génération)
+    employe_nom: str
+    employe_prenom: str
+    employe_numero: str
+    employe_grade: str
+    employe_type_emploi: str  # temps_plein, temps_partiel
+    employe_taux_horaire: float
+    
+    # Détails des heures
+    lignes: List[dict] = []  # Liste des entrées détaillées
+    # Chaque ligne: {date, type, description, heures_brutes, heures_payees, taux, montant, source_id, source_type}
+    
+    # Totaux calculés
+    total_heures_gardes_internes: float = 0.0
+    total_heures_gardes_externes: float = 0.0
+    total_heures_rappels: float = 0.0
+    total_heures_formations: float = 0.0
+    total_heures_interventions: float = 0.0
+    total_heures_supplementaires: float = 0.0
+    
+    total_heures_payees: float = 0.0
+    total_montant_brut: float = 0.0
+    total_primes_repas: float = 0.0
+    total_montant_final: float = 0.0
+    
+    # Workflow
+    statut: str = "brouillon"  # brouillon, valide, exporte
+    
+    # Audit
+    genere_par: str
+    genere_le: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    valide_par: Optional[str] = None
+    valide_le: Optional[datetime] = None
+    exporte_le: Optional[datetime] = None
+    format_export: Optional[str] = None
+    
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+# ==================== ENDPOINTS PARAMÈTRES PAIE ====================
+
+@api_router.get("/{tenant_slug}/paie/parametres")
+async def get_parametres_paie(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère les paramètres de paie du tenant"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    params = await db.parametres_paie.find_one({"tenant_id": tenant["id"]}, {"_id": 0})
+    
+    if not params:
+        # Créer les paramètres par défaut
+        default_params = ParametresPaie(tenant_id=tenant["id"])
+        await db.parametres_paie.insert_one(default_params.dict())
+        params = default_params.dict()
+        params.pop("_id", None)
+    
+    return params
+
+
+@api_router.put("/{tenant_slug}/paie/parametres")
+async def update_parametres_paie(
+    tenant_slug: str,
+    parametres: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour les paramètres de paie du tenant"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    parametres["updated_at"] = datetime.now(timezone.utc)
+    parametres["tenant_id"] = tenant["id"]
+    
+    existing = await db.parametres_paie.find_one({"tenant_id": tenant["id"]})
+    
+    if existing:
+        await db.parametres_paie.update_one(
+            {"tenant_id": tenant["id"]},
+            {"$set": parametres}
+        )
+    else:
+        parametres["id"] = str(uuid.uuid4())
+        parametres["created_at"] = datetime.now(timezone.utc)
+        await db.parametres_paie.insert_one(parametres)
+    
+    return {"success": True}
+
+
+# ==================== GÉNÉRATION FEUILLES DE TEMPS ====================
+
+async def calculer_feuille_temps(
+    tenant_id: str,
+    user_id: str,
+    periode_debut: str,
+    periode_fin: str,
+    params_paie: dict,
+    params_planning: dict,
+    current_user_id: str
+) -> dict:
+    """
+    Calcule la feuille de temps pour un employé sur une période donnée.
+    Agrège: gardes planifiées, interventions, formations.
+    """
+    # Récupérer l'employé
+    employe = await db.users.find_one({"id": user_id}, {"_id": 0, "mot_de_passe_hash": 0})
+    if not employe:
+        raise HTTPException(status_code=404, detail="Employé non trouvé")
+    
+    lignes = []
+    totaux = {
+        "gardes_internes": 0.0,
+        "gardes_externes": 0.0,
+        "rappels": 0.0,
+        "formations": 0.0,
+        "interventions": 0.0,
+        "heures_sup": 0.0,
+        "heures_payees": 0.0,
+        "montant_brut": 0.0,
+        "primes_repas": 0.0
+    }
+    
+    taux_horaire = employe.get("taux_horaire", 0.0)
+    type_emploi = employe.get("type_emploi", "temps_plein")
+    est_temps_plein = type_emploi == "temps_plein"
+    
+    # Autorisation heures supplémentaires (depuis paramètres planning)
+    heures_sup_autorisees = params_planning.get("activer_gestion_heures_sup", False)
+    
+    # 1. GARDES PLANIFIÉES (du module Planning)
+    assignations = await db.assignations.find({
+        "tenant_id": tenant_id,
+        "user_id": user_id,
+        "date": {"$gte": periode_debut, "$lte": periode_fin}
+    }).to_list(1000)
+    
+    types_garde_map = {}
+    types_garde = await db.types_garde.find({"tenant_id": tenant_id}).to_list(100)
+    for tg in types_garde:
+        types_garde_map[tg["id"]] = tg
+    
+    for assignation in assignations:
+        type_garde = types_garde_map.get(assignation.get("type_garde_id"))
+        if not type_garde:
+            continue
+        
+        duree_heures = type_garde.get("duree_heures", 0)
+        est_garde_externe = type_garde.get("est_garde_externe", False)
+        
+        if est_garde_externe:
+            # Garde externe: rémunérée
+            taux = params_paie.get("garde_externe_taux", 1.0)
+            minimum = params_paie.get("garde_externe_minimum_heures", 0)
+            heures_payees = max(duree_heures, minimum) if duree_heures > 0 else 0
+            montant = heures_payees * taux_horaire * taux
+            
+            # Ajouter le montant fixe de garde si configuré
+            montant_fixe = type_garde.get("montant_garde", 0) or params_paie.get("garde_externe_montant_fixe", 0)
+            montant += montant_fixe
+            
+            totaux["gardes_externes"] += duree_heures
+            totaux["heures_payees"] += heures_payees
+            totaux["montant_brut"] += montant
+            
+            lignes.append({
+                "date": assignation.get("date"),
+                "type": "garde_externe",
+                "description": f"Garde externe - {type_garde.get('nom')}",
+                "heures_brutes": duree_heures,
+                "heures_payees": heures_payees,
+                "taux": taux,
+                "montant": montant,
+                "source_id": assignation.get("id"),
+                "source_type": "assignation"
+            })
+        else:
+            # Garde interne: comptabilisée mais pas forcément payée en plus
+            # Pour temps plein: déjà inclus dans le salaire
+            # Pour temps partiel: payé
+            if est_temps_plein:
+                taux = params_paie.get("garde_interne_taux", 0.0)
+            else:
+                taux = 1.0  # Temps partiel payé normalement
+            
+            heures_payees = duree_heures
+            montant = heures_payees * taux_horaire * taux
+            
+            totaux["gardes_internes"] += duree_heures
+            if taux > 0:
+                totaux["heures_payees"] += heures_payees
+                totaux["montant_brut"] += montant
+            
+            lignes.append({
+                "date": assignation.get("date"),
+                "type": "garde_interne",
+                "description": f"Garde interne - {type_garde.get('nom')}",
+                "heures_brutes": duree_heures,
+                "heures_payees": heures_payees if taux > 0 else 0,
+                "taux": taux,
+                "montant": montant,
+                "source_id": assignation.get("id"),
+                "source_type": "assignation",
+                "note": "Inclus dans salaire" if taux == 0 else None
+            })
+    
+    # 2. INTERVENTIONS (présence aux interventions)
+    interventions = await db.interventions.find({
+        "tenant_id": tenant_id,
+        "status": "signed",
+        "xml_time_call_received": {"$gte": periode_debut, "$lte": periode_fin + "T23:59:59"}
+    }).to_list(1000)
+    
+    for intervention in interventions:
+        personnel_present = intervention.get("personnel_present", [])
+        for p in personnel_present:
+            if p.get("user_id") != user_id:
+                continue
+            
+            # Calculer la durée de présence
+            time_start = intervention.get("xml_time_call_received")
+            time_end = intervention.get("xml_time_terminated") or intervention.get("xml_time_call_closed")
+            
+            if not time_start or not time_end:
+                continue
+            
+            try:
+                if isinstance(time_start, str):
+                    start_dt = datetime.fromisoformat(time_start.replace('Z', '+00:00'))
+                else:
+                    start_dt = time_start
+                if isinstance(time_end, str):
+                    end_dt = datetime.fromisoformat(time_end.replace('Z', '+00:00'))
+                else:
+                    end_dt = time_end
+                
+                duree_heures = (end_dt - start_dt).total_seconds() / 3600
+            except:
+                continue
+            
+            # Vérifier si l'employé était en garde interne ce jour-là
+            date_intervention = start_dt.strftime("%Y-%m-%d")
+            assignation_jour = next(
+                (a for a in assignations 
+                 if a.get("date") == date_intervention 
+                 and not types_garde_map.get(a.get("type_garde_id"), {}).get("est_garde_externe", False)),
+                None
+            )
+            
+            statut_presence = p.get("statut", "present")
+            
+            if assignation_jour and statut_presence == "present":
+                # Était en garde interne - intervention comptée dans stats mais pas payée en plus
+                totaux["interventions"] += duree_heures
+                lignes.append({
+                    "date": date_intervention,
+                    "type": "intervention_garde_interne",
+                    "description": f"Intervention #{intervention.get('external_call_id')} - {intervention.get('type_intervention', 'N/A')}",
+                    "heures_brutes": round(duree_heures, 2),
+                    "heures_payees": 0,
+                    "taux": 0,
+                    "montant": 0,
+                    "source_id": intervention.get("id"),
+                    "source_type": "intervention",
+                    "note": "Déjà en garde interne - comptabilisé dans statistiques"
+                })
+            elif statut_presence in ["rappele", "present"]:
+                # Rappel ou garde externe - payé
+                taux = params_paie.get("rappel_taux", 1.0)
+                minimum = params_paie.get("rappel_minimum_heures", 3.0)
+                heures_payees = max(duree_heures, minimum)
+                montant = heures_payees * taux_horaire * taux
+                
+                totaux["rappels"] += duree_heures
+                totaux["heures_payees"] += heures_payees
+                totaux["montant_brut"] += montant
+                
+                lignes.append({
+                    "date": date_intervention,
+                    "type": "rappel" if statut_presence == "rappele" else "intervention",
+                    "description": f"Intervention #{intervention.get('external_call_id')} - {intervention.get('type_intervention', 'N/A')}",
+                    "heures_brutes": round(duree_heures, 2),
+                    "heures_payees": round(heures_payees, 2),
+                    "taux": taux,
+                    "montant": round(montant, 2),
+                    "source_id": intervention.get("id"),
+                    "source_type": "intervention"
+                })
+            
+            # Primes de repas
+            if params_paie.get("inclure_primes_repas", True):
+                primes_repas_montant = 0
+                params_interventions = await db.intervention_settings.find_one({"tenant_id": tenant_id})
+                if params_interventions:
+                    if p.get("prime_dejeuner"):
+                        primes_repas_montant += params_interventions.get("repas_dejeuner", {}).get("montant", 0)
+                    if p.get("prime_diner"):
+                        primes_repas_montant += params_interventions.get("repas_diner", {}).get("montant", 0)
+                    if p.get("prime_souper"):
+                        primes_repas_montant += params_interventions.get("repas_souper", {}).get("montant", 0)
+                
+                if primes_repas_montant > 0:
+                    totaux["primes_repas"] += primes_repas_montant
+                    lignes.append({
+                        "date": date_intervention,
+                        "type": "prime_repas",
+                        "description": f"Primes repas - Intervention #{intervention.get('external_call_id')}",
+                        "heures_brutes": 0,
+                        "heures_payees": 0,
+                        "taux": 0,
+                        "montant": primes_repas_montant,
+                        "source_id": intervention.get("id"),
+                        "source_type": "intervention"
+                    })
+    
+    # 3. FORMATIONS
+    inscriptions = await db.inscriptions_formations.find({
+        "tenant_id": tenant_id,
+        "user_id": user_id,
+        "statut": {"$in": ["present", "complete"]}
+    }).to_list(500)
+    
+    for inscription in inscriptions:
+        formation = await db.formations.find_one({"id": inscription.get("formation_id")})
+        if not formation:
+            continue
+        
+        # Vérifier si la formation est dans la période
+        date_formation = formation.get("date_debut", "")
+        if not (periode_debut <= date_formation <= periode_fin):
+            continue
+        
+        duree_heures = inscription.get("heures_creditees", 0) or formation.get("duree_heures", 0)
+        
+        # Taux pour formations
+        if params_paie.get("formation_taux_specifique", False):
+            taux_formation = params_paie.get("formation_taux_horaire", taux_horaire)
+            montant = duree_heures * taux_formation
+        else:
+            taux = params_paie.get("formation_taux", 1.0)
+            montant = duree_heures * taux_horaire * taux
+        
+        totaux["formations"] += duree_heures
+        totaux["heures_payees"] += duree_heures
+        totaux["montant_brut"] += montant
+        
+        lignes.append({
+            "date": date_formation,
+            "type": "formation",
+            "description": f"Formation - {formation.get('nom')}",
+            "heures_brutes": duree_heures,
+            "heures_payees": duree_heures,
+            "taux": params_paie.get("formation_taux", 1.0),
+            "montant": round(montant, 2),
+            "source_id": formation.get("id"),
+            "source_type": "formation"
+        })
+    
+    # 4. CALCUL HEURES SUPPLÉMENTAIRES (si autorisées)
+    if heures_sup_autorisees:
+        seuil = params_paie.get("heures_sup_seuil_hebdo", 40)
+        taux_sup = params_paie.get("heures_sup_taux", 1.5)
+        
+        # Regrouper par semaine pour calculer les heures sup
+        heures_par_semaine = {}
+        for ligne in lignes:
+            if ligne.get("heures_payees", 0) > 0:
+                date_str = ligne.get("date", "")
+                if date_str:
+                    try:
+                        dt = datetime.strptime(date_str, "%Y-%m-%d")
+                        # Trouver le lundi de la semaine
+                        lundi = dt - timedelta(days=dt.weekday())
+                        semaine_key = lundi.strftime("%Y-%m-%d")
+                        heures_par_semaine[semaine_key] = heures_par_semaine.get(semaine_key, 0) + ligne.get("heures_payees", 0)
+                    except:
+                        pass
+        
+        for semaine, heures in heures_par_semaine.items():
+            if heures > seuil:
+                heures_sup = heures - seuil
+                montant_sup = heures_sup * taux_horaire * (taux_sup - 1)  # Différentiel seulement
+                totaux["heures_sup"] += heures_sup
+                totaux["montant_brut"] += montant_sup
+                
+                lignes.append({
+                    "date": semaine,
+                    "type": "heures_supplementaires",
+                    "description": f"Heures supplémentaires semaine du {semaine}",
+                    "heures_brutes": heures_sup,
+                    "heures_payees": heures_sup,
+                    "taux": taux_sup - 1,  # Différentiel
+                    "montant": round(montant_sup, 2),
+                    "source_id": None,
+                    "source_type": "calcul"
+                })
+    
+    # Trier les lignes par date
+    lignes.sort(key=lambda x: x.get("date", ""))
+    
+    # Calculer le numéro de période
+    try:
+        debut_dt = datetime.strptime(periode_debut, "%Y-%m-%d")
+        debut_annee = datetime(debut_dt.year, 1, 1)
+        jours_depuis_debut = (debut_dt - debut_annee).days
+        numero_periode = (jours_depuis_debut // params_paie.get("periode_paie_jours", 14)) + 1
+    except:
+        numero_periode = 1
+    
+    # Construire la feuille de temps
+    feuille = {
+        "id": str(uuid.uuid4()),
+        "tenant_id": tenant_id,
+        "user_id": user_id,
+        "annee": datetime.strptime(periode_debut, "%Y-%m-%d").year,
+        "periode_debut": periode_debut,
+        "periode_fin": periode_fin,
+        "numero_periode": numero_periode,
+        
+        "employe_nom": employe.get("nom", ""),
+        "employe_prenom": employe.get("prenom", ""),
+        "employe_numero": employe.get("numero_employe", ""),
+        "employe_grade": employe.get("grade", ""),
+        "employe_type_emploi": type_emploi,
+        "employe_taux_horaire": taux_horaire,
+        
+        "lignes": lignes,
+        
+        "total_heures_gardes_internes": round(totaux["gardes_internes"], 2),
+        "total_heures_gardes_externes": round(totaux["gardes_externes"], 2),
+        "total_heures_rappels": round(totaux["rappels"], 2),
+        "total_heures_formations": round(totaux["formations"], 2),
+        "total_heures_interventions": round(totaux["interventions"], 2),
+        "total_heures_supplementaires": round(totaux["heures_sup"], 2),
+        
+        "total_heures_payees": round(totaux["heures_payees"], 2),
+        "total_montant_brut": round(totaux["montant_brut"], 2),
+        "total_primes_repas": round(totaux["primes_repas"], 2),
+        "total_montant_final": round(totaux["montant_brut"] + totaux["primes_repas"], 2),
+        
+        "statut": "brouillon",
+        "genere_par": current_user_id,
+        "genere_le": datetime.now(timezone.utc),
+        
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc)
+    }
+    
+    return feuille
+
+
+@api_router.post("/{tenant_slug}/paie/feuilles-temps/generer")
+async def generer_feuille_temps(
+    tenant_slug: str,
+    params: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Génère une feuille de temps pour un employé sur une période"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    user_id = params.get("user_id")
+    periode_debut = params.get("periode_debut")
+    periode_fin = params.get("periode_fin")
+    
+    if not user_id or not periode_debut or not periode_fin:
+        raise HTTPException(status_code=400, detail="user_id, periode_debut et periode_fin sont requis")
+    
+    # Récupérer les paramètres
+    params_paie = await db.parametres_paie.find_one({"tenant_id": tenant["id"]}) or {}
+    params_planning = await db.parametres_attribution.find_one({"tenant_id": tenant["id"]}) or {}
+    
+    # Vérifier si une feuille existe déjà pour cette période
+    existing = await db.feuilles_temps.find_one({
+        "tenant_id": tenant["id"],
+        "user_id": user_id,
+        "periode_debut": periode_debut,
+        "periode_fin": periode_fin
+    })
+    
+    if existing and existing.get("statut") != "brouillon":
+        raise HTTPException(
+            status_code=400, 
+            detail="Une feuille de temps validée existe déjà pour cette période. Utilisez la regénération."
+        )
+    
+    # Calculer la feuille
+    feuille = await calculer_feuille_temps(
+        tenant_id=tenant["id"],
+        user_id=user_id,
+        periode_debut=periode_debut,
+        periode_fin=periode_fin,
+        params_paie=params_paie,
+        params_planning=params_planning,
+        current_user_id=current_user.id
+    )
+    
+    # Supprimer l'ancienne feuille brouillon si elle existe
+    if existing:
+        await db.feuilles_temps.delete_one({"id": existing["id"]})
+    
+    # Enregistrer la nouvelle feuille
+    await db.feuilles_temps.insert_one(feuille)
+    
+    # Retourner sans _id
+    feuille.pop("_id", None)
+    
+    return {"success": True, "feuille": feuille}
+
+
+@api_router.get("/{tenant_slug}/paie/feuilles-temps")
+async def lister_feuilles_temps(
+    tenant_slug: str,
+    annee: Optional[int] = None,
+    user_id: Optional[str] = None,
+    statut: Optional[str] = None,
+    limit: int = 100,
+    current_user: User = Depends(get_current_user)
+):
+    """Liste les feuilles de temps du tenant"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    query = {"tenant_id": tenant["id"]}
+    
+    if annee:
+        query["annee"] = annee
+    if user_id:
+        query["user_id"] = user_id
+    if statut:
+        query["statut"] = statut
+    
+    feuilles = await db.feuilles_temps.find(
+        query, {"_id": 0}
+    ).sort([("annee", -1), ("periode_debut", -1)]).limit(limit).to_list(limit)
+    
+    return {"feuilles": feuilles}
+
+
+@api_router.get("/{tenant_slug}/paie/feuilles-temps/{feuille_id}")
+async def get_feuille_temps(
+    tenant_slug: str,
+    feuille_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère une feuille de temps spécifique"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    feuille = await db.feuilles_temps.find_one(
+        {"id": feuille_id, "tenant_id": tenant["id"]},
+        {"_id": 0}
+    )
+    
+    if not feuille:
+        raise HTTPException(status_code=404, detail="Feuille de temps non trouvée")
+    
+    return feuille
+
+
+@api_router.post("/{tenant_slug}/paie/feuilles-temps/{feuille_id}/valider")
+async def valider_feuille_temps(
+    tenant_slug: str,
+    feuille_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Valide une feuille de temps (passage brouillon -> validé)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent valider les feuilles de temps")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    feuille = await db.feuilles_temps.find_one({
+        "id": feuille_id,
+        "tenant_id": tenant["id"]
+    })
+    
+    if not feuille:
+        raise HTTPException(status_code=404, detail="Feuille de temps non trouvée")
+    
+    if feuille.get("statut") != "brouillon":
+        raise HTTPException(status_code=400, detail="Seules les feuilles en brouillon peuvent être validées")
+    
+    await db.feuilles_temps.update_one(
+        {"id": feuille_id},
+        {"$set": {
+            "statut": "valide",
+            "valide_par": current_user.id,
+            "valide_le": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    return {"success": True}
+
+
+@api_router.delete("/{tenant_slug}/paie/feuilles-temps/{feuille_id}")
+async def supprimer_feuille_temps(
+    tenant_slug: str,
+    feuille_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprime une feuille de temps (brouillon uniquement)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent supprimer les feuilles de temps")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    feuille = await db.feuilles_temps.find_one({
+        "id": feuille_id,
+        "tenant_id": tenant["id"]
+    })
+    
+    if not feuille:
+        raise HTTPException(status_code=404, detail="Feuille de temps non trouvée")
+    
+    if feuille.get("statut") != "brouillon":
+        raise HTTPException(status_code=400, detail="Seules les feuilles en brouillon peuvent être supprimées")
+    
+    await db.feuilles_temps.delete_one({"id": feuille_id})
+    
+    return {"success": True}
+
+
+# ==================== FIN MODULE PAIE ====================
+
+
 # Include routers in the main app
 app.include_router(api_router)
 app.include_router(pwa_router, prefix="/api")
