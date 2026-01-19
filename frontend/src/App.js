@@ -1289,6 +1289,12 @@ const AppLayout = () => {
             <GestionInterventions user={user} tenantSlug={tenantSlug} />
           </Suspense>
         );
+      case 'paie':
+        return (
+          <Suspense fallback={<LoadingComponent />}>
+            <ModulePaie tenant={tenantSlug} />
+          </Suspense>
+        );
       case 'planning':
         return <Planning />;
       case 'remplacements':
