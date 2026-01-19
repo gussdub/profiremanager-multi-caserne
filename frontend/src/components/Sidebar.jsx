@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from './ui/button';
 import { useToast } from '../hooks/use-toast';
 import { useTenant } from '../contexts/TenantContext';
@@ -9,6 +9,11 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
   const { toast } = useToast();
   const { user, tenant: authTenant, logout } = useAuth();
   const { tenantSlug, switchTenant } = useTenant();
+  
+  // Ref pour le nav scrollable
+  const navRef = useRef(null);
+  const [canScrollDown, setCanScrollDown] = useState(true);
+  const [canScrollUp, setCanScrollUp] = useState(false);
   
   // Afficher le bouton "Changer de caserne" sur mobile (écran < 768px) ou app native/standalone
   const [isMobileDevice, setIsMobileDevice] = useState(false);
@@ -25,6 +30,29 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Gérer l'état du scroll pour les indicateurs
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    
+    const checkScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = nav;
+      setCanScrollUp(scrollTop > 10);
+      setCanScrollDown(scrollTop < scrollHeight - clientHeight - 10);
+    };
+    
+    checkScroll();
+    nav.addEventListener('scroll', checkScroll);
+    
+    // Vérifier aussi au resize
+    window.addEventListener('resize', checkScroll);
+    
+    return () => {
+      nav.removeEventListener('scroll', checkScroll);
+      window.removeEventListener('resize', checkScroll);
+    };
+  }, [isMobileMenuOpen]);
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
