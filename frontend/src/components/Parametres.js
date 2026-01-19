@@ -1209,6 +1209,11 @@ const Parametres = ({ user, tenantSlug }) => {
                         <span>💰 Taux externe: {type.taux_horaire_externe}$/h</span>
                       </div>
                     )}
+                    {type.montant_garde && (
+                      <div className="type-montant">
+                        <span>💵 Prime de garde: {type.montant_garde}$</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
