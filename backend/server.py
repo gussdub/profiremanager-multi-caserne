@@ -36623,9 +36623,74 @@ async def validate_intervention(
                         detail=f"Champs DSI obligatoires manquants: {', '.join(missing)}"
                     )
         
+        # ==================== DÉDUCTION DU STOCK POUR MATÉRIEL CONSOMMABLE ====================
+        # Déduire le stock des équipements marqués comme "gerer_quantite" (consommables)
+        materiel_utilise = intervention.get("materiel_utilise", [])
+        stock_deductions = []
+        
+        for mat in materiel_utilise:
+            materiel_id = mat.get("id")
+            quantite_utilisee = mat.get("quantite", 1)
+            
+            if not materiel_id or quantite_utilisee <= 0:
+                continue
+            
+            # Récupérer l'équipement depuis la base de données
+            equipement = await db.equipements.find_one({
+                "id": materiel_id,
+                "tenant_id": tenant["id"]
+            })
+            
+            if not equipement:
+                continue
+            
+            # Vérifier si cet équipement a la gestion des quantités activée
+            if equipement.get("gerer_quantite", False):
+                stock_actuel = equipement.get("quantite", 0)
+                nouveau_stock = max(0, stock_actuel - quantite_utilisee)
+                
+                # Mettre à jour le stock de l'équipement
+                await db.equipements.update_one(
+                    {"id": materiel_id, "tenant_id": tenant["id"]},
+                    {
+                        "$set": {
+                            "quantite": nouveau_stock,
+                            "updated_at": datetime.now(timezone.utc),
+                            # Activer l'alerte stock bas si nécessaire
+                            "alerte_stock_bas": nouveau_stock <= equipement.get("quantite_minimum", 1)
+                        }
+                    }
+                )
+                
+                stock_deductions.append({
+                    "equipement_id": materiel_id,
+                    "equipement_nom": equipement.get("nom", ""),
+                    "quantite_deduite": quantite_utilisee,
+                    "stock_avant": stock_actuel,
+                    "stock_apres": nouveau_stock
+                })
+                
+                logging.info(f"📦 Stock déduit: {equipement.get('nom')} - {quantite_utilisee} unité(s) (restant: {nouveau_stock})")
+        
+        # Enregistrer les déductions dans l'audit log si des stocks ont été modifiés
+        if stock_deductions:
+            audit_entry = {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "user_id": current_user.id,
+                "user_name": f"{current_user.prenom} {current_user.nom}",
+                "action": "stock_deduction",
+                "comment": f"Déduction de stock pour {len(stock_deductions)} équipement(s) consommable(s)",
+                "details": stock_deductions
+            }
+            await db.interventions.update_one(
+                {"id": intervention_id},
+                {"$push": {"audit_log": audit_entry}}
+            )
+        
         update_data["status"] = "signed"
         update_data["signed_at"] = datetime.now(timezone.utc)
         update_data["signed_by"] = current_user.id
+        update_data["stock_deductions"] = stock_deductions  # Sauvegarder pour référence
     
     await db.interventions.update_one(
         {"id": intervention_id},
