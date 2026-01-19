@@ -38628,6 +38628,22 @@ class TenantPayrollConfig(BaseModel):
     tenant_id: str
     provider_id: Optional[str] = None  # Fournisseur de paie sélectionné
     
+    # Configuration Nethris spécifique
+    company_number: Optional[str] = None  # Numéro de compagnie Nethris (sans lettres)
+    company_number_mode: str = "single"  # "single" ou "per_branch" (par succursale)
+    branch_company_numbers: dict = {}  # {succursale_id: numero_compagnie}
+    
+    # Codes de gains standards Nethris (comme Agendrix)
+    code_gain_regulier: str = "1"  # Code pour temps régulier
+    code_gain_supplementaire: str = "43"  # Code pour temps supplémentaire
+    code_gain_formation_regulier: str = ""  # Code pour formation régulière
+    code_gain_formation_sup: str = ""  # Code pour formation supplémentaire
+    
+    # Correspondances organisationnelles (Nethris)
+    division_mapping: dict = {}  # {position_id: division_nethris}
+    service_mapping: dict = {}  # {succursale_id: service_nethris}
+    departement_mapping: dict = {}  # {grade_id: departement_nethris}
+    
     # Credentials API du tenant (chiffrés/sécurisés)
     api_credentials: dict = {}  # {client_id, client_secret, business_id, company_number, etc.}
     api_connection_tested: bool = False
