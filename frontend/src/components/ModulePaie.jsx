@@ -779,6 +779,122 @@ const ModulePaie = ({ tenant }) => {
         </div>
       </div>
 
+      {/* Types d'heures personnalisés */}
+      <div style={{ background: 'white', borderRadius: '12px', padding: '24px', border: '1px solid #e5e7eb' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', color: '#1e293b' }}>
+            📋 Types d'heures personnalisés
+          </h3>
+          <Button size="sm" onClick={() => setShowEventTypeForm(!showEventTypeForm)} data-testid="add-event-type-btn">
+            <Plus size={16} /> Ajouter
+          </Button>
+        </div>
+        <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '16px' }}>
+          Créez vos propres types d'heures pour les associer aux codes de gains de votre logiciel de paie.
+        </p>
+
+        {/* Formulaire d'ajout */}
+        {showEventTypeForm && (
+          <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '16px', marginBottom: '16px', border: '1px solid #e5e7eb' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
+                  Code *
+                </label>
+                <Input
+                  value={newEventType.code}
+                  onChange={(e) => setNewEventType({...newEventType, code: e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, '_')})}
+                  placeholder="Ex: H_GARDE_INTERNE"
+                  style={{ fontFamily: 'monospace' }}
+                  data-testid="new-event-code"
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
+                  Libellé *
+                </label>
+                <Input
+                  value={newEventType.label}
+                  onChange={(e) => setNewEventType({...newEventType, label: e.target.value})}
+                  placeholder="Ex: Heures garde interne"
+                  data-testid="new-event-label"
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
+                  Catégorie
+                </label>
+                <select
+                  value={newEventType.category}
+                  onChange={(e) => setNewEventType({...newEventType, category: e.target.value})}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db' }}
+                >
+                  <option value="heures">Heures</option>
+                  <option value="prime">Prime</option>
+                  <option value="frais">Frais</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Button size="sm" onClick={handleAddEventType} data-testid="save-event-type-btn">
+                <Check size={14} /> Enregistrer
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setShowEventTypeForm(false)}>
+                Annuler
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Liste des types d'heures */}
+        <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+            <thead>
+              <tr style={{ background: '#f8fafc' }}>
+                <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Code</th>
+                <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Libellé</th>
+                <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Catégorie</th>
+                <th style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid #e5e7eb', width: '80px' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {eventTypes.length === 0 ? (
+                <tr>
+                  <td colSpan="4" style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>
+                    Aucun type d'heure configuré. Cliquez sur "Ajouter" pour en créer.
+                  </td>
+                </tr>
+              ) : (
+                eventTypes.map(et => (
+                  <tr key={et.id || et.code} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                    <td style={{ padding: '10px', fontFamily: 'monospace', fontWeight: '600', color: '#2563eb' }}>{et.code}</td>
+                    <td style={{ padding: '10px' }}>{et.label}</td>
+                    <td style={{ padding: '10px' }}>
+                      <span style={{
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        fontSize: '0.75rem',
+                        background: et.category === 'heures' ? '#dbeafe' : et.category === 'prime' ? '#fef3c7' : '#dcfce7',
+                        color: et.category === 'heures' ? '#1e40af' : et.category === 'prime' ? '#92400e' : '#166534'
+                      }}>
+                        {et.category === 'heures' ? 'Heures' : et.category === 'prime' ? 'Prime' : 'Frais'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '10px', textAlign: 'center' }}>
+                      {et.id && (
+                        <Button variant="ghost" size="sm" onClick={() => handleDeleteEventType(et.id)}>
+                          <Trash2 size={16} style={{ color: '#ef4444' }} />
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <Button onClick={handleSaveParametres} disabled={loading} style={{ alignSelf: 'flex-start' }}>
         {loading ? <RefreshCw className="animate-spin" size={16} /> : <Check size={16} />}
         <span style={{ marginLeft: '8px' }}>Enregistrer les paramètres</span>
