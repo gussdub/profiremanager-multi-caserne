@@ -15,7 +15,8 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
   const [canScrollDown, setCanScrollDown] = useState(true);
   const [canScrollUp, setCanScrollUp] = useState(false);
   
-  // Afficher le bouton "Changer de caserne" sur mobile (écran < 768px) ou app native/standalone
+  // États mobile - déclarés en premier car utilisés dans les useEffect
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
   
   useEffect(() => {
@@ -54,7 +55,6 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
     };
   }, [isMobileMenuOpen]);
 
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
