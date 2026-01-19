@@ -37963,7 +37963,11 @@ async def calculer_feuille_temps(
         "primes_repas": 0.0
     }
     
-    taux_horaire = employe.get("taux_horaire", 0.0)
+    # Taux horaire: utiliser celui de l'employé ou le taux par défaut des paramètres
+    taux_horaire = employe.get("taux_horaire", 0.0) or 0.0
+    if taux_horaire == 0:
+        taux_horaire = params_paie.get("taux_horaire_defaut", 25.0)
+    
     type_emploi = employe.get("type_emploi", "temps_plein")
     est_temps_plein = type_emploi == "temps_plein"
     
