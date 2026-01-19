@@ -39002,6 +39002,124 @@ async def update_single_employee_matricule(
     return {"success": True}
 
 
+# ==================== TYPES D'HEURES PERSONNALISÉS PAR TENANT ====================
+
+@api_router.get("/{tenant_slug}/paie/event-types")
+async def get_tenant_event_types(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère les types d'heures personnalisés du tenant"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès admin requis")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    event_types = await db.tenant_payroll_event_types.find(
+        {"tenant_id": tenant["id"]},
+        {"_id": 0}
+    ).to_list(100)
+    
+    return {"event_types": event_types}
+
+
+@api_router.post("/{tenant_slug}/paie/event-types")
+async def create_tenant_event_type(
+    tenant_slug: str,
+    data: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Crée un nouveau type d'heures pour le tenant"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès admin requis")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # Vérifier que le code n'existe pas déjà
+    existing = await db.tenant_payroll_event_types.find_one({
+        "tenant_id": tenant["id"],
+        "code": data.get("code")
+    })
+    
+    if existing:
+        raise HTTPException(status_code=400, detail="Ce code existe déjà")
+    
+    event_type = {
+        "id": str(uuid.uuid4()),
+        "tenant_id": tenant["id"],
+        "code": data.get("code", "").upper().replace(" ", "_"),
+        "label": data.get("label", ""),
+        "category": data.get("category", "heures"),  # heures, prime, frais
+        "created_at": datetime.now(timezone.utc)
+    }
+    
+    await db.tenant_payroll_event_types.insert_one(event_type)
+    
+    return {"success": True, "event_type": {k: v for k, v in event_type.items() if k != "_id"}}
+
+
+@api_router.put("/{tenant_slug}/paie/event-types/{event_type_id}")
+async def update_tenant_event_type(
+    tenant_slug: str,
+    event_type_id: str,
+    data: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour un type d'heures du tenant"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès admin requis")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    update_data = {}
+    if "label" in data:
+        update_data["label"] = data["label"]
+    if "category" in data:
+        update_data["category"] = data["category"]
+    
+    if update_data:
+        await db.tenant_payroll_event_types.update_one(
+            {"id": event_type_id, "tenant_id": tenant["id"]},
+            {"$set": update_data}
+        )
+    
+    return {"success": True}
+
+
+@api_router.delete("/{tenant_slug}/paie/event-types/{event_type_id}")
+async def delete_tenant_event_type(
+    tenant_slug: str,
+    event_type_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprime un type d'heures du tenant"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès admin requis")
+    
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # Supprimer aussi les mappings associés
+    await db.client_pay_code_mappings.delete_many({
+        "tenant_id": tenant["id"],
+        "internal_event_type": event_type_id
+    })
+    
+    await db.tenant_payroll_event_types.delete_one({
+        "id": event_type_id,
+        "tenant_id": tenant["id"]
+    })
+    
+    return {"success": True}
+
+
 # ==================== SERVICE D'EXPORTATION DE PAIE ====================
 
 async def build_payroll_export_data(
