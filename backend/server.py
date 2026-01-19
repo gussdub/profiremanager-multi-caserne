@@ -12463,6 +12463,7 @@ class Equipement(BaseModel):
     etat: str = "bon"  # neuf, bon, a_reparer, en_reparation, hors_service
     quantite: int = 1
     quantite_minimum: int = 1  # Seuil d'alerte stock bas
+    gerer_quantite: bool = False  # Si True, déduire du stock lors des interventions (consommable)
     
     # Informations fournisseur
     fournisseur_id: str = ""
@@ -12526,6 +12527,7 @@ class EquipementCreate(BaseModel):
     etat: str = "bon"
     quantite: int = 1
     quantite_minimum: int = 1
+    gerer_quantite: bool = False  # Si True, déduire du stock lors des interventions (consommable)
     fournisseur_id: str = ""
     fournisseur_nom: str = ""
     date_achat: str = ""
@@ -12559,6 +12561,7 @@ class EquipementUpdate(BaseModel):
     etat: Optional[str] = None
     quantite: Optional[int] = None
     quantite_minimum: Optional[int] = None
+    gerer_quantite: Optional[bool] = None  # Si True, déduire du stock lors des interventions (consommable)
     fournisseur_id: Optional[str] = None
     fournisseur_nom: Optional[str] = None
     date_achat: Optional[str] = None
