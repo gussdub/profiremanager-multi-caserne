@@ -6386,6 +6386,146 @@ async def delete_user(tenant_slug: str, user_id: str, current_user: User = Depen
     
     return {"message": "Utilisateur supprimé avec succès"}
 
+
+@api_router.get("/{tenant_slug}/users/{user_id}/statistiques-interventions")
+async def get_user_intervention_stats(
+    tenant_slug: str,
+    user_id: str,
+    annee: int = None,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Récupère les statistiques d'interventions d'un employé :
+    - Nombre total d'interventions
+    - Taux de présence
+    - Primes de repas
+    - Détail par mois
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que l'utilisateur existe
+    user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    # Année par défaut = année courante
+    if not annee:
+        annee = datetime.now().year
+    
+    # Définir la période
+    date_debut = datetime(annee, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+    date_fin = datetime(annee, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
+    
+    # Récupérer toutes les interventions de l'année
+    interventions = await db.interventions.find({
+        "tenant_id": tenant.id,
+        "status": "signed",
+        "xml_time_call_received": {"$gte": date_debut.isoformat(), "$lte": date_fin.isoformat()}
+    }, {"_id": 0}).to_list(10000)
+    
+    # Statistiques
+    total_interventions = 0
+    total_present = 0
+    total_absent = 0
+    total_dejeuner = 0
+    total_diner = 0
+    total_souper = 0
+    duree_totale_heures = 0
+    
+    # Par mois
+    stats_par_mois = {i: {"interventions": 0, "present": 0, "absent": 0} for i in range(1, 13)}
+    
+    for intervention in interventions:
+        personnel = intervention.get("personnel_present", [])
+        
+        # Chercher l'employé dans le personnel
+        for p in personnel:
+            p_id = p.get("id") or p.get("user_id")
+            if p_id == user_id:
+                total_interventions += 1
+                
+                # Déterminer le mois
+                date_str = intervention.get("xml_time_call_received")
+                if date_str:
+                    try:
+                        dt = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+                        mois = dt.month
+                        stats_par_mois[mois]["interventions"] += 1
+                    except:
+                        mois = None
+                
+                # Statut de présence
+                statut = p.get("statut_presence", "present")
+                if statut in ["present", "rappele"]:
+                    total_present += 1
+                    if mois:
+                        stats_par_mois[mois]["present"] += 1
+                elif statut in ["absent", "absent_non_paye", "non_disponible"]:
+                    total_absent += 1
+                    if mois:
+                        stats_par_mois[mois]["absent"] += 1
+                else:
+                    # remplace, absent_paye comptent comme présent pour le calcul
+                    total_present += 1
+                    if mois:
+                        stats_par_mois[mois]["present"] += 1
+                
+                # Primes de repas
+                if p.get("prime_dejeuner"):
+                    total_dejeuner += 1
+                if p.get("prime_diner"):
+                    total_diner += 1
+                if p.get("prime_souper"):
+                    total_souper += 1
+                
+                # Durée
+                time_start = intervention.get("xml_time_call_received")
+                time_end = intervention.get("xml_time_call_closed") or intervention.get("xml_time_terminated")
+                if time_start and time_end:
+                    try:
+                        start_dt = datetime.fromisoformat(time_start.replace('Z', '+00:00'))
+                        end_dt = datetime.fromisoformat(time_end.replace('Z', '+00:00'))
+                        duree = (end_dt - start_dt).total_seconds() / 3600
+                        duree_totale_heures += duree
+                    except:
+                        pass
+                
+                break  # Employé trouvé, passer à l'intervention suivante
+    
+    # Calculer le taux de présence
+    taux_presence = 0
+    if total_interventions > 0:
+        taux_presence = round((total_present / total_interventions) * 100, 1)
+    
+    # Charger les tarifs pour calculer les montants
+    settings = await db.intervention_settings.find_one({"tenant_id": tenant.id})
+    montant_dejeuner = settings.get("repas_dejeuner", {}).get("montant", 15) if settings else 15
+    montant_diner = settings.get("repas_diner", {}).get("montant", 18) if settings else 18
+    montant_souper = settings.get("repas_souper", {}).get("montant", 20) if settings else 20
+    
+    total_primes = (total_dejeuner * montant_dejeuner) + (total_diner * montant_diner) + (total_souper * montant_souper)
+    
+    return {
+        "user_id": user_id,
+        "user_name": f"{user.get('prenom', '')} {user.get('nom', '')}",
+        "annee": annee,
+        "statistiques": {
+            "total_interventions": total_interventions,
+            "total_present": total_present,
+            "total_absent": total_absent,
+            "taux_presence": taux_presence,
+            "duree_totale_heures": round(duree_totale_heures, 1),
+            "primes_repas": {
+                "dejeuner": {"count": total_dejeuner, "montant": total_dejeuner * montant_dejeuner},
+                "diner": {"count": total_diner, "montant": total_diner * montant_diner},
+                "souper": {"count": total_souper, "montant": total_souper * montant_souper},
+                "total": total_primes
+            }
+        },
+        "par_mois": stats_par_mois
+    }
+
+
 @api_router.put("/{tenant_slug}/users/{user_id}/password")
 async def change_user_password(
     tenant_slug: str,
