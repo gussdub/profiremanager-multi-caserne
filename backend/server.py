@@ -39994,30 +39994,38 @@ async def fetch_pay_codes_from_api(
         provider_name = provider.get("name", "").lower()
         
         if "nethris" in provider_name:
+            user_code = credentials.get("user_code", "")
+            company_code = credentials.get("company_code", "")
+            password = credentials.get("password", "")
+            
+            if not user_code or not company_code or not password:
+                raise HTTPException(status_code=400, detail="Credentials Nethris incomplets")
+            
             token_url = provider.get("api_token_url", "https://api.nethris.com/OAuth/Token")
             config_url = provider.get("api_config_endpoint", "https://api.nethris.com/V2.00/Configuration/EarnDeduction")
             
             async with httpx.AsyncClient() as client:
-                # Obtenir le token
+                # Obtenir le token avec les credentials service user
                 token_response = await client.post(
                     token_url,
                     data={
-                        "grant_type": "client_credentials",
-                        "client_id": credentials.get("client_id"),
-                        "client_secret": credentials.get("client_secret")
+                        "grant_type": "password",
+                        "username": f"{company_code}/{user_code}",
+                        "password": password,
+                        "scope": "api"
                     },
+                    headers={"Content-Type": "application/x-www-form-urlencoded"},
                     timeout=30.0
                 )
                 
                 if token_response.status_code != 200:
-                    raise HTTPException(status_code=400, detail="Erreur d'authentification")
+                    raise HTTPException(status_code=400, detail="Erreur d'authentification Nethris")
                 
                 token_data = token_response.json()
                 access_token = token_data.get("access_token")
                 
-                # Récupérer les codes
-                business_id = credentials.get("business_id")
-                company_number = credentials.get("company_number")
+                # Récupérer les codes de gains/déductions
+                company_number = company_code
                 
                 codes_response = await client.get(
                     f"{config_url}/{business_id}/{company_number}",
