@@ -2580,6 +2580,7 @@ const SectionMateriel = ({ formData, setFormData, editMode, tenantSlug, getToken
   // Stats
   const totalItems = materielUtilise.reduce((sum, m) => sum + (m.quantite || 1), 0);
   const bouteillesAPRIA = materielUtilise.filter(m => m.est_apria);
+  const consommablesUtilises = materielUtilise.filter(m => m.gerer_quantite);
   
   return (
     <div className="space-y-6">
@@ -2600,15 +2601,18 @@ const SectionMateriel = ({ formData, setFormData, editMode, tenantSlug, getToken
           ) : (
             <div className="space-y-3">
               {materielUtilise.map(mat => (
-                <div key={mat.id} className={`p-3 rounded-lg border ${mat.est_apria ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'}`}>
+                <div key={mat.id} className={`p-3 rounded-lg border ${mat.est_apria ? 'bg-blue-50 border-blue-200' : mat.gerer_quantite ? 'bg-orange-50 border-orange-200' : 'bg-gray-50 border-gray-200'}`}>
                   <div className="flex items-center gap-3 flex-wrap">
                     <span className="font-medium flex-1 min-w-[150px]">
                       {mat.nom}
                       {mat.est_apria && <span className="ml-2 text-xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded">APRIA</span>}
-                      {mat.est_consommable && <span className="ml-2 text-xs bg-orange-200 text-orange-800 px-2 py-0.5 rounded">Consommable</span>}
+                      {mat.gerer_quantite && <span className="ml-2 text-xs bg-orange-200 text-orange-800 px-2 py-0.5 rounded">📦 Stock géré</span>}
                     </span>
                     <span className="text-gray-500 text-sm">{mat.type}</span>
                     {mat.numero_serie && <span className="text-gray-400 text-xs">#{mat.numero_serie}</span>}
+                    {mat.stock_disponible !== undefined && mat.gerer_quantite && (
+                      <span className="text-xs text-gray-500">(Stock: {mat.stock_disponible})</span>
+                    )}
                     
                     {editMode ? (
                       <>
