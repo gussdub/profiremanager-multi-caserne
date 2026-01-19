@@ -926,8 +926,17 @@ const ModulePaie = ({ tenant }) => {
         </Button>
         <div style={{ flex: 1 }} />
         <Button onClick={handleExportPaie} disabled={loading || !payrollConfig?.provider_id}>
-          <Download size={16} /> Exporter vers logiciel de paie
+          <Download size={16} /> Télécharger fichier
         </Button>
+        {selectedProvider?.api_available && payrollConfig?.api_connection_tested && (
+          <Button 
+            onClick={handleSendToApi} 
+            disabled={loading}
+            style={{ background: '#10b981' }}
+          >
+            <Zap size={16} /> Envoyer via API
+          </Button>
+        )}
       </div>
 
       {/* Liste des feuilles */}
