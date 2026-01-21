@@ -2095,12 +2095,15 @@ const ModulePaie = ({ tenant }) => {
           </table>
         </div>
 
-        <p style={{ color: '#64748b', fontSize: '0.8rem', marginTop: '16px' }}>
-          💡 Vous pouvez trouver les matricules de vos employés dans Nethris : RH → Sélection des employés (RH) → colonne "Matricule"
-        </p>
+        {selectedProvider?.name && (
+          <p style={{ color: '#64748b', fontSize: '0.8rem', marginTop: '16px' }}>
+            💡 Consultez la documentation de {selectedProvider.name} pour trouver les matricules de vos employés.
+          </p>
+        )}
       </div>
     </div>
   );
+  };
 
   // Définition des onglets (même style que GestionInterventions)
   const tabs = [
