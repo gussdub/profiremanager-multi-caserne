@@ -1083,21 +1083,22 @@ const ModulePaie = ({ tenant }) => {
               </div>
               <div>
                 <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
-                  Taux par défaut
+                  {newEventType.unit === 'heures' ? 'Multiplicateur du taux horaire' : 'Taux unitaire'}
                 </label>
                 <input
                   type="number"
                   step="0.01"
                   min="0"
-                  value={newEventType.default_rate || 0}
+                  value={newEventType.default_rate || (newEventType.unit === 'heures' ? 1 : 0)}
                   onChange={(e) => setNewEventType({...newEventType, default_rate: parseFloat(e.target.value) || 0})}
-                  placeholder={newEventType.unit === 'km' ? '$/km' : newEventType.unit === 'montant' ? '$' : '$/h'}
+                  placeholder={newEventType.unit === 'km' ? '$/km' : newEventType.unit === 'montant' ? '$' : newEventType.unit === 'heures' ? '1.0' : '$/unité'}
                   style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db' }}
                 />
                 <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                  {newEventType.unit === 'km' ? '$/km (ex: 0.58)' : 
+                  {newEventType.unit === 'km' ? '$/km (ex: 0.65)' : 
                    newEventType.unit === 'montant' ? 'Montant fixe $' : 
-                   newEventType.unit === 'quantite' ? '$/unité' : '$/heure'}
+                   newEventType.unit === 'quantite' ? '$/unité' : 
+                   'Ex: 1.0 = 100% du taux horaire employé, 1.5 = 150%'}
                 </span>
               </div>
             </div>
