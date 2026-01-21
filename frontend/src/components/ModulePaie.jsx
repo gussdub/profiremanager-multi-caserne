@@ -928,6 +928,25 @@ const ModulePaie = ({ tenant }) => {
                   <option value="quantite">Quantité</option>
                 </select>
               </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
+                  Taux par défaut
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={newEventType.default_rate || 0}
+                  onChange={(e) => setNewEventType({...newEventType, default_rate: parseFloat(e.target.value) || 0})}
+                  placeholder={newEventType.unit === 'km' ? '$/km' : newEventType.unit === 'montant' ? '$' : '$/h'}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db' }}
+                />
+                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                  {newEventType.unit === 'km' ? '$/km (ex: 0.58)' : 
+                   newEventType.unit === 'montant' ? 'Montant fixe $' : 
+                   newEventType.unit === 'quantite' ? '$/unité' : '$/heure'}
+                </span>
+              </div>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <Button size="sm" onClick={handleAddEventType} data-testid="save-event-type-btn">
@@ -949,6 +968,7 @@ const ModulePaie = ({ tenant }) => {
                 <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Libellé</th>
                 <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Catégorie</th>
                 <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Unité</th>
+                <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Taux</th>
                 <th style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid #e5e7eb', width: '80px' }}>Actions</th>
               </tr>
             </thead>
