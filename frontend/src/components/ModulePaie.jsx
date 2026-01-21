@@ -497,6 +497,44 @@ const ModulePaie = ({ tenant }) => {
     setEditedLignes(editedLignes.filter(l => l.id !== ligneId));
   };
 
+  // Calculer les totaux en temps réel à partir des lignes éditées
+  const calculerTotauxEnTempsReel = (lignes) => {
+    const totaux = {
+      gardes_internes: 0,
+      gardes_externes: 0,
+      rappels: 0,
+      formations: 0,
+      heures_payees: 0,
+      montant_total: 0
+    };
+    
+    for (const ligne of lignes) {
+      const type = (ligne.type || '').toLowerCase();
+      const code = ligne.type || '';
+      const heures = parseFloat(ligne.heures_payees) || 0;
+      const montant = parseFloat(ligne.montant) || 0;
+      
+      // Catégoriser selon le type
+      if (type.includes('garde_interne') || code.includes('GARDE_INTERNE')) {
+        totaux.gardes_internes += heures;
+      } else if (type.includes('garde_externe') || code.includes('GARDE_EXTERNE')) {
+        totaux.gardes_externes += heures;
+      } else if (type.includes('rappel') || code.includes('RAPPEL') || code.includes('REPONDANT')) {
+        totaux.rappels += heures;
+      } else if (type.includes('formation') || type.includes('pratique') || code.includes('FORMATION') || code.includes('PRATIQUE')) {
+        totaux.formations += heures;
+      }
+      
+      totaux.heures_payees += heures;
+      totaux.montant_total += montant;
+    }
+    
+    return totaux;
+  };
+  
+  // Totaux calculés en temps réel (utilisés en mode édition)
+  const totauxTempsReel = editMode ? calculerTotauxEnTempsReel(editedLignes) : null;
+
   // Modifier une ligne existante
   const handleUpdateLigne = (ligneId, field, value) => {
     setEditedLignes(editedLignes.map(l => {
@@ -507,6 +545,19 @@ const ModulePaie = ({ tenant }) => {
           const eventType = eventTypes.find(et => et.code === value);
           if (eventType) {
             updated.description = eventType.label;
+          }
+        }
+        // Si on coche/décoche fonction supérieure, recalculer le montant
+        if (field === 'fonction_superieure') {
+          const primePct = (parametres?.prime_fonction_superieure_pct || 10) / 100;
+          const heures = parseFloat(updated.heures_payees) || 0;
+          const tauxBase = parseFloat(selectedFeuille?.taux_horaire) || 25;
+          if (value) {
+            // Appliquer la prime
+            updated.montant = Math.round(heures * tauxBase * (1 + primePct) * 100) / 100;
+          } else {
+            // Retirer la prime
+            updated.montant = Math.round(heures * tauxBase * 100) / 100;
           }
         }
         return updated;
