@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://payment-hub-136.preview.emergentagent.com
+- **URL** : https://rescuepay.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://payment-hub-136.preview.emergentagent.com"
+  "apiUrl": "https://rescuepay.preview.emergentagent.com"
 }
 ```
 
