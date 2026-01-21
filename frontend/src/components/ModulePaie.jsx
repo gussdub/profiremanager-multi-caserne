@@ -1809,7 +1809,7 @@ const ModulePaie = ({ tenant }) => {
                       <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Date</th>
                       <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Type</th>
                       <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Description</th>
-                      <th style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #e5e7eb' }}>Heures</th>
+                      <th style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #e5e7eb' }}>Qté/Heures</th>
                       <th style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #e5e7eb' }}>Montant</th>
                       {editMode && <th style={{ padding: '8px', textAlign: 'center', borderBottom: '1px solid #e5e7eb', fontSize: '0.65rem' }} title="Fonction supérieure (+{parametres?.prime_fonction_superieure_pct || 10}%)">Fct.Sup.</th>}
                       {editMode && <th style={{ padding: '8px', textAlign: 'center', borderBottom: '1px solid #e5e7eb' }}>Actions</th>}
