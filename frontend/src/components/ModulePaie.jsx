@@ -1960,10 +1960,12 @@ const ModulePaie = ({ tenant }) => {
                             onChange={(e) => {
                               const selectedType = e.target.value;
                               const eventType = eventTypes.find(et => et.code === selectedType);
+                              const montant = calculerMontantAutomatique(selectedType, parseFloat(newLigne.heures_payees) || 0, newLigne.fonction_superieure);
                               setNewLigne({
                                 ...newLigne, 
                                 type: selectedType,
-                                description: eventType?.label || newLigne.description
+                                description: eventType?.label || newLigne.description,
+                                montant: montant
                               });
                             }}
                             style={{ padding: '4px', borderRadius: '4px', border: '1px solid #d1d5db', fontSize: '0.75rem', minWidth: '120px' }}
@@ -1995,13 +1997,26 @@ const ModulePaie = ({ tenant }) => {
                           />
                         </td>
                         <td style={{ padding: '8px' }}>
-                          <Input
-                            type="number"
-                            step="0.5"
-                            value={newLigne.heures_payees}
-                            onChange={(e) => setNewLigne({...newLigne, heures_payees: e.target.value})}
-                            style={{ width: '70px', padding: '4px', fontSize: '0.75rem', textAlign: 'right' }}
-                          />
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Input
+                              type="number"
+                              step="0.5"
+                              value={newLigne.heures_payees}
+                              onChange={(e) => {
+                                const quantite = parseFloat(e.target.value) || 0;
+                                const montant = calculerMontantAutomatique(newLigne.type, quantite, newLigne.fonction_superieure);
+                                setNewLigne({...newLigne, heures_payees: e.target.value, montant: montant});
+                              }}
+                              style={{ width: '60px', padding: '4px', fontSize: '0.75rem', textAlign: 'right' }}
+                            />
+                            <span style={{ fontSize: '0.7rem', color: '#64748b', minWidth: '20px' }}>
+                              {(() => {
+                                const eventType = eventTypes.find(et => et.code === newLigne.type);
+                                const unit = eventType?.unit || 'heures';
+                                return unit === 'km' ? 'km' : unit === 'montant' ? '$' : unit === 'quantite' ? '' : 'h';
+                              })()}
+                            </span>
+                          </div>
                         </td>
                         <td style={{ padding: '8px' }}>
                           <Input
