@@ -38869,12 +38869,15 @@ async def export_feuilles_temps(
             {"$set": {
                 "statut": "exporte",
                 "exporte_le": datetime.now(timezone.utc),
-                "format_export": "Excel Nethris",
+                "format_export": f"Excel {provider_name.title()}",
                 "exporte_par": current_user.id
             }}
         )
     
-    filename = f"export_paie_nethris_{tenant_slug}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    # Générer le nom du fichier avec l'heure locale (UTC-5 pour Québec approximatif)
+    from datetime import timedelta
+    local_time = datetime.now(timezone.utc) - timedelta(hours=5)
+    filename = f"export_paie_{provider_name}_{tenant_slug}_{local_time.strftime('%Y%m%d_%H%M%S')}.xlsx"
     
     return StreamingResponse(
         file_buffer,
