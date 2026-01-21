@@ -435,7 +435,12 @@ const ModulePaie = ({ tenant }) => {
 
   // Entrer en mode édition d'une feuille
   const handleStartEdit = () => {
-    setEditedLignes([...(selectedFeuille.lignes || [])]);
+    // Assigner un ID unique à chaque ligne pour permettre l'édition indépendante
+    const lignesAvecIds = (selectedFeuille.lignes || []).map((ligne, idx) => ({
+      ...ligne,
+      id: ligne.id || `ligne-${idx}-${Date.now()}`
+    }));
+    setEditedLignes(lignesAvecIds);
     setEditMode(true);
   };
 
