@@ -1878,13 +1878,22 @@ const ModulePaie = ({ tenant }) => {
                           />
                         </td>
                         <td style={{ padding: '8px', textAlign: 'center' }}>
-                          <input
-                            type="checkbox"
-                            checked={ligne.fonction_superieure || false}
-                            onChange={(e) => handleUpdateLigne(ligne.id, 'fonction_superieure', e.target.checked)}
-                            title={`Fonction supérieure (+${parametres?.prime_fonction_superieure_pct || 10}%)`}
-                            style={{ cursor: 'pointer' }}
-                          />
+                          {/* Afficher Fct.Sup. uniquement pour les types en heures */}
+                          {(() => {
+                            const eventType = eventTypes.find(et => et.code === ligne.type);
+                            const isHourBased = !eventType?.unit || eventType?.unit === 'heures';
+                            return isHourBased ? (
+                              <input
+                                type="checkbox"
+                                checked={ligne.fonction_superieure || false}
+                                onChange={(e) => handleUpdateLigne(ligne.id, 'fonction_superieure', e.target.checked)}
+                                title={`Fonction supérieure (+${parametres?.prime_fonction_superieure_pct || 10}%)`}
+                                style={{ cursor: 'pointer' }}
+                              />
+                            ) : (
+                              <span style={{ color: '#9ca3af', fontSize: '0.65rem' }}>N/A</span>
+                            );
+                          })()}
                         </td>
                         <td style={{ padding: '8px', textAlign: 'center' }}>
                           <Button variant="ghost" size="sm" onClick={() => handleDeleteLigne(ligne.id)}>
