@@ -1015,7 +1015,7 @@ const ModulePaie = ({ tenant }) => {
                 <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Catégorie</th>
                 <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Unité</th>
                 <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Taux</th>
-                <th style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid #e5e7eb', width: '80px' }}>Actions</th>
+                <th style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid #e5e7eb', width: '120px' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -1029,39 +1029,101 @@ const ModulePaie = ({ tenant }) => {
                 eventTypes.map(et => (
                   <tr key={et.id || et.code} style={{ borderBottom: '1px solid #e5e7eb' }}>
                     <td style={{ padding: '10px', fontFamily: 'monospace', fontWeight: '600', color: '#2563eb' }}>{et.code}</td>
-                    <td style={{ padding: '10px' }}>{et.label}</td>
                     <td style={{ padding: '10px' }}>
-                      <span style={{
-                        padding: '2px 8px',
-                        borderRadius: '4px',
-                        fontSize: '0.75rem',
-                        background: et.category === 'heures' ? '#dbeafe' : 
-                                   et.category === 'prime' ? '#fef3c7' : 
-                                   et.category === 'deduction' ? '#fee2e2' : '#dcfce7',
-                        color: et.category === 'heures' ? '#1e40af' : 
-                               et.category === 'prime' ? '#92400e' : 
-                               et.category === 'deduction' ? '#991b1b' : '#166534'
-                      }}>
-                        {et.category === 'heures' ? 'Heures' : 
-                         et.category === 'prime' ? 'Prime' : 
-                         et.category === 'deduction' ? 'Déduction' : 'Frais'}
-                      </span>
+                      {editingEventType?.id === et.id ? (
+                        <Input
+                          value={editingEventType.label}
+                          onChange={(e) => setEditingEventType({...editingEventType, label: e.target.value})}
+                          style={{ padding: '4px', fontSize: '0.8rem' }}
+                        />
+                      ) : et.label}
+                    </td>
+                    <td style={{ padding: '10px' }}>
+                      {editingEventType?.id === et.id ? (
+                        <select
+                          value={editingEventType.category}
+                          onChange={(e) => setEditingEventType({...editingEventType, category: e.target.value})}
+                          style={{ padding: '4px', borderRadius: '4px', border: '1px solid #d1d5db', fontSize: '0.75rem' }}
+                        >
+                          <option value="heures">Heures</option>
+                          <option value="prime">Prime</option>
+                          <option value="frais">Frais</option>
+                          <option value="deduction">Déduction</option>
+                        </select>
+                      ) : (
+                        <span style={{
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          fontSize: '0.75rem',
+                          background: et.category === 'heures' ? '#dbeafe' : 
+                                     et.category === 'prime' ? '#fef3c7' : 
+                                     et.category === 'deduction' ? '#fee2e2' : '#dcfce7',
+                          color: et.category === 'heures' ? '#1e40af' : 
+                                 et.category === 'prime' ? '#92400e' : 
+                                 et.category === 'deduction' ? '#991b1b' : '#166534'
+                        }}>
+                          {et.category === 'heures' ? 'Heures' : 
+                           et.category === 'prime' ? 'Prime' : 
+                           et.category === 'deduction' ? 'Déduction' : 'Frais'}
+                        </span>
+                      )}
                     </td>
                     <td style={{ padding: '10px', color: '#64748b', fontSize: '0.8rem' }}>
-                      {et.unit === 'km' ? 'km' : 
-                       et.unit === 'montant' ? '$' : 
-                       et.unit === 'quantite' ? 'qté' : 'h'}
+                      {editingEventType?.id === et.id ? (
+                        <select
+                          value={editingEventType.unit || 'heures'}
+                          onChange={(e) => setEditingEventType({...editingEventType, unit: e.target.value})}
+                          style={{ padding: '4px', borderRadius: '4px', border: '1px solid #d1d5db', fontSize: '0.75rem' }}
+                        >
+                          <option value="heures">h</option>
+                          <option value="km">km</option>
+                          <option value="montant">$</option>
+                          <option value="quantite">qté</option>
+                        </select>
+                      ) : (
+                        et.unit === 'km' ? 'km' : 
+                        et.unit === 'montant' ? '$' : 
+                        et.unit === 'quantite' ? 'qté' : 'h'
+                      )}
                     </td>
                     <td style={{ padding: '10px', fontFamily: 'monospace', fontSize: '0.8rem', color: et.default_rate ? '#059669' : '#9ca3af' }}>
-                      {et.default_rate ? 
-                        `${et.default_rate.toFixed(2)} ${et.unit === 'km' ? '$/km' : et.unit === 'montant' ? '$' : '$/h'}` 
-                        : '-'}
+                      {editingEventType?.id === et.id ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={editingEventType.default_rate || 0}
+                          onChange={(e) => setEditingEventType({...editingEventType, default_rate: parseFloat(e.target.value) || 0})}
+                          style={{ width: '80px', padding: '4px', fontSize: '0.75rem' }}
+                        />
+                      ) : (
+                        et.default_rate ? 
+                          `${et.default_rate.toFixed(2)} ${et.unit === 'km' ? '$/km' : et.unit === 'montant' ? '$' : '$/h'}` 
+                          : '-'
+                      )}
                     </td>
                     <td style={{ padding: '10px', textAlign: 'center' }}>
                       {et.id && (
-                        <Button variant="ghost" size="sm" onClick={() => handleDeleteEventType(et.id)}>
-                          <Trash2 size={16} style={{ color: '#ef4444' }} />
-                        </Button>
+                        <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
+                          {editingEventType?.id === et.id ? (
+                            <>
+                              <Button variant="ghost" size="sm" onClick={handleSaveEditEventType}>
+                                <Check size={14} style={{ color: '#16a34a' }} />
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => setEditingEventType(null)}>
+                                <XCircle size={14} style={{ color: '#64748b' }} />
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button variant="ghost" size="sm" onClick={() => handleEditEventType(et)}>
+                                <Edit size={14} style={{ color: '#2563eb' }} />
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => handleDeleteEventType(et.id)}>
+                                <Trash2 size={14} style={{ color: '#ef4444' }} />
+                              </Button>
+                            </>
+                          )}
+                        </div>
                       )}
                     </td>
                   </tr>
