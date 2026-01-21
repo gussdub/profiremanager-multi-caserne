@@ -499,10 +499,51 @@ const ModulePaie = ({ tenant }) => {
   const handleUpdateLigne = (ligneId, field, value) => {
     setEditedLignes(editedLignes.map(l => {
       if (l.id === ligneId) {
-        return { ...l, [field]: value };
+        const updated = { ...l, [field]: value };
+        // Si on change le type, auto-remplir la description avec le libellé du type
+        if (field === 'type') {
+          const eventType = eventTypes.find(et => et.code === value);
+          if (eventType) {
+            updated.description = eventType.label;
+          }
+        }
+        return updated;
       }
       return l;
     }));
+  };
+
+  // Modifier un type d'heure existant
+  const [editingEventType, setEditingEventType] = useState(null);
+  
+  const handleEditEventType = (eventType) => {
+    setEditingEventType({...eventType});
+  };
+  
+  const handleSaveEditEventType = async () => {
+    if (!editingEventType) return;
+    
+    try {
+      const response = await fetch(`${API_URL}/api/${tenant}/paie/event-types/${editingEventType.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(editingEventType)
+      });
+      
+      if (response.ok) {
+        toast.success('Type d\'heure modifié');
+        setEditingEventType(null);
+        fetchCodeMappings();
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Erreur');
+      }
+    } catch (error) {
+      toast.error('Erreur de connexion');
+    }
   };
 
   const handleSavePayrollConfig = async () => {
