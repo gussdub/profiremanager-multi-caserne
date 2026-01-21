@@ -865,6 +865,14 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
               </p>
             </div>
             <div className="flex items-center gap-3">
+              {/* Bouton Remise de propriété */}
+              <button
+                onClick={() => setShowRemisePropriete(true)}
+                className="bg-orange-500 hover:bg-orange-600 px-3 py-1 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
+                title="Créer une remise de propriété"
+              >
+                📋 Remise de propriété
+              </button>
               {isLocked && (
                 <span className="bg-green-500 px-3 py-1 rounded-full text-sm">
                   ✅ Signé
