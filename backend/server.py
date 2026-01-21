@@ -38574,6 +38574,10 @@ async def modifier_feuille_temps(
     if feuille.get("statut") != "brouillon":
         raise HTTPException(status_code=400, detail="Seules les feuilles en brouillon peuvent être modifiées")
     
+    # Récupérer les types d'heures personnalisés du tenant pour catégoriser correctement
+    event_types = await db.tenant_payroll_event_types.find({"tenant_id": tenant["id"]}).to_list(100)
+    event_type_categories = {et.get("code"): et.get("category", "heures") for et in event_types}
+    
     # Mettre à jour les lignes si fournies
     update_data = {"updated_at": datetime.now(timezone.utc)}
     
@@ -38595,24 +38599,32 @@ async def modifier_feuille_temps(
         }
         
         for ligne in lignes:
-            type_ligne = ligne.get("type", "")
+            type_ligne = (ligne.get("type", "") or "").lower()
+            code_ligne = ligne.get("type", "")
             heures = float(ligne.get("heures_payees", 0) or 0)
             montant = float(ligne.get("montant", 0) or 0)
             
-            if type_ligne == "garde_interne":
+            # Catégoriser selon le type (codes personnalisés ou standards)
+            if "garde_interne" in type_ligne or "H_GARDE_INTERNE" in code_ligne:
                 totaux["gardes_internes"] += heures
-            elif type_ligne == "garde_externe":
+            elif "garde_externe" in type_ligne or "H_GARDE_EXTERNE" in code_ligne:
                 totaux["gardes_externes"] += heures
-            elif type_ligne == "rappel":
+            elif "rappel" in type_ligne or "H_RAPPEL" in code_ligne:
                 totaux["rappels"] += heures
-            elif type_ligne == "formation":
+            elif "formation" in type_ligne or "pratique" in type_ligne or "H_FORMATION" in code_ligne or "H_PRATIQUE" in code_ligne:
                 totaux["formations"] += heures
-            elif type_ligne == "intervention":
+            elif "intervention" in type_ligne or "H_INTERVENTION" in code_ligne:
                 totaux["interventions"] += heures
-            elif type_ligne == "heures_supplementaires":
+            elif "heures_supplementaires" in type_ligne or "H_SUPPLEMENTAIRE" in code_ligne:
                 totaux["heures_sup"] += heures
-            elif type_ligne == "prime_repas":
+            elif "prime_repas" in type_ligne or "REPAS" in code_ligne:
                 totaux["primes_repas"] += montant
+            else:
+                # Type personnalisé: utiliser la catégorie
+                category = event_type_categories.get(code_ligne, "heures")
+                if category == "prime":
+                    totaux["primes_repas"] += montant
+                # Autres types comptent dans heures_payees générales
             
             totaux["heures_payees"] += heures
             totaux["montant_brut"] += montant
@@ -38626,7 +38638,7 @@ async def modifier_feuille_temps(
         update_data["total_heures_payees"] = round(totaux["heures_payees"], 2)
         update_data["total_montant_brut"] = round(totaux["montant_brut"], 2)
         update_data["total_primes_repas"] = round(totaux["primes_repas"], 2)
-        update_data["total_montant_final"] = round(totaux["montant_brut"] + totaux["primes_repas"], 2)
+        update_data["total_montant_final"] = round(totaux["montant_brut"], 2)  # primes déjà incluses dans montant_brut
     
     update_data["modifie_par"] = current_user.id
     update_data["modifie_le"] = datetime.now(timezone.utc)
