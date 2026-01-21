@@ -38765,25 +38765,34 @@ async def export_feuilles_temps(
     
     feuille_ids = params.get("feuille_ids", [])
     
-    # Récupérer les feuilles à exporter
+    # Récupérer les feuilles à exporter (validées OU déjà exportées)
     if feuille_ids:
         feuilles = await db.feuilles_temps.find({
             "id": {"$in": feuille_ids},
-            "tenant_id": tenant["id"]
+            "tenant_id": tenant["id"],
+            "statut": {"$in": ["valide", "exporte"]}  # Inclure validées ET exportées
         }, {"_id": 0}).to_list(500)
     else:
-        # Exporter toutes les feuilles validées si aucun ID spécifié
+        # Exporter toutes les feuilles validées ou exportées si aucun ID spécifié
         feuilles = await db.feuilles_temps.find({
             "tenant_id": tenant["id"],
-            "statut": "valide"
+            "statut": {"$in": ["valide", "exporte"]}  # Inclure validées ET exportées
         }, {"_id": 0}).to_list(500)
     
     if not feuilles:
-        raise HTTPException(status_code=400, detail="Aucune feuille à exporter")
+        raise HTTPException(status_code=400, detail="Aucune feuille validée ou exportée à exporter")
     
     # Récupérer la config du tenant (optionnelle)
     config = await db.tenant_payroll_config.find_one({"tenant_id": tenant["id"]})
     company_number = config.get("company_number", "") if config else ""
+    
+    # Récupérer le fournisseur de paie sélectionné pour le nom du fichier
+    provider_name = "paie"
+    if config and config.get("provider_id"):
+        provider = await db.payroll_providers.find_one({"id": config["provider_id"]}, {"_id": 0})
+        if provider:
+            provider_name = provider.get("name", "paie").lower().replace(" ", "_")
+    
     code_mappings = await db.client_pay_code_mappings.find(
         {"tenant_id": tenant["id"]},
         {"_id": 0}
