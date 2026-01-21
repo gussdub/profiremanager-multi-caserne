@@ -388,11 +388,6 @@ const ModulePaie = ({ tenant }) => {
   };
 
   const handleExportPaie = async () => {
-    if (!payrollConfig?.provider_id) {
-      toast.error('Aucun fournisseur de paie configuré. Allez dans Paramètres > Export.');
-      return;
-    }
-    
     const feuillesAExporter = feuilles.filter(f => f.statut === 'valide');
     if (feuillesAExporter.length === 0) {
       toast.error('Aucune feuille validée à exporter');
