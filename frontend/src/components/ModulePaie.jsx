@@ -1733,26 +1733,36 @@ const ModulePaie = ({ tenant }) => {
             </div>
             
             <div style={{ padding: '24px' }}>
-              {/* Résumé */}
+              {/* Résumé - utilise les totaux en temps réel en mode édition */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '12px', marginBottom: '24px' }}>
                 <div style={{ background: '#f0fdf4', padding: '12px', borderRadius: '8px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#16a34a' }}>{selectedFeuille.total_heures_gardes_internes}h</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#16a34a' }}>
+                    {editMode ? totauxTempsReel?.gardes_internes?.toFixed(1) : selectedFeuille.total_heures_gardes_internes}h
+                  </div>
                   <div style={{ fontSize: '0.7rem', color: '#64748b' }}>Gardes int.</div>
                 </div>
                 <div style={{ background: '#fef3c7', padding: '12px', borderRadius: '8px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#d97706' }}>{selectedFeuille.total_heures_gardes_externes}h</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#d97706' }}>
+                    {editMode ? totauxTempsReel?.gardes_externes?.toFixed(1) : selectedFeuille.total_heures_gardes_externes}h
+                  </div>
                   <div style={{ fontSize: '0.7rem', color: '#64748b' }}>Gardes ext.</div>
                 </div>
                 <div style={{ background: '#fee2e2', padding: '12px', borderRadius: '8px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#dc2626' }}>{selectedFeuille.total_heures_rappels}h</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#dc2626' }}>
+                    {editMode ? totauxTempsReel?.rappels?.toFixed(1) : selectedFeuille.total_heures_rappels}h
+                  </div>
                   <div style={{ fontSize: '0.7rem', color: '#64748b' }}>Rappels</div>
                 </div>
                 <div style={{ background: '#dbeafe', padding: '12px', borderRadius: '8px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#2563eb' }}>{selectedFeuille.total_heures_formations}h</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#2563eb' }}>
+                    {editMode ? totauxTempsReel?.formations?.toFixed(1) : selectedFeuille.total_heures_formations}h
+                  </div>
                   <div style={{ fontSize: '0.7rem', color: '#64748b' }}>Formations</div>
                 </div>
                 <div style={{ background: '#f3e8ff', padding: '12px', borderRadius: '8px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#9333ea' }}>{formatMontant(selectedFeuille.total_montant_final)}</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#9333ea' }}>
+                    {editMode ? formatMontant(totauxTempsReel?.montant_total) : formatMontant(selectedFeuille.total_montant_final)}
+                  </div>
                   <div style={{ fontSize: '0.7rem', color: '#64748b' }}>Total</div>
                 </div>
               </div>
