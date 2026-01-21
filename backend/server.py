@@ -38017,6 +38017,23 @@ async def calculer_feuille_temps(
     type_emploi = employe.get("type_emploi", "temps_plein")
     est_temps_plein = type_emploi == "temps_plein"
     
+    # Prime fonction supérieure: vérifier si l'employé peut occuper un poste supérieur
+    a_fonction_superieur = employe.get("fonction_superieur", False)
+    prime_fonction_superieure_pct = params_paie.get("prime_fonction_superieure_pct", 10) / 100  # Convertir % en décimal
+    grade_employe = (employe.get("grade", "") or "").lower()
+    
+    # Hiérarchie des grades (du plus bas au plus haut)
+    grades_hierarchie = {
+        "pompier": 1,
+        "lieutenant": 2,
+        "capitaine": 3,
+        "chef": 4,
+        "directeur": 5,
+        "eligible": 2,
+        "éligible": 2
+    }
+    niveau_grade_employe = grades_hierarchie.get(grade_employe, 1)
+    
     # Autorisation heures supplémentaires (depuis paramètres planning)
     heures_sup_autorisees = params_planning.get("activer_gestion_heures_sup", False)
     
@@ -38039,6 +38056,24 @@ async def calculer_feuille_temps(
         
         duree_heures = type_garde.get("duree_heures", 0)
         est_garde_externe = type_garde.get("est_garde_externe", False)
+        
+        # Vérifier si fonction supérieure s'applique
+        # La position assignée (poste) peut avoir un grade_requis ou on utilise la logique existante
+        position_id = assignation.get("position_id")
+        applique_fonction_superieure = False
+        taux_horaire_effectif = taux_horaire
+        
+        if a_fonction_superieur and position_id:
+            # Récupérer la configuration de position pour voir le grade requis
+            position = await db.positions.find_one({"id": position_id, "tenant_id": tenant_id})
+            if position:
+                grade_requis = (position.get("grade_requis", "") or "").lower()
+                niveau_grade_requis = grades_hierarchie.get(grade_requis, 1)
+                
+                # Si le grade requis est supérieur au grade de l'employé, appliquer la prime
+                if niveau_grade_requis > niveau_grade_employe:
+                    applique_fonction_superieure = True
+                    taux_horaire_effectif = taux_horaire * (1 + prime_fonction_superieure_pct)
         
         if est_garde_externe:
             # Garde externe: rémunérée
