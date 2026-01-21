@@ -489,7 +489,7 @@ const ModulePaie = ({ tenant }) => {
     };
     
     setEditedLignes([...editedLignes, ligne].sort((a, b) => (a.date || '').localeCompare(b.date || '')));
-    setNewLigne({ date: '', type: '', description: '', heures_payees: 0, montant: 0 });
+    setNewLigne({ date: new Date().toISOString().split('T')[0], type: '', description: '', heures_payees: 0, montant: 0 });
   };
 
   // Supprimer une ligne
