@@ -1210,7 +1210,7 @@ const ModulePaie = ({ tenant }) => {
                            et.unit === 'montant' ? `${et.default_rate.toFixed(2)}$` : 
                            `${et.default_rate.toFixed(2)}$/u`)
                           : (et.unit === 'heures' ? '×1.00' : '-')
-                      )}}
+                      )}
                     </td>
                     <td style={{ padding: '10px', textAlign: 'center' }}>
                       {et.id && (
