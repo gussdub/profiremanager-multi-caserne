@@ -388,9 +388,10 @@ const ModulePaie = ({ tenant }) => {
   };
 
   const handleExportPaie = async () => {
-    const feuillesAExporter = feuilles.filter(f => f.statut === 'valide');
+    // Inclure les feuilles validées ET exportées (pour ré-export)
+    const feuillesAExporter = feuilles.filter(f => f.statut === 'valide' || f.statut === 'exporte');
     if (feuillesAExporter.length === 0) {
-      toast.error('Aucune feuille validée à exporter');
+      toast.error('Aucune feuille validée ou exportée à exporter');
       return;
     }
     
@@ -417,7 +418,7 @@ const ModulePaie = ({ tenant }) => {
         a.click();
         a.remove();
         window.URL.revokeObjectURL(url);
-        toast.success('Export téléchargé');
+        toast.success(`${feuillesAExporter.length} feuille(s) exportée(s)`);
         fetchFeuilles();
       } else {
         const error = await response.json();
