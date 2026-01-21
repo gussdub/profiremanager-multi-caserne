@@ -868,6 +868,34 @@ const ModulePaie = ({ tenant }) => {
         </div>
       </div>
 
+      {/* Prime fonction supérieure */}
+      <div style={{ background: 'white', borderRadius: '12px', padding: '24px', border: '1px solid #e5e7eb' }}>
+        <h3 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', color: '#1e293b' }}>
+          ⬆️ Prime fonction supérieure
+        </h3>
+        <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '16px' }}>
+          Lorsqu'un employé avec "fonction supérieure" cochée dans sa fiche occupe un poste de grade supérieur 
+          (ex: Pompier → Lieutenant, Lieutenant → Capitaine), son taux horaire est majoré de ce pourcentage.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
+              Pourcentage de majoration (%)
+            </label>
+            <Input
+              type="number"
+              step="1"
+              min="0"
+              max="100"
+              value={parametres?.prime_fonction_superieure_pct || 10}
+              onChange={(e) => setParametres({...parametres, prime_fonction_superieure_pct: parseFloat(e.target.value)})}
+              placeholder="10"
+            />
+            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Ex: 10 = +10% sur le taux horaire</span>
+          </div>
+        </div>
+      </div>
+
       {/* Heures supplémentaires */}
       <div style={{ background: 'white', borderRadius: '12px', padding: '24px', border: '1px solid #e5e7eb' }}>
         <h3 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', color: '#1e293b' }}>
