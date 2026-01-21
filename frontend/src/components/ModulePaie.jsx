@@ -1122,7 +1122,7 @@ const ModulePaie = ({ tenant }) => {
                 <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Libellé</th>
                 <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Catégorie</th>
                 <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Unité</th>
-                <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Taux</th>
+                <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }} title="Pour heures: multiplicateur du taux horaire employé. Pour km/$: taux unitaire">Taux/Multi.</th>
                 <th style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid #e5e7eb', width: '120px' }}>Actions</th>
               </tr>
             </thead>
