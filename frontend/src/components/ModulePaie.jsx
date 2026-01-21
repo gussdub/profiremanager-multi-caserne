@@ -37,7 +37,7 @@ const ModulePaie = ({ tenant }) => {
   // Mode édition feuille
   const [editMode, setEditMode] = useState(false);
   const [editedLignes, setEditedLignes] = useState([]);
-  const [newLigne, setNewLigne] = useState({ date: '', type: '', description: '', heures_payees: 0, montant: 0 });
+  const [newLigne, setNewLigne] = useState({ date: new Date().toISOString().split('T')[0], type: '', description: '', heures_payees: 0, montant: 0 });
   
   // Config export
   const [payrollConfig, setPayrollConfig] = useState(null);
