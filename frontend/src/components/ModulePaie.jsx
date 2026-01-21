@@ -1199,15 +1199,18 @@ const ModulePaie = ({ tenant }) => {
                         <Input
                           type="number"
                           step="0.01"
-                          value={editingEventType.default_rate || 0}
+                          value={editingEventType.default_rate || (et.unit === 'heures' ? 1 : 0)}
                           onChange={(e) => setEditingEventType({...editingEventType, default_rate: parseFloat(e.target.value) || 0})}
                           style={{ width: '80px', padding: '4px', fontSize: '0.75rem' }}
                         />
                       ) : (
                         et.default_rate ? 
-                          `${et.default_rate.toFixed(2)} ${et.unit === 'km' ? '$/km' : et.unit === 'montant' ? '$' : '$/h'}` 
-                          : '-'
-                      )}
+                          (et.unit === 'heures' ? `×${et.default_rate.toFixed(2)}` : 
+                           et.unit === 'km' ? `${et.default_rate.toFixed(2)}$/km` : 
+                           et.unit === 'montant' ? `${et.default_rate.toFixed(2)}$` : 
+                           `${et.default_rate.toFixed(2)}$/u`)
+                          : (et.unit === 'heures' ? '×1.00' : '-')
+                      )}}
                     </td>
                     <td style={{ padding: '10px', textAlign: 'center' }}>
                       {et.id && (
