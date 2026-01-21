@@ -1445,11 +1445,13 @@ const ModulePaie = ({ tenant }) => {
           🔗 Associations des codes de gains
         </h3>
         <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '8px' }}>
-          Associez vos types d'heures aux codes de gains Nethris correspondants.
+          Associez vos types d'heures aux codes de gains {selectedProvider?.name || 'de votre système de paie'} correspondants.
         </p>
-        <p style={{ color: '#f59e0b', fontSize: '0.8rem', marginBottom: '16px', background: '#fffbeb', padding: '8px 12px', borderRadius: '6px' }}>
-          ⚠️ Les codes de gains doivent avoir la mention <strong>"Hrs"</strong> (heures) dans Nethris. Les codes avec "$" ne sont pas compatibles.
-        </p>
+        {selectedProvider?.name?.toLowerCase().includes('nethris') && (
+          <p style={{ color: '#f59e0b', fontSize: '0.8rem', marginBottom: '16px', background: '#fffbeb', padding: '8px 12px', borderRadius: '6px' }}>
+            ⚠️ Les codes de gains doivent avoir la mention <strong>"Hrs"</strong> (heures) dans Nethris. Les codes avec "$" ne sont pas compatibles.
+          </p>
+        )}
         
         {/* Formulaire d'ajout */}
         <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
@@ -1468,7 +1470,7 @@ const ModulePaie = ({ tenant }) => {
             </select>
           </div>
           <div style={{ flex: '1', minWidth: '150px' }}>
-            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>Code de gain Nethris</label>
+            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>Code de gain {selectedProvider?.name || ''}</label>
             <Input
               value={newMapping.external_pay_code}
               onChange={(e) => setNewMapping({...newMapping, external_pay_code: e.target.value})}
