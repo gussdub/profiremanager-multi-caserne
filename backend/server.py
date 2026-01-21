@@ -39392,6 +39392,8 @@ async def create_tenant_event_type(
         "code": data.get("code", "").upper().replace(" ", "_"),
         "label": data.get("label", ""),
         "category": data.get("category", "heures"),  # heures, prime, frais
+        "unit": data.get("unit", "heures"),  # heures, km, montant, quantite
+        "default_rate": float(data.get("default_rate", 0)),  # Taux par défaut
         "created_at": datetime.now(timezone.utc)
     }
     
@@ -39420,6 +39422,10 @@ async def update_tenant_event_type(
         update_data["label"] = data["label"]
     if "category" in data:
         update_data["category"] = data["category"]
+    if "unit" in data:
+        update_data["unit"] = data["unit"]
+    if "default_rate" in data:
+        update_data["default_rate"] = float(data["default_rate"])
     
     if update_data:
         await db.tenant_payroll_event_types.update_one(
