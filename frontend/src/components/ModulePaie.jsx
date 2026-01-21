@@ -65,7 +65,7 @@ const ModulePaie = ({ tenant }) => {
   const [matriculesEmployes, setMatriculesEmployes] = useState({});
 
   // Nouveau type d'heure
-  const [newEventType, setNewEventType] = useState({ code: '', label: '', category: 'heures' });
+  const [newEventType, setNewEventType] = useState({ code: '', label: '', category: 'heures', unit: 'heures', default_rate: 0 });
   const [showEventTypeForm, setShowEventTypeForm] = useState(false);
 
   // Récupérer le token avec le bon préfixe tenant
@@ -645,7 +645,7 @@ const ModulePaie = ({ tenant }) => {
       
       if (response.ok) {
         toast.success('Type d\'heure ajouté');
-        setNewEventType({ code: '', label: '', category: 'heures' });
+        setNewEventType({ code: '', label: '', category: 'heures', unit: 'heures', default_rate: 0 });
         setShowEventTypeForm(false);
         fetchCodeMappings(); // Rafraîchit aussi les eventTypes
       } else {
