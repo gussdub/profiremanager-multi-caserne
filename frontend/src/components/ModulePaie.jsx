@@ -1901,6 +1901,15 @@ const ModulePaie = ({ tenant }) => {
                           />
                         </td>
                         <td style={{ padding: '8px', textAlign: 'center' }}>
+                          <input
+                            type="checkbox"
+                            checked={newLigne.fonction_superieure || false}
+                            onChange={(e) => setNewLigne({...newLigne, fonction_superieure: e.target.checked})}
+                            title={`Fonction supérieure (+${parametres?.prime_fonction_superieure_pct || 10}%)`}
+                            style={{ cursor: 'pointer' }}
+                          />
+                        </td>
+                        <td style={{ padding: '8px', textAlign: 'center' }}>
                           <Button size="sm" onClick={handleAddLigne}>
                             <Plus size={14} />
                           </Button>
