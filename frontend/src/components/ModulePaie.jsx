@@ -1721,17 +1721,33 @@ const ModulePaie = ({ tenant }) => {
                         <td style={{ padding: '8px' }}>
                           <select 
                             value={newLigne.type}
-                            onChange={(e) => setNewLigne({...newLigne, type: e.target.value})}
-                            style={{ padding: '4px', borderRadius: '4px', border: '1px solid #d1d5db', fontSize: '0.75rem' }}
+                            onChange={(e) => {
+                              const selectedType = e.target.value;
+                              const eventType = eventTypes.find(et => et.code === selectedType);
+                              setNewLigne({
+                                ...newLigne, 
+                                type: selectedType,
+                                description: eventType?.label || newLigne.description
+                              });
+                            }}
+                            style={{ padding: '4px', borderRadius: '4px', border: '1px solid #d1d5db', fontSize: '0.75rem', minWidth: '120px' }}
                           >
                             <option value="">-- Type --</option>
-                            <option value="garde_interne">Garde interne</option>
-                            <option value="garde_externe">Garde externe</option>
-                            <option value="rappel">Rappel</option>
-                            <option value="formation">Formation</option>
-                            <option value="intervention">Intervention</option>
-                            <option value="prime_repas">Prime repas</option>
-                            <option value="autre">Autre</option>
+                            {eventTypes.length > 0 ? (
+                              eventTypes.map(et => (
+                                <option key={et.code} value={et.code}>{et.label}</option>
+                              ))
+                            ) : (
+                              <>
+                                <option value="garde_interne">Garde interne</option>
+                                <option value="garde_externe">Garde externe</option>
+                                <option value="rappel">Rappel</option>
+                                <option value="formation">Formation</option>
+                                <option value="intervention">Intervention</option>
+                                <option value="prime_repas">Prime repas</option>
+                                <option value="autre">Autre</option>
+                              </>
+                            )}
                           </select>
                         </td>
                         <td style={{ padding: '8px' }}>
