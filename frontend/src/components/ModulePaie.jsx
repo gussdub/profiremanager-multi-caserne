@@ -51,6 +51,7 @@ const ModulePaie = ({ tenant }) => {
   
   // Filtres
   const [filtreAnnee, setFiltreAnnee] = useState(new Date().getFullYear());
+  const [filtreMois, setFiltreMois] = useState('');
   const [filtreEmploye, setFiltreEmploye] = useState('');
   const [filtreStatut, setFiltreStatut] = useState('');
   
