@@ -90,6 +90,7 @@ const ModulePaie = ({ tenant }) => {
     try {
       let url = `${API_URL}/api/${tenant}/paie/feuilles-temps?`;
       if (filtreAnnee) url += `annee=${filtreAnnee}&`;
+      if (filtreMois) url += `mois=${filtreMois}&`;
       if (filtreEmploye) url += `user_id=${filtreEmploye}&`;
       if (filtreStatut) url += `statut=${filtreStatut}&`;
       
@@ -103,7 +104,7 @@ const ModulePaie = ({ tenant }) => {
     } catch (error) {
       console.error('Erreur chargement feuilles:', error);
     }
-  }, [tenant, token, filtreAnnee, filtreEmploye, filtreStatut]);
+  }, [tenant, token, filtreAnnee, filtreMois, filtreEmploye, filtreStatut]);
 
   const fetchEmployes = useCallback(async () => {
     try {
