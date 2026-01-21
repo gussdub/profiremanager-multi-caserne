@@ -1654,15 +1654,24 @@ const ModulePaie = ({ tenant }) => {
                           <select 
                             value={ligne.type}
                             onChange={(e) => handleUpdateLigne(ligne.id, 'type', e.target.value)}
-                            style={{ padding: '4px', borderRadius: '4px', border: '1px solid #d1d5db', fontSize: '0.75rem' }}
+                            style={{ padding: '4px', borderRadius: '4px', border: '1px solid #d1d5db', fontSize: '0.75rem', minWidth: '120px' }}
                           >
-                            <option value="garde_interne">Garde interne</option>
-                            <option value="garde_externe">Garde externe</option>
-                            <option value="rappel">Rappel</option>
-                            <option value="formation">Formation</option>
-                            <option value="intervention">Intervention</option>
-                            <option value="prime_repas">Prime repas</option>
-                            <option value="autre">Autre</option>
+                            <option value="">-- Type --</option>
+                            {eventTypes.length > 0 ? (
+                              eventTypes.map(et => (
+                                <option key={et.code} value={et.code}>{et.label}</option>
+                              ))
+                            ) : (
+                              <>
+                                <option value="garde_interne">Garde interne</option>
+                                <option value="garde_externe">Garde externe</option>
+                                <option value="rappel">Rappel</option>
+                                <option value="formation">Formation</option>
+                                <option value="intervention">Intervention</option>
+                                <option value="prime_repas">Prime repas</option>
+                                <option value="autre">Autre</option>
+                              </>
+                            )}
                           </select>
                         </td>
                         <td style={{ padding: '8px' }}>
