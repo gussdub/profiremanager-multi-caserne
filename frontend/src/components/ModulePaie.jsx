@@ -2008,14 +2008,17 @@ const ModulePaie = ({ tenant }) => {
   );
 
   // Onglet Matricules (comme Agendrix - association des numéros de matricule)
-  const renderMatricules = () => (
+  const renderMatricules = () => {
+    const providerName = selectedProvider?.name || 'votre système de paie';
+    
+    return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div style={{ background: 'white', borderRadius: '12px', padding: '24px', border: '1px solid #e5e7eb' }}>
         <h3 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', color: '#1e293b' }}>
           👥 Association des numéros de matricule
         </h3>
         <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '8px' }}>
-          Pour chacun de vos employés, inscrivez le numéro de matricule utilisé dans votre système de paie (Nethris).
+          Pour chacun de vos employés, inscrivez le numéro de matricule utilisé dans {providerName}.
         </p>
         <p style={{ color: '#f59e0b', fontSize: '0.8rem', marginBottom: '16px', background: '#fffbeb', padding: '8px 12px', borderRadius: '6px' }}>
           ⚠️ <strong>Important:</strong> Si vous laissez une case vide pour un employé, aucune information ne sera exportée pour cet employé.
@@ -2037,7 +2040,7 @@ const ModulePaie = ({ tenant }) => {
                 <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Grade</th>
                 <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Type d'emploi</th>
                 <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e5e7eb', width: '200px' }}>
-                  Matricule Nethris
+                  Matricule {selectedProvider?.name || ''}
                   <span style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'normal', color: '#64748b' }}>
                     (Numéro d'employé)
                   </span>
