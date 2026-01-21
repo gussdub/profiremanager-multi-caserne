@@ -1811,7 +1811,12 @@ const ModulePaie = ({ tenant }) => {
                           {ligne.note && <small style={{ display: 'block', color: '#64748b' }}>{ligne.note}</small>}
                         </td>
                         <td style={{ padding: '8px', textAlign: 'right' }}>
-                          {ligne.heures_payees > 0 ? `${ligne.heures_payees}h` : '-'}
+                          {(() => {
+                            const eventType = eventTypes.find(et => et.code === ligne.type);
+                            const unit = eventType?.unit || 'heures';
+                            const unitLabel = unit === 'km' ? 'km' : unit === 'montant' ? '$' : unit === 'quantite' ? '' : 'h';
+                            return ligne.heures_payees > 0 ? `${ligne.heures_payees}${unitLabel}` : '-';
+                          })()}
                         </td>
                         <td style={{ padding: '8px', textAlign: 'right', fontWeight: '500' }}>
                           {ligne.montant > 0 ? formatMontant(ligne.montant) : '-'}
