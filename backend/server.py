@@ -38470,6 +38470,9 @@ async def lister_feuilles_temps(
     
     if annee:
         query["annee"] = annee
+    if mois:
+        # Filtrer par mois en utilisant periode_debut
+        query["periode_debut"] = {"$regex": f"^{annee}-{mois}"}
     if user_id:
         query["user_id"] = user_id
     if statut:
