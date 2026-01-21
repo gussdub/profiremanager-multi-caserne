@@ -38751,13 +38751,13 @@ async def export_feuilles_temps(
     params: dict = Body(...),
     current_user: User = Depends(get_current_user)
 ):
-    """Exporte les feuilles de temps validées au format Nethris (Excel)"""
+    """Exporte les feuilles de temps au format Excel"""
     from fastapi.responses import StreamingResponse
     import pandas as pd
     from io import BytesIO
     
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent exporter les feuilles de temps")
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
     
     tenant = await get_tenant_by_slug(tenant_slug)
     if not tenant:
@@ -38781,7 +38781,7 @@ async def export_feuilles_temps(
     if not feuilles:
         raise HTTPException(status_code=400, detail="Aucune feuille à exporter")
     
-    # Récupérer la config du tenant
+    # Récupérer la config du tenant (optionnelle)
     config = await db.tenant_payroll_config.find_one({"tenant_id": tenant["id"]})
     company_number = config.get("company_number", "") if config else ""
     code_mappings = await db.client_pay_code_mappings.find(
