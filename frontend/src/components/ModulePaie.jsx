@@ -1891,13 +1891,22 @@ const ModulePaie = ({ tenant }) => {
                           />
                         </td>
                         <td style={{ padding: '8px' }}>
-                          <Input
-                            type="number"
-                            step="0.5"
-                            value={ligne.heures_payees || 0}
-                            onChange={(e) => handleUpdateLigne(ligne.id, 'heures_payees', parseFloat(e.target.value) || 0)}
-                            style={{ width: '70px', padding: '4px', fontSize: '0.75rem', textAlign: 'right' }}
-                          />
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Input
+                              type="number"
+                              step="0.5"
+                              value={ligne.heures_payees || 0}
+                              onChange={(e) => handleUpdateLigne(ligne.id, 'heures_payees', parseFloat(e.target.value) || 0)}
+                              style={{ width: '60px', padding: '4px', fontSize: '0.75rem', textAlign: 'right' }}
+                            />
+                            <span style={{ fontSize: '0.7rem', color: '#64748b', minWidth: '20px' }}>
+                              {(() => {
+                                const eventType = eventTypes.find(et => et.code === ligne.type);
+                                const unit = eventType?.unit || 'heures';
+                                return unit === 'km' ? 'km' : unit === 'montant' ? '$' : unit === 'quantite' ? '' : 'h';
+                              })()}
+                            </span>
+                          </div>
                         </td>
                         <td style={{ padding: '8px' }}>
                           <Input
