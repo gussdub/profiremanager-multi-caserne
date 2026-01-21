@@ -975,7 +975,7 @@ const ModulePaie = ({ tenant }) => {
             <tbody>
               {eventTypes.length === 0 ? (
                 <tr>
-                  <td colSpan="5" style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>
+                  <td colSpan="6" style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>
                     Aucun type configuré. Cliquez sur "Ajouter" pour en créer.
                   </td>
                 </tr>
@@ -1005,6 +1005,11 @@ const ModulePaie = ({ tenant }) => {
                       {et.unit === 'km' ? 'km' : 
                        et.unit === 'montant' ? '$' : 
                        et.unit === 'quantite' ? 'qté' : 'h'}
+                    </td>
+                    <td style={{ padding: '10px', fontFamily: 'monospace', fontSize: '0.8rem', color: et.default_rate ? '#059669' : '#9ca3af' }}>
+                      {et.default_rate ? 
+                        `${et.default_rate.toFixed(2)} ${et.unit === 'km' ? '$/km' : et.unit === 'montant' ? '$' : '$/h'}` 
+                        : '-'}
                     </td>
                     <td style={{ padding: '10px', textAlign: 'center' }}>
                       {et.id && (
