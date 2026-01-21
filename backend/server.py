@@ -38080,7 +38080,7 @@ async def calculer_feuille_temps(
             taux = params_paie.get("garde_externe_taux", 1.0)
             minimum = params_paie.get("garde_externe_minimum_heures", 0)
             heures_payees = max(duree_heures, minimum) if duree_heures > 0 else 0
-            montant = heures_payees * taux_horaire * taux
+            montant = heures_payees * taux_horaire_effectif * taux
             
             # Ajouter le montant fixe de garde si configuré
             montant_fixe = type_garde.get("montant_garde", 0) or params_paie.get("garde_externe_montant_fixe", 0)
@@ -38090,16 +38090,21 @@ async def calculer_feuille_temps(
             totaux["heures_payees"] += heures_payees
             totaux["montant_brut"] += montant
             
+            description = f"Garde externe - {type_garde.get('nom')}"
+            if applique_fonction_superieure:
+                description += f" (Fonction supérieure +{int(prime_fonction_superieure_pct*100)}%)"
+            
             lignes.append({
                 "date": assignation.get("date"),
                 "type": "garde_externe",
-                "description": f"Garde externe - {type_garde.get('nom')}",
+                "description": description,
                 "heures_brutes": duree_heures,
                 "heures_payees": heures_payees,
                 "taux": taux,
                 "montant": montant,
                 "source_id": assignation.get("id"),
-                "source_type": "assignation"
+                "source_type": "assignation",
+                "fonction_superieure": applique_fonction_superieure
             })
         else:
             # Garde interne: comptabilisée mais pas forcément payée en plus
@@ -38111,17 +38116,21 @@ async def calculer_feuille_temps(
                 taux = 1.0  # Temps partiel payé normalement
             
             heures_payees = duree_heures
-            montant = heures_payees * taux_horaire * taux
+            montant = heures_payees * taux_horaire_effectif * taux
             
             totaux["gardes_internes"] += duree_heures
             if taux > 0:
                 totaux["heures_payees"] += heures_payees
                 totaux["montant_brut"] += montant
             
+            description = f"Garde interne - {type_garde.get('nom')}"
+            if applique_fonction_superieure and taux > 0:
+                description += f" (Fonction supérieure +{int(prime_fonction_superieure_pct*100)}%)"
+            
             lignes.append({
                 "date": assignation.get("date"),
                 "type": "garde_interne",
-                "description": f"Garde interne - {type_garde.get('nom')}",
+                "description": description,
                 "heures_brutes": duree_heures,
                 "heures_payees": heures_payees if taux > 0 else 0,
                 "taux": taux,
