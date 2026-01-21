@@ -1722,6 +1722,7 @@ const ModulePaie = ({ tenant }) => {
                       <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Description</th>
                       <th style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #e5e7eb' }}>Heures</th>
                       <th style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #e5e7eb' }}>Montant</th>
+                      {editMode && <th style={{ padding: '8px', textAlign: 'center', borderBottom: '1px solid #e5e7eb', fontSize: '0.65rem' }} title="Fonction supérieure (+{parametres?.prime_fonction_superieure_pct || 10}%)">Fct.Sup.</th>}
                       {editMode && <th style={{ padding: '8px', textAlign: 'center', borderBottom: '1px solid #e5e7eb' }}>Actions</th>}
                     </tr>
                   </thead>
@@ -1735,14 +1736,17 @@ const ModulePaie = ({ tenant }) => {
                             padding: '2px 6px',
                             borderRadius: '4px',
                             fontSize: '0.7rem',
-                            background: ligne.type === 'garde_interne' ? '#d1fae5' :
-                                       ligne.type === 'garde_externe' ? '#fef3c7' :
+                            background: ligne.type === 'garde_interne' || ligne.type?.includes('GARDE_INTERNE') ? '#d1fae5' :
+                                       ligne.type === 'garde_externe' || ligne.type?.includes('GARDE_EXTERNE') ? '#fef3c7' :
                                        ligne.type === 'rappel' ? '#fee2e2' :
-                                       ligne.type === 'formation' ? '#dbeafe' :
-                                       ligne.type === 'prime_repas' ? '#f3e8ff' : '#f1f5f9'
+                                       ligne.type === 'formation' || ligne.type?.includes('PRATIQUE') ? '#dbeafe' :
+                                       ligne.type === 'prime_repas' || ligne.type?.includes('REPAS') ? '#f3e8ff' : '#f1f5f9'
                           }}>
-                            {ligne.type}
+                            {eventTypes.find(et => et.code === ligne.type)?.label || ligne.type}
                           </span>
+                          {ligne.fonction_superieure && (
+                            <span style={{ marginLeft: '4px', fontSize: '0.6rem', color: '#059669' }}>⬆️</span>
+                          )}
                         </td>
                         <td style={{ padding: '8px' }}>
                           {ligne.description}
