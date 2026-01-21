@@ -1248,6 +1248,19 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
           </div>,
           document.body
         )}
+
+        {/* Modal Remise de propriété */}
+        {showRemisePropriete && (
+          <RemiseProprieteModal
+            intervention={formData}
+            tenantSlug={tenantSlug}
+            user={user}
+            onClose={() => setShowRemisePropriete(false)}
+            onSuccess={() => {
+              toast({ title: "Remise de propriété enregistrée", variant: "success" });
+            }}
+          />
+        )}
       </div>
     </div>,
     document.body
