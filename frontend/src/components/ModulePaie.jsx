@@ -525,7 +525,11 @@ const ModulePaie = ({ tenant }) => {
         totaux.formations += heures;
       }
       
-      totaux.heures_payees += heures;
+      // Ne compter les heures que pour les types en heures
+      const eventType = eventTypes.find(et => et.code === code);
+      if (!eventType?.unit || eventType?.unit === 'heures') {
+        totaux.heures_payees += heures;
+      }
       totaux.montant_total += montant;
     }
     
@@ -535,31 +539,58 @@ const ModulePaie = ({ tenant }) => {
   // Totaux calculés en temps réel (utilisés en mode édition)
   const totauxTempsReel = editMode ? calculerTotauxEnTempsReel(editedLignes) : null;
 
+  // Calculer le montant automatiquement selon le type et la quantité
+  const calculerMontantAutomatique = (typeCode, quantite, fonctionSuperieure = false) => {
+    const eventType = eventTypes.find(et => et.code === typeCode);
+    if (!eventType) return 0;
+    
+    const unit = eventType.unit || 'heures';
+    const tauxType = eventType.default_rate || 0;
+    
+    if (unit === 'heures') {
+      // Pour les heures : utiliser le taux horaire de l'employé × multiplicateur du type
+      const tauxHoraireEmploye = selectedFeuille?.taux_horaire || 25;
+      const multiplicateur = tauxType || 1;
+      let montant = quantite * tauxHoraireEmploye * multiplicateur;
+      
+      // Appliquer la prime fonction supérieure si cochée
+      if (fonctionSuperieure) {
+        const primePct = (parametres?.prime_fonction_superieure_pct || 10) / 100;
+        montant = montant * (1 + primePct);
+      }
+      return Math.round(montant * 100) / 100;
+    } else {
+      // Pour km, montant, quantité : utiliser le default_rate directement
+      return Math.round(quantite * tauxType * 100) / 100;
+    }
+  };
+
   // Modifier une ligne existante
   const handleUpdateLigne = (ligneId, field, value) => {
     setEditedLignes(editedLignes.map(l => {
       if (l.id === ligneId) {
         const updated = { ...l, [field]: value };
-        // Si on change le type, auto-remplir la description avec le libellé du type
+        
+        // Si on change le type, auto-remplir la description et recalculer le montant
         if (field === 'type') {
           const eventType = eventTypes.find(et => et.code === value);
           if (eventType) {
             updated.description = eventType.label;
+            // Recalculer le montant avec la nouvelle unité/taux
+            updated.montant = calculerMontantAutomatique(value, parseFloat(updated.heures_payees) || 0, updated.fonction_superieure);
           }
         }
+        
+        // Si on change la quantité/heures, recalculer le montant
+        if (field === 'heures_payees') {
+          updated.montant = calculerMontantAutomatique(updated.type, parseFloat(value) || 0, updated.fonction_superieure);
+        }
+        
         // Si on coche/décoche fonction supérieure, recalculer le montant
         if (field === 'fonction_superieure') {
-          const primePct = (parametres?.prime_fonction_superieure_pct || 10) / 100;
-          const heures = parseFloat(updated.heures_payees) || 0;
-          const tauxBase = parseFloat(selectedFeuille?.taux_horaire) || 25;
-          if (value) {
-            // Appliquer la prime
-            updated.montant = Math.round(heures * tauxBase * (1 + primePct) * 100) / 100;
-          } else {
-            // Retirer la prime
-            updated.montant = Math.round(heures * tauxBase * 100) / 100;
-          }
+          updated.montant = calculerMontantAutomatique(updated.type, parseFloat(updated.heures_payees) || 0, value);
         }
+        
         return updated;
       }
       return l;
