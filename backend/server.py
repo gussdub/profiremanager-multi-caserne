@@ -37818,6 +37818,455 @@ async def assign_intervention_reporters(
     return {"success": True}
 
 
+# ==================== REMISE DE PROPRIÉTÉ ====================
+
+class RemiseProprieteCreate(BaseModel):
+    """Modèle pour créer une remise de propriété"""
+    intervention_id: str
+    
+    # État des énergies
+    electricite: str  # "en_fonction", "coupee_panneau", "coupee_hydro"
+    gaz: str  # "en_fonction", "ferme_valve", "verrouille"
+    eau: str  # "en_fonction", "fermee"
+    
+    # Autorisation d'accès
+    niveau_acces: str  # "rouge", "jaune", "vert"
+    zone_interdite: Optional[str] = None  # Pour jaune: zones spécifiques interdites
+    
+    # Propriétaire
+    proprietaire_nom: str
+    proprietaire_email: Optional[str] = None
+    proprietaire_accepte_email: bool = False
+    proprietaire_confirme_avertissements: bool = True
+    proprietaire_comprend_interdiction: bool = False  # Pour rouge seulement
+    
+    # Signatures
+    officier_nom: str
+    officier_signature: str  # Base64
+    proprietaire_signature: Optional[str] = None  # Base64, optionnel si refus
+    
+    # Refus de signer
+    refus_de_signer: bool = False
+    temoin_nom: Optional[str] = None  # Requis si refus
+    
+    # GPS
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+
+@api_router.post("/{tenant_slug}/interventions/{intervention_id}/remise-propriete")
+async def creer_remise_propriete(
+    tenant_slug: str,
+    intervention_id: str,
+    data: RemiseProprieteCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Crée une remise de propriété et génère le PDF"""
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # Vérifier que l'intervention existe
+    intervention = await db.interventions.find_one({
+        "id": intervention_id,
+        "tenant_id": tenant["id"]
+    })
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    # Créer l'enregistrement de remise
+    remise_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc)
+    
+    remise = {
+        "id": remise_id,
+        "tenant_id": tenant["id"],
+        "intervention_id": intervention_id,
+        "created_at": now,
+        "created_by": current_user.id,
+        
+        # État des énergies
+        "electricite": data.electricite,
+        "gaz": data.gaz,
+        "eau": data.eau,
+        
+        # Autorisation d'accès
+        "niveau_acces": data.niveau_acces,
+        "zone_interdite": data.zone_interdite,
+        
+        # Propriétaire
+        "proprietaire_nom": data.proprietaire_nom,
+        "proprietaire_email": data.proprietaire_email,
+        "proprietaire_accepte_email": data.proprietaire_accepte_email,
+        "proprietaire_confirme_avertissements": data.proprietaire_confirme_avertissements,
+        "proprietaire_comprend_interdiction": data.proprietaire_comprend_interdiction,
+        
+        # Signatures
+        "officier_nom": data.officier_nom,
+        "officier_id": current_user.id,
+        "officier_signature": data.officier_signature,
+        "proprietaire_signature": data.proprietaire_signature,
+        
+        # Refus
+        "refus_de_signer": data.refus_de_signer,
+        "temoin_nom": data.temoin_nom,
+        
+        # GPS
+        "latitude": data.latitude,
+        "longitude": data.longitude,
+        
+        # PDF sera généré ensuite
+        "pdf_base64": None
+    }
+    
+    # Générer le PDF
+    pdf_base64 = await generer_pdf_remise_propriete(tenant, intervention, remise)
+    remise["pdf_base64"] = pdf_base64
+    
+    # Sauvegarder dans la collection remises_propriete
+    await db.remises_propriete.insert_one(remise)
+    
+    # Ajouter la référence à l'intervention
+    await db.interventions.update_one(
+        {"id": intervention_id, "tenant_id": tenant["id"]},
+        {
+            "$push": {"remises_propriete": remise_id},
+            "$set": {"updated_at": now}
+        }
+    )
+    
+    # Envoyer l'email si demandé
+    email_envoye = False
+    if data.proprietaire_accepte_email and data.proprietaire_email:
+        email_envoye = await envoyer_email_remise_propriete(tenant, intervention, remise, pdf_base64)
+    
+    return {
+        "success": True,
+        "remise_id": remise_id,
+        "pdf_base64": pdf_base64,
+        "email_envoye": email_envoye
+    }
+
+
+async def generer_pdf_remise_propriete(tenant: dict, intervention: dict, remise: dict) -> str:
+    """Génère le PDF de remise de propriété et retourne en base64"""
+    from reportlab.lib.pagesizes import letter
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib import colors
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
+    from reportlab.lib.units import inch
+    from io import BytesIO
+    import base64
+    
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    # Styles personnalisés
+    title_style = ParagraphStyle('Title', parent=styles['Title'], fontSize=14, spaceAfter=12, alignment=TA_CENTER)
+    section_style = ParagraphStyle('Section', parent=styles['Heading2'], fontSize=11, spaceBefore=12, spaceAfter=6, textColor=colors.darkblue)
+    normal_style = ParagraphStyle('Normal', parent=styles['Normal'], fontSize=9, spaceAfter=4)
+    warning_style = ParagraphStyle('Warning', parent=styles['Normal'], fontSize=8, textColor=colors.red, spaceBefore=4, spaceAfter=4)
+    small_style = ParagraphStyle('Small', parent=styles['Normal'], fontSize=8, textColor=colors.grey)
+    
+    # Logo et en-tête
+    nom_service = tenant.get("nom_service") or tenant.get("nom", "Service de sécurité incendie")
+    logo_url = tenant.get("logo_url")
+    
+    header_data = []
+    if logo_url and logo_url.startswith('data:image/'):
+        try:
+            header, encoded = logo_url.split(',', 1)
+            logo_data = base64.b64decode(encoded)
+            logo_buffer = BytesIO(logo_data)
+            logo_img = Image(logo_buffer, width=1*inch, height=1*inch)
+            header_data.append([logo_img, Paragraph(f"<b>{nom_service}</b><br/>AVIS DE CESSATION D'INTERVENTION<br/>ET TRANSFERT DE GARDE", title_style)])
+        except:
+            header_data.append([Paragraph(f"<b>{nom_service}</b><br/>AVIS DE CESSATION D'INTERVENTION ET TRANSFERT DE GARDE", title_style)])
+    else:
+        header_data.append([Paragraph(f"<b>{nom_service}</b><br/><br/>AVIS DE CESSATION D'INTERVENTION ET TRANSFERT DE GARDE", title_style)])
+    
+    if header_data and len(header_data[0]) == 2:
+        header_table = Table(header_data, colWidths=[1.2*inch, 5.3*inch])
+        header_table.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('ALIGN', (1, 0), (1, 0), 'CENTER'),
+        ]))
+        elements.append(header_table)
+    else:
+        elements.append(header_data[0][0])
+    
+    elements.append(Spacer(1, 12))
+    
+    # 1. IDENTIFICATION
+    elements.append(Paragraph("1. IDENTIFICATION DE L'INTERVENTION", section_style))
+    
+    date_fin = remise.get("created_at")
+    if isinstance(date_fin, datetime):
+        date_fin_str = date_fin.strftime("%Y-%m-%d à %H:%M")
+    else:
+        date_fin_str = str(date_fin)[:16] if date_fin else ""
+    
+    id_data = [
+        ["No. d'événement:", intervention.get("external_call_id", "N/A")],
+        ["Adresse du sinistre:", intervention.get("address_full", intervention.get("address_street", "N/A"))],
+        ["Date et heure fin d'intervention:", date_fin_str],
+    ]
+    
+    if remise.get("latitude") and remise.get("longitude"):
+        id_data.append(["Coordonnées GPS:", f"{remise['latitude']:.6f}, {remise['longitude']:.6f}"])
+    
+    id_table = Table(id_data, colWidths=[2.2*inch, 4.3*inch])
+    id_table.setStyle(TableStyle([
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+    ]))
+    elements.append(id_table)
+    
+    # 2. ÉTAT DES ÉNERGIES
+    elements.append(Paragraph("2. ÉTAT DES ÉNERGIES ET SERVICES", section_style))
+    
+    elec_map = {
+        "en_fonction": "☑ Laissée en fonction",
+        "coupee_panneau": "☑ Coupée au panneau principal",
+        "coupee_hydro": "☑ Coupée par Hydro-Québec"
+    }
+    gaz_map = {
+        "en_fonction": "☑ Laissé en fonction",
+        "ferme_valve": "☑ Fermé à la valve extérieure",
+        "verrouille": "☑ Compteur verrouillé/retiré"
+    }
+    eau_map = {
+        "en_fonction": "☑ Laissée en fonction",
+        "fermee": "☑ Fermée à l'entrée principale"
+    }
+    
+    elements.append(Paragraph(f"<b>ÉLECTRICITÉ:</b> {elec_map.get(remise.get('electricite'), remise.get('electricite'))}", normal_style))
+    if remise.get("electricite") in ["coupee_panneau", "coupee_hydro"]:
+        elements.append(Paragraph("⚠️ AVERTISSEMENT: L'électricité ne doit être rétablie que par un maître électricien certifié.", warning_style))
+    
+    elements.append(Paragraph(f"<b>GAZ:</b> {gaz_map.get(remise.get('gaz'), remise.get('gaz'))}", normal_style))
+    if remise.get("gaz") in ["ferme_valve", "verrouille"]:
+        elements.append(Paragraph("⚠️ AVERTISSEMENT: Ne jamais réouvrir une valve de gaz fermée. Seul le distributeur est autorisé.", warning_style))
+    
+    elements.append(Paragraph(f"<b>EAU:</b> {eau_map.get(remise.get('eau'), remise.get('eau'))}", normal_style))
+    
+    # 3. AUTORISATION D'ACCÈS
+    elements.append(Paragraph("3. AUTORISATION D'ACCÈS ET SÉCURITÉ", section_style))
+    
+    niveau = remise.get("niveau_acces", "vert")
+    if niveau == "rouge":
+        elements.append(Paragraph("🔴 <b>ACCÈS INTERDIT (DANGER)</b>", ParagraphStyle('RedAlert', parent=normal_style, textColor=colors.red, fontSize=10)))
+        elements.append(Paragraph("L'accès au bâtiment est strictement interdit. La structure est instable ou présente un danger immédiat.", normal_style))
+        elements.append(Paragraph("Action requise: Sécuriser le périmètre et contacter un ingénieur en structure.", normal_style))
+    elif niveau == "jaune":
+        elements.append(Paragraph("🟡 <b>ACCÈS RESTREINT</b>", ParagraphStyle('YellowAlert', parent=normal_style, textColor=colors.orange, fontSize=10)))
+        elements.append(Paragraph("L'accès est limité pour récupération de biens essentiels sous supervision. L'occupation est interdite.", normal_style))
+        if remise.get("zone_interdite"):
+            elements.append(Paragraph(f"Zones interdites: {remise['zone_interdite']}", normal_style))
+    else:
+        elements.append(Paragraph("🟢 <b>RÉINTÉGRATION POSSIBLE</b>", ParagraphStyle('GreenAlert', parent=normal_style, textColor=colors.green, fontSize=10)))
+        elements.append(Paragraph("Le service incendie n'émet aucune contre-indication à la réintégration.", normal_style))
+    
+    # 4. TRANSFERT DE RESPONSABILITÉ
+    elements.append(Paragraph("4. TRANSFERT DE RESPONSABILITÉ", section_style))
+    elements.append(Paragraph("<b>Transfert de garde:</b> La garde juridique des lieux est officiellement remise au propriétaire/occupant signataire.", normal_style))
+    elements.append(Paragraph("<b>Exonération:</b> Le Service de sécurité incendie et la municipalité se dégagent de toute responsabilité concernant le vol, le vandalisme, les dommages climatiques ou la détérioration des biens.", normal_style))
+    elements.append(Paragraph("<b>Obligation du propriétaire:</b> Sécuriser les ouvertures et aviser les assureurs.", normal_style))
+    
+    # 5. SIGNATURES
+    elements.append(Paragraph("5. SIGNATURES", section_style))
+    
+    # Signature officier
+    elements.append(Paragraph(f"<b>L'Officier Responsable:</b> {remise.get('officier_nom', '')}", normal_style))
+    if remise.get("officier_signature"):
+        try:
+            sig_data = remise["officier_signature"]
+            if "," in sig_data:
+                sig_data = sig_data.split(",")[1]
+            sig_bytes = base64.b64decode(sig_data)
+            sig_buffer = BytesIO(sig_bytes)
+            sig_img = Image(sig_buffer, width=2*inch, height=0.6*inch)
+            elements.append(sig_img)
+        except:
+            elements.append(Paragraph("[Signature numérique enregistrée]", small_style))
+    
+    elements.append(Spacer(1, 12))
+    
+    # Signature propriétaire
+    if remise.get("refus_de_signer"):
+        elements.append(Paragraph(f"<b>Le Propriétaire/Représentant:</b> REFUS DE SIGNER", ParagraphStyle('Refus', parent=normal_style, textColor=colors.red)))
+        elements.append(Paragraph(f"Avis remis verbalement. Témoin: {remise.get('temoin_nom', 'N/A')}", normal_style))
+    else:
+        elements.append(Paragraph(f"<b>Le Propriétaire/Représentant:</b> {remise.get('proprietaire_nom', '')}", normal_style))
+        if remise.get("proprietaire_confirme_avertissements"):
+            elements.append(Paragraph("☑ Confirme avoir reçu la garde et pris connaissance des avertissements.", small_style))
+        if remise.get("proprietaire_comprend_interdiction") and niveau == "rouge":
+            elements.append(Paragraph("☑ Comprend qu'il est interdit de pénétrer dans le périmètre de sécurité.", small_style))
+        
+        if remise.get("proprietaire_signature"):
+            try:
+                sig_data = remise["proprietaire_signature"]
+                if "," in sig_data:
+                    sig_data = sig_data.split(",")[1]
+                sig_bytes = base64.b64decode(sig_data)
+                sig_buffer = BytesIO(sig_bytes)
+                sig_img = Image(sig_buffer, width=2*inch, height=0.6*inch)
+                elements.append(sig_img)
+            except:
+                elements.append(Paragraph("[Signature numérique enregistrée]", small_style))
+    
+    # Footer
+    elements.append(Spacer(1, 20))
+    elements.append(Paragraph(f"Document généré le {datetime.now().strftime('%Y-%m-%d à %H:%M')} par {nom_service}", small_style))
+    
+    # Build PDF
+    doc.build(elements)
+    
+    # Retourner en base64
+    pdf_bytes = buffer.getvalue()
+    return base64.b64encode(pdf_bytes).decode('utf-8')
+
+
+async def envoyer_email_remise_propriete(tenant: dict, intervention: dict, remise: dict, pdf_base64: str) -> bool:
+    """Envoie l'email avec le PDF en pièce jointe"""
+    try:
+        resend_api_key = os.environ.get("RESEND_API_KEY")
+        if not resend_api_key:
+            print("RESEND_API_KEY non configurée")
+            return False
+        
+        resend.api_key = resend_api_key
+        
+        # Construire l'adresse d'envoi
+        tenant_slug = tenant.get("slug", "service")
+        # Utiliser l'email configuré ou fallback
+        from_email = os.environ.get("RESEND_FROM_EMAIL", "noreply@resend.dev")
+        
+        nom_service = tenant.get("nom_service") or tenant.get("nom", "Service de sécurité incendie")
+        
+        niveau_acces = remise.get("niveau_acces", "vert")
+        niveau_label = {
+            "rouge": "🔴 ACCÈS INTERDIT",
+            "jaune": "🟡 ACCÈS RESTREINT", 
+            "vert": "🟢 RÉINTÉGRATION POSSIBLE"
+        }.get(niveau_acces, niveau_acces)
+        
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #dc2626;">Avis de cessation d'intervention et transfert de garde</h2>
+            
+            <p>Bonjour {remise.get('proprietaire_nom', '')},</p>
+            
+            <p>Veuillez trouver ci-joint l'avis officiel de cessation d'intervention suite au sinistre à l'adresse:</p>
+            
+            <p style="background: #f3f4f6; padding: 12px; border-radius: 8px;">
+                <strong>📍 {intervention.get('address_full', intervention.get('address_street', 'N/A'))}</strong><br>
+                <strong>No. d'événement:</strong> {intervention.get('external_call_id', 'N/A')}<br>
+                <strong>Statut d'accès:</strong> {niveau_label}
+            </p>
+            
+            <p><strong>Rappels importants:</strong></p>
+            <ul>
+                <li>Contactez votre compagnie d'assurance dans les plus brefs délais</li>
+                <li>Sécurisez les ouvertures (portes, fenêtres) pour éviter les intrusions</li>
+                {"<li style='color: red;'><strong>L'accès au bâtiment est interdit jusqu'à évaluation par un ingénieur</strong></li>" if niveau_acces == "rouge" else ""}
+            </ul>
+            
+            <p>Le document PDF ci-joint constitue la preuve officielle du transfert de responsabilité.</p>
+            
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+            
+            <p style="color: #6b7280; font-size: 12px;">
+                {nom_service}<br>
+                Ce courriel a été envoyé automatiquement suite à votre intervention.
+            </p>
+        </div>
+        """
+        
+        # Décoder le PDF pour l'attachement
+        pdf_bytes = base64.b64decode(pdf_base64)
+        
+        params = {
+            "from": f"{nom_service} <{from_email}>",
+            "to": [remise.get("proprietaire_email")],
+            "subject": f"Avis de cessation d'intervention - {intervention.get('external_call_id', '')}",
+            "html": html_content,
+            "attachments": [
+                {
+                    "filename": f"remise_propriete_{intervention.get('external_call_id', 'NA')}.pdf",
+                    "content": pdf_base64
+                }
+            ]
+        }
+        
+        response = resend.Emails.send(params)
+        print(f"Email remise propriété envoyé: {response}")
+        return True
+        
+    except Exception as e:
+        print(f"Erreur envoi email remise propriété: {e}")
+        return False
+
+
+@api_router.get("/{tenant_slug}/interventions/{intervention_id}/remises-propriete")
+async def get_remises_propriete(
+    tenant_slug: str,
+    intervention_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère toutes les remises de propriété d'une intervention"""
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    remises = await db.remises_propriete.find({
+        "tenant_id": tenant["id"],
+        "intervention_id": intervention_id
+    }, {"_id": 0}).sort("created_at", -1).to_list(100)
+    
+    return {"remises": remises}
+
+
+@api_router.get("/{tenant_slug}/interventions/{intervention_id}/remise-propriete/{remise_id}/pdf")
+async def get_remise_propriete_pdf(
+    tenant_slug: str,
+    intervention_id: str,
+    remise_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère le PDF d'une remise de propriété"""
+    tenant = await get_tenant_by_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    remise = await db.remises_propriete.find_one({
+        "id": remise_id,
+        "tenant_id": tenant["id"],
+        "intervention_id": intervention_id
+    }, {"_id": 0})
+    
+    if not remise:
+        raise HTTPException(status_code=404, detail="Remise non trouvée")
+    
+    if not remise.get("pdf_base64"):
+        raise HTTPException(status_code=404, detail="PDF non disponible")
+    
+    # Décoder et retourner le PDF
+    pdf_bytes = base64.b64decode(remise["pdf_base64"])
+    
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename=remise_propriete_{remise_id[:8]}.pdf"
+        }
+    )
+
+
 # ==================== FIN MODULE GESTION DES INTERVENTIONS ====================
 
 
