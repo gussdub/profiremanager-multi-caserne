@@ -9,7 +9,7 @@ alors qu'il devait lire `parametres.get('actifs', {}).get('emails_notifications_
 
 ENVIRONNEMENT DE TEST:
 - Tenant: demo
-- Backend URL: https://rescuepay.preview.emergentagent.com
+- Backend URL: https://firstresponse-1.preview.emergentagent.com
 - Credentials: gussdub@gmail.com / 230685Juin+
 - User ID de Guillaume Dubeau: f4bdfa76-a2a2-4a01-9734-2cf534d04d31
 
@@ -40,7 +40,7 @@ import os
 
 class VehicleInventoryEmailTester:
     def __init__(self):
-        self.base_url = "https://rescuepay.preview.emergentagent.com/api"
+        self.base_url = "https://firstresponse-1.preview.emergentagent.com/api"
         self.headers = {}
         self.token = None
         self.tenant_slug = "demo"

@@ -10,7 +10,7 @@ import time
 
 def test_attribution_with_logs():
     # Authentification
-    auth_url = "https://rescuepay.preview.emergentagent.com/api/demo/auth/login"
+    auth_url = "https://firstresponse-1.preview.emergentagent.com/api/demo/auth/login"
     credentials = {"email": "gussdub@gmail.com", "mot_de_passe": "230685Juin+"}
     
     print("🔐 Authentification...")
@@ -26,7 +26,7 @@ def test_attribution_with_logs():
     # Test attribution pour une semaine spécifique
     print("\n🚀 Test attribution automatique pour semaine 2025-12-01...")
     
-    attribution_url = "https://rescuepay.preview.emergentagent.com/api/demo/planning/attribution-auto"
+    attribution_url = "https://firstresponse-1.preview.emergentagent.com/api/demo/planning/attribution-auto"
     params = {
         "semaine_debut": "2025-12-01",
         "reset": True  # Reset existing assignments
@@ -52,7 +52,7 @@ def test_attribution_with_logs():
             time.sleep(3)
             
             # Vérifier les assignations créées
-            assignations_url = f"https://rescuepay.preview.emergentagent.com/api/demo/planning/assignations/2025-12-01"
+            assignations_url = f"https://firstresponse-1.preview.emergentagent.com/api/demo/planning/assignations/2025-12-01"
             response = requests.get(assignations_url, headers=headers)
             
             if response.status_code == 200:
