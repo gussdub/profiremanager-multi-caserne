@@ -73,7 +73,6 @@ const ModulePaie = ({ tenant }) => {
   const getToken = () => {
     return localStorage.getItem(`${tenant}_token`) || localStorage.getItem('token');
   };
-  const token = getToken();
 
   const fetchParametres = useCallback(async () => {
     const currentToken = getToken();
