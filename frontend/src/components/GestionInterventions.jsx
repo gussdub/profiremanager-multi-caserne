@@ -4748,7 +4748,7 @@ const SectionFacturation = ({ formData, setFormData, editMode, tenantSlug, getTo
 
 // ==================== ONGLET HISTORIQUE ====================
 
-const TabHistorique = ({ user, tenantSlug, toast }) => {
+const TabHistorique = ({ user, tenantSlug, toast, readOnly = false }) => {
   const [interventions, setInterventions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ status: 'signed', dateFrom: '', dateTo: '' });
@@ -4784,6 +4784,8 @@ const TabHistorique = ({ user, tenantSlug, toast }) => {
 
   // Déverrouiller une intervention (admin seulement)
   const handleUnlock = async (interventionId) => {
+    if (readOnly) return; // Pas d'action en lecture seule
+    
     if (!window.confirm('Êtes-vous sûr de vouloir déverrouiller cette intervention pour modification ?')) {
       return;
     }
