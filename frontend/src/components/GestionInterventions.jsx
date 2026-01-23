@@ -927,7 +927,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
             <SectionIdentification 
               formData={formData} 
               setFormData={setFormData}
-              editMode={editMode && !isLocked}
+              editMode={editMode && !isLocked && !forceReadOnly}
               formatDateTime={formatDateTime}
               tenantSlug={tenantSlug}
               getToken={getToken}
@@ -938,7 +938,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
             <SectionBatiment 
               formData={formData} 
               setFormData={setFormData}
-              editMode={editMode && !isLocked}
+              editMode={editMode && !isLocked && !forceReadOnly}
               referenceData={referenceData}
               tenantSlug={tenantSlug}
               getToken={getToken}
@@ -950,7 +950,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
               resources={resources}
               formData={formData}
               setFormData={setFormData}
-              editMode={editMode && !isLocked}
+              editMode={editMode && !isLocked && !forceReadOnly}
               tenantSlug={tenantSlug}
               interventionId={formData.id}
               onRefresh={fetchDetails}
@@ -960,7 +960,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
             <SectionMateriel 
               formData={formData}
               setFormData={setFormData}
-              editMode={editMode && !isLocked}
+              editMode={editMode && !isLocked && !forceReadOnly}
               tenantSlug={tenantSlug}
               getToken={getToken}
             />
@@ -969,7 +969,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
             <SectionDSI 
               formData={formData} 
               setFormData={setFormData}
-              editMode={editMode && !isLocked}
+              editMode={editMode && !isLocked && !forceReadOnly}
               referenceData={referenceData}
             />
           )}
@@ -977,21 +977,21 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
             <SectionProtection 
               formData={formData} 
               setFormData={setFormData}
-              editMode={editMode && !isLocked}
+              editMode={editMode && !isLocked && !forceReadOnly}
             />
           )}
           {activeSection === 'pertes' && (
             <SectionPertes 
               formData={formData} 
               setFormData={setFormData}
-              editMode={editMode && !isLocked}
+              editMode={editMode && !isLocked && !forceReadOnly}
             />
           )}
           {activeSection === 'narratif' && (
             <SectionNarratif 
               formData={formData} 
               setFormData={setFormData}
-              editMode={editMode && !isLocked}
+              editMode={editMode && !isLocked && !forceReadOnly}
               settings={interventionSettings}
             />
           )}
