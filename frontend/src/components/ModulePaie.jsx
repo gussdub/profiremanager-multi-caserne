@@ -147,9 +147,11 @@ const ModulePaie = ({ tenant }) => {
   }, [tenant]);
 
   const fetchCodeMappings = useCallback(async () => {
+    const currentToken = getToken();
+    if (!currentToken) return;
     try {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/code-mappings`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${currentToken}` }
       });
       if (response.ok) {
         const data = await response.json();
@@ -159,7 +161,7 @@ const ModulePaie = ({ tenant }) => {
     } catch (error) {
       console.error('Erreur chargement mappings:', error);
     }
-  }, [tenant, token]);
+  }, [tenant]);
 
   // Charger les matricules employés (depuis les profils employés)
   useEffect(() => {
