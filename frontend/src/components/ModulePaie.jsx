@@ -98,6 +98,11 @@ const ModulePaie = ({ tenant }) => {
   }, [tenant]);
 
   const fetchFeuilles = useCallback(async () => {
+    const currentToken = getToken();
+    if (!currentToken) {
+      console.warn('[ModulePaie] Token non disponible pour feuilles');
+      return;
+    }
     try {
       let url = `${API_URL}/api/${tenant}/paie/feuilles-temps?`;
       if (filtreAnnee) url += `annee=${filtreAnnee}&`;
@@ -106,7 +111,7 @@ const ModulePaie = ({ tenant }) => {
       if (filtreStatut) url += `statut=${filtreStatut}&`;
       
       const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${currentToken}` }
       });
       if (response.ok) {
         const data = await response.json();
@@ -115,7 +120,7 @@ const ModulePaie = ({ tenant }) => {
     } catch (error) {
       console.error('Erreur chargement feuilles:', error);
     }
-  }, [tenant, token, filtreAnnee, filtreMois, filtreEmploye, filtreStatut]);
+  }, [tenant, filtreAnnee, filtreMois, filtreEmploye, filtreStatut]);
 
   const fetchEmployes = useCallback(async () => {
     try {
