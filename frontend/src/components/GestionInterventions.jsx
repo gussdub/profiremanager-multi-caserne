@@ -385,6 +385,7 @@ const TabRapports = ({ user, tenantSlug, toast, readOnly = false }) => {
             fetchDashboard();
           }}
           toast={toast}
+          readOnly={readOnly}
         />
       )}
     </div>
