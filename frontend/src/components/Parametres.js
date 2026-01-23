@@ -1654,6 +1654,569 @@ const Parametres = ({ user, tenantSlug }) => {
         )}
 
       </div>
+
+      {/* ========== MODALS DE CRÉATION ET ÉDITION ========== */}
+
+      {/* Modal de création de type de garde */}
+      {showCreateTypeModal && (
+        <div className="modal-overlay" onClick={() => setShowCreateTypeModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+            <div className="modal-header">
+              <h3>Créer un nouveau type de garde</h3>
+              <button className="close-btn" onClick={() => setShowCreateTypeModal(false)}>×</button>
+            </div>
+            <div className="modal-body" style={{ display: 'grid', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Nom du type *</label>
+                <input
+                  type="text"
+                  value={createForm.nom || ''}
+                  onChange={(e) => setCreateForm({ ...createForm, nom: e.target.value })}
+                  placeholder="Ex: Garde interne jour"
+                  style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Heure début *</label>
+                  <input
+                    type="time"
+                    value={createForm.heure_debut || '08:00'}
+                    onChange={(e) => setCreateForm({ ...createForm, heure_debut: e.target.value })}
+                    style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Heure fin *</label>
+                  <input
+                    type="time"
+                    value={createForm.heure_fin || '16:00'}
+                    onChange={(e) => setCreateForm({ ...createForm, heure_fin: e.target.value })}
+                    style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                  />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Personnel requis</label>
+                  <input
+                    type="number"
+                    value={createForm.personnel_requis || 1}
+                    onChange={(e) => setCreateForm({ ...createForm, personnel_requis: parseInt(e.target.value) || 1 })}
+                    min="1"
+                    style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Couleur</label>
+                  <input
+                    type="color"
+                    value={createForm.couleur || '#3b82f6'}
+                    onChange={(e) => setCreateForm({ ...createForm, couleur: e.target.value })}
+                    style={{ width: '100%', height: '40px', border: '1px solid #d1d5db', borderRadius: '6px', cursor: 'pointer' }}
+                  />
+                </div>
+              </div>
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={createForm.officier_obligatoire || false}
+                    onChange={(e) => setCreateForm({ ...createForm, officier_obligatoire: e.target.checked })}
+                  />
+                  <span>🎖️ Officier obligatoire</span>
+                </label>
+              </div>
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={createForm.est_garde_externe || false}
+                    onChange={(e) => setCreateForm({ ...createForm, est_garde_externe: e.target.checked })}
+                  />
+                  <span>🏠 Garde externe (astreinte)</span>
+                </label>
+              </div>
+              {createForm.est_garde_externe && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', padding: '12px', background: '#fef3c7', borderRadius: '6px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Taux horaire externe ($/h)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={createForm.taux_horaire_externe || ''}
+                      onChange={(e) => setCreateForm({ ...createForm, taux_horaire_externe: parseFloat(e.target.value) || null })}
+                      placeholder="Ex: 5.50"
+                      style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Prime de garde ($)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={createForm.montant_garde || ''}
+                      onChange={(e) => setCreateForm({ ...createForm, montant_garde: parseFloat(e.target.value) || null })}
+                      placeholder="Ex: 50.00"
+                      style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
+              <Button variant="outline" onClick={() => setShowCreateTypeModal(false)}>
+                Annuler
+              </Button>
+              <Button variant="default" onClick={handleCreateType}>
+                Créer
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de création de compétence */}
+      {showCreateFormationModal && activeTab === 'competences' && (
+        <div className="modal-overlay" onClick={() => setShowCreateFormationModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <div className="modal-header">
+              <h3>Créer une nouvelle compétence</h3>
+              <button className="close-btn" onClick={() => setShowCreateFormationModal(false)}>×</button>
+            </div>
+            <div className="modal-body" style={{ display: 'grid', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Nom de la compétence *</label>
+                <input
+                  type="text"
+                  value={newFormation.nom || ''}
+                  onChange={(e) => setNewFormation({ ...newFormation, nom: e.target.value })}
+                  placeholder="Ex: Conduite véhicule lourd"
+                  style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Description</label>
+                <textarea
+                  value={newFormation.description || ''}
+                  onChange={(e) => setNewFormation({ ...newFormation, description: e.target.value })}
+                  placeholder="Description de la compétence..."
+                  rows={3}
+                  style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px', resize: 'vertical' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Heures requises annuellement</label>
+                <input
+                  type="number"
+                  value={newFormation.duree_heures || 0}
+                  onChange={(e) => setNewFormation({ ...newFormation, duree_heures: parseInt(e.target.value) || 0 })}
+                  min="0"
+                  style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={newFormation.obligatoire || false}
+                    onChange={(e) => setNewFormation({ ...newFormation, obligatoire: e.target.checked })}
+                  />
+                  <span>⚠️ Compétence obligatoire</span>
+                </label>
+              </div>
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
+              <Button variant="outline" onClick={() => setShowCreateFormationModal(false)}>
+                Annuler
+              </Button>
+              <Button variant="default" onClick={handleCreateCompetence}>
+                Créer
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal d'édition de compétence */}
+      {showEditFormationModal && activeTab === 'competences' && editingItem && (
+        <div className="modal-overlay" onClick={() => setShowEditFormationModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <div className="modal-header">
+              <h3>Modifier la compétence</h3>
+              <button className="close-btn" onClick={() => setShowEditFormationModal(false)}>×</button>
+            </div>
+            <div className="modal-body" style={{ display: 'grid', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Nom de la compétence *</label>
+                <input
+                  type="text"
+                  value={editFormation.nom || ''}
+                  onChange={(e) => setEditFormation({ ...editFormation, nom: e.target.value })}
+                  placeholder="Ex: Conduite véhicule lourd"
+                  style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Description</label>
+                <textarea
+                  value={editFormation.description || ''}
+                  onChange={(e) => setEditFormation({ ...editFormation, description: e.target.value })}
+                  placeholder="Description de la compétence..."
+                  rows={3}
+                  style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px', resize: 'vertical' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Heures requises annuellement</label>
+                <input
+                  type="number"
+                  value={editFormation.duree_heures || 0}
+                  onChange={(e) => setEditFormation({ ...editFormation, duree_heures: parseInt(e.target.value) || 0 })}
+                  min="0"
+                  style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={editFormation.obligatoire || false}
+                    onChange={(e) => setEditFormation({ ...editFormation, obligatoire: e.target.checked })}
+                  />
+                  <span>⚠️ Compétence obligatoire</span>
+                </label>
+              </div>
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
+              <Button variant="outline" onClick={() => setShowEditFormationModal(false)}>
+                Annuler
+              </Button>
+              <Button variant="default" onClick={handleUpdateCompetence}>
+                Enregistrer
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de création de grade */}
+      {showCreateGradeModal && (
+        <div className="modal-overlay" onClick={() => setShowCreateGradeModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '450px' }}>
+            <div className="modal-header">
+              <h3>Créer un nouveau grade</h3>
+              <button className="close-btn" onClick={() => setShowCreateGradeModal(false)}>×</button>
+            </div>
+            <div className="modal-body" style={{ display: 'grid', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Nom du grade *</label>
+                <input
+                  type="text"
+                  value={newGrade.nom || ''}
+                  onChange={(e) => setNewGrade({ ...newGrade, nom: e.target.value })}
+                  placeholder="Ex: Lieutenant"
+                  style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Niveau hiérarchique</label>
+                <input
+                  type="number"
+                  value={newGrade.niveau_hierarchique || 1}
+                  onChange={(e) => setNewGrade({ ...newGrade, niveau_hierarchique: parseInt(e.target.value) || 1 })}
+                  min="1"
+                  style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                />
+                <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '4px' }}>
+                  Plus le niveau est élevé, plus le grade est haut dans la hiérarchie
+                </p>
+              </div>
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={newGrade.est_officier || false}
+                    onChange={(e) => setNewGrade({ ...newGrade, est_officier: e.target.checked })}
+                  />
+                  <span>👮 Ce grade est un grade d'officier</span>
+                </label>
+              </div>
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
+              <Button variant="outline" onClick={() => setShowCreateGradeModal(false)}>
+                Annuler
+              </Button>
+              <Button variant="default" onClick={handleCreateGrade}>
+                Créer
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal d'édition de grade */}
+      {showEditGradeModal && editingItem && (
+        <div className="modal-overlay" onClick={() => setShowEditGradeModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '450px' }}>
+            <div className="modal-header">
+              <h3>Modifier le grade</h3>
+              <button className="close-btn" onClick={() => setShowEditGradeModal(false)}>×</button>
+            </div>
+            <div className="modal-body" style={{ display: 'grid', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Nom du grade *</label>
+                <input
+                  type="text"
+                  value={editGrade.nom || ''}
+                  onChange={(e) => setEditGrade({ ...editGrade, nom: e.target.value })}
+                  placeholder="Ex: Lieutenant"
+                  style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Niveau hiérarchique</label>
+                <input
+                  type="number"
+                  value={editGrade.niveau_hierarchique || 1}
+                  onChange={(e) => setEditGrade({ ...editGrade, niveau_hierarchique: parseInt(e.target.value) || 1 })}
+                  min="1"
+                  style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                />
+                <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '4px' }}>
+                  Plus le niveau est élevé, plus le grade est haut dans la hiérarchie
+                </p>
+              </div>
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={editGrade.est_officier || false}
+                    onChange={(e) => setEditGrade({ ...editGrade, est_officier: e.target.checked })}
+                  />
+                  <span>👮 Ce grade est un grade d'officier</span>
+                </label>
+              </div>
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
+              <Button variant="outline" onClick={() => setShowEditGradeModal(false)}>
+                Annuler
+              </Button>
+              <Button variant="default" onClick={handleUpdateGrade}>
+                Enregistrer
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de création de compte utilisateur */}
+      {showCreateUserModal && (
+        <div className="modal-overlay" onClick={() => setShowCreateUserModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="modal-header">
+              <h3>Créer un nouveau compte</h3>
+              <button className="close-btn" onClick={() => setShowCreateUserModal(false)}>×</button>
+            </div>
+            <div className="modal-body" style={{ display: 'grid', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Prénom *</label>
+                  <input
+                    type="text"
+                    value={newUser.prenom || ''}
+                    onChange={(e) => setNewUser({ ...newUser, prenom: e.target.value })}
+                    placeholder="Prénom"
+                    style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Nom *</label>
+                  <input
+                    type="text"
+                    value={newUser.nom || ''}
+                    onChange={(e) => setNewUser({ ...newUser, nom: e.target.value })}
+                    placeholder="Nom"
+                    style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                  />
+                </div>
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Email *</label>
+                <input
+                  type="email"
+                  value={newUser.email || ''}
+                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  placeholder="email@exemple.com"
+                  style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Mot de passe *</label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showPasswordComptes ? 'text' : 'password'}
+                    value={newUser.mot_de_passe || ''}
+                    onChange={(e) => setNewUser({ ...newUser, mot_de_passe: e.target.value })}
+                    placeholder="Mot de passe sécurisé"
+                    style={{ width: '100%', padding: '8px', paddingRight: '40px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswordComptes(!showPasswordComptes)}
+                    style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer' }}
+                  >
+                    {showPasswordComptes ? '🙈' : '👁️'}
+                  </button>
+                </div>
+                <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '4px' }}>
+                  Min. 8 caractères, 1 majuscule, 1 chiffre, 1 caractère spécial (!@#$%^&*+-?())
+                </p>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Téléphone</label>
+                  <input
+                    type="tel"
+                    value={newUser.telephone || ''}
+                    onChange={(e) => setNewUser({ ...newUser, telephone: e.target.value })}
+                    placeholder="514-555-1234"
+                    style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Contact d'urgence</label>
+                  <input
+                    type="tel"
+                    value={newUser.contact_urgence || ''}
+                    onChange={(e) => setNewUser({ ...newUser, contact_urgence: e.target.value })}
+                    placeholder="514-555-5678"
+                    style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                  />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Grade</label>
+                  <select
+                    value={newUser.grade || 'Pompier'}
+                    onChange={(e) => setNewUser({ ...newUser, grade: e.target.value })}
+                    style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                  >
+                    {grades.map(g => (
+                      <option key={g.id} value={g.nom}>{g.nom}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Type d'emploi</label>
+                  <select
+                    value={newUser.type_emploi || 'temps_plein'}
+                    onChange={(e) => setNewUser({ ...newUser, type_emploi: e.target.value })}
+                    style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                  >
+                    <option value="temps_plein">Temps plein</option>
+                    <option value="temps_partiel">Temps partiel</option>
+                  </select>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Rôle</label>
+                  <select
+                    value={newUser.role || 'employe'}
+                    onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                    style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                  >
+                    <option value="employe">Employé</option>
+                    <option value="superviseur">Superviseur</option>
+                    <option value="admin">Administrateur</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Numéro d'employé</label>
+                  <input
+                    type="text"
+                    value={newUser.numero_employe || ''}
+                    onChange={(e) => setNewUser({ ...newUser, numero_employe: e.target.value })}
+                    placeholder="Auto-généré si vide"
+                    style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                  />
+                </div>
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Date d'embauche</label>
+                <input
+                  type="date"
+                  value={newUser.date_embauche || ''}
+                  onChange={(e) => setNewUser({ ...newUser, date_embauche: e.target.value })}
+                  style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                />
+              </div>
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
+              <Button variant="outline" onClick={() => setShowCreateUserModal(false)}>
+                Annuler
+              </Button>
+              <Button variant="default" onClick={handleCreateUser}>
+                Créer le compte
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de modification d'accès utilisateur */}
+      {showEditAccessModal && editingUser && (
+        <div className="modal-overlay" onClick={() => setShowEditAccessModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '450px' }}>
+            <div className="modal-header">
+              <h3>Modifier l'accès de {editingUser.prenom} {editingUser.nom}</h3>
+              <button className="close-btn" onClick={() => setShowEditAccessModal(false)}>×</button>
+            </div>
+            <div className="modal-body" style={{ display: 'grid', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Rôle</label>
+                <select
+                  value={userAccess.role || 'employe'}
+                  onChange={(e) => setUserAccess({ ...userAccess, role: e.target.value })}
+                  style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                >
+                  <option value="employe">👤 Employé</option>
+                  <option value="superviseur">🎖️ Superviseur</option>
+                  <option value="admin">👑 Administrateur</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Statut</label>
+                <select
+                  value={userAccess.statut || 'actif'}
+                  onChange={(e) => setUserAccess({ ...userAccess, statut: e.target.value })}
+                  style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                >
+                  <option value="actif">✅ Actif</option>
+                  <option value="inactif">⏸️ Inactif</option>
+                  <option value="suspendu">🚫 Suspendu</option>
+                </select>
+              </div>
+              <div style={{ padding: '12px', background: '#f3f4f6', borderRadius: '6px' }}>
+                <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                  <strong>Note:</strong> Les modifications d'accès prennent effet immédiatement. L'utilisateur devra peut-être se reconnecter.
+                </p>
+              </div>
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
+              <Button variant="outline" onClick={() => setShowEditAccessModal(false)}>
+                Annuler
+              </Button>
+              <Button variant="default" onClick={handleUpdateAccess}>
+                Enregistrer
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
