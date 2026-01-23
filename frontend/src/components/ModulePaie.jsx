@@ -169,7 +169,7 @@ const ModulePaie = ({ tenant }) => {
     } catch (error) {
       console.error('Erreur chargement mappings:', error);
     }
-  }, [tenant, token]);
+  }, [tenant]);
 
   // Charger les matricules employés (depuis les profils employés)
   useEffect(() => {
