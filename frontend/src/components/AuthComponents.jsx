@@ -531,6 +531,14 @@ const Login = () => {
         });
       }
     } else {
+      // En cas d'échec, effacer les credentials sauvegardés pour ce tenant
+      // Cela évite les boucles d'erreur sur iOS où les anciens credentials
+      // peuvent être désynchronisés avec le vrai mot de passe
+      if (storageModule.current) {
+        await storageModule.current.clearCredentials(tenantSlug);
+        console.log('[Login] ⚠️ Credentials effacés suite à échec de connexion');
+      }
+      
       toast({
         title: "Erreur de connexion",
         description: result.error,
