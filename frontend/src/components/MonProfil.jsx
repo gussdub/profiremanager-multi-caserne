@@ -33,7 +33,6 @@ const MonProfil = () => {
     confirm_password: ''
   });
   const [profileData, setProfileData] = useState({});
-  const [myEPIs, setMyEPIs] = useState([]);
   const [epiTailles, setEpiTailles] = useState({});
   const [photoUploading, setPhotoUploading] = useState(false);
   const photoInputRef = React.useRef(null);
