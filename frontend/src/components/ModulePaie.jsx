@@ -70,12 +70,17 @@ const ModulePaie = ({ tenant }) => {
   const [showEventTypeForm, setShowEventTypeForm] = useState(false);
 
   // Récupérer le token avec le bon préfixe tenant
-  const token = localStorage.getItem(`${tenant}_token`);
+  const getToken = () => localStorage.getItem(`${tenant}_token`);
 
   const fetchParametres = useCallback(async () => {
+    const currentToken = getToken();
+    if (!currentToken) {
+      console.warn('[ModulePaie] Token non disponible pour fetchParametres');
+      return;
+    }
     try {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/parametres`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${currentToken}` }
       });
       if (response.ok) {
         const data = await response.json();
@@ -84,7 +89,7 @@ const ModulePaie = ({ tenant }) => {
     } catch (error) {
       console.error('Erreur chargement paramètres paie:', error);
     }
-  }, [tenant, token]);
+  }, [tenant]);
 
   const fetchFeuilles = useCallback(async () => {
     try {
