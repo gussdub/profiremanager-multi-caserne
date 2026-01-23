@@ -1811,19 +1811,23 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       <p style={{ fontSize: '0.813rem', color: '#64748b', marginBottom: '0.75rem' }}>
                         Tailles déclarées par l'employé dans "Mon profil" (lecture seule)
                       </p>
-                      {userEPIs && userEPIs.length > 0 ? (
+                      {selectedUser.tailles_epi && Object.keys(selectedUser.tailles_epi).length > 0 ? (
                         <div className="detail-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                          {userEPIs.map(epi => (
-                            <div key={epi.id} className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
-                              <span className="detail-label" style={{ minWidth: '140px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <span>{getEPIIcone(epi.type_epi)}</span>
-                                {getEPINom(epi.type_epi)}
-                              </span>
-                              <span className="detail-value" style={{ marginLeft: '1.5rem', textAlign: 'right', flex: 1, fontWeight: '600', color: '#1F2937' }}>
-                                {epi.taille || 'Non renseignée'}
-                              </span>
-                            </div>
-                          ))}
+                          {getAllEPITypes().map(epiType => {
+                            const taille = selectedUser.tailles_epi[epiType.id];
+                            if (!taille) return null;
+                            return (
+                              <div key={epiType.id} className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
+                                <span className="detail-label" style={{ minWidth: '140px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                  <span>{epiType.icone}</span>
+                                  {epiType.nom}
+                                </span>
+                                <span className="detail-value" style={{ marginLeft: '1.5rem', textAlign: 'right', flex: 1, fontWeight: '600', color: '#1F2937' }}>
+                                  {taille}
+                                </span>
+                              </div>
+                            );
+                          })}
                         </div>
                       ) : (
                         <p className="no-data-text">Aucune taille renseignée</p>
