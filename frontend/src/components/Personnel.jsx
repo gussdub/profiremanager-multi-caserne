@@ -2739,10 +2739,21 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                 </div>
               </div>
 
-              <div className="modal-actions" style={{ display: 'flex', justifyContent: 'center', padding: '1rem' }}>
-                <p style={{ fontSize: '0.875rem', color: '#64748b', textAlign: 'center' }}>
-                  💡 Les modifications sont sauvegardées automatiquement lors de la fermeture
-                </p>
+              <div className="modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', padding: '1.5rem', borderTop: '1px solid #e5e7eb', background: '#f8fafc' }}>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowEditModal(false)}
+                  data-testid="cancel-edit-user-btn"
+                >
+                  Annuler
+                </Button>
+                <Button 
+                  variant="default" 
+                  onClick={handleUpdateUser}
+                  data-testid="save-edit-user-btn"
+                >
+                  💾 Enregistrer les modifications
+                </Button>
               </div>
             </div>
           </div>
