@@ -4,7 +4,6 @@ import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { useToast } from '../hooks/use-toast';
 import useModalScrollLock from '../hooks/useModalScrollLock';
-import RemiseProprieteModal from './RemiseProprieteModal';
 import {
   DndContext,
   closestCenter,
