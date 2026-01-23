@@ -163,6 +163,21 @@ export const AuthProvider = ({ children }) => {
     removeItem('current_inspection_id');
     removeItem('detail_inspection_id');
     
+    // Nettoyage supplémentaire pour iOS - effacer les caches potentiellement corrompus
+    try {
+      // Nettoyer sessionStorage aussi (peut causer des problèmes sur iOS)
+      if (tenantSlug) {
+        sessionStorage.removeItem(`${tenantSlug}_token`);
+        sessionStorage.removeItem(`${tenantSlug}_user`);
+        sessionStorage.removeItem(`${tenantSlug}_tenant`);
+      }
+      // Nettoyer les anciens formats de stockage qui peuvent interférer
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
+    } catch (e) {
+      console.log('[Logout] SessionStorage cleanup skipped:', e.message);
+    }
+    
     // Supprimer le header Authorization d'axios
     delete axios.defaults.headers.common['Authorization'];
     
