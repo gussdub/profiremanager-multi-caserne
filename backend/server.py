@@ -36726,6 +36726,7 @@ async def get_intervention_settings(
             "auto_archive_after_days": 365,
             "personnes_ressources": [],
             "validateurs": [],
+            "acces_employes_historique": False,  # Par défaut, employés n'ont pas accès à l'historique
             "modeles_narratif": [
                 {"id": "1", "titre": "Arrivée sur les lieux", "contenu": "À notre arrivée sur les lieux, nous avons constaté..."},
                 {"id": "2", "titre": "Intervention standard", "contenu": "L'intervention s'est déroulée sans incident. Les opérations ont consisté en..."},
