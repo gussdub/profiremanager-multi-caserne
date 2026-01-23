@@ -1400,6 +1400,15 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
     setFormData({ ...formData, manual_personnel: updated });
   };
   
+  // Mettre à jour si l'employé est utilisé en fonction supérieure
+  const updateFonctionSuperieure = (personnelId, checked) => {
+    const updated = manualPersonnel.map(p => 
+      p.id === personnelId ? { ...p, utilise_fonction_superieure: checked } : p
+    );
+    setManualPersonnel(updated);
+    setFormData({ ...formData, manual_personnel: updated });
+  };
+  
   // Appliquer/retirer la prime de repas globale
   const togglePrimeRepasGlobale = (checked) => {
     setPrimeRepasGlobale(checked);
