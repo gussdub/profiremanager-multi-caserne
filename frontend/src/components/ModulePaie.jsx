@@ -70,72 +70,23 @@ const ModulePaie = ({ tenant }) => {
   const [showEventTypeForm, setShowEventTypeForm] = useState(false);
 
   // Récupérer le token avec le bon préfixe tenant
-  const getToken = () => {
-    return localStorage.getItem(`${tenant}_token`) || localStorage.getItem('token');
-  };
+  const token = localStorage.getItem(`${tenant}_token`);
 
   const fetchParametres = useCallback(async () => {
-    const currentToken = getToken();
-    if (!currentToken) {
-      console.warn('[ModulePaie] Token non disponible, retry dans 500ms');
-      setTimeout(fetchParametres, 500);
-      return;
-    }
     try {
-      console.log('[ModulePaie] Fetching parametres...', `${API_URL}/api/${tenant}/paie/parametres`);
       const response = await fetch(`${API_URL}/api/${tenant}/paie/parametres`, {
-        headers: { 'Authorization': `Bearer ${currentToken}` }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
-      
       if (response.ok) {
         const data = await response.json();
-        console.log('[ModulePaie] Parametres chargés:', data);
         setParametres(data);
-      } else {
-        const errorText = await response.text();
-        console.error('[ModulePaie] Erreur réponse paramètres:', response.status, errorText);
-        
-        // Si erreur 403 ou 401, afficher un message mais ne pas bloquer
-        if (response.status === 403) {
-          toast.error("Accès refusé aux paramètres de paie");
-        } else if (response.status === 401) {
-          toast.error("Session expirée, veuillez vous reconnecter");
-        }
-        
-        // Initialiser avec des valeurs par défaut pour éviter le blocage
-        setParametres({
-          periode_paie_jours: 14,
-          garde_externe_taux: 1,
-          garde_externe_minimum_heures: 3,
-          rappel_taux: 1,
-          rappel_minimum_heures: 3,
-          temps_supplementaire_seuil: 40,
-          temps_supplementaire_taux: 1.5
-        });
       }
     } catch (error) {
       console.error('Erreur chargement paramètres paie:', error);
-      toast.error("Erreur de connexion aux paramètres de paie");
-      
-      // Initialiser avec des valeurs par défaut
-      setParametres({
-        periode_paie_jours: 14,
-        garde_externe_taux: 1,
-        garde_externe_minimum_heures: 3,
-        rappel_taux: 1,
-        rappel_minimum_heures: 3,
-        temps_supplementaire_seuil: 40,
-        temps_supplementaire_taux: 1.5
-      });
     }
-  }, [tenant]);
+  }, [tenant, token]);
 
   const fetchFeuilles = useCallback(async () => {
-    const currentToken = getToken();
-    if (!currentToken) {
-      console.warn('[ModulePaie] Token non disponible pour feuilles');
-      return;
-    }
     try {
       let url = `${API_URL}/api/${tenant}/paie/feuilles-temps?`;
       if (filtreAnnee) url += `annee=${filtreAnnee}&`;
@@ -144,7 +95,7 @@ const ModulePaie = ({ tenant }) => {
       if (filtreStatut) url += `statut=${filtreStatut}&`;
       
       const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${currentToken}` }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
         const data = await response.json();
@@ -153,14 +104,12 @@ const ModulePaie = ({ tenant }) => {
     } catch (error) {
       console.error('Erreur chargement feuilles:', error);
     }
-  }, [tenant, filtreAnnee, filtreMois, filtreEmploye, filtreStatut]);
+  }, [tenant, token, filtreAnnee, filtreMois, filtreEmploye, filtreStatut]);
 
   const fetchEmployes = useCallback(async () => {
-    const currentToken = getToken();
-    if (!currentToken) return;
     try {
       const response = await fetch(`${API_URL}/api/${tenant}/users`, {
-        headers: { 'Authorization': `Bearer ${currentToken}` }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
         const data = await response.json();
@@ -169,14 +118,12 @@ const ModulePaie = ({ tenant }) => {
     } catch (error) {
       console.error('Erreur chargement employés:', error);
     }
-  }, [tenant]);
+  }, [tenant, token]);
 
   const fetchPayrollConfig = useCallback(async () => {
-    const currentToken = getToken();
-    if (!currentToken) return;
     try {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/config`, {
-        headers: { 'Authorization': `Bearer ${currentToken}` }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
         const data = await response.json();
@@ -186,14 +133,12 @@ const ModulePaie = ({ tenant }) => {
     } catch (error) {
       console.error('Erreur chargement config paie:', error);
     }
-  }, [tenant]);
+  }, [tenant, token]);
 
   const fetchCodeMappings = useCallback(async () => {
-    const currentToken = getToken();
-    if (!currentToken) return;
     try {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/code-mappings`, {
-        headers: { 'Authorization': `Bearer ${currentToken}` }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
         const data = await response.json();
@@ -203,7 +148,7 @@ const ModulePaie = ({ tenant }) => {
     } catch (error) {
       console.error('Erreur chargement mappings:', error);
     }
-  }, [tenant]);
+  }, [tenant, token]);
 
   // Charger les matricules employés (depuis les profils employés)
   useEffect(() => {
@@ -240,7 +185,7 @@ const ModulePaie = ({ tenant }) => {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/api/save-credentials`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${getToken()}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(apiCredentials)
@@ -265,7 +210,7 @@ const ModulePaie = ({ tenant }) => {
     try {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/api/test-connection`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${getToken()}` }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       
       const data = await response.json();
@@ -296,7 +241,7 @@ const ModulePaie = ({ tenant }) => {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/api/send`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${getToken()}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -325,7 +270,7 @@ const ModulePaie = ({ tenant }) => {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/parametres`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${getToken()}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(parametres)
@@ -355,7 +300,7 @@ const ModulePaie = ({ tenant }) => {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/feuilles-temps/generer-lot`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${getToken()}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -383,7 +328,7 @@ const ModulePaie = ({ tenant }) => {
     try {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/feuilles-temps/${feuilleId}/valider`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${getToken()}` }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       
       if (response.ok) {
@@ -407,7 +352,7 @@ const ModulePaie = ({ tenant }) => {
     try {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/feuilles-temps/${feuilleId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${getToken()}` }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       
       if (response.ok) {
@@ -429,7 +374,7 @@ const ModulePaie = ({ tenant }) => {
   const handleVoirDetail = async (feuilleId) => {
     try {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/feuilles-temps/${feuilleId}`, {
-        headers: { 'Authorization': `Bearer ${getToken()}` }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       
       if (response.ok) {
@@ -455,7 +400,7 @@ const ModulePaie = ({ tenant }) => {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/export`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${getToken()}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -504,7 +449,7 @@ const ModulePaie = ({ tenant }) => {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/feuilles-temps/${selectedFeuille.id}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${getToken()}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ lignes: editedLignes })
@@ -667,7 +612,7 @@ const ModulePaie = ({ tenant }) => {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/event-types/${editingEventType.id}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${getToken()}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(editingEventType)
@@ -692,7 +637,7 @@ const ModulePaie = ({ tenant }) => {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/config`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${getToken()}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(payrollConfig)
@@ -721,7 +666,7 @@ const ModulePaie = ({ tenant }) => {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/code-mappings`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${getToken()}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(newMapping)
@@ -744,7 +689,7 @@ const ModulePaie = ({ tenant }) => {
     try {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/code-mappings/${mappingId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${getToken()}` }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       
       if (response.ok) {
@@ -762,7 +707,7 @@ const ModulePaie = ({ tenant }) => {
       const response = await fetch(`${API_URL}/api/${tenant}/users/${employeId}/matricule-paie`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${getToken()}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ matricule_paie: matricule })
@@ -787,7 +732,7 @@ const ModulePaie = ({ tenant }) => {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/matricules`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${getToken()}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ matricules: matriculesEmployes })
@@ -818,7 +763,7 @@ const ModulePaie = ({ tenant }) => {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/event-types`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${getToken()}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(newEventType)
@@ -847,7 +792,7 @@ const ModulePaie = ({ tenant }) => {
     try {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/event-types/${eventTypeId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${getToken()}` }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       
       if (response.ok) {
@@ -888,24 +833,7 @@ const ModulePaie = ({ tenant }) => {
   };
 
   // Onglet Paramètres
-  const renderParametres = () => {
-    // Protection si parametres n'est pas encore chargé
-    if (!parametres) {
-      return (
-        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '48px', gap: '16px' }}>
-          <RefreshCw className="animate-spin" size={24} />
-          <span>Chargement des paramètres...</span>
-          <button 
-            onClick={fetchParametres}
-            style={{ padding: '8px 16px', background: '#3b82f6', color: 'white', borderRadius: '8px', border: 'none', cursor: 'pointer' }}
-          >
-            Réessayer
-          </button>
-        </div>
-      );
-    }
-    
-    return (
+  const renderParametres = () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Période de paie */}
       <div style={{ background: 'white', borderRadius: '12px', padding: '24px', border: '1px solid #e5e7eb' }}>
@@ -1324,7 +1252,6 @@ const ModulePaie = ({ tenant }) => {
       </Button>
     </div>
   );
-  };
 
   // Onglet Export / Configuration fournisseur (style Agendrix/Nethris)
   const renderExportConfig = () => (
