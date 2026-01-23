@@ -37710,6 +37710,23 @@ async def import_intervention_xml(
                         "created_at": datetime.now(timezone.utc)
                     }
                     await db.intervention_assistance.insert_one(assistance_data)
+            
+            # Parser les notes de PriseAppel
+            if 'priseappel' in call_files and intervention_id:
+                priseappel_xml = ET.fromstring(call_files['priseappel'])
+                notes_priseappel = []
+                for table in priseappel_xml.findall('.//Table'):
+                    note = {
+                        "libelle": table.findtext('libelle'),
+                        "date_rep": table.findtext('dateRep')
+                    }
+                    if note["libelle"]:
+                        notes_priseappel.append(note)
+                
+                await db.interventions.update_one(
+                    {"id": intervention_id},
+                    {"$set": {"xml_notes_priseappel": notes_priseappel}}
+                )
                     
         except Exception as e:
             logging.error(f"Erreur import XML {call_number}: {e}")
