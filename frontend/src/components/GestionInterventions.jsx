@@ -64,7 +64,6 @@ const SortableNarratifSection = ({ section, index, children }) => {
 
 const GestionInterventions = ({ user, tenantSlug }) => {
   const [activeTab, setActiveTab] = useState('rapports');
-  const [hasAccess, setHasAccess] = useState(false);
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -75,9 +74,9 @@ const GestionInterventions = ({ user, tenantSlug }) => {
     return localStorage.getItem(`${tenantSlug}_token`) || localStorage.getItem('token');
   };
 
-  // Vérifier l'accès au module
+  // Charger les paramètres du module
   useEffect(() => {
-    const checkAccess = async () => {
+    const loadSettings = async () => {
       try {
         const response = await fetch(`${API}/interventions/settings`, {
           headers: { 'Authorization': `Bearer ${getToken()}` }
@@ -85,46 +84,46 @@ const GestionInterventions = ({ user, tenantSlug }) => {
         if (response.ok) {
           const data = await response.json();
           setSettings(data.settings);
-          
-          // Vérifier si l'utilisateur a accès
-          const isAdminOrSupervisor = ['admin', 'superviseur'].includes(user?.role);
-          const isDesignatedPerson = (data.settings?.personnes_ressources || []).includes(user?.id);
-          setHasAccess(isAdminOrSupervisor || isDesignatedPerson);
         }
       } catch (error) {
-        console.error('Erreur vérification accès:', error);
+        console.error('Erreur chargement paramètres:', error);
       } finally {
         setLoading(false);
       }
     };
-    checkAccess();
+    loadSettings();
   }, [API, user]);
 
   if (loading) {
     return <div className="p-6 text-center">Chargement...</div>;
   }
 
-  if (!hasAccess) {
-    return (
-      <div className="p-6">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-          <div className="text-4xl mb-4">🔒</div>
-          <h2 className="text-xl font-bold text-yellow-800 mb-2">Accès restreint</h2>
-          <p className="text-yellow-700">
-            Vous n'avez pas accès à ce module. Contactez un administrateur pour être ajouté aux personnes ressources.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  // Déterminer les permissions
+  const isAdmin = user?.role === 'admin';
+  const isSuperviseur = user?.role === 'superviseur';
+  const isAdminOrSupervisor = isAdmin || isSuperviseur;
+  const isEmployee = ['employe', 'pompier'].includes(user?.role);
+  const isDesignatedPerson = (settings?.personnes_ressources || []).includes(user?.id);
+  
+  // Les employés ont accès en lecture seule aux cartes d'appel
+  // L'accès à l'historique dépend du paramètre acces_employes_historique
+  const employeeCanAccessHistory = settings?.acces_employes_historique || false;
+  
+  // Mode lecture seule pour les employés (sauf s'ils sont personnes ressources)
+  const isReadOnlyMode = isEmployee && !isDesignatedPerson;
 
   const tabs = [
     { id: 'rapports', label: 'Rapports d\'intervention', icon: '📋' },
-    { id: 'historique', label: 'Historique', icon: '📚' },
+    { id: 'historique', label: 'Historique', icon: '📚', hideForEmployee: !employeeCanAccessHistory },
     { id: 'parametres', label: 'Paramètres', icon: '⚙️', adminOnly: true },
   ];
 
-  const visibleTabs = tabs.filter(tab => !tab.adminOnly || user?.role === 'admin');
+  // Filtrer les onglets selon le rôle
+  const visibleTabs = tabs.filter(tab => {
+    if (tab.adminOnly && !isAdmin) return false;
+    if (tab.hideForEmployee && isEmployee && !isDesignatedPerson) return false;
+    return true;
+  });
 
   return (
     <div className="p-6" data-testid="gestion-interventions">
