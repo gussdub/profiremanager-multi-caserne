@@ -70,11 +70,10 @@ const MonProfil = () => {
       });
       
       try {
-        const [userData, competencesData, statsData, episData] = await Promise.all([
+        const [userData, competencesData, statsData] = await Promise.all([
           apiGet(tenantSlug, `/users/${user.id}`),
           apiGet(tenantSlug, '/competences'),
-          apiGet(tenantSlug, `/users/${user.id}/stats-mensuelles`),
-          apiGet(tenantSlug, `/epi/employe/${user.id}`)
+          apiGet(tenantSlug, `/users/${user.id}/stats-mensuelles`)
         ]);
         
         console.log('📊 Mon Profil - userData chargé:', userData);
@@ -83,20 +82,16 @@ const MonProfil = () => {
           taux_horaire: userData?.taux_horaire,
           grade: userData?.grade,
           date_embauche: userData?.date_embauche,
-          adresse: userData?.adresse
+          adresse: userData?.adresse,
+          tailles_epi: userData?.tailles_epi
         });
         
         setUserProfile(userData);
         setCompetences(competencesData || []);
         setMonthlyStats(statsData);
-        setMyEPIs(episData);
         
-        // Créer un objet de tailles pour l'édition
-        const tailles = {};
-        episData.forEach(epi => {
-          tailles[epi.type_epi] = epi.taille;
-        });
-        setEpiTailles(tailles);
+        // Utiliser les tailles EPI du profil utilisateur
+        setEpiTailles(userData.tailles_epi || {});
         
         setProfileData({
           nom: userData.nom,
