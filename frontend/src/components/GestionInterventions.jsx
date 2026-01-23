@@ -828,26 +828,42 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
   };
 
   const isAdmin = user.role === 'admin';
+  const isSuperviseur = user.role === 'superviseur';
+  const isReporter = (formData.assigned_reporters || []).includes(user.id);
+  const isEmployee = user.role === 'pompier' || user.role === 'employe';
+  
+  // Les employés (non admin/superviseur) ne peuvent voir que certaines sections
+  // Sauf s'ils sont assignés comme rédacteurs de rapport
+  const employeeLimitedAccess = isEmployee && !isReporter;
   
   const sections = [
-    { id: 'identification', label: 'Identification & Chrono', icon: '📋' },
-    { id: 'batiment', label: 'Bâtiment', icon: '🏠', showIf: isBuildingFire },
-    { id: 'ressources', label: 'Ressources', icon: '👥' },
-    { id: 'materiel', label: 'Matériel utilisé', icon: '🧰' },
-    { id: 'dsi', label: 'Détails DSI', icon: '🔥', showIf: isFireIncident },
-    { id: 'protection', label: 'Protection incendie', icon: '🚨', showIf: isFireIncident },
-    { id: 'pertes', label: 'Pertes & Victimes', icon: '💰' },
-    { id: 'narratif', label: 'Narratif', icon: '📝' },
-    { id: 'remise', label: 'Remise de propriété', icon: '📋' },
-    { id: 'facturation', label: 'Facturation', icon: '🧾', showIf: () => isAdmin },
+    { id: 'identification', label: 'Identification & Chrono', icon: '📋', employeeAccess: true },
+    { id: 'batiment', label: 'Bâtiment', icon: '🏠', showIf: isBuildingFire, employeeAccess: true },
+    { id: 'ressources', label: 'Ressources', icon: '👥', employeeAccess: false },
+    { id: 'materiel', label: 'Matériel utilisé', icon: '🧰', employeeAccess: false },
+    { id: 'dsi', label: 'Détails DSI', icon: '🔥', showIf: isFireIncident, employeeAccess: false },
+    { id: 'protection', label: 'Protection incendie', icon: '🚨', showIf: isFireIncident, employeeAccess: false },
+    { id: 'pertes', label: 'Pertes & Victimes', icon: '💰', employeeAccess: false },
+    { id: 'narratif', label: 'Narratif', icon: '📝', employeeAccess: false },
+    { id: 'remise', label: 'Remise de propriété', icon: '📋', employeeAccess: false },
+    { id: 'facturation', label: 'Facturation', icon: '🧾', showIf: () => isAdmin, employeeAccess: false },
   ];
 
-  const visibleSections = sections.filter(s => !s.showIf || s.showIf());
+  // Filtrer les sections selon le rôle
+  const visibleSections = sections.filter(s => {
+    // Vérifier d'abord les conditions showIf
+    if (s.showIf && !s.showIf()) return false;
+    // Si accès limité employé, ne montrer que les sections autorisées
+    if (employeeLimitedAccess && !s.employeeAccess) return false;
+    return true;
+  });
 
-  const canEdit = user.role === 'admin' || user.role === 'superviseur' || 
-                  (formData.assigned_reporters || []).includes(user.id);
-  const canValidate = user.role === 'admin' || user.role === 'superviseur';
+  const canEdit = (isAdmin || isSuperviseur || isReporter) && !employeeLimitedAccess;
+  const canValidate = isAdmin || isSuperviseur;
   const isLocked = formData.status === 'signed';
+  
+  // Forcer le mode lecture seule pour les employés avec accès limité
+  const forceReadOnly = readOnly || employeeLimitedAccess;
 
   return createPortal(
     <div className="modal-overlay" style={{ zIndex: 100000 }}>
