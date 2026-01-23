@@ -2896,6 +2896,7 @@ class UserUpdate(BaseModel):
     est_preventionniste: Optional[bool] = None
     equipe_garde: Optional[int] = None  # Équipe de garde (1, 2, 3, 4, 5 selon config)
     photo_profil: Optional[str] = None  # Photo de profil en base64
+    tailles_epi: Optional[Dict[str, str]] = None  # Tailles EPI de l'employé
     mot_de_passe: Optional[str] = None  # Optionnel pour les mises à jour
 
 class UserLogin(BaseModel):
