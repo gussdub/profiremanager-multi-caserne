@@ -982,6 +982,17 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
             />
           )}
           
+          {activeSection === 'remise' && (
+            <SectionRemisePropriete
+              intervention={formData}
+              tenantSlug={tenantSlug}
+              user={user}
+              getToken={getToken}
+              toast={toast}
+              canEdit={canEdit && !isLocked && !readOnly}
+            />
+          )}
+          
           {activeSection === 'facturation' && (
             <SectionFacturation 
               formData={formData} 
