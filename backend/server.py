@@ -2547,42 +2547,27 @@ def get_password_hash(password: str) -> str:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
-    Vérifie un mot de passe contre son hash (bcrypt ou SHA256 legacy).
-    Supporte les deux formats pour permettre la migration progressive.
+    Vérifie un mot de passe contre son hash bcrypt.
+    Système simplifié: UNIQUEMENT bcrypt pour stabilité maximale.
     
     Retourne True si le mot de passe correspond, False sinon.
     """
     try:
-        if not hashed_password:
-            logging.error(f"❌ Hash vide ou None")
-            return False
-            
         password_bytes = plain_password.encode('utf-8')
         
-        # Vérifier si c'est un hash bcrypt (commence par $2a$, $2b$, $2y$)
-        if hashed_password.startswith('$2'):
-            if isinstance(hashed_password, str):
-                hash_bytes = hashed_password.encode('utf-8')
-            else:
-                hash_bytes = hashed_password
-            
-            result = bcrypt.checkpw(password_bytes, hash_bytes)
-            logging.info(f"✅ Vérification bcrypt: {result}")
-            return result
+        # Vérifier si c'est un hash bcrypt valide
+        if not hashed_password or not hashed_password.startswith('$2'):
+            logging.error(f"❌ Hash invalide ou non-bcrypt détecté")
+            return False
+        
+        if isinstance(hashed_password, str):
+            hash_bytes = hashed_password.encode('utf-8')
         else:
-            # Hash SHA256 legacy (64 caractères hexadécimaux)
-            import hashlib
-            if len(hashed_password) == 64:
-                sha256_hash = hashlib.sha256(plain_password.encode()).hexdigest()
-                result = sha256_hash == hashed_password
-                if result:
-                    logging.info(f"✅ Vérification SHA256 legacy réussie - migration recommandée")
-                else:
-                    logging.warning(f"❌ Vérification SHA256 échouée")
-                return result
-            else:
-                logging.error(f"❌ Format de hash inconnu (longueur: {len(hashed_password)})")
-                return False
+            hash_bytes = hashed_password
+        
+        result = bcrypt.checkpw(password_bytes, hash_bytes)
+        logging.info(f"✅ Vérification bcrypt: {result}")
+        return result
         
     except Exception as e:
         logging.error(f"❌ Erreur vérification mot de passe: {e}")
