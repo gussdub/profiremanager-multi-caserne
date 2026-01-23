@@ -1654,12 +1654,17 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
             <div className="space-y-2">
               {personnelSansVehicule.map(p => {
                 const statut = statutsPresence.find(s => s.value === (p.statut_presence || 'present'));
+                // Vérifier si l'employé est éligible à la fonction supérieure
+                const employeData = users.find(u => u.id === p.id || u.id === p.user_id);
+                const estEligibleFonctionSup = employeData?.fonction_superieur === true || p.fonction_superieur === true;
+                
                 return (
                   <div key={p.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded border flex-wrap">
                     <span className="font-medium flex-1 min-w-[150px]">
                       {p.user_name || p.prenom + ' ' + p.nom || p.user_id}
                       {p.grade && <span className="text-gray-500 text-sm ml-1">({p.grade})</span>}
                       {p.equipe_origine && <span className="text-purple-600 text-xs ml-2">[{p.equipe_origine}]</span>}
+                      {p.utilise_fonction_superieure && <span className="text-orange-600 text-xs ml-2 font-bold">⬆️ Fct.Sup.</span>}
                     </span>
                     {editMode ? (
                       <>
@@ -1701,6 +1706,18 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                             )}
                           </>
                         )}
+                        {/* Case à cocher Fonction Supérieure si éligible */}
+                        {estEligibleFonctionSup && (
+                          <label className="flex items-center gap-1 text-xs bg-orange-50 px-2 py-1 rounded border border-orange-200" title="Utilisé en fonction supérieure (payé comme Lieutenant)">
+                            <input
+                              type="checkbox"
+                              checked={p.utilise_fonction_superieure ?? false}
+                              onChange={(e) => updateFonctionSuperieure(p.id, e.target.checked)}
+                              className="w-3 h-3"
+                            />
+                            <span className="text-orange-700">⬆️ Fct.Sup.</span>
+                          </label>
+                        )}
                         <label className="flex items-center gap-1">
                           <input
                             type="checkbox"
@@ -1722,6 +1739,7 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                             <span className="ml-1">→ {p.remplace_par_nom}</span>
                           )}
                         </span>
+                        {p.utilise_fonction_superieure && <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">⬆️ Fct.Sup.</span>}
                         {(p.prime_repas ?? true) && <span className="text-xs">🍽️</span>}
                       </>
                     )}
