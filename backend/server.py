@@ -3463,17 +3463,46 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     """
     Authentifie l'utilisateur et vérifie qu'il appartient au tenant
     tenant_slug est optionnel pour compatibilité avec les routes qui ne l'utilisent pas encore
+    Supporte aussi les super-admins qui peuvent accéder à tous les tenants
     """
     try:
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
         tenant_id: str = payload.get("tenant_id")  # Tenant ID stocké dans le token
+        is_super_admin: bool = payload.get("is_super_admin", False)  # Flag super-admin
         
         if user_id is None:
             raise HTTPException(status_code=401, detail="Token invalide")
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Token invalide")
     
+    # Si c'est un super-admin, créer un User virtuel avec droits admin
+    if is_super_admin:
+        super_admin_data = await db.super_admins.find_one({"id": user_id})
+        if super_admin_data is None:
+            raise HTTPException(status_code=401, detail="Super-admin non trouvé")
+        
+        # Créer un User virtuel pour le super-admin avec le tenant_id du token
+        virtual_user = {
+            "id": super_admin_data["id"],
+            "tenant_id": tenant_id,
+            "email": super_admin_data["email"],
+            "nom": super_admin_data["nom"],
+            "prenom": "Super-Admin",
+            "role": "admin",  # Super-admin a tous les droits admin
+            "grade": "Super-Administrateur",
+            "type_emploi": "temps_plein",
+            "statut": "Actif",
+            "numero_employe": "SUPER-ADMIN",
+            "telephone": "",
+            "date_embauche": "",
+            "photo_profil": None,
+            "est_preventionniste": True,  # Accès à tous les modules
+            "is_super_admin": True  # Flag pour identifier
+        }
+        return User(**virtual_user)
+    
+    # Sinon, chercher l'utilisateur normal
     user = await db.users.find_one({"id": user_id})
     if user is None:
         raise HTTPException(status_code=401, detail="Utilisateur non trouvé")
