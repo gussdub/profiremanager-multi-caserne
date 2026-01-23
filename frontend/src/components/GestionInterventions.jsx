@@ -173,7 +173,7 @@ const GestionInterventions = ({ user, tenantSlug }) => {
 
 // ==================== ONGLET RAPPORTS ====================
 
-const TabRapports = ({ user, tenantSlug, toast }) => {
+const TabRapports = ({ user, tenantSlug, toast, readOnly = false }) => {
   const [dashboard, setDashboard] = useState({ counts: {}, new: [], drafts: [], review: [] });
   const [loading, setLoading] = useState(true);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -249,7 +249,7 @@ const TabRapports = ({ user, tenantSlug, toast }) => {
     return <div className="text-center py-8">Chargement...</div>;
   }
 
-  const canImport = ['admin', 'superviseur'].includes(user?.role);
+  const canImport = ['admin', 'superviseur'].includes(user?.role) && !readOnly;
 
   return (
     <div>
