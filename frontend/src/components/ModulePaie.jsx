@@ -1263,6 +1263,7 @@ const ModulePaie = ({ tenant }) => {
       </Button>
     </div>
   );
+  };
 
   // Onglet Export / Configuration fournisseur (style Agendrix/Nethris)
   const renderExportConfig = () => (
