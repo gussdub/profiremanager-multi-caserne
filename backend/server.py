@@ -6175,6 +6175,7 @@ class ProfileUpdate(BaseModel):
     adresse: str = ""
     contact_urgence: str = ""
     heures_max_semaine: int = 25
+    tailles_epi: Optional[Dict[str, str]] = None  # Tailles EPI de l'employé
 
 @api_router.put("/{tenant_slug}/users/mon-profil", response_model=User)
 async def update_mon_profil(
