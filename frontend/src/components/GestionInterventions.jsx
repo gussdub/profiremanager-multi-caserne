@@ -22,6 +22,9 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
+// Composants extraits
+import SectionBatiment from './interventions/SectionBatiment';
+
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 // Composant draggable pour les sections du template narratif
