@@ -198,7 +198,7 @@ const ModulePaie = ({ tenant }) => {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/api/save-credentials`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${getToken()}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(apiCredentials)
@@ -223,7 +223,7 @@ const ModulePaie = ({ tenant }) => {
     try {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/api/test-connection`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${getToken()}` }
       });
       
       const data = await response.json();
@@ -254,7 +254,7 @@ const ModulePaie = ({ tenant }) => {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/api/send`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${getToken()}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -283,7 +283,7 @@ const ModulePaie = ({ tenant }) => {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/parametres`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${getToken()}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(parametres)
@@ -313,7 +313,7 @@ const ModulePaie = ({ tenant }) => {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/feuilles-temps/generer-lot`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${getToken()}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -341,7 +341,7 @@ const ModulePaie = ({ tenant }) => {
     try {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/feuilles-temps/${feuilleId}/valider`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${getToken()}` }
       });
       
       if (response.ok) {
@@ -365,7 +365,7 @@ const ModulePaie = ({ tenant }) => {
     try {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/feuilles-temps/${feuilleId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${getToken()}` }
       });
       
       if (response.ok) {
@@ -387,7 +387,7 @@ const ModulePaie = ({ tenant }) => {
   const handleVoirDetail = async (feuilleId) => {
     try {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/feuilles-temps/${feuilleId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${getToken()}` }
       });
       
       if (response.ok) {
@@ -413,7 +413,7 @@ const ModulePaie = ({ tenant }) => {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/export`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${getToken()}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -462,7 +462,7 @@ const ModulePaie = ({ tenant }) => {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/feuilles-temps/${selectedFeuille.id}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${getToken()}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ lignes: editedLignes })
@@ -625,7 +625,7 @@ const ModulePaie = ({ tenant }) => {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/event-types/${editingEventType.id}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${getToken()}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(editingEventType)
@@ -650,7 +650,7 @@ const ModulePaie = ({ tenant }) => {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/config`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${getToken()}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(payrollConfig)
@@ -679,7 +679,7 @@ const ModulePaie = ({ tenant }) => {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/code-mappings`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${getToken()}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(newMapping)
@@ -702,7 +702,7 @@ const ModulePaie = ({ tenant }) => {
     try {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/code-mappings/${mappingId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${getToken()}` }
       });
       
       if (response.ok) {
@@ -720,7 +720,7 @@ const ModulePaie = ({ tenant }) => {
       const response = await fetch(`${API_URL}/api/${tenant}/users/${employeId}/matricule-paie`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${getToken()}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ matricule_paie: matricule })
@@ -745,7 +745,7 @@ const ModulePaie = ({ tenant }) => {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/matricules`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${getToken()}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ matricules: matriculesEmployes })
@@ -776,7 +776,7 @@ const ModulePaie = ({ tenant }) => {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/event-types`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${getToken()}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(newEventType)
@@ -805,7 +805,7 @@ const ModulePaie = ({ tenant }) => {
     try {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/event-types/${eventTypeId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${getToken()}` }
       });
       
       if (response.ok) {
