@@ -3164,20 +3164,25 @@ const SectionRemisePropriete = ({ intervention, tenantSlug, user, getToken, toas
     }
   };
   
-  // Composant signature simple
-  const SignaturePad = ({ onSave, label }) => {
+  // Composant signature avec prévisualisation
+  const SignaturePad = ({ onSave, label, existingSignature }) => {
     const canvasRef = useRef(null);
     const [isDrawing, setIsDrawing] = useState(false);
+    const [hasDrawn, setHasDrawn] = useState(false);
+    const [savedSignature, setSavedSignature] = useState(existingSignature || null);
+    const [isEditing, setIsEditing] = useState(!existingSignature);
     
     useEffect(() => {
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = 'white';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.strokeStyle = '#000';
-      ctx.lineWidth = 2;
-      ctx.lineCap = 'round';
-    }, []);
+      if (isEditing && canvasRef.current) {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+      }
+    }, [isEditing]);
     
     const getCoords = (e) => {
       const rect = canvasRef.current.getBoundingClientRect();
@@ -3189,18 +3194,98 @@ const SectionRemisePropriete = ({ intervention, tenantSlug, user, getToken, toas
       return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
     };
     
-    const start = (e) => { e.preventDefault(); const {x, y} = getCoords(e); canvasRef.current.getContext('2d').beginPath(); canvasRef.current.getContext('2d').moveTo(x, y); setIsDrawing(true); };
-    const draw = (e) => { if (!isDrawing) return; e.preventDefault(); const {x, y} = getCoords(e); canvasRef.current.getContext('2d').lineTo(x, y); canvasRef.current.getContext('2d').stroke(); };
-    const stop = () => { setIsDrawing(false); onSave(canvasRef.current.toDataURL('image/png')); };
-    const clear = () => { const ctx = canvasRef.current.getContext('2d'); ctx.fillStyle = 'white'; ctx.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height); onSave(null); };
+    const start = (e) => { 
+      e.preventDefault(); 
+      const {x, y} = getCoords(e); 
+      canvasRef.current.getContext('2d').beginPath(); 
+      canvasRef.current.getContext('2d').moveTo(x, y); 
+      setIsDrawing(true); 
+      setHasDrawn(true);
+    };
+    
+    const draw = (e) => { 
+      if (!isDrawing) return; 
+      e.preventDefault(); 
+      const {x, y} = getCoords(e); 
+      canvasRef.current.getContext('2d').lineTo(x, y); 
+      canvasRef.current.getContext('2d').stroke(); 
+    };
+    
+    const stop = () => { 
+      if (isDrawing && hasDrawn) {
+        const dataUrl = canvasRef.current.toDataURL('image/png');
+        setSavedSignature(dataUrl);
+        onSave(dataUrl);
+      }
+      setIsDrawing(false); 
+    };
+    
+    const clear = () => { 
+      const ctx = canvasRef.current.getContext('2d'); 
+      ctx.fillStyle = 'white'; 
+      ctx.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height); 
+      setSavedSignature(null);
+      setHasDrawn(false);
+      onSave(null); 
+    };
+    
+    const confirmSignature = () => {
+      if (savedSignature) {
+        setIsEditing(false);
+      }
+    };
+    
+    const editSignature = () => {
+      setIsEditing(true);
+      setHasDrawn(false);
+    };
+    
+    // Afficher la prévisualisation si signature existante et pas en mode édition
+    if (savedSignature && !isEditing) {
+      return (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">{label}</label>
+          <div className="border-2 border-green-300 rounded-lg bg-green-50 p-2">
+            <img src={savedSignature} alt="Signature" className="max-h-24 mx-auto" />
+          </div>
+          <div className="flex gap-2">
+            <span className="text-sm text-green-600">✅ Signature enregistrée</span>
+            <button type="button" onClick={editSignature} className="text-sm text-blue-600 hover:text-blue-800 underline">
+              Modifier
+            </button>
+          </div>
+        </div>
+      );
+    }
     
     return (
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700">{label}</label>
         <div className="border-2 border-gray-300 rounded-lg bg-white">
-          <canvas ref={canvasRef} width={350} height={120} className="w-full touch-none cursor-crosshair" onMouseDown={start} onMouseMove={draw} onMouseUp={stop} onMouseLeave={stop} onTouchStart={start} onTouchMove={draw} onTouchEnd={stop} />
+          <canvas 
+            ref={canvasRef} 
+            width={350} 
+            height={120} 
+            className="w-full touch-none cursor-crosshair" 
+            onMouseDown={start} 
+            onMouseMove={draw} 
+            onMouseUp={stop} 
+            onMouseLeave={stop} 
+            onTouchStart={start} 
+            onTouchMove={draw} 
+            onTouchEnd={stop} 
+          />
         </div>
-        <button type="button" onClick={clear} className="text-sm text-gray-600 hover:text-gray-800">Effacer</button>
+        <div className="flex gap-3">
+          <button type="button" onClick={clear} className="text-sm text-gray-600 hover:text-gray-800">
+            Effacer
+          </button>
+          {hasDrawn && savedSignature && (
+            <button type="button" onClick={confirmSignature} className="text-sm text-green-600 hover:text-green-800 font-medium">
+              ✅ Confirmer la signature
+            </button>
+          )}
+        </div>
       </div>
     );
   };
