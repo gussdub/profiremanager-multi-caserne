@@ -38733,19 +38733,32 @@ async def calculer_feuille_temps(
             
             statut_presence = p.get("statut", "present")
             
+            # Vérifier si l'employé a été utilisé en fonction supérieure pour cette intervention
+            utilise_fonction_superieure = p.get("utilise_fonction_superieure", False)
+            taux_horaire_intervention = taux_horaire
+            
+            if utilise_fonction_superieure and a_fonction_superieur:
+                # Appliquer la prime de fonction supérieure
+                taux_horaire_intervention = taux_horaire * (1 + prime_fonction_superieure_pct)
+            
             if assignation_jour and statut_presence == "present":
                 # Était en garde interne - intervention comptée dans stats mais pas payée en plus
                 totaux["interventions"] += duree_heures
+                description = f"Intervention #{intervention.get('external_call_id')} - {intervention.get('type_intervention', 'N/A')}"
+                if utilise_fonction_superieure:
+                    description += f" (Fonction supérieure +{int(prime_fonction_superieure_pct*100)}%)"
+                
                 lignes.append({
                     "date": date_intervention,
                     "type": "intervention_garde_interne",
-                    "description": f"Intervention #{intervention.get('external_call_id')} - {intervention.get('type_intervention', 'N/A')}",
+                    "description": description,
                     "heures_brutes": round(duree_heures, 2),
                     "heures_payees": 0,
                     "taux": 0,
                     "montant": 0,
                     "source_id": intervention.get("id"),
                     "source_type": "intervention",
+                    "fonction_superieure": utilise_fonction_superieure,
                     "note": "Déjà en garde interne - comptabilisé dans statistiques"
                 })
             elif statut_presence in ["rappele", "present"]:
@@ -38753,22 +38766,27 @@ async def calculer_feuille_temps(
                 taux = params_paie.get("rappel_taux", 1.0)
                 minimum = params_paie.get("rappel_minimum_heures", 3.0)
                 heures_payees = max(duree_heures, minimum)
-                montant = heures_payees * taux_horaire * taux
+                montant = heures_payees * taux_horaire_intervention * taux
                 
                 totaux["rappels"] += duree_heures
                 totaux["heures_payees"] += heures_payees
                 totaux["montant_brut"] += montant
                 
+                description = f"Intervention #{intervention.get('external_call_id')} - {intervention.get('type_intervention', 'N/A')}"
+                if utilise_fonction_superieure:
+                    description += f" (Fonction supérieure +{int(prime_fonction_superieure_pct*100)}%)"
+                
                 lignes.append({
                     "date": date_intervention,
                     "type": "rappel" if statut_presence == "rappele" else "intervention",
-                    "description": f"Intervention #{intervention.get('external_call_id')} - {intervention.get('type_intervention', 'N/A')}",
+                    "description": description,
                     "heures_brutes": round(duree_heures, 2),
                     "heures_payees": round(heures_payees, 2),
                     "taux": taux,
                     "montant": round(montant, 2),
                     "source_id": intervention.get("id"),
-                    "source_type": "intervention"
+                    "source_type": "intervention",
+                    "fonction_superieure": utilise_fonction_superieure
                 })
             
             # Primes de repas
