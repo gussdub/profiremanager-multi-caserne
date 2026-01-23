@@ -833,7 +833,18 @@ const ModulePaie = ({ tenant }) => {
   };
 
   // Onglet Paramètres
-  const renderParametres = () => (
+  const renderParametres = () => {
+    // Protection si parametres n'est pas encore chargé
+    if (!parametres) {
+      return (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '48px' }}>
+          <RefreshCw className="animate-spin" size={24} />
+          <span style={{ marginLeft: '12px' }}>Chargement des paramètres...</span>
+        </div>
+      );
+    }
+    
+    return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Période de paie */}
       <div style={{ background: 'white', borderRadius: '12px', padding: '24px', border: '1px solid #e5e7eb' }}>
