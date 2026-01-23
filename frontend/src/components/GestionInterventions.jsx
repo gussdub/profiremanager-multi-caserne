@@ -1592,15 +1592,31 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                       <div className="mt-3 pt-3 border-t border-gray-200">
                         <p className="text-sm font-medium text-gray-700 mb-2">Personnel assigné:</p>
                         <div className="flex flex-wrap gap-2">
-                          {personnel.map(p => (
-                            <span key={p.id} className={`px-2 py-1 rounded text-sm flex items-center gap-1 ${p.is_manual ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
-                              {p.user_name || p.user_id}
-                              {p.role_on_scene && <span className="opacity-75">({p.role_on_scene})</span>}
-                              {editMode && p.is_manual && (
-                                <button onClick={() => removePersonnel(p.id)} className="ml-1 text-red-500 hover:text-red-700">×</button>
-                              )}
-                            </span>
-                          ))}
+                          {personnel.map(p => {
+                            const employeData = users.find(u => u.id === p.id || u.id === p.user_id);
+                            const estEligibleFonctionSup = employeData?.fonction_superieur === true || p.fonction_superieur === true;
+                            
+                            return (
+                              <span key={p.id} className={`px-2 py-1 rounded text-sm flex items-center gap-1 ${p.is_manual ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
+                                {p.user_name || p.user_id}
+                                {p.role_on_scene && <span className="opacity-75">({p.role_on_scene})</span>}
+                                {p.utilise_fonction_superieure && <span className="text-orange-600 font-bold ml-1">⬆️</span>}
+                                {editMode && estEligibleFonctionSup && (
+                                  <label className="ml-1" title="Fonction supérieure">
+                                    <input
+                                      type="checkbox"
+                                      checked={p.utilise_fonction_superieure ?? false}
+                                      onChange={(e) => updateFonctionSuperieure(p.id, e.target.checked)}
+                                      className="w-3 h-3"
+                                    />
+                                  </label>
+                                )}
+                                {editMode && p.is_manual && (
+                                  <button onClick={() => removePersonnel(p.id)} className="ml-1 text-red-500 hover:text-red-700">×</button>
+                                )}
+                              </span>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
