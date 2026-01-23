@@ -129,7 +129,12 @@ const GestionInterventions = ({ user, tenantSlug }) => {
     <div className="p-6" data-testid="gestion-interventions">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Gestion des Interventions</h1>
-        <p className="text-gray-600">Gérez vos rapports d'intervention et importez les données du 911</p>
+        <p className="text-gray-600">
+          {isReadOnlyMode 
+            ? "Consultation des cartes d'appel (lecture seule)" 
+            : "Gérez vos rapports d'intervention et importez les données du 911"
+          }
+        </p>
       </div>
 
       {/* Onglets */}
@@ -153,10 +158,10 @@ const GestionInterventions = ({ user, tenantSlug }) => {
 
       {/* Contenu des onglets */}
       {activeTab === 'rapports' && (
-        <TabRapports user={user} tenantSlug={tenantSlug} toast={toast} />
+        <TabRapports user={user} tenantSlug={tenantSlug} toast={toast} readOnly={isReadOnlyMode} />
       )}
       {activeTab === 'historique' && (
-        <TabHistorique user={user} tenantSlug={tenantSlug} toast={toast} />
+        <TabHistorique user={user} tenantSlug={tenantSlug} toast={toast} readOnly={isReadOnlyMode} />
       )}
       {activeTab === 'parametres' && user?.role === 'admin' && (
         <TabParametres user={user} tenantSlug={tenantSlug} toast={toast} />
