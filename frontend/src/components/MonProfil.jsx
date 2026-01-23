@@ -538,74 +538,34 @@ const MonProfil = () => {
     try {
       console.log('💾 [Mon Profil] Début sauvegarde tailles EPI');
       console.log('📋 [Mon Profil] Tailles actuelles:', epiTailles);
-      console.log('📦 [Mon Profil] EPIs existants:', myEPIs);
       
-      const allEPITypes = getAllEPITypes();
-      const updatePromises = [];
-      const createPromises = [];
-      
-      // Pour chaque type d'EPI
-      for (const epiType of allEPITypes) {
-        const taille = epiTailles[epiType.id];
-        const existingEPI = myEPIs.find(e => e.type_epi === epiType.id);
-        
-        console.log(`🔍 [${epiType.nom}] Taille: ${taille}, EPI existant:`, existingEPI ? `Oui (${existingEPI.taille})` : 'Non');
-        
-        // Si une taille est saisie
-        if (taille && taille.trim() !== '') {
-          if (existingEPI) {
-            // Mettre à jour l'EPI existant si la taille a changé
-            if (taille !== existingEPI.taille) {
-              console.log(`✏️ [${epiType.nom}] Mise à jour: ${existingEPI.taille} → ${taille}`);
-              updatePromises.push(
-                apiPut(tenantSlug, `/epi/${existingEPI.id}`, {
-                  taille: taille
-                }).catch(err => {
-                  console.error(`❌ Erreur PUT /epi/${existingEPI.id}:`, err);
-                  throw err;
-                })
-              );
-            } else {
-              console.log(`⏭️ [${epiType.nom}] Aucun changement, skip`);
-            }
-          } else {
-            // Créer un nouvel EPI
-            console.log(`➕ [${epiType.nom}] Création nouvel EPI avec taille: ${taille}`);
-            createPromises.push(
-              apiPost(tenantSlug, '/epi', {
-                user_id: user.id,
-                type_epi: epiType.id,
-                taille: taille,
-                numero_serie: `${epiType.id.toUpperCase()}-${user.id.substring(0, 8)}`,
-                marque: 'N/A',
-                modele: 'N/A',
-                date_mise_en_service: new Date().toISOString().split('T')[0],
-                statut: 'En service',
-                notes: 'Taille déclarée par l\'employé'
-              }).catch(err => {
-                console.error(`❌ Erreur POST /epi:`, err);
-                throw err;
-              })
-            );
-          }
+      // Filtrer les tailles vides
+      const taillesFiltered = {};
+      Object.entries(epiTailles).forEach(([key, value]) => {
+        if (value && value.trim() !== '') {
+          taillesFiltered[key] = value.trim();
         }
-      }
-
-      console.log(`📊 [Mon Profil] ${updatePromises.length} mise(s) à jour, ${createPromises.length} création(s)`);
-      
-      // Exécuter toutes les mises à jour et créations
-      await Promise.all([...updatePromises, ...createPromises]);
-
-      // Recharger les EPI
-      const episData = await apiGet(tenantSlug, `/epi/employe/${user.id}`);
-      setMyEPIs(episData);
-      
-      // Mettre à jour l'objet de tailles
-      const tailles = {};
-      episData.forEach(epi => {
-        tailles[epi.type_epi] = epi.taille;
       });
-      setEpiTailles(tailles);
+      
+      console.log('📋 [Mon Profil] Tailles filtrées à sauvegarder:', taillesFiltered);
+      
+      // Sauvegarder les tailles dans le profil utilisateur
+      const updatedData = await apiPut(tenantSlug, '/users/mon-profil', {
+        prenom: profileData.prenom,
+        nom: profileData.nom,
+        email: profileData.email,
+        telephone: profileData.telephone || '',
+        adresse: profileData.adresse || '',
+        contact_urgence: profileData.contact_urgence || '',
+        heures_max_semaine: profileData.heures_max_semaine || 25,
+        tailles_epi: taillesFiltered
+      });
+      
+      console.log('✅ [Mon Profil] Profil mis à jour avec tailles EPI:', updatedData);
+      
+      // Mettre à jour le profil local
+      setUserProfile(updatedData);
+      setEpiTailles(updatedData.tailles_epi || {});
 
       toast({
         title: "Tailles mises à jour",
@@ -618,7 +578,7 @@ const MonProfil = () => {
       console.error('Erreur sauvegarde EPI:', error);
       toast({
         title: "Erreur",
-        description: error.response?.data?.detail || "Impossible de sauvegarder les tailles",
+        description: error.response?.data?.detail || error.message || "Impossible de sauvegarder les tailles",
         variant: "destructive"
       });
     }
