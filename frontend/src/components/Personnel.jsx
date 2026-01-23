@@ -456,6 +456,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
           : 40,
         role: selectedUser.role, // Préserver le rôle existant
         statut: selectedUser.statut, // Préserver le statut existant
+        tailles_epi: selectedUser.tailles_epi || {}, // Inclure les tailles EPI modifiées
         mot_de_passe: newUser.mot_de_passe || 'unchanged' // Mot de passe optionnel
       };
 
