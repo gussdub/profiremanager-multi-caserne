@@ -3524,6 +3524,7 @@ async def get_current_user_optional(credentials: HTTPAuthorizationCredentials = 
     """
     Version optionnelle de get_current_user - retourne None si pas de token valide.
     Utilisé pour les endpoints qui supportent aussi l'authentification via paramètre URL (mobile).
+    Supporte aussi les super-admins.
     """
     if credentials is None:
         return None
@@ -3532,11 +3533,37 @@ async def get_current_user_optional(credentials: HTTPAuthorizationCredentials = 
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
         tenant_id: str = payload.get("tenant_id")
+        is_super_admin: bool = payload.get("is_super_admin", False)
         
         if user_id is None:
             return None
     except jwt.PyJWTError:
         return None
+    
+    # Si c'est un super-admin, créer un User virtuel
+    if is_super_admin:
+        super_admin_data = await db.super_admins.find_one({"id": user_id})
+        if super_admin_data is None:
+            return None
+        
+        virtual_user = {
+            "id": super_admin_data["id"],
+            "tenant_id": tenant_id,
+            "email": super_admin_data["email"],
+            "nom": super_admin_data["nom"],
+            "prenom": "Super-Admin",
+            "role": "admin",
+            "grade": "Super-Administrateur",
+            "type_emploi": "temps_plein",
+            "statut": "Actif",
+            "numero_employe": "SUPER-ADMIN",
+            "telephone": "",
+            "date_embauche": "",
+            "photo_profil": None,
+            "est_preventionniste": True,
+            "is_super_admin": True
+        }
+        return User(**virtual_user)
     
     user = await db.users.find_one({"id": user_id})
     if user is None:
