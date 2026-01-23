@@ -1238,12 +1238,11 @@ const MonProfil = () => {
 
               <div className="epi-tailles-grid-profile">
                 {getAllEPITypes().map(epiType => {
-                  const existingEPI = myEPIs.find(e => e.type_epi === epiType.id);
                   const isDisabled = !isEditingEPI;
-                  // Utiliser ?? au lieu de || pour permettre les chaînes vides
-                  const currentValue = epiTailles[epiType.id] ?? (existingEPI ? existingEPI.taille : '');
+                  // Utiliser les tailles du profil utilisateur
+                  const currentValue = epiTailles[epiType.id] || '';
                   
-                  console.log(`[${epiType.nom}] disabled=${isDisabled}, value="${currentValue}", epiTailles[${epiType.id}]="${epiTailles[epiType.id]}"`);
+                  console.log(`[${epiType.nom}] disabled=${isDisabled}, value="${currentValue}"`);
                   
                   return (
                     <div key={epiType.id} className="epi-taille-item-profile">
