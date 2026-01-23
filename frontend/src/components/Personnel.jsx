@@ -411,26 +411,8 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   };
 
   const handleEditUser = async (user) => {
-    // Charger les EPIs de l'utilisateur AVANT d'ouvrir le modal
-    try {
-      console.log('🔍 [Edit Modal] Chargement EPIs pour utilisateur:', user.id);
-      const episData = await apiGet(tenantSlug, `/epi/employe/${user.id}`);
-      console.log('✅ [Edit Modal] EPIs chargés:', episData);
-      
-      // Créer un objet user avec les EPIs attachés
-      const userWithEPIs = {
-        ...user,
-        _epis: episData || []
-      };
-      
-      setSelectedUser(userWithEPIs);
-      setUserEPIs(episData || []); // Garder aussi dans userEPIs pour le formulaire
-      
-    } catch (error) {
-      console.error('❌ [Edit Modal] Erreur lors du chargement des EPIs:', error);
-      setSelectedUser({...user, _epis: []});
-      setUserEPIs([]);
-    }
+    // Définir l'utilisateur sélectionné directement avec ses tailles EPI
+    setSelectedUser(user);
     
     setNewUser({
       nom: user.nom,
@@ -449,6 +431,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       heures_max_semaine: user.heures_max_semaine || 40,
       formations: user.formations || [],
       accepte_gardes_externes: user.accepte_gardes_externes !== false,
+      tailles_epi: user.tailles_epi || {},
       mot_de_passe: ''
     });
     
