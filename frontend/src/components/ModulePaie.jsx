@@ -130,9 +130,11 @@ const ModulePaie = ({ tenant }) => {
   }, [tenant]);
 
   const fetchPayrollConfig = useCallback(async () => {
+    const currentToken = getToken();
+    if (!currentToken) return;
     try {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/config`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${currentToken}` }
       });
       if (response.ok) {
         const data = await response.json();
@@ -142,7 +144,7 @@ const ModulePaie = ({ tenant }) => {
     } catch (error) {
       console.error('Erreur chargement config paie:', error);
     }
-  }, [tenant, token]);
+  }, [tenant]);
 
   const fetchCodeMappings = useCallback(async () => {
     try {
