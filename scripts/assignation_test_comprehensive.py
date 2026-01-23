@@ -10,7 +10,7 @@ import sys
 from datetime import datetime, timedelta
 
 # Configuration
-BACKEND_URL = "https://firstresponse-1.preview.emergentagent.com/api"
+BACKEND_URL = "https://paramfix-firepro.preview.emergentagent.com/api"
 
 # Credentials pour les tests
 DEMO_ADMIN = {
