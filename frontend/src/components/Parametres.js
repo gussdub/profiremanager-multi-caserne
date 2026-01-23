@@ -1221,6 +1221,125 @@ const Parametres = ({ user, tenantSlug }) => {
           </div>
         )}
 
+        {/* Modal d'édition de type de garde */}
+        {showEditTypeModal && editingItem && (
+          <div className="modal-overlay" onClick={() => setShowEditTypeModal(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+              <div className="modal-header">
+                <h3>Modifier le type de garde</h3>
+                <button className="close-btn" onClick={() => setShowEditTypeModal(false)}>×</button>
+              </div>
+              <div className="modal-body" style={{ display: 'grid', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Nom du type *</label>
+                  <input
+                    type="text"
+                    value={editForm.nom || ''}
+                    onChange={(e) => setEditForm({ ...editForm, nom: e.target.value })}
+                    placeholder="Ex: Garde interne jour"
+                    style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                  />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Heure début *</label>
+                    <input
+                      type="time"
+                      value={editForm.heure_debut || ''}
+                      onChange={(e) => setEditForm({ ...editForm, heure_debut: e.target.value })}
+                      style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Heure fin *</label>
+                    <input
+                      type="time"
+                      value={editForm.heure_fin || ''}
+                      onChange={(e) => setEditForm({ ...editForm, heure_fin: e.target.value })}
+                      style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                    />
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Personnel requis</label>
+                    <input
+                      type="number"
+                      value={editForm.personnel_requis || 1}
+                      onChange={(e) => setEditForm({ ...editForm, personnel_requis: parseInt(e.target.value) || 1 })}
+                      min="1"
+                      style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Couleur</label>
+                    <input
+                      type="color"
+                      value={editForm.couleur || '#3b82f6'}
+                      onChange={(e) => setEditForm({ ...editForm, couleur: e.target.value })}
+                      style={{ width: '100%', height: '40px', border: '1px solid #d1d5db', borderRadius: '6px', cursor: 'pointer' }}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={editForm.officier_obligatoire || false}
+                      onChange={(e) => setEditForm({ ...editForm, officier_obligatoire: e.target.checked })}
+                    />
+                    <span>🎖️ Officier obligatoire</span>
+                  </label>
+                </div>
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={editForm.est_garde_externe || false}
+                      onChange={(e) => setEditForm({ ...editForm, est_garde_externe: e.target.checked })}
+                    />
+                    <span>🏠 Garde externe (astreinte)</span>
+                  </label>
+                </div>
+                {editForm.est_garde_externe && (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', padding: '12px', background: '#fef3c7', borderRadius: '6px' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Taux horaire externe ($/h)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={editForm.taux_horaire_externe || ''}
+                        onChange={(e) => setEditForm({ ...editForm, taux_horaire_externe: parseFloat(e.target.value) || null })}
+                        placeholder="Ex: 5.50"
+                        style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Prime de garde ($)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={editForm.montant_garde || ''}
+                        onChange={(e) => setEditForm({ ...editForm, montant_garde: parseFloat(e.target.value) || null })}
+                        placeholder="Ex: 50.00"
+                        style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
+                <Button variant="outline" onClick={() => setShowEditTypeModal(false)}>
+                  Annuler
+                </Button>
+                <Button variant="default" onClick={handleUpdateType}>
+                  Enregistrer
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'competences' && (
           <div className="competences-tab">
             <div className="tab-header">
