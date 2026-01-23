@@ -114,9 +114,11 @@ const ModulePaie = ({ tenant }) => {
   }, [tenant, filtreAnnee, filtreMois, filtreEmploye, filtreStatut]);
 
   const fetchEmployes = useCallback(async () => {
+    const currentToken = getToken();
+    if (!currentToken) return;
     try {
       const response = await fetch(`${API_URL}/api/${tenant}/users`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${currentToken}` }
       });
       if (response.ok) {
         const data = await response.json();
@@ -125,7 +127,7 @@ const ModulePaie = ({ tenant }) => {
     } catch (error) {
       console.error('Erreur chargement employés:', error);
     }
-  }, [tenant, token]);
+  }, [tenant]);
 
   const fetchPayrollConfig = useCallback(async () => {
     try {
