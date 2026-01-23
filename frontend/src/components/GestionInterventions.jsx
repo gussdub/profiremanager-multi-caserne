@@ -840,6 +840,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
     { id: 'protection', label: 'Protection incendie', icon: '🚨', showIf: isFireIncident },
     { id: 'pertes', label: 'Pertes & Victimes', icon: '💰' },
     { id: 'narratif', label: 'Narratif', icon: '📝' },
+    { id: 'remise', label: 'Remise de propriété', icon: '📋' },
     { id: 'facturation', label: 'Facturation', icon: '🧾', showIf: () => isAdmin },
   ];
 
@@ -865,9 +866,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
               </p>
             </div>
             <div className="flex items-center gap-3">
-              {/* Bouton Remise de propriété */}
-              <button
-                onClick={() => setShowRemisePropriete(true)}
+              {isLocked && (
                 className="bg-orange-500 hover:bg-orange-600 px-3 py-1 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
                 title="Créer une remise de propriété"
               >
