@@ -3431,7 +3431,11 @@ const SectionRemisePropriete = ({ intervention, tenantSlug, user, getToken, toas
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium mb-1">Officier: {formData.officier_nom}</label>
-              <SignaturePad label="Signature de l'officier *" onSave={(sig) => setFormData({...formData, officier_signature: sig})} />
+              <SignaturePad 
+                label="Signature de l'officier *" 
+                existingSignature={formData.officier_signature}
+                onSave={(sig) => setFormData({...formData, officier_signature: sig})} 
+              />
             </div>
             
             <div>
@@ -3446,7 +3450,11 @@ const SectionRemisePropriete = ({ intervention, tenantSlug, user, getToken, toas
                   <input type="text" value={formData.temoin_nom} onChange={(e) => setFormData({...formData, temoin_nom: e.target.value})} className="w-full p-2 border rounded" placeholder="Nom d'un autre pompier" />
                 </div>
               ) : (
-                <SignaturePad label="Signature du propriétaire *" onSave={(sig) => setFormData({...formData, proprietaire_signature: sig})} />
+                <SignaturePad 
+                  label="Signature du propriétaire *" 
+                  existingSignature={formData.proprietaire_signature}
+                  onSave={(sig) => setFormData({...formData, proprietaire_signature: sig})} 
+                />
               )}
             </div>
           </div>
