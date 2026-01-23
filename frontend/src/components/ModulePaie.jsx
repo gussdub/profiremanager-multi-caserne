@@ -848,9 +848,15 @@ const ModulePaie = ({ tenant }) => {
     // Protection si parametres n'est pas encore chargé
     if (!parametres) {
       return (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '48px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '48px', gap: '16px' }}>
           <RefreshCw className="animate-spin" size={24} />
-          <span style={{ marginLeft: '12px' }}>Chargement des paramètres...</span>
+          <span>Chargement des paramètres...</span>
+          <button 
+            onClick={fetchParametres}
+            style={{ padding: '8px 16px', background: '#3b82f6', color: 'white', borderRadius: '8px', border: 'none', cursor: 'pointer' }}
+          >
+            Réessayer
+          </button>
         </div>
       );
     }
