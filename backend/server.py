@@ -4592,6 +4592,30 @@ async def stripe_webhook(request: Request):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+# ==================== TENANT INFO ROUTE (pour tous les utilisateurs) ====================
+
+@api_router.get("/{tenant_slug}/tenant-info")
+async def get_tenant_info(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère les informations publiques du tenant pour l'utilisateur connecté"""
+    tenant = await db.tenants.find_one({"slug": tenant_slug})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # Retourner uniquement les infos nécessaires (pas de données sensibles)
+    return {
+        "id": tenant.get("id"),
+        "nom": tenant.get("nom"),
+        "slug": tenant.get("slug"),
+        "parametres": {
+            "module_prevention_active": tenant.get("parametres", {}).get("module_prevention_active", False),
+            "modules_actifs": tenant.get("parametres", {}).get("modules_actifs", [])
+        }
+    }
+
+
 # ==================== TENANT BILLING ROUTES (pour les admins de chaque tenant) ====================
 
 @api_router.get("/{tenant_slug}/billing/info")
