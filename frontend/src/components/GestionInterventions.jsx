@@ -24,6 +24,7 @@ import { CSS } from '@dnd-kit/utilities';
 
 // Composants extraits
 import SectionBatiment from './interventions/SectionBatiment';
+import SectionIdentification from './interventions/SectionIdentification';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
