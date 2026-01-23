@@ -82,17 +82,51 @@ const ModulePaie = ({ tenant }) => {
       return;
     }
     try {
+      console.log('[ModulePaie] Fetching parametres...', `${API_URL}/api/${tenant}/paie/parametres`);
       const response = await fetch(`${API_URL}/api/${tenant}/paie/parametres`, {
         headers: { 'Authorization': `Bearer ${currentToken}` }
       });
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('[ModulePaie] Parametres chargés:', data);
         setParametres(data);
       } else {
-        console.error('[ModulePaie] Erreur réponse paramètres:', response.status);
+        const errorText = await response.text();
+        console.error('[ModulePaie] Erreur réponse paramètres:', response.status, errorText);
+        
+        // Si erreur 403 ou 401, afficher un message mais ne pas bloquer
+        if (response.status === 403) {
+          toast.error("Accès refusé aux paramètres de paie");
+        } else if (response.status === 401) {
+          toast.error("Session expirée, veuillez vous reconnecter");
+        }
+        
+        // Initialiser avec des valeurs par défaut pour éviter le blocage
+        setParametres({
+          periode_paie_jours: 14,
+          garde_externe_taux: 1,
+          garde_externe_minimum_heures: 3,
+          rappel_taux: 1,
+          rappel_minimum_heures: 3,
+          temps_supplementaire_seuil: 40,
+          temps_supplementaire_taux: 1.5
+        });
       }
     } catch (error) {
       console.error('Erreur chargement paramètres paie:', error);
+      toast.error("Erreur de connexion aux paramètres de paie");
+      
+      // Initialiser avec des valeurs par défaut
+      setParametres({
+        periode_paie_jours: 14,
+        garde_externe_taux: 1,
+        garde_externe_minimum_heures: 3,
+        rappel_taux: 1,
+        rappel_minimum_heures: 3,
+        temps_supplementaire_seuil: 40,
+        temps_supplementaire_taux: 1.5
+      });
     }
   }, [tenant]);
 
