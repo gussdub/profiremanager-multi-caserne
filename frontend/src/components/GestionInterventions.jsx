@@ -5150,6 +5150,26 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
               </span>
             </div>
           </div>
+
+          {/* Accès des employés */}
+          <div className="border-t pt-4 mt-4">
+            <h4 className="font-medium text-gray-700 mb-3">👥 Accès des employés</h4>
+            <label className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={settings.acces_employes_historique || false}
+                onChange={(e) => setSettings({ ...settings, acces_employes_historique: e.target.checked })}
+                className="w-5 h-5"
+              />
+              <div>
+                <span className="font-medium">Permettre aux employés de consulter l'historique des interventions</span>
+                <p className="text-sm text-gray-500 mt-1">
+                  Si activé, les employés pourront voir les cartes d'appel ET l'historique complet. 
+                  Sinon, ils n'auront accès qu'aux cartes d'appel actuelles (lecture seule).
+                </p>
+              </div>
+            </label>
+          </div>
         </CardContent>
       </Card>
 
