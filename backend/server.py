@@ -12974,19 +12974,10 @@ async def tenant_login(tenant_slug: str, user_login: UserLogin):
         hash_type = "bcrypt" if current_hash.startswith('$2') else "SHA256"
         logging.info(f"🔐 Type de hash détecté: {hash_type}")
         
-        # Vérifier le mot de passe (supporte bcrypt et SHA256)
+        # Vérifier le mot de passe
         if not verify_password(user_login.mot_de_passe, current_hash):
             logging.warning(f"❌ Mot de passe incorrect pour {user_login.email}")
             raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
-        
-        # Migration automatique SHA256 → bcrypt si nécessaire
-        if hash_type == "SHA256":
-            new_bcrypt_hash = get_password_hash(user_login.mot_de_passe)
-            await db.users.update_one(
-                {"id": user_data["id"], "tenant_id": tenant.id},
-                {"$set": {"mot_de_passe_hash": new_bcrypt_hash}}
-            )
-            logging.info(f"✅ Migration bcrypt réussie pour {user_login.email}")
         
         logging.info(f"✅ Mot de passe vérifié avec succès pour {user_login.email}")
         
