@@ -2715,12 +2715,11 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                 {/* Section 4: EPI (Équipements de Protection Individuels) */}
                 <div className="form-section">
                   <h4 className="section-title">🛡️ Tailles des EPI</h4>
-                  <p className="section-description">Sélectionnez les tailles pour chaque équipement. Les autres détails seront gérés dans le module EPI.</p>
+                  <p className="section-description">Sélectionnez les tailles pour chaque équipement. Ces tailles seront visibles dans "Mon Profil" de l'employé.</p>
                   
                   <div className="epi-tailles-grid-modal">
                     {getAllEPITypes().map(epiType => {
-                      const existingEPI = userEPIs.find(e => e.type_epi === epiType.id);
-                      const currentValue = existingEPI ? existingEPI.taille : '';
+                      const currentValue = (selectedUser.tailles_epi || {})[epiType.id] || '';
                       
                       return (
                         <div key={epiType.id} className="epi-taille-row">
@@ -2730,22 +2729,18 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                             value={currentValue}
                             onChange={(e) => {
                               const newValue = e.target.value;
-                              if (existingEPI) {
-                                // Mettre à jour l'EPI existant
-                                const updatedEPIs = userEPIs.map(item => 
-                                  item.id === existingEPI.id ? {...item, taille: newValue} : item
-                                );
-                                setUserEPIs(updatedEPIs);
-                              } else if (newValue) {
-                                // Créer un nouvel EPI si une valeur est saisie
-                                const newEPI = {
-                                  id: `temp-${epiType.id}-${Date.now()}`,
-                                  type_epi: epiType.id,
-                                  taille: newValue,
-                                  user_id: selectedUser.id
-                                };
-                                setUserEPIs([...userEPIs, newEPI]);
+                              const updatedTailles = {
+                                ...(selectedUser.tailles_epi || {}),
+                                [epiType.id]: newValue
+                              };
+                              // Supprimer les tailles vides
+                              if (!newValue) {
+                                delete updatedTailles[epiType.id];
                               }
+                              setSelectedUser({
+                                ...selectedUser,
+                                tailles_epi: updatedTailles
+                              });
                             }}
                             placeholder="Saisir la taille"
                             className="epi-taille-input-modal"
@@ -2755,7 +2750,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                     })}
                   </div>
                   <p className="epi-note-modal">
-                    💡 Pour attribuer ou gérer complètement les EPI, utilisez le <strong>Module EPI</strong> dans la sidebar
+                    💡 Ces tailles seront synchronisées avec le profil de l'employé
                   </p>
                 </div>
               </div>
