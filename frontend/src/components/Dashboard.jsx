@@ -137,8 +137,18 @@ const Dashboard = () => {
       const mesAssignations = toutesAssignations
         .filter(a => a.user_id === user.id && a.date >= todayStr)
         .sort((a, b) => a.date.localeCompare(b.date));
+      
+      // DEBUG - à supprimer après
+      console.log('=== DEBUG PROCHAINE GARDE ===');
+      console.log('todayStr:', todayStr);
+      console.log('user.id:', user.id);
+      console.log('Total assignations:', toutesAssignations.length);
+      console.log('Mes assignations futures:', mesAssignations.map(a => ({ date: a.date, user_id: a.user_id })));
       if (mesAssignations.length > 0) {
+        console.log('Prochaine garde sélectionnée:', mesAssignations[0].date);
         setProchainGarde(mesAssignations[0]);
+      } else {
+        console.log('Aucune garde future trouvée');
       }
       
       // 3. Alertes EPI (index 2)
