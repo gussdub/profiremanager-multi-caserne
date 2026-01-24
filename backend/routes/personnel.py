@@ -75,6 +75,10 @@ class UserUpdate(BaseModel):
     formations: Optional[List[str]] = None
     competences: Optional[List[str]] = None
     statut: Optional[str] = None
+    tailles_epi: Optional[Dict[str, str]] = None  # Tailles EPI de l'employé
+    
+    class Config:
+        extra = "allow"  # Permet les champs supplémentaires non définis
 
 
 # ==================== FONCTIONS UTILITAIRES ====================
