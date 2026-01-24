@@ -13,14 +13,41 @@ French (Français)
 
 ## Core Architecture
 - **Frontend**: React 18 avec Shadcn/UI, TailwindCSS
-- **Backend**: FastAPI (Python) - fichier monolithique server.py (~41000 lignes)
+- **Backend**: FastAPI (Python) - fichier server.py (~41000 lignes)
 - **Database**: MongoDB Atlas
-- **Auth**: JWT + Super-Admin system
+- **Auth**: JWT + Super-Admin system (bcrypt uniquement)
 - **Integrations**: Resend (emails), Stripe (paiements), Nethris/Employeur D/Ceridian (paie)
 
 ## What's Been Implemented
 
-### January 2025
+### January 23, 2025 - Session actuelle
+- **Refactorisation Frontend GestionInterventions.jsx**:
+  - ✅ Fichier réduit de 5651 à 2698 lignes (-52%)
+  - ✅ 10 composants extraits dans `/components/interventions/`:
+    - SectionIdentification.jsx (328 lignes)
+    - SectionBatiment.jsx (537 lignes)
+    - SectionRessources.jsx (824 lignes)
+    - SectionDSI.jsx (133 lignes)
+    - SectionProtection.jsx (141 lignes)
+    - SectionMateriel.jsx (269 lignes)
+    - SectionPertes.jsx (197 lignes)
+    - SectionNarratif.jsx (233 lignes)
+    - SectionRemisePropriete.jsx (458 lignes)
+    - SectionFacturation.jsx (736 lignes)
+
+- **Préparation Refactorisation Backend**:
+  - ✅ Fichier `/backend/routes/paie.py` créé (template pour extraction future)
+  - Module Paie identifié: lignes 38375-41039 (2665 lignes)
+
+- **Corrections de bugs**:
+  - ✅ Module Paie > Paramètres: correction erreur `editingEventType` null
+  - ✅ Token dynamique avec `getToken()` au lieu de variable statique
+  - ✅ Authentification bcrypt restaurée (pas de SHA256)
+  - ✅ Modaux manquants dans module Paramètres (partiellement)
+  - ✅ Boutons "Enregistrer/Annuler" dans modal Personnel
+  - ✅ Tailles EPI synchronisées entre Mon Profil et Personnel
+
+### January 2025 - Sessions précédentes
 - **Module Interventions complet**:
   - Import XML 5 fichiers (Details, Ressources, Commentaires, Assistance/Entraide, PriseAppel)
   - Formulaire DSI complet avec onglets dynamiques
@@ -33,7 +60,6 @@ French (Français)
   - Types d'heures personnalisés avec unités (heures, km, $)
   - Prime fonction supérieure
   - Export multi-statuts avec nom fournisseur dynamique
-  - Filtre par mois
 
 - **Corrections iOS**:
   - Bug reconnexion employés après déconnexion
@@ -42,15 +68,19 @@ French (Français)
 - **Super-Admin**:
   - Connexion sur tous les tenants avec droits admin complets
 
-## Known Technical Debt
+## Technical Debt Status
 
-### P0 - Critical
-- `server.py` (~41000 lignes) - Monolithe backend à décomposer
-- `GestionInterventions.jsx` (~6354 lignes) - À décomposer en sous-composants
+### P0 - Critical (Partiellement résolu)
+- ~~`GestionInterventions.jsx` (~6354 lignes)~~ → ✅ Réduit à 2698 lignes
+- `server.py` (~41000 lignes) - Monolithe backend, extraction préparée mais non activée
 
-### P1 - High
-- Extraction routes Paie vers `/backend/routes/paie.py`
-- Structure `/components/interventions/` créée mais composants non extraits
+### P1 - High (En attente)
+- Extraction routes Paie vers `/backend/routes/paie.py` - Template créé
+- Modaux d'édition dans module Paramètres - Partiellement corrigé
+
+### P2 - Medium
+- Tests unitaires à créer avant migration backend
+- Documentation API à compléter
 
 ## API Endpoints - Module Interventions
 - `GET /api/{tenant}/interventions/settings` - Paramètres du module
@@ -71,19 +101,21 @@ French (Français)
 - `feuilles_temps` - Feuilles de temps employés
 
 ## Test Credentials
-- **Tenant**: `demo`
-- **Admin**: `admin@demo.ca` / `Test123!`
+- **Tenant**: `shefford` (production), `pompiers-test` (dev)
+- **Admin**: `admin@test.com` / `Test123!`
 - **Super-Admin**: `gussdub@icloud.com` / `230685Juin+`
-- **Employé test**: `testemploye@demo.ca` / `Test123!`
 
 ## Backlog / Future Tasks
 1. Module de gestion des jours fériés
 2. Module de facturation pour l'entraide inter-municipale
-3. Refactorisation complète backend/frontend
+3. Extraction complète des routes backend (Paie, Prévention, Personnel, etc.)
+4. Tests unitaires pour migration sécurisée
 
 ## Files of Reference
-- `/app/backend/server.py` - API principale
-- `/app/frontend/src/components/GestionInterventions.jsx` - Module interventions
+- `/app/backend/server.py` - API principale (41000 lignes)
+- `/app/backend/routes/paie.py` - Template extraction module Paie
+- `/app/frontend/src/components/GestionInterventions.jsx` - Module interventions (2698 lignes)
+- `/app/frontend/src/components/interventions/` - Composants extraits (10 fichiers)
 - `/app/frontend/src/components/ModulePaie.jsx` - Module paie
 - `/app/frontend/src/contexts/AuthContext.js` - Authentification
-- `/app/frontend/src/components/AuthComponents.jsx` - Login/Logout
+- `/app/memory/REFACTORING_PLAN.md` - Plan de refactorisation
