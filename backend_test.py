@@ -55,7 +55,7 @@ import os
 class P1FeaturesTester:
     def __init__(self):
         # Utiliser l'URL depuis frontend/.env comme spécifié
-        self.base_url = "https://pompiers-fix.preview.emergentagent.com/api"
+        self.base_url = "https://firehelper.preview.emergentagent.com/api"
         self.headers = {}
         self.token = None
         self.tenant_slug = "shefford"

@@ -1,170 +1,208 @@
 <analysis>**original_problem_statement:**
-L'utilisateur a initialement demandé une application pour gérer les interventions et la paie des pompiers. Au cours de cette session, les demandes ont évolué pour inclure une série de corrections de bugs et de refactorisations :
-1.  **Module Paramètres** : Corriger tous les modaux de création et de modification qui ne fonctionnaient pas (Garde, Compétence, Grade, Compte).
-2.  **Module Mon Profil / Personnel** :
-    *   Corriger un bug qui empêchait la sauvegarde des tailles d'EPI.
-    *   Assurer la synchronisation des tailles d'EPI entre Mon Profil et la vue admin Personnel.
-    *   Ajouter des boutons Enregistrer et Annuler au modal de modification du personnel.
-3.  **Authentification** : Résoudre un problème de connexion en production pour le tenant Shefford, où les utilisateurs étaient obligés de réinitialiser leur mot de passe.
-4.  **Module Paie** :
-    *   Corriger un bug qui affichait une page blanche dans l'onglet Paramètres, en particulier en production.
-    *   Vérifier et compléter la logique de Fonction supérieure pour s'assurer qu'elle est bien calculée et affichée dans la feuille de paie.
-5.  **Module Interventions** :
-    *   Corriger plusieurs crashs et bugs suite à une refactorisation (ex:  manquant,  non importé).
-    *   Implémenter une logique d'import automatique de l'équipe de garde (interne/externe) en fonction de l'heure de l'intervention.
-    *   Corriger et améliorer la logique des primes de repas dans le récapitulatif des ressources, notamment le pré-cochage automatique basé sur la durée et les horaires de l'intervention, et la possibilité de modification manuelle.
-    *   Améliorer l'interface d'assignation des véhicules au personnel.
-6.  **Refactorisation** : Poursuivre la refactorisation de  et  pour réduire la dette technique.
+L'utilisateur a initialement demandé une application pour gérer les interventions et la paie des pompiers. Au cours de cette session, les demandes ont évolué pour inclure une refonte majeure de l'interface utilisateur pour la gestion des ressources d'intervention, la mise en œuvre complète des fondations d'un nouveau module de conformité DSI (Déclaration de Sinistre Incendie) pour le gouvernement du Québec, la correction de plusieurs bugs critiques identifiés lors d'un audit technique, et la résolution de problèmes sur le tableau de bord principal.
 
 **PRODUCT REQUIREMENTS:**
-1.  **Stabilité des modules de base** : Les modules ,  et  doivent être entièrement fonctionnels pour permettre la configuration et la gestion de l'application.
-2.  **Authentification robuste** : La connexion doit fonctionner de manière fiable pour tous les utilisateurs sur tous les tenants, sans nécessiter de réinitialisation de mot de passe.
-3.  **Logique métier Paie** : Les primes (repas, fonction supérieure) doivent être calculées correctement en fonction des actions dans les interventions et des paramètres configurés.
-4.  **Expérience utilisateur améliorée** : L'interface doit être intuitive, notamment pour l'assignation des ressources (personnel, véhicules) dans une intervention.
-5.  **Maintenabilité du code** : La dette technique doit être réduite en décomposant les fichiers monolithiques pour faciliter les futures évolutions.
+1.  **Refonte UX des Ressources d'Intervention** : Simplifier et unifier l'assignation du personnel et des véhicules dans une seule interface claire et intuitive.
+2.  **Module de Conformité DSI** :
+    *   Créer l'architecture de données pour stocker tous les codes de référence officiels du MSP (Ministère de la Sécurité Publique).
+    *   Enrichir le formulaire d'intervention avec les champs DSI requis.
+    *   Développer un tableau de bord pour suivre le statut des transmissions DSI (Brouillon, Prêt, Accepté, Erreur).
+    *   Mettre en place la logique de validation et de signature des rapports avant envoi.
+3.  **Stabilité Technique** : Corriger les problèmes identifiés par un audit, notamment la gestion des dépendances, les chemins de fichiers codés en dur dans les tests, la configuration des tests asynchrones et une faille de sécurité.
+4.  **Fonctionnalité du Tableau de Bord Principal** : S'assurer que tous les widgets du tableau de bord principal affichent des données précises et à jour.
 
 **User's preferred language**: French. You MUST respond in French.
 
 **what currently exists?**
-L'application full-stack (React/FastAPI/MongoDB) est fonctionnelle mais présente des bugs spécifiques en cours de résolution.
-- Les bugs critiques des modules  (modaux),  (page blanche) et de l'authentification (tenant Shefford) ont été corrigés.
-- La fonctionnalité de sauvegarde et de synchronisation des tailles d'EPI est implémentée.
-- Le composant  a été massivement refactorisé. Plus de 50% de son code a été extrait dans 10 sous-composants dédiés (, , etc.), améliorant considérablement la maintenabilité.
-- La refactorisation du backend a commencé : le code du module Paie a été extrait de  vers , bien que son intégration complète ne soit pas terminée.
-- La logique d'import automatique de l'équipe de garde est fonctionnelle.
-- La logique des primes de repas a été largement retravaillée pour inclure des conditions de durée et d'horaires, mais un bug persiste.
+L'application full-stack (React/FastAPI/MongoDB) est largement fonctionnelle.
+-   La section des ressources d'intervention a été entièrement refactorisée en un tableau unifié et intuitif, ce qui a été validé par l'utilisateur.
+-   Les fondations du module de conformité DSI sont en place : les données de référence du MSP (municipalités, codes de sinistre, etc.) ont été importées dans la base de données, les API backend sont créées et un tableau de bord de suivi complet a été intégré dans un nouvel onglet Conformité DSI du module Interventions. L'accès à cet onglet est restreint aux administrateurs et aux validateurs désignés.
+-   Les quatre problèmes critiques soulevés par l'audit technique (dépendances, chemins de test, configuration ============================= test session starts ==============================
+platform linux -- Python 3.11.14, pytest-8.4.2, pluggy-1.6.0
+rootdir: /app
+plugins: anyio-4.12.1, asyncio-1.3.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 5 items
+
+backend/test_defect_workflow.py FFF                                      [ 60%]
+backend/tests/test_attribution_auto_bug.py FF                            [100%]
+
+=================================== FAILURES ===================================
+___________________________ test_email_notification ____________________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+_____________________________ test_multiple_emails _____________________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+__________________________ test_no_emails_configured ___________________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+____________________________ test_attribution_auto _____________________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+__________________________ test_direct_function_call ___________________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+=========================== short test summary info ============================
+FAILED backend/test_defect_workflow.py::test_email_notification - Failed: asy...
+FAILED backend/test_defect_workflow.py::test_multiple_emails - Failed: async ...
+FAILED backend/test_defect_workflow.py::test_no_emails_configured - Failed: a...
+FAILED backend/tests/test_attribution_auto_bug.py::test_attribution_auto - Fa...
+FAILED backend/tests/test_attribution_auto_bug.py::test_direct_function_call
+============================== 5 failed in 0.37s ===============================, faille de sécurité des disponibilités) ont été corrigés.
+-   Un bug de crash dans la section Matériel a été résolu.
 
 **Last working item**:
-- **Last item agent was working**: L'agent travaillait sur deux points soulevés par l'utilisateur concernant le module d'intervention :
-    1.  **Bug (P0)**: La prime de repas 🍽️ est pré-cochée pour le personnel ajouté manuellement, même si la durée de l'intervention est trop courte pour y être éligible selon les paramètres.
-    2.  **Amélioration UX (P1)**: Remplacer le système d'assignation des véhicules au personnel (actuellement via un modal) par des cases à cocher à côté de chaque personne dans le récapitulatif.
-- **Status**: IN PROGRESS
-- **Agent Testing Done**: N
-- **Which testing method agent to use?**: manual testing by user
-- **User Testing Done**: N
+-   **Last item agent was working**: L'agent enquêtait sur un bug signalé par l'utilisateur : les widgets du tableau de bord principal (Activité récente, Véhicules, Personnel) affichent des données incorrectes ou nulles (ex: 0 véhicule), bien que les données existent dans la base de données.
+-   **Status**: IN PROGRESS
+-   **Agent Testing Done**: N
+-   **User Testing Done**: Y (L'utilisateur a signalé le bug)
 
 **All Pending/In progress Issue list**:
-- **Issue 1: Bug des primes de repas (P0)**
-  - **Description**: Lors de l'ajout manuel de personnel dans une intervention, la case Prime repas est cochée par défaut, ignorant les règles de durée minimum configurées dans les paramètres.
-  - **Attempted fixes**: L'agent a commencé à modifier  et  pour intégrer la vérification de la durée de l'intervention avant de pré-cocher les repas.
-  - **Next debug checklist**:
-    1.  Finaliser la modification de  et  pour qu'elles appellent  et n'activent les primes que si les conditions de durée sont remplies.
-    2.  S'assurer que la variable  est bien chargée et disponible avant d'exécuter cette logique.
-    3.  Tester le scénario avec une intervention courte et une intervention longue.
-  - **Why fix this issue and what will be achieved with this?**: Corriger ce bug assurera que la paie est calculée correctement et évitera des paiements de primes non justifiés.
-  - **Status**: IN PROGRESS
-  - **Is recurring issue?**: Y
-  - **Should Test frontend/backend/both after fix?**: frontend
-  - **Blocked on other issue**: None
+-   **Issue 1: Les widgets du tableau de bord principal sont cassés (P0)**
+    -   **Description**: Le tableau de bord principal n'affiche pas les données correctes pour les véhicules, le personnel actif et l'activité récente. L'agent a confirmé via un script que les données existent bien dans la base de données, mais ne sont pas rendues par le frontend.
+    -   **Attempted fixes**: L'agent a commencé à inspecter les fichiers du backend, la base de données et le composant . Il a identifié que la requête pour le personnel pourrait être sensible à la casse (Actif vs actif) et était en train de localiser l'endpoint API exact utilisé par le tableau de bord pour diagnostiquer le problème.
+    -   **Next debug checklist**:
+        1.  Identifier l'endpoint API exact appelé par  pour récupérer les données du tableau de bord.
+        2.  Localiser la fonction correspondante dans .
+        3.  Examiner la logique de cette fonction, en particulier les filtres de requête (ex: statut des utilisateurs, des véhicules).
+        4.  Utiliser  pour tester l'endpoint directement et inspecter la réponse JSON afin de déterminer si le problème vient du backend (données manquantes) ou du frontend (problème d'affichage).
+    -   **Why fix this issue and what will be achieved with this?**: Le tableau de bord est la première page vue par les utilisateurs. Sa réparation est essentielle pour fournir un aperçu fiable et immédiat de l'état du système.
+    -   **Status**: IN PROGRESS
+    -   **Is recurring issue?**: N
+    -   **Should Test frontend/backend/both after fix?**: both
+    -   **Blocked on other issue**: None
 
 **In progress Task List**:
-- **Task 1: Amélioration de l'assignation des véhicules (P1)**
-  - **Description**: Remplacer le système d'assignation de véhicules par des cases à cocher à côté de chaque personne dans la section Ressources d'une intervention.
-  - **Where to resume**: L'agent a reconnu la demande et prévoyait de commencer après avoir corrigé le bug des repas.
-  - **What will be achieved with this?**: Une interface plus rapide et plus intuitive pour les gestionnaires.
-  - **Status**: NOT STARTED
-  - **Should Test frontend/backend/both after fix?**: frontend
-  - **Blocked on something**: Issue 1 (le bug des repas est prioritaire).
-
-- **Task 2: Finaliser la refactorisation du backend (P2)**
-  - **Description**: Le code du module Paie a été extrait dans , mais il n'est pas encore utilisé par l'application principale.
-  - **Where to resume**:
-    1.  Dans , importer le routeur  depuis .
-    2.  Inclure ce routeur dans l'application FastAPI principale : .
-    3.  Supprimer les 2665 lignes de code correspondantes du module Paie dans .
-    4.  Effectuer des tests de régression pour s'assurer que le module Paie fonctionne toujours.
-  - **What will be achieved with this?**: Réduction significative de la taille de , amélioration de la structure du projet et de la maintenabilité.
-  - **Status**: IN PROGRESS
-  - **Should Test frontend/backend/both after fix?**: backend
-  - **Blocked on something**: None
+Aucune. La résolution du bug P0 est la seule tâche en cours.
 
 **Upcoming and Future Tasks**
-- **Upcoming Tasks:**
-  - **(P2) Refactorisation du backend**: Poursuivre la décomposition de  pour d'autres modules (ex: Personnel, Interventions).
-- **Future Tasks:**
-  - **(P2) Module de gestion des jours fériés**: Créer un module pour gérer les jours fériés et leur impact sur la paie.
-  - **(P2) Module de facturation pour l'entraide**: Développer une fonctionnalité pour facturer les services rendus à d'autres municipalités.
-  - **(P3) Amélioration du message d'import**: Rendre le message 1 document non mappé plus clair, par exemple 1 véhicule non mappé : [code].
+-   **Upcoming Tasks:**
+    -   **(P1) Finaliser l'export XML DSI** : Implémenter la génération du fichier XML dans  en se basant sur le schéma XSD officiel du MSP (dès sa réception).
+    -   **(P1) Implémenter la transmission DSI réelle** : Remplacer l'API MOCK par un véritable client SOAP/REST pour communiquer avec le web service du MSP, y compris la gestion des certificats.
+    -   **(P2) Finaliser le Validator Service backend** : Compléter la logique de validation backend () avec toutes les règles de Hard Stop requises par le MSP, afin de ne pas dépendre uniquement de la validation frontend.
+-   **Future Tasks:**
+    -   **(P2) Poursuivre la refactorisation de ** : Continuer à extraire les modules (Personnel, Disponibilités, etc.) dans des fichiers de routes dédiés.
+    -   **(P2) Module de gestion des jours fériés** : Créer une fonctionnalité pour gérer les jours fériés et leur impact sur la paie.
+    -   **(P2) Module de facturation pour l'entraide** : Développer un module pour facturer les services rendus à d'autres municipalités.
+    -   **(P3) Améliorer les messages d'import** : Rendre les messages comme 1 document non mappé plus explicites.
 
 **Completed work in this session**
-- **Module Paramètres**: Tous les modaux de création et de modification (Garde, Compétence, Grade, Compte) sont désormais fonctionnels.
-- **Synchronisation EPI**: La sauvegarde des tailles d'EPI dans Mon Profil et leur synchronisation avec le module Personnel ont été corrigées.
-- **Ergonomie Personnel**: Ajout de boutons Enregistrer et Annuler dans le modal de modification du personnel.
-- **Authentification Production**: Le problème de connexion sur le tenant Shefford a été résolu en restaurant la logique d'authentification à bcrypt uniquement, comme demandé par l'utilisateur.
-- **Module Paie**: Le bug de la page blanche dans l'onglet Paramètres a été corrigé en renforçant le code contre les objets  et en améliorant la récupération du token d'authentification.
-- **Refactorisation Frontend MAJEURE**: Le fichier  a été réduit de ~5600 à ~2700 lignes. Dix sous-composants ont été extraits dans des fichiers dédiés dans , rendant le code beaucoup plus modulaire.
-- **Bugs de refactorisation**: Corrigé les crashs dans les nouveaux composants (, ) causés par des dépendances manquantes.
-- **Logique métier Interventions**:
-    - Implémentation d'un import automatique de l'équipe de garde basé sur l'heure.
-    - Correction et finalisation de la logique de Fonction supérieure.
-    - Amélioration de la logique des primes de repas (interaction, pré-cochage partiel).
+-   **Refactorisation et Amélioration UX MAJEURE (Section Ressources Intervention)** : L'interface d'assignation du personnel aux véhicules a été complètement repensée et simplifiée en un tableau unique et intuitif, avec des compteurs dynamiques et des alertes visuelles. La gestion des primes de repas a également été améliorée avec des cases à cocher par type de repas.
+-   **Implémentation des Fondations du Module DSI** :
+    *   **Import de Données** : Un script a téléchargé et importé dans MongoDB la liste officielle des 1,281 municipalités du Québec (MAMH), ainsi que tous les codes de référence MSP pour les sinistres.
+    *   **API Backend** : De nouvelles routes ( et ) ont été créées pour gérer les données DSI et le suivi des transmissions.
+    *   **Interface Frontend** : La section DSI du formulaire d'intervention a été enrichie avec les nouveaux champs (ex: recherche de municipalité). Un tableau de bord de conformité complet a été créé et intégré en tant que nouvel onglet dans le module Interventions.
+-   **Correction des Problèmes d'Audit Technique** :
+    *   Les dépendances dans  ont été assouplies.
+    *   Les chemins codés en dur dans les fichiers de test ont été remplacés par des chemins relatifs.
+    *   La configuration pour les tests  a été ajoutée via .
+    *   Une faille de sécurité dans les endpoints de modification des disponibilités a été corrigée en ajoutant une validation côté serveur.
+-   **Corrections de Bugs et UI** :
+    *   Un crash lors de l'ajout de matériel a été corrigé ( manquant).
+    *   L'onglet Planning dans les paramètres a été renommé en Horaire.
+    *   L'accès à l'onglet Conformité DSI a été restreint aux administrateurs et validateurs.
 
 **Code Architecture**
 
 
+**Key Technical Concepts**
+-   Full-stack : React, FastAPI, MongoDB.
+-   Programmation asynchrone :  en Python (FastAPI, motor) et JavaScript.
+-   Import de données externes : Utilisation de scripts Python pour récupérer des données gouvernementales (CSV) et peupler la base de données.
+-   Conception d'API REST : Modularisation avec de nouveaux fichiers de routes dans FastAPI.
+-   Refactorisation UI/UX : Réécriture d'un composant clé () suite aux retours de l'utilisateur.
+
+**key DB schema**
+-   Nouvelles collections préfixées par  ont été ajoutées à la base de données  pour stocker les codes officiels du MSP (ex: , , , etc.).
+-   La collection  a été implicitement étendue pour inclure des champs de suivi DSI (, , etc.).
+
+**changes in tech stack**
+-   Ajout de  pour la gestion des tests asynchrones.
+
 **All files of reference**
--    (En cours de modification pour les repas/véhicules)
--    (Modifié pour la logique des repas et des gardes)
--    (Fortement refactorisé)
--    (Corrigé)
--    (Corrigé)
--    (Corrigé)
--    (Corrigé)
--   Tous les nouveaux fichiers dans 
+-   **Bug à investiguer** : , .
+-   **Module DSI (implémentation récente)** : , , , .
+-   **Corrections d'audit** : , , , et les fonctions  /  dans .
+-   **Refonte UI** : .
 
 **Areas that need refactoring**:
--   ****: **Priorité critique**. La refactorisation a commencé mais doit être finalisée. Le fichier  doit être réellement intégré pour que la suppression du code dans  soit effective. D'autres modules doivent suivre.
+-   **** : Ce fichier reste monolithique (plus de 40 000 lignes) malgré l'ajout de nouveaux modules dans des fichiers séparés. La refactorisation doit se poursuivre pour les autres fonctionnalités (Personnel, Disponibilités, etc.).
 
 **key api endpoints**
--   : Modifié pour inclure .
--   : La logique a été modifiée plusieurs fois, pour finalement revenir à une version stricte  sans migration SHA256.
--   : Modifié pour accepter un paramètre  et retourner l'équipe de garde (interne/externe) correspondante.
--   : (NOUVEAU - utilisé par le frontend) Pour récupérer les paramètres de repas (durée min, etc.).
--   : La logique interne utilisant les primes , ,  a été vérifiée.
+-   **Nouveaux endpoints DSI** : , , .
+-   **Endpoints modifiés (sécurité)** : , .
+-   **Endpoint buggé (à vérifier)** : L'endpoint qui alimente le tableau de bord principal (probablement ).
 
 **Critical Info for New Agent**
 -   **COMMUNIQUEZ EN FRANÇAIS.**
--   L'utilisateur est très impliqué et fournit des retours précis, y compris des captures d'écran et des références à des sauvegardes GitHub. Fiez-vous à ses directives.
--   La priorité est de finir le travail sur la section Ressources : d'abord le bug des repas, puis l'amélioration UX pour l'assignation des véhicules.
--   La refactorisation du frontend () est une réussite majeure de cette session. La prochaine étape de refactorisation concerne le backend ().
--   L'authentification a été un point sensible. La version actuelle n'utilise QUE  et a été restaurée à la demande de l'utilisateur. Ne réintroduisez pas la migration SHA256 sans son accord explicite.
+-   La priorité absolue est de corriger les widgets cassés du tableau de bord principal. C'est le dernier point soulevé par l'utilisateur.
+-   L'utilisateur est très compétent techniquement et fournit des exigences détaillées et de haute qualité. Fiez-vous à ses directives.
+-   Le module DSI est une nouvelle fonctionnalité majeure. La phase de mise en place (données, UI, API mockées) est terminée et approuvée. Les prochaines étapes (génération XML, transmission réelle) dépendent de documents externes (XSD du MSP).
 
 **documents and test reports created in this job**
--    (mis à jour)
--    (mis à jour)
+-    (mis à jour avec les exigences DSI)
+-    (script pour peupler la base de données avec les codes officiels)
+-    (configuration pour les tests asynchrones)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: Signale un bug où les repas sont pré-cochés même si la durée de l'intervention est trop courte. Demande aussi une refonte de l'assignation des véhicules (cases à cocher). **Status: IN PROGRESS**.
-2.  **User**: Confirme que la nouvelle logique de repas fonctionne bien (Super ça fonctionne bien). Demande une amélioration : les repas non couverts par les heures de l'intervention ne devraient pas être visibles et les repas couverts devraient être pré-cochés. **Status: IN PROGRESS (partiellement fait, a mené au bug ci-dessus)**.
-3.  **User**: Signale un bug dans le récapitulatif des repas : les cases à cocher ne fonctionnent pas et il faut s'assurer qu'elles impactent la paie. S'aperçoit aussi que les repas sont cochés même pour une intervention de 33mn. **Status: IN PROGRESS**.
-4.  **User**: Demande de vérifier et compléter la logique de Fonction supérieure pour qu'elle s'affiche bien dans la feuille de paie avec toutes les primes associées. **Status: DONE**.
-5.  **User**: Signale une erreur  lors de l'import d'une équipe de garde. Demande aussi une logique d'import automatique basée sur l'heure de l'intervention et les horaires configurés. **Status: DONE**.
-6.  **User**: Signale une erreur en cliquant sur matériel utilisé dans une intervention. **Status: DONE**.
-7.  **User**: Donne son accord pour que l'agent continue avec toutes les tâches de refactorisation (). **Status: DONE**.
-8.  **User**: Confirme que le  fonctionne (). Demande de continuer sur les tâches en attente (refactorisation). **Status: DONE**.
-9.  **User**: Fournit une sauvegarde GitHub comme référence pour résoudre le problème de connexion et le bug de l'onglet Paie > Paramètres. **Status: DONE**.
-10. **User**: Confirme que le problème de l'onglet Paramètres Paie n'est pas que sur iOS, mais aussi sur le web. **Status: DONE**.
+1.  **User**: Signale que les widgets du tableau de bord (activité récente, véhicules) ne fonctionnent pas et doute que tout fonctionne correctement. **Status: IN PROGRESS**.
+2.  **User**: Indique que l'onglet Conformité DSI doit être accessible uniquement aux admins et aux personnes désignées pour la validation. **Status: DONE**.
+3.  **User**: Demande que le tableau de bord DSI soit un onglet dans le module Intervention et que l'onglet Planning dans les paramètres soit renommé en Horaire. **Status: DONE**.
+4.  **User**: Approuve la création du tableau de bord DSI et fournit les exigences détaillées pour l'interface. **Status: DONE**.
+5.  **User**: Approuve les corrections d'audit et demande de commencer immédiatement. **Status: DONE**.
+6.  **User**: Fournit un rapport d'audit détaillé avec 4 problèmes critiques à corriger (dépendances, chemins de test, sécurité). **Status: DONE**.
+7.  **User**: Valide l'ensemble des travaux sur le module DSI (tout est parfait). **Status: DONE**.
+8.  **User**: Confirme que les codes MSP officiels ont été bien implémentés. **Status: DONE**.
+9.  **User**: Fournit une liste de mappings officiels et très détaillés pour tous les codes DSI. **Status: DONE**.
+10. **User**: Confirme l'implémentation du module DSI et pose des questions de clarification. **Status: DONE**.
 
 **Project Health Check:**
-*   **Broken**: La logique de pré-cochage des primes de repas dans le module d'intervention est défectueuse et coche les repas même lorsque la durée minimale n'est pas atteinte.
+-   **Broken**: Le tableau de bord principal () contient des widgets clés qui n'affichent pas les données correctement, ce qui en fait le bug le plus prioritaire à résoudre.
 
 **3rd Party Integrations**
-*   Nethris API, Employeur D API, Ceridian Dayforce (SFTP)
-*   Web Speech API, Open-Meteo, OpenStreetMap Nominatim
-*   @dnd-kit, jspdf & jspdf-autotable, xlsx
-*   Stripe
-*   Resend
-*   Firebase Cloud Messaging (FCM)
-*   
-*   
+-   Nethris API, Employeur D API, Ceridian Dayforce (SFTP)
+-   Web Speech API, Open-Meteo, OpenStreetMap Nominatim
+-   @dnd-kit, jspdf & jspdf-autotable, xlsx
+-   Stripe
+-   Resend
+-   Firebase Cloud Messaging (FCM)
+-   
+-   
+-   *Une future intégration avec le web service du MSP (Gouvernement du Québec) via SOAP/REST est prévue pour le module DSI.*
 
 **Testing status**
-- Testing agent used after significant changes: NO
-- Troubleshoot agent used after agent stuck in loop: NO
-- Test files created: None
-- Known regressions: La logique des primes de repas a régressé et présente un nouveau bug.
+-   Testing agent used after significant changes: NO
+-   Troubleshoot agent used after agent stuck in loop: NO
+-   Test files created: Aucun nouveau fichier de test , mais création de .
+-   Known regressions: Les widgets du tableau de bord principal.
 
 **Credentials to test flow:**
-*   **Tenant Slug:** 
-*   **Admin Email:** , **Password:** 
-*   (Le tenant  a été source de confusion et a été abandonné au profit de ).</analysis>
+-   **Tenant**: 
+-   **Email**: 
+-   **Password**: </analysis>
