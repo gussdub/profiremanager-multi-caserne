@@ -11046,13 +11046,14 @@ async def get_mon_taux_presence(
                 if insc.get("statut") == "present":
                     presences_validees += 1
     
-    taux_presence = round((presences_validees / formations_passees * 100) if formations_passees > 0 else 0, 1)
+    taux_presence = round((presences_validees / formations_passees * 100) if formations_passees > 0 else 100, 1)
     
     # Récupérer les paramètres pour savoir si conforme
     params = await db.parametres_formations.find_one({"tenant_id": tenant.id})
     pourcentage_min = params.get("pourcentage_presence_minimum", 80) if params else 80
     
-    conforme = taux_presence >= pourcentage_min
+    # Si aucune formation passée, l'utilisateur est conforme par défaut
+    conforme = taux_presence >= pourcentage_min if formations_passees > 0 else True
     
     return {
         "formations_passees": formations_passees,
