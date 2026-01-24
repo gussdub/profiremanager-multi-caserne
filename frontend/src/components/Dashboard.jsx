@@ -157,18 +157,20 @@ const Dashboard = () => {
           formationsAVenir: 0
         });
         
-        // Congés
+        // Personnes en congé/maladie actuellement (congés approuvés en cours)
         if (Array.isArray(congesData)) {
-          const enAttente = congesData
-            .filter(d => d.statut === 'en_attente')
+          const absentsActuellement = congesData
+            .filter(d => d.statut === 'approuve' || d.statut === 'approuvé')
             .slice(0, 5);
-          setDemandesConges(enAttente);
+          setPersonnesAbsentes(absentsActuellement);
         }
         
-        // Couverture planning
+        // Couverture planning - calculer sur le mois complet
         if (Array.isArray(planningData)) {
+          const now = new Date();
+          const joursTotal = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
           const joursCouverts = new Set(planningData.map(a => a.date)).size;
-          const taux = Math.min(100, Math.round((joursCouverts / 7) * 100));
+          const taux = Math.min(100, Math.round((joursCouverts / joursTotal) * 100));
           setTauxCouverture(taux);
         }
         
