@@ -130,9 +130,10 @@ dsi_categories_pertes  - 2 docs
 
 ### P2 - Moyen terme (Refactorisation en cours)
 - [x] Créer fichier dependencies.py avec dépendances partagées
-- [x] Créer et activer module personnel.py (5 routes migrées, ~73 lignes nettoyées)
+- [x] Créer et activer module personnel.py (5 routes migrées)
+- [x] Créer et activer module actifs.py (~30 routes migrées : véhicules, bornes, inventaires, rondes, QR codes)
 - [x] Créer module disponibilites.py (désactivé - routes server.py plus complètes)
-- [ ] Continuer extraction modules (planning, formations) quand routes alignées
+- [ ] Continuer extraction modules (planning, formations) - routes complexes avec exports PDF/Excel
 - [ ] Intégration XSD officiel du MSP (en attente de réception)
 - [ ] Transmission SOAP au serveur MSP (certificat SSL requis)
 - [ ] Tests dans la Sandbox MSP
