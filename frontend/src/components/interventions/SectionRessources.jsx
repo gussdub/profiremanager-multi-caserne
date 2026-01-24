@@ -305,6 +305,9 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
         let totalMembres = 0;
         let nouveauxMembresTotal = [];
         
+        // Vérifier si au moins un repas est éligible (durée minimum atteinte)
+        const auMoinsUnRepasEligible = repasAuto.dejeuner || repasAuto.diner || repasAuto.souper;
+        
         equipes.forEach(equipe => {
           const membresAImporter = equipe.membres.map(m => ({
             id: m.id,
@@ -314,7 +317,8 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
             type_emploi: m.type_emploi,
             fonction_superieur: m.fonction_superieur || false,
             statut_presence: 'present',
-            prime_repas: true,
+            // Prime repas cochée seulement si au moins un repas est éligible (durée minimum)
+            prime_repas: auMoinsUnRepasEligible,
             // Primes de repas basées sur les heures de l'intervention
             prime_dejeuner: repasAuto.dejeuner,
             prime_diner: repasAuto.diner,
@@ -368,6 +372,12 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
   
   // Importer une équipe complète (manuel)
   const importerEquipe = (equipe) => {
+    // Calculer les repas éligibles pour l'import manuel aussi
+    const heureDebut = getHeureFromDatetime(formData.xml_time_call_received);
+    const heureFin = getHeureFromDatetime(formData.xml_end_time || formData.xml_time_available);
+    const repasAuto = calculerRepasAutomatiques(heureDebut, heureFin);
+    const auMoinsUnRepasEligible = repasAuto.dejeuner || repasAuto.diner || repasAuto.souper;
+    
     const membresAImporter = equipe.membres.map(m => ({
       id: m.id,
       nom: m.nom,
@@ -376,7 +386,11 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
       type_emploi: m.type_emploi,
       fonction_superieur: m.fonction_superieur || false,
       statut_presence: 'present',
-      prime_repas: true,
+      // Prime repas cochée seulement si au moins un repas est éligible (durée minimum)
+      prime_repas: auMoinsUnRepasEligible,
+      prime_dejeuner: repasAuto.dejeuner,
+      prime_diner: repasAuto.diner,
+      prime_souper: repasAuto.souper,
       utilise_fonction_superieure: false,
       equipe_origine: equipe.equipe_nom
     }));
