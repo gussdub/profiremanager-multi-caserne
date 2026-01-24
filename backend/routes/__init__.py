@@ -58,10 +58,10 @@ Prochains modules à extraire (par priorité):
 # Imports actifs
 from .dsi import router as dsi_router
 from .dsi_transmissions import router as dsi_transmissions_router
+from .personnel import router as personnel_router
+from .disponibilites import router as disponibilites_router
 
 # Imports prêts pour activation (décommenter quand prêt)
-# from .personnel import router as personnel_router
-# from .disponibilites import router as disponibilites_router
 # from .planning import router as planning_router
 # from .formations import router as formations_router
 # from .paie import router as paie_router
@@ -69,8 +69,8 @@ from .dsi_transmissions import router as dsi_transmissions_router
 __all__ = [
     'dsi_router',
     'dsi_transmissions_router',
-    # 'personnel_router',
-    # 'disponibilites_router',
+    'personnel_router',
+    'disponibilites_router',
     # 'planning_router',
     # 'formations_router',
     # 'paie_router',
