@@ -155,6 +155,8 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
         
         // Importer automatiquement toutes les équipes trouvées
         let totalMembres = 0;
+        let nouveauxMembresTotal = [];
+        
         equipes.forEach(equipe => {
           const membresAImporter = equipe.membres.map(m => ({
             id: m.id,
@@ -165,6 +167,10 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
             fonction_superieur: m.fonction_superieur || false,
             statut_presence: 'present',
             prime_repas: true,
+            // Primes de repas basées sur les heures de l'intervention
+            prime_dejeuner: repasAuto.dejeuner,
+            prime_diner: repasAuto.diner,
+            prime_souper: repasAuto.souper,
             utilise_fonction_superieure: false,
             equipe_origine: equipe.equipe_nom
           }));
@@ -172,17 +178,21 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
           // Fusionner avec le personnel existant (éviter les doublons)
           const personnelExistant = manualPersonnel.map(p => p.id);
           const nouveauxMembres = membresAImporter.filter(m => !personnelExistant.includes(m.id));
-          
-          if (nouveauxMembres.length > 0) {
-            const updated = [...manualPersonnel, ...nouveauxMembres];
-            setManualPersonnel(updated);
-            setFormData(prev => ({ ...prev, manual_personnel: updated }));
-            totalMembres += nouveauxMembres.length;
-          }
+          nouveauxMembresTotal = [...nouveauxMembresTotal, ...nouveauxMembres];
+          totalMembres += nouveauxMembres.length;
         });
         
+        if (nouveauxMembresTotal.length > 0) {
+          const updated = [...manualPersonnel, ...nouveauxMembresTotal];
+          setManualPersonnel(updated);
+          setFormData(prev => ({ ...prev, manual_personnel: updated }));
+        }
+        
         const typeGardeMsg = typeGardeDetecte ? ` (garde ${typeGardeDetecte})` : '';
-        alert(`✅ ${totalMembres} membre(s) importé(s)${typeGardeMsg}`);
+        const repasMsg = repasAuto.dejeuner || repasAuto.diner || repasAuto.souper 
+          ? ` - Repas: ${repasAuto.dejeuner ? '🌅' : ''}${repasAuto.diner ? '☀️' : ''}${repasAuto.souper ? '🌙' : ''}`
+          : '';
+        alert(`✅ ${totalMembres} membre(s) importé(s)${typeGardeMsg}${repasMsg}`);
       } else {
         console.error('Erreur API équipes-garde:', response.status);
         alert('Erreur lors du chargement des équipes de garde');
