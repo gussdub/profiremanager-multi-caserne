@@ -20,6 +20,16 @@ Application de gestion des interventions et de la paie pour les services de pomp
 - **Logique des primes de repas** : pré-cochage basé sur durée minimum et horaires
 - **Fonction supérieure** : calcul et affichage dans la paie
 
+### Refactorisation Backend - 25 janvier 2026
+- **Module Actifs extrait** (`routes/actifs.py` - 1593 lignes, ~30 routes)
+  - Véhicules : CRUD, QR codes, inspections SAAQ, fiche de vie
+  - Bornes d'incendie : CRUD, QR codes, import CSV
+  - Inventaires : Modèles et inspections CRUD
+  - Rondes de sécurité : Liste, détail, contre-signature, config emails
+  - Matériels pour interventions : Liste
+- **server.py réduit** de ~1200 lignes (41143 → 39946)
+- **Bug corrigé** : Modal historique inventaires décalé sous la sidebar
+
 ### Dashboard Principal - Corrections 24 janvier 2026
 - **Correction bug widgets** : Personnel actif (37), Véhicules (3) s'affichent correctement
 - **Taux de couverture planning** : Calculé sur le mois complet (pas 7 jours)
