@@ -6158,21 +6158,17 @@ async def import_users_csv(
 #     cleaned_users = [clean_mongo_doc(user) for user in users]
 #     return [User(**user) for user in cleaned_users]
 
-@api_router.get("/{tenant_slug}/users/{user_id}", response_model=User)
-async def get_user(tenant_slug: str, user_id: str, current_user: User = Depends(get_current_user)):
-    if current_user.role not in ["admin", "superviseur"] and current_user.id != user_id:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
-    # Vérifier le tenant
-    tenant = await get_tenant_from_slug(tenant_slug)
-    
-    # Filtrer par tenant_id ET user_id
-    user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
-    if not user:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
-    
-    user = clean_mongo_doc(user)
-    return User(**user)
+# Route legacy commentée - migrée vers routes/personnel.py
+# @api_router.get("/{tenant_slug}/users/{user_id}", response_model=User)
+# async def get_user(tenant_slug: str, user_id: str, current_user: User = Depends(get_current_user)):
+#     if current_user.role not in ["admin", "superviseur"] and current_user.id != user_id:
+#         raise HTTPException(status_code=403, detail="Accès refusé")
+#     tenant = await get_tenant_from_slug(tenant_slug)
+#     user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
+#     if not user:
+#         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+#     user = clean_mongo_doc(user)
+#     return User(**user)
 
 class ProfileUpdate(BaseModel):
     prenom: str
