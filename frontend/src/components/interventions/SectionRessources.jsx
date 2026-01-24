@@ -190,6 +190,25 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
     return chevauche;
   };
   
+  // Vérifier si la durée minimum pour un repas est atteinte
+  const isDureeMinimumAtteinte = () => {
+    const dureeHeures = calculerDureeIntervention();
+    if (!interventionSettings) return false;
+    
+    // Vérifier la durée minimum du premier repas actif trouvé
+    const repasTypes = ['dejeuner', 'diner', 'souper'];
+    for (const type of repasTypes) {
+      const config = interventionSettings[`repas_${type}`];
+      if (config && config.actif) {
+        const dureeMin = config.duree_minimum || 0;
+        if (dureeHeures >= dureeMin) {
+          return true;
+        }
+      }
+    }
+    return dureeHeures >= 1; // Fallback : au moins 1h
+  };
+  
   // Calcul des primes de repas automatiques basé sur les heures et paramètres
   const calculerRepasAutomatiques = (heureDebut, heureFin) => {
     if (!heureDebut) return { dejeuner: false, diner: false, souper: false };
