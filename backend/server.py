@@ -36698,6 +36698,9 @@ async def get_intervention_reference_data(
     current_user: User = Depends(get_current_user)
 ):
     """Récupère les données de référence (natures, causes, etc.) depuis les tables DSI"""
+    # Debug: afficher la base de données utilisée
+    logging.warning(f"🔍 reference-data: DB name = {db_name}, tenant = {tenant_slug}")
+    
     # Utiliser les nouvelles collections DSI
     natures = await db.dsi_natures_sinistre.find({}, {"_id": 0}).to_list(200)
     causes = await db.dsi_causes.find({}, {"_id": 0}).to_list(200)
@@ -36705,6 +36708,8 @@ async def get_intervention_reference_data(
     materiaux = await db.dsi_materiaux.find({}, {"_id": 0}).to_list(200)
     facteurs = await db.dsi_facteurs_allumage.find({}, {"_id": 0}).to_list(200)
     usages = await db.dsi_usages_batiment.find({}, {"_id": 0}).to_list(200)
+    
+    logging.warning(f"🔍 reference-data: Found {len(natures)} natures, {len(causes)} causes, {len(sources)} sources")
     
     # Formater les données pour le frontend (ajouter 'id' basé sur 'code')
     for n in natures:
