@@ -37472,7 +37472,8 @@ async def get_equipes_garde_for_intervention(
                 "nom": m.get("nom"),
                 "prenom": m.get("prenom"),
                 "grade": m.get("grade"),
-                "type_emploi": m.get("type_emploi")
+                "type_emploi": m.get("type_emploi"),
+                "fonction_superieur": m.get("fonction_superieur", False)
             } for m in membres]
         })
     
