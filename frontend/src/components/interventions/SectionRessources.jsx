@@ -41,6 +41,66 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
   const [manualVehicles, setManualVehicles] = useState(formData.manual_vehicles || []);
   const [manualPersonnel, setManualPersonnel] = useState(formData.manual_personnel || []);
   
+  // Calcul des primes de repas automatiques basé sur les heures de l'intervention
+  // Déjeuner: 6h-9h, Dîner: 11h-14h, Souper: 17h-20h
+  const calculerRepasAutomatiques = (heureDebut, heureFin) => {
+    if (!heureDebut || !heureFin) return { dejeuner: false, diner: false, souper: false };
+    
+    try {
+      const getMinutes = (timeStr) => {
+        const [h, m] = timeStr.split(':').map(Number);
+        return h * 60 + (m || 0);
+      };
+      
+      const debut = getMinutes(heureDebut);
+      const fin = getMinutes(heureFin);
+      
+      // Plages horaires des repas (en minutes depuis minuit)
+      const repas = {
+        dejeuner: { debut: 6 * 60, fin: 9 * 60 },   // 6h - 9h
+        diner: { debut: 11 * 60, fin: 14 * 60 },    // 11h - 14h
+        souper: { debut: 17 * 60, fin: 20 * 60 }    // 17h - 20h
+      };
+      
+      const chevauche = (repasDebut, repasFin) => {
+        // Gestion si fin < debut (intervention qui passe minuit)
+        if (fin < debut) {
+          return repasDebut <= fin || repasFin >= debut;
+        }
+        return debut < repasFin && fin > repasDebut;
+      };
+      
+      return {
+        dejeuner: chevauche(repas.dejeuner.debut, repas.dejeuner.fin),
+        diner: chevauche(repas.diner.debut, repas.diner.fin),
+        souper: chevauche(repas.souper.debut, repas.souper.fin)
+      };
+    } catch (e) {
+      console.error('Erreur calcul repas:', e);
+      return { dejeuner: false, diner: false, souper: false };
+    }
+  };
+  
+  // Mettre à jour une prime de repas pour un membre du récapitulatif
+  const updatePrimeRepasRecap = (personnelId, field, value) => {
+    // Mettre à jour dans manualPersonnel si c'est un membre manuel
+    const isManual = manualPersonnel.some(p => p.id === personnelId);
+    
+    if (isManual) {
+      const updatedManual = manualPersonnel.map(p =>
+        p.id === personnelId ? { ...p, [field]: value } : p
+      );
+      setManualPersonnel(updatedManual);
+      setFormData(prev => ({ ...prev, manual_personnel: updatedManual }));
+    } else {
+      // Mettre à jour dans resources (XML)
+      const updatedResources = resources.map(p =>
+        p.id === personnelId ? { ...p, [field]: value } : p
+      );
+      setFormData(prev => ({ ...prev, resources: updatedResources }));
+    }
+  };
+  
   // Charger les équipes de garde
   // Import automatique de l'équipe de garde basé sur l'heure de l'intervention
   const importerEquipeAutomatique = async () => {
