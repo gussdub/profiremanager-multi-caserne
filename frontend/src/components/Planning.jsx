@@ -1378,45 +1378,7 @@ const Planning = () => {
         </div>
       )}
 
-      {/* Section KPIs pour le mois affiché */}
-      {/* Statistiques - Visible uniquement pour admin/superviseur */}
-      {!['employe', 'pompier'].includes(user.role) && (
-        <>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '1rem',
-            padding: '0.75rem 1rem',
-            background: 'white',
-            borderRadius: '8px',
-            border: '1px solid #E5E7EB'
-          }}>
-            <h3 style={{
-              fontSize: '1.125rem',
-              fontWeight: '600',
-              color: '#1F2937',
-              margin: 0
-            }}>📊 Statistiques - {kpis.monthLabel}</h3>
-          </div>
-
-          {/* KPIs du Mois */}
-          <div className="kpi-grid" style={{marginBottom: '2rem'}}>
-            <div className="kpi-card" style={{background: '#D1FAE5'}}>
-              <h3>{kpis.quartsCouverts} / {kpis.quartsNonCouverts}</h3>
-              <p>Couverts / Non Couverts</p>
-            </div>
-            <div className="kpi-card" style={{background: '#DBEAFE'}}>
-              <h3>{kpis.heuresTotales}h</h3>
-              <p>Heures Totales Planifiées</p>
-            </div>
-            <div className="kpi-card" style={{background: '#FEF3C7'}}>
-              <h3>{kpis.tauxCouverture}%</h3>
-              <p>Taux de Couverture</p>
-            </div>
-          </div>
-        </>
-      )}
+      {/* Section KPIs supprimée - Les statistiques sont désormais sur le tableau de bord principal */}
 
       {/* Barre de Contrôles Harmonisée */}
       <div className="personnel-controls" style={{marginBottom: '2rem'}}>
