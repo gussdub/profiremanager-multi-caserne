@@ -273,7 +273,10 @@ const Dashboard = () => {
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
-    const date = new Date(dateStr);
+    // Parser la date en forçant l'heure locale pour éviter le décalage de fuseau horaire
+    // "2026-01-28" doit rester le 28 janvier, pas le 27
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day); // Mois 0-indexé
     return date.toLocaleDateString('fr-CA', { 
       weekday: 'short', 
       day: 'numeric', 
@@ -283,12 +286,23 @@ const Dashboard = () => {
 
   const formatDateTime = (dateStr) => {
     if (!dateStr) return '';
-    const date = new Date(dateStr);
+    // Pour les datetime ISO, on peut utiliser new Date directement
+    // Mais pour les dates simples YYYY-MM-DD, on doit parser manuellement
+    if (dateStr.includes('T')) {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('fr-CA', { 
+        day: 'numeric', 
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+    // Date simple sans heure
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
     return date.toLocaleDateString('fr-CA', { 
       day: 'numeric', 
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit'
+      month: 'short'
     });
   };
 
