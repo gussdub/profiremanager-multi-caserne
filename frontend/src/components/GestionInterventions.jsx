@@ -116,6 +116,7 @@ const GestionInterventions = ({ user, tenantSlug }) => {
   const isAdminOrSupervisor = isAdmin || isSuperviseur;
   const isEmployee = ['employe', 'pompier'].includes(user?.role);
   const isDesignatedPerson = (settings?.personnes_ressources || []).includes(user?.id);
+  const isValidateur = (settings?.validateurs || []).includes(user?.id);
   
   // Les employés ont accès en lecture seule aux cartes d'appel
   // L'accès à l'historique dépend du paramètre acces_employes_historique
@@ -126,7 +127,7 @@ const GestionInterventions = ({ user, tenantSlug }) => {
 
   const tabs = [
     { id: 'rapports', label: 'Rapports d\'intervention', icon: '📋' },
-    { id: 'conformite-dsi', label: 'Conformité DSI', icon: '📊', adminOnly: true },
+    { id: 'conformite-dsi', label: 'Conformité DSI', icon: '📊', validatorsOnly: true },
     { id: 'historique', label: 'Historique', icon: '📚', hideForEmployee: !employeeCanAccessHistory },
     { id: 'parametres', label: 'Paramètres', icon: '⚙️', adminOnly: true },
   ];
@@ -134,6 +135,7 @@ const GestionInterventions = ({ user, tenantSlug }) => {
   // Filtrer les onglets selon le rôle
   const visibleTabs = tabs.filter(tab => {
     if (tab.adminOnly && !isAdmin) return false;
+    if (tab.validatorsOnly && !isAdmin && !isValidateur) return false;
     if (tab.hideForEmployee && isEmployee && !isDesignatedPerson) return false;
     return true;
   });
