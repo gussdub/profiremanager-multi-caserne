@@ -288,7 +288,7 @@ async def delete_user(
     user_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Supprime un utilisateur"""
+    """Supprime un utilisateur et ses données associées"""
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès refusé")
     
@@ -307,10 +307,16 @@ async def delete_user(
     if not user_to_delete:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
     
+    # Supprimer l'utilisateur
     result = await db.users.delete_one({"id": user_id, "tenant_id": tenant.id})
     
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    # Supprimer les données associées
+    await db.disponibilites.delete_many({"user_id": user_id, "tenant_id": tenant.id})
+    await db.assignations.delete_many({"user_id": user_id, "tenant_id": tenant.id})
+    await db.demandes_remplacement.delete_many({"demandeur_id": user_id, "tenant_id": tenant.id})
     
     # Créer activité
     await creer_activite(
