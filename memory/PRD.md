@@ -142,8 +142,9 @@ dsi_categories_pertes  - 2 docs
 - [x] Créer fichier dependencies.py avec dépendances partagées
 - [x] Créer et activer module personnel.py (5 routes migrées)
 - [x] Créer et activer module actifs.py (~30 routes migrées : véhicules, bornes, inventaires, rondes, QR codes)
+- [x] Créer et activer module formations.py (~12 routes migrées : CRUD, inscriptions, taux présence)
 - [x] Créer module disponibilites.py (désactivé - routes server.py plus complètes)
-- [ ] Continuer extraction modules (planning, formations) - routes complexes avec exports PDF/Excel
+- [ ] Activer module planning.py (routes commentées, prêt à activer)
 - [ ] Intégration XSD officiel du MSP (en attente de réception)
 - [ ] Transmission SOAP au serveur MSP (certificat SSL requis)
 - [ ] Tests dans la Sandbox MSP
