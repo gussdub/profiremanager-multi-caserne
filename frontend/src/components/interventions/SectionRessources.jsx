@@ -826,29 +826,6 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                           ) : (
                             <span className="text-gray-400 text-xs">Pas de prime</span>
                           )}
-                                  onChange={(e) => updatePrimeRepasRecap(resource.id, 'prime_diner', e.target.checked)}
-                                  className="w-3 h-3"
-                                />
-                                <span>☀️</span>
-                              </label>
-                              <label className="flex items-center gap-1 text-xs bg-indigo-50 px-2 py-1 rounded cursor-pointer" title="Souper (17h-20h)">
-                                <input
-                                  type="checkbox"
-                                  checked={resource.prime_souper ?? false}
-                                  onChange={(e) => updatePrimeRepasRecap(resource.id, 'prime_souper', e.target.checked)}
-                                  className="w-3 h-3"
-                                />
-                                <span>🌙</span>
-                              </label>
-                            </div>
-                          ) : (
-                            <div className="flex gap-1">
-                              {resource.prime_dejeuner && <span title="Déjeuner" className="text-xs bg-orange-100 px-1 rounded">🌅</span>}
-                              {resource.prime_diner && <span title="Dîner" className="text-xs bg-yellow-100 px-1 rounded">☀️</span>}
-                              {resource.prime_souper && <span title="Souper" className="text-xs bg-indigo-100 px-1 rounded">🌙</span>}
-                              {!resource.prime_dejeuner && !resource.prime_diner && !resource.prime_souper && <span className="text-gray-400">-</span>}
-                            </div>
-                          )}
                         </td>
                         <td className="p-2">
                           <span className={`px-2 py-1 rounded text-xs ${resource.is_manual ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
