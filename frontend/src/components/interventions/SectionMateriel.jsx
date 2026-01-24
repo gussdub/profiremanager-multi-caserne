@@ -3,6 +3,8 @@ import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+
 const SectionMateriel = ({ formData, setFormData, editMode, tenantSlug, getToken }) => {
   const [materielDisponible, setMaterielDisponible] = useState([]);
   const [loading, setLoading] = useState(false);
