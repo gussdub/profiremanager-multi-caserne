@@ -102,25 +102,39 @@ const Dashboard = () => {
       const results = await Promise.all(promises);
       
       // ===== TRAITEMENT DES RÉSULTATS =====
-      // Les 5 premiers résultats sont toujours: Formations, Assignations, Mes EPI, Mes Heures, Mon Taux Présence
+      // Index 0: Formations année courante
+      // Index 1: Assignations mois courant
+      // Index 2: Mes EPI
+      // Index 3: Mes heures
+      // Index 4: Mon taux présence
+      // Index 5: Assignations mois suivant
+      // Index 6: Formations année suivante
+      // Index 7-11: Données admin (si isAdmin)
       
-      // 1. Formations inscrites (index 0)
-      if (results[0]?.data) {
-        const formationsAVenir = (results[0].data || [])
-          .filter(f => new Date(f.date_debut || f.date) >= now)
-          .filter(f => f.inscrits?.includes(user.id) || f.participants?.some(p => p.user_id === user.id))
-          .slice(0, 3);
-        setFormationsInscrites(formationsAVenir);
-      }
+      // Combiner les formations des deux années pour trouver les prochaines
+      const formationsAnneeCourante = results[0]?.data || [];
+      const formationsAnneeSuivante = results[6]?.data || [];
+      const toutesFormations = [...formationsAnneeCourante, ...formationsAnneeSuivante];
       
-      // 2. Prochain garde (index 1)
-      if (results[1]?.data) {
-        const mesAssignations = (results[1].data || [])
-          .filter(a => a.user_id === user.id && new Date(a.date) >= now)
-          .sort((a, b) => new Date(a.date) - new Date(b.date));
-        if (mesAssignations.length > 0) {
-          setProchainGarde(mesAssignations[0]);
-        }
+      // 1. Formations inscrites - chercher la prochaine peu importe quand
+      const formationsAVenir = toutesFormations
+        .filter(f => new Date(f.date_debut || f.date) >= now)
+        .filter(f => f.inscrits?.includes(user.id) || f.participants?.some(p => p.user_id === user.id))
+        .sort((a, b) => new Date(a.date_debut || a.date) - new Date(b.date_debut || b.date))
+        .slice(0, 3);
+      setFormationsInscrites(formationsAVenir);
+      
+      // Combiner les assignations des deux mois pour trouver la prochaine garde
+      const assignationsMoisCourant = results[1]?.data || [];
+      const assignationsMoisSuivant = results[5]?.data || [];
+      const toutesAssignations = [...assignationsMoisCourant, ...assignationsMoisSuivant];
+      
+      // 2. Prochaine garde - chercher la plus proche à partir d'aujourd'hui
+      const mesAssignations = toutesAssignations
+        .filter(a => a.user_id === user.id && new Date(a.date) >= now)
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+      if (mesAssignations.length > 0) {
+        setProchainGarde(mesAssignations[0]);
       }
       
       // 3. Alertes EPI (index 2)
