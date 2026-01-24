@@ -166,18 +166,12 @@ const Dashboard = () => {
         }
         
         // Couverture planning - calculer sur le mois complet
-        console.log('DEBUG planningData:', planningData);
-        console.log('DEBUG planningData type:', typeof planningData);
-        console.log('DEBUG planningData isArray:', Array.isArray(planningData));
         if (Array.isArray(planningData)) {
           const now = new Date();
           const joursTotal = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
           const joursCouverts = new Set(planningData.map(a => a.date)).size;
           const taux = Math.min(100, Math.round((joursCouverts / joursTotal) * 100));
-          console.log('DEBUG couverture:', { joursTotal, joursCouverts, taux });
           setTauxCouverture(taux);
-        } else {
-          console.log('DEBUG planningData is NOT an array!');
         }
         
         // Activités récentes
