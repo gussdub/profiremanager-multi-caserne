@@ -2,14 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
-import { Input } from '../ui/input';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const SectionRessources = ({ vehicles, resources, formData, setFormData, editMode, tenantSlug, interventionId, onRefresh }) => {
   const [showAddVehicle, setShowAddVehicle] = useState(false);
   const [showAddPersonnel, setShowAddPersonnel] = useState(false);
-  const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [users, setUsers] = useState([]);
   const [tenantVehicles, setTenantVehicles] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
@@ -21,6 +19,7 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
   const [showImportEquipe, setShowImportEquipe] = useState(false);
   const [primeRepasGlobale, setPrimeRepasGlobale] = useState(formData.prime_repas_globale ?? false);
   const [interventionSettings, setInterventionSettings] = useState(null);
+  const [sortByVehicle, setSortByVehicle] = useState(false);
   
   // Charger les paramètres d'intervention au montage
   useEffect(() => {
@@ -32,7 +31,6 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
         if (response.ok) {
           const data = await response.json();
           setInterventionSettings(data);
-          console.log('📋 Paramètres intervention chargés:', data);
         }
       } catch (error) {
         console.error('Erreur chargement paramètres:', error);
@@ -41,14 +39,14 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
     loadSettings();
   }, [tenantSlug]);
   
-  // Statuts de présence disponibles avec leur impact sur les statistiques
+  // Statuts de présence disponibles
   const statutsPresence = [
-    { value: 'present', label: 'Présent', color: 'bg-green-100 text-green-800', impact: '+1' },
-    { value: 'absent_non_paye', label: 'Absent (non-payé)', color: 'bg-red-100 text-red-800', impact: '-1' },
-    { value: 'absent_paye', label: 'Absent (payé/maladie)', color: 'bg-orange-100 text-orange-800', impact: '0' },
-    { value: 'remplace', label: 'Remplacé par...', color: 'bg-yellow-100 text-yellow-800', impact: '0' },
-    { value: 'rappele', label: 'Rappelé', color: 'bg-blue-100 text-blue-800', impact: '+1' },
-    { value: 'non_disponible', label: 'Non-disponible', color: 'bg-gray-100 text-gray-800', impact: '-1' }
+    { value: 'present', label: 'Présent', color: 'bg-green-100 text-green-800' },
+    { value: 'absent_non_paye', label: 'Absent (non-payé)', color: 'bg-red-100 text-red-800' },
+    { value: 'absent_paye', label: 'Absent (payé/maladie)', color: 'bg-orange-100 text-orange-800' },
+    { value: 'remplace', label: 'Remplacé par...', color: 'bg-yellow-100 text-yellow-800' },
+    { value: 'rappele', label: 'Rappelé', color: 'bg-blue-100 text-blue-800' },
+    { value: 'non_disponible', label: 'Non-disponible', color: 'bg-gray-100 text-gray-800' }
   ];
   
   const API = `${BACKEND_URL}/api/${tenantSlug}`;
@@ -57,36 +55,28 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
     return localStorage.getItem(`${tenantSlug}_token`) || localStorage.getItem('token');
   };
   
-  // Véhicules manuels ajoutés localement
+  // Véhicules et personnel manuels
   const [manualVehicles, setManualVehicles] = useState(formData.manual_vehicles || []);
   const [manualPersonnel, setManualPersonnel] = useState(formData.manual_personnel || []);
   
-  // Extraire l'heure HH:MM d'un datetime ISO ou autre format
+  // Combiner véhicules XML et manuels
+  const allVehicles = [...vehicles, ...manualVehicles];
+  const allPersonnel = [...resources, ...manualPersonnel];
+  
+  // Extraire l'heure HH:MM d'un datetime
   const getHeureFromDatetime = (datetime) => {
     if (!datetime) return null;
-    
-    // Si c'est un format ISO avec T
     if (datetime.includes('T')) {
       const timePart = datetime.split('T')[1];
-      if (timePart) {
-        return timePart.substring(0, 5); // HH:MM
-      }
+      if (timePart) return timePart.substring(0, 5);
     }
-    
-    // Si c'est un format avec espace (ex: "2024-01-23 12:30:00")
     if (datetime.includes(' ')) {
       const parts = datetime.split(' ');
-      if (parts[1]) {
-        return parts[1].substring(0, 5); // HH:MM
-      }
+      if (parts[1]) return parts[1].substring(0, 5);
     }
-    
-    // Si c'est juste une heure (ex: "12:30")
     if (datetime.includes(':') && !datetime.includes('-')) {
       return datetime.substring(0, 5);
     }
-    
-    console.log(`⚠️ getHeureFromDatetime: format non reconnu pour "${datetime}"`);
     return null;
   };
   
@@ -94,44 +84,31 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
   const calculerDureeIntervention = () => {
     try {
       const debut = formData.xml_time_call_received;
-      // Utiliser xml_end_time ou Disponible (10-22) comme fin
       const fin = formData.xml_end_time || formData.xml_time_available;
-      
       if (!debut || !fin) return 0;
-      
       const debutDate = new Date(debut);
       const finDate = new Date(fin);
-      const dureeHeures = (finDate - debutDate) / (1000 * 60 * 60);
-      
-      return Math.max(0, dureeHeures);
+      return Math.max(0, (finDate - debutDate) / (1000 * 60 * 60));
     } catch (e) {
-      console.error('Erreur calcul durée:', e);
       return 0;
     }
   };
   
-  // Vérifier si l'intervention COUVRE l'heure d'un repas (sans tenir compte de la durée minimum)
+  // Vérifier si l'intervention couvre l'heure d'un repas
   const checkRepasCouvert = (typeRepas) => {
     const heureDebut = getHeureFromDatetime(formData.xml_time_call_received);
     const heureFin = getHeureFromDatetime(formData.xml_end_time || formData.xml_time_available);
+    if (!heureDebut || !heureFin) return true;
     
-    // Si pas d'heures, permettre de cocher manuellement (fallback)
-    if (!heureDebut || !heureFin) {
-      console.log(`⚠️ checkRepasCouvert(${typeRepas}): pas d'heures définies, fallback true`);
-      return true; // Permettre de cocher manuellement
-    }
-    
-    // Si pas de paramètres chargés, utiliser des horaires par défaut
     let config = interventionSettings?.[`repas_${typeRepas}`];
     if (!config || !config.actif) {
-      // Horaires par défaut si pas de config
       const defaultConfig = {
         dejeuner: { heure_debut: '06:00', heure_fin: '09:00', actif: true },
         diner: { heure_debut: '11:00', heure_fin: '14:00', actif: true },
         souper: { heure_debut: '17:00', heure_fin: '20:00', actif: true }
       };
       config = defaultConfig[typeRepas];
-      if (!config) return true; // Fallback permissif
+      if (!config) return true;
     }
     
     const getMinutes = (timeStr) => {
@@ -145,28 +122,20 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
     const debutRepas = getMinutes(config.heure_debut || '00:00');
     const finRepas = getMinutes(config.heure_fin || '23:59');
     
-    // Gestion si fin < debut (intervention qui passe minuit)
     if (finIntervention < debutIntervention) {
       return debutRepas <= finIntervention || finRepas >= debutIntervention;
     }
     return debutIntervention < finRepas && finIntervention > debutRepas;
   };
   
-  // Vérifier si un repas est éligible selon les paramètres (avec durée minimum)
+  // Vérifier si un repas est éligible (durée minimum)
   const checkRepasEligible = (typeRepas, heureDebut, heureFin, dureeHeures) => {
     if (!interventionSettings) return false;
-    
     const config = interventionSettings[`repas_${typeRepas}`];
     if (!config || !config.actif) return false;
-    
-    // Vérifier la durée minimum
     const dureeMin = config.duree_minimum || 0;
-    if (dureeHeures < dureeMin) {
-      console.log(`❌ ${typeRepas}: durée ${dureeHeures.toFixed(2)}h < minimum ${dureeMin}h`);
-      return false;
-    }
+    if (dureeHeures < dureeMin) return false;
     
-    // Vérifier si l'intervention chevauche l'heure du repas
     const getMinutes = (timeStr) => {
       if (!timeStr) return 0;
       const [h, m] = timeStr.split(':').map(Number);
@@ -178,50 +147,17 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
     const debutRepas = getMinutes(config.heure_debut || '00:00');
     const finRepas = getMinutes(config.heure_fin || '23:59');
     
-    // Gestion si fin < debut (intervention qui passe minuit)
-    let chevauche = false;
     if (finIntervention < debutIntervention) {
-      chevauche = debutRepas <= finIntervention || finRepas >= debutIntervention;
-    } else {
-      chevauche = debutIntervention < finRepas && finIntervention > debutRepas;
+      return debutRepas <= finIntervention || finRepas >= debutIntervention;
     }
-    
-    console.log(`${chevauche ? '✅' : '❌'} ${typeRepas}: intervention ${heureDebut}-${heureFin}, repas ${config.heure_debut}-${config.heure_fin}`);
-    return chevauche;
+    return debutIntervention < finRepas && finIntervention > debutRepas;
   };
   
-  // Vérifier si la durée minimum pour un repas est atteinte
-  const isDureeMinimumAtteinte = () => {
-    const dureeHeures = calculerDureeIntervention();
-    if (!interventionSettings) return false;
-    
-    // Vérifier la durée minimum du premier repas actif trouvé
-    const repasTypes = ['dejeuner', 'diner', 'souper'];
-    for (const type of repasTypes) {
-      const config = interventionSettings[`repas_${type}`];
-      if (config && config.actif) {
-        const dureeMin = config.duree_minimum || 0;
-        if (dureeHeures >= dureeMin) {
-          return true;
-        }
-      }
-    }
-    return dureeHeures >= 1; // Fallback : au moins 1h
-  };
-  
-  // Calcul des primes de repas automatiques basé sur les heures et paramètres
+  // Calcul des primes de repas automatiques
   const calculerRepasAutomatiques = (heureDebut, heureFin) => {
     if (!heureDebut) return { dejeuner: false, diner: false, souper: false };
-    
     const dureeHeures = calculerDureeIntervention();
-    console.log(`⏱️ Durée intervention: ${dureeHeures.toFixed(2)}h`);
-    
-    // Si pas de paramètres chargés, ne rien cocher
-    if (!interventionSettings) {
-      console.log('⚠️ Paramètres non chargés, pas de repas auto');
-      return { dejeuner: false, diner: false, souper: false };
-    }
-    
+    if (!interventionSettings) return { dejeuner: false, diner: false, souper: false };
     return {
       dejeuner: checkRepasEligible('dejeuner', heureDebut, heureFin, dureeHeures),
       diner: checkRepasEligible('diner', heureDebut, heureFin, dureeHeures),
@@ -229,234 +165,24 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
     };
   };
   
-  // Mettre à jour une prime de repas pour un membre du récapitulatif
-  const updatePrimeRepasRecap = (personnelId, field, value) => {
-    // Mettre à jour dans manualPersonnel si c'est un membre manuel
+  // Mettre à jour une prime de repas
+  const updatePrimeRepas = (personnelId, field, value) => {
     const isManual = manualPersonnel.some(p => p.id === personnelId);
-    
     if (isManual) {
-      const updatedManual = manualPersonnel.map(p =>
+      const updated = manualPersonnel.map(p =>
         p.id === personnelId ? { ...p, [field]: value } : p
       );
-      setManualPersonnel(updatedManual);
-      setFormData(prev => ({ ...prev, manual_personnel: updatedManual }));
+      setManualPersonnel(updated);
+      setFormData(prev => ({ ...prev, manual_personnel: updated }));
     } else {
-      // Mettre à jour dans resources (XML)
-      const updatedResources = resources.map(p =>
+      const updated = resources.map(p =>
         p.id === personnelId ? { ...p, [field]: value } : p
       );
-      setFormData(prev => ({ ...prev, resources: updatedResources }));
+      setFormData(prev => ({ ...prev, resources: updated }));
     }
   };
   
-  // Charger les équipes de garde
-  // Import automatique de l'équipe de garde basé sur l'heure de l'intervention
-  const importerEquipeAutomatique = async () => {
-    try {
-      const dateIntervention = formData.xml_time_call_received?.split('T')[0] || new Date().toISOString().split('T')[0];
-      
-      // Extraire l'heure de début de l'intervention
-      let heureDebut = null;
-      if (formData.xml_time_call_received) {
-        const timePart = formData.xml_time_call_received.split('T')[1];
-        if (timePart) {
-          heureDebut = timePart.substring(0, 5); // HH:MM
-        }
-      }
-      
-      // Extraire l'heure de fin de l'intervention
-      let heureFin = null;
-      if (formData.xml_end_time) {
-        const timePart = formData.xml_end_time.split('T')[1];
-        if (timePart) {
-          heureFin = timePart.substring(0, 5); // HH:MM
-        }
-      }
-      
-      // Calculer les repas automatiques
-      const repasAuto = calculerRepasAutomatiques(heureDebut, heureFin || heureDebut);
-      console.log(`🍽️ Repas automatiques détectés:`, repasAuto);
-      
-      // Appeler l'API avec date et heure pour détection automatique
-      let url = `${API}/interventions/equipes-garde?date=${dateIntervention}`;
-      if (heureDebut) {
-        url += `&heure=${heureDebut}`;
-      }
-      
-      console.log(`🕐 Import équipe automatique - Date: ${dateIntervention}, Heure: ${heureDebut}`);
-      
-      const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${getToken()}` }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        const equipes = data.equipes || [];
-        const typeGardeDetecte = data.type_garde_detecte;
-        
-        console.log(`✅ Équipes trouvées: ${equipes.length}, Type garde détecté: ${typeGardeDetecte}`);
-        
-        if (equipes.length === 0) {
-          alert('Aucune équipe de garde configurée pour cette date.');
-          return;
-        }
-        
-        // Importer automatiquement toutes les équipes trouvées
-        let totalMembres = 0;
-        let nouveauxMembresTotal = [];
-        
-        // Vérifier si au moins un repas est éligible (durée minimum atteinte)
-        const auMoinsUnRepasEligible = repasAuto.dejeuner || repasAuto.diner || repasAuto.souper;
-        
-        equipes.forEach(equipe => {
-          const membresAImporter = equipe.membres.map(m => ({
-            id: m.id,
-            nom: m.nom,
-            prenom: m.prenom,
-            grade: m.grade,
-            type_emploi: m.type_emploi,
-            fonction_superieur: m.fonction_superieur || false,
-            statut_presence: 'present',
-            // Prime repas cochée seulement si au moins un repas est éligible (durée minimum)
-            prime_repas: auMoinsUnRepasEligible,
-            // Primes de repas basées sur les heures de l'intervention
-            prime_dejeuner: repasAuto.dejeuner,
-            prime_diner: repasAuto.diner,
-            prime_souper: repasAuto.souper,
-            utilise_fonction_superieure: false,
-            equipe_origine: equipe.equipe_nom
-          }));
-          
-          // Fusionner avec le personnel existant (éviter les doublons)
-          const personnelExistant = manualPersonnel.map(p => p.id);
-          const nouveauxMembres = membresAImporter.filter(m => !personnelExistant.includes(m.id));
-          nouveauxMembresTotal = [...nouveauxMembresTotal, ...nouveauxMembres];
-          totalMembres += nouveauxMembres.length;
-        });
-        
-        if (nouveauxMembresTotal.length > 0) {
-          const updated = [...manualPersonnel, ...nouveauxMembresTotal];
-          setManualPersonnel(updated);
-          setFormData(prev => ({ ...prev, manual_personnel: updated }));
-        }
-        
-        const typeGardeMsg = typeGardeDetecte ? ` (garde ${typeGardeDetecte})` : '';
-        const repasMsg = repasAuto.dejeuner || repasAuto.diner || repasAuto.souper 
-          ? ` - Repas: ${repasAuto.dejeuner ? '🌅' : ''}${repasAuto.diner ? '☀️' : ''}${repasAuto.souper ? '🌙' : ''}`
-          : '';
-        alert(`✅ ${totalMembres} membre(s) importé(s)${typeGardeMsg}${repasMsg}`);
-      } else {
-        console.error('Erreur API équipes-garde:', response.status);
-        alert('Erreur lors du chargement des équipes de garde');
-      }
-    } catch (error) {
-      console.error('Erreur import équipe automatique:', error);
-      alert('Erreur lors de l\'import de l\'équipe');
-    }
-  };
-  
-  const loadEquipesGarde = async () => {
-    try {
-      const dateIntervention = formData.xml_time_call_received?.split('T')[0] || new Date().toISOString().split('T')[0];
-      const response = await fetch(`${API}/interventions/equipes-garde?date=${dateIntervention}`, {
-        headers: { 'Authorization': `Bearer ${getToken()}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setEquipesGarde(data.equipes || []);
-      }
-    } catch (error) {
-      console.error('Erreur chargement équipes:', error);
-    }
-  };
-  
-  // Importer une équipe complète (manuel)
-  const importerEquipe = (equipe) => {
-    // Calculer les repas éligibles pour l'import manuel aussi
-    const heureDebut = getHeureFromDatetime(formData.xml_time_call_received);
-    const heureFin = getHeureFromDatetime(formData.xml_end_time || formData.xml_time_available);
-    const repasAuto = calculerRepasAutomatiques(heureDebut, heureFin);
-    const auMoinsUnRepasEligible = repasAuto.dejeuner || repasAuto.diner || repasAuto.souper;
-    
-    const membresAImporter = equipe.membres.map(m => ({
-      id: m.id,
-      nom: m.nom,
-      prenom: m.prenom,
-      grade: m.grade,
-      type_emploi: m.type_emploi,
-      fonction_superieur: m.fonction_superieur || false,
-      statut_presence: 'present',
-      // Prime repas cochée seulement si au moins un repas est éligible (durée minimum)
-      prime_repas: auMoinsUnRepasEligible,
-      prime_dejeuner: repasAuto.dejeuner,
-      prime_diner: repasAuto.diner,
-      prime_souper: repasAuto.souper,
-      utilise_fonction_superieure: false,
-      equipe_origine: equipe.equipe_nom
-    }));
-    
-    // Fusionner avec le personnel existant (éviter les doublons)
-    const personnelExistant = manualPersonnel.map(p => p.id);
-    const nouveauxMembres = membresAImporter.filter(m => !personnelExistant.includes(m.id));
-    
-    const updated = [...manualPersonnel, ...nouveauxMembres];
-    setManualPersonnel(updated);
-    setFormData({ ...formData, manual_personnel: updated });
-    setShowImportEquipe(false);
-  };
-  
-  // Mettre à jour le statut de présence d'un membre
-  const updateStatutPresence = (personnelId, statut, remplacePar = null) => {
-    const updated = manualPersonnel.map(p => 
-      p.id === personnelId ? { ...p, statut_presence: statut, remplace_par: remplacePar } : p
-    );
-    setManualPersonnel(updated);
-    setFormData({ ...formData, manual_personnel: updated });
-  };
-  
-  // Mettre à jour le remplaçant et son statut payé
-  const updateRemplacant = (personnelId, remplacantId) => {
-    const remplacant = users.find(u => u.id === remplacantId);
-    const updated = manualPersonnel.map(p => 
-      p.id === personnelId ? { 
-        ...p, 
-        remplace_par: remplacantId,
-        remplace_par_nom: remplacant ? `${remplacant.prenom} ${remplacant.nom}` : null,
-        remplacant_paye: true // Par défaut payé
-      } : p
-    );
-    setManualPersonnel(updated);
-    setFormData({ ...formData, manual_personnel: updated });
-  };
-  
-  // Mettre à jour le statut payé du remplaçant
-  const updateRemplacantPaye = (personnelId, paye) => {
-    const updated = manualPersonnel.map(p => 
-      p.id === personnelId ? { ...p, remplacant_paye: paye } : p
-    );
-    setManualPersonnel(updated);
-    setFormData({ ...formData, manual_personnel: updated });
-  };
-  
-  // Mettre à jour la prime de repas d'un membre
-  const updatePrimeRepas = (personnelId, checked) => {
-    const updated = manualPersonnel.map(p => 
-      p.id === personnelId ? { ...p, prime_repas: checked } : p
-    );
-    setManualPersonnel(updated);
-    setFormData({ ...formData, manual_personnel: updated });
-  };
-  
-  // Mettre à jour si l'employé est utilisé en fonction supérieure
-  const updateFonctionSuperieure = (personnelId, checked) => {
-    const updated = manualPersonnel.map(p => 
-      p.id === personnelId ? { ...p, utilise_fonction_superieure: checked } : p
-    );
-    setManualPersonnel(updated);
-    setFormData({ ...formData, manual_personnel: updated });
-  };
-  
-  // Mettre à jour le véhicule assigné à un membre du personnel
+  // Mettre à jour le véhicule assigné
   const updateVehicleAssignment = (personnelId, vehicleNumber) => {
     const updated = manualPersonnel.map(p => 
       p.id === personnelId ? { ...p, vehicle_number: vehicleNumber || null } : p
@@ -465,51 +191,80 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
     setFormData({ ...formData, manual_personnel: updated });
   };
   
-  // Appliquer/retirer la prime de repas globale
+  // Mettre à jour le statut de présence
+  const updateStatutPresence = (personnelId, statut) => {
+    const isManual = manualPersonnel.some(p => p.id === personnelId);
+    if (isManual) {
+      const updated = manualPersonnel.map(p =>
+        p.id === personnelId ? { ...p, statut_presence: statut, remplace_par: statut !== 'remplace' ? null : p.remplace_par } : p
+      );
+      setManualPersonnel(updated);
+      setFormData({ ...formData, manual_personnel: updated });
+    }
+  };
+  
+  // Mettre à jour le remplaçant
+  const updateRemplacant = (personnelId, remplacantId) => {
+    const remplacant = users.find(u => u.id === remplacantId);
+    const updated = manualPersonnel.map(p =>
+      p.id === personnelId ? { 
+        ...p, 
+        remplace_par: remplacantId, 
+        remplace_par_nom: remplacant ? `${remplacant.prenom} ${remplacant.nom}` : null 
+      } : p
+    );
+    setManualPersonnel(updated);
+    setFormData({ ...formData, manual_personnel: updated });
+  };
+  
+  // Mettre à jour fonction supérieure
+  const updateFonctionSuperieure = (personnelId, checked) => {
+    const updated = manualPersonnel.map(p => 
+      p.id === personnelId ? { ...p, utilise_fonction_superieure: checked } : p
+    );
+    setManualPersonnel(updated);
+    setFormData({ ...formData, manual_personnel: updated });
+  };
+  
+  // Prime repas globale
   const togglePrimeRepasGlobale = (checked) => {
     setPrimeRepasGlobale(checked);
-    const updated = manualPersonnel.map(p => ({ ...p, prime_repas: checked }));
+    const heureDebut = getHeureFromDatetime(formData.xml_time_call_received);
+    const heureFin = getHeureFromDatetime(formData.xml_end_time || formData.xml_time_available);
+    const repasAuto = calculerRepasAutomatiques(heureDebut, heureFin);
+    const auMoinsUnRepasEligible = repasAuto.dejeuner || repasAuto.diner || repasAuto.souper;
+    
+    const updated = manualPersonnel.map(p => ({
+      ...p,
+      prime_repas: checked && auMoinsUnRepasEligible,
+      prime_dejeuner: checked ? repasAuto.dejeuner : false,
+      prime_diner: checked ? repasAuto.diner : false,
+      prime_souper: checked ? repasAuto.souper : false
+    }));
     setManualPersonnel(updated);
     setFormData({ ...formData, manual_personnel: updated, prime_repas_globale: checked });
   };
   
-  // Charger la liste des utilisateurs et le planning
+  // Charger les utilisateurs
   const loadUsers = async () => {
     if (users.length > 0) return;
     setLoadingUsers(true);
     try {
-      const [usersResponse, planningResponse] = await Promise.all([
-        fetch(`${API}/users`, { headers: { 'Authorization': `Bearer ${getToken()}` } }),
-        fetch(`${API}/plannings?date=${formData.xml_time_call_received?.split('T')[0] || new Date().toISOString().split('T')[0]}`, { 
-          headers: { 'Authorization': `Bearer ${getToken()}` } 
-        }).catch(() => ({ ok: false }))
-      ]);
-      
-      if (usersResponse.ok) {
-        const data = await usersResponse.json();
-        setUsers(data.users || data || []);
-      }
-      
-      // Récupérer le personnel en garde interne
-      if (planningResponse.ok) {
-        const planningData = await planningResponse.json();
-        const gardeInterne = (planningData.affectations || [])
-          .filter(a => a.type_affectation === 'garde_interne' || a.type === 'garde_interne')
-          .map(a => ({ id: a.user_id, ...a }));
-        setGardeInterneUsers(gardeInterne);
-        // Pré-sélectionner le personnel en garde
-        if (gardeInterne.length > 0 && selectedPersonnel.length === 0) {
-          setSelectedPersonnel(gardeInterne.map(g => g.id));
-        }
+      const response = await fetch(`${API}/users`, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data);
       }
     } catch (error) {
-      console.error('Erreur chargement:', error);
+      console.error('Erreur chargement utilisateurs:', error);
     } finally {
       setLoadingUsers(false);
     }
   };
   
-  // Charger les véhicules du tenant (depuis Gestion des Actifs)
+  // Charger les véhicules du tenant
   const loadTenantVehicles = async () => {
     try {
       const response = await fetch(`${API}/actifs/vehicules`, {
@@ -517,70 +272,107 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
       });
       if (response.ok) {
         const data = await response.json();
-        setTenantVehicles(data || []);
+        setTenantVehicles(data);
       }
     } catch (error) {
       console.error('Erreur chargement véhicules:', error);
     }
   };
   
-  const openAddPersonnel = (vehicle = null) => {
-    setSelectedVehicle(vehicle);
+  // Import automatique équipe de garde
+  const importerEquipeAutomatique = async () => {
+    try {
+      const dateIntervention = formData.xml_time_call_received?.split('T')[0] || new Date().toISOString().split('T')[0];
+      let heureDebut = null;
+      if (formData.xml_time_call_received) {
+        const timePart = formData.xml_time_call_received.split('T')[1];
+        if (timePart) heureDebut = timePart.substring(0, 5);
+      }
+      
+      const url = heureDebut 
+        ? `${API}/interventions/equipes-garde?date=${dateIntervention}&heure=${heureDebut}`
+        : `${API}/interventions/equipes-garde?date=${dateIntervention}`;
+        
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      
+      if (!response.ok) throw new Error('Erreur chargement équipes');
+      
+      const equipes = await response.json();
+      if (!equipes || equipes.length === 0) {
+        alert('Aucune équipe de garde trouvée pour cette date/heure.');
+        return;
+      }
+      
+      const heureFin = getHeureFromDatetime(formData.xml_end_time || formData.xml_time_available);
+      const repasAuto = calculerRepasAutomatiques(heureDebut, heureFin);
+      const auMoinsUnRepasEligible = repasAuto.dejeuner || repasAuto.diner || repasAuto.souper;
+      
+      const personnelExistants = manualPersonnel.map(p => p.id);
+      let nouveauxMembres = [];
+      
+      equipes.forEach(equipe => {
+        const membresAImporter = equipe.membres
+          .filter(m => !personnelExistants.includes(m.id))
+          .map(m => ({
+            id: m.id,
+            nom: m.nom,
+            prenom: m.prenom,
+            grade: m.grade,
+            type_emploi: m.type_emploi,
+            fonction_superieur: m.fonction_superieur || false,
+            statut_presence: 'present',
+            prime_repas: auMoinsUnRepasEligible,
+            prime_dejeuner: repasAuto.dejeuner,
+            prime_diner: repasAuto.diner,
+            prime_souper: repasAuto.souper,
+            utilise_fonction_superieure: false,
+            equipe_origine: equipe.equipe_nom,
+            vehicle_number: null,
+            is_manual: true
+          }));
+        nouveauxMembres = [...nouveauxMembres, ...membresAImporter];
+      });
+      
+      const updated = [...manualPersonnel, ...nouveauxMembres];
+      setManualPersonnel(updated);
+      setFormData({ ...formData, manual_personnel: updated });
+      
+      alert(`✅ ${nouveauxMembres.length} membre(s) importé(s) de l'équipe de garde.`);
+    } catch (error) {
+      console.error('Erreur import équipe:', error);
+      alert('Erreur lors de l\'import de l\'équipe de garde.');
+    }
+  };
+  
+  // Ouvrir modal ajout personnel
+  const openAddPersonnel = () => {
     loadUsers();
     setSelectedPersonnel([]);
-    setSearchPersonnel('');
     setShowAddPersonnel(true);
   };
   
-  const addVehicle = () => {
-    if (!newVehicle.number) return;
-    const vehicle = {
-      id: `manual_${Date.now()}`,
-      xml_vehicle_number: newVehicle.number,
-      crew_count: parseInt(newVehicle.crew_count) || 0,
-      is_manual: true
-    };
-    const updated = [...manualVehicles, vehicle];
-    setManualVehicles(updated);
-    setFormData({ ...formData, manual_vehicles: updated });
-    setNewVehicle({ number: '', crew_count: '' });
-    setShowAddVehicle(false);
-  };
-  
-  const removeVehicle = (vehicleId) => {
-    const updated = manualVehicles.filter(v => v.id !== vehicleId);
-    setManualVehicles(updated);
-    setFormData({ ...formData, manual_vehicles: updated });
-  };
-  
-  const addPersonnelToVehicle = () => {
-    if (selectedPersonnel.length === 0) return;
-    
-    // Calculer les repas éligibles pour pré-cocher
+  // Ajouter personnel
+  const addPersonnel = () => {
     const heureDebut = getHeureFromDatetime(formData.xml_time_call_received);
     const heureFin = getHeureFromDatetime(formData.xml_end_time || formData.xml_time_available);
     const repasAuto = calculerRepasAutomatiques(heureDebut, heureFin);
-    
-    // Vérifier si au moins un repas est éligible (durée minimum atteinte)
     const auMoinsUnRepasEligible = repasAuto.dejeuner || repasAuto.diner || repasAuto.souper;
     
     const newPersonnel = selectedPersonnel.map(userId => {
       const user = users.find(u => u.id === userId);
       return {
-        id: `manual_${Date.now()}_${userId}`,
-        user_id: userId,
-        user_name: user ? `${user.prenom} ${user.nom}` : userId,
-        nom: user?.nom || '',
-        prenom: user?.prenom || '',
-        grade: user?.grade || '',
-        type_emploi: user?.type_emploi || '',
-        fonction_superieur: user?.fonction_superieur || false,
-        vehicle_number: selectedVehicle?.xml_vehicle_number || null,
-        role_on_scene: 'Pompier',
+        id: user.id,
+        user_id: user.id,
+        user_name: `${user.prenom} ${user.nom}`,
+        prenom: user.prenom,
+        nom: user.nom,
+        grade: user.grade || user.grade_nom,
+        fonction_superieur: user.fonction_superieur || false,
+        vehicle_number: null,
         statut_presence: 'present',
-        // Prime repas cochée seulement si au moins un repas est éligible
         prime_repas: auMoinsUnRepasEligible,
-        // Pré-cocher les repas éligibles
         prime_dejeuner: repasAuto.dejeuner,
         prime_diner: repasAuto.diner,
         prime_souper: repasAuto.souper,
@@ -597,26 +389,61 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
     setSearchPersonnel('');
   };
   
+  // Supprimer personnel
   const removePersonnel = (personnelId) => {
     const updated = manualPersonnel.filter(p => p.id !== personnelId);
     setManualPersonnel(updated);
     setFormData({ ...formData, manual_personnel: updated });
   };
   
-  // Combiner véhicules XML et manuels
-  const allVehicles = [...vehicles, ...manualVehicles];
-  const allPersonnel = [...resources, ...manualPersonnel];
-  
-  // Obtenir le personnel assigné à un véhicule
-  const getVehiclePersonnel = (vehicleNumber) => {
-    return allPersonnel.filter(r => r.vehicle_number === vehicleNumber);
+  // Ajouter véhicule
+  const addVehicle = () => {
+    if (!newVehicle.number) return;
+    const vehicle = {
+      id: `manual-${Date.now()}`,
+      xml_vehicle_number: newVehicle.number,
+      crew_count: parseInt(newVehicle.crew_count) || 0,
+      is_manual: true
+    };
+    const updated = [...manualVehicles, vehicle];
+    setManualVehicles(updated);
+    setFormData({ ...formData, manual_vehicles: updated });
+    setShowAddVehicle(false);
+    setNewVehicle({ number: '', crew_count: '' });
   };
   
-  // Personnel supplémentaire
-  const personnelSansVehicule = allPersonnel.filter(r => !r.vehicle_number);
+  // Supprimer véhicule
+  const removeVehicle = (vehicleId) => {
+    const updated = manualVehicles.filter(v => v.id !== vehicleId);
+    setManualVehicles(updated);
+    setFormData({ ...formData, manual_vehicles: updated });
+  };
   
+  // Obtenir le nombre de personnel par véhicule
+  const getVehiclePersonnelCount = (vehicleNumber) => {
+    return allPersonnel.filter(r => r.vehicle_number === vehicleNumber).length;
+  };
+  
+  // Trier le personnel
+  const getSortedPersonnel = () => {
+    if (!sortByVehicle) return allPersonnel;
+    return [...allPersonnel].sort((a, b) => {
+      const vA = a.vehicle_number || 'zzz';
+      const vB = b.vehicle_number || 'zzz';
+      return vA.localeCompare(vB);
+    });
+  };
+  
+  // Options du dropdown véhicule
+  const vehicleOptions = [
+    { value: '', label: '— Non assigné —' },
+    ...allVehicles.map(v => ({ value: v.xml_vehicle_number, label: `🚒 ${v.xml_vehicle_number}` })),
+    { value: 'vehicule_personnel', label: '🚗 Véhicule personnel' }
+  ];
+
   return (
     <div className="space-y-6">
+      {/* Section Véhicules déployés - Simplifiée */}
       <Card>
         <CardHeader className="bg-blue-50">
           <CardTitle className="text-lg text-blue-800 flex justify-between items-center">
@@ -632,70 +459,31 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
           {allVehicles.length === 0 ? (
             <p className="text-gray-500">Aucun véhicule enregistré</p>
           ) : (
-            <div className="space-y-4">
+            <div className="flex flex-wrap gap-3">
               {allVehicles.map(vehicle => {
-                const personnel = getVehiclePersonnel(vehicle.xml_vehicle_number);
+                const count = getVehiclePersonnelCount(vehicle.xml_vehicle_number);
+                const hasNoPersonnel = count === 0;
                 return (
-                  <div key={vehicle.id} className={`p-4 rounded-lg border ${vehicle.is_manual ? 'bg-green-50 border-green-200' : 'bg-gray-50'}`}>
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <div className="font-bold text-xl flex items-center gap-2">
-                          {vehicle.xml_vehicle_number}
-                          {vehicle.is_manual && <span className="text-xs bg-green-200 text-green-800 px-2 py-0.5 rounded">Manuel</span>}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          👥 {vehicle.crew_count || 0} pompier(s) {!vehicle.is_manual && 'selon la centrale'}
-                        </div>
-                        {vehicle.xml_status && (
-                          <div className="text-xs text-gray-500">Statut: {vehicle.xml_status}</div>
-                        )}
+                  <div 
+                    key={vehicle.id} 
+                    className={`px-4 py-3 rounded-lg border-2 flex items-center gap-3 ${
+                      hasNoPersonnel ? 'bg-orange-50 border-orange-400' : 'bg-gray-50 border-gray-200'
+                    } ${vehicle.is_manual ? 'border-green-400' : ''}`}
+                  >
+                    <div>
+                      <div className="font-bold text-lg flex items-center gap-2">
+                        🚒 {vehicle.xml_vehicle_number}
+                        {vehicle.is_manual && <span className="text-xs bg-green-200 text-green-800 px-2 py-0.5 rounded">Manuel</span>}
                       </div>
-                      <div className="flex gap-2">
-                        {editMode && (
-                          <Button size="sm" variant="outline" onClick={() => openAddPersonnel(vehicle)}>
-                            + Personnel
-                          </Button>
-                        )}
-                        {editMode && vehicle.is_manual && (
-                          <Button size="sm" variant="destructive" onClick={() => removeVehicle(vehicle.id)}>
-                            🗑️
-                          </Button>
-                        )}
+                      <div className={`text-sm ${hasNoPersonnel ? 'text-orange-600 font-medium' : 'text-gray-600'}`}>
+                        👥 {count} assigné{count > 1 ? 's' : ''}
+                        {hasNoPersonnel && ' ⚠️'}
                       </div>
                     </div>
-                    
-                    {/* Personnel assigné */}
-                    {personnel.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-gray-200">
-                        <p className="text-sm font-medium text-gray-700 mb-2">Personnel assigné:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {personnel.map(p => {
-                            const employeData = users.find(u => u.id === p.id || u.id === p.user_id);
-                            const estEligibleFonctionSup = employeData?.fonction_superieur === true || p.fonction_superieur === true;
-                            
-                            return (
-                              <span key={p.id} className={`px-2 py-1 rounded text-sm flex items-center gap-1 ${p.is_manual ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
-                                {p.user_name || p.user_id}
-                                {p.role_on_scene && <span className="opacity-75">({p.role_on_scene})</span>}
-                                {p.utilise_fonction_superieure && <span className="text-orange-600 font-bold ml-1">⬆️</span>}
-                                {editMode && estEligibleFonctionSup && (
-                                  <label className="ml-1" title="Fonction supérieure">
-                                    <input
-                                      type="checkbox"
-                                      checked={p.utilise_fonction_superieure ?? false}
-                                      onChange={(e) => updateFonctionSuperieure(p.id, e.target.checked)}
-                                      className="w-3 h-3"
-                                    />
-                                  </label>
-                                )}
-                                {editMode && p.is_manual && (
-                                  <button onClick={() => removePersonnel(p.id)} className="ml-1 text-red-500 hover:text-red-700">×</button>
-                                )}
-                              </span>
-                            );
-                          })}
-                        </div>
-                      </div>
+                    {editMode && vehicle.is_manual && (
+                      <Button size="sm" variant="ghost" onClick={() => removeVehicle(vehicle.id)} className="text-red-500 hover:text-red-700 p-1">
+                        🗑️
+                      </Button>
                     )}
                   </div>
                 );
@@ -705,153 +493,53 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
         </CardContent>
       </Card>
 
-      {/* Personnel supplémentaire */}
+      {/* Section Personnel présent lors de l'intervention */}
       <Card>
-        <CardHeader className="bg-orange-50">
-          <CardTitle className="text-lg text-orange-800 flex justify-between items-center">
-            <span>🚶 Personnel supplémentaire ({personnelSansVehicule.length})</span>
+        <CardHeader className="bg-green-50">
+          <CardTitle className="text-lg text-green-800">
+            <div className="flex justify-between items-center flex-wrap gap-2">
+              <span>👥 Personnel présent lors de l'intervention ({allPersonnel.length})</span>
+              {editMode && (
+                <div className="flex gap-2 flex-wrap">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={importerEquipeAutomatique}
+                    className="bg-purple-50 border-purple-300 text-purple-700 hover:bg-purple-100"
+                  >
+                    📋 Importer équipe de garde
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={openAddPersonnel}>
+                    + Ajouter
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant={sortByVehicle ? "default" : "outline"}
+                    onClick={() => setSortByVehicle(!sortByVehicle)}
+                  >
+                    ↕️ Trier par véhicule
+                  </Button>
+                </div>
+              )}
+            </div>
             {editMode && (
-              <Button size="sm" variant="outline" onClick={() => openAddPersonnel(null)}>
-                + Ajouter
-              </Button>
+              <div className="mt-2">
+                <label className="flex items-center gap-2 text-sm font-normal">
+                  <input
+                    type="checkbox"
+                    checked={primeRepasGlobale}
+                    onChange={(e) => togglePrimeRepasGlobale(e.target.checked)}
+                    className="w-4 h-4"
+                  />
+                  <span>🍽️ Prime repas pour tous</span>
+                </label>
+              </div>
             )}
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-4">
-          {/* Bouton Import équipe de garde */}
-          {editMode && (
-            <div className="mb-4 flex gap-2 flex-wrap">
-              <Button 
-                size="sm" 
-                variant="outline"
-                onClick={importerEquipeAutomatique}
-                className="bg-purple-50 border-purple-300 text-purple-700 hover:bg-purple-100"
-                title="Import automatique basé sur l'heure de l'intervention"
-              >
-                📋 Importer équipe de garde
-              </Button>
-              <label className="flex items-center gap-2 ml-auto">
-                <input
-                  type="checkbox"
-                  checked={primeRepasGlobale}
-                  onChange={(e) => togglePrimeRepasGlobale(e.target.checked)}
-                  className="w-4 h-4"
-                />
-                <span className="text-sm font-medium">🍽️ Prime de repas pour tous</span>
-              </label>
-            </div>
-          )}
-          
-          {personnelSansVehicule.length === 0 ? (
-            <p className="text-gray-500 text-sm">Ajouter du personnel</p>
-          ) : (
-            <div className="space-y-2">
-              {personnelSansVehicule.map(p => {
-                const statut = statutsPresence.find(s => s.value === (p.statut_presence || 'present'));
-                // Vérifier si l'employé est éligible à la fonction supérieure
-                const employeData = users.find(u => u.id === p.id || u.id === p.user_id);
-                const estEligibleFonctionSup = employeData?.fonction_superieur === true || p.fonction_superieur === true;
-                
-                return (
-                  <div key={p.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded border flex-wrap">
-                    <span className="font-medium flex-1 min-w-[150px]">
-                      {p.user_name || p.prenom + ' ' + p.nom || p.user_id}
-                      {p.grade && <span className="text-gray-500 text-sm ml-1">({p.grade})</span>}
-                      {p.equipe_origine && <span className="text-purple-600 text-xs ml-2">[{p.equipe_origine}]</span>}
-                      {p.utilise_fonction_superieure && <span className="text-orange-600 text-xs ml-2 font-bold">⬆️ Fct.Sup.</span>}
-                    </span>
-                    {editMode ? (
-                      <>
-                        <select
-                          value={p.statut_presence || 'present'}
-                          onChange={(e) => updateStatutPresence(p.id, e.target.value)}
-                          className={`text-xs rounded px-2 py-1 border ${statut?.color || ''}`}
-                        >
-                          {statutsPresence.map(s => (
-                            <option key={s.value} value={s.value}>{s.label}</option>
-                          ))}
-                        </select>
-                        {/* Sélecteur de remplaçant si statut = remplacé */}
-                        {p.statut_presence === 'remplace' && (
-                          <>
-                            <select
-                              value={p.remplace_par || ''}
-                              onChange={(e) => updateRemplacant(p.id, e.target.value)}
-                              className="text-xs rounded px-2 py-1 border bg-yellow-50"
-                            >
-                              <option value="">-- Choisir remplaçant --</option>
-                              {users
-                                .filter(u => (u.statut || '').toLowerCase() === 'actif' && u.id !== p.id)
-                                .map(u => (
-                                  <option key={u.id} value={u.id}>{u.prenom} {u.nom}</option>
-                                ))
-                              }
-                            </select>
-                            {p.remplace_par && (
-                              <label className="flex items-center gap-1 text-xs bg-green-50 px-2 py-1 rounded border border-green-200">
-                                <input
-                                  type="checkbox"
-                                  checked={p.remplacant_paye ?? true}
-                                  onChange={(e) => updateRemplacantPaye(p.id, e.target.checked)}
-                                  className="w-3 h-3"
-                                />
-                                <span>Payé</span>
-                              </label>
-                            )}
-                          </>
-                        )}
-                        {/* Case à cocher Fonction Supérieure si éligible */}
-                        {estEligibleFonctionSup && (
-                          <label className="flex items-center gap-1 text-xs bg-orange-50 px-2 py-1 rounded border border-orange-200" title="Utilisé en fonction supérieure (payé comme Lieutenant)">
-                            <input
-                              type="checkbox"
-                              checked={p.utilise_fonction_superieure ?? false}
-                              onChange={(e) => updateFonctionSuperieure(p.id, e.target.checked)}
-                              className="w-3 h-3"
-                            />
-                            <span className="text-orange-700">⬆️ Fct.Sup.</span>
-                          </label>
-                        )}
-                        <label className="flex items-center gap-1">
-                          <input
-                            type="checkbox"
-                            checked={p.prime_repas ?? true}
-                            onChange={(e) => updatePrimeRepas(p.id, e.target.checked)}
-                            className="w-4 h-4"
-                          />
-                          <span className="text-xs">🍽️</span>
-                        </label>
-                        {p.is_manual && (
-                          <button onClick={() => removePersonnel(p.id)} className="text-red-500 hover:text-red-700">×</button>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <span className={`text-xs px-2 py-1 rounded ${statut?.color || 'bg-gray-100'}`}>
-                          {statut?.label || 'Présent'}
-                          {p.statut_presence === 'remplace' && p.remplace_par_nom && (
-                            <span className="ml-1">→ {p.remplace_par_nom}</span>
-                          )}
-                        </span>
-                        {p.utilise_fonction_superieure && <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">⬆️ Fct.Sup.</span>}
-                        {(p.prime_repas ?? true) && <span className="text-xs">🍽️</span>}
-                      </>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="bg-blue-50">
-          <CardTitle className="text-lg text-blue-800">👥 Récapitulatif du personnel ({allPersonnel.length})</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-4">
           {allPersonnel.length === 0 ? (
-            <p className="text-gray-500">Aucune ressource humaine enregistrée</p>
+            <p className="text-gray-500">Aucun personnel enregistré. Cliquez sur "Importer équipe de garde" ou "+ Ajouter".</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -861,43 +549,49 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                     <th className="p-2 text-left">Véhicule</th>
                     <th className="p-2 text-left">Statut</th>
                     <th className="p-2 text-left">Remplaçant</th>
-                    <th className="p-2 text-left">Primes repas</th>
-                    <th className="p-2 text-left">Source</th>
-                    {editMode && <th className="p-2 text-left">Actions</th>}
+                    <th className="p-2 text-left">Fct.Sup</th>
+                    {checkRepasCouvert('dejeuner') && <th className="p-2 text-center" title="Déjeuner">🌅</th>}
+                    {checkRepasCouvert('diner') && <th className="p-2 text-center" title="Dîner">☀️</th>}
+                    {checkRepasCouvert('souper') && <th className="p-2 text-center" title="Souper">🌙</th>}
+                    {editMode && <th className="p-2 text-center">⚡</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {allPersonnel.map(resource => {
-                    const statut = statutsPresence.find(s => s.value === (resource.statut_presence || 'present'));
+                  {getSortedPersonnel().map(person => {
+                    const statut = statutsPresence.find(s => s.value === (person.statut_presence || 'present'));
+                    const employeData = users.find(u => u.id === person.id || u.id === person.user_id);
+                    const estEligibleFonctionSup = employeData?.fonction_superieur === true || person.fonction_superieur === true;
+                    
                     return (
-                      <tr key={resource.id} className="border-b">
+                      <tr key={person.id} className="border-b hover:bg-gray-50">
                         <td className="p-2 font-medium">
-                          {resource.user_name || resource.prenom + ' ' + resource.nom || resource.user_id || 'Non assigné'}
-                          {resource.grade && <span className="text-gray-500 text-xs ml-1">({resource.grade})</span>}
+                          {person.user_name || `${person.prenom} ${person.nom}` || person.user_id || 'Non assigné'}
+                          {person.grade && <span className="text-gray-500 text-xs ml-1">({person.grade})</span>}
+                          {person.equipe_origine && <span className="text-purple-600 text-xs ml-1">[{person.equipe_origine}]</span>}
                         </td>
                         <td className="p-2">
-                          {editMode && resource.is_manual ? (
+                          {editMode && person.is_manual ? (
                             <select
-                              value={resource.vehicle_number || ''}
-                              onChange={(e) => updateVehicleAssignment(resource.id, e.target.value)}
-                              className="text-xs rounded px-2 py-1 border bg-blue-50 w-full"
+                              value={person.vehicle_number || ''}
+                              onChange={(e) => updateVehicleAssignment(person.id, e.target.value)}
+                              className="text-xs rounded px-2 py-1 border bg-blue-50 w-full min-w-[140px]"
                             >
-                              <option value="">🚶 Supplémentaire</option>
-                              {allVehicles.map(v => (
-                                <option key={v.id} value={v.xml_vehicle_number}>
-                                  🚒 {v.xml_vehicle_number}
-                                </option>
+                              {vehicleOptions.map(opt => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
                               ))}
                             </select>
                           ) : (
-                            resource.vehicle_number || <span className="text-orange-600">Supplémentaire</span>
+                            <span className={person.vehicle_number ? 'text-blue-700' : 'text-gray-400'}>
+                              {person.vehicle_number === 'vehicule_personnel' ? '🚗 Véh. perso.' : 
+                               person.vehicle_number ? `🚒 ${person.vehicle_number}` : '— Non assigné —'}
+                            </span>
                           )}
                         </td>
                         <td className="p-2">
-                          {editMode ? (
+                          {editMode && person.is_manual ? (
                             <select
-                              value={resource.statut_presence || 'present'}
-                              onChange={(e) => updateStatutPresence(resource.id, e.target.value)}
+                              value={person.statut_presence || 'present'}
+                              onChange={(e) => updateStatutPresence(person.id, e.target.value)}
                               className={`text-xs rounded px-2 py-1 border ${statut?.color || ''}`}
                             >
                               {statutsPresence.map(s => (
@@ -911,92 +605,93 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                           )}
                         </td>
                         <td className="p-2">
-                          {resource.statut_presence === 'remplace' ? (
-                            editMode ? (
+                          {person.statut_presence === 'remplace' ? (
+                            editMode && person.is_manual ? (
                               <select
-                                value={resource.remplace_par || ''}
-                                onChange={(e) => updateRemplacant(resource.id, e.target.value)}
+                                value={person.remplace_par || ''}
+                                onChange={(e) => updateRemplacant(person.id, e.target.value)}
                                 className="text-xs rounded px-2 py-1 border bg-yellow-50 w-full"
                               >
                                 <option value="">-- Choisir --</option>
                                 {users
-                                  .filter(u => (u.statut || '').toLowerCase() === 'actif' && u.id !== resource.id)
+                                  .filter(u => (u.statut || '').toLowerCase() === 'actif' && u.id !== person.id)
                                   .map(u => (
                                     <option key={u.id} value={u.id}>{u.prenom} {u.nom}</option>
                                   ))
                                 }
                               </select>
                             ) : (
-                              <span className="text-yellow-700 text-xs">{resource.remplace_par_nom || '-'}</span>
+                              <span className="text-yellow-700 text-xs">{person.remplace_par_nom || '-'}</span>
                             )
                           ) : (
                             <span className="text-gray-400 text-xs">-</span>
                           )}
                         </td>
-                        <td className="p-2">
-                          {/* Afficher les cases de repas seulement si prime_repas est coché */}
-                          {resource.prime_repas ? (
-                            editMode ? (
-                              <div className="flex gap-1 flex-wrap">
-                                {/* Afficher uniquement les repas couverts par l'intervention */}
-                                {checkRepasCouvert('dejeuner') && (
-                                  <label className="flex items-center gap-1 text-xs bg-orange-50 px-2 py-1 rounded cursor-pointer" title="Déjeuner">
-                                    <input
-                                      type="checkbox"
-                                      checked={resource.prime_dejeuner ?? false}
-                                      onChange={(e) => updatePrimeRepasRecap(resource.id, 'prime_dejeuner', e.target.checked)}
-                                      className="w-3 h-3"
-                                    />
-                                    <span>🌅</span>
-                                  </label>
-                                )}
-                                {checkRepasCouvert('diner') && (
-                                  <label className="flex items-center gap-1 text-xs bg-yellow-50 px-2 py-1 rounded cursor-pointer" title="Dîner">
-                                    <input
-                                      type="checkbox"
-                                      checked={resource.prime_diner ?? false}
-                                      onChange={(e) => updatePrimeRepasRecap(resource.id, 'prime_diner', e.target.checked)}
-                                      className="w-3 h-3"
-                                    />
-                                    <span>☀️</span>
-                                  </label>
-                                )}
-                                {checkRepasCouvert('souper') && (
-                                  <label className="flex items-center gap-1 text-xs bg-indigo-50 px-2 py-1 rounded cursor-pointer" title="Souper">
-                                    <input
-                                      type="checkbox"
-                                      checked={resource.prime_souper ?? false}
-                                      onChange={(e) => updatePrimeRepasRecap(resource.id, 'prime_souper', e.target.checked)}
-                                      className="w-3 h-3"
-                                    />
-                                    <span>🌙</span>
-                                  </label>
-                                )}
-                                {!checkRepasCouvert('dejeuner') && !checkRepasCouvert('diner') && !checkRepasCouvert('souper') && (
-                                  <span className="text-gray-400 text-xs">Aucun repas couvert</span>
-                                )}
-                              </div>
+                        <td className="p-2 text-center">
+                          {estEligibleFonctionSup ? (
+                            editMode && person.is_manual ? (
+                              <input
+                                type="checkbox"
+                                checked={person.utilise_fonction_superieure ?? false}
+                                onChange={(e) => updateFonctionSuperieure(person.id, e.target.checked)}
+                                className="w-4 h-4"
+                                title="Fonction supérieure"
+                              />
                             ) : (
-                              <div className="flex gap-1">
-                                {resource.prime_dejeuner && checkRepasCouvert('dejeuner') && <span title="Déjeuner">🌅</span>}
-                                {resource.prime_diner && checkRepasCouvert('diner') && <span title="Dîner">☀️</span>}
-                                {resource.prime_souper && checkRepasCouvert('souper') && <span title="Souper">🌙</span>}
-                                {!resource.prime_dejeuner && !resource.prime_diner && !resource.prime_souper && <span className="text-gray-400">-</span>}
-                              </div>
+                              person.utilise_fonction_superieure ? <span className="text-orange-600">⬆️</span> : <span className="text-gray-400">-</span>
                             )
                           ) : (
-                            <span className="text-gray-400 text-xs">Pas de prime</span>
+                            <span className="text-gray-400">-</span>
                           )}
                         </td>
-                        <td className="p-2">
-                          <span className={`px-2 py-1 rounded text-xs ${resource.is_manual ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
-                            {resource.is_manual ? 'Manuel' : 'XML'}
-                          </span>
-                        </td>
+                        {checkRepasCouvert('dejeuner') && (
+                          <td className="p-2 text-center">
+                            {editMode && person.is_manual ? (
+                              <input
+                                type="checkbox"
+                                checked={person.prime_dejeuner ?? false}
+                                onChange={(e) => updatePrimeRepas(person.id, 'prime_dejeuner', e.target.checked)}
+                                className="w-4 h-4"
+                              />
+                            ) : (
+                              person.prime_dejeuner ? '✓' : '-'
+                            )}
+                          </td>
+                        )}
+                        {checkRepasCouvert('diner') && (
+                          <td className="p-2 text-center">
+                            {editMode && person.is_manual ? (
+                              <input
+                                type="checkbox"
+                                checked={person.prime_diner ?? false}
+                                onChange={(e) => updatePrimeRepas(person.id, 'prime_diner', e.target.checked)}
+                                className="w-4 h-4"
+                              />
+                            ) : (
+                              person.prime_diner ? '✓' : '-'
+                            )}
+                          </td>
+                        )}
+                        {checkRepasCouvert('souper') && (
+                          <td className="p-2 text-center">
+                            {editMode && person.is_manual ? (
+                              <input
+                                type="checkbox"
+                                checked={person.prime_souper ?? false}
+                                onChange={(e) => updatePrimeRepas(person.id, 'prime_souper', e.target.checked)}
+                                className="w-4 h-4"
+                              />
+                            ) : (
+                              person.prime_souper ? '✓' : '-'
+                            )}
+                          </td>
+                        )}
                         {editMode && (
-                          <td className="p-2">
-                            {resource.is_manual && (
-                              <button onClick={() => removePersonnel(resource.id)} className="text-red-500 hover:text-red-700">🗑️</button>
+                          <td className="p-2 text-center">
+                            {person.is_manual && (
+                              <button onClick={() => removePersonnel(person.id)} className="text-red-500 hover:text-red-700">
+                                🗑️
+                              </button>
                             )}
                           </td>
                         )}
@@ -1009,54 +704,6 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
           )}
         </CardContent>
       </Card>
-
-      {/* Modal Import Équipe de garde */}
-      {showImportEquipe && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" style={{ zIndex: 100001 }}>
-          <div className="bg-white rounded-lg p-6 max-w-lg w-full">
-            <h3 className="text-lg font-bold mb-4">📋 Importer équipe de garde</h3>
-            
-            {equipesGarde.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">
-                Aucune équipe de garde trouvée pour cette date.<br/>
-                <span className="text-sm">Vérifiez les paramètres d&apos;équipes dans le module Planning.</span>
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {equipesGarde.map(equipe => (
-                  <div key={equipe.type_emploi} className="border rounded-lg p-4" style={{ borderColor: equipe.couleur }}>
-                    <div className="flex justify-between items-center mb-3">
-                      <div>
-                        <span className="font-bold" style={{ color: equipe.couleur }}>{equipe.equipe_nom}</span>
-                        <span className="text-gray-500 text-sm ml-2">
-                          ({equipe.type_emploi === 'temps_plein' ? 'Temps plein' : 'Temps partiel'})
-                        </span>
-                      </div>
-                      <Button size="sm" onClick={() => importerEquipe(equipe)}>
-                        Importer ({equipe.membres.length})
-                      </Button>
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {equipe.membres.map(m => (
-                        <span key={m.id} className="bg-gray-100 px-2 py-1 rounded text-xs">
-                          {m.prenom} {m.nom} {m.grade && `(${m.grade})`}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            <div className="flex justify-end mt-4">
-              <Button variant="outline" onClick={() => setShowImportEquipe(false)}>
-                Fermer
-              </Button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
       
       {/* Modal Ajout Véhicule */}
       {showAddVehicle && createPortal(
@@ -1066,7 +713,7 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Sélectionner un véhicule du tenant *</label>
+                <label className="block text-sm font-medium mb-1">Sélectionner un véhicule *</label>
                 <select 
                   value={newVehicle.number}
                   onChange={(e) => {
@@ -1085,13 +732,10 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                     </option>
                   ))}
                 </select>
-                {tenantVehicles.length === 0 && (
-                  <p className="text-xs text-gray-500 mt-1">Aucun véhicule trouvé. Ajoutez des véhicules dans Gestion des Actifs.</p>
-                )}
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-1">Nombre de pompiers</label>
+                <label className="block text-sm font-medium mb-1">Capacité</label>
                 <input
                   type="number"
                   value={newVehicle.crew_count}
@@ -1120,11 +764,8 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
       {showAddPersonnel && createPortal(
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" style={{ zIndex: 100001 }}>
           <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col">
-            <h3 className="text-lg font-bold mb-4">
-              👥 {selectedVehicle ? `Ajouter personnel au véhicule ${selectedVehicle.xml_vehicle_number}` : 'Ajouter du personnel'}
-            </h3>
+            <h3 className="text-lg font-bold mb-4">👥 Ajouter du personnel</h3>
             
-            {/* Barre de recherche */}
             <div className="mb-3">
               <input
                 type="text"
@@ -1135,13 +776,6 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
               />
             </div>
             
-            {/* Info garde interne */}
-            {gardeInterneUsers.length > 0 && (
-              <div className="bg-blue-50 border border-blue-200 rounded p-2 mb-3 text-sm text-blue-800">
-                ℹ️ {gardeInterneUsers.length} personne(s) en garde interne pré-sélectionnée(s)
-              </div>
-            )}
-            
             {loadingUsers ? (
               <p>Chargement...</p>
             ) : (
@@ -1150,40 +784,37 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                   <p className="text-gray-500 text-center py-4">Aucun utilisateur trouvé</p>
                 ) : users
                   .filter(u => (u.statut || '').toLowerCase() === 'actif')
+                  .filter(u => !allPersonnel.some(p => p.id === u.id))
                   .filter(u => {
                     if (!searchPersonnel) return true;
                     const search = searchPersonnel.toLowerCase();
                     return `${u.prenom} ${u.nom}`.toLowerCase().includes(search);
                   })
-                  .map(user => {
-                    const isGardeInterne = gardeInterneUsers.some(g => g.id === user.id);
-                    return (
-                      <label key={user.id} className={`flex items-center gap-2 p-2 rounded cursor-pointer ${isGardeInterne ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
-                        <input 
-                          type="checkbox"
-                          checked={selectedPersonnel.includes(user.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedPersonnel([...selectedPersonnel, user.id]);
-                            } else {
-                              setSelectedPersonnel(selectedPersonnel.filter(id => id !== user.id));
-                            }
-                          }}
-                          className="w-4 h-4" 
-                        />
-                        <span className="flex-1">{user.prenom} {user.nom}</span>
-                        <span className="text-gray-500 text-sm">({user.grade || user.grade_nom || 'Pompier'})</span>
-                        {isGardeInterne && <span className="text-xs bg-blue-200 text-blue-800 px-1 rounded">Garde</span>}
-                      </label>
-                    );
-                  })}
+                  .map(user => (
+                    <label key={user.id} className="flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-gray-50">
+                      <input 
+                        type="checkbox"
+                        checked={selectedPersonnel.includes(user.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedPersonnel([...selectedPersonnel, user.id]);
+                          } else {
+                            setSelectedPersonnel(selectedPersonnel.filter(id => id !== user.id));
+                          }
+                        }}
+                        className="w-4 h-4" 
+                      />
+                      <span className="flex-1">{user.prenom} {user.nom}</span>
+                      <span className="text-gray-500 text-sm">({user.grade || user.grade_nom || 'Pompier'})</span>
+                    </label>
+                  ))}
               </div>
             )}
             <div className="flex gap-2 mt-4 pt-3 border-t">
               <Button variant="outline" onClick={() => { setShowAddPersonnel(false); setSearchPersonnel(''); }} className="flex-1">
                 Annuler
               </Button>
-              <Button onClick={addPersonnelToVehicle} disabled={selectedPersonnel.length === 0} className="flex-1">
+              <Button onClick={addPersonnel} disabled={selectedPersonnel.length === 0} className="flex-1">
                 Ajouter ({selectedPersonnel.length})
               </Button>
             </div>
