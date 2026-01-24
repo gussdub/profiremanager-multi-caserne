@@ -1083,7 +1083,7 @@ const Parametres = ({ user, tenantSlug }) => {
           { id: 'types-garde', icon: '🚒', title: 'Gardes', desc: 'Types de gardes' },
           { id: 'competences', icon: '📜', title: 'Compétences', desc: 'Certifications' },
           { id: 'grades', icon: '🎖️', title: 'Grades', desc: 'Hiérarchie' },
-          { id: 'attribution', icon: '📅', title: 'Planning', desc: 'Attribution auto' },
+          { id: 'attribution', icon: '📅', title: 'Horaire', desc: 'Attribution auto' },
           { id: 'equipes-garde', icon: '👥', title: 'Équipes', desc: 'Rotations' },
           { id: 'comptes', icon: '🔐', title: 'Comptes', desc: 'Utilisateurs' },
           { id: 'remplacements', icon: '🔄', title: 'Remplacements', desc: 'Règles' },
