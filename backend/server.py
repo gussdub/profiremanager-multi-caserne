@@ -41082,6 +41082,7 @@ async def fetch_pay_codes_from_api(
 # Include routers in the main app
 app.include_router(api_router)
 app.include_router(pwa_router, prefix="/api")
+app.include_router(dsi_router, prefix="/api")
 
 # Add CORS middleware
 app.add_middleware(
