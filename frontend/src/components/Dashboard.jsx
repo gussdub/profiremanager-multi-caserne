@@ -58,17 +58,27 @@ const Dashboard = () => {
       const semaineDebut = lundi.toISOString().split('T')[0];
 
       // ===== APPELS EN PARALLÈLE =====
+      // Pour trouver la prochaine garde/formation, on cherche sur une période étendue
+      const premierJourMoisCourant = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+      const premierJourMoisSuivant = now.getMonth() === 11 
+        ? `${now.getFullYear() + 1}-01-01`
+        : `${now.getFullYear()}-${String(now.getMonth() + 2).padStart(2, '0')}-01`;
+      
       const promises = [
-        // 1. Formations
+        // 1. Formations (année courante + suivante pour couvrir les formations futures)
         axios.get(`${API}/${tenantSlug}/formations?annee=${now.getFullYear()}`, { headers, timeout: 10000 }).catch(() => null),
-        // 2. Assignations (mes gardes)
-        axios.get(`${API}/${tenantSlug}/planning/assignations/${semaineDebut}`, { headers, timeout: 10000 }).catch(() => null),
+        // 2. Assignations mois courant (pour trouver la prochaine garde)
+        axios.get(`${API}/${tenantSlug}/planning/assignations/${premierJourMoisCourant}`, { headers, timeout: 10000 }).catch(() => null),
         // 3. Mes EPI
         axios.get(`${API}/${tenantSlug}/mes-epi`, { headers, timeout: 10000 }).catch(() => null),
         // 4. Mes heures (nouvel endpoint accessible à tous les utilisateurs)
         axios.get(`${API}/${tenantSlug}/planning/mes-heures?date_debut=${debutMois}&date_fin=${finMois}`, { headers, timeout: 10000 }).catch(() => null),
         // 5. Mon taux de présence formations (endpoint existant)
         axios.get(`${API}/${tenantSlug}/formations/mon-taux-presence?annee=${now.getFullYear()}`, { headers, timeout: 10000 }).catch(() => null),
+        // 6. Assignations mois suivant (backup si pas de garde ce mois-ci)
+        axios.get(`${API}/${tenantSlug}/planning/assignations/${premierJourMoisSuivant}`, { headers, timeout: 10000 }).catch(() => null),
+        // 7. Formations année suivante (backup)
+        axios.get(`${API}/${tenantSlug}/formations?annee=${now.getFullYear() + 1}`, { headers, timeout: 10000 }).catch(() => null),
       ];
       
       // Ajouter les appels admin uniquement
