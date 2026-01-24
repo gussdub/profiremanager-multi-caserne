@@ -163,4 +163,4 @@ dsi_categories_pertes  - 2 docs
 
 ---
 
-*Dernière mise à jour : 24 janvier 2026*
+*Dernière mise à jour : 25 janvier 2026*
