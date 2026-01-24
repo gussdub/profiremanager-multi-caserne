@@ -41222,6 +41222,7 @@ app.include_router(api_router)
 app.include_router(pwa_router, prefix="/api")
 app.include_router(dsi_router, prefix="/api")
 app.include_router(dsi_transmissions_router, prefix="/api")
+app.include_router(personnel_router, prefix="/api")  # Module Personnel activé
 
 # Add CORS middleware
 app.add_middleware(
