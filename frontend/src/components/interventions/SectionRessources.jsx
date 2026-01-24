@@ -826,38 +826,48 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                           {resource.prime_repas ? (
                             editMode ? (
                               <div className="flex gap-1 flex-wrap">
-                                <label className="flex items-center gap-1 text-xs bg-orange-50 px-2 py-1 rounded cursor-pointer" title="Déjeuner">
-                                  <input
-                                    type="checkbox"
-                                    checked={resource.prime_dejeuner ?? false}
-                                    onChange={(e) => updatePrimeRepasRecap(resource.id, 'prime_dejeuner', e.target.checked)}
-                                    className="w-3 h-3"
-                                  />
-                                  <span>🌅</span>
-                                </label>
-                                <label className="flex items-center gap-1 text-xs bg-yellow-50 px-2 py-1 rounded cursor-pointer" title="Dîner">
-                                  <input
-                                    type="checkbox"
-                                    checked={resource.prime_diner ?? false}
-                                    onChange={(e) => updatePrimeRepasRecap(resource.id, 'prime_diner', e.target.checked)}
-                                    className="w-3 h-3"
-                                  />
-                                  <span>☀️</span>
-                                </label>
-                                <label className="flex items-center gap-1 text-xs bg-indigo-50 px-2 py-1 rounded cursor-pointer" title="Souper">
-                                  <input
-                                    type="checkbox"
-                                    checked={resource.prime_souper ?? false}
-                                    onChange={(e) => updatePrimeRepasRecap(resource.id, 'prime_souper', e.target.checked)}
-                                    className="w-3 h-3"
-                                  />
-                                  <span>🌙</span>
-                                </label>
+                                {/* Afficher uniquement les repas couverts par l'intervention */}
+                                {checkRepasCouvert('dejeuner') && (
+                                  <label className="flex items-center gap-1 text-xs bg-orange-50 px-2 py-1 rounded cursor-pointer" title="Déjeuner">
+                                    <input
+                                      type="checkbox"
+                                      checked={resource.prime_dejeuner ?? false}
+                                      onChange={(e) => updatePrimeRepasRecap(resource.id, 'prime_dejeuner', e.target.checked)}
+                                      className="w-3 h-3"
+                                    />
+                                    <span>🌅</span>
+                                  </label>
+                                )}
+                                {checkRepasCouvert('diner') && (
+                                  <label className="flex items-center gap-1 text-xs bg-yellow-50 px-2 py-1 rounded cursor-pointer" title="Dîner">
+                                    <input
+                                      type="checkbox"
+                                      checked={resource.prime_diner ?? false}
+                                      onChange={(e) => updatePrimeRepasRecap(resource.id, 'prime_diner', e.target.checked)}
+                                      className="w-3 h-3"
+                                    />
+                                    <span>☀️</span>
+                                  </label>
+                                )}
+                                {checkRepasCouvert('souper') && (
+                                  <label className="flex items-center gap-1 text-xs bg-indigo-50 px-2 py-1 rounded cursor-pointer" title="Souper">
+                                    <input
+                                      type="checkbox"
+                                      checked={resource.prime_souper ?? false}
+                                      onChange={(e) => updatePrimeRepasRecap(resource.id, 'prime_souper', e.target.checked)}
+                                      className="w-3 h-3"
+                                    />
+                                    <span>🌙</span>
+                                  </label>
+                                )}
+                                {!checkRepasCouvert('dejeuner') && !checkRepasCouvert('diner') && !checkRepasCouvert('souper') && (
+                                  <span className="text-gray-400 text-xs">Aucun repas couvert</span>
+                                )}
                               </div>
                             ) : (
                               <div className="flex gap-1">
-                                {resource.prime_dejeuner && <span title="Déjeuner">🌅</span>}
-                                {resource.prime_diner && <span title="Dîner">☀️</span>}
+                                {resource.prime_dejeuner && checkRepasCouvert('dejeuner') && <span title="Déjeuner">🌅</span>}
+                                {resource.prime_diner && checkRepasCouvert('diner') && <span title="Dîner">☀️</span>}
                                 {resource.prime_souper && <span title="Souper">🌙</span>}
                                 {!resource.prime_dejeuner && !resource.prime_diner && !resource.prime_souper && <span className="text-gray-400">-</span>}
                               </div>
