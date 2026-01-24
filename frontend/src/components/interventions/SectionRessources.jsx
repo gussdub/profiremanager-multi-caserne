@@ -538,6 +538,9 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
     const heureFin = getHeureFromDatetime(formData.xml_end_time || formData.xml_time_available);
     const repasAuto = calculerRepasAutomatiques(heureDebut, heureFin);
     
+    // Vérifier si au moins un repas est éligible (durée minimum atteinte)
+    const auMoinsUnRepasEligible = repasAuto.dejeuner || repasAuto.diner || repasAuto.souper;
+    
     const newPersonnel = selectedPersonnel.map(userId => {
       const user = users.find(u => u.id === userId);
       return {
@@ -552,7 +555,8 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
         vehicle_number: selectedVehicle?.xml_vehicle_number || null,
         role_on_scene: 'Pompier',
         statut_presence: 'present',
-        prime_repas: true,
+        // Prime repas cochée seulement si au moins un repas est éligible
+        prime_repas: auMoinsUnRepasEligible,
         // Pré-cocher les repas éligibles
         prime_dejeuner: repasAuto.dejeuner,
         prime_diner: repasAuto.diner,
