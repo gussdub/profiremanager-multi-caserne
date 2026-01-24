@@ -13254,19 +13254,32 @@ async def create_demande_conge(tenant_slug: str, demande: DemandeCongeCreate, cu
     return demande_obj
 
 @api_router.get("/{tenant_slug}/demandes-conge", response_model=List[DemandeCongé])
-async def get_demandes_conge(tenant_slug: str, current_user: User = Depends(get_current_user)):
+async def get_demandes_conge(
+    tenant_slug: str, 
+    statut: str = None,
+    date_actuelle: str = None,
+    current_user: User = Depends(get_current_user)
+):
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
     
+    # Construire le filtre de base
+    filter_query = {"tenant_id": tenant.id}
+    
     if current_user.role == "employe":
         # Employés voient seulement leurs demandes
-        demandes = await db.demandes_conge.find({
-            "tenant_id": tenant.id,
-            "demandeur_id": current_user.id
-        }).to_list(1000)
-    else:
-        # Superviseurs et admins voient toutes les demandes de leur tenant
-        demandes = await db.demandes_conge.find({"tenant_id": tenant.id}).to_list(1000)
+        filter_query["demandeur_id"] = current_user.id
+    
+    # Filtrer par statut si spécifié
+    if statut:
+        filter_query["statut"] = statut
+    
+    # Filtrer par date actuelle (congés en cours)
+    if date_actuelle:
+        filter_query["date_debut"] = {"$lte": date_actuelle}
+        filter_query["date_fin"] = {"$gte": date_actuelle}
+    
+    demandes = await db.demandes_conge.find(filter_query).to_list(1000)
     
     cleaned_demandes = [clean_mongo_doc(demande) for demande in demandes]
     return [DemandeCongé(**demande) for demande in cleaned_demandes]
