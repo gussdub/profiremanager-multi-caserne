@@ -342,7 +342,7 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
       alert(`✅ ${nouveauxMembres.length} membre(s) importé(s) de l'équipe de garde.`);
     } catch (error) {
       console.error('Erreur import équipe:', error);
-      alert('Erreur lors de l\'import de l\'équipe de garde.');
+      alert('Erreur lors de l import de l équipe de garde.');
     }
   };
   
@@ -539,7 +539,7 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
         </CardHeader>
         <CardContent className="pt-4">
           {allPersonnel.length === 0 ? (
-            <p className="text-gray-500">Aucun personnel enregistré. Cliquez sur "Importer équipe de garde" ou "+ Ajouter".</p>
+            <p className="text-gray-500">Aucun personnel enregistré. Cliquez sur &quot;Importer équipe de garde&quot; ou &quot;+ Ajouter&quot;.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
