@@ -96,11 +96,24 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
     const heureDebut = getHeureFromDatetime(formData.xml_time_call_received);
     const heureFin = getHeureFromDatetime(formData.xml_end_time || formData.xml_time_available);
     
-    if (!heureDebut || !heureFin) return false;
-    if (!interventionSettings) return false;
+    // Si pas d'heures, permettre de cocher manuellement (fallback)
+    if (!heureDebut || !heureFin) {
+      console.log(`⚠️ checkRepasCouvert(${typeRepas}): pas d'heures définies, fallback true`);
+      return true; // Permettre de cocher manuellement
+    }
     
-    const config = interventionSettings[`repas_${typeRepas}`];
-    if (!config || !config.actif) return false;
+    // Si pas de paramètres chargés, utiliser des horaires par défaut
+    let config = interventionSettings?.[`repas_${typeRepas}`];
+    if (!config || !config.actif) {
+      // Horaires par défaut si pas de config
+      const defaultConfig = {
+        dejeuner: { heure_debut: '06:00', heure_fin: '09:00', actif: true },
+        diner: { heure_debut: '11:00', heure_fin: '14:00', actif: true },
+        souper: { heure_debut: '17:00', heure_fin: '20:00', actif: true }
+      };
+      config = defaultConfig[typeRepas];
+      if (!config) return true; // Fallback permissif
+    }
     
     const getMinutes = (timeStr) => {
       if (!timeStr) return 0;
