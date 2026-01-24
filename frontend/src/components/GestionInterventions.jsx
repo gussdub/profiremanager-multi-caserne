@@ -126,6 +126,7 @@ const GestionInterventions = ({ user, tenantSlug }) => {
 
   const tabs = [
     { id: 'rapports', label: 'Rapports d\'intervention', icon: '📋' },
+    { id: 'conformite-dsi', label: 'Conformité DSI', icon: '📊', adminOnly: true },
     { id: 'historique', label: 'Historique', icon: '📚', hideForEmployee: !employeeCanAccessHistory },
     { id: 'parametres', label: 'Paramètres', icon: '⚙️', adminOnly: true },
   ];
