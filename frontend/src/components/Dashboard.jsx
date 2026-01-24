@@ -83,15 +83,18 @@ const Dashboard = () => {
       
       // Ajouter les appels admin uniquement
       if (isAdmin) {
-        // Calculer le premier jour du mois courant pour le taux de couverture
-        const premierJourMois = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
         const todayStr = now.toISOString().split('T')[0];
         
         promises.push(
+          // Index 7: Users
           axios.get(`${API}/${tenantSlug}/users`, { headers, timeout: 10000 }).catch(() => null),
+          // Index 8: Véhicules
           axios.get(`${API}/${tenantSlug}/actifs/vehicules`, { headers, timeout: 10000 }).catch(() => null),
+          // Index 9: Congés en cours
           axios.get(`${API}/${tenantSlug}/demandes-conge?statut=approuve&date_actuelle=${todayStr}`, { headers, timeout: 10000 }).catch(() => null),
-          axios.get(`${API}/${tenantSlug}/planning/assignations/${premierJourMois}`, { headers, timeout: 10000 }).catch(() => null),
+          // Index 10: Assignations mois courant (pour couverture planning admin)
+          axios.get(`${API}/${tenantSlug}/planning/assignations/${premierJourMoisCourant}`, { headers, timeout: 10000 }).catch(() => null),
+          // Index 11: Notifications
           axios.get(`${API}/${tenantSlug}/notifications?limit=10`, { headers, timeout: 10000 }).catch(() => null),
         );
       }
