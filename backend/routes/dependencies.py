@@ -28,7 +28,7 @@ from functools import lru_cache
 
 MONGO_URL = os.environ.get('MONGO_URL')
 DB_NAME = os.environ.get('DB_NAME', 'profiremanager-dev')
-JWT_SECRET = os.environ.get('JWT_SECRET', 'super-secret-key-change-in-production')
+JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key-here')  # Même valeur que server.py
 JWT_ALGORITHM = "HS256"
 
 # Connexion MongoDB asynchrone (réutilisée par tous les modules)
