@@ -61,13 +61,32 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
   const [manualVehicles, setManualVehicles] = useState(formData.manual_vehicles || []);
   const [manualPersonnel, setManualPersonnel] = useState(formData.manual_personnel || []);
   
-  // Extraire l'heure HH:MM d'un datetime ISO
+  // Extraire l'heure HH:MM d'un datetime ISO ou autre format
   const getHeureFromDatetime = (datetime) => {
     if (!datetime) return null;
-    const timePart = datetime.split('T')[1];
-    if (timePart) {
-      return timePart.substring(0, 5); // HH:MM
+    
+    // Si c'est un format ISO avec T
+    if (datetime.includes('T')) {
+      const timePart = datetime.split('T')[1];
+      if (timePart) {
+        return timePart.substring(0, 5); // HH:MM
+      }
     }
+    
+    // Si c'est un format avec espace (ex: "2024-01-23 12:30:00")
+    if (datetime.includes(' ')) {
+      const parts = datetime.split(' ');
+      if (parts[1]) {
+        return parts[1].substring(0, 5); // HH:MM
+      }
+    }
+    
+    // Si c'est juste une heure (ex: "12:30")
+    if (datetime.includes(':') && !datetime.includes('-')) {
+      return datetime.substring(0, 5);
+    }
+    
+    console.log(`⚠️ getHeureFromDatetime: format non reconnu pour "${datetime}"`);
     return null;
   };
   
