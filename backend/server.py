@@ -17099,12 +17099,57 @@ async def import_disponibilites_csv(
     if not disponibilites:
         raise HTTPException(status_code=400, detail="Aucune disponibilité à importer")
     
+    # SÉCURITÉ: Vérifier le blocage des disponibilités
+    params = await db.parametres_disponibilites.find_one({"tenant_id": tenant.id})
+    blocage_actif = params and params.get("blocage_dispos_active", False)
+    exceptions_admin = params.get("exceptions_admin_superviseur", True) if params else True
+    
+    # Fonction locale pour vérifier si un mois est bloqué
+    def is_month_blocked(mois_str):
+        if not blocage_actif:
+            return False
+        
+        from datetime import date as date_type
+        today = datetime.now(timezone.utc).date()
+        jour_blocage = params.get("jour_blocage_dispos", 15)
+        
+        mois_parts = mois_str.split("-")
+        mois_annee = int(mois_parts[0])
+        mois_mois = int(mois_parts[1])
+        
+        try:
+            date_blocage = date_type(today.year, today.month, jour_blocage)
+        except ValueError:
+            import calendar
+            dernier_jour = calendar.monthrange(today.year, today.month)[1]
+            date_blocage = date_type(today.year, today.month, min(jour_blocage, dernier_jour))
+        
+        if today.month == 12:
+            mois_bloque_num = 1
+            annee_mois_bloque = today.year + 1
+        else:
+            mois_bloque_num = today.month + 1
+            annee_mois_bloque = today.year
+        
+        est_apres_date_limite = today > date_blocage
+        mois_cible_est_passe = (mois_annee < today.year) or (mois_annee == today.year and mois_mois <= today.month)
+        mois_cible_est_le_mois_bloque = (mois_annee == annee_mois_bloque and mois_mois == mois_bloque_num)
+        
+        est_bloque = mois_cible_est_passe or (est_apres_date_limite and mois_cible_est_le_mois_bloque)
+        
+        # Exception pour admin/superviseur
+        if est_bloque and exceptions_admin and current_user.role in ["admin", "superviseur"]:
+            return False
+        
+        return est_bloque
+    
     results = {
         "total": len(disponibilites),
         "created": 0,
         "updated": 0,
         "errors": [],
-        "skipped": 0
+        "skipped": 0,
+        "blocked": 0
     }
     
     # Précharger les utilisateurs et types de garde pour optimisation
