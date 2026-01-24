@@ -20550,9 +20550,15 @@ async def get_parametres_formations(tenant_slug: str, current_user: User = Depen
         # Récupérer les paramètres de formations ou retourner valeurs par défaut
         formation_params = tenant.parametres.get('formations', {
             'heures_minimales_annuelles': 100,
+            'pourcentage_presence_minimum': 80,
             'delai_notification_liste_attente': 7,
             'email_notifications_actif': True
-        })
+        }) if tenant.parametres else {
+            'heures_minimales_annuelles': 100,
+            'pourcentage_presence_minimum': 80,
+            'delai_notification_liste_attente': 7,
+            'email_notifications_actif': True
+        }
         
         return formation_params
         
