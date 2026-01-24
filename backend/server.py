@@ -39,6 +39,7 @@ from firebase_admin import credentials, messaging
 import qrcode
 from pwa_manifest import pwa_router
 from routes.dsi import router as dsi_router
+from routes.dsi_transmissions import router as dsi_transmissions_router
 from io import BytesIO
 import base64
 from PIL import Image as PILImage
