@@ -499,7 +499,7 @@ const Formations = () => {
       {activeTab === 'formations' && (
         <div className="formations-content">
           {!['employe', 'pompier'].includes(user?.role) && (
-            <div className="formations-actions"><Button onClick={() => { setSelectedFormation(null); setFormationForm({...formationForm, annee: anneeSelectionnee}); setShowFormationModal(true); }}>➕ Nouvelle Formation</Button></div>
+            <div className="formations-actions"><Button onClick={() => { setSelectedFormation(null); setFormationForm({nom: '', competence_id: '', description: '', date_debut: '', date_fin: '', heure_debut: '', heure_fin: '', duree_heures: 0, lieu: '', instructeur: '', places_max: 20, obligatoire: false, annee: anneeSelectionnee}); setShowFormationModal(true); }}>➕ Nouvelle Formation</Button></div>
           )}
           <div className="formations-grid">
             {formations.map(f => (
