@@ -41144,6 +41144,7 @@ async def fetch_pay_codes_from_api(
 # IMPORTANT: L'ordre détermine la priorité des routes
 # Module personnel extrait et prioritaire
 app.include_router(personnel_router, prefix="/api")  # Module Personnel (GET/PUT/DELETE users)
+app.include_router(actifs_router, prefix="/api")  # Module Actifs (véhicules, bornes, inventaires, rondes)
 # disponibilites_router désactivé - routes server.py plus complètes (export PDF, blocage avancé)
 app.include_router(api_router)  # Routes principales (server.py)
 app.include_router(pwa_router, prefix="/api")
