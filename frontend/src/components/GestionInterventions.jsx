@@ -25,6 +25,14 @@ import { CSS } from '@dnd-kit/utilities';
 // Composants extraits
 import SectionBatiment from './interventions/SectionBatiment';
 import SectionIdentification from './interventions/SectionIdentification';
+import SectionRessources from './interventions/SectionRessources';
+import SectionDSI from './interventions/SectionDSI';
+import SectionProtection from './interventions/SectionProtection';
+import SectionMateriel from './interventions/SectionMateriel';
+import SectionPertes from './interventions/SectionPertes';
+import SectionNarratif from './interventions/SectionNarratif';
+import SectionRemisePropriete from './interventions/SectionRemisePropriete';
+import SectionFacturation from './interventions/SectionFacturation';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
