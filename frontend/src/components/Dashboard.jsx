@@ -134,7 +134,6 @@ const Dashboard = () => {
       
       // 2. Prochaine garde - chercher la plus proche à partir d'aujourd'hui
       // Utiliser la comparaison de chaînes YYYY-MM-DD pour éviter les problèmes de fuseau horaire
-      const todayStr = now.toISOString().split('T')[0]; // Format YYYY-MM-DD
       const mesAssignations = toutesAssignations
         .filter(a => a.user_id === user.id && a.date >= todayStr)
         .sort((a, b) => a.date.localeCompare(b.date));
