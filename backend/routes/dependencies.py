@@ -72,6 +72,7 @@ class User(BaseModel):
     statut: str = "Actif"
     mot_de_passe_hash: Optional[str] = None
     photo_profil: Optional[str] = None
+    tailles_epi: Optional[Dict[str, str]] = {}  # Tailles EPI de l'employé
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: Optional[datetime] = None
     
