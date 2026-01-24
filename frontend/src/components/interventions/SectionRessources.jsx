@@ -875,7 +875,24 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                           {resource.user_name || resource.prenom + ' ' + resource.nom || resource.user_id || 'Non assigné'}
                           {resource.grade && <span className="text-gray-500 text-xs ml-1">({resource.grade})</span>}
                         </td>
-                        <td className="p-2">{resource.vehicle_number || <span className="text-orange-600">Supplémentaire</span>}</td>
+                        <td className="p-2">
+                          {editMode && resource.is_manual ? (
+                            <select
+                              value={resource.vehicle_number || ''}
+                              onChange={(e) => updateVehicleAssignment(resource.id, e.target.value)}
+                              className="text-xs rounded px-2 py-1 border bg-blue-50 w-full"
+                            >
+                              <option value="">🚶 Supplémentaire</option>
+                              {allVehicles.map(v => (
+                                <option key={v.id} value={v.xml_vehicle_number}>
+                                  🚒 {v.xml_vehicle_number}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            resource.vehicle_number || <span className="text-orange-600">Supplémentaire</span>
+                          )}
+                        </td>
                         <td className="p-2">
                           {editMode ? (
                             <select
