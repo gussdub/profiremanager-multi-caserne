@@ -498,7 +498,7 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
         <CardHeader className="bg-green-50">
           <CardTitle className="text-lg text-green-800">
             <div className="flex justify-between items-center flex-wrap gap-2">
-              <span>👥 Personnel présent lors de l'intervention ({allPersonnel.length})</span>
+              <span>👥 Personnel présent lors de l&apos;intervention ({allPersonnel.length})</span>
               {editMode && (
                 <div className="flex gap-2 flex-wrap">
                   <Button 
