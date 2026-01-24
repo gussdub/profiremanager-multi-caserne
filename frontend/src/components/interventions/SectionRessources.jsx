@@ -783,21 +783,49 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                           )}
                         </td>
                         <td className="p-2">
-                          {editMode ? (
-                            <div className="flex gap-1 flex-wrap">
-                              <label className="flex items-center gap-1 text-xs bg-orange-50 px-2 py-1 rounded cursor-pointer" title="Déjeuner (6h-9h)">
-                                <input
-                                  type="checkbox"
-                                  checked={resource.prime_dejeuner ?? false}
-                                  onChange={(e) => updatePrimeRepasRecap(resource.id, 'prime_dejeuner', e.target.checked)}
-                                  className="w-3 h-3"
-                                />
-                                <span>🌅</span>
-                              </label>
-                              <label className="flex items-center gap-1 text-xs bg-yellow-50 px-2 py-1 rounded cursor-pointer" title="Dîner (11h-14h)">
-                                <input
-                                  type="checkbox"
-                                  checked={resource.prime_diner ?? false}
+                          {/* Afficher les cases de repas seulement si prime_repas est coché */}
+                          {resource.prime_repas ? (
+                            editMode ? (
+                              <div className="flex gap-1 flex-wrap">
+                                <label className="flex items-center gap-1 text-xs bg-orange-50 px-2 py-1 rounded cursor-pointer" title="Déjeuner">
+                                  <input
+                                    type="checkbox"
+                                    checked={resource.prime_dejeuner ?? false}
+                                    onChange={(e) => updatePrimeRepasRecap(resource.id, 'prime_dejeuner', e.target.checked)}
+                                    className="w-3 h-3"
+                                  />
+                                  <span>🌅</span>
+                                </label>
+                                <label className="flex items-center gap-1 text-xs bg-yellow-50 px-2 py-1 rounded cursor-pointer" title="Dîner">
+                                  <input
+                                    type="checkbox"
+                                    checked={resource.prime_diner ?? false}
+                                    onChange={(e) => updatePrimeRepasRecap(resource.id, 'prime_diner', e.target.checked)}
+                                    className="w-3 h-3"
+                                  />
+                                  <span>☀️</span>
+                                </label>
+                                <label className="flex items-center gap-1 text-xs bg-indigo-50 px-2 py-1 rounded cursor-pointer" title="Souper">
+                                  <input
+                                    type="checkbox"
+                                    checked={resource.prime_souper ?? false}
+                                    onChange={(e) => updatePrimeRepasRecap(resource.id, 'prime_souper', e.target.checked)}
+                                    className="w-3 h-3"
+                                  />
+                                  <span>🌙</span>
+                                </label>
+                              </div>
+                            ) : (
+                              <div className="flex gap-1">
+                                {resource.prime_dejeuner && <span title="Déjeuner">🌅</span>}
+                                {resource.prime_diner && <span title="Dîner">☀️</span>}
+                                {resource.prime_souper && <span title="Souper">🌙</span>}
+                                {!resource.prime_dejeuner && !resource.prime_diner && !resource.prime_souper && <span className="text-gray-400">-</span>}
+                              </div>
+                            )
+                          ) : (
+                            <span className="text-gray-400 text-xs">Pas de prime</span>
+                          )}
                                   onChange={(e) => updatePrimeRepasRecap(resource.id, 'prime_diner', e.target.checked)}
                                   className="w-3 h-3"
                                 />
