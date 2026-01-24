@@ -6387,93 +6387,15 @@ async def delete_photo_profil_admin(
     
     return {"message": "Photo de profil supprimée"}
 
-@api_router.put("/{tenant_slug}/users/{user_id}", response_model=User)
-async def update_user(tenant_slug: str, user_id: str, user_update: UserUpdate, current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
-    # Vérifier le tenant
-    tenant = await get_tenant_from_slug(tenant_slug)
-    
-    # Check if user exists dans ce tenant
-    existing_user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
-    if not existing_user:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
-    
-    # Préparer les données à mettre à jour (seulement les champs fournis)
-    update_data = {k: v for k, v in user_update.dict(exclude_unset=True).items() if v is not None}
-    
-    # CORRECTION CRITIQUE: Synchroniser formations/competences (deux sens!)
-    # Certaines parties du frontend envoient "formations", d'autres "competences"
-    if "formations" in update_data:
-        update_data["competences"] = update_data["formations"]
-        logging.info(f"🔄 [SYNC] Copie formations → competences: {update_data['formations']}")
-    elif "competences" in update_data:
-        update_data["formations"] = update_data["competences"]
-        logging.info(f"🔄 [SYNC] Copie competences → formations: {update_data['competences']}")
-    
-    # Gestion du mot de passe
-    if "mot_de_passe" in update_data and update_data["mot_de_passe"]:
-        update_data["mot_de_passe_hash"] = get_password_hash(update_data.pop("mot_de_passe"))
-    elif "mot_de_passe" in update_data:
-        update_data.pop("mot_de_passe")
-    
-    # Mettre à jour uniquement les champs fournis
-    result = await db.users.update_one(
-        {"id": user_id, "tenant_id": tenant.id},
-        {"$set": update_data}
-    )
-    
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
-    
-    updated_user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
-    updated_user = clean_mongo_doc(updated_user)
-    
-    # Créer une activité
-    await creer_activite(
-        tenant_id=tenant.id,
-        type_activite="personnel_modification",
-        description=f"✏️ {current_user.prenom} {current_user.nom} a modifié le profil de {updated_user['prenom']} {updated_user['nom']}",
-        user_id=current_user.id,
-        user_nom=f"{current_user.prenom} {current_user.nom}"
-    )
-    
-    return User(**updated_user)
+# Route legacy commentée - migrée vers routes/personnel.py
+# @api_router.put("/{tenant_slug}/users/{user_id}", response_model=User)
+# async def update_user(tenant_slug: str, user_id: str, user_update: UserUpdate, current_user: User = Depends(get_current_user)):
+#     ... (voir routes/personnel.py pour l'implémentation complète)
 
-@api_router.delete("/{tenant_slug}/users/{user_id}")
-async def delete_user(tenant_slug: str, user_id: str, current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
-    # Vérifier le tenant
-    tenant = await get_tenant_from_slug(tenant_slug)
-    
-    # Check if user exists dans ce tenant
-    existing_user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
-    if not existing_user:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
-    
-    # Delete user
-    result = await db.users.delete_one({"id": user_id, "tenant_id": tenant.id})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=400, detail="Impossible de supprimer l'utilisateur")
-    
-    # Also delete related data (filtré par tenant_id aussi)
-    await db.disponibilites.delete_many({"user_id": user_id, "tenant_id": tenant.id})
-    await db.assignations.delete_many({"user_id": user_id, "tenant_id": tenant.id})
-    await db.demandes_remplacement.delete_many({"demandeur_id": user_id, "tenant_id": tenant.id})
-    
-    # Créer une activité
-    await creer_activite(
-        tenant_id=tenant.id,
-        type_activite="personnel_suppression",
-        description=f"🗑️ {current_user.prenom} {current_user.nom} a supprimé {existing_user['prenom']} {existing_user['nom']} du personnel",
-        user_id=current_user.id,
-        user_nom=f"{current_user.prenom} {current_user.nom}"
-    )
-    
-    return {"message": "Utilisateur supprimé avec succès"}
+# Route legacy commentée - migrée vers routes/personnel.py
+# @api_router.delete("/{tenant_slug}/users/{user_id}")
+# async def delete_user(tenant_slug: str, user_id: str, current_user: User = Depends(get_current_user)):
+#     ... (voir routes/personnel.py pour l'implémentation complète)
 
 
 @api_router.get("/{tenant_slug}/users/{user_id}/statistiques-interventions")
