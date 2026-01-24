@@ -84,14 +84,21 @@ dsi_categories_pertes  - 2 docs
 /app
 ├── backend/
 │   ├── routes/
-│   │   ├── dsi.py              # API DSI
-│   │   └── paie.py
+│   │   ├── __init__.py           # Documentation modules
+│   │   ├── dsi.py                # API DSI (ACTIF)
+│   │   ├── dsi_transmissions.py  # Conformité DSI (ACTIF)
+│   │   ├── personnel.py          # Gestion users (PRÊT)
+│   │   ├── disponibilites.py     # Disponibilités (PRÊT)
+│   │   ├── planning.py           # Planning (PRÊT)
+│   │   ├── formations.py         # Formations (PRÊT)
+│   │   └── paie.py               # Module Paie (PRÊT)
 │   ├── scripts/
 │   │   ├── import_dsi_references.py
 │   │   └── import_dsi_msp_official.py
-│   └── server.py
+│   └── server.py                 # ~41,000 lignes (refactorisation en cours)
 └── frontend/
     └── src/components/
+        ├── Dashboard.jsx           # Corrigé 24 janv 2026
         ├── interventions/
         │   ├── SectionRessources.jsx  # Refactorisé
         │   ├── SectionDSI.jsx         # Enrichi
@@ -109,11 +116,13 @@ dsi_categories_pertes  - 2 docs
 - [ ] Compléter section "Victimes" avec détail civil/pompier
 - [ ] Téléchargement du fichier XML DSI généré
 
-### P2 - Moyen terme
+### P2 - Moyen terme (Refactorisation en cours)
+- [x] Créer modules routes: personnel.py, disponibilites.py, planning.py, formations.py
+- [ ] Activer et tester chaque module individuellement
+- [ ] Supprimer le code dupliqué de server.py après activation
 - [ ] Intégration XSD officiel du MSP (en attente de réception)
 - [ ] Transmission SOAP au serveur MSP (certificat SSL requis)
 - [ ] Tests dans la Sandbox MSP
-- [ ] Refactorisation complète de server.py (>40k lignes)
 
 ### P3 - Long terme
 - [ ] Module de gestion des jours fériés
