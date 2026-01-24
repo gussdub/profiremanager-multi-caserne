@@ -868,7 +868,7 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                               <div className="flex gap-1">
                                 {resource.prime_dejeuner && checkRepasCouvert('dejeuner') && <span title="Déjeuner">🌅</span>}
                                 {resource.prime_diner && checkRepasCouvert('diner') && <span title="Dîner">☀️</span>}
-                                {resource.prime_souper && <span title="Souper">🌙</span>}
+                                {resource.prime_souper && checkRepasCouvert('souper') && <span title="Souper">🌙</span>}
                                 {!resource.prime_dejeuner && !resource.prime_diner && !resource.prime_souper && <span className="text-gray-400">-</span>}
                               </div>
                             )
