@@ -226,23 +226,23 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
     setFormData({ ...formData, manual_personnel: updated });
   };
   
-  // Prime repas globale
-  const togglePrimeRepasGlobale = (checked) => {
-    setPrimeRepasGlobale(checked);
-    const heureDebut = getHeureFromDatetime(formData.xml_time_call_received);
-    const heureFin = getHeureFromDatetime(formData.xml_end_time || formData.xml_time_available);
-    const repasAuto = calculerRepasAutomatiques(heureDebut, heureFin);
-    const auMoinsUnRepasEligible = repasAuto.dejeuner || repasAuto.diner || repasAuto.souper;
-    
+  // Vérifier si tous les repas d'un type sont cochés
+  const areAllRepasChecked = (typeRepas) => {
+    const field = `prime_${typeRepas}`;
+    const manualWithRepas = manualPersonnel.filter(p => p.is_manual);
+    if (manualWithRepas.length === 0) return false;
+    return manualWithRepas.every(p => p[field] === true);
+  };
+  
+  // Cocher/décocher tous les repas d'un type
+  const toggleAllRepasType = (typeRepas, checked) => {
+    const field = `prime_${typeRepas}`;
     const updated = manualPersonnel.map(p => ({
       ...p,
-      prime_repas: checked && auMoinsUnRepasEligible,
-      prime_dejeuner: checked ? repasAuto.dejeuner : false,
-      prime_diner: checked ? repasAuto.diner : false,
-      prime_souper: checked ? repasAuto.souper : false
+      [field]: checked
     }));
     setManualPersonnel(updated);
-    setFormData({ ...formData, manual_personnel: updated, prime_repas_globale: checked });
+    setFormData({ ...formData, manual_personnel: updated });
   };
   
   // Charger les utilisateurs
