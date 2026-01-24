@@ -116,11 +116,14 @@ const Dashboard = () => {
       const formationsAnneeSuivante = results[6]?.data || [];
       const toutesFormations = [...formationsAnneeCourante, ...formationsAnneeSuivante];
       
+      // Date d'aujourd'hui en format YYYY-MM-DD pour comparaison sans problème de fuseau horaire
+      const todayStr = now.toISOString().split('T')[0];
+      
       // 1. Formations inscrites - chercher la prochaine peu importe quand
       const formationsAVenir = toutesFormations
-        .filter(f => new Date(f.date_debut || f.date) >= now)
+        .filter(f => (f.date_debut || f.date) >= todayStr)
         .filter(f => f.inscrits?.includes(user.id) || f.participants?.some(p => p.user_id === user.id))
-        .sort((a, b) => new Date(a.date_debut || a.date) - new Date(b.date_debut || b.date))
+        .sort((a, b) => (a.date_debut || a.date).localeCompare(b.date_debut || b.date))
         .slice(0, 3);
       setFormationsInscrites(formationsAVenir);
       
