@@ -20,6 +20,16 @@ Application de gestion des interventions et de la paie pour les services de pomp
 - **Logique des primes de repas** : pré-cochage basé sur durée minimum et horaires
 - **Fonction supérieure** : calcul et affichage dans la paie
 
+### Dashboard Principal - Corrections 24 janvier 2026
+- **Correction bug widgets** : Personnel actif (37), Véhicules (3) s'affichent correctement
+- **Taux de couverture planning** : Calculé sur le mois complet (pas 7 jours)
+- **Taux de présence formations** : 100% conforme par défaut si aucune formation passée
+- **Prochaine garde** : Recherche étendue au mois courant + suivant
+- **Mes formations à venir** : Recherche étendue à l'année courante + suivante
+- **Correction fuseau horaire** : Les dates YYYY-MM-DD sont parsées en heure locale
+- **Widget "Personnes absentes"** : Remplace "Demandes de congés en attente"
+- **KPI supprimés de la page Horaire** : Allégement du design
+
 ### Module DSI (Déclaration de Sinistre Incendie) - 24 janvier 2026
 - **Tables de référence MSP officielles** :
   - 1,281 municipalités MAMH (données ouvertes Québec)
