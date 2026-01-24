@@ -37364,11 +37364,13 @@ async def get_weather_for_intervention(
 async def get_equipes_garde_for_intervention(
     tenant_slug: str,
     date: str,  # Format YYYY-MM-DD
+    heure: str = None,  # Format HH:MM - heure de l'intervention pour détection automatique
     current_user: User = Depends(get_current_user)
 ):
     """
     Récupère les équipes de garde et leurs membres pour une date donnée.
-    Utilisé pour importer rapidement une équipe dans une intervention.
+    Si l'heure est fournie, détermine automatiquement si c'est garde interne ou externe
+    en fonction des types de garde configurés.
     """
     tenant = await get_tenant_by_slug(tenant_slug)
     if not tenant:
@@ -37379,7 +37381,43 @@ async def get_equipes_garde_for_intervention(
     if not params or not params.get("actif", False):
         return {"equipes": [], "message": "Système d'équipes de garde non activé"}
     
-    result = {"equipes": []}
+    # Si heure fournie, déterminer le type de garde (interne/externe) basé sur les horaires configurés
+    type_garde_cible = None
+    if heure:
+        types_garde = await db.types_garde.find({"tenant_id": tenant["id"]}).to_list(None)
+        
+        # Convertir l'heure en minutes depuis minuit pour comparaison facile
+        try:
+            heure_parts = heure.split(":")
+            heure_minutes = int(heure_parts[0]) * 60 + int(heure_parts[1])
+        except:
+            heure_minutes = None
+        
+        if heure_minutes is not None and types_garde:
+            for tg in types_garde:
+                try:
+                    debut_parts = tg.get("heure_debut", "00:00").split(":")
+                    fin_parts = tg.get("heure_fin", "00:00").split(":")
+                    debut_minutes = int(debut_parts[0]) * 60 + int(debut_parts[1])
+                    fin_minutes = int(fin_parts[0]) * 60 + int(fin_parts[1])
+                    
+                    # Gestion des gardes qui passent minuit (ex: 16:00 - 08:00)
+                    if fin_minutes < debut_minutes:
+                        # Garde de nuit - passe minuit
+                        is_in_range = heure_minutes >= debut_minutes or heure_minutes < fin_minutes
+                    else:
+                        # Garde normale
+                        is_in_range = debut_minutes <= heure_minutes < fin_minutes
+                    
+                    if is_in_range:
+                        type_garde_cible = "externe" if tg.get("est_garde_externe", False) else "interne"
+                        logging.info(f"🕐 Intervention à {heure} → Type garde: {type_garde_cible} ({tg.get('nom')})")
+                        break
+                except Exception as e:
+                    logging.warning(f"Erreur parsing horaire type garde: {e}")
+                    continue
+    
+    result = {"equipes": [], "type_garde_detecte": type_garde_cible}
     
     # Pour chaque type d'emploi (temps plein et temps partiel)
     for type_emploi in ["temps_plein", "temps_partiel"]:
