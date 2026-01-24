@@ -22,13 +22,17 @@ load_dotenv()
 
 from motor.motor_asyncio import AsyncIOMotorClient
 
+# Use relative paths based on current file location
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+LOG_PATH = os.path.join(BASE_DIR, 'attribution_test_output.log')
+
 # Configure logging to capture all details
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler('/app/backend/tests/attribution_test_output.log')
+        logging.FileHandler(LOG_PATH)
     ]
 )
 logger = logging.getLogger(__name__)
@@ -204,8 +208,9 @@ async def test_direct_function_call():
     """
     import importlib.util
     
-    # Load server module dynamically
-    spec = importlib.util.spec_from_file_location("server", "/app/backend/server.py")
+    # Load server module dynamically using relative path
+    server_path = os.path.join(os.path.dirname(BASE_DIR), "server.py")
+    spec = importlib.util.spec_from_file_location("server", server_path)
     
     logger.info("\n" + "=" * 60)
     logger.info("TEST DIRECT DE LA FONCTION")
@@ -236,4 +241,4 @@ if __name__ == "__main__":
     result2 = loop.run_until_complete(test_direct_function_call())
     print(f"Test direct function call: {'PASS' if result2 else 'FAIL'}")
     
-    print("\nLogs saved to: /app/backend/tests/attribution_test_output.log")
+    print(f"\nLogs saved to: {LOG_PATH}")
