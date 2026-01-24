@@ -133,41 +133,44 @@ const Dashboard = () => {
       }
 
       // ===== DONNÉES ADMIN UNIQUEMENT =====
-      let adminIndex = 5; // Index de départ pour les données admin
-      if (isAdmin && results.length > adminIndex) {
-        // Users
-        if (results[adminIndex]?.data) {
-          setStatsGenerales(prev => ({ ...prev, personnel: results[adminIndex].data.length || 0 }));
-        }
-        adminIndex++;
+      if (isAdmin && results.length > 5) {
+        // Index fixes pour éviter les problèmes de closure
+        const usersData = results[5]?.data;
+        const vehiculesData = results[6]?.data;
+        const congesData = results[7]?.data;
+        const planningData = results[8]?.data;
+        const notificationsData = results[9]?.data;
         
-        // Véhicules
-        if (results[adminIndex]?.data) {
-          setStatsGenerales(prev => ({ ...prev, vehicules: results[adminIndex].data.length || 0 }));
-        }
-        adminIndex++;
+        // Calculer toutes les valeurs avant de mettre à jour le state
+        const personnelCount = Array.isArray(usersData) ? usersData.length : 0;
+        const vehiculesCount = Array.isArray(vehiculesData) ? vehiculesData.length : 0;
+        
+        // Mise à jour atomique du state
+        setStatsGenerales({
+          personnel: personnelCount,
+          vehicules: vehiculesCount,
+          epiActifs: 0,
+          formationsAVenir: 0
+        });
         
         // Congés
-        if (results[adminIndex]?.data) {
-          const enAttente = (results[adminIndex].data || [])
+        if (Array.isArray(congesData)) {
+          const enAttente = congesData
             .filter(d => d.statut === 'en_attente')
             .slice(0, 5);
           setDemandesConges(enAttente);
         }
-        adminIndex++;
         
         // Couverture planning
-        if (results[adminIndex]?.data) {
-          const assignations = results[adminIndex].data || [];
-          const joursCouverts = new Set(assignations.map(a => a.date)).size;
+        if (Array.isArray(planningData)) {
+          const joursCouverts = new Set(planningData.map(a => a.date)).size;
           const taux = Math.min(100, Math.round((joursCouverts / 7) * 100));
           setTauxCouverture(taux);
         }
-        adminIndex++;
         
         // Activités récentes
-        if (results[adminIndex]?.data) {
-          const activites = (results[adminIndex].data || [])
+        if (Array.isArray(notificationsData)) {
+          const activites = notificationsData
             .slice(0, 5)
             .map(n => ({
               id: n.id,
