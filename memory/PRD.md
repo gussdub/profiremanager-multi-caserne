@@ -98,15 +98,15 @@ dsi_categories_pertes  - 2 docs
 │   │   ├── dependencies.py       # Dépendances partagées (db, auth, helpers)
 │   │   ├── dsi.py                # API DSI (ACTIF)
 │   │   ├── dsi_transmissions.py  # Conformité DSI (ACTIF)
-│   │   ├── personnel.py          # Gestion users (ACTIF - 5 routes)
-│   │   ├── disponibilites.py     # Disponibilités (ACTIF - 4 routes)
+│   │   ├── personnel.py          # Gestion users (ACTIF - 5 routes migrées)
+│   │   ├── disponibilites.py     # Disponibilités (INACTIF - routes server.py plus complètes)
 │   │   ├── planning.py           # Planning (PRÊT)
 │   │   ├── formations.py         # Formations (PRÊT)
 │   │   └── paie.py               # Module Paie (PRÊT)
 │   ├── scripts/
 │   │   ├── import_dsi_references.py
 │   │   └── import_dsi_msp_official.py
-│   └── server.py                 # ~41,000 lignes (refactorisation en cours)
+│   └── server.py                 # ~41,170 lignes (73 lignes nettoyées)
 └── frontend/
     └── src/components/
         ├── Dashboard.jsx           # Corrigé 24 janv 2026
