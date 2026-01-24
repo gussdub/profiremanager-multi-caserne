@@ -947,35 +947,29 @@ const Formations = () => {
                 
                 <div className="form-row-full">
                   <div className="form-field-modern">
-                    <Label>Date de la formation * (AAAA-MM-JJ)</Label>
+                    <Label>Date de la formation *</Label>
                     <Input 
-                      type="text" 
+                      type="date" 
                       value={formationForm.date_debut} 
                       onChange={e => setFormationForm({...formationForm, date_debut: e.target.value})}
-                      placeholder="2025-01-28"
-                      maxLength={10}
                       required
                     />
                   </div>
                   <div className="form-field-modern">
-                    <Label>Heure de début * (HH:MM)</Label>
+                    <Label>Heure de début *</Label>
                     <Input 
-                      type="text" 
+                      type="time" 
                       value={formationForm.heure_debut} 
                       onChange={e => setFormationForm({...formationForm, heure_debut: e.target.value})}
-                      placeholder="09:00"
-                      maxLength={5}
                       required
                     />
                   </div>
                   <div className="form-field-modern">
-                    <Label>Heure de fin * (HH:MM)</Label>
+                    <Label>Heure de fin *</Label>
                     <Input 
-                      type="text" 
+                      type="time" 
                       value={formationForm.heure_fin} 
                       onChange={e => setFormationForm({...formationForm, heure_fin: e.target.value})}
-                      placeholder="17:00"
-                      maxLength={5}
                       required
                     />
                   </div>
