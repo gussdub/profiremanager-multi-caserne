@@ -31925,50 +31925,9 @@ async def create_ronde_securite(
     
     return ronde
 
-@api_router.get("/{tenant_slug}/actifs/rondes-securite", response_model=List[RondeSecurite])
-async def get_rondes_securite(
-    tenant_slug: str,
-    vehicule_id: Optional[str] = None,
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Récupérer l'historique des rondes de sécurité
-    """
-    tenant = await get_tenant_from_slug(tenant_slug)
-    
-    if current_user.tenant_id != tenant.id:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
-    query = {"tenant_id": tenant.id}
-    if vehicule_id:
-        query["vehicule_id"] = vehicule_id
-    
-    rondes = await db.rondes_securite.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
-    return rondes
-
-@api_router.get("/{tenant_slug}/actifs/rondes-securite/{ronde_id}", response_model=RondeSecurite)
-async def get_ronde_securite_by_id(
-    tenant_slug: str,
-    ronde_id: str,
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Récupérer une ronde de sécurité spécifique par son ID
-    """
-    tenant = await get_tenant_from_slug(tenant_slug)
-    
-    if current_user.tenant_id != tenant.id:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
-    ronde = await db.rondes_securite.find_one(
-        {"id": ronde_id, "tenant_id": tenant.id},
-        {"_id": 0}
-    )
-    
-    if not ronde:
-        raise HTTPException(status_code=404, detail="Ronde de sécurité non trouvée")
-    
-    return ronde
+# Routes GET rondes-securite migrées vers actifs.py (POST reste ici pour l'envoi d'email)
+# - GET /{tenant_slug}/actifs/rondes-securite - Liste des rondes
+# - GET /{tenant_slug}/actifs/rondes-securite/{ronde_id} - Détail ronde
 
 @api_router.get("/{tenant_slug}/actifs/rondes-securite/{ronde_id}/export-pdf")
 async def export_ronde_securite_pdf(
