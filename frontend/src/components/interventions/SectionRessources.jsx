@@ -89,8 +89,10 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
             prenom: m.prenom,
             grade: m.grade,
             type_emploi: m.type_emploi,
+            fonction_superieur: m.fonction_superieur || false,
             statut_presence: 'present',
             prime_repas: true,
+            utilise_fonction_superieure: false,
             equipe_origine: equipe.equipe_nom
           }));
           
