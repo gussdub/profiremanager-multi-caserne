@@ -1019,7 +1019,7 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
             {equipesGarde.length === 0 ? (
               <p className="text-gray-500 text-center py-4">
                 Aucune équipe de garde trouvée pour cette date.<br/>
-                <span className="text-sm">Vérifiez les paramètres d'équipes dans le module Planning.</span>
+                <span className="text-sm">Vérifiez les paramètres d&apos;équipes dans le module Planning.</span>
               </p>
             ) : (
               <div className="space-y-3">
