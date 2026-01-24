@@ -988,6 +988,9 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
               setFormData={setFormData}
               editMode={editMode && !isLocked && !forceReadOnly}
               referenceData={referenceData}
+              tenantSlug={tenantSlug}
+              vehicles={vehicles}
+              resources={resources}
             />
           )}
           {activeSection === 'protection' && (
