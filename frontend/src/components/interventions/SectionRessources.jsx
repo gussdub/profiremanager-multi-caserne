@@ -521,19 +521,6 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                 </div>
               )}
             </div>
-            {editMode && (
-              <div className="mt-2">
-                <label className="flex items-center gap-2 text-sm font-normal">
-                  <input
-                    type="checkbox"
-                    checked={primeRepasGlobale}
-                    onChange={(e) => togglePrimeRepasGlobale(e.target.checked)}
-                    className="w-4 h-4"
-                  />
-                  <span>🍽️ Prime repas pour tous</span>
-                </label>
-              </div>
-            )}
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-4">
