@@ -536,9 +536,57 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                     <th className="p-2 text-left">Statut</th>
                     <th className="p-2 text-left">Remplaçant</th>
                     <th className="p-2 text-left">Fct.Sup</th>
-                    {checkRepasCouvert('dejeuner') && <th className="p-2 text-center" title="Déjeuner">🌅</th>}
-                    {checkRepasCouvert('diner') && <th className="p-2 text-center" title="Dîner">☀️</th>}
-                    {checkRepasCouvert('souper') && <th className="p-2 text-center" title="Souper">🌙</th>}
+                    {checkRepasCouvert('dejeuner') && (
+                      <th className="p-2 text-center">
+                        {editMode ? (
+                          <label className="flex flex-col items-center gap-1 cursor-pointer" title="Cocher/décocher tous les déjeuners">
+                            <input
+                              type="checkbox"
+                              checked={areAllRepasChecked('dejeuner')}
+                              onChange={(e) => toggleAllRepasType('dejeuner', e.target.checked)}
+                              className="w-4 h-4"
+                            />
+                            <span className="text-xs">Déj.</span>
+                          </label>
+                        ) : (
+                          <span className="text-xs">Déj.</span>
+                        )}
+                      </th>
+                    )}
+                    {checkRepasCouvert('diner') && (
+                      <th className="p-2 text-center">
+                        {editMode ? (
+                          <label className="flex flex-col items-center gap-1 cursor-pointer" title="Cocher/décocher tous les dîners">
+                            <input
+                              type="checkbox"
+                              checked={areAllRepasChecked('diner')}
+                              onChange={(e) => toggleAllRepasType('diner', e.target.checked)}
+                              className="w-4 h-4"
+                            />
+                            <span className="text-xs">Dîn.</span>
+                          </label>
+                        ) : (
+                          <span className="text-xs">Dîn.</span>
+                        )}
+                      </th>
+                    )}
+                    {checkRepasCouvert('souper') && (
+                      <th className="p-2 text-center">
+                        {editMode ? (
+                          <label className="flex flex-col items-center gap-1 cursor-pointer" title="Cocher/décocher tous les soupers">
+                            <input
+                              type="checkbox"
+                              checked={areAllRepasChecked('souper')}
+                              onChange={(e) => toggleAllRepasType('souper', e.target.checked)}
+                              className="w-4 h-4"
+                            />
+                            <span className="text-xs">Soup.</span>
+                          </label>
+                        ) : (
+                          <span className="text-xs">Soup.</span>
+                        )}
+                      </th>
+                    )}
                     {editMode && <th className="p-2 text-center">⚡</th>}
                   </tr>
                 </thead>
