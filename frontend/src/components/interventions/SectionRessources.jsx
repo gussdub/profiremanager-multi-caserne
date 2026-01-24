@@ -445,8 +445,9 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
               <Button 
                 size="sm" 
                 variant="outline"
-                onClick={() => { loadEquipesGarde(); setShowImportEquipe(true); }}
+                onClick={importerEquipeAutomatique}
                 className="bg-purple-50 border-purple-300 text-purple-700 hover:bg-purple-100"
+                title="Import automatique basé sur l'heure de l'intervention"
               >
                 📋 Importer équipe de garde
               </Button>
