@@ -20,6 +20,26 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
   const [equipesGarde, setEquipesGarde] = useState([]);
   const [showImportEquipe, setShowImportEquipe] = useState(false);
   const [primeRepasGlobale, setPrimeRepasGlobale] = useState(formData.prime_repas_globale ?? false);
+  const [interventionSettings, setInterventionSettings] = useState(null);
+  
+  // Charger les paramètres d'intervention au montage
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const response = await fetch(`${API}/interventions/settings`, {
+          headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setInterventionSettings(data);
+          console.log('📋 Paramètres intervention chargés:', data);
+        }
+      } catch (error) {
+        console.error('Erreur chargement paramètres:', error);
+      }
+    };
+    loadSettings();
+  }, [tenantSlug]);
   
   // Statuts de présence disponibles avec leur impact sur les statistiques
   const statutsPresence = [
@@ -41,44 +61,82 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
   const [manualVehicles, setManualVehicles] = useState(formData.manual_vehicles || []);
   const [manualPersonnel, setManualPersonnel] = useState(formData.manual_personnel || []);
   
-  // Calcul des primes de repas automatiques basé sur les heures de l'intervention
-  // Déjeuner: 6h-9h, Dîner: 11h-14h, Souper: 17h-20h
-  const calculerRepasAutomatiques = (heureDebut, heureFin) => {
-    if (!heureDebut || !heureFin) return { dejeuner: false, diner: false, souper: false };
-    
+  // Calculer la durée de l'intervention en heures
+  const calculerDureeIntervention = () => {
     try {
-      const getMinutes = (timeStr) => {
-        const [h, m] = timeStr.split(':').map(Number);
-        return h * 60 + (m || 0);
-      };
+      const debut = formData.xml_time_call_received;
+      // Utiliser xml_end_time ou Disponible (10-22) comme fin
+      const fin = formData.xml_end_time || formData.xml_time_available;
       
-      const debut = getMinutes(heureDebut);
-      const fin = getMinutes(heureFin);
+      if (!debut || !fin) return 0;
       
-      // Plages horaires des repas (en minutes depuis minuit)
-      const repas = {
-        dejeuner: { debut: 6 * 60, fin: 9 * 60 },   // 6h - 9h
-        diner: { debut: 11 * 60, fin: 14 * 60 },    // 11h - 14h
-        souper: { debut: 17 * 60, fin: 20 * 60 }    // 17h - 20h
-      };
+      const debutDate = new Date(debut);
+      const finDate = new Date(fin);
+      const dureeHeures = (finDate - debutDate) / (1000 * 60 * 60);
       
-      const chevauche = (repasDebut, repasFin) => {
-        // Gestion si fin < debut (intervention qui passe minuit)
-        if (fin < debut) {
-          return repasDebut <= fin || repasFin >= debut;
-        }
-        return debut < repasFin && fin > repasDebut;
-      };
-      
-      return {
-        dejeuner: chevauche(repas.dejeuner.debut, repas.dejeuner.fin),
-        diner: chevauche(repas.diner.debut, repas.diner.fin),
-        souper: chevauche(repas.souper.debut, repas.souper.fin)
-      };
+      return Math.max(0, dureeHeures);
     } catch (e) {
-      console.error('Erreur calcul repas:', e);
+      console.error('Erreur calcul durée:', e);
+      return 0;
+    }
+  };
+  
+  // Vérifier si un repas est éligible selon les paramètres
+  const checkRepasEligible = (typeRepas, heureDebut, heureFin, dureeHeures) => {
+    if (!interventionSettings) return false;
+    
+    const config = interventionSettings[`repas_${typeRepas}`];
+    if (!config || !config.actif) return false;
+    
+    // Vérifier la durée minimum
+    const dureeMin = config.duree_minimum || 0;
+    if (dureeHeures < dureeMin) {
+      console.log(`❌ ${typeRepas}: durée ${dureeHeures.toFixed(2)}h < minimum ${dureeMin}h`);
+      return false;
+    }
+    
+    // Vérifier si l'intervention chevauche l'heure du repas
+    const getMinutes = (timeStr) => {
+      if (!timeStr) return 0;
+      const [h, m] = timeStr.split(':').map(Number);
+      return h * 60 + (m || 0);
+    };
+    
+    const debutIntervention = getMinutes(heureDebut);
+    const finIntervention = getMinutes(heureFin);
+    const debutRepas = getMinutes(config.heure_debut || '00:00');
+    const finRepas = getMinutes(config.heure_fin || '23:59');
+    
+    // Gestion si fin < debut (intervention qui passe minuit)
+    let chevauche = false;
+    if (finIntervention < debutIntervention) {
+      chevauche = debutRepas <= finIntervention || finRepas >= debutIntervention;
+    } else {
+      chevauche = debutIntervention < finRepas && finIntervention > debutRepas;
+    }
+    
+    console.log(`${chevauche ? '✅' : '❌'} ${typeRepas}: intervention ${heureDebut}-${heureFin}, repas ${config.heure_debut}-${config.heure_fin}`);
+    return chevauche;
+  };
+  
+  // Calcul des primes de repas automatiques basé sur les heures et paramètres
+  const calculerRepasAutomatiques = (heureDebut, heureFin) => {
+    if (!heureDebut) return { dejeuner: false, diner: false, souper: false };
+    
+    const dureeHeures = calculerDureeIntervention();
+    console.log(`⏱️ Durée intervention: ${dureeHeures.toFixed(2)}h`);
+    
+    // Si pas de paramètres chargés, ne rien cocher
+    if (!interventionSettings) {
+      console.log('⚠️ Paramètres non chargés, pas de repas auto');
       return { dejeuner: false, diner: false, souper: false };
     }
+    
+    return {
+      dejeuner: checkRepasEligible('dejeuner', heureDebut, heureFin, dureeHeures),
+      diner: checkRepasEligible('diner', heureDebut, heureFin, dureeHeures),
+      souper: checkRepasEligible('souper', heureDebut, heureFin, dureeHeures)
+    };
   };
   
   // Mettre à jour une prime de repas pour un membre du récapitulatif
