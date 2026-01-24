@@ -948,62 +948,53 @@ const Formations = () => {
                 <div className="form-row-full">
                   <div className="form-field-modern">
                     <Label>Date de la formation *</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button 
-                          variant="outline" 
-                          style={{ width: '100%', justifyContent: 'flex-start', fontWeight: 'normal' }}
-                        >
-                          📅 {formationForm.date_debut ? format(new Date(formationForm.date_debut + 'T00:00:00'), 'dd MMMM yyyy', { locale: fr }) : 'Sélectionner une date'}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={formationForm.date_debut ? new Date(formationForm.date_debut + 'T00:00:00') : undefined}
-                          onSelect={(date) => {
-                            if (date) {
-                              const formatted = format(date, 'yyyy-MM-dd');
-                              setFormationForm({...formationForm, date_debut: formatted, date_fin: formatted});
-                            }
-                          }}
-                          locale={fr}
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <input
+                      type="date"
+                      value={formationForm.date_debut}
+                      onChange={e => setFormationForm({...formationForm, date_debut: e.target.value, date_fin: e.target.value})}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid #d1d5db',
+                        fontSize: '14px',
+                        boxSizing: 'border-box'
+                      }}
+                    />
                   </div>
                   <div className="form-field-modern">
                     <Label>Heure de début *</Label>
-                    <Input 
-                      type="text" 
-                      value={formationForm.heure_debut} 
-                      onChange={e => {
-                        let val = e.target.value.replace(/[^0-9:]/g, '');
-                        if (val.length === 4 && !val.includes(':')) {
-                          val = val.slice(0,2) + ':' + val.slice(2);
-                        }
-                        setFormationForm({...formationForm, heure_debut: val});
-                      }}
-                      placeholder="Ex: 09:00"
-                      maxLength={5}
+                    <input
+                      type="time"
+                      value={formationForm.heure_debut}
+                      onChange={e => setFormationForm({...formationForm, heure_debut: e.target.value})}
                       required
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid #d1d5db',
+                        fontSize: '14px',
+                        boxSizing: 'border-box'
+                      }}
                     />
                   </div>
                   <div className="form-field-modern">
                     <Label>Heure de fin *</Label>
-                    <Input 
-                      type="text" 
-                      value={formationForm.heure_fin} 
-                      onChange={e => {
-                        let val = e.target.value.replace(/[^0-9:]/g, '');
-                        if (val.length === 4 && !val.includes(':')) {
-                          val = val.slice(0,2) + ':' + val.slice(2);
-                        }
-                        setFormationForm({...formationForm, heure_fin: val});
-                      }}
-                      placeholder="Ex: 17:00"
-                      maxLength={5}
+                    <input
+                      type="time"
+                      value={formationForm.heure_fin}
+                      onChange={e => setFormationForm({...formationForm, heure_fin: e.target.value})}
                       required
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid #d1d5db',
+                        fontSize: '14px',
+                        boxSizing: 'border-box'
+                      }}
                     />
                   </div>
                 </div>
