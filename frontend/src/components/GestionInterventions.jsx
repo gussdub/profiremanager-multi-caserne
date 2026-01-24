@@ -1497,6 +1497,282 @@ const TabHistorique = ({ user, tenantSlug, toast, readOnly = false }) => {
 };
 
 
+// ==================== ONGLET CONFORMITÉ DSI ====================
+
+const TabConformiteDSI = ({ user, tenantSlug, toast }) => {
+  const [stats, setStats] = useState(null);
+  const [transmissions, setTransmissions] = useState([]);
+  const [retards, setRetards] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filtreStatut, setFiltreStatut] = useState('');
+  const [selectedIntervention, setSelectedIntervention] = useState(null);
+  const [erreurDetails, setErreurDetails] = useState(null);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [sending, setSending] = useState({});
+
+  const API = `${BACKEND_URL}/api/${tenantSlug}`;
+
+  const getToken = () => {
+    return localStorage.getItem(`${tenantSlug}_token`) || localStorage.getItem('token');
+  };
+
+  const getTenantId = () => {
+    const token = getToken();
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.tenant_id;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  };
+
+  const tenantId = getTenantId();
+
+  useEffect(() => {
+    if (!tenantId) return;
+    fetchData();
+  }, [tenantId, filtreStatut]);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [statsRes, listRes, retardsRes] = await Promise.all([
+        fetch(`${BACKEND_URL}/api/dsi/transmissions/stats/${tenantId}`),
+        fetch(`${BACKEND_URL}/api/dsi/transmissions/list/${tenantId}?limit=50${filtreStatut ? `&statut=${filtreStatut}` : ''}`),
+        fetch(`${BACKEND_URL}/api/dsi/transmissions/retards/${tenantId}`)
+      ]);
+
+      if (statsRes.ok) setStats(await statsRes.json());
+      if (listRes.ok) setTransmissions(await listRes.json());
+      if (retardsRes.ok) setRetards(await retardsRes.json());
+    } catch (error) {
+      console.error('Erreur chargement données DSI:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const voirErreurs = async (intervention) => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/dsi/transmissions/erreurs/${intervention.id}?tenant_id=${tenantId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSelectedIntervention({ ...intervention, tenant_slug: tenantSlug });
+        setErreurDetails(data.erreurs);
+        setShowErrorModal(true);
+      }
+    } catch (error) {
+      console.error('Erreur chargement erreurs:', error);
+    }
+  };
+
+  const envoyerRapport = async (interventionId) => {
+    setSending(prev => ({ ...prev, [interventionId]: true }));
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/dsi/transmissions/envoyer/${interventionId}?tenant_id=${tenantId}`, { method: 'POST' });
+      const data = await res.json();
+      
+      if (data.success) {
+        toast?.({ title: '✅ Succès', description: `Rapport accepté! Confirmation: ${data.numero_confirmation}` });
+      } else {
+        toast?.({ title: '❌ Erreur', description: 'Rapport rejeté par le MSP', variant: 'destructive' });
+      }
+      fetchData();
+    } catch (error) {
+      console.error('Erreur envoi:', error);
+      toast?.({ title: 'Erreur', description: 'Erreur lors de l\'envoi', variant: 'destructive' });
+    } finally {
+      setSending(prev => ({ ...prev, [interventionId]: false }));
+    }
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '-';
+    try {
+      return new Date(dateStr).toLocaleDateString('fr-CA');
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const StatusBadge = ({ statut }) => {
+    const config = {
+      brouillon: { icon: '🔵', label: 'En brouillon', bg: 'bg-blue-100', text: 'text-blue-800' },
+      pret_envoi: { icon: '🟡', label: 'Prêt pour envoi', bg: 'bg-yellow-100', text: 'text-yellow-800' },
+      envoye: { icon: '🟡', label: 'En attente', bg: 'bg-yellow-100', text: 'text-yellow-800' },
+      accepte: { icon: '🟢', label: 'Accepté MSP', bg: 'bg-green-100', text: 'text-green-800' },
+      erreur: { icon: '🔴', label: 'Erreur', bg: 'bg-red-100', text: 'text-red-800' }
+    };
+    const s = config[statut] || config.brouillon;
+    return (
+      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${s.bg} ${s.text}`}>
+        {s.icon} {s.label}
+      </span>
+    );
+  };
+
+  const ConformityGauge = ({ taux }) => {
+    const circumference = 2 * Math.PI * 45;
+    const offset = circumference - (taux / 100) * circumference;
+    const color = taux >= 90 ? '#22c55e' : taux >= 70 ? '#f59e0b' : '#ef4444';
+    return (
+      <div className="relative w-28 h-28">
+        <svg className="w-full h-full transform -rotate-90">
+          <circle cx="56" cy="56" r="45" stroke="#e5e7eb" strokeWidth="8" fill="none" />
+          <circle cx="56" cy="56" r="45" stroke={color} strokeWidth="8" fill="none" strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-xl font-bold" style={{ color }}>{taux}%</span>
+        </div>
+      </div>
+    );
+  };
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div></div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Alerte retards */}
+      {retards.length > 0 && (
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+          <div className="flex items-center">
+            <span className="text-2xl mr-3">⚠️</span>
+            <div>
+              <p className="font-bold text-red-800">Attention : {retards.length} rapport(s) de plus de 48h non transmis au MSP</p>
+              <p className="text-sm text-red-600">{retards.map(r => r.numero_rapport).join(', ')}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Widgets statistiques */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 flex flex-col items-center">
+          <ConformityGauge taux={stats?.taux_conformite || 100} />
+          <p className="text-sm font-medium text-gray-600 mt-2">Taux conformité</p>
+        </div>
+        <div className="bg-white rounded-lg p-4 border-l-4 border-blue-500">
+          <p className="text-3xl font-bold text-blue-600">{stats?.brouillon || 0}</p>
+          <p className="text-sm text-gray-500">🔵 En brouillon</p>
+        </div>
+        <div className="bg-white rounded-lg p-4 border-l-4 border-yellow-500">
+          <p className="text-3xl font-bold text-yellow-600">{stats?.pret_envoi || 0}</p>
+          <p className="text-sm text-gray-500">🟡 Prêts pour envoi</p>
+        </div>
+        <div className="bg-white rounded-lg p-4 border-l-4 border-green-500">
+          <p className="text-3xl font-bold text-green-600">{stats?.accepte || 0}</p>
+          <p className="text-sm text-gray-500">🟢 Acceptés MSP</p>
+        </div>
+        <div className="bg-white rounded-lg p-4 border-l-4 border-red-500">
+          <p className="text-3xl font-bold text-red-600">{stats?.erreur || 0}</p>
+          <p className="text-sm text-gray-500">🔴 Erreurs</p>
+        </div>
+      </div>
+
+      {/* Tableau des transmissions */}
+      <div className="bg-white rounded-lg shadow">
+        <div className="p-4 border-b bg-gray-50 flex items-center justify-between flex-wrap gap-4">
+          <h3 className="text-lg font-semibold">📋 Suivi des Transmissions DSI</h3>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600">Filtrer:</label>
+            <select value={filtreStatut} onChange={(e) => setFiltreStatut(e.target.value)} className="border rounded px-3 py-1 text-sm">
+              <option value="">Tous</option>
+              <option value="brouillon">🔵 En brouillon</option>
+              <option value="pret_envoi">🟡 Prêt pour envoi</option>
+              <option value="accepte">🟢 Accepté</option>
+              <option value="erreur">🔴 Erreur</option>
+            </select>
+            <button onClick={fetchData} className="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200 text-sm">🔄</button>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-100 text-left">
+              <tr>
+                <th className="p-3">Date</th>
+                <th className="p-3">No. Rapport</th>
+                <th className="p-3">Adresse</th>
+                <th className="p-3">Statut</th>
+                <th className="p-3">No. Confirmation MSP</th>
+                <th className="p-3 text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transmissions.length === 0 ? (
+                <tr><td colSpan={6} className="p-8 text-center text-gray-500">Aucune intervention trouvée</td></tr>
+              ) : (
+                transmissions.map((trans) => (
+                  <tr key={trans.id} className="border-b hover:bg-gray-50">
+                    <td className="p-3">{formatDate(trans.date)}</td>
+                    <td className="p-3 font-medium">{trans.numero_rapport}</td>
+                    <td className="p-3 max-w-xs truncate" title={trans.adresse}>{trans.adresse || '-'}</td>
+                    <td className="p-3"><StatusBadge statut={trans.statut} /></td>
+                    <td className="p-3 font-mono text-sm">{trans.numero_confirmation_msp || '--'}</td>
+                    <td className="p-3 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        {trans.statut === 'accepte' && (
+                          <button onClick={() => window.location.href = `/${tenantSlug}/interventions/${trans.id}`} className="text-blue-600 hover:text-blue-800 text-sm">👁️ Voir</button>
+                        )}
+                        {trans.statut === 'erreur' && (
+                          <button onClick={() => voirErreurs(trans)} className="text-red-600 hover:text-red-800 text-sm">🛠️ Réparer</button>
+                        )}
+                        {(trans.statut === 'pret_envoi' || trans.statut === 'envoye') && (
+                          <button onClick={() => envoyerRapport(trans.id)} disabled={sending[trans.id]} className="text-blue-600 hover:text-blue-800 text-sm">{sending[trans.id] ? '⏳' : '🚀'} Envoyer</button>
+                        )}
+                        {trans.statut === 'brouillon' && trans.requiert_dsi && (
+                          <button onClick={() => window.location.href = `/${tenantSlug}/interventions/${trans.id}`} className="text-gray-600 hover:text-gray-800 text-sm">✏️ Compléter</button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Modal d'erreur */}
+      {showErrorModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-auto">
+            <div className="p-4 border-b bg-red-50">
+              <h3 className="text-lg font-bold text-red-800">⚠️ Erreur de transmission MSP</h3>
+              <p className="text-sm text-red-600 mt-1">Rapport #{selectedIntervention?.numero_rapport}</p>
+            </div>
+            <div className="p-4 space-y-4">
+              {erreurDetails && erreurDetails.length > 0 ? (
+                erreurDetails.map((err, idx) => (
+                  <div key={idx} className="bg-red-50 p-4 rounded-lg border border-red-200">
+                    <p className="font-medium text-red-800">❌ {err.message_utilisateur}</p>
+                    <p className="text-sm text-red-600 mt-1">Code: {err.code}</p>
+                    <div className="mt-3 bg-white p-3 rounded border">
+                      <p className="text-sm font-medium text-gray-700">💡 Suggestion:</p>
+                      <p className="text-sm text-gray-600">{err.suggestion}</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500">Aucune erreur détaillée disponible.</p>
+              )}
+            </div>
+            <div className="p-4 border-t flex gap-2 justify-end">
+              <button onClick={() => setShowErrorModal(false)} className="px-4 py-2 border rounded hover:bg-gray-100">Fermer</button>
+              <button onClick={() => window.location.href = `/${tenantSlug}/interventions/${selectedIntervention?.id}`} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">🛠️ Corriger le rapport</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+
 // ==================== ONGLET PARAMETRES ====================
 
 const TabParametres = ({ user, tenantSlug, toast }) => {
