@@ -17223,6 +17223,16 @@ async def import_disponibilites_csv(
                 })
                 continue
             
+            # SÉCURITÉ: Vérifier le blocage pour ce mois
+            mois_str = debut_dt.strftime("%Y-%m")
+            if is_month_blocked(mois_str):
+                results["errors"].append({
+                    "ligne": index + 2,
+                    "erreur": f"Mois {mois_str} bloqué - date limite dépassée"
+                })
+                results["blocked"] += 1
+                continue
+            
             # 3. Mapper la sélection au statut (avec valeur par défaut "Disponible")
             selection = dispo_data.get("selection", dispo_data.get("Sélection", "Disponible")).strip().lower()
             
