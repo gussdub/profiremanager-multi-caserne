@@ -1290,12 +1290,6 @@ const AppLayout = () => {
             <GestionInterventions user={user} tenantSlug={tenantSlug} />
           </Suspense>
         );
-      case 'dsi-conformite':
-        return (
-          <Suspense fallback={<LoadingComponent />}>
-            <DSIComplianceDashboard tenantSlug={tenantSlug} />
-          </Suspense>
-        );
       case 'paie':
         return (
           <Suspense fallback={<LoadingComponent />}>
