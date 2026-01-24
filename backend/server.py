@@ -41221,7 +41221,8 @@ async def fetch_pay_codes_from_api(
 # Include routers in the main app
 # IMPORTANT: L'ordre détermine la priorité des routes
 # Les modules extraits sont ajoutés EN PREMIER pour être prioritaires sur api_router
-app.include_router(personnel_router, prefix="/api")  # Module Personnel (prioritaire)
+app.include_router(personnel_router, prefix="/api")  # Module Personnel
+app.include_router(disponibilites_router, prefix="/api")  # Module Disponibilités
 app.include_router(api_router)  # Routes principales (server.py)
 app.include_router(pwa_router, prefix="/api")
 app.include_router(dsi_router, prefix="/api")
