@@ -623,7 +623,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({ ...intervention });
   const [referenceData, setReferenceData] = useState({ 
-    natures: [], causes: [], sources_chaleur: [], materiaux: [], categories_batiment: [] 
+    natures: [], causes: [], sources_chaleur: [], materiaux: [], facteurs_allumage: [], usages_batiment: [], categories_batiment: [] 
   });
   const [loading, setLoading] = useState(false);
   const [vehicles, setVehicles] = useState([]);
