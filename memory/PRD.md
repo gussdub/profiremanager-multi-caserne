@@ -128,9 +128,11 @@ dsi_categories_pertes  - 2 docs
 - [ ] Téléchargement du fichier XML DSI généré
 
 ### P2 - Moyen terme (Refactorisation en cours)
-- [x] Créer modules routes: personnel.py, disponibilites.py, planning.py, formations.py
-- [ ] Activer et tester chaque module individuellement
-- [ ] Supprimer le code dupliqué de server.py après activation
+- [x] Créer fichier dependencies.py avec dépendances partagées
+- [x] Créer et activer module personnel.py (5 routes)
+- [x] Créer et activer module disponibilites.py (4 routes)
+- [ ] Activer et tester modules planning.py et formations.py
+- [ ] Supprimer le code dupliqué de server.py après validation
 - [ ] Intégration XSD officiel du MSP (en attente de réception)
 - [ ] Transmission SOAP au serveur MSP (certificat SSL requis)
 - [ ] Tests dans la Sandbox MSP
