@@ -6141,19 +6141,22 @@ async def import_users_csv(
     return results
 
 
+# ============== ROUTES MIGRÉES VERS routes/personnel.py ==============
+# Les routes suivantes sont maintenant gérées par le module routes/personnel.py
+# GET  /{tenant_slug}/users - Liste utilisateurs
+# GET  /{tenant_slug}/users/{user_id} - Détail utilisateur  
+# POST /{tenant_slug}/users - Créer utilisateur
+# PUT  /{tenant_slug}/users/{user_id} - Modifier utilisateur
+# DELETE /{tenant_slug}/users/{user_id} - Supprimer utilisateur
+# =====================================================================
 
-@api_router.get("/{tenant_slug}/users", response_model=List[User])
-async def get_users(tenant_slug: str, current_user: User = Depends(get_current_user)):
-    # Tous les utilisateurs authentifiés peuvent voir la liste des users (lecture seule)
-    # Les employés ont besoin de voir les noms dans le Planning
-    
-    # Vérifier le tenant
-    tenant = await get_tenant_from_slug(tenant_slug)
-    
-    # Filtrer par tenant_id
-    users = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
-    cleaned_users = [clean_mongo_doc(user) for user in users]
-    return [User(**user) for user in cleaned_users]
+# Route legacy commentée - migrée vers routes/personnel.py
+# @api_router.get("/{tenant_slug}/users", response_model=List[User])
+# async def get_users(tenant_slug: str, current_user: User = Depends(get_current_user)):
+#     tenant = await get_tenant_from_slug(tenant_slug)
+#     users = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+#     cleaned_users = [clean_mongo_doc(user) for user in users]
+#     return [User(**user) for user in cleaned_users]
 
 @api_router.get("/{tenant_slug}/users/{user_id}", response_model=User)
 async def get_user(tenant_slug: str, user_id: str, current_user: User = Depends(get_current_user)):
