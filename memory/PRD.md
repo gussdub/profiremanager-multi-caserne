@@ -95,10 +95,11 @@ dsi_categories_pertes  - 2 docs
 ├── backend/
 │   ├── routes/
 │   │   ├── __init__.py           # Documentation modules
+│   │   ├── dependencies.py       # Dépendances partagées (db, auth, helpers)
 │   │   ├── dsi.py                # API DSI (ACTIF)
 │   │   ├── dsi_transmissions.py  # Conformité DSI (ACTIF)
-│   │   ├── personnel.py          # Gestion users (PRÊT)
-│   │   ├── disponibilites.py     # Disponibilités (PRÊT)
+│   │   ├── personnel.py          # Gestion users (ACTIF - 5 routes)
+│   │   ├── disponibilites.py     # Disponibilités (ACTIF - 4 routes)
 │   │   ├── planning.py           # Planning (PRÊT)
 │   │   ├── formations.py         # Formations (PRÊT)
 │   │   └── paie.py               # Module Paie (PRÊT)
