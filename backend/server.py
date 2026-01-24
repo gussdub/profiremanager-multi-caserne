@@ -16997,12 +16997,74 @@ async def resolve_disponibilite_conflict(
     }
 
 @api_router.put("/{tenant_slug}/disponibilites/{user_id}")
+@api_router.put("/{tenant_slug}/disponibilites/{user_id}")
 async def update_user_disponibilites(tenant_slug: str, user_id: str, disponibilites: List[DisponibiliteCreate], current_user: User = Depends(get_current_user)):
     if current_user.role not in ["admin", "superviseur"] and current_user.id != user_id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # SÉCURITÉ: Vérifier le blocage des disponibilités pour chaque mois concerné
+    if disponibilites:
+        mois_concernes = set()
+        for dispo in disponibilites:
+            # Extraire le mois de la date de début
+            date_debut = dispo.date_debut
+            if isinstance(date_debut, str):
+                try:
+                    date_debut = datetime.fromisoformat(date_debut.replace('Z', '+00:00'))
+                except:
+                    continue
+            if hasattr(date_debut, 'year') and hasattr(date_debut, 'month'):
+                mois_concernes.add(f"{date_debut.year}-{str(date_debut.month).zfill(2)}")
+        
+        # Vérifier le blocage pour chaque mois
+        for mois in mois_concernes:
+            # Récupérer les paramètres de blocage
+            params = await db.parametres_disponibilites.find_one({"tenant_id": tenant.id})
+            if params and params.get("blocage_dispos_active", False):
+                from datetime import date as date_type
+                today = datetime.now(timezone.utc).date()
+                jour_blocage = params.get("jour_blocage_dispos", 15)
+                exceptions_admin = params.get("exceptions_admin_superviseur", True)
+                
+                # Parser le mois
+                mois_parts = mois.split("-")
+                mois_annee = int(mois_parts[0])
+                mois_mois = int(mois_parts[1])
+                
+                # Calculer si le mois est bloqué
+                try:
+                    date_blocage = date_type(today.year, today.month, jour_blocage)
+                except ValueError:
+                    import calendar
+                    dernier_jour = calendar.monthrange(today.year, today.month)[1]
+                    date_blocage = date_type(today.year, today.month, min(jour_blocage, dernier_jour))
+                
+                # Mois suivant = mois bloqué après la date limite
+                if today.month == 12:
+                    mois_bloque = 1
+                    annee_mois_bloque = today.year + 1
+                else:
+                    mois_bloque = today.month + 1
+                    annee_mois_bloque = today.year
+                
+                est_apres_date_limite = today > date_blocage
+                mois_cible_est_passe = (mois_annee < today.year) or (mois_annee == today.year and mois_mois <= today.month)
+                mois_cible_est_le_mois_bloque = (mois_annee == annee_mois_bloque and mois_mois == mois_bloque)
+                
+                est_bloque = mois_cible_est_passe or (est_apres_date_limite and mois_cible_est_le_mois_bloque)
+                
+                # Exception pour admin/superviseur
+                if est_bloque and exceptions_admin and current_user.role in ["admin", "superviseur"]:
+                    est_bloque = False
+                
+                if est_bloque:
+                    raise HTTPException(
+                        status_code=403, 
+                        detail=f"La saisie des disponibilités pour {mois} est bloquée. Date limite dépassée."
+                    )
     
     # Delete existing disponibilités for this user dans ce tenant
     await db.disponibilites.delete_many({"user_id": user_id, "tenant_id": tenant.id})
