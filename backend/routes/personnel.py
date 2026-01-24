@@ -235,15 +235,25 @@ async def update_user(
     if current_user.role != "admin" and current_user.id != user_id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    # Préparer les données de mise à jour
-    update_data = {k: v for k, v in user_update.dict().items() if v is not None}
+    # Préparer les données de mise à jour (seulement les champs fournis)
+    update_data = {k: v for k, v in user_update.dict(exclude_unset=True).items() if v is not None}
     
     if not update_data:
         raise HTTPException(status_code=400, detail="Aucune donnée à mettre à jour")
     
-    # Synchroniser formations vers competences
+    # SYNCHRONISATION BIDIRECTIONNELLE formations/competences
     if "formations" in update_data:
         update_data["competences"] = update_data["formations"]
+        logging.info(f"🔄 [SYNC] Copie formations → competences: {update_data['formations']}")
+    elif "competences" in update_data:
+        update_data["formations"] = update_data["competences"]
+        logging.info(f"🔄 [SYNC] Copie competences → formations: {update_data['competences']}")
+    
+    # Gestion du mot de passe si fourni
+    if "mot_de_passe" in update_data and update_data["mot_de_passe"]:
+        update_data["mot_de_passe_hash"] = get_password_hash(update_data.pop("mot_de_passe"))
+    elif "mot_de_passe" in update_data:
+        update_data.pop("mot_de_passe")
     
     update_data["updated_at"] = datetime.now(timezone.utc)
     
@@ -257,8 +267,18 @@ async def update_user(
     
     # Récupérer l'utilisateur mis à jour
     user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
+    user_cleaned = clean_mongo_doc(user)
     
-    return User(**clean_mongo_doc(user))
+    # Créer une activité
+    await creer_activite(
+        tenant_id=tenant.id,
+        type_activite="personnel_modification",
+        description=f"✏️ {current_user.prenom} {current_user.nom} a modifié le profil de {user_cleaned.get('prenom')} {user_cleaned.get('nom')}",
+        user_id=current_user.id,
+        user_nom=f"{current_user.prenom} {current_user.nom}"
+    )
+    
+    return User(**user_cleaned)
 
 
 @router.delete("/{tenant_slug}/users/{user_id}")
