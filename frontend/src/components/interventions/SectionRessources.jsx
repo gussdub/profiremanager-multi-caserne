@@ -482,14 +482,31 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
   const addPersonnelToVehicle = () => {
     if (selectedPersonnel.length === 0) return;
     
+    // Calculer les repas éligibles pour pré-cocher
+    const heureDebut = getHeureFromDatetime(formData.xml_time_call_received);
+    const heureFin = getHeureFromDatetime(formData.xml_end_time || formData.xml_time_available);
+    const repasAuto = calculerRepasAutomatiques(heureDebut, heureFin);
+    
     const newPersonnel = selectedPersonnel.map(userId => {
       const user = users.find(u => u.id === userId);
       return {
         id: `manual_${Date.now()}_${userId}`,
         user_id: userId,
         user_name: user ? `${user.prenom} ${user.nom}` : userId,
+        nom: user?.nom || '',
+        prenom: user?.prenom || '',
+        grade: user?.grade || '',
+        type_emploi: user?.type_emploi || '',
+        fonction_superieur: user?.fonction_superieur || false,
         vehicle_number: selectedVehicle?.xml_vehicle_number || null,
         role_on_scene: 'Pompier',
+        statut_presence: 'present',
+        prime_repas: true,
+        // Pré-cocher les repas éligibles
+        prime_dejeuner: repasAuto.dejeuner,
+        prime_diner: repasAuto.diner,
+        prime_souper: repasAuto.souper,
+        utilise_fonction_superieure: false,
         is_manual: true
       };
     });
