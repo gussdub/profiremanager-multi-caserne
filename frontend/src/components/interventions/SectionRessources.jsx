@@ -42,6 +42,82 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
   const [manualPersonnel, setManualPersonnel] = useState(formData.manual_personnel || []);
   
   // Charger les équipes de garde
+  // Import automatique de l'équipe de garde basé sur l'heure de l'intervention
+  const importerEquipeAutomatique = async () => {
+    try {
+      const dateIntervention = formData.xml_time_call_received?.split('T')[0] || new Date().toISOString().split('T')[0];
+      
+      // Extraire l'heure de l'intervention
+      let heureIntervention = null;
+      if (formData.xml_time_call_received) {
+        const timePart = formData.xml_time_call_received.split('T')[1];
+        if (timePart) {
+          heureIntervention = timePart.substring(0, 5); // HH:MM
+        }
+      }
+      
+      // Appeler l'API avec date et heure pour détection automatique
+      let url = `${API}/interventions/equipes-garde?date=${dateIntervention}`;
+      if (heureIntervention) {
+        url += `&heure=${heureIntervention}`;
+      }
+      
+      console.log(`🕐 Import équipe automatique - Date: ${dateIntervention}, Heure: ${heureIntervention}`);
+      
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const equipes = data.equipes || [];
+        const typeGardeDetecte = data.type_garde_detecte;
+        
+        console.log(`✅ Équipes trouvées: ${equipes.length}, Type garde détecté: ${typeGardeDetecte}`);
+        
+        if (equipes.length === 0) {
+          alert('Aucune équipe de garde configurée pour cette date.');
+          return;
+        }
+        
+        // Importer automatiquement toutes les équipes trouvées
+        let totalMembres = 0;
+        equipes.forEach(equipe => {
+          const membresAImporter = equipe.membres.map(m => ({
+            id: m.id,
+            nom: m.nom,
+            prenom: m.prenom,
+            grade: m.grade,
+            type_emploi: m.type_emploi,
+            statut_presence: 'present',
+            prime_repas: true,
+            equipe_origine: equipe.equipe_nom
+          }));
+          
+          // Fusionner avec le personnel existant (éviter les doublons)
+          const personnelExistant = manualPersonnel.map(p => p.id);
+          const nouveauxMembres = membresAImporter.filter(m => !personnelExistant.includes(m.id));
+          
+          if (nouveauxMembres.length > 0) {
+            const updated = [...manualPersonnel, ...nouveauxMembres];
+            setManualPersonnel(updated);
+            setFormData(prev => ({ ...prev, manual_personnel: updated }));
+            totalMembres += nouveauxMembres.length;
+          }
+        });
+        
+        const typeGardeMsg = typeGardeDetecte ? ` (garde ${typeGardeDetecte})` : '';
+        alert(`✅ ${totalMembres} membre(s) importé(s)${typeGardeMsg}`);
+      } else {
+        console.error('Erreur API équipes-garde:', response.status);
+        alert('Erreur lors du chargement des équipes de garde');
+      }
+    } catch (error) {
+      console.error('Erreur import équipe automatique:', error);
+      alert('Erreur lors de l\'import de l\'équipe');
+    }
+  };
+  
   const loadEquipesGarde = async () => {
     try {
       const dateIntervention = formData.xml_time_call_received?.split('T')[0] || new Date().toISOString().split('T')[0];
@@ -57,7 +133,7 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
     }
   };
   
-  // Importer une équipe complète
+  // Importer une équipe complète (manuel)
   const importerEquipe = (equipe) => {
     const membresAImporter = equipe.membres.map(m => ({
       id: m.id,
