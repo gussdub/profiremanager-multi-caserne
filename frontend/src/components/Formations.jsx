@@ -366,8 +366,14 @@ const Formations = () => {
   
   const handleValiderPresence = async (userId, statut) => {
     try {
-      await apiPut(tenantSlug, `/formations/${selectedFormation.id}/presence/${userId}`, { statut, notes: '' });
-      toast({ title: "Succès", description: "Présence validée" });
+      // Envoyer les heures de la formation pour les créditer
+      const heures = selectedFormation?.duree_heures || 0;
+      await apiPut(tenantSlug, `/formations/${selectedFormation.id}/presence/${userId}`, { 
+        statut, 
+        heures_creditees: statut === 'present' ? heures : 0,
+        notes: '' 
+      });
+      toast({ title: "Succès", description: `Présence validée${statut === 'present' ? ` (${heures}h créditées)` : ''}` });
       loadInscriptions(selectedFormation.id);
     } catch (error) {
       toast({ title: "Erreur", description: error.response?.data?.detail || "Erreur", variant: "destructive" });
