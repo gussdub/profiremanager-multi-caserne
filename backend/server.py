@@ -36697,33 +36697,38 @@ async def get_intervention_reference_data(
     tenant_slug: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Récupère les données de référence (natures, causes, etc.)"""
-    natures = await db.intervention_natures.find(
-        {"actif": True}, {"_id": 0}
-    ).to_list(200)
+    """Récupère les données de référence (natures, causes, etc.) depuis les tables DSI"""
+    # Utiliser les nouvelles collections DSI
+    natures = await db.dsi_natures_sinistre.find({}, {"_id": 0}).to_list(200)
+    causes = await db.dsi_causes.find({}, {"_id": 0}).to_list(200)
+    sources = await db.dsi_sources_chaleur.find({}, {"_id": 0}).to_list(200)
+    materiaux = await db.dsi_materiaux.find({}, {"_id": 0}).to_list(200)
+    facteurs = await db.dsi_facteurs_allumage.find({}, {"_id": 0}).to_list(200)
+    usages = await db.dsi_usages_batiment.find({}, {"_id": 0}).to_list(200)
     
-    causes = await db.intervention_causes.find(
-        {"actif": True}, {"_id": 0}
-    ).to_list(200)
-    
-    sources = await db.intervention_sources_chaleur.find(
-        {"actif": True}, {"_id": 0}
-    ).to_list(200)
-    
-    materiaux = await db.intervention_materiaux.find(
-        {"actif": True}, {"_id": 0}
-    ).to_list(200)
-    
-    categories = await db.intervention_categories_batiment.find(
-        {"actif": True}, {"_id": 0}
-    ).to_list(200)
+    # Formater les données pour le frontend (ajouter 'id' basé sur 'code')
+    for n in natures:
+        n['id'] = n.get('code', '')
+        n['libelle'] = n.get('libelle', '')
+    for c in causes:
+        c['id'] = c.get('code', '')
+    for s in sources:
+        s['id'] = s.get('code', '')
+    for m in materiaux:
+        m['id'] = m.get('code', '')
+    for f in facteurs:
+        f['id'] = f.get('code', '')
+    for u in usages:
+        u['id'] = u.get('code', '')
     
     return {
         "natures": natures,
         "causes": causes,
         "sources_chaleur": sources,
         "materiaux": materiaux,
-        "categories_batiment": categories
+        "facteurs_allumage": facteurs,
+        "usages_batiment": usages,
+        "categories_batiment": usages  # Alias pour compatibilité
     }
 
 
