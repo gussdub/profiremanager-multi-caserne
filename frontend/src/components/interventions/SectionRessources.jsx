@@ -107,22 +107,35 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
     try {
       const dateIntervention = formData.xml_time_call_received?.split('T')[0] || new Date().toISOString().split('T')[0];
       
-      // Extraire l'heure de l'intervention
-      let heureIntervention = null;
+      // Extraire l'heure de début de l'intervention
+      let heureDebut = null;
       if (formData.xml_time_call_received) {
         const timePart = formData.xml_time_call_received.split('T')[1];
         if (timePart) {
-          heureIntervention = timePart.substring(0, 5); // HH:MM
+          heureDebut = timePart.substring(0, 5); // HH:MM
         }
       }
       
-      // Appeler l'API avec date et heure pour détection automatique
-      let url = `${API}/interventions/equipes-garde?date=${dateIntervention}`;
-      if (heureIntervention) {
-        url += `&heure=${heureIntervention}`;
+      // Extraire l'heure de fin de l'intervention
+      let heureFin = null;
+      if (formData.xml_end_time) {
+        const timePart = formData.xml_end_time.split('T')[1];
+        if (timePart) {
+          heureFin = timePart.substring(0, 5); // HH:MM
+        }
       }
       
-      console.log(`🕐 Import équipe automatique - Date: ${dateIntervention}, Heure: ${heureIntervention}`);
+      // Calculer les repas automatiques
+      const repasAuto = calculerRepasAutomatiques(heureDebut, heureFin || heureDebut);
+      console.log(`🍽️ Repas automatiques détectés:`, repasAuto);
+      
+      // Appeler l'API avec date et heure pour détection automatique
+      let url = `${API}/interventions/equipes-garde?date=${dateIntervention}`;
+      if (heureDebut) {
+        url += `&heure=${heureDebut}`;
+      }
+      
+      console.log(`🕐 Import équipe automatique - Date: ${dateIntervention}, Heure: ${heureDebut}`);
       
       const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${getToken()}` }
