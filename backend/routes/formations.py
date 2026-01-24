@@ -207,6 +207,10 @@ async def create_formation(
     formation_dict["tenant_id"] = tenant.id
     formation_dict["places_restantes"] = formation.places_max
     
+    # Si date_fin est vide, utiliser date_debut
+    if not formation_dict.get("date_fin"):
+        formation_dict["date_fin"] = formation_dict.get("date_debut", "")
+    
     # CALCUL AUTOMATIQUE de duree_heures depuis heure_debut et heure_fin
     if formation.heure_debut and formation.heure_fin:
         try:
