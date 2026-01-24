@@ -483,43 +483,50 @@ const Dashboard = () => {
             gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', 
             gap: '1rem'
           }}>
-            {/* Demandes de congés */}
+            {/* Personnes en congé/maladie */}
             <Card>
               <CardHeader>
                 <CardTitle style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span>📝 Demandes de congés en attente</span>
-                  {demandesConges.length > 0 && (
+                  <span>🏥 Personnes absentes</span>
+                  {personnesAbsentes.length > 0 && (
                     <span style={{
-                      background: '#fef2f2',
-                      color: '#dc2626',
+                      background: '#fef3c7',
+                      color: '#d97706',
                       padding: '0.25rem 0.5rem',
                       borderRadius: '999px',
                       fontSize: '0.75rem',
                       fontWeight: '600'
                     }}>
-                      {demandesConges.length}
+                      {personnesAbsentes.length}
                     </span>
                   )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {demandesConges.length > 0 ? (
+                {personnesAbsentes.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    {demandesConges.map((demande, idx) => (
+                    {personnesAbsentes.map((absence, idx) => (
                       <div key={idx} style={{
                         padding: '0.75rem',
-                        background: '#f8fafc',
+                        background: '#fefce8',
                         borderRadius: '8px',
-                        borderLeft: '3px solid #3b82f6'
+                        borderLeft: `3px solid ${absence.type_conge === 'maladie' ? '#ef4444' : '#f59e0b'}`
                       }}>
                         <div style={{ fontWeight: '500', marginBottom: '0.25rem' }}>
-                          {demande.user_nom || demande.nom_employe || 'Employé'}
+                          {absence.user_nom || absence.nom_employe || 'Employé'}
                         </div>
                         <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
-                          {formatDate(demande.date_debut)} → {formatDate(demande.date_fin)}
+                          {formatDate(absence.date_debut)} → {formatDate(absence.date_fin)}
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.25rem' }}>
-                          {demande.type_conge || demande.motif || 'Congé'}
+                        <div style={{ 
+                          fontSize: '0.75rem', 
+                          color: absence.type_conge === 'maladie' ? '#dc2626' : '#d97706',
+                          marginTop: '0.25rem',
+                          fontWeight: '500'
+                        }}>
+                          {absence.type_conge === 'maladie' ? '🤒 Maladie' : 
+                           absence.type_conge === 'vacances' ? '🌴 Vacances' :
+                           absence.type_conge || absence.motif || 'Congé'}
                         </div>
                       </div>
                     ))}
@@ -531,7 +538,7 @@ const Dashboard = () => {
                     color: '#9ca3af'
                   }}>
                     <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>✅</div>
-                    Aucune demande en attente
+                    Tout le monde est présent
                   </div>
                 )}
               </CardContent>
