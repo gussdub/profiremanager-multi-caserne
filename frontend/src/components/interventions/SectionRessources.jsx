@@ -17,7 +17,6 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
   const [gardeInterneUsers, setGardeInterneUsers] = useState([]);
   const [equipesGarde, setEquipesGarde] = useState([]);
   const [showImportEquipe, setShowImportEquipe] = useState(false);
-  const [primeRepasGlobale, setPrimeRepasGlobale] = useState(formData.prime_repas_globale ?? false);
   const [interventionSettings, setInterventionSettings] = useState(null);
   const [sortByVehicle, setSortByVehicle] = useState(false);
   
