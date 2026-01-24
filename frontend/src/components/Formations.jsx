@@ -949,39 +949,27 @@ const Formations = () => {
                   <div className="form-field-modern">
                     <Label>Date de la formation *</Label>
                     <Input 
-                      type="text" 
+                      type="date" 
                       value={formationForm.date_debut} 
                       onChange={e => setFormationForm({...formationForm, date_debut: e.target.value})}
-                      placeholder="AAAA-MM-JJ"
-                      pattern="\d{4}-\d{2}-\d{2}"
-                      onFocus={e => e.target.type = 'date'}
-                      onBlur={e => { if (!e.target.value) e.target.type = 'text'; }}
                       required
                     />
                   </div>
                   <div className="form-field-modern">
                     <Label>Heure de début *</Label>
                     <Input 
-                      type="text" 
+                      type="time" 
                       value={formationForm.heure_debut} 
                       onChange={e => setFormationForm({...formationForm, heure_debut: e.target.value})}
-                      placeholder="HH:MM (ex: 09:00)"
-                      pattern="\d{2}:\d{2}"
-                      onFocus={e => e.target.type = 'time'}
-                      onBlur={e => { if (!e.target.value) e.target.type = 'text'; }}
                       required
                     />
                   </div>
                   <div className="form-field-modern">
                     <Label>Heure de fin *</Label>
                     <Input 
-                      type="text" 
+                      type="time" 
                       value={formationForm.heure_fin} 
                       onChange={e => setFormationForm({...formationForm, heure_fin: e.target.value})}
-                      placeholder="HH:MM (ex: 17:00)"
-                      pattern="\d{2}:\d{2}"
-                      onFocus={e => e.target.type = 'time'}
-                      onBlur={e => { if (!e.target.value) e.target.type = 'text'; }}
                       required
                     />
                   </div>
