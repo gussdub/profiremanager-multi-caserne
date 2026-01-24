@@ -465,8 +465,8 @@ const Dashboard = () => {
 
             <Card style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>
               <CardContent style={{ padding: '1.25rem', color: 'white' }}>
-                <div style={{ fontSize: '2rem', fontWeight: '700' }}>{demandesConges.length}</div>
-                <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>📝 Congés à approuver</div>
+                <div style={{ fontSize: '2rem', fontWeight: '700' }}>{personnesAbsentes.length}</div>
+                <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>🏥 Absents aujourd'hui</div>
               </CardContent>
             </Card>
 
