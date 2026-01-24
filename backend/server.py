@@ -10537,61 +10537,7 @@ async def dashboard_formations(tenant_slug: str, annee: int, current_user: User 
     }
 
 
-@api_router.get("/{tenant_slug}/formations/mon-taux-presence")
-async def get_mon_taux_presence(
-    tenant_slug: str,
-    annee: int,
-    current_user: User = Depends(get_current_user)
-):
-    """Calcule le taux de présence personnel (formations passées)"""
-    tenant = await get_tenant_from_slug(tenant_slug)
-    
-    # Date d'aujourd'hui
-    aujourd_hui = datetime.now(timezone.utc).date()
-    
-    # Récupérer mes inscriptions
-    mes_inscriptions = await db.inscriptions_formations.find({
-        "user_id": current_user.id,
-        "tenant_id": tenant.id
-    }).to_list(1000)
-    
-    formations_passees = 0
-    presences_validees = 0
-    
-    for insc in mes_inscriptions:
-        formation = await db.formations.find_one({
-            "id": insc["formation_id"],
-            "annee": annee,
-            "tenant_id": tenant.id
-        })
-        
-        if formation:
-            date_fin = datetime.fromisoformat(formation["date_fin"]).date()
-            
-            # Seulement les formations passées
-            if date_fin < aujourd_hui:
-                formations_passees += 1
-                if insc.get("statut") == "present":
-                    presences_validees += 1
-    
-    taux_presence = round((presences_validees / formations_passees * 100) if formations_passees > 0 else 100, 1)
-    
-    # Récupérer les paramètres pour savoir si conforme
-    params = await db.parametres_formations.find_one({"tenant_id": tenant.id})
-    pourcentage_min = params.get("pourcentage_presence_minimum", 80) if params else 80
-    
-    # Si aucune formation passée, l'utilisateur est conforme par défaut
-    conforme = taux_presence >= pourcentage_min if formations_passees > 0 else True
-    
-    return {
-        "formations_passees": formations_passees,
-        "presences_validees": presences_validees,
-        "absences": formations_passees - presences_validees,
-        "taux_presence": taux_presence,
-        "pourcentage_minimum": pourcentage_min,
-        "conforme": conforme
-    }
-
+# Route mon-taux-presence migrée vers routes/formations.py
 
 # ====================================================================
 # RAPPORTS AVANCÉS - EXPORTS PDF/EXCEL ET RAPPORTS PAR COMPÉTENCES
