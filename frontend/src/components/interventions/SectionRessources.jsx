@@ -704,44 +704,29 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                         <td className="p-2">
                           {editMode ? (
                             <div className="flex gap-1 flex-wrap">
-                              <label className="flex items-center gap-1 text-xs bg-orange-50 px-2 py-1 rounded cursor-pointer" title="Déjeuner">
+                              <label className="flex items-center gap-1 text-xs bg-orange-50 px-2 py-1 rounded cursor-pointer" title="Déjeuner (6h-9h)">
                                 <input
                                   type="checkbox"
                                   checked={resource.prime_dejeuner ?? false}
-                                  onChange={(e) => {
-                                    const updated = allPersonnel.map(p => 
-                                      p.id === resource.id ? { ...p, prime_dejeuner: e.target.checked } : p
-                                    );
-                                    setFormData({ ...formData, personnel_present: updated });
-                                  }}
+                                  onChange={(e) => updatePrimeRepasRecap(resource.id, 'prime_dejeuner', e.target.checked)}
                                   className="w-3 h-3"
                                 />
                                 <span>🌅</span>
                               </label>
-                              <label className="flex items-center gap-1 text-xs bg-yellow-50 px-2 py-1 rounded cursor-pointer" title="Dîner">
+                              <label className="flex items-center gap-1 text-xs bg-yellow-50 px-2 py-1 rounded cursor-pointer" title="Dîner (11h-14h)">
                                 <input
                                   type="checkbox"
                                   checked={resource.prime_diner ?? false}
-                                  onChange={(e) => {
-                                    const updated = allPersonnel.map(p => 
-                                      p.id === resource.id ? { ...p, prime_diner: e.target.checked } : p
-                                    );
-                                    setFormData({ ...formData, personnel_present: updated });
-                                  }}
+                                  onChange={(e) => updatePrimeRepasRecap(resource.id, 'prime_diner', e.target.checked)}
                                   className="w-3 h-3"
                                 />
                                 <span>☀️</span>
                               </label>
-                              <label className="flex items-center gap-1 text-xs bg-indigo-50 px-2 py-1 rounded cursor-pointer" title="Souper">
+                              <label className="flex items-center gap-1 text-xs bg-indigo-50 px-2 py-1 rounded cursor-pointer" title="Souper (17h-20h)">
                                 <input
                                   type="checkbox"
                                   checked={resource.prime_souper ?? false}
-                                  onChange={(e) => {
-                                    const updated = allPersonnel.map(p => 
-                                      p.id === resource.id ? { ...p, prime_souper: e.target.checked } : p
-                                    );
-                                    setFormData({ ...formData, personnel_present: updated });
-                                  }}
+                                  onChange={(e) => updatePrimeRepasRecap(resource.id, 'prime_souper', e.target.checked)}
                                   className="w-3 h-3"
                                 />
                                 <span>🌙</span>
