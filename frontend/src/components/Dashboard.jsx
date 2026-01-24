@@ -164,13 +164,13 @@ const Dashboard = () => {
       }
 
       // ===== DONNÉES ADMIN UNIQUEMENT =====
-      if (isAdmin && results.length > 5) {
-        // Index fixes pour éviter les problèmes de closure
-        const usersData = results[5]?.data;
-        const vehiculesData = results[6]?.data;
-        const congesData = results[7]?.data;
-        const planningData = results[8]?.data;
-        const notificationsData = results[9]?.data;
+      // Index admin: 7=Users, 8=Véhicules, 9=Congés, 10=Planning, 11=Notifications
+      if (isAdmin && results.length > 7) {
+        const usersData = results[7]?.data;
+        const vehiculesData = results[8]?.data;
+        const congesData = results[9]?.data;
+        const planningDataAdmin = results[10]?.data;
+        const notificationsData = results[11]?.data;
         
         // Calculer toutes les valeurs avant de mettre à jour le state
         const personnelCount = Array.isArray(usersData) ? usersData.length : 0;
@@ -193,10 +193,10 @@ const Dashboard = () => {
         }
         
         // Couverture planning - calculer sur le mois complet
-        if (Array.isArray(planningData)) {
+        if (Array.isArray(planningDataAdmin)) {
           const now = new Date();
           const joursTotal = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-          const joursCouverts = new Set(planningData.map(a => a.date)).size;
+          const joursCouverts = new Set(planningDataAdmin.map(a => a.date)).size;
           const taux = Math.min(100, Math.round((joursCouverts / joursTotal) * 100));
           setTauxCouverture(taux);
         }
