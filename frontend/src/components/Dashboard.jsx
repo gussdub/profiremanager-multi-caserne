@@ -20,7 +20,7 @@ const Dashboard = () => {
   
   // États pour les données admin
   const [tauxCouverture, setTauxCouverture] = useState(0);
-  const [demandesConges, setDemandesConges] = useState([]);
+  const [personnesAbsentes, setPersonnesAbsentes] = useState([]);
   const [activitesRecentes, setActivitesRecentes] = useState([]);
   const [statsGenerales, setStatsGenerales] = useState({
     personnel: 0,
