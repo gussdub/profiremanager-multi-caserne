@@ -4,13 +4,10 @@ import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Calendar } from "./ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { useToast } from "../hooks/use-toast";
 import { useTenant } from "../contexts/TenantContext";
 import { useAuth } from "../contexts/AuthContext";
 import { fr } from "date-fns/locale";
-import { format } from "date-fns";
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 
 const Formations = () => {
