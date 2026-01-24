@@ -39,7 +39,7 @@ class Disponibilite(BaseModel):
     user_id: str
     tenant_id: str
     date: str  # Format YYYY-MM-DD
-    type_garde_id: str
+    type_garde_id: Optional[str] = None
     est_disponible: bool = True
     commentaire: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
