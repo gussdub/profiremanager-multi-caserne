@@ -21,13 +21,17 @@ Application de gestion des interventions et de la paie pour les services de pomp
 - **Fonction supérieure** : calcul et affichage dans la paie
 
 ### Refactorisation Backend - 25 janvier 2026
+- **Module Formations extrait** (`routes/formations.py` - 670 lignes, ~12 routes)
+  - CRUD formations, inscriptions/désinscriptions
+  - Validation présence, taux de présence
+  - Correction UX: inputs date/time natifs HTML pour Safari
 - **Module Actifs extrait** (`routes/actifs.py` - 1593 lignes, ~30 routes)
   - Véhicules : CRUD, QR codes, inspections SAAQ, fiche de vie
   - Bornes d'incendie : CRUD, QR codes, import CSV
   - Inventaires : Modèles et inspections CRUD
   - Rondes de sécurité : Liste, détail, contre-signature, config emails
   - Matériels pour interventions : Liste
-- **server.py réduit** de ~1200 lignes (41143 → 39946)
+- **server.py réduit** de ~1650 lignes total (41143 → 39497)
 - **Bug corrigé** : Modal historique inventaires décalé sous la sidebar
 
 ### Dashboard Principal - Corrections 24 janvier 2026
