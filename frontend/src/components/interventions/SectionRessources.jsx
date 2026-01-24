@@ -61,6 +61,16 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
   const [manualVehicles, setManualVehicles] = useState(formData.manual_vehicles || []);
   const [manualPersonnel, setManualPersonnel] = useState(formData.manual_personnel || []);
   
+  // Extraire l'heure HH:MM d'un datetime ISO
+  const getHeureFromDatetime = (datetime) => {
+    if (!datetime) return null;
+    const timePart = datetime.split('T')[1];
+    if (timePart) {
+      return timePart.substring(0, 5); // HH:MM
+    }
+    return null;
+  };
+  
   // Calculer la durée de l'intervention en heures
   const calculerDureeIntervention = () => {
     try {
@@ -81,7 +91,36 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
     }
   };
   
-  // Vérifier si un repas est éligible selon les paramètres
+  // Vérifier si l'intervention COUVRE l'heure d'un repas (sans tenir compte de la durée minimum)
+  const checkRepasCouvert = (typeRepas) => {
+    const heureDebut = getHeureFromDatetime(formData.xml_time_call_received);
+    const heureFin = getHeureFromDatetime(formData.xml_end_time || formData.xml_time_available);
+    
+    if (!heureDebut || !heureFin) return false;
+    if (!interventionSettings) return false;
+    
+    const config = interventionSettings[`repas_${typeRepas}`];
+    if (!config || !config.actif) return false;
+    
+    const getMinutes = (timeStr) => {
+      if (!timeStr) return 0;
+      const [h, m] = timeStr.split(':').map(Number);
+      return h * 60 + (m || 0);
+    };
+    
+    const debutIntervention = getMinutes(heureDebut);
+    const finIntervention = getMinutes(heureFin);
+    const debutRepas = getMinutes(config.heure_debut || '00:00');
+    const finRepas = getMinutes(config.heure_fin || '23:59');
+    
+    // Gestion si fin < debut (intervention qui passe minuit)
+    if (finIntervention < debutIntervention) {
+      return debutRepas <= finIntervention || finRepas >= debutIntervention;
+    }
+    return debutIntervention < finRepas && finIntervention > debutRepas;
+  };
+  
+  // Vérifier si un repas est éligible selon les paramètres (avec durée minimum)
   const checkRepasEligible = (typeRepas, heureDebut, heureFin, dureeHeures) => {
     if (!interventionSettings) return false;
     
