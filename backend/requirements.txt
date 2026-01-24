@@ -68,4 +68,4 @@ qrcode>=7.4.0
 
 # Emergent Integrations
 --extra-index-url https://d33sy5i8bnduwe.cloudfront.net/simple/
-emergentintegrations>=0.10.0
+emergentintegrations>=0.1.0
