@@ -75,10 +75,11 @@ class UserUpdate(BaseModel):
     formations: Optional[List[str]] = None
     competences: Optional[List[str]] = None
     statut: Optional[str] = None
-    tailles_epi: Optional[Dict[str, str]] = None  # Tailles EPI de l'employé
+    tailles_epi: Optional[Dict[str, str]] = None
+    mot_de_passe: Optional[str] = None  # Pour changement de mot de passe
     
     class Config:
-        extra = "allow"  # Permet les champs supplémentaires non définis
+        extra = "allow"
 
 
 # ==================== FONCTIONS UTILITAIRES ====================
