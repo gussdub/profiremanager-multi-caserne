@@ -115,13 +115,14 @@ dsi_categories_pertes  - 2 docs
 │   │   ├── personnel.py          # Gestion users (ACTIF - 5 routes migrées)
 │   │   ├── actifs.py             # Véhicules, bornes, inventaires, rondes (ACTIF - ~30 routes migrées)
 │   │   ├── formations.py         # Formations CRUD + inscriptions (ACTIF - ~12 routes migrées)
+│   │   ├── equipements.py        # Équipements CRUD + maintenance + alertes (ACTIF - ~15 routes migrées)
 │   │   ├── disponibilites.py     # Disponibilités (INACTIF - routes server.py plus complètes)
 │   │   ├── planning.py           # Planning (PRÊT - routes commentées)
 │   │   └── paie.py               # Module Paie (PRÊT)
 │   ├── scripts/
 │   │   ├── import_dsi_references.py
 │   │   └── import_dsi_msp_official.py
-│   └── server.py                 # ~39,497 lignes (réduit de ~1650 lignes total)
+│   └── server.py                 # ~39,507 lignes (réduit de ~1636 lignes total)
 └── frontend/
     └── src/components/
         ├── Dashboard.jsx           # Corrigé 24 janv 2026
