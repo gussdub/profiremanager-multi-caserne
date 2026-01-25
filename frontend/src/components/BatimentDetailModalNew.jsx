@@ -1010,7 +1010,7 @@ const BatimentForm = ({
         style={{
           position: 'fixed',
           top: 0,
-          left: '220px', // Décalage pour éviter la sidebar (largeur sidebar ~200px)
+          left: '240px', // Décalage pour éviter la sidebar (largeur sidebar ~200px + marge)
           right: 0,
           bottom: 0,
           backgroundColor: 'rgba(0, 0, 0, 0.6)',
