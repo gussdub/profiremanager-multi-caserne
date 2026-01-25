@@ -476,7 +476,7 @@ const InspectionModal = ({ point, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     point_eau_id: point?.id || '',
     inspecteur_id: user?.id || '',
-    date_inspection: new Date().toISOString().split('T')[0],
+    date_inspection: getLocalDateString(),
     etat_general: 'conforme',
     debit_mesure_gpm: '',
     observations: '',
