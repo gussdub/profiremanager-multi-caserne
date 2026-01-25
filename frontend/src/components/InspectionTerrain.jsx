@@ -207,7 +207,7 @@ const InspectionTerrain = ({ tenantSlug, grille, batiment, onComplete, onCancel 
         batiment_id: batiment.id,
         grille_inspection_id: grille.id,
         grille_nom: grille.nom,
-        date_inspection: new Date().toISOString().split('T')[0],
+        date_inspection: getLocalDateString(),
         heure_debut: new Date().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' }),
         heure_fin: new Date().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' }),
         inspecteur_id: inspecteur_id,
@@ -246,7 +246,7 @@ const InspectionTerrain = ({ tenantSlug, grille, batiment, onComplete, onCancel 
               priorite: 'moyenne',
               statut: 'ouverte',
               photos: questionPhotos,
-              date_identification: new Date().toISOString().split('T')[0],
+              date_identification: getLocalDateString(),
               identifie_par: inspecteur_id
             };
             
