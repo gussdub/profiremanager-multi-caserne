@@ -11,6 +11,7 @@ import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import InspectionUnifieeModal from './InspectionUnifieeModal';
 
 // Utilitaire pour formater une date ISO en format local (dd/mm/yyyy) sans décalage de timezone
+// Utilitaire pour formater une date ISO en format local (dd/mm/yyyy) sans décalage de timezone
 const formatDateLocal = (dateStr) => {
   if (!dateStr) return 'N/A';
   // Extraire uniquement la partie date (YYYY-MM-DD) sans conversion UTC
@@ -23,6 +24,15 @@ const formatDateLocal = (dateStr) => {
 const extractDateForInput = (dateStr) => {
   if (!dateStr) return '';
   return dateStr.split('T')[0];
+};
+
+// Utilitaire pour obtenir la date locale au format YYYY-MM-DD (sans décalage timezone)
+const getLocalDateString = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 const ModuleEPI = ({ user }) => {
