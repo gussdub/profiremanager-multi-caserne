@@ -10,6 +10,14 @@ import CameraCapture, { isIOS } from './CameraCapture';
 import InspectionPartieFacialeModal from './InspectionPartieFacialeModal';
 import InspectionUnifieeModal from './InspectionUnifieeModal';
 
+// Utilitaire pour formater une date ISO en format local (dd/mm/yyyy) sans décalage de timezone
+const formatDateLocal = (dateStr) => {
+  if (!dateStr) return 'N/A';
+  const datePart = dateStr.split('T')[0];
+  const [year, month, day] = datePart.split('-');
+  return `${day}/${month}/${year}`;
+};
+
 const MesEPI = ({ user }) => {
   const [epis, setEpis] = useState([]);
   const [equipementsAssignes, setEquipementsAssignes] = useState([]);
