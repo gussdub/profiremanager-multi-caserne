@@ -2,204 +2,162 @@
 Routes API pour le module Planning
 ==================================
 
-Ce fichier contient les routes pour la gestion du planning et des assignations.
+STATUT: ACTIF
+Ce module gère le planning des gardes : assignations, exports, rapports d'heures.
 
-STATUT: PRÊT POUR ACTIVATION
-Les routes sont dans server.py lignes 8500-9500 environ.
+Routes Assignations:
+- GET    /{tenant_slug}/planning/{semaine_debut}                - Obtenir planning d'une semaine
+- GET    /{tenant_slug}/planning/assignations/{semaine_debut}   - Liste assignations semaine
+- POST   /{tenant_slug}/planning/assignation                    - Créer assignation
+- DELETE /{tenant_slug}/planning/assignation/{assignation_id}   - Supprimer assignation
 
-Pour activer ce module:
-1. Dans server.py, importer: from routes.planning import router as planning_router
-2. Inclure: api_router.include_router(planning_router)
-3. Supprimer les routes correspondantes de server.py
-4. Tester exhaustivement
+Routes Rapports:
+- GET    /{tenant_slug}/planning/mes-heures                     - Mes heures (employé)
+- GET    /{tenant_slug}/planning/rapport-heures                 - Rapport heures global
 
-Routes incluses:
-- GET    /{tenant_slug}/planning/types-garde                  - Liste des types de garde
-- POST   /{tenant_slug}/planning/types-garde                  - Créer un type de garde
-- PUT    /{tenant_slug}/planning/types-garde/{id}             - Modifier un type
-- DELETE /{tenant_slug}/planning/types-garde/{id}             - Supprimer un type
-- GET    /{tenant_slug}/planning/assignations/{semaine}       - Assignations de la semaine
-- POST   /{tenant_slug}/planning/assignations                 - Créer une assignation
-- PUT    /{tenant_slug}/planning/assignations/{id}            - Modifier une assignation
-- DELETE /{tenant_slug}/planning/assignations/{id}            - Supprimer une assignation
-- POST   /{tenant_slug}/planning/auto-assign                  - Auto-assignation
-- GET    /{tenant_slug}/planning/export-pdf                   - Export PDF
-- GET    /{tenant_slug}/planning/export-excel                 - Export Excel
-- GET    /{tenant_slug}/planning/mes-heures                   - Mes heures travaillées
-- GET    /{tenant_slug}/planning/statistiques                 - Statistiques planning
+Routes Outils:
+- POST   /{tenant_slug}/planning/recalculer-durees-gardes       - Recalculer durées
+- GET    /{tenant_slug}/planning/rapport-assignations-invalides - Rapport assignations invalides
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
-from datetime import datetime, timezone, date, timedelta
+from datetime import datetime, timezone, timedelta
 import uuid
 import logging
 
-# Ces imports seront résolus quand le module sera activé
-# from server import (
-#     db, 
-#     get_current_user, 
-#     get_tenant_from_slug, 
-#     clean_mongo_doc,
-#     User,
-#     TypeGarde,
-#     Assignation
-# )
+from routes.dependencies import (
+    db,
+    get_current_user,
+    get_tenant_from_slug,
+    clean_mongo_doc,
+    User,
+    creer_activite
+)
 
 router = APIRouter(tags=["Planning"])
+logger = logging.getLogger(__name__)
 
 
 # ==================== MODÈLES ====================
 
-class TypeGardeCreate(BaseModel):
-    """Modèle pour la création d'un type de garde"""
-    nom: str
-    code: str
-    couleur: str = "#3B82F6"
-    heure_debut: str = "08:00"
-    heure_fin: str = "16:00"
-    est_garde_interne: bool = False
-    est_rappel: bool = False
-    nombre_pompiers_requis: int = 1
-    actif: bool = True
+class Planning(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    semaine_debut: str  # Format: YYYY-MM-DD
+    semaine_fin: str
+    assignations: Dict[str, Any] = {}  # jour -> type_garde -> assignation
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
-class TypeGardeUpdate(BaseModel):
-    """Modèle pour la mise à jour d'un type de garde"""
-    nom: Optional[str] = None
-    code: Optional[str] = None
-    couleur: Optional[str] = None
-    heure_debut: Optional[str] = None
-    heure_fin: Optional[str] = None
-    est_garde_interne: Optional[bool] = None
-    est_rappel: Optional[bool] = None
-    nombre_pompiers_requis: Optional[int] = None
-    actif: Optional[bool] = None
+class Assignation(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    user_id: str
+    type_garde_id: str
+    date: str
+    statut: str = "planifie"  # planifie, confirme, remplacement_demande
+    assignation_type: str = "auto"  # auto, manuel, manuel_avance
+    justification: Optional[Dict[str, Any]] = None
+    notes_admin: Optional[str] = None
+    justification_historique: Optional[List[Dict[str, Any]]] = None
 
 
 class AssignationCreate(BaseModel):
-    """Modèle pour la création d'une assignation"""
     user_id: str
-    date: str  # Format YYYY-MM-DD
     type_garde_id: str
-    vehicule_id: Optional[str] = None
-    notes: Optional[str] = None
+    date: str
+    assignation_type: str = "manuel"
+    notes_admin: Optional[str] = None
 
 
-class AssignationUpdate(BaseModel):
-    """Modèle pour la mise à jour d'une assignation"""
-    user_id: Optional[str] = None
-    date: Optional[str] = None
-    type_garde_id: Optional[str] = None
-    vehicule_id: Optional[str] = None
-    notes: Optional[str] = None
+# ==================== FONCTIONS UTILITAIRES ====================
+
+def get_semaine_range(semaine_debut: str) -> tuple:
+    """Retourne les dates de début et fin de semaine"""
+    date_debut = datetime.strptime(semaine_debut, "%Y-%m-%d")
+    date_fin = date_debut + timedelta(days=6)
+    return date_debut, date_fin
 
 
-# ==================== ROUTES ====================
-# Note: Ces routes sont commentées car elles ne sont pas encore activées.
-# Décommenter quand prêt à migrer depuis server.py
+async def get_types_garde(tenant_id: str) -> List[Dict]:
+    """Récupère les types de garde d'un tenant"""
+    types = await db.types_garde.find(
+        {"tenant_id": tenant_id},
+        {"_id": 0}
+    ).sort("ordre", 1).to_list(100)
+    return types
 
-"""
-@router.get("/{tenant_slug}/planning/types-garde")
-async def get_types_garde(
+
+async def get_user_info(user_id: str) -> Optional[Dict]:
+    """Récupère les informations d'un utilisateur"""
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "mot_de_passe_hash": 0})
+    return user
+
+
+# ==================== ROUTES PLANNING ====================
+
+@router.get("/{tenant_slug}/planning/{semaine_debut}")
+async def get_planning_semaine(
     tenant_slug: str,
+    semaine_debut: str,
     current_user: User = Depends(get_current_user)
 ):
-    '''Liste tous les types de garde du tenant'''
+    """
+    Récupérer le planning d'une semaine complète
+    Retourne les assignations avec les informations des employés et types de garde
+    """
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    types = await db.types_garde.find({"tenant_id": tenant.id}).to_list(100)
-    return [clean_mongo_doc(t) for t in types]
-
-
-@router.post("/{tenant_slug}/planning/types-garde")
-async def create_type_garde(
-    tenant_slug: str,
-    type_garde: TypeGardeCreate,
-    current_user: User = Depends(get_current_user)
-):
-    '''Créer un nouveau type de garde'''
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    date_debut, date_fin = get_semaine_range(semaine_debut)
+    semaine_fin = date_fin.strftime("%Y-%m-%d")
     
-    tenant = await get_tenant_from_slug(tenant_slug)
-    
-    # Vérifier unicité du code
-    existing = await db.types_garde.find_one({
+    # Récupérer les assignations de la semaine
+    assignations = await db.assignations.find({
         "tenant_id": tenant.id,
-        "code": type_garde.code
-    })
-    if existing:
-        raise HTTPException(status_code=400, detail="Ce code existe déjà")
+        "date": {
+            "$gte": semaine_debut,
+            "$lte": semaine_fin
+        }
+    }, {"_id": 0}).to_list(1000)
     
-    type_dict = type_garde.dict()
-    type_dict["id"] = str(uuid.uuid4())
-    type_dict["tenant_id"] = tenant.id
-    type_dict["created_at"] = datetime.now(timezone.utc)
+    # Récupérer les types de garde
+    types_garde = await get_types_garde(tenant.id)
+    types_garde_dict = {t["id"]: t for t in types_garde}
     
-    await db.types_garde.insert_one(type_dict)
+    # Récupérer les infos des employés assignés
+    user_ids = list(set([a["user_id"] for a in assignations if a.get("user_id")]))
+    users = await db.users.find(
+        {"id": {"$in": user_ids}},
+        {"_id": 0, "mot_de_passe_hash": 0}
+    ).to_list(1000)
+    users_dict = {u["id"]: u for u in users}
     
-    return type_dict
-
-
-@router.put("/{tenant_slug}/planning/types-garde/{type_id}")
-async def update_type_garde(
-    tenant_slug: str,
-    type_id: str,
-    type_update: TypeGardeUpdate,
-    current_user: User = Depends(get_current_user)
-):
-    '''Modifier un type de garde'''
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    # Enrichir les assignations
+    for assignation in assignations:
+        user_id = assignation.get("user_id")
+        type_garde_id = assignation.get("type_garde_id")
+        
+        if user_id and user_id in users_dict:
+            user = users_dict[user_id]
+            assignation["user_nom"] = f"{user.get('prenom', '')} {user.get('nom', '')}"
+            assignation["user_grade"] = user.get("grade", "")
+        
+        if type_garde_id and type_garde_id in types_garde_dict:
+            tg = types_garde_dict[type_garde_id]
+            assignation["type_garde_nom"] = tg.get("nom", "")
+            assignation["type_garde_couleur"] = tg.get("couleur", "#3B82F6")
     
-    tenant = await get_tenant_from_slug(tenant_slug)
+    # Construire l'objet Planning
+    planning_obj = Planning(semaine_debut=semaine_debut, semaine_fin=semaine_fin)
     
-    update_data = {k: v for k, v in type_update.dict().items() if v is not None}
-    update_data["updated_at"] = datetime.now(timezone.utc)
-    
-    result = await db.types_garde.update_one(
-        {"id": type_id, "tenant_id": tenant.id},
-        {"$set": update_data}
-    )
-    
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Type de garde non trouvé")
-    
-    return {"message": "Type de garde mis à jour"}
-
-
-@router.delete("/{tenant_slug}/planning/types-garde/{type_id}")
-async def delete_type_garde(
-    tenant_slug: str,
-    type_id: str,
-    current_user: User = Depends(get_current_user)
-):
-    '''Supprimer un type de garde'''
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
-    tenant = await get_tenant_from_slug(tenant_slug)
-    
-    # Vérifier qu'il n'y a pas d'assignations utilisant ce type
-    assignations_count = await db.garde_assignments.count_documents({
-        "tenant_id": tenant.id,
-        "type_garde_id": type_id
-    })
-    
-    if assignations_count > 0:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Impossible de supprimer: {assignations_count} assignations utilisent ce type"
-        )
-    
-    result = await db.types_garde.delete_one({"id": type_id, "tenant_id": tenant.id})
-    
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Type de garde non trouvé")
-    
-    return {"message": "Type de garde supprimé"}
+    return {
+        "id": planning_obj.id,
+        "semaine_debut": semaine_debut,
+        "semaine_fin": semaine_fin,
+        "assignations": assignations,
+        "types_garde": types_garde
+    }
 
 
 @router.get("/{tenant_slug}/planning/assignations/{semaine_debut}")
@@ -208,187 +166,378 @@ async def get_assignations_semaine(
     semaine_debut: str,
     current_user: User = Depends(get_current_user)
 ):
-    '''Récupère les assignations d'une semaine (ou mois si 1er du mois)'''
+    """Récupérer les assignations d'une semaine"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Déterminer la plage de dates
-    start_date = datetime.strptime(semaine_debut, "%Y-%m-%d").date()
+    date_debut, date_fin = get_semaine_range(semaine_debut)
+    semaine_fin = date_fin.strftime("%Y-%m-%d")
     
-    # Si c'est le 1er du mois, récupérer tout le mois
-    if start_date.day == 1:
-        import calendar
-        _, last_day = calendar.monthrange(start_date.year, start_date.month)
-        end_date = start_date.replace(day=last_day)
-    else:
-        # Sinon, récupérer la semaine
-        end_date = start_date + timedelta(days=6)
-    
-    assignations = await db.garde_assignments.find({
+    assignations = await db.assignations.find({
         "tenant_id": tenant.id,
         "date": {
             "$gte": semaine_debut,
-            "$lte": end_date.strftime("%Y-%m-%d")
+            "$lte": semaine_fin
         }
-    }).to_list(1000)
+    }, {"_id": 0}).sort("date", 1).to_list(1000)
     
-    return [clean_mongo_doc(a) for a in assignations]
+    return assignations
 
 
-@router.post("/{tenant_slug}/planning/assignations")
+@router.post("/{tenant_slug}/planning/assignation")
 async def create_assignation(
     tenant_slug: str,
-    assignation: AssignationCreate,
+    assignation_data: AssignationCreate,
     current_user: User = Depends(get_current_user)
 ):
-    '''Créer une nouvelle assignation'''
+    """Créer une nouvelle assignation"""
     if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
     # Vérifier que l'utilisateur existe
-    user = await db.users.find_one({"id": assignation.user_id, "tenant_id": tenant.id})
+    user = await db.users.find_one({"id": assignation_data.user_id, "tenant_id": tenant.id})
     if not user:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
     
     # Vérifier que le type de garde existe
-    type_garde = await db.types_garde.find_one({
-        "id": assignation.type_garde_id,
-        "tenant_id": tenant.id
-    })
+    type_garde = await db.types_garde.find_one({"id": assignation_data.type_garde_id, "tenant_id": tenant.id})
     if not type_garde:
         raise HTTPException(status_code=404, detail="Type de garde non trouvé")
     
-    assign_dict = assignation.dict()
-    assign_dict["id"] = str(uuid.uuid4())
-    assign_dict["tenant_id"] = tenant.id
-    assign_dict["type_garde_nom"] = type_garde.get("nom")
-    assign_dict["user_nom"] = f"{user.get('prenom')} {user.get('nom')}"
-    assign_dict["created_at"] = datetime.now(timezone.utc)
-    assign_dict["created_by"] = current_user.id
+    # Vérifier s'il n'y a pas déjà une assignation pour ce jour/type
+    existing = await db.assignations.find_one({
+        "tenant_id": tenant.id,
+        "date": assignation_data.date,
+        "type_garde_id": assignation_data.type_garde_id
+    })
     
-    await db.garde_assignments.insert_one(assign_dict)
+    if existing:
+        # Mettre à jour l'assignation existante
+        await db.assignations.update_one(
+            {"id": existing["id"]},
+            {"$set": {
+                "user_id": assignation_data.user_id,
+                "assignation_type": assignation_data.assignation_type,
+                "notes_admin": assignation_data.notes_admin,
+                "updated_at": datetime.now(timezone.utc)
+            }}
+        )
+        updated = await db.assignations.find_one({"id": existing["id"]}, {"_id": 0})
+        return updated
     
-    return assign_dict
+    # Créer une nouvelle assignation
+    assignation = Assignation(
+        tenant_id=tenant.id,
+        user_id=assignation_data.user_id,
+        type_garde_id=assignation_data.type_garde_id,
+        date=assignation_data.date,
+        assignation_type=assignation_data.assignation_type,
+        notes_admin=assignation_data.notes_admin
+    )
+    
+    await db.assignations.insert_one(assignation.dict())
+    
+    # Créer une notification
+    await creer_activite(
+        tenant_id=tenant.id,
+        type_activite="planning",
+        description=f"Nouvelle assignation créée pour {user.get('prenom', '')} {user.get('nom', '')}",
+        user_id=current_user.id,
+        user_nom=f"{current_user.prenom} {current_user.nom}",
+        metadata={"assignation_id": assignation.id, "date": assignation_data.date}
+    )
+    
+    return clean_mongo_doc(assignation.dict())
 
 
-@router.delete("/{tenant_slug}/planning/assignations/{assignation_id}")
+@router.delete("/{tenant_slug}/planning/assignation/{assignation_id}")
 async def delete_assignation(
     tenant_slug: str,
     assignation_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    '''Supprimer une assignation'''
+    """Supprimer une assignation"""
     if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    result = await db.garde_assignments.delete_one({
+    assignation = await db.assignations.find_one({
         "id": assignation_id,
         "tenant_id": tenant.id
     })
     
-    if result.deleted_count == 0:
+    if not assignation:
         raise HTTPException(status_code=404, detail="Assignation non trouvée")
     
-    return {"message": "Assignation supprimée"}
+    await db.assignations.delete_one({"id": assignation_id})
+    
+    return {"message": "Assignation supprimée avec succès"}
 
+
+# ==================== ROUTES RAPPORTS D'HEURES ====================
 
 @router.get("/{tenant_slug}/planning/mes-heures")
 async def get_mes_heures(
     tenant_slug: str,
-    date_debut: str,
-    date_fin: str,
+    mois: Optional[str] = None,  # Format: YYYY-MM
     current_user: User = Depends(get_current_user)
 ):
-    '''Récupère les heures travaillées de l'utilisateur connecté'''
+    """
+    Récupérer mes heures pour un mois donné (pour l'employé connecté)
+    """
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Récupérer mes assignations
-    assignations = await db.garde_assignments.find({
+    # Si pas de mois spécifié, prendre le mois courant
+    if not mois:
+        mois = datetime.now(timezone.utc).strftime("%Y-%m")
+    
+    # Calculer les dates du mois
+    year, month = map(int, mois.split('-'))
+    date_debut = datetime(year, month, 1, tzinfo=timezone.utc)
+    if month == 12:
+        date_fin = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+    else:
+        date_fin = datetime(year, month + 1, 1, tzinfo=timezone.utc)
+    
+    # Récupérer les assignations de l'utilisateur pour ce mois
+    assignations = await db.assignations.find({
         "tenant_id": tenant.id,
         "user_id": current_user.id,
-        "date": {"$gte": date_debut, "$lte": date_fin}
-    }).to_list(1000)
+        "date": {
+            "$gte": date_debut.strftime("%Y-%m-%d"),
+            "$lt": date_fin.strftime("%Y-%m-%d")
+        }
+    }, {"_id": 0}).to_list(100)
     
-    # Calculer les heures
-    heures_internes = 0
-    heures_externes = 0
+    # Récupérer les types de garde pour calculer les heures
+    types_garde = await get_types_garde(tenant.id)
+    types_garde_dict = {t["id"]: t for t in types_garde}
     
-    for assign in assignations:
-        type_garde = await db.types_garde.find_one({
-            "id": assign.get("type_garde_id"),
-            "tenant_id": tenant.id
-        })
-        
-        if type_garde:
-            # Calculer la durée
-            try:
-                h_debut = datetime.strptime(type_garde.get("heure_debut", "08:00"), "%H:%M")
-                h_fin = datetime.strptime(type_garde.get("heure_fin", "16:00"), "%H:%M")
-                duree = (h_fin - h_debut).seconds / 3600
-                
-                if type_garde.get("est_garde_interne"):
-                    heures_internes += duree
-                else:
-                    heures_externes += duree
-            except:
-                pass
+    total_heures = 0
+    detail_par_type = {}
     
-    return {
-        "heures_internes": round(heures_internes, 1),
-        "heures_externes": round(heures_externes, 1),
-        "total_heures": round(heures_internes + heures_externes, 1)
-    }
-"""
-
-
-# ==================== FONCTIONS UTILITAIRES ====================
-
-def calculer_duree_garde(heure_debut: str, heure_fin: str) -> float:
-    """Calcule la durée d'une garde en heures"""
-    try:
-        h_debut = datetime.strptime(heure_debut, "%H:%M")
-        h_fin = datetime.strptime(heure_fin, "%H:%M")
-        
-        # Gérer le cas où la garde traverse minuit
-        if h_fin < h_debut:
-            duree = (24 * 3600 - (h_debut - h_fin).seconds) / 3600
-        else:
-            duree = (h_fin - h_debut).seconds / 3600
-        
-        return round(duree, 2)
-    except:
-        return 0
-
-
-def generer_dates_semaine(date_debut: str) -> List[str]:
-    """Génère les 7 dates d'une semaine à partir du lundi"""
-    start = datetime.strptime(date_debut, "%Y-%m-%d").date()
-    return [
-        (start + timedelta(days=i)).strftime("%Y-%m-%d")
-        for i in range(7)
-    ]
-
-
-def calculer_statistiques_planning(assignations: List[dict], types_garde: List[dict]) -> dict:
-    """Calcule les statistiques d'un planning"""
-    total_assignations = len(assignations)
-    par_type = {}
-    
-    for assign in assignations:
-        type_id = assign.get("type_garde_id")
-        par_type[type_id] = par_type.get(type_id, 0) + 1
-    
-    # Enrichir avec les noms des types
-    types_dict = {t["id"]: t["nom"] for t in types_garde}
-    par_type_enrichi = {
-        types_dict.get(k, k): v 
-        for k, v in par_type.items()
-    }
+    for assignation in assignations:
+        type_garde_id = assignation.get("type_garde_id")
+        if type_garde_id in types_garde_dict:
+            tg = types_garde_dict[type_garde_id]
+            duree = tg.get("duree_heures", 0)
+            total_heures += duree
+            
+            if type_garde_id not in detail_par_type:
+                detail_par_type[type_garde_id] = {
+                    "nom": tg.get("nom", ""),
+                    "couleur": tg.get("couleur", "#3B82F6"),
+                    "heures": 0,
+                    "count": 0
+                }
+            
+            detail_par_type[type_garde_id]["heures"] += duree
+            detail_par_type[type_garde_id]["count"] += 1
     
     return {
-        "total_assignations": total_assignations,
-        "par_type_garde": par_type_enrichi
+        "mois": mois,
+        "total_heures": total_heures,
+        "nombre_gardes": len(assignations),
+        "detail_par_type": list(detail_par_type.values()),
+        "assignations": assignations
+    }
+
+
+@router.get("/{tenant_slug}/planning/rapport-heures")
+async def get_rapport_heures(
+    tenant_slug: str,
+    mois: Optional[str] = None,  # Format: YYYY-MM
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Rapport d'heures global pour tous les employés (admin/superviseur)
+    """
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Si pas de mois spécifié, prendre le mois courant
+    if not mois:
+        mois = datetime.now(timezone.utc).strftime("%Y-%m")
+    
+    # Calculer les dates du mois
+    year, month = map(int, mois.split('-'))
+    date_debut = datetime(year, month, 1, tzinfo=timezone.utc)
+    if month == 12:
+        date_fin = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+    else:
+        date_fin = datetime(year, month + 1, 1, tzinfo=timezone.utc)
+    
+    # Récupérer toutes les assignations du mois
+    assignations = await db.assignations.find({
+        "tenant_id": tenant.id,
+        "date": {
+            "$gte": date_debut.strftime("%Y-%m-%d"),
+            "$lt": date_fin.strftime("%Y-%m-%d")
+        }
+    }, {"_id": 0}).to_list(10000)
+    
+    # Récupérer les types de garde
+    types_garde = await get_types_garde(tenant.id)
+    types_garde_dict = {t["id"]: t for t in types_garde}
+    
+    # Récupérer tous les employés actifs
+    users = await db.users.find(
+        {"tenant_id": tenant.id, "statut": "Actif"},
+        {"_id": 0, "mot_de_passe_hash": 0}
+    ).to_list(1000)
+    users_dict = {u["id"]: u for u in users}
+    
+    # Calculer les heures par employé
+    rapport = {}
+    for assignation in assignations:
+        user_id = assignation.get("user_id")
+        type_garde_id = assignation.get("type_garde_id")
+        
+        if user_id not in rapport:
+            user = users_dict.get(user_id, {})
+            rapport[user_id] = {
+                "user_id": user_id,
+                "nom": user.get("nom", ""),
+                "prenom": user.get("prenom", ""),
+                "grade": user.get("grade", ""),
+                "type_emploi": user.get("type_emploi", ""),
+                "total_heures": 0,
+                "nombre_gardes": 0,
+                "detail_par_type": {}
+            }
+        
+        if type_garde_id in types_garde_dict:
+            tg = types_garde_dict[type_garde_id]
+            duree = tg.get("duree_heures", 0)
+            rapport[user_id]["total_heures"] += duree
+            rapport[user_id]["nombre_gardes"] += 1
+            
+            if type_garde_id not in rapport[user_id]["detail_par_type"]:
+                rapport[user_id]["detail_par_type"][type_garde_id] = {
+                    "nom": tg.get("nom", ""),
+                    "heures": 0,
+                    "count": 0
+                }
+            
+            rapport[user_id]["detail_par_type"][type_garde_id]["heures"] += duree
+            rapport[user_id]["detail_par_type"][type_garde_id]["count"] += 1
+    
+    # Convertir en liste triée
+    rapport_list = list(rapport.values())
+    rapport_list.sort(key=lambda x: x["total_heures"], reverse=True)
+    
+    return {
+        "mois": mois,
+        "total_assignations": len(assignations),
+        "employes": rapport_list
+    }
+
+
+# ==================== ROUTES OUTILS ====================
+
+@router.get("/{tenant_slug}/planning/rapport-assignations-invalides")
+async def get_assignations_invalides(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Rapport des assignations invalides (employés inactifs, types de garde supprimés, etc.)
+    """
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer toutes les assignations futures
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    assignations = await db.assignations.find({
+        "tenant_id": tenant.id,
+        "date": {"$gte": today}
+    }, {"_id": 0}).to_list(10000)
+    
+    # Récupérer les employés actifs
+    users_actifs = await db.users.find(
+        {"tenant_id": tenant.id, "statut": "Actif"},
+        {"_id": 0, "id": 1}
+    ).to_list(1000)
+    users_actifs_ids = set([u["id"] for u in users_actifs])
+    
+    # Récupérer les types de garde actifs
+    types_garde = await db.types_garde.find(
+        {"tenant_id": tenant.id},
+        {"_id": 0, "id": 1}
+    ).to_list(100)
+    types_garde_ids = set([t["id"] for t in types_garde])
+    
+    invalides = []
+    for assignation in assignations:
+        problemes = []
+        
+        if assignation.get("user_id") not in users_actifs_ids:
+            problemes.append("Employé inactif ou supprimé")
+        
+        if assignation.get("type_garde_id") not in types_garde_ids:
+            problemes.append("Type de garde supprimé")
+        
+        if problemes:
+            invalides.append({
+                "assignation_id": assignation.get("id"),
+                "date": assignation.get("date"),
+                "user_id": assignation.get("user_id"),
+                "type_garde_id": assignation.get("type_garde_id"),
+                "problemes": problemes
+            })
+    
+    return {
+        "total_invalides": len(invalides),
+        "assignations_invalides": invalides
+    }
+
+
+@router.post("/{tenant_slug}/planning/recalculer-durees-gardes")
+async def recalculer_durees_gardes(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Recalculer les durées de toutes les gardes selon les types de garde actuels
+    """
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer les types de garde
+    types_garde = await get_types_garde(tenant.id)
+    types_garde_dict = {t["id"]: t for t in types_garde}
+    
+    # Récupérer toutes les assignations
+    assignations = await db.assignations.find(
+        {"tenant_id": tenant.id},
+        {"_id": 0}
+    ).to_list(100000)
+    
+    updated_count = 0
+    for assignation in assignations:
+        type_garde_id = assignation.get("type_garde_id")
+        if type_garde_id in types_garde_dict:
+            tg = types_garde_dict[type_garde_id]
+            duree = tg.get("duree_heures", 0)
+            
+            # Mettre à jour si différent
+            if assignation.get("duree_heures") != duree:
+                await db.assignations.update_one(
+                    {"id": assignation["id"]},
+                    {"$set": {"duree_heures": duree}}
+                )
+                updated_count += 1
+    
+    return {
+        "message": "Recalcul des durées terminé",
+        "total_assignations": len(assignations),
+        "mises_a_jour": updated_count
     }
