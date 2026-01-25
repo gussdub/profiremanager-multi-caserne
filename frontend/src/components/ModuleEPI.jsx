@@ -1789,8 +1789,8 @@ const ModuleEPI = ({ user }) => {
                 
                 <div className="detail-section">
                   <h3>Dates & Coûts</h3>
-                  <p><strong>Fabrication:</strong> {selectedEPI.date_fabrication ? new Date(selectedEPI.date_fabrication).toLocaleDateString('fr-FR') : 'N/A'}</p>
-                  <p><strong>Mise en service:</strong> {new Date(selectedEPI.date_mise_en_service).toLocaleDateString('fr-FR')}</p>
+                  <p><strong>Fabrication:</strong> {formatDateLocal(selectedEPI.date_fabrication)}</p>
+                  <p><strong>Mise en service:</strong> {formatDateLocal(selectedEPI.date_mise_en_service)}</p>
                   <p><strong>Coût d'achat:</strong> {selectedEPI.cout_achat} $</p>
                 </div>
                 
