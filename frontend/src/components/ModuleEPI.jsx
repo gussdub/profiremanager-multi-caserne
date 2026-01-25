@@ -10,6 +10,21 @@ import MesEPI from "./MesEPI";
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import InspectionUnifieeModal from './InspectionUnifieeModal';
 
+// Utilitaire pour formater une date ISO en format local (dd/mm/yyyy) sans décalage de timezone
+const formatDateLocal = (dateStr) => {
+  if (!dateStr) return 'N/A';
+  // Extraire uniquement la partie date (YYYY-MM-DD) sans conversion UTC
+  const datePart = dateStr.split('T')[0];
+  const [year, month, day] = datePart.split('-');
+  return `${day}/${month}/${year}`;
+};
+
+// Utilitaire pour extraire la partie date (YYYY-MM-DD) d'une chaîne ISO pour les inputs type="date"
+const extractDateForInput = (dateStr) => {
+  if (!dateStr) return '';
+  return dateStr.split('T')[0];
+};
+
 const ModuleEPI = ({ user }) => {
   const { tenantSlug } = useTenant();
   const { toast } = useToast();
