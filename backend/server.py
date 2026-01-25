@@ -22780,7 +22780,7 @@ async def create_epi(tenant_slug: str, epi: EPICreate, current_user: User = Depe
         await creer_activite(
             tenant_id=tenant.id,
             type_activite="epi_attribution",
-            description=f"🧰 {current_user.prenom} {current_user.nom} a attribué l'EPI '{epi.type_equipement}' (#{epi_dict['numero_serie']}) à {user['prenom']} {user['nom']}",
+            description=f"🧰 {current_user.prenom} {current_user.nom} a attribué l'EPI '{epi.type_epi}' (#{epi_dict['numero_serie']}) à {user['prenom']} {user['nom']}",
             user_id=current_user.id,
             user_nom=f"{current_user.prenom} {current_user.nom}",
             data={"concerne_user_id": epi.user_id}
