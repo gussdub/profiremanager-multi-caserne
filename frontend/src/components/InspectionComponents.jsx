@@ -362,7 +362,7 @@ const NouvelleInspection = ({ setCurrentView, batiments, selectedBatiment, onBat
   const [formData, setFormData] = useState({
     batiment_id: selectedBatiment?.id || '',
     grille_inspection_id: '',
-    date_inspection: new Date().toISOString().split('T')[0],
+    date_inspection: getLocalDateString(),
     type_inspection: 'reguliere'
   });
 
