@@ -2,6 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 
+// Fonction utilitaire pour formater une date locale au format YYYY-MM-DD (sans décalage timezone)
+const formatDateLocalYMD = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openBatimentModal }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [inspections, setInspections] = useState([]);
