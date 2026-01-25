@@ -907,7 +907,7 @@ const ModuleEPI = ({ user }) => {
                   <p><strong>Marque:</strong> {epi.marque}</p>
                   <p><strong>Modèle:</strong> {epi.modele}</p>
                   <p><strong>Assigné à:</strong> {getUserName(epi.user_id)}</p>
-                  <p><strong>Mise en service:</strong> {new Date(epi.date_mise_en_service).toLocaleDateString('fr-FR')}</p>
+                  <p><strong>Mise en service:</strong> {formatDateLocal(epi.date_mise_en_service)}</p>
                 </div>
                 <div className="epi-card-actions">
                   <Button size="sm" variant="outline" onClick={() => openDetailEPI(epi)}>
