@@ -700,10 +700,10 @@ const MesEPI = ({ user }) => {
                   {epi.modele && <p><strong>Modèle:</strong> {epi.modele}</p>}
                   {epi.taille && <p><strong>Taille:</strong> {epi.taille}</p>}
                   {epi.date_mise_en_service && (
-                    <p><strong>Mise en service:</strong> {new Date(epi.date_mise_en_service).toLocaleDateString('fr-FR')}</p>
+                    <p><strong>Mise en service:</strong> {formatDateLocal(epi.date_mise_en_service)}</p>
                   )}
                   {epi.prochaine_inspection && (
-                    <p><strong>Prochaine inspection:</strong> {new Date(epi.prochaine_inspection).toLocaleDateString('fr-FR')}</p>
+                    <p><strong>Prochaine inspection:</strong> {formatDateLocal(epi.prochaine_inspection)}</p>
                   )}
                 </div>
                 
