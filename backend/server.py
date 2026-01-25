@@ -24990,43 +24990,6 @@ async def get_statistiques_materiel(
 
 
 # ===== ÉQUIPEMENTS - EXPORTS =====
-    vehicule_id: Optional[str] = None,
-    employe_id: Optional[str] = None,
-    emplacement_type: Optional[str] = None,
-    alerte: Optional[bool] = None,
-    current_user: User = Depends(get_current_user)
-):
-    """Récupérer les équipements avec filtres optionnels"""
-    tenant = await get_tenant_from_slug(tenant_slug)
-    
-    query = {"tenant_id": tenant.id}
-    
-    if categorie_id:
-        query["categorie_id"] = categorie_id
-    if etat:
-        query["etat"] = etat
-    if vehicule_id:
-        query["vehicule_id"] = vehicule_id
-    if employe_id:
-        query["employe_id"] = employe_id
-    if emplacement_type:
-        query["emplacement_type"] = emplacement_type
-    if alerte:
-        query["$or"] = [
-            {"alerte_maintenance": True},
-            {"alerte_stock_bas": True},
-            {"alerte_reparation": True},
-            {"alerte_fin_vie": True},
-            {"alerte_expiration": True}
-        ]
-    
-    equipements = await db.equipements.find(
-        query,
-        {"_id": 0}
-    ).sort("nom", 1).to_list(10000)
-    
-    return equipements
-
 
 @api_router.get("/{tenant_slug}/equipements/export-csv")
 async def export_equipements_csv(
