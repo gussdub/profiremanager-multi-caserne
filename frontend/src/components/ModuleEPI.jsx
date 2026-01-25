@@ -57,7 +57,7 @@ const ModuleEPI = ({ user }) => {
     modele: '',
     numero_serie_fabricant: '',
     date_fabrication: '',
-    date_mise_en_service: new Date().toISOString().split('T')[0],
+    date_mise_en_service: getLocalDateString(),
     norme_certification: 'NFPA 1971',
     cout_achat: 0,
     couleur: '',
@@ -77,7 +77,7 @@ const ModuleEPI = ({ user }) => {
   const [inspections, setInspections] = useState([]);
   const [showAllInspections, setShowAllInspections] = useState(false);
   const [inspectionForm, setInspectionForm] = useState({
-    date_inspection: new Date().toISOString().split('T')[0],
+    date_inspection: getLocalDateString(),
     inspecteur_nom: '',
     inspecteur_id: '',
     isp_id: '',
@@ -113,7 +113,7 @@ const ModuleEPI = ({ user }) => {
   const [showNettoyageModal, setShowNettoyageModal] = useState(false);
   const [nettoyageForm, setNettoyageForm] = useState({
     type_nettoyage: 'routine',
-    date_nettoyage: new Date().toISOString().split('T')[0],
+    date_nettoyage: getLocalDateString(),
     methode: 'laveuse_extractrice',
     effectue_par: '',
     effectue_par_id: user?.id || '',
@@ -131,7 +131,7 @@ const ModuleEPI = ({ user }) => {
   const [selectedReparation, setSelectedReparation] = useState(null);
   const [reparationForm, setReparationForm] = useState({
     statut: 'demandee',
-    date_demande: new Date().toISOString().split('T')[0],
+    date_demande: getLocalDateString(),
     demandeur: user ? `${user.prenom} ${user.nom}` : '',
     demandeur_id: user?.id || '',
     reparateur_type: 'interne',
@@ -145,7 +145,7 @@ const ModuleEPI = ({ user }) => {
   // États Phase 2 - Retrait
   const [showRetraitModal, setShowRetraitModal] = useState(false);
   const [retraitForm, setRetraitForm] = useState({
-    date_retrait: new Date().toISOString().split('T')[0],
+    date_retrait: getLocalDateString(),
     raison: 'age_limite',
     description_raison: '',
     methode_disposition: 'coupe_detruit',
@@ -545,7 +545,7 @@ const ModuleEPI = ({ user }) => {
       modele: '',
       numero_serie_fabricant: '',
       date_fabrication: '',
-      date_mise_en_service: new Date().toISOString().split('T')[0],
+      date_mise_en_service: getLocalDateString(),
       norme_certification: 'NFPA 1971',
       cout_achat: 0,
       couleur: '',
@@ -701,7 +701,7 @@ const ModuleEPI = ({ user }) => {
       loadNettoyages(selectedEPI.id);
       setNettoyageForm({
         type_nettoyage: 'routine',
-        date_nettoyage: new Date().toISOString().split('T')[0],
+        date_nettoyage: getLocalDateString(),
         methode: 'laveuse_extractrice',
         effectue_par: '',
         effectue_par_id: user?.id || '',
@@ -759,7 +759,7 @@ const ModuleEPI = ({ user }) => {
       setSelectedReparation(null);
       setReparationForm({
         statut: 'demandee',
-        date_demande: new Date().toISOString().split('T')[0],
+        date_demande: getLocalDateString(),
         demandeur: `${user?.prenom} ${user?.nom}` || '',
         demandeur_id: user?.id || '',
         reparateur_type: 'interne',
@@ -1655,7 +1655,7 @@ const ModuleEPI = ({ user }) => {
                       <Input 
                         type="date"
                         id="nouvelle-date-service"
-                        defaultValue={new Date().toISOString().split('T')[0]}
+                        defaultValue={getLocalDateString()}
                       />
                     </div>
 
@@ -1739,7 +1739,7 @@ const ModuleEPI = ({ user }) => {
                     modele: nouveauModele,
                     taille: nouvelleTaille,
                     date_mise_en_service: nouvelleDateService,
-                    date_attribution: new Date().toISOString().split('T')[0],
+                    date_attribution: getLocalDateString(),
                     statut: 'En service',
                     user_id: selectedDemandeRemplacement.user_id,
                     notes: `Attribué suite à remplacement de ${epi.numero_serie}`
