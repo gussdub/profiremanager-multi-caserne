@@ -871,7 +871,7 @@ const Prevention = () => {
         grille: grille,
         batiment: batiment,
         inspecteur_id: user.id,
-        date_inspection: new Date().toISOString().split('T')[0]
+        date_inspection: getLocalDateString()
       }));
 
       // Naviguer vers la vue inspection-terrain
