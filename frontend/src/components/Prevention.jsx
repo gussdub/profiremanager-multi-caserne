@@ -6,6 +6,15 @@ import { useTenant } from '../contexts/TenantContext';
 import { useAuth } from '../contexts/AuthContext';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 
+// Fonction utilitaire pour obtenir la date locale au format YYYY-MM-DD (sans décalage timezone)
+const getLocalDateString = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 // Lazy load sub-components  
 const PlansIntervention = lazy(() => import('./PlansIntervention'));
 const ParametresPrevention = lazy(() => import('./ParametresPrevention'));
