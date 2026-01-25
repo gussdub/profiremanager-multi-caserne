@@ -4,6 +4,15 @@ import { apiGet, apiPost } from '../utils/api';
 import { useToast } from '../hooks/use-toast';
 import VoiceInputButton from './VoiceInputButton';
 
+// Fonction utilitaire pour obtenir la date locale au format YYYY-MM-DD (sans décalage timezone)
+const getLocalDateString = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const InspectionTerrain = ({ tenantSlug, grille, batiment, onComplete, onCancel }) => {
   const { toast } = useToast();
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
