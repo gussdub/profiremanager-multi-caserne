@@ -39483,6 +39483,7 @@ app.include_router(actifs_router, prefix="/api")  # Module Actifs (véhicules, b
 app.include_router(formations_router, prefix="/api")  # Module Formations (CRUD + inscriptions)
 app.include_router(equipements_router, prefix="/api")  # Module Équipements (CRUD + maintenance + alertes)
 app.include_router(prevention_router, prefix="/api")  # Module Prévention (bâtiments, inspections, grilles, secteurs)
+app.include_router(planning_router, prefix="/api")  # Module Planning (assignations, rapports heures)
 # disponibilites_router désactivé - routes server.py plus complètes (export PDF, blocage avancé)
 app.include_router(api_router)  # Routes principales (server.py)
 app.include_router(pwa_router, prefix="/api")
