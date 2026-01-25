@@ -71,7 +71,7 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
     setSelectedDate(date);
     setNewInspection({
       ...newInspection,
-      date_inspection: date.toISOString().split('T')[0],
+      date_inspection: formatDateLocalYMD(date),
       preventionniste_id: '' // Vide par défaut - non assigné
     });
     setShowCreateModal(true);
