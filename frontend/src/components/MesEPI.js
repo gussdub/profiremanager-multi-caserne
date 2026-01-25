@@ -662,11 +662,11 @@ const MesEPI = ({ user }) => {
       )}
 
       {/* Section EPI classiques */}
-      {epis.length === 0 && equipementsAssignes.length === 0 ? (
+      {epis.filter(e => e.statut !== 'Retiré').length === 0 && equipementsAssignes.length === 0 ? (
         <div className="empty-state">
           <p>Aucun EPI ou équipement ne vous est assigné pour le moment.</p>
         </div>
-      ) : epis.length > 0 && (
+      ) : epis.filter(e => e.statut !== 'Retiré').length > 0 && (
         <>
           <h2 style={{ 
             fontSize: '1.25rem', 
@@ -679,7 +679,7 @@ const MesEPI = ({ user }) => {
             🛡️ Mes EPI (Habits de combat)
           </h2>
           <div className="epi-grid">
-            {epis.map((epi) => (
+            {epis.filter(e => e.statut !== 'Retiré').map((epi) => (
               <div key={epi.id} className="epi-card">
                 <div className="epi-card-header">
                   <span className="epi-icon">{getTypeIcon(epi.type_epi)}</span>
