@@ -43,6 +43,7 @@ from routes.dsi_transmissions import router as dsi_transmissions_router
 from routes.personnel import router as personnel_router
 from routes.actifs import router as actifs_router
 from routes.formations import router as formations_router
+from routes.equipements import router as equipements_router
 # from routes.disponibilites import router as disponibilites_router  # Désactivé - routes server.py plus complètes
 from io import BytesIO
 import base64
