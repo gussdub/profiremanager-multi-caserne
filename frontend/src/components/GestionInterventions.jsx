@@ -1027,6 +1027,17 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
             >
               🖨️ Imprimer
             </Button>
+            
+            {/* Bouton Export XML DSI - visible uniquement pour les incendies signés ou en validation */}
+            {isFireIncident() && (formData.status === 'signed' || formData.status === 'review') && (
+              <Button
+                variant="outline"
+                onClick={handleExportXML}
+                className="border-green-500 text-green-700 hover:bg-green-50"
+              >
+                📄 Export XML DSI
+              </Button>
+            )}
           </div>
           
           <div className="flex gap-2 flex-wrap">
