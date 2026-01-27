@@ -637,6 +637,256 @@ const SuperAdminDashboard = ({ onLogout }) => {
     });
   };
 
+  // ==================== FONCTIONS SFTP ====================
+  
+  const fetchSftpConfig = async (tenantSlug) => {
+    try {
+      setSftpLoading(true);
+      const token = getToken();
+      const response = await fetch(`${API}/${tenantSlug}/sftp/config`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data) {
+          setSftpConfig(data);
+          setSftpFormData({
+            host: data.host || '',
+            port: data.port || 22,
+            username: data.username || '',
+            password: '', // Ne pas afficher le mot de passe
+            remote_path: data.remote_path || '/',
+            polling_interval: data.polling_interval || 30,
+            actif: data.actif !== false,
+            description: data.description || ''
+          });
+        }
+      }
+    } catch (error) {
+      console.log('Pas de configuration SFTP');
+    } finally {
+      setSftpLoading(false);
+    }
+  };
+
+  const handleSaveSftpConfig = async () => {
+    if (!sftpFormData.host || !sftpFormData.username) {
+      toast({
+        title: "Erreur",
+        description: "L'hôte et le nom d'utilisateur sont requis",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Si pas de nouveau mot de passe et config existante, on ne l'envoie pas
+    const dataToSend = { ...sftpFormData };
+    if (!dataToSend.password && sftpConfig) {
+      delete dataToSend.password;
+    } else if (!dataToSend.password && !sftpConfig) {
+      toast({
+        title: "Erreur",
+        description: "Le mot de passe est requis pour une nouvelle configuration",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      setSftpLoading(true);
+      const token = getToken();
+      const method = sftpConfig ? 'PUT' : 'POST';
+      
+      const response = await fetch(`${API}/${selectedTenant.slug}/sftp/config`, {
+        method: method,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(dataToSend)
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Erreur lors de la sauvegarde');
+      }
+      
+      toast({
+        title: "Succès",
+        description: "Configuration SFTP enregistrée"
+      });
+      
+      await fetchSftpConfig(selectedTenant.slug);
+      
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setSftpLoading(false);
+    }
+  };
+
+  const handleTestSftp = async () => {
+    const testData = { ...sftpFormData };
+    
+    try {
+      setSftpTesting(true);
+      const token = getToken();
+      
+      // Si pas de mot de passe, tester avec la config existante
+      const body = testData.password ? testData : null;
+      
+      const response = await fetch(`${API}/${selectedTenant.slug}/sftp/test`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: body ? JSON.stringify(body) : null
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        toast({
+          title: "✅ Connexion réussie",
+          description: result.message
+        });
+      } else {
+        toast({
+          title: "❌ Échec de connexion",
+          description: result.message,
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setSftpTesting(false);
+    }
+  };
+
+  const handleStartSftpPolling = async () => {
+    try {
+      const token = getToken();
+      const response = await fetch(`${API}/${selectedTenant.slug}/sftp/start-polling`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Erreur');
+      }
+      
+      toast({
+        title: "Succès",
+        description: "Surveillance SFTP démarrée"
+      });
+      
+      await fetchSftpConfig(selectedTenant.slug);
+      
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleStopSftpPolling = async () => {
+    try {
+      const token = getToken();
+      const response = await fetch(`${API}/${selectedTenant.slug}/sftp/stop-polling`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Erreur');
+      }
+      
+      toast({
+        title: "Succès",
+        description: "Surveillance SFTP arrêtée"
+      });
+      
+      await fetchSftpConfig(selectedTenant.slug);
+      
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteSftpConfig = async () => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer la configuration SFTP ?")) {
+      return;
+    }
+    
+    try {
+      const token = getToken();
+      const response = await fetch(`${API}/${selectedTenant.slug}/sftp/config`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Erreur');
+      }
+      
+      toast({
+        title: "Succès",
+        description: "Configuration SFTP supprimée"
+      });
+      
+      setSftpConfig(null);
+      setSftpFormData({
+        host: '',
+        port: 22,
+        username: '',
+        password: '',
+        remote_path: '/',
+        polling_interval: 30,
+        actif: true,
+        description: ''
+      });
+      
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
   // Fonctions pour gérer les super admins
   const fetchSuperAdmins = async () => {
     try {
