@@ -1,6 +1,8 @@
 """
 Routes API pour la configuration SFTP et le polling des cartes d'appel
 =====================================================================
+
+Ces routes sont accessibles UNIQUEMENT aux super-administrateurs depuis /admin.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
@@ -72,14 +74,9 @@ class SFTPConfig(BaseModel):
 @router.get("/{tenant_slug}/sftp/config")
 async def get_sftp_config(
     tenant_slug: str,
-    current_user: User = Depends(get_current_user_or_super_admin)
+    admin: SuperAdmin = Depends(get_super_admin)
 ):
-    """Récupérer la configuration SFTP du tenant"""
-    # Vérifier les permissions (admin du tenant ou super-admin)
-    is_super_admin = getattr(current_user, 'is_super_admin', False)
-    if not is_super_admin and current_user.role not in ["admin", "super_admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-    
+    """Récupérer la configuration SFTP du tenant (Super-admin uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     config = await db.sftp_configs.find_one(
@@ -101,14 +98,9 @@ async def get_sftp_config(
 async def create_sftp_config(
     tenant_slug: str,
     config_data: SFTPConfigCreate,
-    current_user: User = Depends(get_current_user_or_super_admin)
+    admin: SuperAdmin = Depends(get_super_admin)
 ):
-    """Créer ou mettre à jour la configuration SFTP"""
-    # Vérifier les permissions (admin du tenant ou super-admin)
-    is_super_admin = getattr(current_user, 'is_super_admin', False)
-    if not is_super_admin and current_user.role not in ["admin", "super_admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-    
+    """Créer ou mettre à jour la configuration SFTP (Super-admin uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     # Vérifier si une config existe déjà
@@ -141,14 +133,9 @@ async def create_sftp_config(
 async def update_sftp_config(
     tenant_slug: str,
     config_data: SFTPConfigUpdate,
-    current_user: User = Depends(get_current_user_or_super_admin)
+    admin: SuperAdmin = Depends(get_super_admin)
 ):
-    """Mettre à jour la configuration SFTP"""
-    # Vérifier les permissions (admin du tenant ou super-admin)
-    is_super_admin = getattr(current_user, 'is_super_admin', False)
-    if not is_super_admin and current_user.role not in ["admin", "super_admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-    
+    """Mettre à jour la configuration SFTP (Super-admin uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     existing = await db.sftp_configs.find_one({"tenant_id": tenant.id})
@@ -172,14 +159,9 @@ async def update_sftp_config(
 @router.delete("/{tenant_slug}/sftp/config")
 async def delete_sftp_config(
     tenant_slug: str,
-    current_user: User = Depends(get_current_user_or_super_admin)
+    admin: SuperAdmin = Depends(get_super_admin)
 ):
-    """Supprimer la configuration SFTP"""
-    # Vérifier les permissions (admin du tenant ou super-admin)
-    is_super_admin = getattr(current_user, 'is_super_admin', False)
-    if not is_super_admin and current_user.role not in ["admin", "super_admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-    
+    """Supprimer la configuration SFTP (Super-admin uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     # Arrêter le polling si actif
@@ -200,18 +182,13 @@ async def delete_sftp_config(
 async def test_sftp_connection(
     tenant_slug: str,
     config_data: Optional[SFTPConfigCreate] = None,
-    current_user: User = Depends(get_current_user_or_super_admin)
+    admin: SuperAdmin = Depends(get_super_admin)
 ):
     """
-    Tester la connexion SFTP.
+    Tester la connexion SFTP (Super-admin uniquement).
     Si config_data est fourni, teste avec ces paramètres.
     Sinon, teste avec la configuration existante.
     """
-    # Vérifier les permissions (admin du tenant ou super-admin)
-    is_super_admin = getattr(current_user, 'is_super_admin', False)
-    if not is_super_admin and current_user.role not in ["admin", "super_admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
     sftp_service = get_sftp_service()
     
@@ -237,14 +214,9 @@ async def test_sftp_connection(
 @router.post("/{tenant_slug}/sftp/start-polling")
 async def start_sftp_polling(
     tenant_slug: str,
-    current_user: User = Depends(get_current_user_or_super_admin)
+    admin: SuperAdmin = Depends(get_super_admin)
 ):
-    """Démarrer le polling SFTP pour ce tenant"""
-    # Vérifier les permissions (admin du tenant ou super-admin)
-    is_super_admin = getattr(current_user, 'is_super_admin', False)
-    if not is_super_admin and current_user.role not in ["admin", "super_admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-    
+    """Démarrer le polling SFTP pour ce tenant (Super-admin uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     # Vérifier que la config existe et est active
@@ -270,14 +242,9 @@ async def start_sftp_polling(
 @router.post("/{tenant_slug}/sftp/stop-polling")
 async def stop_sftp_polling(
     tenant_slug: str,
-    current_user: User = Depends(get_current_user_or_super_admin)
+    admin: SuperAdmin = Depends(get_super_admin)
 ):
-    """Arrêter le polling SFTP pour ce tenant"""
-    # Vérifier les permissions (admin du tenant ou super-admin)
-    is_super_admin = getattr(current_user, 'is_super_admin', False)
-    if not is_super_admin and current_user.role not in ["admin", "super_admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-    
+    """Arrêter le polling SFTP pour ce tenant (Super-admin uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     sftp_service = get_sftp_service()
     
@@ -289,14 +256,9 @@ async def stop_sftp_polling(
 @router.post("/{tenant_slug}/sftp/check-now")
 async def check_sftp_now(
     tenant_slug: str,
-    current_user: User = Depends(get_current_user_or_super_admin)
+    admin: SuperAdmin = Depends(get_super_admin)
 ):
-    """Vérifier le SFTP immédiatement (sans attendre le polling)"""
-    # Vérifier les permissions (admin du tenant, superviseur ou super-admin)
-    is_super_admin = getattr(current_user, 'is_super_admin', False)
-    if not is_super_admin and current_user.role not in ["admin", "superviseur", "super_admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-    
+    """Vérifier le SFTP immédiatement (Super-admin uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     sftp_service = get_sftp_service()
     
@@ -328,14 +290,9 @@ async def check_sftp_now(
 @router.get("/{tenant_slug}/sftp/status")
 async def get_sftp_status(
     tenant_slug: str,
-    current_user: User = Depends(get_current_user_or_super_admin)
+    admin: SuperAdmin = Depends(get_super_admin)
 ):
-    """Obtenir le statut du service SFTP"""
-    # Vérifier les permissions (admin du tenant, superviseur ou super-admin)
-    is_super_admin = getattr(current_user, 'is_super_admin', False)
-    if not is_super_admin and current_user.role not in ["admin", "superviseur", "super_admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-    
+    """Obtenir le statut du service SFTP (Super-admin uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     sftp_service = get_sftp_service()
     ws_manager = get_websocket_manager()
