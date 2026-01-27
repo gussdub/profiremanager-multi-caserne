@@ -12,10 +12,9 @@ import logging
 
 from routes.dependencies import (
     db,
-    get_current_user,
-    get_current_user_or_super_admin,
+    get_super_admin,
     get_tenant_from_slug,
-    User
+    SuperAdmin
 )
 from services.sftp_service import get_sftp_service, init_sftp_service
 from services.websocket_manager import get_websocket_manager
