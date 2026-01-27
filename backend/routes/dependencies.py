@@ -190,6 +190,76 @@ async def get_current_user(
         raise HTTPException(status_code=401, detail=f"Token invalide: {str(e)}")
 
 
+class SuperAdminUser(BaseModel):
+    """Modèle pour représenter un super-admin comme un User compatible"""
+    id: str
+    email: str
+    nom: str
+    prenom: str = ""
+    role: str = "super_admin"
+    tenant_id: str = ""  # Super-admins n'ont pas de tenant spécifique
+    is_super_admin: bool = True
+    
+    class Config:
+        extra = "allow"
+
+
+async def get_current_user_or_super_admin(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+) -> User:
+    """
+    Dépendance FastAPI qui authentifie à la fois les utilisateurs réguliers ET les super-administrateurs.
+    
+    Cette dépendance est nécessaire pour les routes qui doivent être accessibles par les deux types d'utilisateurs,
+    comme la configuration SFTP qui peut être gérée depuis le tableau de bord super-admin.
+    
+    Retourne un objet User (ou SuperAdminUser compatible) avec le flag is_super_admin si applicable.
+    """
+    token = credentials.credentials
+    
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        user_id = payload.get("sub") or payload.get("user_id")
+        role = payload.get("role", "")
+        
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Token invalide")
+        
+        # Vérifier si c'est un super-admin
+        if role == "super_admin":
+            super_admin_doc = await db.super_admins.find_one({"id": user_id})
+            
+            if not super_admin_doc:
+                raise HTTPException(status_code=401, detail="Super administrateur non trouvé")
+            
+            # Retourner un objet compatible avec User
+            cleaned = clean_mongo_doc(super_admin_doc)
+            return SuperAdminUser(
+                id=cleaned.get("id"),
+                email=cleaned.get("email", ""),
+                nom=cleaned.get("nom", ""),
+                prenom=cleaned.get("prenom", ""),
+                role="super_admin",
+                is_super_admin=True
+            )
+        
+        # Sinon, c'est un utilisateur régulier
+        user_doc = await db.users.find_one({"id": user_id})
+        
+        if not user_doc:
+            raise HTTPException(status_code=401, detail="Utilisateur non trouvé")
+        
+        user = User(**clean_mongo_doc(user_doc))
+        # Ajouter le flag is_super_admin = False pour cohérence
+        user.is_super_admin = False
+        return user
+        
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expiré")
+    except jwt.InvalidTokenError as e:
+        raise HTTPException(status_code=401, detail=f"Token invalide: {str(e)}")
+
+
 async def verify_tenant_access(user: User, tenant_slug: str) -> Tenant:
     """
     Vérifie que l'utilisateur a accès au tenant demandé.
