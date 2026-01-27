@@ -150,7 +150,16 @@ async def update_sftp_config(
     if not existing:
         raise HTTPException(status_code=404, detail="Configuration SFTP non trouvée")
     
-    update_data = {k: v for k, v in config_data.dict().items() if v is not None}
+    # Exclure les valeurs None ET le mot de passe vide
+    update_data = {}
+    for k, v in config_data.dict().items():
+        if v is None:
+            continue
+        # Ne pas inclure le mot de passe s'il est vide
+        if k == "password" and not v:
+            continue
+        update_data[k] = v
+    
     if not update_data:
         return {"message": "Aucune modification"}
     
