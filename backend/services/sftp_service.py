@@ -40,9 +40,27 @@ class SFTPService:
         )
         return config
     
+    def _clean_host(self, host: str) -> str:
+        """Nettoie le hostname en enlevant les protocoles et trailing slashes"""
+        if not host:
+            return host
+        # Enlever les protocoles courants
+        for prefix in ['http://', 'https://', 'sftp://', 'ftp://']:
+            if host.lower().startswith(prefix):
+                host = host[len(prefix):]
+        # Enlever le trailing slash et le path
+        host = host.split('/')[0]
+        # Enlever le port si présent dans l'URL
+        if ':' in host:
+            host = host.split(':')[0]
+        return host.strip()
+    
     def connect_sftp(self, config: Dict) -> paramiko.SFTPClient:
         """Établit une connexion SFTP"""
-        transport = paramiko.Transport((config["host"], config.get("port", 22)))
+        host = self._clean_host(config["host"])
+        port = config.get("port", 22)
+        
+        transport = paramiko.Transport((host, port))
         transport.connect(
             username=config["username"],
             password=config["password"]
