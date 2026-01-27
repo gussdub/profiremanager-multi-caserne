@@ -314,11 +314,43 @@ async def startup_event():
     # Initialiser les grades par défaut
     await initialize_default_grades()
     
+    # Initialiser le service SFTP
+    from services.sftp_service import init_sftp_service
+    from services.websocket_manager import get_websocket_manager
+    ws_manager = get_websocket_manager()
+    init_sftp_service(db, ws_manager)
+    logger.info("Service SFTP initialisé")
+    
+    # Démarrer le polling SFTP pour les tenants actifs
+    asyncio.create_task(start_sftp_polling_for_active_tenants())
+    
     # Démarrer le job périodique pour vérifier les timeouts de remplacement
     asyncio.create_task(job_verifier_timeouts_remplacements())
     
     # Démarrer le nettoyage périodique des tâches SSE expirées
     asyncio.create_task(cleanup_expired_tasks())
+
+
+async def start_sftp_polling_for_active_tenants():
+    """Démarre le polling SFTP pour tous les tenants avec une config active"""
+    await asyncio.sleep(5)  # Attendre que l'app soit prête
+    
+    from services.sftp_service import get_sftp_service
+    sftp_service = get_sftp_service()
+    
+    # Récupérer tous les configs SFTP actives
+    configs = await db.sftp_configs.find({"actif": True}, {"_id": 0}).to_list(100)
+    
+    for config in configs:
+        tenant_id = config["tenant_id"]
+        tenant = await db.tenants.find_one({"id": tenant_id}, {"_id": 0})
+        if tenant:
+            await sftp_service.start_polling(
+                tenant_id,
+                tenant.get("slug", tenant_id),
+                interval=config.get("polling_interval", 30)
+            )
+            logger.info(f"Polling SFTP démarré pour tenant {tenant.get('slug', tenant_id)}")
 
 # ==================== SYSTÈME DE PROGRESSION TEMPS RÉEL ====================
 # Dictionnaire global pour stocker les progressions des attributions auto
