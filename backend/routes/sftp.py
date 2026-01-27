@@ -81,7 +81,7 @@ async def get_sftp_config(
     
     config = await db.sftp_configs.find_one(
         {"tenant_id": tenant.id},
-        {"_id": 0, "password": 0}  # Ne pas exposer le mot de passe
+        {"_id": 0}  # Inclure le mot de passe pour les super-admins
     )
     
     if not config:
