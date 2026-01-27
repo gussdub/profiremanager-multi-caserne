@@ -279,7 +279,7 @@ async def check_sftp_now(
     current_user: User = Depends(get_current_user)
 ):
     """Vérifier le SFTP immédiatement (sans attendre le polling)"""
-    if current_user.role not in ["admin", "superviseur"]:
+    if current_user.role not in ["admin", "superviseur", "super_admin", "superadmin"]:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
     
     tenant = await get_tenant_from_slug(tenant_slug)
@@ -316,7 +316,7 @@ async def get_sftp_status(
     current_user: User = Depends(get_current_user)
 ):
     """Obtenir le statut du service SFTP"""
-    if current_user.role not in ["admin", "superviseur"]:
+    if current_user.role not in ["admin", "superviseur", "super_admin", "superadmin"]:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
     
     tenant = await get_tenant_from_slug(tenant_slug)
