@@ -290,16 +290,6 @@ const TabRapports = ({ user, tenantSlug, toast, readOnly = false }) => {
             </span>
           </div>
         </div>
-        
-        {canImport && (
-          <Button 
-            onClick={() => setShowImportModal(true)}
-            className="bg-green-600 hover:bg-green-700"
-            data-testid="import-xml-btn"
-          >
-            📤 Importer XML
-          </Button>
-        )}
       </div>
 
       {/* Colonnes Kanban */}
