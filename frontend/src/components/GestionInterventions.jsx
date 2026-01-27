@@ -185,9 +185,6 @@ const GestionInterventions = ({ user, tenantSlug }) => {
       {activeTab === 'parametres' && user?.role === 'admin' && (
         <TabParametres user={user} tenantSlug={tenantSlug} toast={toast} />
       )}
-      {activeTab === 'sftp' && user?.role === 'admin' && (
-        <ConfigurationSFTP user={user} />
-      )}
     </div>
   );
 };
