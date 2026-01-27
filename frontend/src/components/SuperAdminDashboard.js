@@ -659,7 +659,7 @@ const SuperAdminDashboard = ({ onLogout }) => {
             host: data.host || '',
             port: data.port || 22,
             username: data.username || '',
-            password: '', // Ne pas afficher le mot de passe
+            password: data.password || '', // Afficher le mot de passe pour le super-admin
             remote_path: data.remote_path || '/',
             polling_interval: data.polling_interval || 30,
             actif: data.actif !== false,
