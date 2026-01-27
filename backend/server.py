@@ -46,6 +46,7 @@ from routes.formations import router as formations_router
 from routes.equipements import router as equipements_router
 from routes.prevention import router as prevention_router
 from routes.planning import router as planning_router
+from routes.sftp import router as sftp_router
 # from routes.disponibilites import router as disponibilites_router  # Désactivé - routes server.py plus complètes
 from io import BytesIO
 import base64
