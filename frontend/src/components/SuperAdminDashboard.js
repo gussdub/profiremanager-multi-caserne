@@ -1926,6 +1926,34 @@ const SuperAdminDashboard = ({ onLogout }) => {
                   </label>
                 </div>
               </div>
+
+              {/* Section Configuration SFTP 911 */}
+              <div style={{ 
+                padding: '20px', 
+                background: '#f0f9ff', 
+                borderRadius: '8px',
+                border: '1px solid #0ea5e9',
+                marginTop: '10px'
+              }}>
+                <div style={{ marginBottom: '15px' }}>
+                  <Label style={{ fontSize: '16px', fontWeight: 'bold', color: '#0369a1' }}>
+                    📡 Configuration SFTP - Cartes d'appel 911
+                  </Label>
+                  <p style={{ fontSize: '13px', color: '#0369a1', margin: '5px 0 0 0' }}>
+                    Configurez la connexion au serveur SFTP de la centrale 911 pour importer automatiquement les cartes d'appel
+                  </p>
+                </div>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowSftpConfigModal(true);
+                  }}
+                  style={{ backgroundColor: 'white' }}
+                >
+                  ⚙️ Configurer le SFTP
+                </Button>
+              </div>
             </div>
 
             <div style={{ display: 'flex', gap: '10px', marginTop: '30px', justifyContent: 'flex-end' }}>
