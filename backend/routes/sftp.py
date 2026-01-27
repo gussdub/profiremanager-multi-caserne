@@ -107,8 +107,13 @@ async def create_sftp_config(
     existing = await db.sftp_configs.find_one({"tenant_id": tenant.id})
     
     if existing:
-        # Mettre à jour
+        # Mettre à jour - exclure le mot de passe s'il est vide pour conserver l'ancien
         update_data = config_data.dict()
+        
+        # Si le mot de passe est vide, ne pas l'inclure dans la mise à jour
+        if not update_data.get("password"):
+            del update_data["password"]
+        
         update_data["updated_at"] = datetime.now(timezone.utc)
         
         await db.sftp_configs.update_one(
@@ -118,7 +123,10 @@ async def create_sftp_config(
         
         return {"message": "Configuration SFTP mise à jour", "id": existing["id"]}
     else:
-        # Créer
+        # Créer - le mot de passe est obligatoire pour une nouvelle config
+        if not config_data.password:
+            raise HTTPException(status_code=400, detail="Le mot de passe est obligatoire pour une nouvelle configuration")
+        
         config = SFTPConfig(
             tenant_id=tenant.id,
             **config_data.dict()
