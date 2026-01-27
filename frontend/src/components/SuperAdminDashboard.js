@@ -736,11 +736,32 @@ const SuperAdminDashboard = ({ onLogout }) => {
   const handleTestSftp = async () => {
     const testData = { ...sftpFormData };
     
+    // Vérifier qu'on a les infos minimales pour tester
+    if (!testData.host || !testData.username) {
+      toast({
+        title: "Erreur",
+        description: "L'hôte et le nom d'utilisateur sont requis pour tester",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Si pas de mot de passe dans le formulaire et config existante, on ne peut pas tester avec les nouveaux params
+    if (!testData.password && !sftpConfig) {
+      toast({
+        title: "Erreur",
+        description: "Le mot de passe est requis pour tester une nouvelle configuration",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     try {
       setSftpTesting(true);
       const token = getToken();
       
-      // Si pas de mot de passe, tester avec la config existante
+      // Si pas de mot de passe mais config existante, tester avec config existante (body null)
+      // Sinon, envoyer les données du formulaire
       const body = testData.password ? testData : null;
       
       const response = await fetch(`${API}/${selectedTenant.slug}/sftp/test`, {
