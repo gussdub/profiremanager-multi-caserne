@@ -2357,12 +2357,33 @@ const SuperAdminDashboard = ({ onLogout }) => {
 
                 <div>
                   <Label>Mot de passe {sftpConfig ? '(laisser vide pour conserver)' : '*'}</Label>
-                  <Input
-                    type="password"
-                    value={sftpFormData.password}
-                    onChange={(e) => setSftpFormData({ ...sftpFormData, password: e.target.value })}
-                    placeholder={sftpConfig ? '••••••••' : 'Mot de passe'}
-                  />
+                  <div style={{ position: 'relative' }}>
+                    <Input
+                      type={showSftpPassword ? 'text' : 'password'}
+                      value={sftpFormData.password}
+                      onChange={(e) => setSftpFormData({ ...sftpFormData, password: e.target.value })}
+                      placeholder={sftpConfig ? '••••••••' : 'Mot de passe'}
+                      style={{ paddingRight: '40px' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowSftpPassword(!showSftpPassword)}
+                      style={{
+                        position: 'absolute',
+                        right: '10px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '18px',
+                        padding: '0'
+                      }}
+                      title={showSftpPassword ? 'Masquer' : 'Afficher'}
+                    >
+                      {showSftpPassword ? '🙈' : '👁️'}
+                    </button>
+                  </div>
                 </div>
 
                 <div>
