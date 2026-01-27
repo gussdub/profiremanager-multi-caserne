@@ -199,7 +199,8 @@ async def test_sftp_connection(
     Si config_data est fourni, teste avec ces paramètres.
     Sinon, teste avec la configuration existante.
     """
-    if current_user.role != "admin":
+    # Permettre aux super-admins et admins
+    if current_user.role not in ["admin", "super_admin", "superadmin"]:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
     
     tenant = await get_tenant_from_slug(tenant_slug)
@@ -208,6 +209,7 @@ async def test_sftp_connection(
     if config_data:
         # Tester avec les paramètres fournis
         test_config = config_data.dict()
+        logger.info(f"Test SFTP avec config fournie: host={test_config.get('host')}, user={test_config.get('username')}")
     else:
         # Tester avec la config existante
         test_config = await db.sftp_configs.find_one(
@@ -216,6 +218,7 @@ async def test_sftp_connection(
         )
         if not test_config:
             raise HTTPException(status_code=404, detail="Configuration SFTP non trouvée")
+        logger.info(f"Test SFTP avec config existante: host={test_config.get('host')}")
     
     result = await sftp_service.test_connection(test_config)
     
