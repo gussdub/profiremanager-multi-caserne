@@ -367,20 +367,6 @@ const TabRapports = ({ user, tenantSlug, toast, readOnly = false }) => {
         </Card>
       </div>
 
-      {/* Modal Import XML */}
-      {showImportModal && (
-        <ImportXMLModal
-          tenantSlug={tenantSlug}
-          onClose={() => setShowImportModal(false)}
-          onSuccess={() => {
-            setShowImportModal(false);
-            fetchDashboard();
-            toast({ title: "Import réussi", description: "Les fichiers XML ont été importés" });
-          }}
-          toast={toast}
-        />
-      )}
-
       {/* Modal Détail Intervention */}
       {selectedIntervention && (
         <InterventionDetailModal
