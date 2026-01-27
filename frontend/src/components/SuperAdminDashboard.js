@@ -2212,6 +2212,7 @@ const SuperAdminDashboard = ({ onLogout }) => {
                   variant="outline" 
                   onClick={() => {
                     setShowSftpConfigModal(true);
+                    fetchSftpConfig(selectedTenant.slug);
                   }}
                   style={{ backgroundColor: 'white' }}
                 >
