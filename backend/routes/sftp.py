@@ -102,10 +102,12 @@ async def get_sftp_config(
 async def create_sftp_config(
     tenant_slug: str,
     config_data: SFTPConfigCreate,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_or_super_admin)
 ):
     """Créer ou mettre à jour la configuration SFTP"""
-    if current_user.role not in ["admin", "super_admin", "superadmin"]:
+    # Vérifier les permissions (admin du tenant ou super-admin)
+    is_super_admin = getattr(current_user, 'is_super_admin', False)
+    if not is_super_admin and current_user.role not in ["admin", "super_admin", "superadmin"]:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
     
     tenant = await get_tenant_from_slug(tenant_slug)
