@@ -634,6 +634,55 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
     }
   };
 
+  // Export XML DSI
+  const handleExportXML = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/dsi/export/${formData.id}/xml?tenant_slug=${tenantSlug}`, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Créer un blob et télécharger le fichier
+        const blob = new Blob([data.content], { type: 'application/xml' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = data.filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        toast({ 
+          title: "Export réussi", 
+          description: `Fichier ${data.filename} téléchargé` 
+        });
+      } else {
+        const error = await response.json();
+        if (error.detail?.errors) {
+          // Afficher les erreurs de validation
+          const errorMessages = error.detail.errors.map(e => e.message).join('\n');
+          toast({ 
+            title: "Export impossible", 
+            description: `Validation DSI échouée:\n${errorMessages}`,
+            variant: "destructive"
+          });
+        } else {
+          toast({ 
+            title: "Erreur", 
+            description: error.detail?.message || error.detail || "Erreur d'export",
+            variant: "destructive"
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Erreur export XML:', error);
+      toast({ title: "Erreur", description: "Erreur lors de l'export XML", variant: "destructive" });
+    }
+  };
+
   const formatDateTime = (dateStr) => {
     if (!dateStr) return '-';
     try {
