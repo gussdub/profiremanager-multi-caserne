@@ -75,7 +75,7 @@ async def get_sftp_config(
     current_user: User = Depends(get_current_user)
 ):
     """Récupérer la configuration SFTP du tenant"""
-    if current_user.role != "admin":
+    if current_user.role not in ["admin", "super_admin", "superadmin"]:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
     
     tenant = await get_tenant_from_slug(tenant_slug)
@@ -102,7 +102,7 @@ async def create_sftp_config(
     current_user: User = Depends(get_current_user)
 ):
     """Créer ou mettre à jour la configuration SFTP"""
-    if current_user.role != "admin":
+    if current_user.role not in ["admin", "super_admin", "superadmin"]:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
     
     tenant = await get_tenant_from_slug(tenant_slug)
@@ -140,7 +140,7 @@ async def update_sftp_config(
     current_user: User = Depends(get_current_user)
 ):
     """Mettre à jour la configuration SFTP"""
-    if current_user.role != "admin":
+    if current_user.role not in ["admin", "super_admin", "superadmin"]:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
     
     tenant = await get_tenant_from_slug(tenant_slug)
@@ -169,7 +169,7 @@ async def delete_sftp_config(
     current_user: User = Depends(get_current_user)
 ):
     """Supprimer la configuration SFTP"""
-    if current_user.role != "admin":
+    if current_user.role not in ["admin", "super_admin", "superadmin"]:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
     
     tenant = await get_tenant_from_slug(tenant_slug)
@@ -231,7 +231,7 @@ async def start_sftp_polling(
     current_user: User = Depends(get_current_user)
 ):
     """Démarrer le polling SFTP pour ce tenant"""
-    if current_user.role != "admin":
+    if current_user.role not in ["admin", "super_admin", "superadmin"]:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
     
     tenant = await get_tenant_from_slug(tenant_slug)
@@ -262,7 +262,7 @@ async def stop_sftp_polling(
     current_user: User = Depends(get_current_user)
 ):
     """Arrêter le polling SFTP pour ce tenant"""
-    if current_user.role != "admin":
+    if current_user.role not in ["admin", "super_admin", "superadmin"]:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
     
     tenant = await get_tenant_from_slug(tenant_slug)
