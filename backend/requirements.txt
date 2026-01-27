@@ -70,3 +70,4 @@ qrcode>=7.4.0
 --extra-index-url https://d33sy5i8bnduwe.cloudfront.net/simple/
 emergentintegrations>=0.1.0
 paramiko==4.0.0
+matplotlib==3.10.7
