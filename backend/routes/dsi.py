@@ -20,7 +20,7 @@ router = APIRouter(prefix="/dsi", tags=["DSI"])
 
 # Connexion MongoDB
 MONGO_URL = os.environ.get('MONGO_URL')
-DB_NAME = os.environ.get('DB_NAME', 'profiremanager-dev')
+DB_NAME = os.environ.get('DB_NAME', 'profiremanager')  # Même défaut que server.py
 client = MongoClient(MONGO_URL)
 db = client[DB_NAME]
 
