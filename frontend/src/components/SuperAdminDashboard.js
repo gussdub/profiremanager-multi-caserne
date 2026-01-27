@@ -31,6 +31,7 @@ const SuperAdminDashboard = ({ onLogout }) => {
   const [selectedTenant, setSelectedTenant] = useState(null);
   const [showInactivityWarning, setShowInactivityWarning] = useState(false);
   const [showSftpConfigModal, setShowSftpConfigModal] = useState(false);
+  const [showSftpPassword, setShowSftpPassword] = useState(false);
   const [sftpConfig, setSftpConfig] = useState(null);
   const [sftpLoading, setSftpLoading] = useState(false);
   const [sftpTesting, setSftpTesting] = useState(false);
