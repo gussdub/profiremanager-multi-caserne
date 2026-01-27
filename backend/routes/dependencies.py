@@ -27,7 +27,7 @@ from functools import lru_cache
 # ==================== CONFIGURATION ====================
 
 MONGO_URL = os.environ.get('MONGO_URL')
-DB_NAME = os.environ.get('DB_NAME', 'profiremanager-dev')
+DB_NAME = os.environ.get('DB_NAME', 'profiremanager')  # Même défaut que server.py
 JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key-here')  # Même valeur que server.py
 JWT_ALGORITHM = "HS256"
 
