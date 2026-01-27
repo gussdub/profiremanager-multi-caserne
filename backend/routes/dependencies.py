@@ -190,74 +190,43 @@ async def get_current_user(
         raise HTTPException(status_code=401, detail=f"Token invalide: {str(e)}")
 
 
-class SuperAdminUser(BaseModel):
-    """Modèle pour représenter un super-admin comme un User compatible"""
-    id: str
+class SuperAdmin(BaseModel):
+    """Modèle Super Admin - identique à celui de server.py"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     email: str
     nom: str
-    prenom: str = ""
-    role: str = "super_admin"
-    tenant_id: str = ""  # Super-admins n'ont pas de tenant spécifique
-    is_super_admin: bool = True
+    mot_de_passe_hash: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     
     class Config:
         extra = "allow"
 
 
-async def get_current_user_or_super_admin(
+async def get_super_admin(
     credentials: HTTPAuthorizationCredentials = Depends(security)
-) -> User:
+) -> SuperAdmin:
     """
-    Dépendance FastAPI qui authentifie à la fois les utilisateurs réguliers ET les super-administrateurs.
-    
-    Cette dépendance est nécessaire pour les routes qui doivent être accessibles par les deux types d'utilisateurs,
-    comme la configuration SFTP qui peut être gérée depuis le tableau de bord super-admin.
-    
-    Retourne un objet User (ou SuperAdminUser compatible) avec le flag is_super_admin si applicable.
+    Authentifie et retourne le super admin.
+    Identique à la fonction dans server.py pour assurer la cohérence.
+    Utilisée pour les routes SFTP accessibles uniquement aux super-admins.
     """
-    token = credentials.credentials
-    
     try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-        user_id = payload.get("sub") or payload.get("user_id")
-        role = payload.get("role", "")
+        payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        admin_id: str = payload.get("sub")
+        role: str = payload.get("role")
         
-        if not user_id:
-            raise HTTPException(status_code=401, detail="Token invalide")
-        
-        # Vérifier si c'est un super-admin
-        if role == "super_admin":
-            super_admin_doc = await db.super_admins.find_one({"id": user_id})
+        if role != "super_admin":
+            raise HTTPException(status_code=403, detail="Accès super admin requis")
             
-            if not super_admin_doc:
-                raise HTTPException(status_code=401, detail="Super administrateur non trouvé")
-            
-            # Retourner un objet compatible avec User
-            cleaned = clean_mongo_doc(super_admin_doc)
-            return SuperAdminUser(
-                id=cleaned.get("id"),
-                email=cleaned.get("email", ""),
-                nom=cleaned.get("nom", ""),
-                prenom=cleaned.get("prenom", ""),
-                role="super_admin",
-                is_super_admin=True
-            )
+        admin = await db.super_admins.find_one({"id": admin_id})
+        if not admin:
+            raise HTTPException(status_code=401, detail="Super admin non trouvé")
         
-        # Sinon, c'est un utilisateur régulier
-        user_doc = await db.users.find_one({"id": user_id})
-        
-        if not user_doc:
-            raise HTTPException(status_code=401, detail="Utilisateur non trouvé")
-        
-        user = User(**clean_mongo_doc(user_doc))
-        # Ajouter le flag is_super_admin = False pour cohérence
-        user.is_super_admin = False
-        return user
-        
+        return SuperAdmin(**clean_mongo_doc(admin))
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expiré")
-    except jwt.InvalidTokenError as e:
-        raise HTTPException(status_code=401, detail=f"Token invalide: {str(e)}")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Token invalide")
 
 
 async def verify_tenant_access(user: User, tenant_slug: str) -> Tenant:
