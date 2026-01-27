@@ -2236,6 +2236,192 @@ const SuperAdminDashboard = ({ onLogout }) => {
         </div>
       )}
 
+      {/* Modal Configuration SFTP */}
+      {showSftpConfigModal && selectedTenant && (
+        <div className="modal-overlay" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1001
+        }}>
+          <div className="modal-content" style={{
+            backgroundColor: 'white',
+            padding: '30px',
+            borderRadius: '10px',
+            maxWidth: '700px',
+            width: '90%',
+            maxHeight: '90vh',
+            overflow: 'auto'
+          }}>
+            <h2 style={{ marginBottom: '10px', fontSize: '24px', fontWeight: 'bold' }}>
+              📡 Configuration SFTP - Cartes d'appel 911
+            </h2>
+            <p style={{ marginBottom: '20px', color: '#666', fontSize: '14px' }}>
+              Configurer l'accès SFTP pour <strong>{selectedTenant.nom}</strong>
+            </p>
+
+            {sftpLoading ? (
+              <div style={{ textAlign: 'center', padding: '2rem' }}>
+                <p>Chargement...</p>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gap: '15px' }}>
+                {/* Statut actuel */}
+                {sftpConfig && (
+                  <div style={{ 
+                    padding: '15px', 
+                    borderRadius: '8px', 
+                    backgroundColor: sftpConfig.polling_active ? '#dcfce7' : '#fef3c7',
+                    border: `1px solid ${sftpConfig.polling_active ? '#86efac' : '#fcd34d'}`,
+                    marginBottom: '10px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div>
+                        <strong>{sftpConfig.polling_active ? '✅ Surveillance active' : '⏸️ Surveillance inactive'}</strong>
+                        {sftpConfig.last_check && (
+                          <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                            Dernière vérification: {new Date(sftpConfig.last_check).toLocaleString('fr-FR')}
+                          </p>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        {sftpConfig.polling_active ? (
+                          <Button variant="outline" size="sm" onClick={handleStopSftpPolling}>
+                            ⏹️ Arrêter
+                          </Button>
+                        ) : (
+                          <Button size="sm" onClick={handleStartSftpPolling}>
+                            ▶️ Démarrer
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px', gap: '15px' }}>
+                  <div>
+                    <Label>Serveur SFTP *</Label>
+                    <Input
+                      value={sftpFormData.host}
+                      onChange={(e) => setSftpFormData({ ...sftpFormData, host: e.target.value })}
+                      placeholder="sftp.centrale911.ca"
+                    />
+                  </div>
+                  <div>
+                    <Label>Port</Label>
+                    <Input
+                      type="number"
+                      value={sftpFormData.port}
+                      onChange={(e) => setSftpFormData({ ...sftpFormData, port: parseInt(e.target.value) || 22 })}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label>Nom d'utilisateur *</Label>
+                  <Input
+                    value={sftpFormData.username}
+                    onChange={(e) => setSftpFormData({ ...sftpFormData, username: e.target.value })}
+                    placeholder="user_sftp"
+                  />
+                </div>
+
+                <div>
+                  <Label>Mot de passe {sftpConfig ? '(laisser vide pour conserver)' : '*'}</Label>
+                  <Input
+                    type="password"
+                    value={sftpFormData.password}
+                    onChange={(e) => setSftpFormData({ ...sftpFormData, password: e.target.value })}
+                    placeholder={sftpConfig ? '••••••••' : 'Mot de passe'}
+                  />
+                </div>
+
+                <div>
+                  <Label>Chemin du répertoire</Label>
+                  <Input
+                    value={sftpFormData.remote_path}
+                    onChange={(e) => setSftpFormData({ ...sftpFormData, remote_path: e.target.value })}
+                    placeholder="/cartes_appel/shefford"
+                  />
+                  <small style={{ color: '#666' }}>Répertoire où sont déposées les cartes d'appel XML</small>
+                </div>
+
+                <div>
+                  <Label>Intervalle de vérification (secondes)</Label>
+                  <Input
+                    type="number"
+                    min="10"
+                    max="300"
+                    value={sftpFormData.polling_interval}
+                    onChange={(e) => setSftpFormData({ ...sftpFormData, polling_interval: parseInt(e.target.value) || 30 })}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <input
+                    type="checkbox"
+                    id="sftp_actif"
+                    checked={sftpFormData.actif}
+                    onChange={(e) => setSftpFormData({ ...sftpFormData, actif: e.target.checked })}
+                  />
+                  <Label htmlFor="sftp_actif" style={{ marginBottom: 0 }}>Configuration active</Label>
+                </div>
+
+                <div>
+                  <Label>Description (optionnel)</Label>
+                  <Input
+                    value={sftpFormData.description}
+                    onChange={(e) => setSftpFormData({ ...sftpFormData, description: e.target.value })}
+                    placeholder="CAUCA - Chaudière-Appalaches"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '25px', justifyContent: 'space-between' }}>
+              <div>
+                {sftpConfig && (
+                  <Button variant="destructive" onClick={handleDeleteSftpConfig}>
+                    🗑️ Supprimer
+                  </Button>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <Button variant="outline" onClick={handleTestSftp} disabled={sftpTesting}>
+                  {sftpTesting ? '⏳ Test...' : '🔌 Tester'}
+                </Button>
+                <Button variant="outline" onClick={() => {
+                  setShowSftpConfigModal(false);
+                  setSftpConfig(null);
+                  setSftpFormData({
+                    host: '',
+                    port: 22,
+                    username: '',
+                    password: '',
+                    remote_path: '/',
+                    polling_interval: 30,
+                    actif: true,
+                    description: ''
+                  });
+                }}>
+                  Fermer
+                </Button>
+                <Button onClick={handleSaveSftpConfig} disabled={sftpLoading}>
+                  {sftpLoading ? 'Enregistrement...' : 'Enregistrer'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal Créer Admin pour Caserne */}
       {showCreateAdminModal && (
         <div className="modal-overlay" style={{
