@@ -30,6 +30,20 @@ const SuperAdminDashboard = ({ onLogout }) => {
   const [editingSuperAdmin, setEditingSuperAdmin] = useState(null);
   const [selectedTenant, setSelectedTenant] = useState(null);
   const [showInactivityWarning, setShowInactivityWarning] = useState(false);
+  const [showSftpConfigModal, setShowSftpConfigModal] = useState(false);
+  const [sftpConfig, setSftpConfig] = useState(null);
+  const [sftpLoading, setSftpLoading] = useState(false);
+  const [sftpTesting, setSftpTesting] = useState(false);
+  const [sftpFormData, setSftpFormData] = useState({
+    host: '',
+    port: 22,
+    username: '',
+    password: '',
+    remote_path: '/',
+    polling_interval: 30,
+    actif: true,
+    description: ''
+  });
   const [timeRemaining, setTimeRemaining] = useState(0);
   // États pour le journal d'audit
   const [auditLogs, setAuditLogs] = useState([]);
