@@ -13,6 +13,7 @@ import logging
 from routes.dependencies import (
     db,
     get_current_user,
+    get_current_user_or_super_admin,
     get_tenant_from_slug,
     User
 )
