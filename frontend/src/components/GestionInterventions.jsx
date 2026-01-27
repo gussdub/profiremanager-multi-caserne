@@ -266,11 +266,9 @@ const TabRapports = ({ user, tenantSlug, toast, readOnly = false }) => {
     return <div className="text-center py-8">Chargement...</div>;
   }
 
-  const canImport = ['admin', 'superviseur'].includes(user?.role) && !readOnly;
-
   return (
     <div>
-      {/* En-tête avec bouton import */}
+      {/* En-tête avec compteurs */}
       <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
         <div className="flex gap-4 flex-wrap">
           <div className="bg-blue-50 px-4 py-2 rounded-lg">
