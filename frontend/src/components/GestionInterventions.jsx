@@ -131,7 +131,6 @@ const GestionInterventions = ({ user, tenantSlug }) => {
     { id: 'conformite-dsi', label: 'Conformité DSI', icon: '📊', validatorsOnly: true },
     { id: 'historique', label: 'Historique', icon: '📚', hideForEmployee: !employeeCanAccessHistory },
     { id: 'parametres', label: 'Paramètres', icon: '⚙️', adminOnly: true },
-    { id: 'sftp', label: 'SFTP 911', icon: '📡', adminOnly: true },
   ];
 
   // Filtrer les onglets selon le rôle
