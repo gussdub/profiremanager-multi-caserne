@@ -194,7 +194,6 @@ const GestionInterventions = ({ user, tenantSlug }) => {
 const TabRapports = ({ user, tenantSlug, toast, readOnly = false }) => {
   const [dashboard, setDashboard] = useState({ counts: {}, new: [], drafts: [], review: [] });
   const [loading, setLoading] = useState(true);
-  const [showImportModal, setShowImportModal] = useState(false);
   const [selectedIntervention, setSelectedIntervention] = useState(null);
 
   const API = `${BACKEND_URL}/api/${tenantSlug}`;
