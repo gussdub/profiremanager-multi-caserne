@@ -71,3 +71,4 @@ qrcode>=7.4.0
 emergentintegrations>=0.1.0
 paramiko==4.0.0
 matplotlib==3.10.7
+pywebpush==2.1.2
