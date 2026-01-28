@@ -58,10 +58,16 @@ const PlanInterventionViewerNew = ({ planId, tenantSlug, onBack, batiment }) => 
         }
       );
       
+      // Générer le nom du fichier avec l'adresse ou le nom du bâtiment
+      const batimentInfo = batiment?.adresse_civique || batiment?.nom_etablissement || batiment?.nom || 'batiment';
+      const villeInfo = batiment?.ville || '';
+      const batimentSafe = `${batimentInfo}${villeInfo ? '_' + villeInfo : ''}`.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '');
+      const numeroPlan = plan?.numero_plan || new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.download = `plan-intervention-${batiment?.nom_etablissement || 'batiment'}.pdf`;
+      link.download = `plan_intervention_${numeroPlan}_${batimentSafe}.pdf`;
       document.body.appendChild(link);
       link.click();
       link.remove();
