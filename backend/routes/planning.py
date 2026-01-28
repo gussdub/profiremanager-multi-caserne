@@ -295,7 +295,7 @@ async def create_assignation(
         description=f"Nouvelle assignation créée pour {user.get('prenom', '')} {user.get('nom', '')}",
         user_id=current_user.id,
         user_nom=f"{current_user.prenom} {current_user.nom}",
-        metadata={"assignation_id": assignation.id, "date": assignation_data.date}
+        data={"assignation_id": assignation.id, "date": assignation_data.date}
     )
     
     # Retourner l'assignation avec un éventuel avertissement
