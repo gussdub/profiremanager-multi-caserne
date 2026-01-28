@@ -717,14 +717,13 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
     <div style={{ 
       position: 'fixed',
       top: 0,
-      left: 0,
+      left: '65px',
       right: 0,
       bottom: 0,
       backgroundColor: '#f9fafb',
       zIndex: 1000000,
       display: 'flex',
-      flexDirection: 'column',
-      paddingLeft: '65px'
+      flexDirection: 'column'
     }}>
       {/* Header */}
       <div style={{ 
