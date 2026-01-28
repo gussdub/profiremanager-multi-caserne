@@ -120,6 +120,36 @@ class Notification(BaseModel):
     date_lecture: Optional[str] = None
 
 
+class Activite(BaseModel):
+    """Modèle activité pour le journal d'activités"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    type_activite: str
+    description: str
+    user_id: Optional[str] = None
+    user_nom: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class ValidationCompetence(BaseModel):
+    """Validation manuelle d'une compétence pour un employé"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    user_id: str
+    competence_id: str
+    justification: str
+    date_validation: str
+    validee_par: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class ValidationCompetenceCreate(BaseModel):
+    user_id: str
+    competence_id: str
+    justification: str
+    date_validation: str
+
+
 # ==================== CACHE TENANT ====================
 
 # Cache simple pour les tenants (évite les requêtes répétées)
