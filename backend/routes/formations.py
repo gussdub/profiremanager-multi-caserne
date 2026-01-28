@@ -40,6 +40,29 @@ from routes.dependencies import (
     User
 )
 
+# Import des helpers PDF partagés
+from utils.pdf_helpers import (
+    create_branded_pdf,
+    get_modern_pdf_styles
+)
+
+# Import openpyxl pour Excel
+try:
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+except ImportError:
+    Workbook = None
+
+# Import reportlab pour PDF
+try:
+    from reportlab.lib.pagesizes import A4, letter
+    from reportlab.lib.units import inch
+    from reportlab.lib import colors
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+except ImportError:
+    pass
+
 router = APIRouter(tags=["Formations"])
 logger = logging.getLogger(__name__)
 
