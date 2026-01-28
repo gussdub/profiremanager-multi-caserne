@@ -96,7 +96,7 @@ async def tenant_login(tenant_slug: str, login: LoginRequest):
         raise HTTPException(status_code=401, detail="Compte désactivé")
     
     stored_hash = user.get("mot_de_passe_hash", "")
-    if not verify_password(login.password, stored_hash):
+    if not verify_password(login.mot_de_passe, stored_hash):
         raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
     
     # Créer le token
