@@ -81,15 +81,54 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
 
 @router.post("/{tenant_slug}/auth/login")
 async def tenant_login(tenant_slug: str, login: LoginRequest):
-    """Connexion d'un utilisateur à un tenant spécifique"""
+    """
+    Connexion d'un utilisateur à un tenant spécifique.
+    Supporte aussi les super-admins qui peuvent se connecter à n'importe quel tenant.
+    """
     tenant = await get_tenant_from_slug(tenant_slug)
     
+    # D'abord chercher l'utilisateur dans le tenant
     user = await db.users.find_one({
         "tenant_id": tenant.id,
         "email": login.email.lower().strip()
     })
     
+    # Si pas trouvé, vérifier si c'est un super-admin
     if not user:
+        super_admin = await db.super_admins.find_one({
+            "email": login.email.lower().strip()
+        })
+        
+        if super_admin:
+            # Vérifier le mot de passe du super-admin
+            stored_hash = super_admin.get("mot_de_passe_hash", "")
+            if verify_password(login.mot_de_passe, stored_hash):
+                # Créer un token spécial pour super-admin accédant à un tenant
+                access_token = create_access_token(
+                    data={
+                        "sub": super_admin["id"],
+                        "tenant_id": tenant.id,
+                        "role": "admin",  # Accès admin sur le tenant
+                        "is_super_admin": True  # Flag pour identifier
+                    }
+                )
+                
+                logger.info(f"🔑 Super-admin {login.email} connecté au tenant {tenant_slug}")
+                
+                return {
+                    "access_token": access_token,
+                    "token_type": "bearer",
+                    "user": {
+                        "id": super_admin["id"],
+                        "email": super_admin["email"],
+                        "nom": super_admin.get("nom", "Super"),
+                        "prenom": "Admin",
+                        "role": "admin",
+                        "is_super_admin": True
+                    }
+                }
+        
+        # Ni utilisateur ni super-admin trouvé
         raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
     
     if not user.get("actif", True):
