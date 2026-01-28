@@ -10603,8 +10603,8 @@ app.include_router(generation_indisponibilites_router, prefix="/api")  # Module 
 app.include_router(equipements_exports_router, prefix="/api")  # Module Équipements Exports/Imports
 app.include_router(users_router, prefix="/api")  # Module Users
 app.include_router(disponibilites_router, prefix="/api")  # Module Disponibilités
-app.include_router(auth_router, prefix="/api")  # Module Auth
-app.include_router(api_router)  # Routes principales (server.py)
+app.include_router(api_router)  # Routes principales (server.py) - DOIT être avant auth_router pour que /admin/auth/login soit traité avant /{tenant_slug}/auth/login
+app.include_router(auth_router, prefix="/api")  # Module Auth (tenant routes)
 app.include_router(pwa_router, prefix="/api")
 app.include_router(dsi_router, prefix="/api")
 app.include_router(dsi_transmissions_router, prefix="/api")
