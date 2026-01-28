@@ -428,3 +428,30 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     except Exception as e:
         logger.error(f"Erreur vérification mot de passe: {e}")
         return False
+
+
+
+# ==================== NOTIFICATIONS ====================
+
+async def creer_notification(
+    tenant_id: str,
+    destinataire_id: str,
+    type: str,
+    titre: str,
+    message: str,
+    lien: Optional[str] = None,
+    data: Optional[Dict[str, Any]] = None
+):
+    """Crée une notification dans la base de données"""
+    notification = Notification(
+        tenant_id=tenant_id,
+        destinataire_id=destinataire_id,
+        type=type,
+        titre=titre,
+        message=message,
+        lien=lien,
+        data=data or {}
+    )
+    await db.notifications.insert_one(notification.dict())
+    return notification
+
