@@ -18,6 +18,8 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
+from pathlib import Path
+from dotenv import load_dotenv
 import os
 import jwt
 import uuid
@@ -25,6 +27,10 @@ import logging
 import re
 import bcrypt
 from functools import lru_cache
+
+# Charger les variables d'environnement AVANT toute autre configuration
+ROOT_DIR = Path(__file__).parent.parent
+load_dotenv(ROOT_DIR / '.env')
 
 logger = logging.getLogger(__name__)
 
