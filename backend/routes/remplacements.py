@@ -788,11 +788,7 @@ async def accepter_remplacement(demande_id: str, remplacant_id: str, tenant_id: 
             type_activite="remplacement_accepte",
             description=f"✅ {remplacant.get('prenom', '')} {remplacant.get('nom', '')} a accepté de remplacer {demandeur.get('prenom', '')} {demandeur.get('nom', '')} pour la {garde_nom} du {demande_data['date']}",
             user_id=remplacant_id,
-            user_nom=f"{remplacant.get('prenom', '')} {remplacant.get('nom', '')}",
-            metadata={
-                "concerne_user_id": demande_data["demandeur_id"],
-                "demande_id": demande_id
-            }
+            user_nom=f"{remplacant.get('prenom', '')} {remplacant.get('nom', '')}"
         )
         
         logger.info(f"✅ Remplacement accepté: demande {demande_id}, remplaçant {remplacant.get('nom', '')}")
@@ -963,8 +959,7 @@ async def create_demande_remplacement(tenant_slug: str, demande: DemandeRemplace
             type_activite="remplacement_demande",
             description=f"🔄 {current_user.prenom} {current_user.nom} cherche un remplaçant pour la {garde_nom} du {demande.date}",
             user_id=current_user.id,
-            user_nom=f"{current_user.prenom} {current_user.nom}",
-            metadata={"concerne_user_id": current_user.id, "demande_id": demande_obj.id}
+            user_nom=f"{current_user.prenom} {current_user.nom}"
         )
         
         cleaned_demande = clean_mongo_doc(demande_obj.dict())
