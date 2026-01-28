@@ -108,6 +108,13 @@ const ModuleEPI = ({ user }) => {
   const [rapportConformite, setRapportConformite] = useState(null);
   const [rapportEcheances, setRapportEcheances] = useState(null);
   
+  // États filtres inventaire
+  const [filtreRecherche, setFiltreRecherche] = useState('');
+  const [filtreTypeEPI, setFiltreTypeEPI] = useState('');
+  const [filtrePersonne, setFiltrePersonne] = useState('');
+  const [filtreStatut, setFiltreStatut] = useState('');
+  const [filtreKPI, setFiltreKPI] = useState('');
+  
   // États Phase 2 - Nettoyages
   const [nettoyages, setNettoyages] = useState([]);
   const [showNettoyageModal, setShowNettoyageModal] = useState(false);
