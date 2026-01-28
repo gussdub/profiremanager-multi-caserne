@@ -836,6 +836,71 @@ const ModuleEPI = ({ user }) => {
     const user = users.find(u => u.id === userId);
     return user ? `${user.prenom} ${user.nom}` : 'Non assigné';
   };
+
+  // Calculer les statistiques pour les KPIs
+  const statsEPI = {
+    total: epis.length,
+    enService: epis.filter(e => e.statut === 'En service').length,
+    enInspection: epis.filter(e => e.statut === 'En inspection').length,
+    enReparation: epis.filter(e => e.statut === 'En réparation').length,
+    horsService: epis.filter(e => e.statut === 'Hors service' || e.statut === 'Retiré').length
+  };
+
+  // Gérer le clic sur les cartes KPI
+  const handleKPIClick = (filterType) => {
+    if (filtreKPI === filterType) {
+      setFiltreKPI('');
+      setFiltreStatut('');
+    } else {
+      setFiltreKPI(filterType);
+      if (filterType === 'total') {
+        setFiltreStatut('');
+      } else if (filterType === 'enService') {
+        setFiltreStatut('En service');
+      } else if (filterType === 'enInspection') {
+        setFiltreStatut('En inspection');
+      } else if (filterType === 'enReparation') {
+        setFiltreStatut('En réparation');
+      } else if (filterType === 'horsService') {
+        setFiltreStatut('hors_service'); // Tag spécial pour filtrer Hors service + Retiré
+      }
+    }
+  };
+
+  // Filtrer les EPIs selon les critères
+  const episFiltres = epis.filter(epi => {
+    // Filtre par KPI/Statut
+    if (filtreKPI === 'horsService') {
+      if (epi.statut !== 'Hors service' && epi.statut !== 'Retiré') return false;
+    } else if (filtreStatut && epi.statut !== filtreStatut) {
+      return false;
+    }
+    
+    // Filtre par type EPI
+    if (filtreTypeEPI && epi.type_epi !== filtreTypeEPI) return false;
+    
+    // Filtre par personne assignée
+    if (filtrePersonne) {
+      if (filtrePersonne === 'non_assigne' && epi.user_id) return false;
+      if (filtrePersonne !== 'non_assigne' && epi.user_id !== filtrePersonne) return false;
+    }
+    
+    // Filtre par recherche texte
+    if (filtreRecherche) {
+      const search = filtreRecherche.toLowerCase();
+      const typeName = getTypeName(epi.type_epi).toLowerCase();
+      const userName = getUserName(epi.user_id).toLowerCase();
+      return (
+        epi.numero_serie?.toLowerCase().includes(search) ||
+        epi.marque?.toLowerCase().includes(search) ||
+        epi.modele?.toLowerCase().includes(search) ||
+        typeName.includes(search) ||
+        userName.includes(search)
+      );
+    }
+    
+    return true;
+  });
   
   if (loading) {
     return (
