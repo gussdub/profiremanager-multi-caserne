@@ -957,7 +957,7 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
               <p className="user-name">{user?.prenom} {user?.nom}</p>
               <p className="user-role">{user?.role === 'admin' ? 'Administrateur' : 
                                       user?.role === 'superviseur' ? 'Superviseur' : 'Employé'}</p>
-              <p className="user-grade">{user?.grade}</p>
+              {user?.grade && <p className="user-grade">{user.grade}</p>}
             </div>
           </div>
           <div className="sidebar-user-actions" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%' }}>
