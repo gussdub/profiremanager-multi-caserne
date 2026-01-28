@@ -3800,6 +3800,7 @@ async def export_plan_intervention_pdf(
     # Styles
     styles = getSampleStyleSheet()
     modern_styles = get_modern_pdf_styles(styles)
+    title_style = modern_styles['title']
     heading_style = modern_styles['heading']
     normal_style = styles['Normal']
     
