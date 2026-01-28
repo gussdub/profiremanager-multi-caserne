@@ -123,11 +123,20 @@ const PlansIntervention = ({ tenantSlug, filteredBatimentId, setFilteredBatiment
         }
       );
       
+      // Trouver le plan et le bâtiment pour le nom du fichier
+      const plan = plans.find(p => p.id === planId);
+      const batiment = plan?.batiment;
+      const batimentInfo = batiment?.adresse_civique || batiment?.nom_etablissement || batiment?.nom || '';
+      const villeInfo = batiment?.ville || '';
+      const batimentSafe = `${batimentInfo}${villeInfo ? '_' + villeInfo : ''}`.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
+      const numeroPlan = plan?.numero_plan || new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      const filename = batimentSafe ? `plan_intervention_${numeroPlan}_${batimentSafe}.pdf` : `plan_intervention_${numeroPlan}.pdf`;
+      
       // Créer un lien de téléchargement
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `plan_intervention_${planId}.pdf`);
+      link.setAttribute('download', filename);
       document.body.appendChild(link);
       link.click();
       link.remove();
