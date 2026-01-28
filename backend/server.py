@@ -8453,38 +8453,11 @@ async def detect_conflicts(tenant_id: str, user_id: str, date: str, heure_debut:
 
 # Assignation manuelle avancée avec récurrence
 
-# ==================== SSE ENDPOINT POUR PROGRESSION ====================
-@api_router.put("/{tenant_slug}/assignations/{assignation_id}/notes")
-async def update_assignation_notes(
-    tenant_slug: str,
-    assignation_id: str,
-    notes: str = Body(..., embed=True),
-    current_user: User = Depends(get_current_user)
-):
-    """Permet à un admin de mettre à jour les notes sur une assignation auto"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
-    
-    # Vérifier le tenant
-    tenant = await get_tenant_from_slug(tenant_slug)
-    
-    # Trouver l'assignation
-    assignation = await db.assignations.find_one({
-        "id": assignation_id,
-        "tenant_id": tenant.id
-    })
-    
-    if not assignation:
-        raise HTTPException(status_code=404, detail="Assignation non trouvée")
-    
-    # Mettre à jour les notes
-    await db.assignations.update_one(
-        {"id": assignation_id},
-        {"$set": {"notes_admin": notes}}
-    )
-    
-    return {"message": "Notes mises à jour avec succès", "notes": notes}
 
+# ==================== ASSIGNATIONS NOTES - MIGRÉ ====================
+# Route migrée vers routes/planning.py:
+# - PUT /{tenant_slug}/assignations/{assignation_id}/notes
+# ====================================================================
 
 # ==================== STATISTIQUES - MIGRÉ ====================
 # Route migrée vers routes/statistiques.py:
