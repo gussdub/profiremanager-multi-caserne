@@ -7385,7 +7385,7 @@ async def envoyer_email_remplacement(
         remplacant_prenom = remplacant_user.get("prenom", "")
         
         # URL de base pour les liens
-        frontend_url = os.environ.get('FRONTEND_URL', 'https://callcard-import.preview.emergentagent.com')
+        frontend_url = os.environ.get('FRONTEND_URL', 'https://profire-portal.preview.emergentagent.com')
         backend_url = os.environ.get('REACT_APP_BACKEND_URL', frontend_url)
         
         # Liens avec token - utilise l'API backend
@@ -8531,7 +8531,7 @@ async def action_remplacement_via_email(
     Traite une action de remplacement (accepter/refuser) via le lien email
     Redirige vers l'app avec le résultat
     """
-    frontend_url = os.environ.get('FRONTEND_URL', 'https://callcard-import.preview.emergentagent.com')
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://profire-portal.preview.emergentagent.com')
     
     try:
         # Vérifier le token

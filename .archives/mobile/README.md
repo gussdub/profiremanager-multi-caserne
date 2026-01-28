@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://callcard-import.preview.emergentagent.com
+- **URL** : https://profire-portal.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://callcard-import.preview.emergentagent.com"
+  "apiUrl": "https://profire-portal.preview.emergentagent.com"
 }
 ```
 
