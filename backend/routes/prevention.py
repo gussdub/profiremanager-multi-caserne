@@ -41,7 +41,7 @@ Routes Références:
 - GET    /{tenant_slug}/prevention/meta/categories-batiments    - Catégories bâtiments
 """
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Body
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
