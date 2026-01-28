@@ -776,7 +776,7 @@ const Remplacements = () => {
           onClick={() => setActiveTab('conges')}
           data-testid="tab-conges"
         >
-          🏖️ Congés ({mesConges.length})
+          🏖️ Congés ({filteredConges.length})
         </button>
       </div>
 
