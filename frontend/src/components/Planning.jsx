@@ -105,7 +105,30 @@ const Planning = () => {
   const [showAssignErrorModal, setShowAssignErrorModal] = useState(false);
   const [assignErrorContent, setAssignErrorContent] = useState({ title: '', message: '' });
   
+  // État pour le modal d'avertissement de sureffectif
+  const [showOverstaffWarningModal, setShowOverstaffWarningModal] = useState(false);
+  const [overstaffWarningMessage, setOverstaffWarningMessage] = useState('');
+  
   const { toast } = useToast();
+
+  // Fonction utilitaire pour vérifier si un utilisateur est officier
+  // Considère Lieutenant, Capitaine, Directeur comme officiers par défaut
+  const isUserOfficer = (user) => {
+    if (!user) return false;
+    
+    // Vérifier d'abord fonction_superieur
+    if (user.fonction_superieur) return true;
+    
+    // Chercher dans les grades si disponible
+    const gradeInfo = grades && grades.find(g => g.nom === user.grade);
+    if (gradeInfo && gradeInfo.est_officier !== undefined) {
+      return gradeInfo.est_officier;
+    }
+    
+    // Par défaut, Lieutenant, Capitaine, Directeur sont des officiers
+    const officerGrades = ['Lieutenant', 'Capitaine', 'Directeur', 'Chef de division', 'Chef aux opérations'];
+    return officerGrades.includes(user.grade);
+  };
 
   // Fonction pour calculer l'aperçu des dates de récurrence
   const calculateRecurrenceDates = () => {
