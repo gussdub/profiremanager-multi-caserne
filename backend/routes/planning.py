@@ -631,13 +631,12 @@ async def get_planning_semaine(
         "semaine_fin": semaine_fin,
         "assignations": assignations,
         "types_garde": types_garde
-    }
 
 
+# ==================== ROUTES PLANNING AVANCÉES (MIGRÉES DE SERVER.PY) ====================
 
-# ==================== ROUTES PLANNING AVANCÉES ====================
 
-
+# DELETE formater-mois
 @router.delete("/{tenant_slug}/planning/formater-mois")
 async def formater_planning_mois(
     tenant_slug: str,
@@ -699,6 +698,8 @@ async def formater_planning_mois(
         "demandes_supprimees": result_remplacements.deleted_count
     }
 
+
+# GET export-pdf
 @router.get("/{tenant_slug}/planning/export-pdf")
 async def export_planning_pdf(
     tenant_slug: str, 
@@ -787,7 +788,300 @@ async def export_planning_pdf(
         types_garde_sorted = sorted(types_garde_list, key=lambda x: x.get('heure_debut', '00:00'))
         
         if type == 'semaine':
+            # ===== FORMAT GRILLE SEMAINE =====
+            from reportlab.lib.enums import TA_LEFT
+            
+            # Styles pour les cellules - taille augmentée et leading adapté
+            header_style_white = ParagraphStyle('HeaderWhite', fontSize=9, alignment=TA_CENTER, textColor=colors.white, leading=12, wordWrap='CJK')
+            garde_cell_style = ParagraphStyle('GardeCell', fontSize=8, alignment=TA_LEFT, textColor=colors.white, leading=11, wordWrap='CJK')
+            day_cell_style = ParagraphStyle('DayCell', fontSize=8, alignment=TA_CENTER, leading=11, textColor=colors.HexColor('#1F2937'), wordWrap='CJK')
+            
+            # Debug: logger les assignations
+            logging.warning(f"DEBUG PDF: {len(assignations_list)} assignations trouvées pour {date_debut.strftime('%Y-%m-%d')} à {date_fin.strftime('%Y-%m-%d')}")
+            logging.warning(f"DEBUG PDF: {len(types_garde_sorted)} types de garde")
+            
+            # En-tête : Type de garde + 7 jours
+            header_row = [Paragraph("<b>Type de garde</b>", header_style_white)]
+            for i in range(7):
+                d = date_debut + timedelta(days=i)
+                header_row.append(Paragraph(f"<b>{jours_fr[d.weekday()]}</b><br/>{d.strftime('%d/%m')}", header_style_white))
+            
+            table_data = [header_row]
+            cell_colors = []
+            
+            # Une ligne par type de garde
+            for type_garde in types_garde_sorted:
+                garde_nom = type_garde.get('nom', 'N/A')
+                heure_debut_garde = type_garde.get('heure_debut', '??:??')
+                heure_fin_garde = type_garde.get('heure_fin', '??:??')
+                personnel_requis = type_garde.get('personnel_requis', 1)
+                jours_app = type_garde.get('jours_application', [])
+                type_garde_id = type_garde.get('id')
+                
+                # Première colonne - nom complet sans troncature
+                row = [Paragraph(f"<b>{garde_nom}</b><br/><font size='7'>{heure_debut_garde}-{heure_fin_garde}</font>", garde_cell_style)]
+                row_colors = [PRIMARY_RED]
+                
+                for i in range(7):
+                    d = date_debut + timedelta(days=i)
+                    date_str = d.strftime('%Y-%m-%d')
+                    day_name = d.strftime('%A').lower()
+                    
+                    # Vérifier si applicable ce jour
+                    if jours_app and day_name not in jours_app:
+                        row.append(Paragraph("-", day_cell_style))
+                        row_colors.append(LIGHT_GRAY)
+                        continue
+                    
+                    # Trouver les assignations pour ce jour et ce type de garde
+                    assignations_jour = [a for a in assignations_list 
+                                        if a.get('date') == date_str and a.get('type_garde_id') == type_garde_id]
+                    
+                    # Construire les noms des pompiers
+                    noms = []
+                    for a in assignations_jour:
+                        user_id = a.get('user_id')
+                        if user_id and user_id in users_map:
+                            u = users_map[user_id]
+                            prenom = u.get('prenom', '')
+                            nom = u.get('nom', '')
+                            if prenom or nom:
+                                noms.append(f"{prenom[:1]}. {nom}")
+                    
+                    if noms:
+                        cell_text = "<br/>".join(noms[:4])
+                        if len(noms) > 4:
+                            cell_text += f"<br/><font size='6'>+{len(noms)-4}</font>"
+                        row.append(Paragraph(cell_text, day_cell_style))
+                        
+                        if len(noms) >= personnel_requis:
+                            row_colors.append(COMPLETE_GREEN)
+                        else:
+                            row_colors.append(PARTIAL_YELLOW)
+                    else:
+                        row.append(Paragraph("<font color='#B91C1C'>Vacant</font>", day_cell_style))
+                        row_colors.append(VACANT_RED)
+                
+                table_data.append(row)
+                cell_colors.append(row_colors)
+            
+            # Largeurs de colonnes - première colonne plus large pour les noms de garde
+            page_width = landscape(letter)[0]
+            available_width = page_width - 1*inch
+            first_col = 1.8*inch
+            day_col = (available_width - first_col) / 7
+            col_widths = [first_col] + [day_col] * 7
+            
+            # Hauteur minimale des lignes pour permettre l'affichage des noms
+            row_heights = [0.5*inch] + [0.7*inch] * (len(table_data) - 1)
+            
+            # Créer la table avec hauteurs de lignes
+            table = Table(table_data, colWidths=col_widths, rowHeights=row_heights)
+            
+            # Style de base - WORDWRAP activé pour permettre le retour à la ligne
+            style_commands = [
+                ('BACKGROUND', (0, 0), (-1, 0), HEADER_BG),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 9),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('GRID', (0, 0), (-1, -1), 0.5, BORDER_COLOR),
+                ('FONTSIZE', (0, 1), (-1, -1), 8),
+                ('TOPPADDING', (0, 0), (-1, -1), 6),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                ('LEFTPADDING', (0, 0), (-1, -1), 4),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+            ]
+            
+            # Appliquer les couleurs par cellule
+            for row_idx, colors_row in enumerate(cell_colors, start=1):
+                for col_idx, bg_color in enumerate(colors_row):
+                    style_commands.append(('BACKGROUND', (col_idx, row_idx), (col_idx, row_idx), bg_color))
+                    if col_idx == 0:
+                        style_commands.append(('TEXTCOLOR', (col_idx, row_idx), (col_idx, row_idx), colors.white))
+                        style_commands.append(('ALIGN', (col_idx, row_idx), (col_idx, row_idx), 'LEFT'))
+                        style_commands.append(('LEFTPADDING', (col_idx, row_idx), (col_idx, row_idx), 8))
+            
+            table.setStyle(TableStyle(style_commands))
+            elements.append(table)
+            
+            # Légende
+            elements.append(Spacer(1, 0.3*inch))
+            legend_style = ParagraphStyle('Legend', fontSize=9, alignment=TA_CENTER, textColor=colors.HexColor('#6B7280'))
+            elements.append(Paragraph("Legende: Vert = Complet | Jaune = Partiel | Rouge = Vacant | Gris = Non applicable", legend_style))
+            
+        elif type == 'mois':
+            # ===== FORMAT GRILLE MOIS - Une grille par semaine =====
+            from reportlab.platypus import PageBreak
+            
+            current = date_debut
+            semaine_num = 1
+            page_width = landscape(letter)[0]
+            
+            # Style pour titre de semaine
+            semaine_style = ParagraphStyle(
+                'SemaineStyle',
+                parent=styles['Heading2'],
+                fontSize=12,
+                textColor=PRIMARY_RED,
+                spaceBefore=10,
+                spaceAfter=10,
+                fontName='Helvetica-Bold'
+            )
+            
+            while current <= date_fin:
+                fin_semaine = min(current + timedelta(days=6), date_fin)
+                nb_jours = (fin_semaine - current).days + 1
+                
+                # Titre de la semaine
+                elements.append(Paragraph(
+                    f"Semaine {semaine_num} - Du {current.strftime('%d/%m')} au {fin_semaine.strftime('%d/%m/%Y')}",
+                    semaine_style
+                ))
+                
+                # Styles pour le format mois - avec retour à la ligne
+                from reportlab.lib.enums import TA_LEFT
+                header_style_mois = ParagraphStyle('HeaderMois', fontSize=8, alignment=TA_CENTER, textColor=colors.white, leading=10, wordWrap='CJK')
+                garde_cell_style_mois = ParagraphStyle('GardeCellMois', fontSize=7, alignment=TA_LEFT, textColor=colors.white, leading=9, wordWrap='CJK')
+                day_cell_style_mois = ParagraphStyle('DayCellMois', fontSize=7, alignment=TA_CENTER, leading=9, textColor=colors.HexColor('#1F2937'), wordWrap='CJK')
+                
+                # En-tête avec des Paragraph pour le retour à la ligne
+                header_row = [Paragraph("<b>Type de garde</b>", header_style_mois)]
+                for i in range(nb_jours):
+                    d = current + timedelta(days=i)
+                    header_row.append(Paragraph(f"<b>{jours_fr[d.weekday()]}</b><br/>{d.strftime('%d')}", header_style_mois))
+                
+                table_data = [header_row]
+                cell_colors_mois = []
+                
+                for type_garde in types_garde_sorted:
+                    garde_nom = type_garde.get('nom', 'N/A')  # NE PLUS TRONQUER
+                    heure_debut_garde = type_garde.get('heure_debut', '')
+                    heure_fin_garde = type_garde.get('heure_fin', '')
+                    personnel_requis = type_garde.get('personnel_requis', 1)
+                    jours_app = type_garde.get('jours_application', [])
+                    type_garde_id = type_garde.get('id')
+                    
+                    # Première colonne avec nom complet et horaires
+                    row = [Paragraph(f"<b>{garde_nom}</b><br/><font size='6'>{heure_debut_garde}-{heure_fin_garde}</font>", garde_cell_style_mois)]
+                    row_colors = [PRIMARY_RED]
+                    
+                    for i in range(nb_jours):
+                        d = current + timedelta(days=i)
+                        date_str = d.strftime('%Y-%m-%d')
+                        day_name = d.strftime('%A').lower()
+                        
+                        if jours_app and day_name not in jours_app:
+                            row.append(Paragraph("-", day_cell_style_mois))
+                            row_colors.append(LIGHT_GRAY)
+                            continue
+                        
+                        assignations_jour = [a for a in assignations_list 
+                                            if a['date'] == date_str and a['type_garde_id'] == type_garde_id]
+                        
+                        # Construire les noms des pompiers
+                        noms = []
+                        for a in assignations_jour:
+                            user_id = a.get('user_id')
+                            if user_id and user_id in users_map:
+                                u = users_map[user_id]
+                                prenom = u.get('prenom', '')
+                                nom = u.get('nom', '')
+                                if prenom or nom:
+                                    noms.append(f"{prenom[:1]}. {nom}")
+                        
+                        if noms:
+                            cell_text = "<br/>".join(noms[:3])  # Max 3 noms pour le mois
+                            if len(noms) > 3:
+                                cell_text += f"<br/><font size='5'>+{len(noms)-3}</font>"
+                            row.append(Paragraph(cell_text, day_cell_style_mois))
+                            
+                            if len(noms) >= personnel_requis:
+                                row_colors.append(COMPLETE_GREEN)
+                            else:
+                                row_colors.append(PARTIAL_YELLOW)
+                        else:
+                            row.append(Paragraph("<font color='#B91C1C'>Vacant</font>", day_cell_style_mois))
+                            row_colors.append(VACANT_RED)
+                    
+                    table_data.append(row)
+                    cell_colors_mois.append(row_colors)
+                
+                # Largeurs - première colonne plus large pour afficher le nom complet
+                available_width = page_width - 1*inch
+                first_col = 1.6*inch  # Augmenté pour les noms de garde complets
+                day_col = (available_width - first_col) / nb_jours
+                col_widths = [first_col] + [day_col] * nb_jours
+                
+                # Hauteurs de lignes - plus hautes pour afficher les noms des pompiers
+                row_heights = [0.4*inch] + [0.6*inch] * (len(table_data) - 1)
+                
+                table = Table(table_data, colWidths=col_widths, rowHeights=row_heights)
+                
+                style_commands = [
+                    ('BACKGROUND', (0, 0), (-1, 0), HEADER_BG),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, -1), 7),
+                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('GRID', (0, 0), (-1, -1), 0.5, BORDER_COLOR),
+                    ('TOPPADDING', (0, 0), (-1, -1), 4),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 3),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 3),
+                ]
+                
+                for row_idx, colors_row in enumerate(cell_colors_mois, start=1):
+                    for col_idx, bg_color in enumerate(colors_row):
+                        style_commands.append(('BACKGROUND', (col_idx, row_idx), (col_idx, row_idx), bg_color))
+                        if col_idx == 0:
+                            style_commands.append(('TEXTCOLOR', (col_idx, row_idx), (col_idx, row_idx), colors.white))
+                            style_commands.append(('ALIGN', (col_idx, row_idx), (col_idx, row_idx), 'LEFT'))
+                            style_commands.append(('LEFTPADDING', (col_idx, row_idx), (col_idx, row_idx), 6))
+                
+                table.setStyle(TableStyle(style_commands))
+                elements.append(table)
+                elements.append(Spacer(1, 0.2*inch))
+                
+                current = fin_semaine + timedelta(days=1)
+                semaine_num += 1
+                
+                if current <= date_fin:
+                    elements.append(PageBreak())
+        
+        # Footer
+        def add_footer(canvas, doc_obj):
+            canvas.saveState()
+            canvas.setStrokeColor(colors.HexColor('#e2e8f0'))
+            canvas.setLineWidth(1)
+            canvas.line(0.5*inch, 0.5*inch, landscape(letter)[0] - 0.5*inch, 0.5*inch)
+            canvas.setFont('Helvetica', 9)
+            canvas.setFillColor(colors.HexColor('#64748b'))
+            footer_text = f"ProFireManager - {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+            canvas.drawCentredString(landscape(letter)[0] / 2, 0.35*inch, footer_text)
+            canvas.setFont('Helvetica', 8)
+            canvas.drawRightString(landscape(letter)[0] - 0.5*inch, 0.35*inch, f"Page {doc_obj.page}")
+            canvas.restoreState()
+        
+        doc.build(elements, onFirstPage=add_footer, onLaterPages=add_footer)
+        buffer.seek(0)
+        
+        return StreamingResponse(
+            buffer,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename=planning_{type}_{periode}.pdf"}
+        )
+        
+    except Exception as e:
+        import traceback
+        logging.error(f"Erreur export PDF: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Erreur export PDF: {str(e)}")
 
+
+
+# GET export-excel
 @router.get("/{tenant_slug}/planning/export-excel")
 async def export_planning_excel(
     tenant_slug: str, 
@@ -953,6 +1247,11 @@ async def export_planning_excel(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur export Excel: {str(e)}")
 
+# ===== RAPPORT D'HEURES =====
+
+
+
+# GET rapport-heures/debug
 @router.get("/{tenant_slug}/planning/rapport-heures/debug/{user_id}")
 async def debug_rapport_heures_user(
     tenant_slug: str,
@@ -1057,6 +1356,8 @@ async def debug_rapport_heures_user(
         "doublons": doublons[:10] if doublons else []
     }
 
+
+# POST supprimer-assignations-invalides
 @router.post("/{tenant_slug}/planning/supprimer-assignations-invalides")
 async def supprimer_assignations_invalides(
     tenant_slug: str,
@@ -1115,6 +1416,8 @@ async def supprimer_assignations_invalides(
         "ids_supprimes": ids_to_delete[:50]  # Max 50 pour la réponse
     }
 
+
+# GET rapport-heures/export-pdf
 @router.get("/{tenant_slug}/planning/rapport-heures/export-pdf")
 async def export_rapport_heures_pdf(
     tenant_slug: str,
@@ -1225,6 +1528,8 @@ async def export_rapport_heures_pdf(
         headers={"Content-Disposition": f"attachment; filename=rapport_heures_{date_debut}_{date_fin}.pdf"}
     )
 
+
+# GET rapport-heures/export-excel
 @router.get("/{tenant_slug}/planning/rapport-heures/export-excel")
 async def export_rapport_heures_excel(
     tenant_slug: str,
@@ -1350,6 +1655,8 @@ async def export_rapport_heures_excel(
         headers={"Content-Disposition": f"attachment; filename=rapport_heures_{date_debut}_{date_fin}.xlsx"}
     )
 
+
+# POST assignation-avancee
 @router.post("/{tenant_slug}/planning/assignation-avancee")
 async def assignation_manuelle_avancee(
     tenant_slug: str,
@@ -1635,6 +1942,7 @@ async def assignation_manuelle_avancee(
 
 # Mode démo spécial - Attribution automatique agressive pour impression client
 
+# POST attribution-auto-demo
 @router.post("/{tenant_slug}/planning/attribution-auto-demo")
 async def attribution_automatique_demo(tenant_slug: str, semaine_debut: str, current_user: User = Depends(get_current_user)):
     if current_user.role not in ["admin", "superviseur"]:
@@ -1753,6 +2061,7 @@ async def attribution_automatique_demo(tenant_slug: str, semaine_debut: str, cur
 
 # Vérification des assignations existantes pour une période
 
+# GET check-periode
 @router.get("/{tenant_slug}/planning/assignations/check-periode")
 async def check_assignations_periode(
     tenant_slug: str, 
@@ -1779,6 +2088,8 @@ async def check_assignations_periode(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur vérification période: {str(e)}")
 
+
+# GET progress/{task_id}
 @router.get("/{tenant_slug}/planning/attribution-auto/progress/{task_id}")
 async def attribution_progress_stream(
     tenant_slug: str,
@@ -1808,6 +2119,7 @@ async def attribution_progress_stream(
 
 # Attribution automatique intelligente avec rotation équitable et ancienneté
 
+# POST attribution-auto
 @router.post("/{tenant_slug}/planning/attribution-auto")
 async def attribution_automatique(
     tenant_slug: str, 
@@ -2369,7 +2681,9 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         
         # Attribution automatique logic (5 niveaux de priorité)
         # nouvelles_assignations déjà déclaré plus haut
+        
 
+# GET rapport-audit
 @router.get("/{tenant_slug}/planning/rapport-audit")
 async def generer_rapport_audit_assignations(
     tenant_slug: str,
@@ -2611,7 +2925,9 @@ async def generer_excel_audit(assignations, user_map, type_garde_map, tenant, mo
     )
 
 # Endpoint pour obtenir les statistiques personnelles mensuelles
+@router.get("/{tenant_slug}/users/{user_id}/stats-mensuelles")
 
+# POST reinitialiser
 @router.post("/planning/reinitialiser")
 async def reinitialiser_planning(current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
@@ -2629,6 +2945,8 @@ async def reinitialiser_planning(current_user: User = Depends(get_current_user))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur réinitialisation: {str(e)}")
 
+
+# GET parametres/validation-planning
 @router.get("/{tenant_slug}/parametres/validation-planning")
 async def get_parametres_validation(tenant_slug: str, current_user: User = Depends(get_current_user)):
     """
@@ -2655,6 +2973,8 @@ async def get_parametres_validation(tenant_slug: str, current_user: User = Depen
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur récupération paramètres: {str(e)}")
 
+
+# PUT parametres/validation-planning
 @router.put("/{tenant_slug}/parametres/validation-planning")
 async def update_parametres_validation(tenant_slug: str, parametres: dict, current_user: User = Depends(get_current_user)):
     """
@@ -2684,6 +3004,8 @@ async def update_parametres_validation(tenant_slug: str, parametres: dict, curre
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur mise à jour paramètres: {str(e)}")
 
+
+# POST envoyer-notifications
 @router.post("/{tenant_slug}/planning/envoyer-notifications")
 async def envoyer_notifications_planning(tenant_slug: str, periode_debut: str, periode_fin: str, current_user: User = Depends(get_current_user)):
     """
@@ -2799,3 +3121,4 @@ async def envoyer_notifications_planning(tenant_slug: str, periode_debut: str, p
 
 
 # Réparer tous les mots de passe démo
+@router.post("/repair-demo-passwords")
