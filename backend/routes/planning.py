@@ -1671,8 +1671,57 @@ async def export_rapport_heures_excel(
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Récupérer les données du rapport
-    rapport_response = await get_rapport_heures(tenant_slug, date_debut, date_fin, current_user)
+    # Récupérer les données directement (même logique que pour le PDF)
+    from datetime import datetime as dt
+    debut_dt = dt.strptime(date_debut, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    fin_dt = dt.strptime(date_fin, "%Y-%m-%d").replace(tzinfo=timezone.utc) + timedelta(days=1)
+    
+    assignations = await db.assignations.find({
+        "tenant_id": tenant.id,
+        "date": {"$gte": debut_dt.strftime("%Y-%m-%d"), "$lt": fin_dt.strftime("%Y-%m-%d")}
+    }).to_list(10000)
+    
+    users = await db.users.find({"tenant_id": tenant.id, "actif": True}).to_list(1000)
+    users_dict = {u["id"]: u for u in users}
+    
+    heures_par_employe = {}
+    for assign in assignations:
+        uid = assign.get("user_id")
+        if uid not in heures_par_employe:
+            heures_par_employe[uid] = {"internes": 0, "externes": 0}
+        
+        duree = assign.get("duree_heures", 0)
+        if assign.get("externe"):
+            heures_par_employe[uid]["externes"] += duree
+        else:
+            heures_par_employe[uid]["internes"] += duree
+    
+    employes = []
+    for uid, heures in heures_par_employe.items():
+        user = users_dict.get(uid, {})
+        employes.append({
+            "nom_complet": f"{user.get('prenom', '')} {user.get('nom', '')}".strip() or "Inconnu",
+            "type_emploi": user.get("type_emploi", "temps_plein"),
+            "grade": user.get("grade", "N/A"),
+            "heures_internes": heures["internes"],
+            "heures_externes": heures["externes"],
+            "total_heures": heures["internes"] + heures["externes"]
+        })
+    
+    employes.sort(key=lambda x: x["nom_complet"])
+    
+    total_internes = sum(e["heures_internes"] for e in employes)
+    total_externes = sum(e["heures_externes"] for e in employes)
+    nb_employes = len(employes)
+    
+    statistiques = {
+        "nombre_employes": nb_employes,
+        "total_heures_planifiees": total_internes + total_externes,
+        "moyenne_heures_internes": round(total_internes / nb_employes, 1) if nb_employes > 0 else 0,
+        "moyenne_heures_externes": round(total_externes / nb_employes, 1) if nb_employes > 0 else 0
+    }
+    
+    rapport_response = {"employes": employes, "statistiques": statistiques}
     
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
