@@ -18171,61 +18171,10 @@ async def init_demo_data():
 # Note: La fonction creer_notification a été déplacée vers routes/dependencies.py
 # ============================================================================
 
-# ==================== PARAMÈTRES REMPLACEMENTS ====================
-
-@api_router.get("/{tenant_slug}/parametres/remplacements")
-async def get_parametres_remplacements(tenant_slug: str, current_user: User = Depends(get_current_user)):
-    """Récupère les paramètres de remplacements"""
-    if current_user.role not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
-    # Vérifier le tenant
-    tenant = await get_tenant_from_slug(tenant_slug)
-    
-    # Chercher pour ce tenant spécifique
-    parametres = await db.parametres_remplacements.find_one({"tenant_id": tenant.id})
-    
-    if not parametres:
-        # Créer paramètres par défaut pour ce tenant
-        default_params = ParametresRemplacements(tenant_id=tenant.id)
-        await db.parametres_remplacements.insert_one(default_params.dict())
-        return default_params
-    
-    cleaned_params = clean_mongo_doc(parametres)
-    return cleaned_params  # Retourner le dict directement pour plus de flexibilité
-
-@api_router.put("/{tenant_slug}/parametres/remplacements")
-async def update_parametres_remplacements(
-    tenant_slug: str,
-    parametres_data: dict,
-    current_user: User = Depends(get_current_user)
-):
-    """Met à jour les paramètres de remplacements"""
-    if current_user.role not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
-    # Vérifier le tenant
-    tenant = await get_tenant_from_slug(tenant_slug)
-    
-    # Chercher les paramètres existants pour ce tenant
-    existing = await db.parametres_remplacements.find_one({"tenant_id": tenant.id})
-    
-    # S'assurer que tenant_id est présent dans les données
-    parametres_data["tenant_id"] = tenant.id
-    
-    if existing:
-        # Mettre à jour les paramètres existants
-        await db.parametres_remplacements.update_one(
-            {"tenant_id": tenant.id},
-            {"$set": parametres_data}
-        )
-    else:
-        # Créer de nouveaux paramètres avec un ID
-        if "id" not in parametres_data:
-            parametres_data["id"] = str(uuid.uuid4())
-        await db.parametres_remplacements.insert_one(parametres_data)
-    
-    return {"message": "Paramètres mis à jour avec succès"}
+# ==================== PARAMÈTRES REMPLACEMENTS MIGRÉS VERS routes/remplacements.py ====================
+# GET    /{tenant_slug}/parametres/remplacements             - Récupérer paramètres
+# PUT    /{tenant_slug}/parametres/remplacements             - Modifier paramètres
+# ============================================================================
 
 
 # ==================== PARAMÈTRES NIVEAUX D'ATTRIBUTION ====================
