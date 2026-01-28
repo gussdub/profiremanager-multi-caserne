@@ -3384,6 +3384,112 @@ const Planning = () => {
         </div>
       )}
 
+      {/* Modal d'avertissement de sureffectif */}
+      {showOverstaffWarningModal && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            zIndex: 1000010,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem'
+          }}
+          onClick={() => setShowOverstaffWarningModal(false)}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'white',
+              borderRadius: '16px',
+              maxWidth: '500px',
+              width: '100%',
+              overflow: 'hidden',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)'
+            }}
+          >
+            {/* Header orange/jaune */}
+            <div style={{
+              background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+              padding: '1.5rem',
+              color: 'white'
+            }}>
+              <h2 style={{ 
+                margin: 0, 
+                fontSize: '1.5rem', 
+                fontWeight: '700',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem'
+              }}>
+                <span style={{ fontSize: '2rem' }}>⚠️</span>
+                Sureffectif détecté
+              </h2>
+            </div>
+            
+            {/* Contenu */}
+            <div style={{ padding: '1.5rem' }}>
+              <p style={{ 
+                marginBottom: '1rem', 
+                color: '#4B5563',
+                fontSize: '0.95rem',
+                lineHeight: '1.5'
+              }}>
+                L'assignation a été créée avec succès, mais attention :
+              </p>
+              
+              <div style={{
+                background: '#FFFBEB',
+                border: '2px solid #FCD34D',
+                borderRadius: '12px',
+                padding: '1.25rem'
+              }}>
+                <div style={{
+                  color: '#92400E',
+                  fontSize: '1rem',
+                  lineHeight: '1.5',
+                  background: 'white',
+                  padding: '1rem',
+                  borderRadius: '8px',
+                  border: '1px solid #FCD34D',
+                  fontWeight: '500'
+                }}>
+                  {overstaffWarningMessage}
+                </div>
+              </div>
+            </div>
+            
+            {/* Footer */}
+            <div style={{
+              padding: '1rem 1.5rem',
+              borderTop: '1px solid #E5E7EB',
+              display: 'flex',
+              justifyContent: 'flex-end',
+              background: '#F9FAFB'
+            }}>
+              <Button 
+                onClick={() => setShowOverstaffWarningModal(false)}
+                style={{ 
+                  background: '#F59E0B', 
+                  color: 'white',
+                  padding: '0.75rem 2rem',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  borderRadius: '8px'
+                }}
+              >
+                Compris
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
