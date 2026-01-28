@@ -457,11 +457,13 @@ const RapportHeuresModal = ({ isOpen, onClose, tenantSlug }) => {
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 text-center">
                           <span className={`px-2 py-1 rounded text-xs font-medium ${
-                            emp.type_emploi === 'temps_partiel' 
-                              ? 'bg-yellow-100 text-yellow-800' 
-                              : 'bg-blue-100 text-blue-800'
+                            emp.type_emploi === 'Temps plein'
+                              ? 'bg-green-100 text-green-800' 
+                              : emp.type_emploi === 'Temps partiel'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-orange-100 text-orange-800'
                           }`}>
-                            {emp.type_emploi === 'temps_partiel' ? 'TP' : 'TF'}
+                            {emp.type_emploi || 'Non défini'}
                           </span>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 text-center">
