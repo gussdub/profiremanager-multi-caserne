@@ -345,7 +345,7 @@ async def get_rapport_heures(
             type_emploi = user.get("type_emploi", "")
             
             # Déterminer si interne ou externe
-            is_interne = type_emploi in ["Temps plein", "Permanent", "temps_plein", "permanent"]
+            is_interne = type_emploi == "Temps plein"
             
             rapport[user_id] = {
                 "user_id": user_id,
