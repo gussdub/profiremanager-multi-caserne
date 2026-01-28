@@ -139,7 +139,7 @@ async def get_parametres_paie(
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -165,7 +165,7 @@ async def update_parametres_paie(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -624,7 +624,7 @@ async def generer_feuille_temps(
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -691,7 +691,7 @@ async def lister_feuilles_temps(
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -724,7 +724,7 @@ async def get_feuille_temps(
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -749,7 +749,7 @@ async def valider_feuille_temps(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent valider les feuilles de temps")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -788,7 +788,7 @@ async def modifier_feuille_temps(
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -897,7 +897,7 @@ async def ajouter_ligne_feuille_temps(
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -952,7 +952,7 @@ async def supprimer_feuille_temps(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent supprimer les feuilles de temps")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -988,7 +988,7 @@ async def export_feuilles_temps(
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -1127,7 +1127,7 @@ async def generer_feuilles_temps_lot(
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -1438,7 +1438,7 @@ async def get_tenant_payroll_config(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès admin requis")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -1464,7 +1464,7 @@ async def update_tenant_payroll_config(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès admin requis")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -1497,7 +1497,7 @@ async def get_pay_code_mappings(
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -1539,7 +1539,7 @@ async def create_pay_code_mapping(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès admin requis")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -1573,7 +1573,7 @@ async def delete_pay_code_mapping(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès admin requis")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -1595,7 +1595,7 @@ async def update_employee_matricules(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès admin requis")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -1624,7 +1624,7 @@ async def update_single_employee_matricule(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès admin requis")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -1652,7 +1652,7 @@ async def get_tenant_event_types(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès admin requis")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -1674,7 +1674,7 @@ async def create_tenant_event_type(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès admin requis")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -1714,7 +1714,7 @@ async def update_tenant_event_type(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès admin requis")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -1747,7 +1747,7 @@ async def delete_tenant_event_type(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès admin requis")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -1897,7 +1897,7 @@ async def export_payroll(
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -2044,7 +2044,7 @@ async def get_champs_supplementaires(
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -2073,7 +2073,7 @@ async def update_champs_supplementaires(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès admin requis")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -2100,7 +2100,7 @@ async def save_api_credentials(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès admin requis")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -2126,7 +2126,7 @@ async def test_api_connection(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès admin requis")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -2310,7 +2310,7 @@ async def send_payroll_to_api(
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -2610,7 +2610,7 @@ async def fetch_pay_codes_from_api(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès admin requis")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
