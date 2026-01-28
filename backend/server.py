@@ -13476,53 +13476,12 @@ async def export_salaires_excel(
     )
 
 
-# ====================================================================
-# DASHBOARD - MESSAGES IMPORTANTS ET ACTIVITÉS
-# ====================================================================
-
-# MESSAGES IMPORTANTS
-@api_router.post("/{tenant_slug}/dashboard/messages")
-async def create_message_important(tenant_slug: str, message: MessageImportantCreate, current_user: User = Depends(get_current_user)):
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
-    tenant = await get_tenant_from_slug(tenant_slug)
-    message_dict = message.dict()
-    message_dict["tenant_id"] = tenant.id
-    message_dict["auteur_id"] = current_user.id
-    message_dict["auteur_nom"] = f"{current_user.prenom} {current_user.nom}"
-    message_obj = MessageImportant(**message_dict)
-    await db.messages_importants.insert_one(message_obj.dict())
-    return clean_mongo_doc(message_obj.dict())
-
-@api_router.get("/{tenant_slug}/dashboard/messages")
-async def get_messages_importants(tenant_slug: str, current_user: User = Depends(get_current_user)):
-    tenant = await get_tenant_from_slug(tenant_slug)
-    
-    # Récupérer messages non expirés
-    today = datetime.now(timezone.utc).date().isoformat()
-    messages = await db.messages_importants.find({
-        "tenant_id": tenant.id,
-        "$or": [
-            {"date_expiration": None},
-            {"date_expiration": {"$gte": today}}
-        ]
-    }).sort("created_at", -1).to_list(100)
-    
-    return [clean_mongo_doc(m) for m in messages]
-
-@api_router.delete("/{tenant_slug}/dashboard/messages/{message_id}")
-async def delete_message_important(tenant_slug: str, message_id: str, current_user: User = Depends(get_current_user)):
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
-    tenant = await get_tenant_from_slug(tenant_slug)
-    result = await db.messages_importants.delete_one({"id": message_id, "tenant_id": tenant.id})
-    
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Message non trouvé")
-    
-    return {"message": "Message supprimé"}
+# ==================== DASHBOARD MESSAGES ROUTES MIGRÉES VERS routes/dashboard_messages.py ====================
+# Routes migrées:
+# - POST   /{tenant_slug}/dashboard/messages              - Créer un message important
+# - GET    /{tenant_slug}/dashboard/messages              - Liste des messages importants
+# - DELETE /{tenant_slug}/dashboard/messages/{message_id} - Supprimer un message
+# ============================================================================
 
 
 # DASHBOARD DONNÉES COMPLÈTES
