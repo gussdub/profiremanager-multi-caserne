@@ -50,7 +50,7 @@ import logging
 import csv
 import base64
 import json
-from io import StringIO
+from io import StringIO, BytesIO
 from datetime import timedelta
 from starlette.responses import StreamingResponse, Response
 
