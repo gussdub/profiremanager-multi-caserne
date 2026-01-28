@@ -712,26 +712,6 @@ const Remplacements = () => {
             </span>
           </div>
 
-          {/* Toggle Vue Liste/Cartes */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.75rem' }}>
-            <div className="view-toggle">
-              <button 
-                className={viewMode === 'liste' ? 'active' : ''}
-                onClick={() => setViewMode('liste')}
-                title="Vue Liste"
-              >
-                ☰
-              </button>
-              <button 
-                className={viewMode === 'cartes' ? 'active' : ''}
-                onClick={() => setViewMode('cartes')}
-                title="Vue Cartes"
-              >
-                ⊞
-              </button>
-            </div>
-          </div>
-
           {/* Exports */}
           <div style={{display: 'flex', gap: '1rem', marginTop: '1rem'}}>
             <Button variant="outline" onClick={() => { setExportType('pdf'); setShowExportModal(true); }}>
