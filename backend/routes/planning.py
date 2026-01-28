@@ -3122,10 +3122,3 @@ async def envoyer_notifications_planning(tenant_slug: str, periode_debut: str, p
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur envoi notifications: {str(e)}")
 
-
-
- 
-
-
-# Réparer tous les mots de passe démo
-@router.post("/repair-demo-passwords")
