@@ -54,6 +54,7 @@ from routes.paie_complet import router as paie_complet_router
 from routes.interventions import router as interventions_router
 from routes.apria import router as apria_router
 from routes.epi import router as epi_router
+from routes.competences_grades import router as competences_grades_router
 # from routes.disponibilites import router as disponibilites_router  # Désactivé - routes server.py plus complètes
 from io import BytesIO
 import base64
