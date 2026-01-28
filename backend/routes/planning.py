@@ -170,19 +170,19 @@ async def create_assignation(
     if not type_garde:
         raise HTTPException(status_code=404, detail="Type de garde non trouvé")
     
-    # Vérifier s'il n'y a pas déjà une assignation pour ce jour/type
+    # Vérifier s'il n'y a pas déjà une assignation pour ce user/jour/type (évite les doublons)
     existing = await db.assignations.find_one({
         "tenant_id": tenant.id,
+        "user_id": assignation_data.user_id,
         "date": assignation_data.date,
         "type_garde_id": assignation_data.type_garde_id
     })
     
     if existing:
-        # Mettre à jour l'assignation existante
+        # Mettre à jour l'assignation existante pour ce même utilisateur
         await db.assignations.update_one(
             {"id": existing["id"]},
             {"$set": {
-                "user_id": assignation_data.user_id,
                 "assignation_type": assignation_data.assignation_type,
                 "notes_admin": assignation_data.notes_admin,
                 "updated_at": datetime.now(timezone.utc)
@@ -191,7 +191,7 @@ async def create_assignation(
         updated = await db.assignations.find_one({"id": existing["id"]}, {"_id": 0})
         return updated
     
-    # Créer une nouvelle assignation
+    # Créer une nouvelle assignation (permet plusieurs personnes sur le même créneau)
     assignation = Assignation(
         tenant_id=tenant.id,
         user_id=assignation_data.user_id,
