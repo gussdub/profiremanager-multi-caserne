@@ -112,6 +112,12 @@ api_router = APIRouter(prefix="/api")
 
 # ==================== HELPERS ====================
 
+def clean_mongo_doc(doc):
+    """Remove MongoDB ObjectId and other non-serializable fields"""
+    if doc and "_id" in doc:
+        doc.pop("_id", None)
+    return doc
+
 def is_temps_partiel(user: dict) -> bool:
     """Vérifie si un employé est temps partiel ou temporaire (traités de la même façon)"""
     type_emploi = user.get("type_emploi", "temps_plein")
