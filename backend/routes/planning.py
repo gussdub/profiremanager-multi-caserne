@@ -1499,8 +1499,67 @@ async def export_rapport_heures_pdf(
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Récupérer les données du rapport
-    rapport_response = await get_rapport_heures(tenant_slug, date_debut, date_fin, current_user)
+    # Convertir date_debut en format mois pour appeler get_rapport_heures
+    mois = date_debut[:7]  # YYYY-MM
+    
+    # Récupérer les données du rapport en créant un faux current_user pour l'appel interne
+    # On va récupérer les données directement ici
+    from datetime import datetime as dt
+    debut_dt = dt.strptime(date_debut, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    fin_dt = dt.strptime(date_fin, "%Y-%m-%d").replace(tzinfo=timezone.utc) + timedelta(days=1)
+    
+    # Récupérer toutes les assignations de la période
+    assignations = await db.assignations.find({
+        "tenant_id": tenant.id,
+        "date": {"$gte": debut_dt.strftime("%Y-%m-%d"), "$lt": fin_dt.strftime("%Y-%m-%d")}
+    }).to_list(10000)
+    
+    # Récupérer tous les utilisateurs
+    users = await db.users.find({"tenant_id": tenant.id, "actif": True}).to_list(1000)
+    users_dict = {u["id"]: u for u in users}
+    
+    # Calculer les heures par employé
+    heures_par_employe = {}
+    for assign in assignations:
+        uid = assign.get("user_id")
+        if uid not in heures_par_employe:
+            heures_par_employe[uid] = {"internes": 0, "externes": 0}
+        
+        duree = assign.get("duree_heures", 0)
+        if assign.get("externe"):
+            heures_par_employe[uid]["externes"] += duree
+        else:
+            heures_par_employe[uid]["internes"] += duree
+    
+    # Construire la liste des employés
+    employes = []
+    for uid, heures in heures_par_employe.items():
+        user = users_dict.get(uid, {})
+        employes.append({
+            "nom_complet": f"{user.get('prenom', '')} {user.get('nom', '')}".strip() or "Inconnu",
+            "type_emploi": user.get("type_emploi", "temps_plein"),
+            "grade": user.get("grade", "N/A"),
+            "heures_internes": heures["internes"],
+            "heures_externes": heures["externes"],
+            "total_heures": heures["internes"] + heures["externes"]
+        })
+    
+    # Trier par nom
+    employes.sort(key=lambda x: x["nom_complet"])
+    
+    # Statistiques
+    total_internes = sum(e["heures_internes"] for e in employes)
+    total_externes = sum(e["heures_externes"] for e in employes)
+    nb_employes = len(employes)
+    
+    statistiques = {
+        "nombre_employes": nb_employes,
+        "total_heures_planifiees": total_internes + total_externes,
+        "moyenne_heures_internes": round(total_internes / nb_employes, 1) if nb_employes > 0 else 0,
+        "moyenne_heures_externes": round(total_externes / nb_employes, 1) if nb_employes > 0 else 0
+    }
+    
+    rapport_response = {"employes": employes, "statistiques": statistiques}
     
     from reportlab.lib.pagesizes import letter, A4
     from reportlab.lib import colors
