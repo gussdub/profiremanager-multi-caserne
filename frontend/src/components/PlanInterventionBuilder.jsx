@@ -1296,22 +1296,41 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
           </div>
         </div>
 
-        {/* Colonne droite - Formulaire (250px) */}
+        {/* Colonne droite - Formulaire (collapsible) */}
         <div style={{ 
-          width: '250px', 
-          minWidth: '250px',
+          width: showInfoPanel ? '250px' : '40px', 
+          minWidth: showInfoPanel ? '250px' : '40px',
           backgroundColor: '#fff', 
           borderLeft: '1px solid #e5e7eb',
           overflowY: 'auto',
           display: 'flex',
-          flexDirection: 'column'
+          flexDirection: 'column',
+          transition: 'width 0.3s ease, min-width 0.3s ease'
         }}>
-          <div style={{ padding: '15px', borderBottom: '1px solid #e5e7eb' }}>
-            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>
-              📋 Informations du Plan
-            </h3>
+          <div 
+            style={{ 
+              padding: showInfoPanel ? '15px' : '10px', 
+              borderBottom: '1px solid #e5e7eb',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: showInfoPanel ? 'space-between' : 'center'
+            }}
+            onClick={() => setShowInfoPanel(!showInfoPanel)}
+          >
+            {showInfoPanel ? (
+              <>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>
+                  📋 Informations du Plan
+                </h3>
+                <span style={{ fontSize: '18px' }}>▶</span>
+              </>
+            ) : (
+              <span style={{ fontSize: '18px', writingMode: 'vertical-rl', textOrientation: 'mixed' }}>◀ Info</span>
+            )}
           </div>
           
+          {showInfoPanel && (
           <div style={{ padding: '15px', flex: 1 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                   <div>
