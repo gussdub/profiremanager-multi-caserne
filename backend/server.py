@@ -8485,111 +8485,11 @@ async def update_assignation_notes(
     
     return {"message": "Notes mises à jour avec succès", "notes": notes}
 
-# Endpoint pour générer le rapport d'audit des assignations automatiques
-@api_router.get("/{tenant_slug}/statistiques", response_model=Statistiques)
-async def get_statistiques(tenant_slug: str, current_user: User = Depends(get_current_user)):
-    # Vérifier le tenant
-    tenant = await get_tenant_from_slug(tenant_slug)
-    
-    try:
-        # 1. Personnel actif (100% dynamique)
-        personnel_count = await db.users.count_documents({"statut": "Actif", "tenant_id": tenant.id})
-        
-        # 2. Gardes cette semaine (100% dynamique)
-        today = datetime.now(timezone.utc).date()
-        start_week = today - timedelta(days=today.weekday())
-        end_week = start_week + timedelta(days=6)
-        
-        gardes_count = await db.assignations.count_documents({
-            "tenant_id": tenant.id,
-            "date": {
-                "$gte": start_week.strftime("%Y-%m-%d"),
-                "$lte": end_week.strftime("%Y-%m-%d")
-            }
-        })
-        
-        # 3. Formations planifiées (100% dynamique)
-        formations_count = await db.sessions_formation.count_documents({"statut": "planifie", "tenant_id": tenant.id})
-        
-        # 4. Taux de couverture dynamique - CALCUL CORRECT
-        # Calculer le total de personnel requis pour la semaine
-        total_assignations_required = await db.types_garde.find({"tenant_id": tenant.id}).to_list(1000)
-        total_personnel_requis = 0
-        total_personnel_assigne = 0
-        
-        # Pour chaque jour de la semaine
-        for day_offset in range(7):
-            current_day = start_week + timedelta(days=day_offset)
-            day_name = current_day.strftime("%A").lower()
-            
-            # Pour chaque type de garde
-            for type_garde in total_assignations_required:
-                jours_app = type_garde.get("jours_application", [])
-                
-                # Si ce type de garde s'applique à ce jour
-                if not jours_app or day_name in jours_app:
-                    personnel_requis = type_garde.get("personnel_requis", 1)
-                    total_personnel_requis += personnel_requis
-                    
-                    # Compter combien de personnes sont assignées pour cette garde ce jour
-                    assignations_jour = await db.assignations.count_documents({
-                        "tenant_id": tenant.id,
-                        "date": current_day.strftime("%Y-%m-%d"),
-                        "type_garde_id": type_garde["id"]
-                    })
-                    
-                    total_personnel_assigne += min(assignations_jour, personnel_requis)
-        
-        # Calcul correct : (personnel assigné / personnel requis) × 100
-        taux_couverture = (total_personnel_assigne / total_personnel_requis * 100) if total_personnel_requis > 0 else 0
-        
-        # Cap à 100% maximum
-        taux_couverture = min(taux_couverture, 100.0)
-        
-        # 5. Heures travaillées ce mois (100% dynamique)
-        start_month = today.replace(day=1)
-        end_month = (start_month + timedelta(days=32)).replace(day=1) - timedelta(days=1)
-        
-        assignations_mois = await db.assignations.find({
-            "tenant_id": tenant.id,
-            "date": {
-                "$gte": start_month.strftime("%Y-%m-%d"),
-                "$lte": end_month.strftime("%Y-%m-%d")
-            }
-        }).to_list(1000)
-        
-        # Calculer les heures basées sur les types de garde
-        heures_totales = 0
-        types_garde_dict = {tg["id"]: tg for tg in total_assignations_required}
-        
-        for assignation in assignations_mois:
-            type_garde = types_garde_dict.get(assignation["type_garde_id"])
-            if type_garde:
-                heures_totales += type_garde.get("duree_heures", 8)
-        
-        # 6. Remplacements effectués (100% dynamique)
-        remplacements_count = await db.demandes_remplacement.count_documents({"statut": "approuve", "tenant_id": tenant.id})
-        
-        return Statistiques(
-            personnel_actif=personnel_count,
-            gardes_cette_semaine=gardes_count,
-            formations_planifiees=formations_count,
-            taux_couverture=round(taux_couverture, 1),
-            heures_travaillees=heures_totales,
-            remplacements_effectues=remplacements_count
-        )
-        
-    except Exception as e:
-        # Fallback en cas d'erreur
-        print(f"Erreur calcul statistiques: {str(e)}")
-        return Statistiques(
-            personnel_actif=0,
-            gardes_cette_semaine=0,
-            formations_planifiees=0,
-            taux_couverture=0.0,
-            heures_travaillees=0,
-            remplacements_effectues=0
-        )
+
+# ==================== STATISTIQUES - MIGRÉ ====================
+# Route migrée vers routes/statistiques.py:
+# - GET /{tenant_slug}/statistiques
+# ==============================================================
 
 # Réinitialiser tout le planning (vider toutes assignations)
 
