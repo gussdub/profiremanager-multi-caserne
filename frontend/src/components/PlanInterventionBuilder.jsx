@@ -1446,6 +1446,7 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
               />
             </div>
           </div>
+          )}
         </div>
       </div>
 
