@@ -25008,6 +25008,7 @@ app.include_router(bornes_seches_router, prefix="/api")  # Module Bornes Sèches
 app.include_router(points_eau_router, prefix="/api")  # Module Points d'Eau
 app.include_router(remplacements_router, prefix="/api")  # Module Remplacements
 app.include_router(equipes_garde_router, prefix="/api")  # Module Équipes de Garde
+app.include_router(inventaires_vehicules_router, prefix="/api")  # Module Inventaires Véhicules
 # disponibilites_router désactivé - routes server.py plus complètes (export PDF, blocage avancé)
 app.include_router(api_router)  # Routes principales (server.py)
 app.include_router(pwa_router, prefix="/api")
