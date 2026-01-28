@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { useToast } from '../hooks/use-toast';
 import { useTenant } from '../contexts/TenantContext';
+import { useAuth } from '../contexts/AuthContext';
 import { apiGet } from '../utils/api';
 
 const ModuleRapports = ({ setCurrentView }) => {
