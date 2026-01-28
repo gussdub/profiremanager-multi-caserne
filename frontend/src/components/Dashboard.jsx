@@ -68,7 +68,7 @@ const Dashboard = () => {
         // 1. Formations (année courante + suivante pour couvrir les formations futures)
         axios.get(`${API}/${tenantSlug}/formations?annee=${now.getFullYear()}`, { headers, timeout: 10000 }).catch(() => null),
         // 2. Assignations mois courant (pour trouver la prochaine garde)
-        axios.get(`${API}/${tenantSlug}/planning/assignations/${premierJourMoisCourant}`, { headers, timeout: 10000 }).catch(() => null),
+        axios.get(`${API}/${tenantSlug}/planning/assignations/${premierJourMoisCourant}?mode=mois`, { headers, timeout: 10000 }).catch(() => null),
         // 3. Mes EPI
         axios.get(`${API}/${tenantSlug}/mes-epi`, { headers, timeout: 10000 }).catch(() => null),
         // 4. Mes heures (nouvel endpoint accessible à tous les utilisateurs)
@@ -76,7 +76,7 @@ const Dashboard = () => {
         // 5. Mon taux de présence formations (endpoint existant)
         axios.get(`${API}/${tenantSlug}/formations/mon-taux-presence?annee=${now.getFullYear()}`, { headers, timeout: 10000 }).catch(() => null),
         // 6. Assignations mois suivant (backup si pas de garde ce mois-ci)
-        axios.get(`${API}/${tenantSlug}/planning/assignations/${premierJourMoisSuivant}`, { headers, timeout: 10000 }).catch(() => null),
+        axios.get(`${API}/${tenantSlug}/planning/assignations/${premierJourMoisSuivant}?mode=mois`, { headers, timeout: 10000 }).catch(() => null),
         // 7. Formations année suivante (backup)
         axios.get(`${API}/${tenantSlug}/formations?annee=${now.getFullYear() + 1}`, { headers, timeout: 10000 }).catch(() => null),
       ];
