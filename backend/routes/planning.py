@@ -631,6 +631,7 @@ async def get_planning_semaine(
         "semaine_fin": semaine_fin,
         "assignations": assignations,
         "types_garde": types_garde
+    }
 
 
 # ==================== ROUTES PLANNING AVANCÉES (MIGRÉES DE SERVER.PY) ====================
