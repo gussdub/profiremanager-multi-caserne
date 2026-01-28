@@ -74,6 +74,7 @@ from routes.users import router as users_router
 from routes.disponibilites import router as disponibilites_router
 from routes.auth import router as auth_router
 from routes.approvisionnement_eau import router as approvisionnement_eau_router
+from routes.validations_competences import router as validations_competences_router
 from io import BytesIO
 import base64
 from PIL import Image as PILImage
