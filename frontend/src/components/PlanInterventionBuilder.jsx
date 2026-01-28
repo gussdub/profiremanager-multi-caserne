@@ -1296,9 +1296,10 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
           </div>
         </div>
 
-        {/* Colonne droite - Formulaire (300px) */}
+        {/* Colonne droite - Formulaire (250px) */}
         <div style={{ 
-          width: '300px', 
+          width: '250px', 
+          minWidth: '250px',
           backgroundColor: '#fff', 
           borderLeft: '1px solid #e5e7eb',
           overflowY: 'auto',
