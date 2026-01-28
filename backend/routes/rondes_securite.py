@@ -386,7 +386,7 @@ async def get_rondes_vehicule(
     return rondes
 
 
-@router.get("/{tenant_slug}/actifs/rondes-securite/{ronde_id}/pdf")
+@router.get("/{tenant_slug}/actifs/rondes-securite/{ronde_id}/export-pdf")
 async def get_ronde_pdf(
     tenant_slug: str,
     ronde_id: str,
