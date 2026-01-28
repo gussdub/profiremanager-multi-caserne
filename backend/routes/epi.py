@@ -30,6 +30,295 @@ router = APIRouter(tags=["EPI - Équipements de Protection"])
 logger = logging.getLogger(__name__)
 
 
+# ==================== TYPES D'EPI PERSONNALISÉS ====================
+class TypeEPI(BaseModel):
+    """Type/Catégorie d'EPI personnalisable"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    nom: str  # Ex: "Casque", "Harnais", "Bottes"
+    icone: str = "🛡️"  # Emoji pour l'affichage
+    description: str = ""
+    ordre: int = 0  # Pour trier l'affichage
+    est_defaut: bool = False  # Types par défaut non supprimables
+    actif: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class TypeEPICreate(BaseModel):
+    nom: str
+    icone: str = "🛡️"
+    description: str = ""
+    ordre: int = 0
+
+class TypeEPIUpdate(BaseModel):
+    nom: Optional[str] = None
+    icone: Optional[str] = None
+    description: Optional[str] = None
+    ordre: Optional[int] = None
+    actif: Optional[bool] = None
+
+class EPICreate(BaseModel):
+    tenant_id: Optional[str] = None
+    numero_serie: str = ""  # Auto-généré si vide
+    type_epi: str
+    marque: str
+    modele: str
+    numero_serie_fabricant: str = ""
+    date_fabrication: Optional[str] = None
+    date_mise_en_service: str
+    norme_certification: str = ""
+    cout_achat: float = 0.0
+    couleur: str = ""
+    taille: str = ""
+    user_id: Optional[str] = None
+    statut: str = "En service"
+    notes: str = ""
+    # Formulaires d'inspection assignés (3 types)
+    formulaire_apres_usage_id: str = ""
+    formulaire_routine_id: str = ""
+    formulaire_avancee_id: str = ""
+
+class EPIUpdate(BaseModel):
+    numero_serie: Optional[str] = None
+    type_epi: Optional[str] = None
+    marque: Optional[str] = None
+    modele: Optional[str] = None
+    numero_serie_fabricant: Optional[str] = None
+    date_fabrication: Optional[str] = None
+    date_mise_en_service: Optional[str] = None
+    norme_certification: Optional[str] = None
+    cout_achat: Optional[float] = None
+    couleur: Optional[str] = None
+    taille: Optional[str] = None
+    user_id: Optional[str] = None
+    statut: Optional[str] = None
+    notes: Optional[str] = None
+    # Formulaires d'inspection assignés (3 types)
+    formulaire_apres_usage_id: Optional[str] = None
+    formulaire_routine_id: Optional[str] = None
+    formulaire_avancee_id: Optional[str] = None
+
+class InspectionEPI(BaseModel):
+    """Modèle pour les 3 types d'inspections NFPA 1851"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    epi_id: str
+    type_inspection: str  # apres_utilisation, routine_mensuelle, avancee_annuelle
+    date_inspection: str
+    inspecteur_nom: str
+    inspecteur_id: Optional[str] = None  # Si c'est un utilisateur du système
+    isp_id: Optional[str] = None  # Si inspection par ISP
+    isp_nom: str = ""
+    isp_accreditations: str = ""
+    statut_global: str  # conforme, non_conforme, necessite_reparation, hors_service
+    checklist: Dict[str, Any] = {}  # JSON avec tous les points de vérification
+    photos: List[str] = []
+    commentaires: str = ""
+    rapport_pdf_url: str = ""  # Pour inspection avancée
+    signature_numerique: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class InspectionEPICreate(BaseModel):
+    tenant_id: Optional[str] = None
+    epi_id: str
+    type_inspection: str
+    date_inspection: str
+    inspecteur_nom: str
+    inspecteur_id: Optional[str] = None
+    isp_id: Optional[str] = None
+    isp_nom: str = ""
+    isp_accreditations: str = ""
+    statut_global: str
+    checklist: Dict[str, Any] = {}
+    photos: List[str] = []
+    commentaires: str = ""
+    rapport_pdf_url: str = ""
+    signature_numerique: str = ""
+
+# Nouveaux modèles pour "Mes EPI"
+class InspectionApresUsage(BaseModel):
+    """Inspection simple après utilisation par l'employé"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    epi_id: str
+    user_id: str  # Employé qui fait l'inspection
+    date_inspection: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    statut: str  # "ok" ou "defaut"
+    defauts_constates: str = ""  # Description des défauts si statut = "defaut"
+    notes: str = ""
+    photo_url: str = ""  # URL de la photo du défaut (optionnel)
+    criteres_inspection: Optional[Dict[str, bool]] = {}  # Critères cochés/décochés
+
+class InspectionApresUsageCreate(BaseModel):
+    statut: str  # "ok" ou "defaut"
+    defauts_constates: Optional[str] = ""
+    notes: Optional[str] = ""
+    photo_url: Optional[str] = ""
+    criteres_inspection: Optional[Dict[str, bool]] = {}
+
+class DemandeRemplacementEPI(BaseModel):
+    """Demande de remplacement d'EPI par un employé"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    epi_id: str
+    user_id: str  # Employé qui fait la demande
+    raison: str  # "Usé", "Perdu", "Défectueux", "Taille inadaptée"
+    notes_employe: str = ""
+    statut: str = "En attente"  # "En attente", "Approuvée", "Refusée"
+    date_demande: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    date_traitement: Optional[datetime] = None
+    traite_par: Optional[str] = None  # ID admin/superviseur qui traite
+    notes_admin: str = ""  # Notes de l'admin lors du traitement
+
+class DemandeRemplacementEPICreate(BaseModel):
+    raison: str
+    notes_employe: Optional[str] = ""
+
+class ISP(BaseModel):
+    """Fournisseur de Services Indépendant"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    nom: str
+    contact: str = ""
+    telephone: str = ""
+    email: str = ""
+    accreditations: str = ""
+    notes: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ISPCreate(BaseModel):
+    tenant_id: Optional[str] = None
+    nom: str
+    contact: str = ""
+    telephone: str = ""
+    email: str = ""
+    accreditations: str = ""
+    notes: str = ""
+
+class ISPUpdate(BaseModel):
+    nom: Optional[str] = None
+    contact: Optional[str] = None
+    telephone: Optional[str] = None
+    email: Optional[str] = None
+    accreditations: Optional[str] = None
+    notes: Optional[str] = None
+
+# ==================== MODÈLES PHASE 2 : NETTOYAGE, RÉPARATIONS, RETRAIT ====================
+
+class NettoyageEPI(BaseModel):
+    """Suivi des nettoyages EPI selon NFPA 1851"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    epi_id: str
+    type_nettoyage: str  # routine, avance
+    date_nettoyage: str
+    methode: str  # laveuse_extractrice, manuel, externe
+    effectue_par: str  # Nom de la personne ou organisation
+    effectue_par_id: Optional[str] = None  # ID utilisateur si interne
+    isp_id: Optional[str] = None  # Si nettoyage externe
+    nombre_cycles: int = 1  # Pour suivi limite fabricant
+    temperature: str = ""  # Ex: "Eau tiède max 40°C"
+    produits_utilises: str = ""
+    cout_nettoyage: float = 0.0  # Coût du nettoyage (pour les externes)
+    notes: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class NettoyageEPICreate(BaseModel):
+    tenant_id: Optional[str] = None
+    epi_id: str
+    type_nettoyage: str
+    date_nettoyage: str
+    methode: str
+    effectue_par: str
+    effectue_par_id: Optional[str] = None
+    isp_id: Optional[str] = None
+    nombre_cycles: int = 1
+    temperature: str = ""
+    produits_utilises: str = ""
+    cout_nettoyage: float = 0.0
+    notes: str = ""
+
+class ReparationEPI(BaseModel):
+    """Gestion des réparations EPI"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    epi_id: str
+    statut: str  # demandee, en_cours, terminee, impossible
+    date_demande: str
+    demandeur: str
+    demandeur_id: Optional[str] = None
+    date_envoi: Optional[str] = None
+    date_reception: Optional[str] = None
+    date_reparation: Optional[str] = None
+    reparateur_type: str  # interne, externe
+    reparateur_nom: str = ""
+    isp_id: Optional[str] = None
+    probleme_description: str
+    pieces_remplacees: List[str] = []
+    cout_reparation: float = 0.0
+    notes: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ReparationEPICreate(BaseModel):
+    tenant_id: Optional[str] = None
+    epi_id: str
+    statut: str = "demandee"
+    date_demande: str
+    demandeur: str
+    demandeur_id: Optional[str] = None
+    reparateur_type: str
+    reparateur_nom: str = ""
+    isp_id: Optional[str] = None
+    probleme_description: str
+    notes: str = ""
+
+class ReparationEPIUpdate(BaseModel):
+    statut: Optional[str] = None
+    date_envoi: Optional[str] = None
+    date_reception: Optional[str] = None
+    date_reparation: Optional[str] = None
+    reparateur_nom: Optional[str] = None
+    isp_id: Optional[str] = None
+    pieces_remplacees: Optional[List[str]] = None
+    cout_reparation: Optional[float] = None
+    notes: Optional[str] = None
+
+class RetraitEPI(BaseModel):
+    """Enregistrement du retrait définitif d'un EPI"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    epi_id: str
+    date_retrait: str
+    raison: str  # age_limite, dommage_irreparable, echec_inspection, autre
+    description_raison: str
+    methode_disposition: str  # coupe_detruit, recyclage, don, autre
+    preuve_disposition: List[str] = []  # URLs photos
+    certificat_disposition_url: str = ""
+    cout_disposition: float = 0.0
+    retire_par: str
+    retire_par_id: Optional[str] = None
+    notes: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class RetraitEPICreate(BaseModel):
+    tenant_id: Optional[str] = None
+    epi_id: str
+    date_retrait: str
+    raison: str
+    description_raison: str
+    methode_disposition: str
+    preuve_disposition: List[str] = []
+    certificat_disposition_url: str = ""
+    cout_disposition: float = 0.0
+    retire_par: str
+    retire_par_id: Optional[str] = None
+    notes: str = ""
+
+
+
+
+# ==================== ROUTES EPI ====================
+
 # ========== TYPES D'EPI PERSONNALISÉS ==========
 
 # Types d'EPI par défaut
