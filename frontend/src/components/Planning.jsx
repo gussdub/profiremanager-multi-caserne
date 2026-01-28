@@ -835,21 +835,40 @@ const Planning = () => {
         });
       }
 
-      // Rafraîchir les données
-      await fetchPlanningData();
-      
       // Fermer le modal d'assignation
       setShowAssignModal(false);
       setQuickAssignSearchQuery('');
       setShowQuickAssignDropdown(false);
       
-      // Rouvrir le modal de détails avec les données mises à jour
-      if (selectedSlot) {
-        // Récupérer les données fraîches après le fetchPlanningData
-        setTimeout(() => {
-          openGardeDetails(selectedSlot.date, selectedSlot.typeGarde);
-        }, 100);
+      // Mise à jour locale immédiate (évite le flash et le délai)
+      // Ajouter la nouvelle assignation à l'état global
+      const newAssignation = {
+        id: response.id,
+        user_id: userId,
+        type_garde_id: typeGardeId,
+        date: date,
+        assignation_type: "manuel",
+        tenant_id: response.tenant_id
+      };
+      
+      setAssignations(prev => [...prev, newAssignation]);
+      
+      // Trouver l'utilisateur pour l'ajouter au modal de détails
+      const addedUser = users.find(u => u.id === userId);
+      
+      // Mettre à jour le modal de détails s'il est ouvert
+      if (selectedGardeDetails && selectedSlot) {
+        setSelectedGardeDetails(prev => ({
+          ...prev,
+          assignations: [...prev.assignations, newAssignation],
+          personnelAssigne: addedUser 
+            ? [...prev.personnelAssigne, { ...addedUser, assignation_id: response.id }]
+            : prev.personnelAssigne
+        }));
+        // Rouvrir le modal de détails
+        setShowGardeDetailsModal(true);
       }
+      
     } catch (error) {
       // Le wrapper apiCall met le status dans error.status et les data dans error.data
       const errorDetail = error.data?.detail || error.message;
