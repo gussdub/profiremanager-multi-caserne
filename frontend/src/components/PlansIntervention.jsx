@@ -125,7 +125,7 @@ const PlansIntervention = ({ tenantSlug, filteredBatimentId, setFilteredBatiment
       
       // Trouver le plan et le bâtiment pour le nom du fichier
       const plan = plans.find(p => p.id === planId);
-      const batiment = plan?.batiment;
+      const batiment = batiments.find(b => b.id === plan?.batiment_id);
       const batimentInfo = batiment?.adresse_civique || batiment?.nom_etablissement || batiment?.nom || '';
       const villeInfo = batiment?.ville || '';
       const batimentSafe = `${batimentInfo}${villeInfo ? '_' + villeInfo : ''}`.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
