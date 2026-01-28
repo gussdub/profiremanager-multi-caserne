@@ -145,7 +145,7 @@ async def get_billing_overview(admin: SuperAdmin = Depends(get_super_admin)):
     for tenant in tenants:
         # Compter les utilisateurs actifs
         user_count = await db.users.count_documents({
-            "tenant_id": tenant["id"],
+            "tenant_id": tenant.id,
             "statut": "Actif"
         })
         
@@ -167,7 +167,7 @@ async def get_billing_overview(admin: SuperAdmin = Depends(get_super_admin)):
                 past_due_tenants += 1
         
         billing_details.append({
-            "tenant_id": tenant["id"],
+            "tenant_id": tenant.id,
             "tenant_slug": tenant.get("slug"),
             "tenant_nom": tenant.get("nom"),
             "user_count": user_count,
@@ -386,7 +386,7 @@ async def send_payment_reminder(
         if resend.api_key:
             resend.Emails.send({
                 "from": "ProFireManager <noreply@profiremanager.com>",
-                "to": [tenant["email_contact"]],
+                "to": [tenant.email_contact],
                 "subject": "Rappel de paiement - ProFireManager",
                 "html": f"""
                 <h2>Rappel de paiement</h2>
@@ -568,7 +568,7 @@ async def get_tenant_billing_info(
     
     # Compter les utilisateurs actifs
     user_count = await db.users.count_documents({
-        "tenant_id": tenant["id"],
+        "tenant_id": tenant.id,
         "statut": "Actif"
     })
     
@@ -694,7 +694,7 @@ async def create_checkout_session(
     try:
         # Compter les utilisateurs actifs
         user_count = await db.users.count_documents({
-            "tenant_id": tenant["id"],
+            "tenant_id": tenant.id,
             "statut": "Actif"
         })
         if user_count == 0:
@@ -715,7 +715,7 @@ async def create_checkout_session(
             recurring={"interval": interval},
             product_data={
                 "name": f"ProFireManager - {tenant.get('nom', tenant_slug)}",
-                "metadata": {"tenant_id": tenant["id"]}
+                "metadata": {"tenant_id": tenant.id}
             }
         )
         
@@ -729,7 +729,7 @@ async def create_checkout_session(
                 email=customer_email,
                 name=tenant.get("nom", tenant_slug),
                 metadata={
-                    "tenant_id": tenant["id"],
+                    "tenant_id": tenant.id,
                     "tenant_slug": tenant_slug
                 }
             )
@@ -737,7 +737,7 @@ async def create_checkout_session(
             
             # Sauvegarder le customer_id dans la base de données
             await db.tenants.update_one(
-                {"id": tenant["id"]},
+                {"id": tenant.id},
                 {"$set": {"stripe_customer_id": customer_id}}
             )
         
@@ -751,12 +751,12 @@ async def create_checkout_session(
             "success_url": return_url + "?checkout=success",
             "cancel_url": return_url + "?checkout=cancelled",
             "metadata": {
-                "tenant_id": tenant["id"],
+                "tenant_id": tenant.id,
                 "tenant_slug": tenant_slug
             },
             "subscription_data": {
                 "metadata": {
-                    "tenant_id": tenant["id"],
+                    "tenant_id": tenant.id,
                     "tenant_slug": tenant_slug
                 }
             }
