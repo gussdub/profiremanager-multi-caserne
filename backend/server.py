@@ -3898,7 +3898,7 @@ async def super_admin_login(login: SuperAdminLogin):
         hash_type = "bcrypt" if current_hash.startswith('$2') else "SHA256"
         logging.info(f"🔐 Type de hash détecté: {hash_type}")
         
-        if not verify_password(login.mot_de_passe, current_hash):
+        if not verify_password(login.password, current_hash):
             logging.warning(f"❌ Mot de passe incorrect pour Super Admin {login.email}")
             raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
         
