@@ -2274,10 +2274,7 @@ const Planning = () => {
                     <span>⏰ {selectedGardeDetails.typeGarde.heure_debut} - {selectedGardeDetails.typeGarde.heure_fin}</span>
                     <span>👥 {selectedGardeDetails.typeGarde.personnel_requis} personnel requis</span>
                     {selectedGardeDetails.typeGarde.officier_obligatoire && (() => {
-                      const hasOfficer = selectedGardeDetails.personnelAssigne.some(u => {
-                        const gradeInfo = grades && grades.find(g => g.nom === u.grade);
-                        return (gradeInfo && gradeInfo.est_officier) || u.fonction_superieur;
-                      });
+                      const hasOfficer = selectedGardeDetails.personnelAssigne.some(u => isUserOfficer(u));
                       return (
                         <span style={{
                           padding: '0.25rem 0.5rem',
