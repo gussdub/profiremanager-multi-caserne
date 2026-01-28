@@ -120,7 +120,7 @@ async def calculate_meal_primes_for_intervention(intervention: dict, settings: d
         return None
 
 
-@api_router.get("/{tenant_slug}/interventions")
+@router.get("/{tenant_slug}/interventions")
 async def list_interventions(
     tenant_slug: str,
     status: Optional[str] = None,
@@ -168,7 +168,7 @@ async def list_interventions(
     }
 
 
-@api_router.get("/{tenant_slug}/interventions/dashboard")
+@router.get("/{tenant_slug}/interventions/dashboard")
 async def get_interventions_dashboard(
     tenant_slug: str,
     current_user: User = Depends(get_current_user)
@@ -208,7 +208,7 @@ async def get_interventions_dashboard(
     }
 
 
-@api_router.get("/{tenant_slug}/interventions/reference-data")
+@router.get("/{tenant_slug}/interventions/reference-data")
 async def get_intervention_reference_data(
     tenant_slug: str,
     current_user: User = Depends(get_current_user)
@@ -248,7 +248,7 @@ async def get_intervention_reference_data(
     }
 
 
-@api_router.get("/{tenant_slug}/interventions/settings")
+@router.get("/{tenant_slug}/interventions/settings")
 async def get_intervention_settings(
     tenant_slug: str,
     current_user: User = Depends(get_current_user)
@@ -297,7 +297,7 @@ async def get_intervention_settings(
     return {"settings": settings}
 
 
-@api_router.put("/{tenant_slug}/interventions/settings")
+@router.put("/{tenant_slug}/interventions/settings")
 async def update_intervention_settings(
     tenant_slug: str,
     settings_data: dict,
@@ -322,7 +322,7 @@ async def update_intervention_settings(
     return {"success": True}
 
 
-@api_router.get("/{tenant_slug}/interventions/detail/{intervention_id}")
+@router.get("/{tenant_slug}/interventions/detail/{intervention_id}")
 async def get_intervention_detail(
     tenant_slug: str,
     intervention_id: str,
@@ -373,7 +373,7 @@ async def get_intervention_detail(
     }
 
 
-@api_router.put("/{tenant_slug}/interventions/{intervention_id}")
+@router.put("/{tenant_slug}/interventions/{intervention_id}")
 async def update_intervention(
     tenant_slug: str,
     intervention_id: str,
@@ -425,7 +425,7 @@ async def update_intervention(
     return {"success": True, "intervention": updated}
 
 
-@api_router.post("/{tenant_slug}/interventions/{intervention_id}/validate")
+@router.post("/{tenant_slug}/interventions/{intervention_id}/validate")
 async def validate_intervention(
     tenant_slug: str,
     intervention_id: str,
@@ -582,7 +582,7 @@ async def validate_intervention(
     return {"success": True, "intervention": updated}
 
 
-@api_router.post("/{tenant_slug}/interventions/{intervention_id}/unlock")
+@router.post("/{tenant_slug}/interventions/{intervention_id}/unlock")
 async def unlock_intervention(
     tenant_slug: str,
     intervention_id: str,
@@ -643,7 +643,7 @@ async def unlock_intervention(
 
 # ==================== FACTURES ENTRAIDE ====================
 
-@api_router.post("/{tenant_slug}/interventions/{intervention_id}/facture-entraide")
+@router.post("/{tenant_slug}/interventions/{intervention_id}/facture-entraide")
 async def generer_facture_entraide(
     tenant_slug: str,
     intervention_id: str,
@@ -732,7 +732,7 @@ async def generer_facture_entraide(
     return {"success": True, "facture": facture}
 
 
-@api_router.get("/{tenant_slug}/factures-entraide")
+@router.get("/{tenant_slug}/factures-entraide")
 async def lister_factures_entraide(
     tenant_slug: str,
     limit: int = 100,
@@ -751,7 +751,7 @@ async def lister_factures_entraide(
     return {"factures": factures}
 
 
-@api_router.get("/{tenant_slug}/factures-entraide/{facture_id}")
+@router.get("/{tenant_slug}/factures-entraide/{facture_id}")
 async def get_facture_entraide(
     tenant_slug: str,
     facture_id: str,
@@ -775,7 +775,7 @@ async def get_facture_entraide(
 
 # ==================== MÉTÉO AUTOMATIQUE ====================
 
-@api_router.get("/{tenant_slug}/interventions/weather")
+@router.get("/{tenant_slug}/interventions/weather")
 async def get_weather_for_intervention(
     tenant_slug: str,
     lat: float,
@@ -882,7 +882,7 @@ async def get_weather_for_intervention(
 
 # ==================== ÉQUIPES DE GARDE POUR INTERVENTIONS ====================
 
-@api_router.get("/{tenant_slug}/interventions/equipes-garde")
+@router.get("/{tenant_slug}/interventions/equipes-garde")
 async def get_equipes_garde_for_intervention(
     tenant_slug: str,
     date: str,  # Format YYYY-MM-DD
@@ -1002,7 +1002,7 @@ async def get_equipes_garde_for_intervention(
     return result
 
 
-@api_router.post("/{tenant_slug}/interventions/import-xml")
+@router.post("/{tenant_slug}/interventions/import-xml")
 async def import_intervention_xml(
     tenant_slug: str,
     files: List[UploadFile] = File(...),
@@ -1326,7 +1326,7 @@ async def import_intervention_xml(
     return results
 
 
-@api_router.get("/{tenant_slug}/interventions/mappings")
+@router.get("/{tenant_slug}/interventions/mappings")
 async def get_intervention_mappings(
     tenant_slug: str,
     type_mapping: Optional[str] = None,
@@ -1351,7 +1351,7 @@ async def get_intervention_mappings(
     return {"mappings": mappings}
 
 
-@api_router.post("/{tenant_slug}/interventions/mappings")
+@router.post("/{tenant_slug}/interventions/mappings")
 async def create_intervention_mapping(
     tenant_slug: str,
     mapping_data: dict,
@@ -1397,7 +1397,7 @@ async def create_intervention_mapping(
         return {"success": True, "action": "created"}
 
 
-@api_router.post("/{tenant_slug}/interventions/{intervention_id}/resources")
+@router.post("/{tenant_slug}/interventions/{intervention_id}/resources")
 async def add_intervention_resource(
     tenant_slug: str,
     intervention_id: str,
@@ -1434,7 +1434,7 @@ async def add_intervention_resource(
     return {"success": True, "resource": {k: v for k, v in resource.items() if k != "_id"}}
 
 
-@api_router.delete("/{tenant_slug}/interventions/{intervention_id}/resources/{resource_id}")
+@router.delete("/{tenant_slug}/interventions/{intervention_id}/resources/{resource_id}")
 async def remove_intervention_resource(
     tenant_slug: str,
     intervention_id: str,
@@ -1453,7 +1453,7 @@ async def remove_intervention_resource(
     return {"success": True}
 
 
-@api_router.put("/{tenant_slug}/interventions/{intervention_id}/assign-reporters")
+@router.put("/{tenant_slug}/interventions/{intervention_id}/assign-reporters")
 async def assign_intervention_reporters(
     tenant_slug: str,
     intervention_id: str,
@@ -1517,7 +1517,7 @@ class RemiseProprieteCreate(BaseModel):
     longitude: Optional[float] = None
 
 
-@api_router.post("/{tenant_slug}/interventions/{intervention_id}/remise-propriete")
+@router.post("/{tenant_slug}/interventions/{intervention_id}/remise-propriete")
 async def creer_remise_propriete(
     tenant_slug: str,
     intervention_id: str,
@@ -1875,7 +1875,7 @@ async def envoyer_email_remise_propriete(tenant: dict, intervention: dict, remis
         return False
 
 
-@api_router.get("/{tenant_slug}/interventions/{intervention_id}/remises-propriete")
+@router.get("/{tenant_slug}/interventions/{intervention_id}/remises-propriete")
 async def get_remises_propriete(
     tenant_slug: str,
     intervention_id: str,
@@ -1894,7 +1894,7 @@ async def get_remises_propriete(
     return {"remises": remises}
 
 
-@api_router.get("/{tenant_slug}/interventions/{intervention_id}/remise-propriete/{remise_id}/pdf")
+@router.get("/{tenant_slug}/interventions/{intervention_id}/remise-propriete/{remise_id}/pdf")
 async def get_remise_propriete_pdf(
     tenant_slug: str,
     intervention_id: str,
