@@ -59,6 +59,7 @@ from routes.types_garde import router as types_garde_router
 from routes.dashboard_messages import router as dashboard_messages_router
 from routes.conges import router as conges_router
 from routes.notifications import router as notifications_router
+from routes.personnalisation import router as personnalisation_router
 # from routes.disponibilites import router as disponibilites_router  # Désactivé - routes server.py plus complètes
 from io import BytesIO
 import base64
