@@ -40,6 +40,12 @@ from routes.dependencies import (
     creer_activite
 )
 
+# Import des helpers PDF partagés
+from utils.pdf_helpers import (
+    create_branded_pdf,
+    get_modern_pdf_styles
+)
+
 router = APIRouter(tags=["Planning"])
 logger = logging.getLogger(__name__)
 
