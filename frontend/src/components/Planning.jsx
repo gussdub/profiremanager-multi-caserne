@@ -775,21 +775,44 @@ const Planning = () => {
     if (['employe', 'pompier'].includes(user.role)) return;
 
     try {
-      await apiPost(tenantSlug, '/planning/assignation', {
+      const response = await apiPost(tenantSlug, '/planning/assignation', {
         user_id: userId,
         type_garde_id: typeGardeId,
         date: date,
         assignation_type: "manuel"
       });
 
-      toast({
-        title: "Attribution réussie",
-        description: "L'assignation a été créée avec succès",
-        variant: "success"
-      });
+      // Vérifier si un avertissement de sureffectif a été retourné
+      if (response.warning) {
+        toast({
+          title: "⚠️ Attention - Sureffectif",
+          description: response.warning,
+          variant: "warning",
+          duration: 5000
+        });
+      } else {
+        toast({
+          title: "Attribution réussie",
+          description: "L'assignation a été créée avec succès",
+          variant: "success"
+        });
+      }
 
-      fetchPlanningData();
+      // Rafraîchir les données
+      await fetchPlanningData();
+      
+      // Fermer le modal d'assignation
       setShowAssignModal(false);
+      setQuickAssignSearchQuery('');
+      setShowQuickAssignDropdown(false);
+      
+      // Rouvrir le modal de détails avec les données mises à jour
+      if (selectedSlot) {
+        // Récupérer les données fraîches après le fetchPlanningData
+        setTimeout(() => {
+          openGardeDetails(selectedSlot.date, selectedSlot.typeGarde);
+        }, 100);
+      }
     } catch (error) {
       // Le wrapper apiCall met le status dans error.status et les data dans error.data
       const errorDetail = error.data?.detail || error.message;
