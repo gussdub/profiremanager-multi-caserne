@@ -511,3 +511,38 @@ async def creer_notification(
     await db.notifications.insert_one(notification.dict())
     return notification
 
+
+
+# ==================== ACTIVITÉS ====================
+
+async def creer_activite(
+    tenant_id: str, 
+    type_activite: str, 
+    description: str, 
+    user_id: Optional[str] = None, 
+    user_nom: Optional[str] = None,
+    data: Optional[dict] = None
+):
+    """Helper pour créer une activité dans le système avec auto-nettoyage après 30 jours"""
+    from datetime import timedelta
+    
+    activite = Activite(
+        tenant_id=tenant_id,
+        type_activite=type_activite,
+        description=description,
+        user_id=user_id,
+        user_nom=user_nom
+    )
+    
+    activite_dict = activite.dict()
+    if data:
+        activite_dict["data"] = data
+    
+    await db.activites.insert_one(activite_dict)
+    
+    # Nettoyage automatique des activités > 30 jours
+    date_limite = datetime.now(timezone.utc) - timedelta(days=30)
+    await db.activites.delete_many({
+        "tenant_id": tenant_id,
+        "created_at": {"$lt": date_limite}
+    })
