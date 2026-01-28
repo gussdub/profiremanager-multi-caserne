@@ -787,15 +787,18 @@ const Planning = () => {
         variant: "success"
       });
 
-      // Recharger les données et rouvrir le modal avec les infos à jour
-      await fetchPlanningData();
+      // Mise à jour locale immédiate (évite le flash et le délai)
+      const updatedAssignations = selectedGardeDetails.assignations.filter(a => a.user_id !== personId);
+      const updatedPersonnelAssigne = selectedGardeDetails.personnelAssigne.filter(p => p.id !== personId);
       
-      // Rouvrir le modal de détails avec les données mises à jour
-      if (selectedGardeDetails) {
-        setTimeout(() => {
-          openGardeDetails(selectedGardeDetails.date, selectedGardeDetails.typeGarde);
-        }, 100);
-      }
+      setSelectedGardeDetails({
+        ...selectedGardeDetails,
+        assignations: updatedAssignations,
+        personnelAssigne: updatedPersonnelAssigne
+      });
+      
+      // Mettre à jour l'état global des assignations aussi
+      setAssignations(prev => prev.filter(a => a.id !== assignationToRemove.id));
       
     } catch (error) {
       toast({
