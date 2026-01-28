@@ -71,7 +71,7 @@ from routes.parametres_disponibilites import router as parametres_disponibilites
 from routes.generation_indisponibilites import router as generation_indisponibilites_router
 from routes.equipements_exports import router as equipements_exports_router
 from routes.users import router as users_router
-# from routes.disponibilites import router as disponibilites_router  # Désactivé - routes server.py plus complètes
+from routes.disponibilites import router as disponibilites_router
 from io import BytesIO
 import base64
 from PIL import Image as PILImage
