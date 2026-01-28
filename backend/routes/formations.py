@@ -1183,11 +1183,15 @@ async def rapport_par_competences(
     rapport = []
     
     for comp in competences:
-        # Récupérer toutes les formations pour cette compétence
+        # Récupérer toutes les formations pour cette compétence et cette année
+        # Filtrer par date_debut qui commence par l'année
         formations = await db.formations.find({
             "tenant_id": tenant.id,
             "competence_id": comp["id"],
-            "annee": annee
+            "$or": [
+                {"annee": annee},
+                {"date_debut": {"$regex": f"^{annee}"}}
+            ]
         }).to_list(1000)
         
         total_formations = len(formations)
