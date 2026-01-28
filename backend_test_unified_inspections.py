@@ -47,7 +47,7 @@ import uuid
 class UnifiedInspectionTester:
     def __init__(self):
         # URL depuis frontend/.env
-        self.base_url = "https://ems-dispatcher.preview.emergentagent.com/api"
+        self.base_url = "https://intervention-system-1.preview.emergentagent.com/api"
         self.headers = {}
         self.token = None
         self.tenant_slug = "shefford"

@@ -51,7 +51,7 @@ import os
 class PermissionsE2ETester:
     def __init__(self):
         # Utiliser l'URL depuis frontend/.env comme spécifié
-        self.base_url = "https://ems-dispatcher.preview.emergentagent.com/api"
+        self.base_url = "https://intervention-system-1.preview.emergentagent.com/api"
         self.headers = {}
         self.token = None
         self.tenant_slug = "shefford"

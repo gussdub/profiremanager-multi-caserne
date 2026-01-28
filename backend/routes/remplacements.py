@@ -354,7 +354,7 @@ async def envoyer_email_remplacement(
         remplacant_email = remplacant_user["email"]
         remplacant_prenom = remplacant_user.get("prenom", "")
         
-        frontend_url = os.environ.get('FRONTEND_URL', 'https://ems-dispatcher.preview.emergentagent.com')
+        frontend_url = os.environ.get('FRONTEND_URL', 'https://intervention-system-1.preview.emergentagent.com')
         backend_url = os.environ.get('REACT_APP_BACKEND_URL', frontend_url)
         
         lien_accepter = f"{backend_url}/api/remplacement-action/{token}/accepter"
@@ -1380,7 +1380,7 @@ async def refuser_demande_remplacement(
 @router.get("/remplacement-action/{token}/{action}")
 async def action_remplacement_via_email(token: str, action: str):
     """Traite une action de remplacement via le lien email"""
-    frontend_url = os.environ.get('FRONTEND_URL', 'https://ems-dispatcher.preview.emergentagent.com')
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://intervention-system-1.preview.emergentagent.com')
     
     try:
         token_data = await db.tokens_remplacement.find_one({"token": token})

@@ -2,7 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 
-const API_URL = Constants.expoConfig.extra.apiUrl || 'https://ems-dispatcher.preview.emergentagent.com';
+const API_URL = Constants.expoConfig.extra.apiUrl || 'https://intervention-system-1.preview.emergentagent.com';
 
 const api = axios.create({
   baseURL: API_URL,

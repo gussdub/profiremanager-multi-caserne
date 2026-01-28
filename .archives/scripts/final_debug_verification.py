@@ -16,7 +16,7 @@ load_dotenv('/app/backend/.env')
 load_dotenv('/app/frontend/.env')
 
 # Configuration
-BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'https://ems-dispatcher.preview.emergentagent.com')
+BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'https://intervention-system-1.preview.emergentagent.com')
 API_BASE = f"{BACKEND_URL}/api"
 
 # Credentials from review request
