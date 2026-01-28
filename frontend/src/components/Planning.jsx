@@ -1770,10 +1770,7 @@ const Planning = () => {
                   const coverage = getGardeCoverage(date, typeGarde);
                   
                   // Vérifier si un officier est assigné à cette garde
-                  const hasOfficerAssigned = assignedUsers.some(u => {
-                    const gradeInfo = grades && grades.find(g => g.nom === u.grade);
-                    return (gradeInfo && gradeInfo.est_officier) || u.fonction_superieur;
-                  });
+                  const hasOfficerAssigned = assignedUsers.some(u => isUserOfficer(u));
                   
                   // Vérifier si c'est un quart de l'utilisateur actuel
                   const isMyShift = ['employe', 'pompier'].includes(user.role) && assignedUsers.some(u => u.id === user.id);
