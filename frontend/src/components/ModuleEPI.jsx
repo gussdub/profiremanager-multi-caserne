@@ -913,11 +913,169 @@ const ModuleEPI = ({ user }) => {
   
   return (
     <div className="module-epi-nfpa">
-      <div className="module-header">
-        <div>
-          <h1>🛡️ Gestion EPI - NFPA 1851</h1>
-          <p>Système complet de gestion des équipements de protection</p>
+      {/* En-tête avec titre et KPIs */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            🛡️ Gestion EPI - NFPA 1851
+          </h2>
         </div>
+        
+        {/* Cartes KPI cliquables */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+          <div 
+            onClick={() => handleKPIClick('total')}
+            style={{
+              background: filtreKPI === 'total' ? '#3b82f6' : 'white',
+              borderRadius: '0.5rem',
+              padding: '1rem',
+              boxShadow: filtreKPI === 'total' ? '0 4px 12px rgba(59,130,246,0.4)' : '0 1px 3px rgba(0,0,0,0.1)',
+              borderLeft: '4px solid #3b82f6',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              transform: filtreKPI === 'total' ? 'scale(1.02)' : 'scale(1)'
+            }}
+            data-testid="kpi-total"
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '1.5rem' }}>📊</span>
+              <div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: filtreKPI === 'total' ? 'white' : '#3b82f6' }}>{statsEPI.total}</div>
+                <div style={{ fontSize: '0.75rem', color: filtreKPI === 'total' ? 'rgba(255,255,255,0.9)' : '#6b7280' }}>Total EPI</div>
+              </div>
+            </div>
+          </div>
+          
+          <div 
+            onClick={() => handleKPIClick('enService')}
+            style={{
+              background: filtreKPI === 'enService' ? '#22c55e' : 'white',
+              borderRadius: '0.5rem',
+              padding: '1rem',
+              boxShadow: filtreKPI === 'enService' ? '0 4px 12px rgba(34,197,94,0.4)' : '0 1px 3px rgba(0,0,0,0.1)',
+              borderLeft: '4px solid #22c55e',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              transform: filtreKPI === 'enService' ? 'scale(1.02)' : 'scale(1)'
+            }}
+            data-testid="kpi-en-service"
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '1.5rem' }}>✅</span>
+              <div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: filtreKPI === 'enService' ? 'white' : '#22c55e' }}>{statsEPI.enService}</div>
+                <div style={{ fontSize: '0.75rem', color: filtreKPI === 'enService' ? 'rgba(255,255,255,0.9)' : '#6b7280' }}>En service</div>
+              </div>
+            </div>
+          </div>
+          
+          <div 
+            onClick={() => handleKPIClick('enInspection')}
+            style={{
+              background: filtreKPI === 'enInspection' ? '#f59e0b' : 'white',
+              borderRadius: '0.5rem',
+              padding: '1rem',
+              boxShadow: filtreKPI === 'enInspection' ? '0 4px 12px rgba(245,158,11,0.4)' : '0 1px 3px rgba(0,0,0,0.1)',
+              borderLeft: '4px solid #f59e0b',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              transform: filtreKPI === 'enInspection' ? 'scale(1.02)' : 'scale(1)'
+            }}
+            data-testid="kpi-en-inspection"
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '1.5rem' }}>🔍</span>
+              <div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: filtreKPI === 'enInspection' ? 'white' : '#f59e0b' }}>{statsEPI.enInspection}</div>
+                <div style={{ fontSize: '0.75rem', color: filtreKPI === 'enInspection' ? 'rgba(255,255,255,0.9)' : '#6b7280' }}>En inspection</div>
+              </div>
+            </div>
+          </div>
+          
+          <div 
+            onClick={() => handleKPIClick('enReparation')}
+            style={{
+              background: filtreKPI === 'enReparation' ? '#ef4444' : 'white',
+              borderRadius: '0.5rem',
+              padding: '1rem',
+              boxShadow: filtreKPI === 'enReparation' ? '0 4px 12px rgba(239,68,68,0.4)' : '0 1px 3px rgba(0,0,0,0.1)',
+              borderLeft: '4px solid #ef4444',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              transform: filtreKPI === 'enReparation' ? 'scale(1.02)' : 'scale(1)'
+            }}
+            data-testid="kpi-en-reparation"
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '1.5rem' }}>🔧</span>
+              <div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: filtreKPI === 'enReparation' ? 'white' : '#ef4444' }}>{statsEPI.enReparation}</div>
+                <div style={{ fontSize: '0.75rem', color: filtreKPI === 'enReparation' ? 'rgba(255,255,255,0.9)' : '#6b7280' }}>En réparation</div>
+              </div>
+            </div>
+          </div>
+          
+          <div 
+            onClick={() => handleKPIClick('horsService')}
+            style={{
+              background: filtreKPI === 'horsService' ? '#6b7280' : 'white',
+              borderRadius: '0.5rem',
+              padding: '1rem',
+              boxShadow: filtreKPI === 'horsService' ? '0 4px 12px rgba(107,114,128,0.4)' : '0 1px 3px rgba(0,0,0,0.1)',
+              borderLeft: '4px solid #6b7280',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              transform: filtreKPI === 'horsService' ? 'scale(1.02)' : 'scale(1)'
+            }}
+            data-testid="kpi-hors-service"
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '1.5rem' }}>❌</span>
+              <div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: filtreKPI === 'horsService' ? 'white' : '#6b7280' }}>{statsEPI.horsService}</div>
+                <div style={{ fontSize: '0.75rem', color: filtreKPI === 'horsService' ? 'rgba(255,255,255,0.9)' : '#6b7280' }}>Hors service</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Indicateur de filtre KPI actif */}
+        {filtreKPI && (
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '0.5rem', 
+            marginBottom: '1rem',
+            padding: '0.5rem 1rem',
+            backgroundColor: '#f3f4f6',
+            borderRadius: '0.5rem',
+            fontSize: '0.875rem'
+          }}>
+            <span>🔍 Filtre actif :</span>
+            <span style={{ fontWeight: '600' }}>
+              {filtreKPI === 'total' && 'Tous les EPI'}
+              {filtreKPI === 'enService' && 'En service'}
+              {filtreKPI === 'enInspection' && 'En inspection'}
+              {filtreKPI === 'enReparation' && 'En réparation'}
+              {filtreKPI === 'horsService' && 'Hors service / Retiré'}
+            </span>
+            <button
+              onClick={() => { setFiltreKPI(''); setFiltreStatut(''); }}
+              style={{
+                marginLeft: 'auto',
+                padding: '0.25rem 0.75rem',
+                backgroundColor: '#e5e7eb',
+                border: 'none',
+                borderRadius: '0.25rem',
+                cursor: 'pointer',
+                fontSize: '0.75rem'
+              }}
+              data-testid="clear-kpi-filter"
+            >
+              ✕ Effacer
+            </button>
+          </div>
+        )}
       </div>
       
       {/* Onglets */}
@@ -925,36 +1083,42 @@ const ModuleEPI = ({ user }) => {
         <button 
           className={activeTab === 'inventaire' ? 'active' : ''}
           onClick={() => setActiveTab('inventaire')}
+          data-testid="tab-inventaire"
         >
-          📦 Inventaire ({epis.length})
+          📦 Inventaire ({episFiltres.length}/{epis.length})
         </button>
         <button 
           className={activeTab === 'demandes' ? 'active' : ''}
           onClick={() => setActiveTab('demandes')}
+          data-testid="tab-demandes"
         >
           🔄 Demandes de remplacement
         </button>
         <button 
           className={activeTab === 'nettoyage' ? 'active' : ''}
           onClick={() => setActiveTab('nettoyage')}
+          data-testid="tab-nettoyage"
         >
           🧼 Nettoyage & Entretien
         </button>
         <button 
           className={activeTab === 'reparations' ? 'active' : ''}
           onClick={() => setActiveTab('reparations')}
+          data-testid="tab-reparations"
         >
           🔧 Réparations
         </button>
         <button 
           className={activeTab === 'isp' ? 'active' : ''}
           onClick={() => setActiveTab('isp')}
+          data-testid="tab-isp"
         >
           🏢 Fournisseurs ISP ({isps.length})
         </button>
         <button 
           className={activeTab === 'rapports' ? 'active' : ''}
           onClick={() => setActiveTab('rapports')}
+          data-testid="tab-rapports"
         >
           📊 Rapports
         </button>
@@ -963,15 +1127,110 @@ const ModuleEPI = ({ user }) => {
       {/* ONGLET INVENTAIRE */}
       {activeTab === 'inventaire' && (
         <div className="epi-inventaire">
-          <div className="inventaire-actions">
-            <Button onClick={() => { resetEPIForm(); setShowEPIModal(true); }}>
+          {/* Barre de filtres */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem', alignItems: 'center' }}>
+            <Button onClick={() => { resetEPIForm(); setShowEPIModal(true); }} style={{ background: '#22c55e' }} data-testid="btn-nouvel-epi">
               ➕ Nouvel EPI
             </Button>
+            
+            <Input
+              placeholder="🔍 Rechercher..."
+              value={filtreRecherche}
+              onChange={(e) => setFiltreRecherche(e.target.value)}
+              style={{ minWidth: '150px', flex: '1 1 auto', maxWidth: '250px' }}
+              data-testid="filter-recherche"
+            />
+            
+            <select
+              value={filtreTypeEPI}
+              onChange={(e) => setFiltreTypeEPI(e.target.value)}
+              style={{
+                padding: '0.5rem',
+                borderRadius: '0.375rem',
+                border: '1px solid #d1d5db',
+                background: 'white',
+                minWidth: '160px'
+              }}
+              data-testid="filter-type-epi"
+            >
+              <option value="">Tous les types</option>
+              {typesEPI.map(t => (
+                <option key={t.id} value={t.id}>{t.icone} {t.nom}</option>
+              ))}
+            </select>
+            
+            <select
+              value={filtrePersonne}
+              onChange={(e) => setFiltrePersonne(e.target.value)}
+              style={{
+                padding: '0.5rem',
+                borderRadius: '0.375rem',
+                border: '1px solid #d1d5db',
+                background: 'white',
+                minWidth: '180px'
+              }}
+              data-testid="filter-personne"
+            >
+              <option value="">Toutes les personnes</option>
+              <option value="non_assigne">📭 Non assigné</option>
+              {users.map(u => (
+                <option key={u.id} value={u.id}>👤 {u.prenom} {u.nom}</option>
+              ))}
+            </select>
+            
+            {/* Bouton pour effacer tous les filtres */}
+            {(filtreRecherche || filtreTypeEPI || filtrePersonne || filtreKPI) && (
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  setFiltreRecherche('');
+                  setFiltreTypeEPI('');
+                  setFiltrePersonne('');
+                  setFiltreStatut('');
+                  setFiltreKPI('');
+                }}
+                style={{ fontSize: '0.8rem' }}
+                data-testid="btn-effacer-filtres"
+              >
+                ✕ Effacer filtres
+              </Button>
+            )}
           </div>
           
+          {/* Résumé des filtres actifs */}
+          {(filtreTypeEPI || filtrePersonne) && (
+            <div style={{ 
+              marginBottom: '1rem',
+              padding: '0.5rem 1rem',
+              backgroundColor: '#EFF6FF',
+              borderRadius: '0.5rem',
+              fontSize: '0.8rem',
+              color: '#1E40AF',
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '0.5rem',
+              alignItems: 'center'
+            }}>
+              <span>Filtres:</span>
+              {filtreTypeEPI && (
+                <span style={{ backgroundColor: '#DBEAFE', padding: '0.2rem 0.5rem', borderRadius: '0.25rem' }}>
+                  {typesEPI.find(t => t.id === filtreTypeEPI)?.icone} {typesEPI.find(t => t.id === filtreTypeEPI)?.nom}
+                </span>
+              )}
+              {filtrePersonne && (
+                <span style={{ backgroundColor: '#DBEAFE', padding: '0.2rem 0.5rem', borderRadius: '0.25rem' }}>
+                  👤 {filtrePersonne === 'non_assigne' ? 'Non assigné' : getUserName(filtrePersonne)}
+                </span>
+              )}
+              <span style={{ marginLeft: 'auto', color: '#6B7280' }}>
+                {episFiltres.length} résultat(s)
+              </span>
+            </div>
+          )}
+          
           <div className="epi-grid">
-            {epis.map(epi => (
-              <div key={epi.id} className="epi-card">
+            {episFiltres.map(epi => (
+              <div key={epi.id} className="epi-card" data-testid={`epi-card-${epi.id}`}>
                 <div className="epi-card-header">
                   <span className="epi-icon">{getTypeIcon(epi.type_epi)}</span>
                   <div>
@@ -992,19 +1251,37 @@ const ModuleEPI = ({ user }) => {
                   <p><strong>Mise en service:</strong> {formatDateLocal(epi.date_mise_en_service)}</p>
                 </div>
                 <div className="epi-card-actions">
-                  <Button size="sm" variant="outline" onClick={() => openDetailEPI(epi)}>
+                  <Button size="sm" variant="outline" onClick={() => openDetailEPI(epi)} data-testid={`btn-details-${epi.id}`}>
                     📋 Détails
                   </Button>
-                  <Button size="sm" onClick={() => openEditEPI(epi)}>
+                  <Button size="sm" onClick={() => openEditEPI(epi)} data-testid={`btn-modifier-${epi.id}`}>
                     ✏️ Modifier
                   </Button>
-                  <Button size="sm" variant="destructive" onClick={() => handleDeleteEPI(epi.id)}>
+                  <Button size="sm" variant="destructive" onClick={() => handleDeleteEPI(epi.id)} data-testid={`btn-supprimer-${epi.id}`}>
                     🗑️
                   </Button>
                 </div>
               </div>
             ))}
           </div>
+          
+          {episFiltres.length === 0 && epis.length > 0 && (
+            <div className="empty-state">
+              <p>Aucun EPI ne correspond aux filtres</p>
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  setFiltreRecherche('');
+                  setFiltreTypeEPI('');
+                  setFiltrePersonne('');
+                  setFiltreStatut('');
+                  setFiltreKPI('');
+                }}
+              >
+                Réinitialiser les filtres
+              </Button>
+            </div>
+          )}
           
           {epis.length === 0 && (
             <div className="empty-state">
