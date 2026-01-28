@@ -781,9 +781,15 @@ const Planning = () => {
         variant: "success"
       });
 
-      // Fermer le modal et recharger les données
-      setShowGardeDetailsModal(false);
-      fetchPlanningData();
+      // Recharger les données et rouvrir le modal avec les infos à jour
+      await fetchPlanningData();
+      
+      // Rouvrir le modal de détails avec les données mises à jour
+      if (selectedGardeDetails) {
+        setTimeout(() => {
+          openGardeDetails(selectedGardeDetails.date, selectedGardeDetails.typeGarde);
+        }, 100);
+      }
       
     } catch (error) {
       toast({
