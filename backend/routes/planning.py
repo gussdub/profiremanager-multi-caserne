@@ -21,11 +21,14 @@ Routes Outils:
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone, timedelta
+from io import BytesIO
 import uuid
 import logging
+import asyncio
 
 from routes.dependencies import (
     db,
