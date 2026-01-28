@@ -901,9 +901,7 @@ const Remplacements = () => {
                   <div key={demande.id} className="demande-card" data-testid={`replacement-${demande.id}`}>
                     <div className="demande-header">
                       <div className="demande-info">
-                        <h3>{getTypeGardeName(demande.type_garde_id)}</h3>
-                        <span className="demande-date">{parseDateLocal(demande.date).toLocaleDateString('fr-FR')}</span>
-                        {/* Badge de priorité sous la date */}
+                        {/* Badge de priorité en premier */}
                         <span 
                           style={{ 
                             backgroundColor: demande.priorite === 'urgent' ? '#EF4444' : '#3B82F6',
@@ -912,12 +910,14 @@ const Remplacements = () => {
                             borderRadius: '12px',
                             fontSize: '11px',
                             fontWeight: '600',
-                            marginTop: '6px',
+                            marginBottom: '8px',
                             display: 'inline-block'
                           }}
                         >
                           {demande.priorite === 'urgent' ? '🚨 Urgent' : '📋 Normal'}
                         </span>
+                        <h3>{getTypeGardeName(demande.type_garde_id)}</h3>
+                        <span className="demande-date">{parseDateLocal(demande.date).toLocaleDateString('fr-FR')}</span>
                       </div>
                       <div className="demande-status" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                         {/* Badge de statut */}
