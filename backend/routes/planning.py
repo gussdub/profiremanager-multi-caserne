@@ -482,3 +482,72 @@ async def recalculer_durees_gardes(
         "total_assignations": len(assignations),
         "mises_a_jour": updated_count
     }
+
+
+# ==================== ROUTE GÉNÉRIQUE (DOIT ÊTRE À LA FIN) ====================
+# Cette route capture tout ce qui n'a pas été capturé par les routes spécifiques ci-dessus
+
+@router.get("/{tenant_slug}/planning/{semaine_debut}")
+async def get_planning_semaine(
+    tenant_slug: str,
+    semaine_debut: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Récupérer le planning d'une semaine complète
+    Retourne les assignations avec les informations des employés et types de garde
+    
+    IMPORTANT: Cette route DOIT être définie en DERNIER car {semaine_debut} 
+    est un paramètre générique qui capturerait sinon les autres routes.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    date_debut, date_fin = get_semaine_range(semaine_debut)
+    semaine_fin = date_fin.strftime("%Y-%m-%d")
+    
+    # Récupérer les assignations de la semaine
+    assignations = await db.assignations.find({
+        "tenant_id": tenant.id,
+        "date": {
+            "$gte": semaine_debut,
+            "$lte": semaine_fin
+        }
+    }, {"_id": 0}).to_list(1000)
+    
+    # Récupérer les types de garde
+    types_garde = await get_types_garde(tenant.id)
+    types_garde_dict = {t["id"]: t for t in types_garde}
+    
+    # Récupérer les infos des employés assignés
+    user_ids = list(set([a["user_id"] for a in assignations if a.get("user_id")]))
+    users = await db.users.find(
+        {"id": {"$in": user_ids}},
+        {"_id": 0, "mot_de_passe_hash": 0}
+    ).to_list(1000)
+    users_dict = {u["id"]: u for u in users}
+    
+    # Enrichir les assignations
+    for assignation in assignations:
+        user_id = assignation.get("user_id")
+        type_garde_id = assignation.get("type_garde_id")
+        
+        if user_id and user_id in users_dict:
+            user = users_dict[user_id]
+            assignation["user_nom"] = f"{user.get('prenom', '')} {user.get('nom', '')}"
+            assignation["user_grade"] = user.get("grade", "")
+        
+        if type_garde_id and type_garde_id in types_garde_dict:
+            tg = types_garde_dict[type_garde_id]
+            assignation["type_garde_nom"] = tg.get("nom", "")
+            assignation["type_garde_couleur"] = tg.get("couleur", "#3B82F6")
+    
+    # Construire l'objet Planning
+    planning_obj = Planning(semaine_debut=semaine_debut, semaine_fin=semaine_fin)
+    
+    return {
+        "id": planning_obj.id,
+        "semaine_debut": semaine_debut,
+        "semaine_fin": semaine_fin,
+        "assignations": assignations,
+        "types_garde": types_garde
+    }
