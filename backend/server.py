@@ -37413,6 +37413,7 @@ app.include_router(sftp_router, prefix="/api")  # Module SFTP (cartes d'appel 91
 app.include_router(billing_router, prefix="/api")  # Module Billing (Stripe, facturation)
 app.include_router(admin_router, prefix="/api")  # Module Admin (centrales 911, audit logs)
 app.include_router(debogage_router, prefix="/api")  # Module Débogage (bugs, features)
+app.include_router(paie_complet_router, prefix="/api")  # Module Paie complet
 # disponibilites_router désactivé - routes server.py plus complètes (export PDF, blocage avancé)
 app.include_router(api_router)  # Routes principales (server.py)
 app.include_router(pwa_router, prefix="/api")
