@@ -28,7 +28,10 @@ const Remplacements = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('remplacements');
   const [viewMode, setViewMode] = useState('liste'); // 'liste' ou 'cartes'
-  const [filterStatut, setFilterStatut] = useState('tous'); // 'tous', 'en_attente', 'accepte', 'refuse'
+  const [filterStatut, setFilterStatut] = useState('non_traitees'); // 'non_traitees', 'acceptees', 'refusees', 'toutes'
+  const [filterPeriode, setFilterPeriode] = useState('toutes'); // 'ce_mois', 'mois_precedent', '3_mois', 'cette_annee', 'personnalise', 'toutes'
+  const [filterDateDebut, setFilterDateDebut] = useState('');
+  const [filterDateFin, setFilterDateFin] = useState('');
   const [showCreateRemplacementModal, setShowCreateRemplacementModal] = useState(false);
   const [showCreateCongeModal, setShowCreateCongeModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
