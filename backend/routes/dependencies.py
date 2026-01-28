@@ -24,6 +24,8 @@ import uuid
 import logging
 from functools import lru_cache
 
+logger = logging.getLogger(__name__)
+
 # ==================== CONFIGURATION ====================
 
 MONGO_URL = os.environ.get('MONGO_URL')
