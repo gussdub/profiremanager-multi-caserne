@@ -1644,6 +1644,37 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
     return localStorage.getItem(`${tenantSlug}_token`) || localStorage.getItem('token');
   };
 
+  // Configuration des capteurs pour drag & drop du template narratif
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 }
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 5 }
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Gestion du drag & drop des sections du template narratif
+  const handleNarratifDragEnd = (event) => {
+    const { active, over } = event;
+    
+    if (active.id !== over?.id) {
+      const currentTemplate = settings?.template_narratif || [];
+      const oldIndex = currentTemplate.findIndex((s, i) => (s.id || `section-${i}`) === active.id);
+      const newIndex = currentTemplate.findIndex((s, i) => (s.id || `section-${i}`) === over?.id);
+      
+      if (oldIndex !== -1 && newIndex !== -1) {
+        setSettings({
+          ...settings,
+          template_narratif: arrayMove(currentTemplate, oldIndex, newIndex)
+        });
+      }
+    }
+  };
+
   useEffect(() => {
     fetchSettings();
     fetchUsers();
