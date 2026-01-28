@@ -4227,7 +4227,7 @@ async def export_plan_intervention_pdf(
     print(f"DEBUG - batiment: {batiment}")
     if batiment:
         print(f"DEBUG - batiment keys: {batiment.keys()}")
-        batiment_info = batiment.get('nom') or batiment.get('nom_batiment') or batiment.get('adresse_civique') or batiment.get('adresse') or 'batiment'
+        batiment_info = batiment.get('nom_etablissement') or batiment.get('nom') or batiment.get('nom_batiment') or batiment.get('adresse_civique') or batiment.get('adresse') or 'batiment'
     else:
         batiment_info = 'batiment'
     
