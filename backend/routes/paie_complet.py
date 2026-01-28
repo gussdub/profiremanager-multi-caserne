@@ -143,11 +143,11 @@ async def get_parametres_paie(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
-    params = await db.parametres_paie.find_one({"tenant_id": tenant["id"]}, {"_id": 0})
+    params = await db.parametres_paie.find_one({"tenant_id": tenant.id}, {"_id": 0})
     
     if not params:
         # Créer les paramètres par défaut
-        default_params = ParametresPaie(tenant_id=tenant["id"])
+        default_params = ParametresPaie(tenant_id=tenant.id)
         await db.parametres_paie.insert_one(default_params.dict())
         params = default_params.dict()
         params.pop("_id", None)
@@ -170,13 +170,13 @@ async def update_parametres_paie(
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
     parametres["updated_at"] = datetime.now(timezone.utc)
-    parametres["tenant_id"] = tenant["id"]
+    parametres["tenant_id"] = tenant.id
     
-    existing = await db.parametres_paie.find_one({"tenant_id": tenant["id"]})
+    existing = await db.parametres_paie.find_one({"tenant_id": tenant.id})
     
     if existing:
         await db.parametres_paie.update_one(
-            {"tenant_id": tenant["id"]},
+            {"tenant_id": tenant.id},
             {"$set": parametres}
         )
     else:
@@ -636,12 +636,12 @@ async def generer_feuille_temps(
         raise HTTPException(status_code=400, detail="user_id, periode_debut et periode_fin sont requis")
     
     # Récupérer les paramètres
-    params_paie = await db.parametres_paie.find_one({"tenant_id": tenant["id"]}) or {}
-    params_planning = await db.parametres_attribution.find_one({"tenant_id": tenant["id"]}) or {}
+    params_paie = await db.parametres_paie.find_one({"tenant_id": tenant.id}) or {}
+    params_planning = await db.parametres_attribution.find_one({"tenant_id": tenant.id}) or {}
     
     # Vérifier si une feuille existe déjà pour cette période
     existing = await db.feuilles_temps.find_one({
-        "tenant_id": tenant["id"],
+        "tenant_id": tenant.id,
         "user_id": user_id,
         "periode_debut": periode_debut,
         "periode_fin": periode_fin
@@ -655,7 +655,7 @@ async def generer_feuille_temps(
     
     # Calculer la feuille
     feuille = await calculer_feuille_temps(
-        tenant_id=tenant["id"],
+        tenant_id=tenant.id,
         user_id=user_id,
         periode_debut=periode_debut,
         periode_fin=periode_fin,
@@ -695,7 +695,7 @@ async def lister_feuilles_temps(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
-    query = {"tenant_id": tenant["id"]}
+    query = {"tenant_id": tenant.id}
     
     if annee:
         query["annee"] = annee
@@ -729,7 +729,7 @@ async def get_feuille_temps(
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
     feuille = await db.feuilles_temps.find_one(
-        {"id": feuille_id, "tenant_id": tenant["id"]},
+        {"id": feuille_id, "tenant_id": tenant.id},
         {"_id": 0}
     )
     
@@ -755,7 +755,7 @@ async def valider_feuille_temps(
     
     feuille = await db.feuilles_temps.find_one({
         "id": feuille_id,
-        "tenant_id": tenant["id"]
+        "tenant_id": tenant.id
     })
     
     if not feuille:
@@ -794,7 +794,7 @@ async def modifier_feuille_temps(
     
     feuille = await db.feuilles_temps.find_one({
         "id": feuille_id,
-        "tenant_id": tenant["id"]
+        "tenant_id": tenant.id
     })
     
     if not feuille:
@@ -804,7 +804,7 @@ async def modifier_feuille_temps(
         raise HTTPException(status_code=400, detail="Seules les feuilles en brouillon peuvent être modifiées")
     
     # Récupérer les types d'heures personnalisés du tenant pour catégoriser correctement
-    event_types = await db.tenant_payroll_event_types.find({"tenant_id": tenant["id"]}).to_list(100)
+    event_types = await db.tenant_payroll_event_types.find({"tenant_id": tenant.id}).to_list(100)
     event_type_categories = {et.get("code"): et.get("category", "heures") for et in event_types}
     
     # Mettre à jour les lignes si fournies
@@ -903,7 +903,7 @@ async def ajouter_ligne_feuille_temps(
     
     feuille = await db.feuilles_temps.find_one({
         "id": feuille_id,
-        "tenant_id": tenant["id"]
+        "tenant_id": tenant.id
     })
     
     if not feuille:
@@ -958,7 +958,7 @@ async def supprimer_feuille_temps(
     
     feuille = await db.feuilles_temps.find_one({
         "id": feuille_id,
-        "tenant_id": tenant["id"]
+        "tenant_id": tenant.id
     })
     
     if not feuille:
@@ -998,13 +998,13 @@ async def export_feuilles_temps(
     if feuille_ids:
         feuilles = await db.feuilles_temps.find({
             "id": {"$in": feuille_ids},
-            "tenant_id": tenant["id"],
+            "tenant_id": tenant.id,
             "statut": {"$in": ["valide", "exporte"]}  # Inclure validées ET exportées
         }, {"_id": 0}).to_list(500)
     else:
         # Exporter toutes les feuilles validées ou exportées si aucun ID spécifié
         feuilles = await db.feuilles_temps.find({
-            "tenant_id": tenant["id"],
+            "tenant_id": tenant.id,
             "statut": {"$in": ["valide", "exporte"]}  # Inclure validées ET exportées
         }, {"_id": 0}).to_list(500)
     
@@ -1012,7 +1012,7 @@ async def export_feuilles_temps(
         raise HTTPException(status_code=400, detail="Aucune feuille validée ou exportée à exporter")
     
     # Récupérer la config du tenant (optionnelle)
-    config = await db.tenant_payroll_config.find_one({"tenant_id": tenant["id"]})
+    config = await db.tenant_payroll_config.find_one({"tenant_id": tenant.id})
     company_number = config.get("company_number", "") if config else ""
     
     # Récupérer le fournisseur de paie sélectionné pour le nom du fichier
@@ -1023,7 +1023,7 @@ async def export_feuilles_temps(
             provider_name = provider.get("name", "paie").lower().replace(" ", "_")
     
     code_mappings = await db.client_pay_code_mappings.find(
-        {"tenant_id": tenant["id"]},
+        {"tenant_id": tenant.id},
         {"_id": 0}
     ).to_list(100)
     
@@ -1138,16 +1138,16 @@ async def generer_feuilles_temps_lot(
         raise HTTPException(status_code=400, detail="periode_debut et periode_fin sont requis")
     
     # Récupérer les paramètres de paie (dans collection parametres avec type=paie ou parametres_paie)
-    params_paie = await db.parametres.find_one({"tenant_id": tenant["id"], "type": "paie"})
+    params_paie = await db.parametres.find_one({"tenant_id": tenant.id, "type": "paie"})
     if not params_paie:
-        params_paie = await db.parametres_paie.find_one({"tenant_id": tenant["id"]})
+        params_paie = await db.parametres_paie.find_one({"tenant_id": tenant.id})
     params_paie = params_paie or {}
     
-    params_planning = await db.parametres_attribution.find_one({"tenant_id": tenant["id"]}) or {}
+    params_planning = await db.parametres_attribution.find_one({"tenant_id": tenant.id}) or {}
     
     # Récupérer tous les employés actifs
     employes = await db.users.find({
-        "tenant_id": tenant["id"],
+        "tenant_id": tenant.id,
         "statut": "Actif"
     }, {"_id": 0, "mot_de_passe_hash": 0}).to_list(1000)
     
@@ -1162,7 +1162,7 @@ async def generer_feuilles_temps_lot(
         try:
             # Vérifier si une feuille existe déjà
             existing = await db.feuilles_temps.find_one({
-                "tenant_id": tenant["id"],
+                "tenant_id": tenant.id,
                 "user_id": employe["id"],
                 "periode_debut": periode_debut,
                 "periode_fin": periode_fin
@@ -1173,7 +1173,7 @@ async def generer_feuilles_temps_lot(
             
             # Calculer la feuille
             feuille = await calculer_feuille_temps(
-                tenant_id=tenant["id"],
+                tenant_id=tenant.id,
                 user_id=employe["id"],
                 periode_debut=periode_debut,
                 periode_fin=periode_fin,
@@ -1442,10 +1442,10 @@ async def get_tenant_payroll_config(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
-    config = await db.tenant_payroll_config.find_one({"tenant_id": tenant["id"]}, {"_id": 0})
+    config = await db.tenant_payroll_config.find_one({"tenant_id": tenant.id}, {"_id": 0})
     
     if not config:
-        config = TenantPayrollConfig(tenant_id=tenant["id"]).dict()
+        config = TenantPayrollConfig(tenant_id=tenant.id).dict()
         await db.tenant_payroll_config.insert_one(config)
     
     # Récupérer les fournisseurs actifs pour le dropdown
@@ -1469,13 +1469,13 @@ async def update_tenant_payroll_config(
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
     config_data["updated_at"] = datetime.now(timezone.utc)
-    config_data["tenant_id"] = tenant["id"]
+    config_data["tenant_id"] = tenant.id
     
-    existing = await db.tenant_payroll_config.find_one({"tenant_id": tenant["id"]})
+    existing = await db.tenant_payroll_config.find_one({"tenant_id": tenant.id})
     
     if existing:
         await db.tenant_payroll_config.update_one(
-            {"tenant_id": tenant["id"]},
+            {"tenant_id": tenant.id},
             {"$set": config_data}
         )
     else:
@@ -1502,13 +1502,13 @@ async def get_pay_code_mappings(
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
     mappings = await db.client_pay_code_mappings.find(
-        {"tenant_id": tenant["id"]},
+        {"tenant_id": tenant.id},
         {"_id": 0}
     ).to_list(100)
     
     # Récupérer les types d'heures personnalisés du tenant
     custom_event_types = await db.tenant_payroll_event_types.find(
-        {"tenant_id": tenant["id"]},
+        {"tenant_id": tenant.id},
         {"_id": 0}
     ).to_list(100)
     
@@ -1543,12 +1543,12 @@ async def create_pay_code_mapping(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
-    mapping_data["tenant_id"] = tenant["id"]
+    mapping_data["tenant_id"] = tenant.id
     mapping = ClientPayCodeMapping(**mapping_data)
     
     # Vérifier si un mapping existe déjà pour ce type
     existing = await db.client_pay_code_mappings.find_one({
-        "tenant_id": tenant["id"],
+        "tenant_id": tenant.id,
         "internal_event_type": mapping.internal_event_type
     })
     
@@ -1579,7 +1579,7 @@ async def delete_pay_code_mapping(
     
     await db.client_pay_code_mappings.delete_one({
         "id": mapping_id,
-        "tenant_id": tenant["id"]
+        "tenant_id": tenant.id
     })
     
     return {"success": True}
@@ -1604,7 +1604,7 @@ async def update_employee_matricules(
     
     for user_id, matricule in matricules.items():
         result = await db.users.update_one(
-            {"id": user_id, "tenant_id": tenant["id"]},
+            {"id": user_id, "tenant_id": tenant.id},
             {"$set": {"matricule_paie": matricule}}
         )
         if result.modified_count > 0:
@@ -1631,7 +1631,7 @@ async def update_single_employee_matricule(
     matricule_paie = data.get("matricule_paie", "")
     
     result = await db.users.update_one(
-        {"id": user_id, "tenant_id": tenant["id"]},
+        {"id": user_id, "tenant_id": tenant.id},
         {"$set": {"matricule_paie": matricule_paie}}
     )
     
@@ -1657,7 +1657,7 @@ async def get_tenant_event_types(
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
     event_types = await db.tenant_payroll_event_types.find(
-        {"tenant_id": tenant["id"]},
+        {"tenant_id": tenant.id},
         {"_id": 0}
     ).to_list(100)
     
@@ -1680,7 +1680,7 @@ async def create_tenant_event_type(
     
     # Vérifier que le code n'existe pas déjà
     existing = await db.tenant_payroll_event_types.find_one({
-        "tenant_id": tenant["id"],
+        "tenant_id": tenant.id,
         "code": data.get("code")
     })
     
@@ -1689,7 +1689,7 @@ async def create_tenant_event_type(
     
     event_type = {
         "id": str(uuid.uuid4()),
-        "tenant_id": tenant["id"],
+        "tenant_id": tenant.id,
         "code": data.get("code", "").upper().replace(" ", "_"),
         "label": data.get("label", ""),
         "category": data.get("category", "heures"),  # heures, prime, frais
@@ -1730,7 +1730,7 @@ async def update_tenant_event_type(
     
     if update_data:
         await db.tenant_payroll_event_types.update_one(
-            {"id": event_type_id, "tenant_id": tenant["id"]},
+            {"id": event_type_id, "tenant_id": tenant.id},
             {"$set": update_data}
         )
     
@@ -1753,13 +1753,13 @@ async def delete_tenant_event_type(
     
     # Supprimer aussi les mappings associés
     await db.client_pay_code_mappings.delete_many({
-        "tenant_id": tenant["id"],
+        "tenant_id": tenant.id,
         "internal_event_type": event_type_id
     })
     
     await db.tenant_payroll_event_types.delete_one({
         "id": event_type_id,
-        "tenant_id": tenant["id"]
+        "tenant_id": tenant.id
     })
     
     return {"success": True}
@@ -1902,7 +1902,7 @@ async def export_payroll(
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
     # Récupérer la configuration du tenant
-    config = await db.tenant_payroll_config.find_one({"tenant_id": tenant["id"]})
+    config = await db.tenant_payroll_config.find_one({"tenant_id": tenant.id})
     if not config or not config.get("provider_id"):
         raise HTTPException(status_code=400, detail="Aucun fournisseur de paie configuré. Allez dans Paramètres > Paie.")
     
@@ -1921,7 +1921,7 @@ async def export_payroll(
     
     # Récupérer les mappings de codes
     code_mappings = await db.client_pay_code_mappings.find(
-        {"tenant_id": tenant["id"], "is_active": True}
+        {"tenant_id": tenant.id, "is_active": True}
     ).to_list(100)
     
     # Récupérer les feuilles de temps à exporter
@@ -1929,7 +1929,7 @@ async def export_payroll(
     periode_debut = export_params.get("periode_debut")
     periode_fin = export_params.get("periode_fin")
     
-    query = {"tenant_id": tenant["id"], "statut": {"$in": ["valide", "brouillon"]}}
+    query = {"tenant_id": tenant.id, "statut": {"$in": ["valide", "brouillon"]}}
     
     if feuille_ids:
         query["id"] = {"$in": feuille_ids}
@@ -1946,7 +1946,7 @@ async def export_payroll(
     
     # Construire les données d'export
     export_rows = await build_payroll_export_data(
-        tenant_id=tenant["id"],
+        tenant_id=tenant.id,
         feuilles=feuilles,
         provider=provider,
         columns=columns,
@@ -2048,7 +2048,7 @@ async def get_champs_supplementaires(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
-    config = await db.tenant_payroll_config.find_one({"tenant_id": tenant["id"]})
+    config = await db.tenant_payroll_config.find_one({"tenant_id": tenant.id})
     
     champs = config.get("champs_supplementaires", []) if config else []
     
@@ -2080,7 +2080,7 @@ async def update_champs_supplementaires(
     champs = champs_data.get("champs", [])
     
     await db.tenant_payroll_config.update_one(
-        {"tenant_id": tenant["id"]},
+        {"tenant_id": tenant.id},
         {"$set": {"champs_supplementaires": champs, "updated_at": datetime.now(timezone.utc)}},
         upsert=True
     )
@@ -2105,7 +2105,7 @@ async def save_api_credentials(
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
     await db.tenant_payroll_config.update_one(
-        {"tenant_id": tenant["id"]},
+        {"tenant_id": tenant.id},
         {"$set": {
             "api_credentials": credentials,
             "api_connection_tested": False,
@@ -2131,7 +2131,7 @@ async def test_api_connection(
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
     # Récupérer la config du tenant
-    config = await db.tenant_payroll_config.find_one({"tenant_id": tenant["id"]})
+    config = await db.tenant_payroll_config.find_one({"tenant_id": tenant.id})
     if not config or not config.get("provider_id"):
         raise HTTPException(status_code=400, detail="Aucun fournisseur de paie configuré")
     
@@ -2261,7 +2261,7 @@ async def test_api_connection(
         
         # Enregistrer le résultat du test
         await db.tenant_payroll_config.update_one(
-            {"tenant_id": tenant["id"]},
+            {"tenant_id": tenant.id},
             {"$set": {
                 "api_connection_tested": result == "success",
                 "api_last_test_date": datetime.now(timezone.utc),
@@ -2278,7 +2278,7 @@ async def test_api_connection(
     except httpx.TimeoutException:
         message = "Timeout lors de la connexion à l'API"
         await db.tenant_payroll_config.update_one(
-            {"tenant_id": tenant["id"]},
+            {"tenant_id": tenant.id},
             {"$set": {
                 "api_connection_tested": False,
                 "api_last_test_date": datetime.now(timezone.utc),
@@ -2290,7 +2290,7 @@ async def test_api_connection(
     except Exception as e:
         message = f"Erreur de connexion: {str(e)}"
         await db.tenant_payroll_config.update_one(
-            {"tenant_id": tenant["id"]},
+            {"tenant_id": tenant.id},
             {"$set": {
                 "api_connection_tested": False,
                 "api_last_test_date": datetime.now(timezone.utc),
@@ -2315,7 +2315,7 @@ async def send_payroll_to_api(
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
     # Récupérer la config du tenant
-    config = await db.tenant_payroll_config.find_one({"tenant_id": tenant["id"]})
+    config = await db.tenant_payroll_config.find_one({"tenant_id": tenant.id})
     if not config or not config.get("provider_id"):
         raise HTTPException(status_code=400, detail="Aucun fournisseur de paie configuré")
     
@@ -2341,7 +2341,7 @@ async def send_payroll_to_api(
     
     feuilles = await db.feuilles_temps.find({
         "id": {"$in": feuille_ids},
-        "tenant_id": tenant["id"],
+        "tenant_id": tenant.id,
         "statut": "valide"
     }, {"_id": 0}).to_list(1000)
     
@@ -2354,12 +2354,12 @@ async def send_payroll_to_api(
     ).sort("position", 1).to_list(100)
     
     code_mappings = await db.client_pay_code_mappings.find(
-        {"tenant_id": tenant["id"], "is_active": True}
+        {"tenant_id": tenant.id, "is_active": True}
     ).to_list(100)
     
     # Construire les données d'export
     export_rows = await build_payroll_export_data(
-        tenant_id=tenant["id"],
+        tenant_id=tenant.id,
         feuilles=feuilles,
         provider=provider,
         columns=columns,
@@ -2615,7 +2615,7 @@ async def fetch_pay_codes_from_api(
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
     # Récupérer la config du tenant
-    config = await db.tenant_payroll_config.find_one({"tenant_id": tenant["id"]})
+    config = await db.tenant_payroll_config.find_one({"tenant_id": tenant.id})
     if not config or not config.get("provider_id"):
         raise HTTPException(status_code=400, detail="Aucun fournisseur de paie configuré")
     
