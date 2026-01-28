@@ -1745,7 +1745,7 @@ const Planning = () => {
             // Récupérer les types de garde applicables pour ce jour, triés chronologiquement
             const gardesOfDay = typesGarde
               .filter(typeGarde => shouldShowTypeGardeForDay(typeGarde, dayIndex))
-              .sort((a, b) => a.heure_debut.localeCompare(b.heure_debut));
+              .sort((a, b) => (a.heure_debut || '00:00').localeCompare(b.heure_debut || '23:59'));
 
             return (
               <div 
