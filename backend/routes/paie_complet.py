@@ -9,7 +9,7 @@ Ce module gère toute la fonctionnalité de paie :
 - Intégrations avec les systèmes de paie externes
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, File, Body
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone, timedelta
