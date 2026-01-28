@@ -132,20 +132,10 @@ const Dashboard = () => {
       const assignationsMoisSuivant = results[5]?.data || [];
       const toutesAssignations = [...assignationsMoisCourant, ...assignationsMoisSuivant];
       
-      // DEBUG: Log pour vérifier les données
-      console.log('🔍 Dashboard Debug - User ID:', user.id);
-      console.log('🔍 Dashboard Debug - todayStr:', todayStr);
-      console.log('🔍 Dashboard Debug - Assignations mois courant:', assignationsMoisCourant.length);
-      console.log('🔍 Dashboard Debug - Assignations mois suivant:', assignationsMoisSuivant.length);
-      console.log('🔍 Dashboard Debug - Toutes assignations:', toutesAssignations);
-      
       // 2. Prochaine garde - chercher la plus proche à partir d'aujourd'hui
-      // Utiliser la comparaison de chaînes YYYY-MM-DD pour éviter les problèmes de fuseau horaire
       const mesAssignations = toutesAssignations
         .filter(a => a.user_id === user.id && a.date >= todayStr)
         .sort((a, b) => a.date.localeCompare(b.date));
-      
-      console.log('🔍 Dashboard Debug - Mes assignations filtrées:', mesAssignations);
       
       if (mesAssignations.length > 0) {
         setProchainGarde(mesAssignations[0]);
