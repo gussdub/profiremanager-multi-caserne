@@ -217,7 +217,9 @@ async def get_current_user_info(
                 "nom": user.get("nom", ""),
                 "prenom": user.get("prenom", ""),
                 "role": user.get("role", "employe"),
-                "tenant_id": user.get("tenant_id")
+                "tenant_id": user.get("tenant_id"),
+                "grade": user.get("grade"),
+                "type_emploi": user.get("type_emploi")
             }
     
     except jwt.ExpiredSignatureError:
