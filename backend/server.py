@@ -2833,7 +2833,7 @@ class SuperAdmin(BaseModel):
 
 class SuperAdminLogin(BaseModel):
     email: str
-    mot_de_passe: str
+    password: str  # Changed to match frontend
 
 # ==================== AUDIT LOG MODELS ====================
 
