@@ -2683,6 +2683,12 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         # Attribution automatique logic (5 niveaux de priorité)
         # nouvelles_assignations déjà déclaré plus haut
         
+        return nouvelles_assignations
+    
+    except Exception as e:
+        logging.error(f"Erreur attribution automatique: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erreur attribution: {str(e)}")
+
 
 # GET rapport-audit
 @router.get("/{tenant_slug}/planning/rapport-audit")
