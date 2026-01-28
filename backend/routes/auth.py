@@ -30,7 +30,7 @@ router = APIRouter(tags=["Auth"])
 logger = logging.getLogger(__name__)
 
 # Configuration JWT
-SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "profiremanager-secret-key-2024-ultra-secure")
+SECRET_KEY = os.environ.get("JWT_SECRET", "your-secret-key-here")  # Même clé que server.py et dependencies.py
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 480
 
