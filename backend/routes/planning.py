@@ -29,6 +29,7 @@ from io import BytesIO
 import uuid
 import logging
 import asyncio
+import time
 
 from routes.dependencies import (
     db,
@@ -41,6 +42,66 @@ from routes.dependencies import (
 
 router = APIRouter(tags=["Planning"])
 logger = logging.getLogger(__name__)
+
+
+# ==================== SYSTÈME DE PROGRESSION TEMPS RÉEL ====================
+# Dictionnaire global pour stocker les progressions des attributions auto
+attribution_progress_store: Dict[str, Dict[str, Any]] = {}
+
+class AttributionProgress:
+    """Classe pour gérer la progression d'une attribution automatique"""
+    
+    def __init__(self, task_id: str):
+        self.task_id = task_id
+        self.start_time = time.time()
+        self.current_step = ""
+        self.progress_percentage = 0
+        self.total_gardes = 0
+        self.gardes_traitees = 0
+        self.assignations_creees = 0
+        self.status = "en_cours"  # en_cours, termine, erreur
+        self.error_message = None
+        self.expires_at = time.time() + 3600  # Expire après 1 heure
+        
+    def update(self, step: str, progress: int, gardes_traitees: int = 0, assignations: int = 0):
+        """Met à jour la progression"""
+        self.current_step = step
+        self.progress_percentage = min(progress, 100)
+        self.gardes_traitees = gardes_traitees
+        if assignations > 0:
+            self.assignations_creees = assignations
+        attribution_progress_store[self.task_id] = self.to_dict()
+    
+    def complete(self, assignations_totales: int):
+        """Marque la tâche comme terminée"""
+        self.status = "termine"
+        self.progress_percentage = 100
+        self.assignations_creees = assignations_totales
+        elapsed_time = time.time() - self.start_time
+        self.current_step = f"✅ Terminé en {elapsed_time:.1f}s - {assignations_totales} assignations créées"
+        attribution_progress_store[self.task_id] = self.to_dict()
+    
+    def error(self, message: str):
+        """Marque la tâche en erreur"""
+        self.status = "erreur"
+        self.error_message = message
+        self.current_step = f"❌ Erreur: {message}"
+        attribution_progress_store[self.task_id] = self.to_dict()
+    
+    def to_dict(self):
+        """Convertit en dictionnaire pour JSON"""
+        elapsed = time.time() - self.start_time
+        return {
+            "task_id": self.task_id,
+            "status": self.status,
+            "current_step": self.current_step,
+            "progress_percentage": self.progress_percentage,
+            "total_gardes": self.total_gardes,
+            "gardes_traitees": self.gardes_traitees,
+            "assignations_creees": self.assignations_creees,
+            "elapsed_time": f"{elapsed:.1f}s",
+            "error_message": self.error_message
+        }
 
 
 # ==================== MODÈLES ====================
