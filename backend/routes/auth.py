@@ -39,7 +39,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 480
 
 class LoginRequest(BaseModel):
     email: str
-    password: str
+    mot_de_passe: str  # Cohérent avec le frontend français
 
 class ForgotPasswordRequest(BaseModel):
     email: str
