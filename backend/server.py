@@ -50,6 +50,7 @@ from routes.sftp import router as sftp_router
 from routes.billing import router as billing_router
 from routes.admin import router as admin_router
 from routes.debogage import router as debogage_router
+from routes.paie_complet import router as paie_complet_router
 # from routes.disponibilites import router as disponibilites_router  # Désactivé - routes server.py plus complètes
 from io import BytesIO
 import base64
