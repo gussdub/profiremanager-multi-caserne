@@ -66,6 +66,7 @@ from routes.points_eau import router as points_eau_router
 from routes.remplacements import router as remplacements_router
 from routes.equipes_garde import router as equipes_garde_router
 from routes.inventaires_vehicules import router as inventaires_vehicules_router
+from routes.rondes_securite import router as rondes_securite_router
 # from routes.disponibilites import router as disponibilites_router  # Désactivé - routes server.py plus complètes
 from io import BytesIO
 import base64
