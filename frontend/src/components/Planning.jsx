@@ -741,15 +741,17 @@ const Planning = () => {
         variant: "success"
       });
 
-      // Recharger les données et rouvrir le modal avec les infos à jour
-      await fetchPlanningData();
+      // Mise à jour locale immédiate (évite le flash et le délai)
+      const assignationIds = assignationsWithIds.map(a => a.id);
       
-      // Rouvrir le modal de détails avec les données mises à jour (maintenant vide)
-      if (selectedGardeDetails) {
-        setTimeout(() => {
-          openGardeDetails(selectedGardeDetails.date, selectedGardeDetails.typeGarde);
-        }, 100);
-      }
+      setSelectedGardeDetails({
+        ...selectedGardeDetails,
+        assignations: [],
+        personnelAssigne: []
+      });
+      
+      // Mettre à jour l'état global des assignations aussi
+      setAssignations(prev => prev.filter(a => !assignationIds.includes(a.id)));
       
     } catch (error) {
       console.error('Error removing all personnel:', error);
