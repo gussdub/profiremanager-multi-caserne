@@ -61,6 +61,7 @@ from routes.conges import router as conges_router
 from routes.notifications import router as notifications_router
 from routes.personnalisation import router as personnalisation_router
 from routes.materiel import router as materiel_router
+from routes.bornes_seches import router as bornes_seches_router
 # from routes.disponibilites import router as disponibilites_router  # Désactivé - routes server.py plus complètes
 from io import BytesIO
 import base64
