@@ -28215,6 +28215,7 @@ app.include_router(conges_router, prefix="/api")  # Module Demandes de Congé
 app.include_router(notifications_router, prefix="/api")  # Module Notifications (lecture)
 app.include_router(personnalisation_router, prefix="/api")  # Module Personnalisation (logo, branding)
 app.include_router(materiel_router, prefix="/api")  # Module Matériel & Stock
+app.include_router(bornes_seches_router, prefix="/api")  # Module Bornes Sèches
 # disponibilites_router désactivé - routes server.py plus complètes (export PDF, blocage avancé)
 app.include_router(api_router)  # Routes principales (server.py)
 app.include_router(pwa_router, prefix="/api")
