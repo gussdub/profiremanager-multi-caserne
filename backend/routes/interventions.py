@@ -135,7 +135,7 @@ async def list_interventions(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
-    query = {"tenant_id": tenant["id"]}
+    query = {"tenant_id": tenant.id}
     
     if status:
         query["status"] = status
@@ -179,7 +179,7 @@ async def get_interventions_dashboard(
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
     pipeline = [
-        {"$match": {"tenant_id": tenant["id"]}},
+        {"$match": {"tenant_id": tenant.id}},
         {"$group": {"_id": "$status", "count": {"$sum": 1}}},
     ]
     
@@ -189,15 +189,15 @@ async def get_interventions_dashboard(
     
     # Récupérer les interventions par catégorie
     new_interventions = await db.interventions.find(
-        {"tenant_id": tenant["id"], "status": "new"}, {"_id": 0}
+        {"tenant_id": tenant.id, "status": "new"}, {"_id": 0}
     ).sort("created_at", -1).limit(20).to_list(20)
     
     draft_interventions = await db.interventions.find(
-        {"tenant_id": tenant["id"], "status": {"$in": ["draft", "revision"]}}, {"_id": 0}
+        {"tenant_id": tenant.id, "status": {"$in": ["draft", "revision"]}}, {"_id": 0}
     ).sort("updated_at", -1).limit(20).to_list(20)
     
     review_interventions = await db.interventions.find(
-        {"tenant_id": tenant["id"], "status": "review"}, {"_id": 0}
+        {"tenant_id": tenant.id, "status": "review"}, {"_id": 0}
     ).sort("updated_at", -1).limit(20).to_list(20)
     
     return {
@@ -259,13 +259,13 @@ async def get_intervention_settings(
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
     settings = await db.intervention_settings.find_one(
-        {"tenant_id": tenant["id"]}, {"_id": 0}
+        {"tenant_id": tenant.id}, {"_id": 0}
     )
     
     if not settings:
         settings = {
             "id": str(uuid.uuid4()),
-            "tenant_id": tenant["id"],
+            "tenant_id": tenant.id,
             "supervisors_can_validate": True,
             "auto_assign_officer": True,
             "require_dsi_for_fire": True,
@@ -314,7 +314,7 @@ async def update_intervention_settings(
     settings_data["updated_at"] = datetime.now(timezone.utc)
     
     await db.intervention_settings.update_one(
-        {"tenant_id": tenant["id"]},
+        {"tenant_id": tenant.id},
         {"$set": settings_data},
         upsert=True
     )
@@ -334,7 +334,7 @@ async def get_intervention_detail(
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
     intervention = await db.interventions.find_one(
-        {"id": intervention_id, "tenant_id": tenant["id"]}, {"_id": 0}
+        {"id": intervention_id, "tenant_id": tenant.id}, {"_id": 0}
     )
     if not intervention:
         raise HTTPException(status_code=404, detail="Intervention non trouvée")
@@ -386,7 +386,7 @@ async def update_intervention(
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
     intervention = await db.interventions.find_one(
-        {"id": intervention_id, "tenant_id": tenant["id"]}
+        {"id": intervention_id, "tenant_id": tenant.id}
     )
     if not intervention:
         raise HTTPException(status_code=404, detail="Intervention non trouvée")
@@ -441,7 +441,7 @@ async def validate_intervention(
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
     intervention = await db.interventions.find_one(
-        {"id": intervention_id, "tenant_id": tenant["id"]}
+        {"id": intervention_id, "tenant_id": tenant.id}
     )
     if not intervention:
         raise HTTPException(status_code=404, detail="Intervention non trouvée")
@@ -478,7 +478,7 @@ async def validate_intervention(
         type_intervention = (intervention.get("type_intervention") or "").lower()
         if "incendie" in type_intervention and "alarme" not in type_intervention:
             settings = await db.intervention_settings.find_one(
-                {"tenant_id": tenant["id"]}
+                {"tenant_id": tenant.id}
             )
             if settings and settings.get("require_dsi_for_fire"):
                 required_fields = ["cause_id", "source_heat_id"]
@@ -898,7 +898,7 @@ async def get_equipes_garde_for_intervention(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
-    params = await db.parametres_equipes_garde.find_one({"tenant_id": tenant["id"]})
+    params = await db.parametres_equipes_garde.find_one({"tenant_id": tenant.id})
     
     if not params or not params.get("actif", False):
         return {"equipes": [], "message": "Système d'équipes de garde non activé"}
@@ -906,7 +906,7 @@ async def get_equipes_garde_for_intervention(
     # Si heure fournie, déterminer le type de garde (interne/externe) basé sur les horaires configurés
     type_garde_cible = None
     if heure:
-        types_garde = await db.types_garde.find({"tenant_id": tenant["id"]}).to_list(None)
+        types_garde = await db.types_garde.find({"tenant_id": tenant.id}).to_list(None)
         
         # Convertir l'heure en minutes depuis minuit pour comparaison facile
         try:
@@ -978,7 +978,7 @@ async def get_equipes_garde_for_intervention(
         
         # Récupérer les membres de cette équipe
         membres = await db.users.find({
-            "tenant_id": tenant["id"],
+            "tenant_id": tenant.id,
             "equipe_garde": equipe_num,
             "type_emploi": type_emploi.replace("_", " "),
             "statut": "Actif"
@@ -1045,7 +1045,7 @@ async def import_intervention_xml(
         intervention_id = None
         try:
             existing = await db.interventions.find_one({
-                "tenant_id": tenant["id"],
+                "tenant_id": tenant.id,
                 "external_call_id": call_number
             })
             
@@ -1067,7 +1067,7 @@ async def import_intervention_xml(
                             municipality_raw = service
                     
                     intervention_data = {
-                        "tenant_id": tenant["id"],
+                        "tenant_id": tenant.id,
                         "external_call_id": call_number,
                         "guid_carte": table.findtext('idCarteAppel'),
                         "guid_municipalite": table.findtext('guidMun'),
@@ -1175,7 +1175,7 @@ async def import_intervention_xml(
             # ==================== CALCUL AUTOMATIQUE DES PRIMES DE REPAS À L'IMPORT ====================
             if intervention_id:
                 # Charger les paramètres du tenant pour les primes de repas
-                settings = await db.intervention_settings.find_one({"tenant_id": tenant["id"]})
+                settings = await db.intervention_settings.find_one({"tenant_id": tenant.id})
                 
                 if settings:
                     # Récupérer l'intervention fraîchement importée/mise à jour
@@ -1219,7 +1219,7 @@ async def import_intervention_xml(
                         vehicle_data = {
                             "id": str(uuid.uuid4()),
                             "intervention_id": intervention_id,
-                            "tenant_id": tenant["id"],
+                            "tenant_id": tenant.id,
                             "xml_vehicle_number": vehicle_number,
                             "xml_vehicle_id": table.findtext('idRessource'),
                             "xml_status": table.findtext('disponibilite'),
@@ -1228,7 +1228,7 @@ async def import_intervention_xml(
                         }
                         
                         mapping = await db.intervention_code_mappings.find_one({
-                            "tenant_id": tenant["id"],
+                            "tenant_id": tenant.id,
                             "type_mapping": "vehicule",
                             "code_externe": vehicle_number
                         })
@@ -1274,7 +1274,7 @@ async def import_intervention_xml(
                     assistance_data = {
                         "id": str(uuid.uuid4()),
                         "intervention_id": intervention_id,
-                        "tenant_id": tenant["id"],
+                        "tenant_id": tenant.id,
                         "xml_assistance_id": table.findtext('idAssistance'),
                         "no_carte_entraide": table.findtext('noCarteEntraide'),
                         "municipalite": table.findtext('municipalite'),
@@ -1340,7 +1340,7 @@ async def get_intervention_mappings(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
-    query = {"tenant_id": tenant["id"]}
+    query = {"tenant_id": tenant.id}
     if type_mapping:
         query["type_mapping"] = type_mapping
     
@@ -1366,7 +1366,7 @@ async def create_intervention_mapping(
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
     existing = await db.intervention_code_mappings.find_one({
-        "tenant_id": tenant["id"],
+        "tenant_id": tenant.id,
         "type_mapping": mapping_data["type_mapping"],
         "code_externe": mapping_data["code_externe"]
     })
@@ -1384,7 +1384,7 @@ async def create_intervention_mapping(
     else:
         new_mapping = {
             "id": str(uuid.uuid4()),
-            "tenant_id": tenant["id"],
+            "tenant_id": tenant.id,
             "type_mapping": mapping_data["type_mapping"],
             "code_externe": mapping_data["code_externe"],
             "libelle_externe": mapping_data.get("libelle_externe", ""),
@@ -1411,7 +1411,7 @@ async def add_intervention_resource(
     
     intervention = await db.interventions.find_one({
         "id": intervention_id,
-        "tenant_id": tenant["id"]
+        "tenant_id": tenant.id
     })
     if not intervention:
         raise HTTPException(status_code=404, detail="Intervention non trouvée")
@@ -1419,7 +1419,7 @@ async def add_intervention_resource(
     resource = {
         "id": str(uuid.uuid4()),
         "intervention_id": intervention_id,
-        "tenant_id": tenant["id"],
+        "tenant_id": tenant.id,
         "user_id": resource_data.get("user_id"),
         "role_on_scene": resource_data.get("role_on_scene", "Pompier"),
         "datetime_start": resource_data.get("datetime_start"),
@@ -1471,7 +1471,7 @@ async def assign_intervention_reporters(
     user_ids = reporters_data.get("user_ids", [])
     
     await db.interventions.update_one(
-        {"id": intervention_id, "tenant_id": tenant["id"]},
+        {"id": intervention_id, "tenant_id": tenant.id},
         {"$set": {
             "assigned_reporters": user_ids,
             "updated_at": datetime.now(timezone.utc)
@@ -1532,7 +1532,7 @@ async def creer_remise_propriete(
     # Vérifier que l'intervention existe
     intervention = await db.interventions.find_one({
         "id": intervention_id,
-        "tenant_id": tenant["id"]
+        "tenant_id": tenant.id
     })
     if not intervention:
         raise HTTPException(status_code=404, detail="Intervention non trouvée")
@@ -1543,7 +1543,7 @@ async def creer_remise_propriete(
     
     remise = {
         "id": remise_id,
-        "tenant_id": tenant["id"],
+        "tenant_id": tenant.id,
         "intervention_id": intervention_id,
         "created_at": now,
         "created_by": current_user.id,
@@ -1591,7 +1591,7 @@ async def creer_remise_propriete(
     
     # Ajouter la référence à l'intervention
     await db.interventions.update_one(
-        {"id": intervention_id, "tenant_id": tenant["id"]},
+        {"id": intervention_id, "tenant_id": tenant.id},
         {
             "$push": {"remises_propriete": remise_id},
             "$set": {"updated_at": now}
@@ -1887,7 +1887,7 @@ async def get_remises_propriete(
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
     remises = await db.remises_propriete.find({
-        "tenant_id": tenant["id"],
+        "tenant_id": tenant.id,
         "intervention_id": intervention_id
     }, {"_id": 0}).sort("created_at", -1).to_list(100)
     
@@ -1908,7 +1908,7 @@ async def get_remise_propriete_pdf(
     
     remise = await db.remises_propriete.find_one({
         "id": remise_id,
-        "tenant_id": tenant["id"],
+        "tenant_id": tenant.id,
         "intervention_id": intervention_id
     }, {"_id": 0})
     
