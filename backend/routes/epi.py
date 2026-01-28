@@ -30,6 +30,34 @@ router = APIRouter(tags=["EPI - Équipements de Protection"])
 logger = logging.getLogger(__name__)
 
 
+# ==================== MODÈLES EPI NFPA 1851 ====================
+
+class EPI(BaseModel):
+    """Modèle complet d'un équipement de protection individuelle selon NFPA 1851"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    numero_serie: str  # Numéro de série interne (format libre)
+    type_epi: str  # ID du type d'EPI personnalisé
+    marque: str
+    modele: str
+    numero_serie_fabricant: str = ""
+    date_fabrication: Optional[str] = None
+    date_mise_en_service: str
+    norme_certification: str = ""  # ex: NFPA 1971, édition 2018
+    cout_achat: float = 0.0
+    couleur: str = ""
+    taille: str = ""
+    user_id: Optional[str] = None  # Affecté à quel pompier
+    statut: str = "En service"  # En service, En inspection, En réparation, Hors service, Retiré
+    notes: str = ""
+    # Formulaires d'inspection assignés (3 types)
+    formulaire_apres_usage_id: str = ""  # Formulaire pour inspection après utilisation
+    formulaire_routine_id: str = ""  # Formulaire pour inspection routine mensuelle
+    formulaire_avancee_id: str = ""  # Formulaire pour inspection avancée annuelle
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
 # ==================== TYPES D'EPI PERSONNALISÉS ====================
 class TypeEPI(BaseModel):
     """Type/Catégorie d'EPI personnalisable"""
