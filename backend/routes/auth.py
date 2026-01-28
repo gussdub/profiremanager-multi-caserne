@@ -161,7 +161,9 @@ async def tenant_login(tenant_slug: str, login: LoginRequest):
             "email": user["email"],
             "nom": user.get("nom", ""),
             "prenom": user.get("prenom", ""),
-            "role": user.get("role", "employe")
+            "role": user.get("role", "employe"),
+            "grade": user.get("grade"),
+            "type_emploi": user.get("type_emploi")
         }
     }
 
