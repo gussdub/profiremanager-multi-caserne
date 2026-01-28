@@ -918,6 +918,8 @@ const Remplacements = () => {
                         </span>
                         <h3>{getTypeGardeName(demande.type_garde_id)}</h3>
                         <span className="demande-date">{parseDateLocal(demande.date).toLocaleDateString('fr-FR')}</span>
+                        {/* Raison juste après la date */}
+                        <p style={{ margin: '4px 0 0 0', color: '#4B5563', fontSize: '0.95rem' }}>{demande.raison}</p>
                       </div>
                       <div className="demande-status" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                         {/* Badge de statut */}
@@ -930,8 +932,7 @@ const Remplacements = () => {
                       </div>
                     </div>
                     <div className="demande-details">
-                      <p className="demande-raison">{demande.raison}</p>
-                      <div className="demande-meta">
+                      <div className="demande-meta" style={{ marginTop: '12px' }}>
                         <span>Demandé par: {getUserName(demande.demandeur_id)} </span>
                         <span>Le: {new Date(demande.created_at).toLocaleDateString('fr-FR')}</span>
                       </div>
