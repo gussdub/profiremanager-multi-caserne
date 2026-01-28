@@ -131,7 +131,7 @@ async def list_interventions(
     current_user: User = Depends(get_current_user)
 ):
     """Liste les interventions avec filtres"""
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -174,7 +174,7 @@ async def get_interventions_dashboard(
     current_user: User = Depends(get_current_user)
 ):
     """Retourne les interventions groupées par statut pour le dashboard"""
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -254,7 +254,7 @@ async def get_intervention_settings(
     current_user: User = Depends(get_current_user)
 ):
     """Récupère les paramètres du module"""
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -307,7 +307,7 @@ async def update_intervention_settings(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès admin requis")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -329,7 +329,7 @@ async def get_intervention_detail(
     current_user: User = Depends(get_current_user)
 ):
     """Récupère une intervention avec ses ressources"""
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -381,7 +381,7 @@ async def update_intervention(
     current_user: User = Depends(get_current_user)
 ):
     """Met à jour une intervention"""
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -436,7 +436,7 @@ async def validate_intervention(
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Permission refusée")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -894,7 +894,7 @@ async def get_equipes_garde_for_intervention(
     Si l'heure est fournie, détermine automatiquement si c'est garde interne ou externe
     en fonction des types de garde configurés.
     """
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -1012,7 +1012,7 @@ async def import_intervention_xml(
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Permission refusée")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -1336,7 +1336,7 @@ async def get_intervention_mappings(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès admin requis")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -1361,7 +1361,7 @@ async def create_intervention_mapping(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès admin requis")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -1405,7 +1405,7 @@ async def add_intervention_resource(
     current_user: User = Depends(get_current_user)
 ):
     """Ajoute une ressource humaine à l'intervention"""
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -1464,7 +1464,7 @@ async def assign_intervention_reporters(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès admin requis")
     
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -1525,7 +1525,7 @@ async def creer_remise_propriete(
     current_user: User = Depends(get_current_user)
 ):
     """Crée une remise de propriété et génère le PDF"""
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -1882,7 +1882,7 @@ async def get_remises_propriete(
     current_user: User = Depends(get_current_user)
 ):
     """Récupère toutes les remises de propriété d'une intervention"""
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -1902,7 +1902,7 @@ async def get_remise_propriete_pdf(
     current_user: User = Depends(get_current_user)
 ):
     """Récupère le PDF d'une remise de propriété"""
-    tenant = await get_tenant_by_slug(tenant_slug)
+    tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
