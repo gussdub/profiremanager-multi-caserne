@@ -37992,8 +37992,7 @@ app.include_router(prevention_router, prefix="/api")  # Module Prévention (bât
 app.include_router(planning_router, prefix="/api")  # Module Planning (assignations, rapports heures)
 app.include_router(sftp_router, prefix="/api")  # Module SFTP (cartes d'appel 911, WebSocket)
 app.include_router(billing_router, prefix="/api")  # Module Billing (Stripe, facturation)
-app.include_router(centrales_911_router, prefix="/api")  # Module Centrales 911
-app.include_router(admin_router, prefix="/api")  # Module Admin (centrales, audit logs)
+app.include_router(admin_router, prefix="/api")  # Module Admin (centrales 911, audit logs)
 # disponibilites_router désactivé - routes server.py plus complètes (export PDF, blocage avancé)
 app.include_router(api_router)  # Routes principales (server.py)
 app.include_router(pwa_router, prefix="/api")
