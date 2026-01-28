@@ -127,6 +127,28 @@ async def tenant_login(tenant_slug: str, login: LoginRequest):
     }
 
 
+@router.get("/{tenant_slug}/auth/me")
+async def get_current_user_info(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère les informations de l'utilisateur connecté"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que l'utilisateur appartient bien à ce tenant
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès non autorisé à ce tenant")
+    
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "nom": current_user.nom,
+        "prenom": current_user.prenom,
+        "role": current_user.role,
+        "tenant_id": current_user.tenant_id
+    }
+
+
 @router.post("/{tenant_slug}/auth/forgot-password")
 async def forgot_password(tenant_slug: str, request: ForgotPasswordRequest):
     """Demande de réinitialisation de mot de passe"""
