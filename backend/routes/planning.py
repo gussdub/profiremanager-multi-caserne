@@ -111,6 +111,36 @@ class AttributionProgress:
         }
 
 
+async def progress_event_generator(task_id: str):
+    """Générateur SSE pour streamer les mises à jour de progression"""
+    try:
+        # Attendre que la tâche soit créée
+        for _ in range(50):  # Attendre max 5 secondes
+            if task_id in attribution_progress_store:
+                break
+            await asyncio.sleep(0.1)
+        
+        # Streamer les mises à jour
+        last_data = None
+        while True:
+            if task_id in attribution_progress_store:
+                current_data = attribution_progress_store[task_id]
+                
+                # Envoyer seulement si les données ont changé
+                if current_data != last_data:
+                    yield f"data: {json.dumps(current_data)}\n\n"
+                    last_data = current_data.copy()
+                
+                # Si terminé ou en erreur, arrêter le stream
+                if current_data.get("status") in ["termine", "erreur"]:
+                    break
+            
+            await asyncio.sleep(0.5)  # Mise à jour toutes les 500ms
+            
+    except asyncio.CancelledError:
+        pass
+
+
 # ==================== MODÈLES ====================
 
 class Planning(BaseModel):
