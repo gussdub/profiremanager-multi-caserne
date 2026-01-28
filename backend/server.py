@@ -1527,6 +1527,8 @@ async def job_verifier_timeouts_remplacements():
     Job périodique qui vérifie les timeouts des demandes de remplacement
     S'exécute toutes les minutes
     """
+    from routes.remplacements import verifier_et_traiter_timeouts
+    
     while True:
         try:
             await asyncio.sleep(60)  # Attendre 60 secondes
