@@ -30,6 +30,32 @@ router = APIRouter(tags=["EPI - Équipements de Protection"])
 logger = logging.getLogger(__name__)
 
 
+# ==================== MODÈLES IMPORT CSV ====================
+
+class ImportFieldConfig(BaseModel):
+    """Configuration d'un champ pour l'import CSV"""
+    key: str
+    label: str
+    required: bool = False
+
+
+class ImportSettings(BaseModel):
+    """Configuration des imports CSV pour un tenant"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    epi_fields: List[ImportFieldConfig] = []
+    personnel_fields: List[ImportFieldConfig] = []
+    rapports_fields: List[ImportFieldConfig] = []
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class ImportSettingsUpdate(BaseModel):
+    """Mise à jour des configurations d'import"""
+    epi_fields: Optional[List[ImportFieldConfig]] = None
+    personnel_fields: Optional[List[ImportFieldConfig]] = None
+    rapports_fields: Optional[List[ImportFieldConfig]] = None
+
+
 # ==================== MODÈLES EPI NFPA 1851 ====================
 
 class EPI(BaseModel):
