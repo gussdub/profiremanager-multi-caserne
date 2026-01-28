@@ -3050,35 +3050,10 @@ class AssignationCreate(BaseModel):
     date: str
     assignation_type: str = "manuel"
 
-class TentativeRemplacement(BaseModel):
-    """Historique des tentatives de remplacement"""
-    user_id: str
-    nom_complet: str
-    date_contact: datetime
-    statut: str  # contacted, accepted, refused, expired
-    date_reponse: Optional[datetime] = None
-
-class DemandeRemplacement(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    tenant_id: str
-    demandeur_id: str
-    type_garde_id: str
-    date: str  # Date de la garde à remplacer (format: YYYY-MM-DD)
-    raison: str
-    statut: str = "en_attente"  # en_attente, en_cours, accepte, expiree, annulee
-    priorite: str = "normal"  # urgent (≤24h), normal (>24h) - calculé automatiquement
-    remplacant_id: Optional[str] = None
-    tentatives_historique: List[Dict[str, Any]] = []  # Historique des personnes contactées
-    remplacants_contactes_ids: List[str] = []  # IDs des remplaçants actuellement en attente de réponse
-    date_prochaine_tentative: Optional[datetime] = None
-    nombre_tentatives: int = 0
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class DemandeRemplacementCreate(BaseModel):
-    type_garde_id: str
-    date: str
-    raison: str
+# ==================== MODÈLES REMPLACEMENT MIGRÉS VERS routes/remplacements.py ====================
+# TentativeRemplacement, DemandeRemplacement, DemandeRemplacementCreate
+# ont été déplacés vers routes/remplacements.py
+# ============================================================================
 
 class Formation(BaseModel):
     """Formation planifiée avec gestion inscriptions NFPA 1500"""
