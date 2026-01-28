@@ -101,23 +101,47 @@ async def get_user_info(user_id: str) -> Optional[Dict]:
 # est définie à la FIN du fichier pour éviter les conflits avec les routes spécifiques
 
 
-@router.get("/{tenant_slug}/planning/assignations/{semaine_debut}")
-async def get_assignations_semaine(
+@router.get("/{tenant_slug}/planning/assignations/{date_debut}")
+async def get_assignations_periode(
     tenant_slug: str,
-    semaine_debut: str,
+    date_debut: str,
+    mode: str = Query(default="semaine", description="Mode d'affichage: 'semaine' ou 'mois'"),
     current_user: User = Depends(get_current_user)
 ):
-    """Récupérer les assignations d'une semaine"""
+    """
+    Récupérer les assignations pour une période donnée.
+    - mode='semaine': Récupère 7 jours à partir de date_debut
+    - mode='mois': Récupère tout le mois de la date fournie
+    """
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    date_debut, date_fin = get_semaine_range(semaine_debut)
-    semaine_fin = date_fin.strftime("%Y-%m-%d")
+    if mode == "mois":
+        # Parser la date et calculer le premier et dernier jour du mois
+        date_obj = datetime.strptime(date_debut, "%Y-%m-%d")
+        year = date_obj.year
+        month = date_obj.month
+        
+        # Premier jour du mois
+        debut_mois = datetime(year, month, 1)
+        # Dernier jour du mois
+        if month == 12:
+            fin_mois = datetime(year + 1, 1, 1) - timedelta(days=1)
+        else:
+            fin_mois = datetime(year, month + 1, 1) - timedelta(days=1)
+        
+        date_debut_str = debut_mois.strftime("%Y-%m-%d")
+        date_fin_str = fin_mois.strftime("%Y-%m-%d")
+    else:
+        # Mode semaine (par défaut): 7 jours à partir de la date
+        date_obj, date_fin_obj = get_semaine_range(date_debut)
+        date_debut_str = date_debut
+        date_fin_str = date_fin_obj.strftime("%Y-%m-%d")
     
     assignations = await db.assignations.find({
         "tenant_id": tenant.id,
         "date": {
-            "$gte": semaine_debut,
-            "$lte": semaine_fin
+            "$gte": date_debut_str,
+            "$lte": date_fin_str
         }
     }, {"_id": 0}).sort("date", 1).to_list(1000)
     
