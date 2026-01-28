@@ -229,6 +229,76 @@ async def get_super_admin(
         raise HTTPException(status_code=401, detail="Token invalide")
 
 
+# ==================== MODÈLES SUPER ADMIN ====================
+
+class TenantCreate(BaseModel):
+    """Modèle pour créer un tenant"""
+    slug: str
+    nom: str
+    adresse: str = ""
+    ville: str = ""
+    province: str = "QC"
+    code_postal: str = ""
+    telephone: str = ""
+    email_contact: str = ""
+    date_creation: Optional[str] = None
+    centrale_911_id: Optional[str] = None
+
+
+class SuperAdminLogin(BaseModel):
+    """Modèle pour login super admin"""
+    email: str
+    mot_de_passe: str
+
+
+class AuditLog(BaseModel):
+    """Journal d'audit pour les actions super-admin"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    admin_id: str
+    admin_email: str
+    admin_nom: str
+    action: str
+    details: Dict[str, Any] = {}
+    tenant_id: Optional[str] = None
+    tenant_slug: Optional[str] = None
+    tenant_nom: Optional[str] = None
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+async def log_super_admin_action(
+    admin: SuperAdmin,
+    action: str,
+    details: Dict[str, Any] = None,
+    tenant_id: str = None,
+    tenant_slug: str = None,
+    tenant_nom: str = None,
+    ip_address: str = None,
+    user_agent: str = None
+):
+    """
+    Enregistre une action super-admin dans le journal d'audit
+    """
+    try:
+        audit_entry = AuditLog(
+            admin_id=admin.id,
+            admin_email=admin.email,
+            admin_nom=admin.nom,
+            action=action,
+            details=details or {},
+            tenant_id=tenant_id,
+            tenant_slug=tenant_slug,
+            tenant_nom=tenant_nom,
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+        await db.audit_logs.insert_one(audit_entry.dict())
+        logger.info(f"📝 [AUDIT] {admin.email} - {action}" + (f" - Tenant: {tenant_slug}" if tenant_slug else ""))
+    except Exception as e:
+        logger.error(f"Erreur log audit: {e}")
+
+
 async def verify_tenant_access(user: User, tenant_slug: str) -> Tenant:
     """
     Vérifie que l'utilisateur a accès au tenant demandé.
