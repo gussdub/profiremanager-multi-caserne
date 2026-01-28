@@ -767,7 +767,7 @@ const Remplacements = () => {
           onClick={() => setActiveTab('remplacements')}
           data-testid="tab-remplacements"
         >
-          🔄 Remplacements ({demandes.length})
+          🔄 Remplacements ({filteredDemandes.length})
         </button>
         <button
           className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
