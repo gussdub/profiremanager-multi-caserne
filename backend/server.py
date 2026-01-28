@@ -37871,6 +37871,7 @@ app.include_router(planning_router, prefix="/api")  # Module Planning (assignati
 app.include_router(sftp_router, prefix="/api")  # Module SFTP (cartes d'appel 911, WebSocket)
 app.include_router(billing_router, prefix="/api")  # Module Billing (Stripe, facturation)
 app.include_router(admin_router, prefix="/api")  # Module Admin (centrales 911, audit logs)
+app.include_router(debogage_router, prefix="/api")  # Module Débogage (bugs, features)
 # disponibilites_router désactivé - routes server.py plus complètes (export PDF, blocage avancé)
 app.include_router(api_router)  # Routes principales (server.py)
 app.include_router(pwa_router, prefix="/api")
