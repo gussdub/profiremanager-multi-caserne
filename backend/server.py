@@ -32848,6 +32848,7 @@ app.include_router(admin_router, prefix="/api")  # Module Admin (centrales 911, 
 app.include_router(debogage_router, prefix="/api")  # Module Débogage (bugs, features)
 app.include_router(paie_complet_router, prefix="/api")  # Module Paie complet
 app.include_router(interventions_router, prefix="/api")  # Module Interventions
+app.include_router(apria_router, prefix="/api")  # Module APRIA - Inspections
 # disponibilites_router désactivé - routes server.py plus complètes (export PDF, blocage avancé)
 app.include_router(api_router)  # Routes principales (server.py)
 app.include_router(pwa_router, prefix="/api")
