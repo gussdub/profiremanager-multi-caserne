@@ -23,9 +23,11 @@ import httpx
 from routes.dependencies import (
     db,
     get_current_user,
+    get_super_admin,
     get_tenant_from_slug,
     clean_mongo_doc,
-    User
+    User,
+    SuperAdmin
 )
 
 router = APIRouter(tags=["Paie"])
