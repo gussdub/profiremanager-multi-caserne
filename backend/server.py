@@ -11010,6 +11010,7 @@ app.include_router(rondes_securite_router, prefix="/api")  # Module Rondes de S�
 app.include_router(parametres_disponibilites_router, prefix="/api")  # Module Paramètres Disponibilités
 app.include_router(generation_indisponibilites_router, prefix="/api")  # Module Génération Indisponibilités
 app.include_router(equipements_exports_router, prefix="/api")  # Module Équipements Exports/Imports
+app.include_router(users_router, prefix="/api")  # Module Users
 # disponibilites_router désactivé - routes server.py plus complètes (export PDF, blocage avancé)
 app.include_router(api_router)  # Routes principales (server.py)
 app.include_router(pwa_router, prefix="/api")
