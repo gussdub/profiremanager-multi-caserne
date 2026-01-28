@@ -62,6 +62,15 @@ from routes.dependencies import (
     User
 )
 
+# Import des helpers PDF partagés
+from utils.pdf_helpers import (
+    create_branded_pdf,
+    create_pdf_header_elements,
+    create_pdf_footer_text,
+    get_modern_pdf_styles,
+    BrandedDocTemplate
+)
+
 router = APIRouter(tags=["Prévention"])
 logger = logging.getLogger(__name__)
 
