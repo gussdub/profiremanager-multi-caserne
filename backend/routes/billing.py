@@ -208,7 +208,7 @@ async def create_stripe_customer_for_tenant(
         raise HTTPException(status_code=400, detail="Ce tenant est marqué comme gratuit")
     
     if tenant.get("stripe_customer_id"):
-        return {"message": "Client Stripe existe déjà", "customer_id": tenant["stripe_customer_id"]}
+        return {"message": "Client Stripe existe déjà", "customer_id": tenant.stripe_customer_id}
     
     try:
         customer = stripe.Customer.create(
@@ -281,7 +281,7 @@ async def create_subscription_for_tenant(
         
         # Paramètres de l'abonnement
         sub_params = {
-            "customer": tenant["stripe_customer_id"],
+            "customer": tenant.stripe_customer_id,
             "items": [{"price": price.id, "quantity": user_count}],
             "metadata": {
                 "tenant_id": tenant_id,
@@ -343,7 +343,7 @@ async def get_tenant_invoices(
     
     try:
         invoices = stripe.Invoice.list(
-            customer=tenant["stripe_customer_id"],
+            customer=tenant.stripe_customer_id,
             limit=limit
         )
         
@@ -615,7 +615,7 @@ async def get_my_invoices(
     
     try:
         invoices = stripe.Invoice.list(
-            customer=tenant["stripe_customer_id"],
+            customer=tenant.stripe_customer_id,
             limit=limit
         )
         
@@ -658,7 +658,7 @@ async def get_billing_portal(
     
     try:
         session = stripe.billing_portal.Session.create(
-            customer=tenant["stripe_customer_id"],
+            customer=tenant.stripe_customer_id,
             return_url=return_url
         )
         
