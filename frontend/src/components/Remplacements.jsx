@@ -996,7 +996,11 @@ const Remplacements = () => {
               ) : (
                 <div className="empty-state">
                   <h3>Aucune demande de remplacement</h3>
-                  <p>Les demandes apparaîtront ici.</p>
+                  <p>
+                    {filterStatut !== 'toutes' || filterPeriode !== 'toutes'
+                      ? 'Aucun résultat pour les filtres sélectionnés. Essayez de modifier vos critères.'
+                      : 'Les demandes apparaîtront ici.'}
+                  </p>
                 </div>
               )}
             </div>
