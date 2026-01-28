@@ -4,8 +4,8 @@ Dépendances partagées pour les routes API
 
 Ce fichier centralise les dépendances communes utilisées par tous les modules de routes :
 - Connexion MongoDB
-- Authentification (get_current_user)
-- Fonctions utilitaires (get_tenant_from_slug, clean_mongo_doc)
+- Authentification (get_current_user, get_super_admin)
+- Fonctions utilitaires (get_tenant_from_slug, clean_mongo_doc, password utils)
 - Modèles Pydantic de base
 
 Usage dans un module de routes:
@@ -22,6 +22,8 @@ import os
 import jwt
 import uuid
 import logging
+import re
+import bcrypt
 from functools import lru_cache
 
 logger = logging.getLogger(__name__)
