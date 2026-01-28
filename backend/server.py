@@ -9835,6 +9835,10 @@ class BatimentCreate(BaseModel):
     class Config:
         extra = "ignore"  # Ignorer les champs supplémentaires
 
+class BatimentPhotoUpload(BaseModel):
+    """Modèle pour l'upload de photo de bâtiment en base64"""
+    photo_base64: str  # Data URL base64 (ex: data:image/jpeg;base64,...)
+
 class SecteurGeographique(BaseModel):
     """Secteur géographique pour l'assignation des préventionnistes"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
