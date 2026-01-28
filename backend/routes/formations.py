@@ -104,6 +104,11 @@ class FormationUpdate(BaseModel):
     statut: Optional[str] = None
 
 
+# Alias pour compatibilité avec les sessions de formation
+SessionFormation = Formation
+SessionFormationCreate = FormationCreate
+
+
 class InscriptionFormation(BaseModel):
     """Inscription d'un pompier à une formation"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
