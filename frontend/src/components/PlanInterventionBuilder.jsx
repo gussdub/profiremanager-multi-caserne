@@ -717,7 +717,7 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
     <div style={{ 
       position: 'fixed',
       top: 0,
-      left: '65px',
+      left: '160px',
       right: 0,
       bottom: 0,
       backgroundColor: '#f9fafb',
