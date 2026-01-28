@@ -172,13 +172,12 @@ const PlanInterventionViewer = ({ planId, tenantSlug, onClose }) => {
     <div style={{
       position: 'fixed',
       top: 0,
-      left: 0,
+      left: '65px',
       right: 0,
       bottom: 0,
       background: 'rgba(0,0,0,0.8)',
       zIndex: 10000,
-      overflow: 'auto',
-      paddingLeft: '65px'
+      overflow: 'auto'
     }}>
       <div style={{
         minHeight: '100vh',
