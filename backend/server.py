@@ -23822,6 +23822,7 @@ app.include_router(equipes_garde_router, prefix="/api")  # Module Équipes de Ga
 app.include_router(inventaires_vehicules_router, prefix="/api")  # Module Inventaires Véhicules
 app.include_router(rondes_securite_router, prefix="/api")  # Module Rondes de Sécurité
 app.include_router(parametres_disponibilites_router, prefix="/api")  # Module Paramètres Disponibilités
+app.include_router(generation_indisponibilites_router, prefix="/api")  # Module Génération Indisponibilités
 # disponibilites_router désactivé - routes server.py plus complètes (export PDF, blocage avancé)
 app.include_router(api_router)  # Routes principales (server.py)
 app.include_router(pwa_router, prefix="/api")
