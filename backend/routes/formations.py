@@ -583,6 +583,13 @@ async def desinscrire_formation(
     )
     
     return {"message": "Désinscription réussie"}
+    
+    await db.formations.update_one(
+        {"id": formation_id, "tenant_id": tenant.id},
+        {"$set": {"places_restantes": formation["places_max"] - nb_inscrits}}
+    )
+    
+    return {"message": "Désinscription réussie"}
 
 
 @router.get("/{tenant_slug}/formations/{formation_id}/inscriptions")
