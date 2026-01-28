@@ -599,6 +599,21 @@ const Remplacements = () => {
             >
               🏖️ Congé
             </Button>
+          </div>
+
+          {/* Barre de filtres compacte */}
+          <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '0.75rem',
+            alignItems: 'center',
+            padding: '1rem',
+            backgroundColor: '#F9FAFB',
+            borderRadius: '12px',
+            border: '1px solid #E5E7EB',
+            marginTop: '1rem'
+          }}>
+            <span style={{ fontWeight: '600', color: '#374151', fontSize: '0.9rem' }}>🔍 Filtres:</span>
             
             {/* Filtre par statut */}
             <select 
@@ -607,17 +622,99 @@ const Remplacements = () => {
               style={{
                 padding: '0.5rem 1rem',
                 borderRadius: '8px',
-                border: '1px solid #E5E7EB',
-                cursor: 'pointer'
+                border: '1px solid #D1D5DB',
+                cursor: 'pointer',
+                backgroundColor: 'white',
+                fontSize: '0.9rem'
               }}
             >
-              <option value="tous">📋 Tous les statuts</option>
-              <option value="en_attente">⏳ En attente</option>
-              <option value="accepte">✅ Acceptées</option>
-              <option value="refuse">❌ Refusées</option>
+              <option value="non_traitees">⏳ Non traitées</option>
+              <option value="acceptees">✅ Acceptées</option>
+              <option value="refusees">❌ Refusées/Annulées</option>
+              <option value="toutes">📋 Toutes</option>
             </select>
 
-            {/* Toggle Vue Liste/Cartes */}
+            {/* Filtre par période */}
+            <select 
+              value={filterPeriode}
+              onChange={(e) => setFilterPeriode(e.target.value)}
+              style={{
+                padding: '0.5rem 1rem',
+                borderRadius: '8px',
+                border: '1px solid #D1D5DB',
+                cursor: 'pointer',
+                backgroundColor: 'white',
+                fontSize: '0.9rem'
+              }}
+            >
+              <option value="toutes">📅 Toutes périodes</option>
+              <option value="ce_mois">📅 Ce mois-ci</option>
+              <option value="mois_precedent">📅 Mois précédent</option>
+              <option value="3_mois">📅 3 derniers mois</option>
+              <option value="cette_annee">📅 Cette année</option>
+              <option value="personnalise">🔧 Période personnalisée</option>
+            </select>
+
+            {/* Dates personnalisées */}
+            {filterPeriode === 'personnalise' && (
+              <>
+                <input
+                  type="date"
+                  value={filterDateDebut}
+                  onChange={(e) => setFilterDateDebut(e.target.value)}
+                  style={{
+                    padding: '0.5rem',
+                    borderRadius: '8px',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '0.9rem'
+                  }}
+                  placeholder="Date début"
+                />
+                <span style={{ color: '#6B7280' }}>→</span>
+                <input
+                  type="date"
+                  value={filterDateFin}
+                  onChange={(e) => setFilterDateFin(e.target.value)}
+                  style={{
+                    padding: '0.5rem',
+                    borderRadius: '8px',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '0.9rem'
+                  }}
+                  placeholder="Date fin"
+                />
+              </>
+            )}
+
+            {/* Bouton réinitialiser */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={resetFilters}
+              style={{
+                padding: '0.5rem 0.75rem',
+                fontSize: '0.85rem',
+                borderRadius: '8px'
+              }}
+            >
+              🔄 Réinitialiser
+            </Button>
+
+            {/* Compteur de résultats */}
+            <span style={{ 
+              marginLeft: 'auto', 
+              fontSize: '0.85rem', 
+              color: '#6B7280',
+              backgroundColor: '#E5E7EB',
+              padding: '0.4rem 0.8rem',
+              borderRadius: '20px'
+            }}>
+              {activeTab === 'remplacements' ? filteredDemandes.length : filteredConges.length} résultat(s)
+            </span>
+          </div>
+
+          {/* Toggle Vue Liste/Cartes */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.75rem' }}>
             <div className="view-toggle">
               <button 
                 className={viewMode === 'liste' ? 'active' : ''}
@@ -637,7 +734,7 @@ const Remplacements = () => {
           </div>
 
           {/* Exports */}
-          <div style={{display: 'flex', gap: '1rem'}}>
+          <div style={{display: 'flex', gap: '1rem', marginTop: '1rem'}}>
             <Button variant="outline" onClick={() => { setExportType('pdf'); setShowExportModal(true); }}>
               📄 Export PDF
             </Button>
