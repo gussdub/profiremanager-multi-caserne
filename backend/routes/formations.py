@@ -20,14 +20,14 @@ Routes Inscriptions:
 
 Routes Mon Profil:
 - GET    /{tenant_slug}/formations/mon-taux-presence            - Taux présence utilisateur
-
-Note: Les rapports et exports PDF/Excel restent dans server.py pour l'instant.
 """
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
+from io import BytesIO
 import uuid
 import logging
 
