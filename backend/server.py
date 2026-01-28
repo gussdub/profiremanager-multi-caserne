@@ -56,6 +56,7 @@ from routes.apria import router as apria_router
 from routes.epi import router as epi_router
 from routes.competences_grades import router as competences_grades_router
 from routes.types_garde import router as types_garde_router
+from routes.dashboard_messages import router as dashboard_messages_router
 # from routes.disponibilites import router as disponibilites_router  # Désactivé - routes server.py plus complètes
 from io import BytesIO
 import base64
