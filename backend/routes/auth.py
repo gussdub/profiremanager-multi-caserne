@@ -169,23 +169,61 @@ async def tenant_login(tenant_slug: str, login: LoginRequest):
 @router.get("/{tenant_slug}/auth/me")
 async def get_current_user_info(
     tenant_slug: str,
-    current_user: User = Depends(get_current_user)
+    credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer())
 ):
-    """Récupère les informations de l'utilisateur connecté"""
+    """
+    Récupère les informations de l'utilisateur connecté.
+    Supporte les utilisateurs normaux ET les super-admins.
+    """
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Vérifier que l'utilisateur appartient bien à ce tenant
-    if current_user.tenant_id != tenant.id:
-        raise HTTPException(status_code=403, detail="Accès non autorisé à ce tenant")
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        is_super_admin = payload.get("is_super_admin", False)
+        token_tenant_id = payload.get("tenant_id")
+        
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Token invalide")
+        
+        # Vérifier que le token est pour ce tenant
+        if token_tenant_id != tenant.id:
+            raise HTTPException(status_code=403, detail="Token non valide pour ce tenant")
+        
+        if is_super_admin:
+            # C'est un super-admin connecté à un tenant
+            super_admin = await db.super_admins.find_one({"id": user_id})
+            if not super_admin:
+                raise HTTPException(status_code=401, detail="Super admin non trouvé")
+            
+            return {
+                "id": super_admin["id"],
+                "email": super_admin["email"],
+                "nom": super_admin.get("nom", "Super"),
+                "prenom": "Admin",
+                "role": "admin",
+                "tenant_id": tenant.id,
+                "is_super_admin": True
+            }
+        else:
+            # Utilisateur normal
+            user = await db.users.find_one({"id": user_id})
+            if not user:
+                raise HTTPException(status_code=401, detail="Utilisateur non trouvé")
+            
+            return {
+                "id": user["id"],
+                "email": user["email"],
+                "nom": user.get("nom", ""),
+                "prenom": user.get("prenom", ""),
+                "role": user.get("role", "employe"),
+                "tenant_id": user.get("tenant_id")
+            }
     
-    return {
-        "id": current_user.id,
-        "email": current_user.email,
-        "nom": current_user.nom,
-        "prenom": current_user.prenom,
-        "role": current_user.role,
-        "tenant_id": current_user.tenant_id
-    }
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expiré")
+    except jwt.InvalidTokenError as e:
+        raise HTTPException(status_code=401, detail=f"Token invalide: {str(e)}")
 
 
 @router.post("/{tenant_slug}/auth/forgot-password")
