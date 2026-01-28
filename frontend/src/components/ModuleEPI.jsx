@@ -1078,47 +1078,120 @@ const ModuleEPI = ({ user }) => {
         )}
       </div>
       
-      {/* Onglets */}
-      <div className="epi-tabs">
+      {/* Onglets stylisés */}
+      <div style={{ 
+        display: 'flex', 
+        flexWrap: 'wrap',
+        gap: '0.5rem', 
+        marginBottom: '1rem', 
+        borderBottom: '1px solid #e5e7eb', 
+        paddingBottom: '0.75rem' 
+      }}>
         <button 
-          className={activeTab === 'inventaire' ? 'active' : ''}
           onClick={() => setActiveTab('inventaire')}
           data-testid="tab-inventaire"
+          style={{
+            padding: '0.5rem 1rem',
+            background: activeTab === 'inventaire' ? '#3b82f6' : 'transparent',
+            color: activeTab === 'inventaire' ? 'white' : '#4b5563',
+            border: 'none',
+            borderRadius: '0.375rem',
+            cursor: 'pointer',
+            fontWeight: activeTab === 'inventaire' ? '600' : '400',
+            transition: 'all 0.2s',
+            fontSize: '0.9rem',
+            whiteSpace: 'nowrap'
+          }}
         >
           📦 Inventaire ({episFiltres.length}/{epis.length})
         </button>
         <button 
-          className={activeTab === 'demandes' ? 'active' : ''}
           onClick={() => setActiveTab('demandes')}
           data-testid="tab-demandes"
+          style={{
+            padding: '0.5rem 1rem',
+            background: activeTab === 'demandes' ? '#3b82f6' : 'transparent',
+            color: activeTab === 'demandes' ? 'white' : '#4b5563',
+            border: 'none',
+            borderRadius: '0.375rem',
+            cursor: 'pointer',
+            fontWeight: activeTab === 'demandes' ? '600' : '400',
+            transition: 'all 0.2s',
+            fontSize: '0.9rem',
+            whiteSpace: 'nowrap'
+          }}
         >
-          🔄 Demandes de remplacement
+          🔄 Demandes
         </button>
         <button 
-          className={activeTab === 'nettoyage' ? 'active' : ''}
           onClick={() => setActiveTab('nettoyage')}
           data-testid="tab-nettoyage"
+          style={{
+            padding: '0.5rem 1rem',
+            background: activeTab === 'nettoyage' ? '#3b82f6' : 'transparent',
+            color: activeTab === 'nettoyage' ? 'white' : '#4b5563',
+            border: 'none',
+            borderRadius: '0.375rem',
+            cursor: 'pointer',
+            fontWeight: activeTab === 'nettoyage' ? '600' : '400',
+            transition: 'all 0.2s',
+            fontSize: '0.9rem',
+            whiteSpace: 'nowrap'
+          }}
         >
-          🧼 Nettoyage & Entretien
+          🧼 Nettoyage
         </button>
         <button 
-          className={activeTab === 'reparations' ? 'active' : ''}
           onClick={() => setActiveTab('reparations')}
           data-testid="tab-reparations"
+          style={{
+            padding: '0.5rem 1rem',
+            background: activeTab === 'reparations' ? '#3b82f6' : 'transparent',
+            color: activeTab === 'reparations' ? 'white' : '#4b5563',
+            border: 'none',
+            borderRadius: '0.375rem',
+            cursor: 'pointer',
+            fontWeight: activeTab === 'reparations' ? '600' : '400',
+            transition: 'all 0.2s',
+            fontSize: '0.9rem',
+            whiteSpace: 'nowrap'
+          }}
         >
           🔧 Réparations
         </button>
         <button 
-          className={activeTab === 'isp' ? 'active' : ''}
           onClick={() => setActiveTab('isp')}
           data-testid="tab-isp"
+          style={{
+            padding: '0.5rem 1rem',
+            background: activeTab === 'isp' ? '#3b82f6' : 'transparent',
+            color: activeTab === 'isp' ? 'white' : '#4b5563',
+            border: 'none',
+            borderRadius: '0.375rem',
+            cursor: 'pointer',
+            fontWeight: activeTab === 'isp' ? '600' : '400',
+            transition: 'all 0.2s',
+            fontSize: '0.9rem',
+            whiteSpace: 'nowrap'
+          }}
         >
           🏢 Fournisseurs ISP ({isps.length})
         </button>
         <button 
-          className={activeTab === 'rapports' ? 'active' : ''}
           onClick={() => setActiveTab('rapports')}
           data-testid="tab-rapports"
+          style={{
+            padding: '0.5rem 1rem',
+            background: activeTab === 'rapports' ? '#3b82f6' : 'transparent',
+            color: activeTab === 'rapports' ? 'white' : '#4b5563',
+            border: 'none',
+            borderRadius: '0.375rem',
+            cursor: 'pointer',
+            fontWeight: activeTab === 'rapports' ? '600' : '400',
+            transition: 'all 0.2s',
+            fontSize: '0.9rem',
+            whiteSpace: 'nowrap'
+          }}
         >
           📊 Rapports
         </button>
