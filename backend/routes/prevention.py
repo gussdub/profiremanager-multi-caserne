@@ -4225,17 +4225,47 @@ async def export_plan_intervention_pdf(
     
     # Générer un nom de fichier avec le nom du bâtiment ou l'adresse
     print(f"DEBUG - batiment: {batiment}")
+    print(f"DEBUG - plan keys: {plan.keys()}")
+    
+    # Récupérer les informations pour le nom de fichier
     if batiment:
         print(f"DEBUG - batiment keys: {batiment.keys()}")
-        batiment_info = batiment.get('nom_etablissement') or batiment.get('nom') or batiment.get('nom_batiment') or batiment.get('adresse_civique') or batiment.get('adresse') or 'batiment'
+        # Priorité : adresse_civique > nom_etablissement > nom
+        adresse = batiment.get('adresse_civique') or batiment.get('adresse') or ''
+        nom_etab = batiment.get('nom_etablissement') or batiment.get('nom') or ''
+        ville = batiment.get('ville') or ''
+        
+        # Construire le nom du fichier : adresse ou nom + ville
+        if adresse:
+            batiment_info = f"{adresse}_{ville}" if ville else adresse
+        elif nom_etab:
+            batiment_info = f"{nom_etab}_{ville}" if ville else nom_etab
+        else:
+            batiment_info = 'batiment'
     else:
         batiment_info = 'batiment'
     
     print(f"DEBUG - batiment_info: {batiment_info}")
     
     # Nettoyer le nom pour le rendre compatible avec les noms de fichiers
-    batiment_safe = batiment_info.replace(' ', '_').replace('/', '-').replace('\\', '-').replace(',', '')
-    numero_plan = plan.get('numero_plan', plan_id[:8])
+    # Remplacer les espaces, caractères spéciaux, accents basiques
+    import unicodedata
+    batiment_safe = unicodedata.normalize('NFKD', batiment_info).encode('ASCII', 'ignore').decode('ASCII')
+    batiment_safe = batiment_safe.replace(' ', '_').replace('/', '-').replace('\\', '-').replace(',', '').replace("'", '').replace('"', '').lower()
+    
+    # Numéro du plan - si pas de numero_plan, générer un numéro basé sur la date de création
+    numero_plan = plan.get('numero_plan')
+    if not numero_plan:
+        # Essayer de générer un numéro lisible
+        created_at = plan.get('created_at')
+        if created_at:
+            if isinstance(created_at, str):
+                numero_plan = created_at[:10].replace('-', '')
+            else:
+                numero_plan = created_at.strftime('%Y%m%d')
+        else:
+            numero_plan = 'plan'
+    
     filename = f"plan_intervention_{numero_plan}_{batiment_safe}.pdf"
     
     print(f"DEBUG - filename généré: {filename}")
