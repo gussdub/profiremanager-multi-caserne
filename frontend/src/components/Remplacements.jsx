@@ -1183,9 +1183,11 @@ const Remplacements = () => {
                 <div className="empty-state">
                   <h3>Aucune demande de congé</h3>
                   <p>
-                    {!['employe', 'pompier'].includes(user.role) 
-                      ? 'Les demandes de congé des employés apparaîtront ici pour approbation.' 
-                      : 'Vos demandes de congé apparaîtront ici.'}
+                    {filterStatut !== 'toutes' || filterPeriode !== 'toutes'
+                      ? 'Aucun résultat pour les filtres sélectionnés. Essayez de modifier vos critères.'
+                      : (!['employe', 'pompier'].includes(user.role) 
+                        ? 'Les demandes de congé des employés apparaîtront ici pour approbation.' 
+                        : 'Vos demandes de congé apparaîtront ici.')}
                   </p>
                   {!['employe', 'pompier'].includes(user.role) && (
                     <div className="management-tips">
