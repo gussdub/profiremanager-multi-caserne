@@ -29169,6 +29169,7 @@ app.include_router(apria_router, prefix="/api")  # Module APRIA - Inspections
 app.include_router(epi_router, prefix="/api")  # Module EPI - Équipements protection
 app.include_router(competences_grades_router, prefix="/api")  # Module Compétences & Grades
 app.include_router(types_garde_router, prefix="/api")  # Module Types de Garde
+app.include_router(dashboard_messages_router, prefix="/api")  # Module Messages Dashboard
 # disponibilites_router désactivé - routes server.py plus complètes (export PDF, blocage avancé)
 app.include_router(api_router)  # Routes principales (server.py)
 app.include_router(pwa_router, prefix="/api")
