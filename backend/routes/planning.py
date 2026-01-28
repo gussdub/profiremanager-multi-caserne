@@ -340,13 +340,24 @@ async def get_rapport_heures(
         
         if user_id not in rapport:
             user = users_dict.get(user_id, {})
+            nom = user.get("nom", "")
+            prenom = user.get("prenom", "")
+            type_emploi = user.get("type_emploi", "")
+            
+            # Déterminer si interne ou externe
+            is_interne = type_emploi in ["Temps plein", "Permanent", "temps_plein", "permanent"]
+            
             rapport[user_id] = {
                 "user_id": user_id,
-                "nom": user.get("nom", ""),
-                "prenom": user.get("prenom", ""),
+                "nom": nom,
+                "prenom": prenom,
+                "nom_complet": f"{prenom} {nom}".strip(),
                 "grade": user.get("grade", ""),
-                "type_emploi": user.get("type_emploi", ""),
+                "type_emploi": type_emploi,
+                "is_interne": is_interne,
                 "total_heures": 0,
+                "heures_internes": 0,
+                "heures_externes": 0,
                 "nombre_gardes": 0,
                 "detail_par_type": {}
             }
@@ -356,6 +367,12 @@ async def get_rapport_heures(
             duree = tg.get("duree_heures", 0)
             rapport[user_id]["total_heures"] += duree
             rapport[user_id]["nombre_gardes"] += 1
+            
+            # Répartir entre heures internes et externes
+            if rapport[user_id]["is_interne"]:
+                rapport[user_id]["heures_internes"] += duree
+            else:
+                rapport[user_id]["heures_externes"] += duree
             
             if type_garde_id not in rapport[user_id]["detail_par_type"]:
                 rapport[user_id]["detail_par_type"][type_garde_id] = {
