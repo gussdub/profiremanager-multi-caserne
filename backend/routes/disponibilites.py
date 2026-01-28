@@ -56,6 +56,42 @@ class DisponibiliteCreate(BaseModel):
     commentaire: Optional[str] = None
 
 
+class DisponibiliteReinitialiser(BaseModel):
+    """Modèle pour la réinitialisation des disponibilités"""
+    user_id: str
+    periode: str  # "semaine", "mois", "annee", "personnalisee"
+    mode: str  # "tout" ou "generees_seulement"
+    type_entree: str = "les_deux"  # "disponibilites", "indisponibilites", "les_deux"
+    date_debut: Optional[str] = None
+    date_fin: Optional[str] = None
+
+
+class ConflictResolution(BaseModel):
+    """Historique des résolutions de conflits disponibilité/indisponibilité"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    user_id: str
+    affected_user_id: str
+    action: str
+    type_created: str
+    conflicts_deleted: List[Dict[str, Any]] = []
+    created_item: Optional[Dict[str, Any]] = None
+    resolved_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class ConflictDetail(BaseModel):
+    """Détail d'un conflit"""
+    type: str
+    date: str
+    id: str
+
+
+class DisponibiliteImportCSV(BaseModel):
+    """Modèle pour l'import CSV"""
+    csv_content: str
+    mois: str
+
+
 # ==================== ROUTES ====================
 
 @router.get("/{tenant_slug}/disponibilites/statut-blocage")
