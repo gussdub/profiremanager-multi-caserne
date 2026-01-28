@@ -76,6 +76,67 @@ class UserUpdate(BaseModel):
     tailles_epi: Optional[Dict[str, str]] = None
     mot_de_passe: Optional[str] = None
 
+class ProfileUpdate(BaseModel):
+    prenom: str
+    nom: str
+    email: str
+    telephone: str = ""
+    adresse: str = ""
+    contact_urgence: str = ""
+    heures_max_semaine: int = 25
+    tailles_epi: Optional[Dict[str, str]] = None
+
+class PhotoProfilUpload(BaseModel):
+    photo_base64: str
+
+class PasswordUpdate(BaseModel):
+    current_password: str
+    new_password: str
+
+class AccessUpdate(BaseModel):
+    role: str
+
+
+# Helper function pour redimensionner les images
+from io import BytesIO
+from PIL import Image as PILImage
+
+def resize_and_compress_image(base64_string: str, max_size: int = 200) -> str:
+    """Redimensionne et compresse une image base64"""
+    try:
+        if ',' in base64_string:
+            base64_string = base64_string.split(',')[1]
+        
+        image_data = base64.b64decode(base64_string)
+        
+        if len(image_data) > 10 * 1024 * 1024:
+            raise ValueError("Image trop volumineuse (max 10MB)")
+        
+        img = PILImage.open(BytesIO(image_data))
+        
+        if img.mode in ('RGBA', 'P'):
+            img = img.convert('RGB')
+        
+        width, height = img.size
+        min_dim = min(width, height)
+        
+        left = (width - min_dim) // 2
+        top = (height - min_dim) // 2
+        right = left + min_dim
+        bottom = top + min_dim
+        img = img.crop((left, top, right, bottom))
+        
+        img = img.resize((max_size, max_size), PILImage.Resampling.LANCZOS)
+        
+        buffer = BytesIO()
+        img.save(buffer, format='JPEG', quality=85, optimize=True)
+        buffer.seek(0)
+        
+        return f"data:image/jpeg;base64,{base64.b64encode(buffer.read()).decode()}"
+    except Exception as e:
+        logger.error(f"Erreur resize image: {e}")
+        raise ValueError(f"Erreur traitement image: {str(e)}")
+
 
 # ==================== ROUTES MIGRÉES DE SERVER.PY ====================
 
