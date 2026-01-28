@@ -184,6 +184,7 @@ async def get_current_user(
 ) -> User:
     """
     Dépendance FastAPI pour récupérer l'utilisateur courant depuis le token JWT.
+    Supporte les utilisateurs normaux ET les super-admins connectés à un tenant.
     Lève une HTTPException 401 si le token est invalide.
     """
     token = credentials.credentials
@@ -191,11 +192,30 @@ async def get_current_user(
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         user_id = payload.get("sub") or payload.get("user_id")
+        is_super_admin = payload.get("is_super_admin", False)
+        tenant_id = payload.get("tenant_id")
         
         if not user_id:
             raise HTTPException(status_code=401, detail="Token invalide")
         
-        # Récupérer l'utilisateur depuis la DB
+        if is_super_admin:
+            # Super-admin connecté à un tenant - créer un User virtuel
+            super_admin_doc = await db.super_admins.find_one({"id": user_id})
+            if not super_admin_doc:
+                raise HTTPException(status_code=401, detail="Super admin non trouvé")
+            
+            # Retourner un User avec les infos du super-admin
+            return User(
+                id=super_admin_doc["id"],
+                email=super_admin_doc["email"],
+                nom=super_admin_doc.get("nom", "Super"),
+                prenom="Admin",
+                role="admin",
+                tenant_id=tenant_id or "",
+                statut="Actif"
+            )
+        
+        # Utilisateur normal - récupérer depuis la DB
         user_doc = await db.users.find_one({"id": user_id})
         
         if not user_doc:
