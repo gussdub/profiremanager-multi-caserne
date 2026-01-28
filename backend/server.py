@@ -48,7 +48,6 @@ from routes.prevention import router as prevention_router
 from routes.planning import router as planning_router
 from routes.sftp import router as sftp_router
 from routes.billing import router as billing_router
-from routes.centrales_911 import router as centrales_911_router
 from routes.admin import router as admin_router
 # from routes.disponibilites import router as disponibilites_router  # Désactivé - routes server.py plus complètes
 from io import BytesIO
