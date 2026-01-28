@@ -9385,35 +9385,9 @@ class Notification(BaseModel):
     date_creation: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     date_lecture: Optional[str] = None
 
-class NotificationRemplacement(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    tenant_id: str
-    demande_remplacement_id: str
-    destinataire_id: str
-    message: str
-    type_notification: str = "remplacement_disponible"  # remplacement_disponible, approbation_requise
-    statut: str = "envoye"  # envoye, lu, accepte, refuse
-    date_envoi: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    date_reponse: Optional[datetime] = None
-    ordre_priorite: Optional[int] = None  # Pour le mode séquentiel
-
-class ParametresRemplacements(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    tenant_id: str
-    mode_notification: str = "simultane"  # simultane, sequentiel, groupe_sequentiel
-    taille_groupe: int = 3  # Pour mode groupe_sequentiel
-    delai_attente_heures: int = 24  # Délai avant de passer au suivant
-    max_contacts: int = 5
-    priorite_grade: bool = True
-    priorite_competences: bool = True
-    # Gestion des heures supplémentaires
-    activer_gestion_heures_sup: bool = False
-    seuil_max_heures: int = 40  # Nombre d'heures maximum
-    periode_calcul_heures: str = "semaine"  # semaine, mois, personnalise
-    jours_periode_personnalisee: int = 7  # Nombre de jours si période personnalisée
-    # Regroupement des heures
-    activer_regroupement_heures: bool = False
-    duree_max_regroupement: int = 24  # Durée maximale d'une garde regroupée en heures
+# ==================== MODÈLES REMPLACEMENTS MIGRÉS VERS routes/remplacements.py ====================
+# NotificationRemplacement, ParametresRemplacements déplacés vers routes/remplacements.py
+# ============================================================================
 
 class ParametresValidationPlanning(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
