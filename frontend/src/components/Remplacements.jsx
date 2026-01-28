@@ -739,7 +739,22 @@ const Remplacements = () => {
                         <h3>{getTypeGardeName(demande.type_garde_id)}</h3>
                         <span className="demande-date">{parseDateLocal(demande.date).toLocaleDateString('fr-FR')}</span>
                       </div>
-                      <div className="demande-status">
+                      <div className="demande-status" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        {/* Badge de priorité */}
+                        <span 
+                          className="priorite-badge" 
+                          style={{ 
+                            backgroundColor: getPrioriteColor(demande.priorite || 'normal'),
+                            color: 'white',
+                            padding: '4px 10px',
+                            borderRadius: '12px',
+                            fontSize: '12px',
+                            fontWeight: '600'
+                          }}
+                        >
+                          {demande.priorite === 'urgent' ? '🚨 Urgent' : '📋 Normal'}
+                        </span>
+                        {/* Badge de statut */}
                         <span 
                           className="status-badge" 
                           style={{ backgroundColor: getStatutColor(demande.statut) }}
