@@ -99,6 +99,21 @@ class Tenant(BaseModel):
         extra = "allow"
 
 
+class Notification(BaseModel):
+    """Modèle notification pour alertes utilisateurs"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    destinataire_id: str
+    type: str  # remplacement_disponible, conge_approuve, conge_refuse, conge_demande, planning_assigne
+    titre: str
+    message: str
+    lien: Optional[str] = None  # Lien vers la page concernée
+    statut: str = "non_lu"  # non_lu, lu
+    data: Optional[Dict[str, Any]] = {}  # Données supplémentaires (demande_id, etc.)
+    date_creation: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    date_lecture: Optional[str] = None
+
+
 # ==================== CACHE TENANT ====================
 
 # Cache simple pour les tenants (évite les requêtes répétées)
