@@ -2005,9 +2005,9 @@ const Planning = () => {
               const dayName = date.toLocaleDateString('fr-FR', { weekday: 'short', timeZone: 'UTC' });
               const dayIndex = date.getUTCDay() === 0 ? 6 : date.getUTCDay() - 1; // Lundi = 0
               
-              const gardesJour = typesGarde.filter(typeGarde => 
-                shouldShowTypeGardeForDay(typeGarde, dayIndex)
-              );
+              const gardesJour = typesGarde
+                .filter(typeGarde => shouldShowTypeGardeForDay(typeGarde, dayIndex))
+                .sort((a, b) => (a.heure_debut || '00:00').localeCompare(b.heure_debut || '23:59'));
 
               return (
                 <div key={date.toISOString().split('T')[0]} className="jour-mois">
