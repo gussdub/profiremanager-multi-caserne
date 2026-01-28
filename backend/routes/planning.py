@@ -191,6 +191,20 @@ async def create_assignation(
         updated = await db.assignations.find_one({"id": existing["id"]}, {"_id": 0})
         return updated
     
+    # Compter le nombre d'assignations actuelles pour cette garde/date
+    current_count = await db.assignations.count_documents({
+        "tenant_id": tenant.id,
+        "date": assignation_data.date,
+        "type_garde_id": assignation_data.type_garde_id
+    })
+    
+    personnel_requis = type_garde.get("personnel_requis", 1)
+    warning_message = None
+    
+    # Vérifier si on va dépasser le personnel requis
+    if current_count >= personnel_requis:
+        warning_message = f"Cette garde nécessite {personnel_requis} personne(s), vous en avez maintenant {current_count + 1}."
+    
     # Créer une nouvelle assignation (permet plusieurs personnes sur le même créneau)
     assignation = Assignation(
         tenant_id=tenant.id,
@@ -213,7 +227,12 @@ async def create_assignation(
         metadata={"assignation_id": assignation.id, "date": assignation_data.date}
     )
     
-    return clean_mongo_doc(assignation.dict())
+    # Retourner l'assignation avec un éventuel avertissement
+    result = clean_mongo_doc(assignation.dict())
+    if warning_message:
+        result["warning"] = warning_message
+    
+    return result
 
 
 @router.delete("/{tenant_slug}/planning/assignation/{assignation_id}")
