@@ -29018,6 +29018,7 @@ app.include_router(competences_grades_router, prefix="/api")  # Module Compéten
 app.include_router(types_garde_router, prefix="/api")  # Module Types de Garde
 app.include_router(dashboard_messages_router, prefix="/api")  # Module Messages Dashboard
 app.include_router(conges_router, prefix="/api")  # Module Demandes de Congé
+app.include_router(notifications_router, prefix="/api")  # Module Notifications (lecture)
 # disponibilites_router désactivé - routes server.py plus complètes (export PDF, blocage avancé)
 app.include_router(api_router)  # Routes principales (server.py)
 app.include_router(pwa_router, prefix="/api")
