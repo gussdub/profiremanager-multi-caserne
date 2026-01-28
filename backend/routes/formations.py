@@ -1558,7 +1558,7 @@ async def inscrire_formation(tenant_slug: str, session_id: str, current_user: Us
 
 # DELETE sessions-formation/{session_id}/desinscription
 @router.delete("/{tenant_slug}/sessions-formation/{session_id}/desinscription")
-async def desinscrire_formation(tenant_slug: str, session_id: str, current_user: User = Depends(get_current_user)):
+async def desinscrire_session_formation(tenant_slug: str, session_id: str, current_user: User = Depends(get_current_user)):
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
     
