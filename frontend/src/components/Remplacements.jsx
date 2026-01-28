@@ -1085,8 +1085,8 @@ const Remplacements = () => {
 
             {/* Liste des demandes de congé */}
             <div className="conges-list">
-              {mesConges.length > 0 ? (
-                mesConges.map(conge => (
+              {filteredConges.length > 0 ? (
+                filteredConges.map(conge => (
                   <div key={conge.id} className="conge-card" data-testid={`conge-${conge.id}`}>
                     <div className="conge-header">
                       <div className="conge-type">
