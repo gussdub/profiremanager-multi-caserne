@@ -39,6 +39,10 @@ class ResetPasswordRequest(BaseModel):
     token: str
     new_password: str
 
+class SuperAdminLogin(BaseModel):
+    email: str
+    mot_de_passe: str
+
 
 # ==================== HELPERS ====================
 
