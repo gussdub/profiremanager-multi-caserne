@@ -2439,10 +2439,13 @@ async def process_attribution_auto_async(
                 progress=progress  # Passer l'objet progress pour mises à jour granulaires
             )
             
-            week_elapsed = time.time() - week_start_time
-            logging.info(f"⏱️ [PERF] Semaine {week_number} traitée en {week_elapsed:.2f}s - {assignations_cette_semaine} assignations")
+            # Compter le nombre d'assignations créées (la fonction retourne une liste)
+            nb_assignations_semaine = len(assignations_cette_semaine) if isinstance(assignations_cette_semaine, list) else assignations_cette_semaine
             
-            total_assignations_creees += assignations_cette_semaine
+            week_elapsed = time.time() - week_start_time
+            logging.info(f"⏱️ [PERF] Semaine {week_number} traitée en {week_elapsed:.2f}s - {nb_assignations_semaine} assignations")
+            
+            total_assignations_creees += nb_assignations_semaine
             progress.assignations_creees = total_assignations_creees
             
             # Passer à la semaine suivante
