@@ -417,23 +417,88 @@ const Remplacements = () => {
   const tauxSucces = totalDemandes > 0 ? Math.round((remplacementsTrouves / totalDemandes) * 100) : 0;
   const congesDuMois = mesConges.length;
 
-  // Filtrer les demandes selon le filtre de statut
-  const getFilteredDemandes = () => {
-    let filtered = mesDemandes;
+  // Fonction pour obtenir les dates de la période sélectionnée
+  const getPeriodeDates = () => {
+    const now = new Date();
+    let dateDebut = null;
+    let dateFin = null;
+
+    switch (filterPeriode) {
+      case 'ce_mois':
+        dateDebut = new Date(now.getFullYear(), now.getMonth(), 1);
+        dateFin = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        break;
+      case 'mois_precedent':
+        dateDebut = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        dateFin = new Date(now.getFullYear(), now.getMonth(), 0);
+        break;
+      case '3_mois':
+        dateDebut = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+        dateFin = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        break;
+      case 'cette_annee':
+        dateDebut = new Date(now.getFullYear(), 0, 1);
+        dateFin = new Date(now.getFullYear(), 11, 31);
+        break;
+      case 'personnalise':
+        if (filterDateDebut) dateDebut = new Date(filterDateDebut);
+        if (filterDateFin) dateFin = new Date(filterDateFin);
+        break;
+      default: // 'toutes'
+        return { dateDebut: null, dateFin: null };
+    }
+    return { dateDebut, dateFin };
+  };
+
+  // Fonction de filtrage générique (pour remplacements et congés)
+  const filterByStatutAndPeriode = (items, dateField = 'date') => {
+    let filtered = [...items];
     
-    if (filterStatut !== 'tous') {
-      const statutMap = {
-        'en_attente': 'en_cours',
-        'accepte': 'approuve',
-        'refuse': 'refuse'
-      };
-      filtered = filtered.filter(d => d.statut === statutMap[filterStatut]);
+    // Filtre par statut
+    if (filterStatut !== 'toutes') {
+      if (filterStatut === 'non_traitees') {
+        filtered = filtered.filter(d => ['en_attente', 'en_cours'].includes(d.statut));
+      } else if (filterStatut === 'acceptees') {
+        filtered = filtered.filter(d => ['accepte', 'approuve', 'approuve_manuellement'].includes(d.statut));
+      } else if (filterStatut === 'refusees') {
+        filtered = filtered.filter(d => ['refuse', 'refusee', 'annulee', 'expiree'].includes(d.statut));
+      }
+    }
+    
+    // Filtre par période
+    const { dateDebut, dateFin } = getPeriodeDates();
+    if (dateDebut || dateFin) {
+      filtered = filtered.filter(d => {
+        const itemDate = new Date(d[dateField] || d.created_at);
+        if (dateDebut && itemDate < dateDebut) return false;
+        if (dateFin && itemDate > dateFin) return false;
+        return true;
+      });
     }
     
     return filtered;
   };
 
+  // Filtrer les demandes de remplacement
+  const getFilteredDemandes = () => {
+    return filterByStatutAndPeriode(mesDemandes, 'date');
+  };
+
+  // Filtrer les demandes de congés
+  const getFilteredConges = () => {
+    return filterByStatutAndPeriode(mesConges, 'date_debut');
+  };
+
+  // Réinitialiser les filtres
+  const resetFilters = () => {
+    setFilterStatut('non_traitees');
+    setFilterPeriode('toutes');
+    setFilterDateDebut('');
+    setFilterDateFin('');
+  };
+
   const filteredDemandes = getFilteredDemandes();
+  const filteredConges = getFilteredConges();
 
   return (
     <div className="remplacements-refonte">
