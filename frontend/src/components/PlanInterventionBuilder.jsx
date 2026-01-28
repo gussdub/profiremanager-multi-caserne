@@ -800,9 +800,10 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
 
       {/* Layout 3 colonnes */}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        {/* Colonne gauche - Palette de symboles (300px) */}
+        {/* Colonne gauche - Palette de symboles (250px) */}
         <div style={{ 
-          width: '300px', 
+          width: '250px', 
+          minWidth: '250px',
           backgroundColor: '#fff', 
           borderRight: '1px solid #e5e7eb',
           overflowY: 'auto',
