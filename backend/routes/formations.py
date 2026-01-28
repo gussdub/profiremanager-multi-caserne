@@ -547,7 +547,7 @@ async def desinscrire_formation(
                 {"id": formation_id, "tenant_id": tenant.id},
                 {"$pull": {"participants": current_user.id}}
             )
-            logger.info(f"Utilisateur retiré de la liste des participants de la formation")
+            logger.info("Utilisateur retiré de la liste des participants de la formation")
             return {"message": "Désinscription réussie"}
         
         logger.error(f"Utilisateur {current_user.id} non inscrit à formation {formation_id}")
