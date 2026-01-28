@@ -371,10 +371,28 @@ async def get_rapport_heures(
     rapport_list = list(rapport.values())
     rapport_list.sort(key=lambda x: x["total_heures"], reverse=True)
     
+    # Calculer les statistiques
+    total_heures_planifiees = sum([r["total_heures"] for r in rapport_list])
+    nb_employes = len(rapport_list)
+    
+    # Séparer internes et externes
+    heures_internes = sum([r["total_heures"] for r in rapport_list if r.get("type_emploi") == "Temps plein" or r.get("type_emploi") == "Permanent"])
+    heures_externes = sum([r["total_heures"] for r in rapport_list if r.get("type_emploi") not in ["Temps plein", "Permanent", ""]])
+    nb_internes = len([r for r in rapport_list if r.get("type_emploi") == "Temps plein" or r.get("type_emploi") == "Permanent"])
+    nb_externes = len([r for r in rapport_list if r.get("type_emploi") not in ["Temps plein", "Permanent", ""]])
+    
     return {
         "mois": mois,
         "total_assignations": len(assignations),
-        "employes": rapport_list
+        "employes": rapport_list,
+        "statistiques": {
+            "total_heures_planifiees": round(total_heures_planifiees, 2),
+            "moyenne_heures_internes": round(heures_internes / nb_internes, 2) if nb_internes > 0 else 0,
+            "moyenne_heures_externes": round(heures_externes / nb_externes, 2) if nb_externes > 0 else 0,
+            "nb_employes": nb_employes,
+            "nb_internes": nb_internes,
+            "nb_externes": nb_externes
+        }
     }
 
 
