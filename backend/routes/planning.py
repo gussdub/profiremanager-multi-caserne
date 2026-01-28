@@ -2881,11 +2881,88 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         
         logging.info(f"📊 [ÉQUITÉ] Heures calculées pour {len(users)} utilisateurs sur la période")
         
-        # Initialiser la liste des nouvelles assignations
+        # ==================== RÉCUPÉRATION DES PARAMÈTRES ====================
+        # Paramètres des niveaux d'attribution
+        niveaux_actifs = {
+            "niveau_2": params_tenant.get("niveau_2_actif", True),  # Temps partiel DISPONIBLES
+            "niveau_3": params_tenant.get("niveau_3_actif", True),  # Temps partiel STAND-BY
+            "niveau_4": params_tenant.get("niveau_4_actif", True),  # Temps plein INCOMPLETS
+            "niveau_5": params_tenant.get("niveau_5_actif", True)   # Temps plein COMPLETS (heures sup)
+        }
+        autoriser_heures_sup = params_tenant.get("autoriser_heures_supplementaires", False)
+        
+        # Si heures sup non autorisées, désactiver niveau 5
+        if not autoriser_heures_sup:
+            niveaux_actifs["niveau_5"] = False
+        
+        logging.info(f"📋 Niveaux actifs: {niveaux_actifs}, Heures sup: {autoriser_heures_sup}")
+        
+        # Paramètres de paie pour seuil hebdomadaire temps plein
+        params_paie = await db.parametres_paie.find_one({"tenant_id": tenant.id})
+        seuil_hebdo_temps_plein = 40  # Défaut
+        if params_paie:
+            seuil_hebdo_temps_plein = params_paie.get("seuil_hebdomadaire", 40)
+        
+        logging.info(f"📋 Seuil hebdo temps plein: {seuil_hebdo_temps_plein}h")
+        
+        # ==================== PRÉPARATION DES DONNÉES UTILISATEURS ====================
+        # Créer un dictionnaire pour accès rapide aux infos utilisateurs
+        users_map = {u["id"]: u for u in users}
+        
+        # Calculer les heures hebdomadaires pour chaque utilisateur
+        # (pour déterminer si temps plein incomplet ou complet)
+        def get_heures_semaine(user_id, date_str, type_garde_externe=False):
+            """Calcule les heures travaillées dans la semaine contenant date_str"""
+            date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+            # Trouver le lundi de cette semaine
+            lundi = date_obj - timedelta(days=date_obj.weekday())
+            dimanche = lundi + timedelta(days=6)
+            
+            heures = 0
+            for a in existing_assignations:
+                if a.get("user_id") != user_id:
+                    continue
+                try:
+                    a_date = datetime.strptime(a.get("date", ""), "%Y-%m-%d")
+                    if lundi <= a_date <= dimanche:
+                        tg = next((t for t in types_garde if t["id"] == a.get("type_garde_id")), None)
+                        if tg:
+                            is_externe = tg.get("est_garde_externe", False)
+                            if type_garde_externe == is_externe:  # Compter séparément
+                                heures += tg.get("duree_heures", 8)
+                except:
+                    pass
+            return heures
+        
+        def get_heures_max_semaine(user):
+            """Retourne le max d'heures par semaine pour cet utilisateur"""
+            type_emploi = user.get("type_emploi", "temps_plein")
+            if type_emploi in ["temps_partiel", "temporaire"]:
+                return user.get("heures_max_semaine", 20)
+            else:
+                return seuil_hebdo_temps_plein
+        
+        def trier_candidats_equite_anciennete(candidats, type_garde_externe=False):
+            """Trie les candidats par équité (moins d'heures) puis ancienneté (plus ancien)"""
+            def sort_key(user):
+                user_id = user["id"]
+                # Heures selon le type de garde (interne ou externe)
+                if type_garde_externe:
+                    heures = user_monthly_hours_externes.get(user_id, 0)
+                else:
+                    heures = user_monthly_hours.get(user_id, 0) - user_monthly_hours_externes.get(user_id, 0)
+                
+                # Ancienneté (date_embauche)
+                date_embauche = user.get("date_embauche", "2099-12-31")
+                
+                return (heures, date_embauche)
+            
+            return sorted(candidats, key=sort_key)
+        
+        # ==================== INITIALISATION ====================
         nouvelles_assignations = []
         
-        # ==================== ATTRIBUTION AUTOMATIQUE (basée sur disponibilités) ====================
-        # Pour chaque jour de la période
+        # ==================== ATTRIBUTION AUTOMATIQUE À 5 NIVEAUX ====================
         current_date = datetime.strptime(semaine_debut, "%Y-%m-%d")
         end_date = datetime.strptime(semaine_fin, "%Y-%m-%d")
         
@@ -2896,98 +2973,140 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
             if progress:
                 progress.current_step = f"📅 Traitement du {date_str}..."
             
-            # Pour chaque type de garde
-            for type_garde in types_garde:
+            # N0: Priorisation des types de garde (par priorité intrinsèque)
+            types_garde_tries = sorted(types_garde, key=lambda t: t.get("priorite", 99))
+            
+            for type_garde in types_garde_tries:
                 type_garde_id = type_garde["id"]
                 type_garde_nom = type_garde.get("nom", "Garde")
                 personnel_requis = type_garde.get("personnel_requis", 1)
-                heure_debut = type_garde.get("heure_debut", "00:00")
-                heure_fin = type_garde.get("heure_fin", "23:59")
+                est_externe = type_garde.get("est_garde_externe", False)
+                duree_garde = type_garde.get("duree_heures", 8)
                 
                 # Vérifier si ce type de garde s'applique ce jour
                 jours_app = type_garde.get("jours_application", [])
                 if jours_app and len(jours_app) > 0 and day_name not in jours_app:
                     continue
                 
-                # Compter les assignations existantes pour cette garde ce jour
-                existing_count = 0
-                for a in existing_assignations:
-                    if a.get("date") == date_str and a.get("type_garde_id") == type_garde_id:
-                        existing_count += 1
+                # N1: Compter les assignations MANUELLES existantes (ne jamais écraser)
+                existing_count = sum(
+                    1 for a in existing_assignations
+                    if a.get("date") == date_str and a.get("type_garde_id") == type_garde_id
+                )
                 
                 places_restantes = personnel_requis - existing_count
                 
                 if places_restantes <= 0:
-                    continue  # Garde déjà complète
+                    continue  # Garde complète
                 
-                # Trouver les utilisateurs disponibles pour cette garde ce jour
-                candidats = []
-                for user in users:
-                    user_id = user["id"]
-                    
-                    # Vérifier si l'utilisateur est déjà assigné ce jour
-                    already_assigned = any(
-                        a.get("date") == date_str and a.get("user_id") == user_id 
-                        for a in existing_assignations
-                    )
-                    if already_assigned:
-                        continue
-                    
-                    # Vérifier les disponibilités de l'utilisateur
-                    user_dispos = dispos_lookup.get(user_id, {}).get(date_str, {}).get(type_garde_id, [])
-                    
-                    if not user_dispos:
-                        continue  # Pas de disponibilité pour cette garde
-                    
-                    # Vérifier que l'utilisateur a une dispo qui couvre les heures de la garde
-                    has_valid_dispo = False
-                    for dispo in user_dispos:
-                        dispo_debut = dispo.get("heure_debut", "00:00")
-                        dispo_fin = dispo.get("heure_fin", "23:59")
-                        
-                        # Simplification: on considère la dispo valide si elle existe pour ce type de garde
-                        has_valid_dispo = True
+                # Utilisateurs déjà assignés ce jour (pour éviter doubles assignations)
+                users_assignes_ce_jour = set(
+                    a.get("user_id") for a in existing_assignations
+                    if a.get("date") == date_str
+                )
+                
+                # Récupérer les disponibilités pour ce jour/type_garde
+                def get_user_dispos(user_id):
+                    return dispos_lookup.get(user_id, {}).get(date_str, {}).get(type_garde_id, [])
+                
+                # Récupérer les indisponibilités pour ce jour
+                def has_indisponibilite(user_id):
+                    user_indispos = indispos_lookup.get(user_id, {})
+                    return date_str in user_indispos
+                
+                # ==================== NIVEAUX 2-5 ====================
+                assignes_cette_garde = 0
+                
+                for niveau in [2, 3, 4, 5]:
+                    if assignes_cette_garde >= places_restantes:
                         break
                     
-                    if has_valid_dispo:
-                        # Calculer un score basé sur les heures déjà travaillées (équité)
-                        heures_mois = user_monthly_hours.get(user_id, 0)
-                        candidats.append({
-                            "user": user,
-                            "heures_mois": heures_mois
-                        })
-                
-                # Trier les candidats par heures travaillées (moins d'heures = priorité)
-                candidats.sort(key=lambda c: c["heures_mois"])
-                
-                # Assigner les candidats
-                for i, candidat in enumerate(candidats[:places_restantes]):
-                    user = candidat["user"]
+                    if not niveaux_actifs.get(f"niveau_{niveau}", True):
+                        continue  # Niveau désactivé
                     
-                    # Créer l'assignation
-                    assignation = {
-                        "id": str(uuid.uuid4()),
-                        "tenant_id": tenant.id,
-                        "user_id": user["id"],
-                        "type_garde_id": type_garde_id,
-                        "date": date_str,
-                        "statut": "assigne",
-                        "auto_attribue": True,
-                        "created_at": datetime.now(timezone.utc).isoformat()
-                    }
+                    candidats = []
                     
-                    # Insérer dans la DB
-                    await db.assignations.insert_one(assignation)
-                    nouvelles_assignations.append(assignation)
+                    for user in users:
+                        user_id = user["id"]
+                        
+                        # Ignorer si déjà assigné ce jour
+                        if user_id in users_assignes_ce_jour:
+                            continue
+                        
+                        # Ignorer si statut inactif
+                        if user.get("statut") != "Actif":
+                            continue
+                        
+                        type_emploi = user.get("type_emploi", "temps_plein")
+                        heures_semaine = get_heures_semaine(user_id, date_str, est_externe)
+                        heures_max = get_heures_max_semaine(user)
+                        has_dispo = len(get_user_dispos(user_id)) > 0
+                        has_indispo = has_indisponibilite(user_id)
+                        
+                        # N2: Temps partiel DISPONIBLES
+                        if niveau == 2:
+                            if type_emploi in ["temps_partiel", "temporaire"] and has_dispo:
+                                # Vérifier qu'il n'a pas atteint son max
+                                if heures_semaine + duree_garde <= heures_max:
+                                    candidats.append(user)
+                        
+                        # N3: Temps partiel STAND-BY (ni dispo ni indispo)
+                        elif niveau == 3:
+                            if type_emploi in ["temps_partiel", "temporaire"] and not has_dispo and not has_indispo:
+                                if heures_semaine + duree_garde <= heures_max:
+                                    candidats.append(user)
+                        
+                        # N4: Temps plein INCOMPLETS (heures < max)
+                        elif niveau == 4:
+                            if type_emploi == "temps_plein":
+                                if heures_semaine + duree_garde <= heures_max:
+                                    candidats.append(user)
+                        
+                        # N5: Temps plein COMPLETS (heures sup)
+                        elif niveau == 5:
+                            if type_emploi == "temps_plein":
+                                if heures_semaine >= heures_max:  # Déjà au max
+                                    candidats.append(user)
                     
-                    # Ajouter aux assignations existantes pour éviter les doublons
-                    existing_assignations.append(assignation)
+                    # Trier par équité puis ancienneté
+                    candidats_tries = trier_candidats_equite_anciennete(candidats, est_externe)
                     
-                    # Mettre à jour les heures mensuelles
-                    duree = type_garde.get("duree_heures", 8)
-                    user_monthly_hours[user["id"]] = user_monthly_hours.get(user["id"], 0) + duree
-                    
-                    logging.info(f"✅ Assigné {user.get('prenom', '')} {user.get('nom', '')} à {type_garde_nom} le {date_str}")
+                    # Assigner les candidats
+                    for user in candidats_tries:
+                        if assignes_cette_garde >= places_restantes:
+                            break
+                        
+                        user_id = user["id"]
+                        
+                        # Créer l'assignation
+                        assignation = {
+                            "id": str(uuid.uuid4()),
+                            "tenant_id": tenant.id,
+                            "user_id": user_id,
+                            "type_garde_id": type_garde_id,
+                            "date": date_str,
+                            "statut": "assigne",
+                            "auto_attribue": True,
+                            "niveau_attribution": niveau,
+                            "created_at": datetime.now(timezone.utc).isoformat()
+                        }
+                        
+                        # Insérer dans la DB
+                        await db.assignations.insert_one(assignation)
+                        nouvelles_assignations.append(assignation)
+                        
+                        # Mise à jour locale
+                        existing_assignations.append(assignation)
+                        users_assignes_ce_jour.add(user_id)
+                        
+                        # Mettre à jour les heures mensuelles
+                        if est_externe:
+                            user_monthly_hours_externes[user_id] = user_monthly_hours_externes.get(user_id, 0) + duree_garde
+                        user_monthly_hours[user_id] = user_monthly_hours.get(user_id, 0) + duree_garde
+                        
+                        assignes_cette_garde += 1
+                        
+                        logging.info(f"✅ [N{niveau}] {user.get('prenom', '')} {user.get('nom', '')} → {type_garde_nom} le {date_str}")
             
             current_date += timedelta(days=1)
         
@@ -2996,7 +3115,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         return nouvelles_assignations
     
     except Exception as e:
-        logging.error(f"Erreur attribution automatique: {str(e)}")
+        logging.error(f"Erreur attribution automatique: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Erreur attribution: {str(e)}")
 
 
