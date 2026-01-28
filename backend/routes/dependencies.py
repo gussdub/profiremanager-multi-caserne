@@ -356,3 +356,60 @@ async def creer_activite(
     
     await db.notifications.insert_one(activite)
     return activite
+
+
+# ==================== FONCTIONS MOT DE PASSE ====================
+
+def validate_complex_password(password: str) -> bool:
+    """
+    Valide qu'un mot de passe respecte les critères de complexité :
+    - 8 caractères minimum
+    - 1 majuscule
+    - 1 chiffre  
+    - 1 caractère spécial (!@#$%^&*+-?())
+    """
+    if len(password) < 8:
+        return False
+    
+    has_uppercase = bool(re.search(r'[A-Z]', password))
+    has_digit = bool(re.search(r'\d', password))
+    has_special = bool(re.search(r'[!@#$%^&*+\-?()]', password))
+    
+    return has_uppercase and has_digit and has_special
+
+
+def get_password_hash(password: str) -> str:
+    """
+    Crée un hash bcrypt du mot de passe (sécurisé et standard).
+    """
+    password_bytes = password.encode('utf-8')
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password_bytes, salt).decode('utf-8')
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """
+    Vérifie un mot de passe contre son hash bcrypt.
+    Système simplifié: UNIQUEMENT bcrypt pour stabilité maximale.
+    
+    Retourne True si le mot de passe correspond, False sinon.
+    """
+    try:
+        password_bytes = plain_password.encode('utf-8')
+        
+        # Vérifier si c'est un hash bcrypt valide
+        if not hashed_password or not hashed_password.startswith('$2'):
+            logger.error("Hash invalide ou non-bcrypt détecté")
+            return False
+        
+        if isinstance(hashed_password, str):
+            hash_bytes = hashed_password.encode('utf-8')
+        else:
+            hash_bytes = hashed_password
+        
+        result = bcrypt.checkpw(password_bytes, hash_bytes)
+        return result
+        
+    except Exception as e:
+        logger.error(f"Erreur vérification mot de passe: {e}")
+        return False
