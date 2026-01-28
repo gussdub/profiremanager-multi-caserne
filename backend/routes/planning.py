@@ -43,7 +43,8 @@ from routes.dependencies import (
 # Import des helpers PDF partagés
 from utils.pdf_helpers import (
     create_branded_pdf,
-    get_modern_pdf_styles
+    get_modern_pdf_styles,
+    create_pdf_footer_text
 )
 
 router = APIRouter(tags=["Planning"])
