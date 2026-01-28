@@ -27,6 +27,56 @@ router = APIRouter(tags=["Users"])
 logger = logging.getLogger(__name__)
 
 
+# ==================== MODÈLES ====================
+
+class UserCreate(BaseModel):
+    tenant_id: Optional[str] = None
+    nom: str
+    prenom: str
+    email: str
+    telephone: str = ""
+    adresse: str = ""
+    contact_urgence: str = ""
+    grade: str = "Pompier"
+    fonction_superieur: bool = False
+    type_emploi: str = "temps_plein"
+    heures_max_semaine: int = 40
+    role: str = "employe"
+    numero_employe: str = ""
+    date_embauche: str = ""
+    taux_horaire: float = 0.0
+    formations: List[str] = []
+    competences: List[str] = []
+    accepte_gardes_externes: bool = True
+    est_preventionniste: bool = False
+    equipe_garde: Optional[int] = None
+    mot_de_passe: str = "TempPass123!"
+
+class UserUpdate(BaseModel):
+    nom: Optional[str] = None
+    prenom: Optional[str] = None
+    email: Optional[str] = None
+    telephone: Optional[str] = None
+    adresse: Optional[str] = None
+    contact_urgence: Optional[str] = None
+    grade: Optional[str] = None
+    fonction_superieur: Optional[bool] = None
+    type_emploi: Optional[str] = None
+    heures_max_semaine: Optional[int] = None
+    role: Optional[str] = None
+    numero_employe: Optional[str] = None
+    date_embauche: Optional[str] = None
+    taux_horaire: Optional[float] = None
+    formations: Optional[List[str]] = None
+    competences: Optional[List[str]] = None
+    accepte_gardes_externes: Optional[bool] = None
+    est_preventionniste: Optional[bool] = None
+    equipe_garde: Optional[int] = None
+    photo_profil: Optional[str] = None
+    tailles_epi: Optional[Dict[str, str]] = None
+    mot_de_passe: Optional[str] = None
+
+
 # ==================== ROUTES MIGRÉES DE SERVER.PY ====================
 
 # POST users
