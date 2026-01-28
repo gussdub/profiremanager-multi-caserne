@@ -48,14 +48,13 @@ from datetime import datetime, timezone
 import uuid
 import logging
 import csv
-from io import StringIO
-
-from routes.dependencies import (
-# Imports supplémentaires pour les fonctionnalités étendues
 import base64
 import json
-from starlette.responses import StreamingResponse, Response
+from io import StringIO
 from datetime import timedelta
+from starlette.responses import StreamingResponse, Response
+
+from routes.dependencies import (
     db,
     get_current_user,
     get_tenant_from_slug,
