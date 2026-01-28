@@ -9719,6 +9719,7 @@ app.include_router(disponibilites_router, prefix="/api")  # Module Disponibilit�
 app.include_router(approvisionnement_eau_router, prefix="/api")  # Module Approvisionnement Eau
 app.include_router(validations_competences_router, prefix="/api")  # Module Validations Compétences
 app.include_router(parametres_router, prefix="/api")  # Module Paramètres Généraux
+app.include_router(statistiques_router, prefix="/api")  # Module Statistiques Dashboard
 app.include_router(api_router)  # Routes principales (server.py) - DOIT être avant auth_router pour que /admin/auth/login soit traité avant /{tenant_slug}/auth/login
 app.include_router(auth_router, prefix="/api")  # Module Auth (tenant routes)
 app.include_router(pwa_router, prefix="/api")
