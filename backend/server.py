@@ -8692,22 +8692,18 @@ async def annuler_demande_remplacement(
         "demande_id": demande_id
     }
 
-# ==================== COMPÉTENCES ROUTES ====================
-
-@api_router.post("/{tenant_slug}/competences", response_model=Competence)
-async def create_competence(tenant_slug: str, competence: CompetenceCreate, current_user: User = Depends(get_current_user)):
-    """Crée une compétence"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
-    tenant = await get_tenant_from_slug(tenant_slug)
-    
-    competence_dict = competence.dict()
-    competence_dict["tenant_id"] = tenant.id
-    competence_obj = Competence(**competence_dict)
-    
-    comp_data = competence_obj.dict()
-    comp_data["created_at"] = competence_obj.created_at.isoformat()
+# ==================== COMPÉTENCES ROUTES MIGRÉES VERS routes/competences_grades.py ====================
+# Les routes compétences et grades ont été extraites vers routes/competences_grades.py
+# POST   /{tenant_slug}/competences
+# GET    /{tenant_slug}/competences
+# PUT    /{tenant_slug}/competences/{competence_id}
+# DELETE /{tenant_slug}/competences/{competence_id}
+# POST   /{tenant_slug}/competences/clean-invalid
+# POST   /{tenant_slug}/grades
+# GET    /{tenant_slug}/grades
+# PUT    /{tenant_slug}/grades/{grade_id}
+# DELETE /{tenant_slug}/grades/{grade_id}
+# ============================================================================
     
     await db.competences.insert_one(comp_data)
     return competence_obj
