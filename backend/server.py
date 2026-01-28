@@ -27592,6 +27592,7 @@ app.include_router(notifications_router, prefix="/api")  # Module Notifications 
 app.include_router(personnalisation_router, prefix="/api")  # Module Personnalisation (logo, branding)
 app.include_router(materiel_router, prefix="/api")  # Module Matériel & Stock
 app.include_router(bornes_seches_router, prefix="/api")  # Module Bornes Sèches
+app.include_router(points_eau_router, prefix="/api")  # Module Points d'Eau
 # disponibilites_router désactivé - routes server.py plus complètes (export PDF, blocage avancé)
 app.include_router(api_router)  # Routes principales (server.py)
 app.include_router(pwa_router, prefix="/api")
