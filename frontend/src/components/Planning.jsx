@@ -345,7 +345,7 @@ const Planning = () => {
         
       const [typesData, assignationsData, usersData, gradesData, equipesGardeData] = await Promise.all([
         apiGet(tenantSlug, '/types-garde'),
-        apiGet(tenantSlug, `/planning/assignations/${dateRange}`),
+        apiGet(tenantSlug, `/planning/assignations/${dateRange}?mode=${viewMode}`),
         apiGet(tenantSlug, '/users'), // Tous les rôles peuvent voir les users (lecture seule)
         apiGet(tenantSlug, '/grades'), // Pour vérifier si un utilisateur est officier
         apiGet(tenantSlug, '/parametres/equipes-garde').catch(() => null)
