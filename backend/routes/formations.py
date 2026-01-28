@@ -519,21 +519,38 @@ async def desinscrire_formation(
     formation_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Désinscription d'une formation"""
+    """Se désinscrire d'une formation"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
+    # Vérifier que la formation existe
     formation = await db.formations.find_one({"id": formation_id, "tenant_id": tenant.id})
     if not formation:
+        logger.error(f"Formation non trouvée: {formation_id} pour tenant {tenant.id}")
         raise HTTPException(status_code=404, detail="Formation non trouvée")
     
-    # Vérifier si inscrit
+    logger.info(f"Désinscription demandée par user {current_user.id} pour formation {formation_id}")
+    
+    # Vérifier inscription existante
     existing = await db.inscriptions_formations.find_one({
         "formation_id": formation_id,
         "user_id": current_user.id,
         "tenant_id": tenant.id
     })
     
+    logger.info(f"Inscription existante: {existing}")
+    
     if not existing:
+        # Vérifier si l'utilisateur est dans la liste des participants directement sur la formation
+        if current_user.id in formation.get("participants", []):
+            # Retirer de la liste des participants
+            await db.formations.update_one(
+                {"id": formation_id, "tenant_id": tenant.id},
+                {"$pull": {"participants": current_user.id}}
+            )
+            logger.info(f"Utilisateur retiré de la liste des participants de la formation")
+            return {"message": "Désinscription réussie"}
+        
+        logger.error(f"Utilisateur {current_user.id} non inscrit à formation {formation_id}")
         raise HTTPException(status_code=400, detail="Vous n'êtes pas inscrit à cette formation")
     
     # Empêcher la désinscription si présence déjà validée
@@ -546,6 +563,12 @@ async def desinscrire_formation(
         "user_id": current_user.id,
         "tenant_id": tenant.id
     })
+    
+    # Retirer aussi de la liste des participants si présent
+    await db.formations.update_one(
+        {"id": formation_id, "tenant_id": tenant.id},
+        {"$pull": {"participants": current_user.id}}
+    )
     
     # Recalculer les places restantes
     nb_inscrits = await db.inscriptions_formations.count_documents({
