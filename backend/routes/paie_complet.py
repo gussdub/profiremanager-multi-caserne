@@ -128,7 +128,7 @@ class FeuilleTemps(BaseModel):
 
 # ==================== ENDPOINTS PARAMÈTRES PAIE ====================
 
-@api_router.get("/{tenant_slug}/paie/parametres")
+@router.get("/{tenant_slug}/paie/parametres")
 async def get_parametres_paie(
     tenant_slug: str,
     current_user: User = Depends(get_current_user)
@@ -153,7 +153,7 @@ async def get_parametres_paie(
     return params
 
 
-@api_router.put("/{tenant_slug}/paie/parametres")
+@router.put("/{tenant_slug}/paie/parametres")
 async def update_parametres_paie(
     tenant_slug: str,
     parametres: dict = Body(...),
@@ -612,7 +612,7 @@ async def calculer_feuille_temps(
     return feuille
 
 
-@api_router.post("/{tenant_slug}/paie/feuilles-temps/generer")
+@router.post("/{tenant_slug}/paie/feuilles-temps/generer")
 async def generer_feuille_temps(
     tenant_slug: str,
     params: dict = Body(...),
@@ -675,7 +675,7 @@ async def generer_feuille_temps(
     return {"success": True, "feuille": feuille}
 
 
-@api_router.get("/{tenant_slug}/paie/feuilles-temps")
+@router.get("/{tenant_slug}/paie/feuilles-temps")
 async def lister_feuilles_temps(
     tenant_slug: str,
     annee: Optional[int] = None,
@@ -712,7 +712,7 @@ async def lister_feuilles_temps(
     return {"feuilles": feuilles}
 
 
-@api_router.get("/{tenant_slug}/paie/feuilles-temps/{feuille_id}")
+@router.get("/{tenant_slug}/paie/feuilles-temps/{feuille_id}")
 async def get_feuille_temps(
     tenant_slug: str,
     feuille_id: str,
@@ -737,7 +737,7 @@ async def get_feuille_temps(
     return feuille
 
 
-@api_router.post("/{tenant_slug}/paie/feuilles-temps/{feuille_id}/valider")
+@router.post("/{tenant_slug}/paie/feuilles-temps/{feuille_id}/valider")
 async def valider_feuille_temps(
     tenant_slug: str,
     feuille_id: str,
@@ -775,7 +775,7 @@ async def valider_feuille_temps(
     return {"success": True}
 
 
-@api_router.put("/{tenant_slug}/paie/feuilles-temps/{feuille_id}")
+@router.put("/{tenant_slug}/paie/feuilles-temps/{feuille_id}")
 async def modifier_feuille_temps(
     tenant_slug: str,
     feuille_id: str,
@@ -884,7 +884,7 @@ async def modifier_feuille_temps(
     return {"success": True, "feuille": feuille_updated}
 
 
-@api_router.post("/{tenant_slug}/paie/feuilles-temps/{feuille_id}/lignes")
+@router.post("/{tenant_slug}/paie/feuilles-temps/{feuille_id}/lignes")
 async def ajouter_ligne_feuille_temps(
     tenant_slug: str,
     feuille_id: str,
@@ -940,7 +940,7 @@ async def ajouter_ligne_feuille_temps(
     return await modifier_feuille_temps(tenant_slug, feuille_id, {"lignes": lignes}, current_user)
 
 
-@api_router.delete("/{tenant_slug}/paie/feuilles-temps/{feuille_id}")
+@router.delete("/{tenant_slug}/paie/feuilles-temps/{feuille_id}")
 async def supprimer_feuille_temps(
     tenant_slug: str,
     feuille_id: str,
@@ -972,7 +972,7 @@ async def supprimer_feuille_temps(
 
 # ==================== EXPORT FICHIER PAIE (FORMAT NETHRIS/EXCEL) ====================
 
-@api_router.post("/{tenant_slug}/paie/export")
+@router.post("/{tenant_slug}/paie/export")
 async def export_feuilles_temps(
     tenant_slug: str,
     params: dict = Body(...),
@@ -1115,7 +1115,7 @@ async def export_feuilles_temps(
 
 # ==================== GÉNÉRATION EN LOT DES FEUILLES DE TEMPS ====================
 
-@api_router.post("/{tenant_slug}/paie/feuilles-temps/generer-lot")
+@router.post("/{tenant_slug}/paie/feuilles-temps/generer-lot")
 async def generer_feuilles_temps_lot(
     tenant_slug: str,
     params: dict = Body(...),
@@ -1298,7 +1298,7 @@ class TenantPayrollConfig(BaseModel):
 
 # ==================== ENDPOINTS SUPER ADMIN - FOURNISSEURS DE PAIE ====================
 
-@api_router.get("/super-admin/payroll-providers")
+@router.get("/super-admin/payroll-providers")
 async def list_payroll_providers(
     admin: SuperAdmin = Depends(get_super_admin)
 ):
@@ -1307,7 +1307,7 @@ async def list_payroll_providers(
     return {"providers": providers}
 
 
-@api_router.post("/super-admin/payroll-providers")
+@router.post("/super-admin/payroll-providers")
 async def create_payroll_provider(
     provider_data: dict = Body(...),
     admin: SuperAdmin = Depends(get_super_admin)
@@ -1319,7 +1319,7 @@ async def create_payroll_provider(
     return {"success": True, "provider": provider.dict()}
 
 
-@api_router.put("/super-admin/payroll-providers/{provider_id}")
+@router.put("/super-admin/payroll-providers/{provider_id}")
 async def update_payroll_provider(
     provider_id: str,
     provider_data: dict = Body(...),
@@ -1336,7 +1336,7 @@ async def update_payroll_provider(
     return {"success": True}
 
 
-@api_router.delete("/super-admin/payroll-providers/{provider_id}")
+@router.delete("/super-admin/payroll-providers/{provider_id}")
 async def delete_payroll_provider(
     provider_id: str,
     admin: SuperAdmin = Depends(get_super_admin)
@@ -1351,7 +1351,7 @@ async def delete_payroll_provider(
 
 # ==================== ENDPOINTS SUPER ADMIN - COLONNES DES FOURNISSEURS ====================
 
-@api_router.get("/super-admin/payroll-providers/{provider_id}/columns")
+@router.get("/super-admin/payroll-providers/{provider_id}/columns")
 async def get_provider_columns(
     provider_id: str,
     admin: SuperAdmin = Depends(get_super_admin)
@@ -1365,7 +1365,7 @@ async def get_provider_columns(
     return {"columns": columns}
 
 
-@api_router.post("/super-admin/payroll-providers/{provider_id}/columns")
+@router.post("/super-admin/payroll-providers/{provider_id}/columns")
 async def create_provider_column(
     provider_id: str,
     column_data: dict = Body(...),
@@ -1379,7 +1379,7 @@ async def create_provider_column(
     return {"success": True, "column": column.dict()}
 
 
-@api_router.put("/super-admin/payroll-providers/{provider_id}/columns/{column_id}")
+@router.put("/super-admin/payroll-providers/{provider_id}/columns/{column_id}")
 async def update_provider_column(
     provider_id: str,
     column_id: str,
@@ -1395,7 +1395,7 @@ async def update_provider_column(
     return {"success": True}
 
 
-@api_router.delete("/super-admin/payroll-providers/{provider_id}/columns/{column_id}")
+@router.delete("/super-admin/payroll-providers/{provider_id}/columns/{column_id}")
 async def delete_provider_column(
     provider_id: str,
     column_id: str,
@@ -1407,7 +1407,7 @@ async def delete_provider_column(
     return {"success": True}
 
 
-@api_router.post("/super-admin/payroll-providers/{provider_id}/columns/reorder")
+@router.post("/super-admin/payroll-providers/{provider_id}/columns/reorder")
 async def reorder_provider_columns(
     provider_id: str,
     order_data: dict = Body(...),
@@ -1427,7 +1427,7 @@ async def reorder_provider_columns(
 
 # ==================== ENDPOINTS TENANT - CONFIGURATION PAIE ====================
 
-@api_router.get("/{tenant_slug}/paie/config")
+@router.get("/{tenant_slug}/paie/config")
 async def get_tenant_payroll_config(
     tenant_slug: str,
     current_user: User = Depends(get_current_user)
@@ -1452,7 +1452,7 @@ async def get_tenant_payroll_config(
     return {"config": config, "providers_disponibles": providers}
 
 
-@api_router.put("/{tenant_slug}/paie/config")
+@router.put("/{tenant_slug}/paie/config")
 async def update_tenant_payroll_config(
     tenant_slug: str,
     config_data: dict = Body(...),
@@ -1486,7 +1486,7 @@ async def update_tenant_payroll_config(
 
 # ==================== ENDPOINTS TENANT - MAPPING DES CODES ====================
 
-@api_router.get("/{tenant_slug}/paie/code-mappings")
+@router.get("/{tenant_slug}/paie/code-mappings")
 async def get_pay_code_mappings(
     tenant_slug: str,
     current_user: User = Depends(get_current_user)
@@ -1527,7 +1527,7 @@ async def get_pay_code_mappings(
     return {"mappings": mappings, "event_types": internal_event_types}
 
 
-@api_router.post("/{tenant_slug}/paie/code-mappings")
+@router.post("/{tenant_slug}/paie/code-mappings")
 async def create_pay_code_mapping(
     tenant_slug: str,
     mapping_data: dict = Body(...),
@@ -1561,7 +1561,7 @@ async def create_pay_code_mapping(
     return {"success": True, "mapping": mapping.dict()}
 
 
-@api_router.delete("/{tenant_slug}/paie/code-mappings/{mapping_id}")
+@router.delete("/{tenant_slug}/paie/code-mappings/{mapping_id}")
 async def delete_pay_code_mapping(
     tenant_slug: str,
     mapping_id: str,
@@ -1583,7 +1583,7 @@ async def delete_pay_code_mapping(
     return {"success": True}
 
 
-@api_router.put("/{tenant_slug}/paie/matricules")
+@router.put("/{tenant_slug}/paie/matricules")
 async def update_employee_matricules(
     tenant_slug: str,
     data: dict = Body(...),
@@ -1611,7 +1611,7 @@ async def update_employee_matricules(
     return {"success": True, "updated_count": updated_count}
 
 
-@api_router.put("/{tenant_slug}/users/{user_id}/matricule-paie")
+@router.put("/{tenant_slug}/users/{user_id}/matricule-paie")
 async def update_single_employee_matricule(
     tenant_slug: str,
     user_id: str,
@@ -1641,7 +1641,7 @@ async def update_single_employee_matricule(
 
 # ==================== TYPES D'HEURES PERSONNALISÉS PAR TENANT ====================
 
-@api_router.get("/{tenant_slug}/paie/event-types")
+@router.get("/{tenant_slug}/paie/event-types")
 async def get_tenant_event_types(
     tenant_slug: str,
     current_user: User = Depends(get_current_user)
@@ -1662,7 +1662,7 @@ async def get_tenant_event_types(
     return {"event_types": event_types}
 
 
-@api_router.post("/{tenant_slug}/paie/event-types")
+@router.post("/{tenant_slug}/paie/event-types")
 async def create_tenant_event_type(
     tenant_slug: str,
     data: dict = Body(...),
@@ -1701,7 +1701,7 @@ async def create_tenant_event_type(
     return {"success": True, "event_type": {k: v for k, v in event_type.items() if k != "_id"}}
 
 
-@api_router.put("/{tenant_slug}/paie/event-types/{event_type_id}")
+@router.put("/{tenant_slug}/paie/event-types/{event_type_id}")
 async def update_tenant_event_type(
     tenant_slug: str,
     event_type_id: str,
@@ -1735,7 +1735,7 @@ async def update_tenant_event_type(
     return {"success": True}
 
 
-@api_router.delete("/{tenant_slug}/paie/event-types/{event_type_id}")
+@router.delete("/{tenant_slug}/paie/event-types/{event_type_id}")
 async def delete_tenant_event_type(
     tenant_slug: str,
     event_type_id: str,
@@ -1882,7 +1882,7 @@ async def build_payroll_export_data(
     return export_rows
 
 
-@api_router.post("/{tenant_slug}/paie/export")
+@router.post("/{tenant_slug}/paie/export")
 async def export_payroll(
     tenant_slug: str,
     export_params: dict = Body(...),
@@ -2033,7 +2033,7 @@ async def export_payroll(
 
 # ==================== CHAMPS SUPPLÉMENTAIRES PARAMÉTRABLES ====================
 
-@api_router.get("/{tenant_slug}/paie/champs-supplementaires")
+@router.get("/{tenant_slug}/paie/champs-supplementaires")
 async def get_champs_supplementaires(
     tenant_slug: str,
     current_user: User = Depends(get_current_user)
@@ -2061,7 +2061,7 @@ async def get_champs_supplementaires(
     return {"champs": champs, "champs_suggeres": champs_suggeres}
 
 
-@api_router.put("/{tenant_slug}/paie/champs-supplementaires")
+@router.put("/{tenant_slug}/paie/champs-supplementaires")
 async def update_champs_supplementaires(
     tenant_slug: str,
     champs_data: dict = Body(...),
@@ -2088,7 +2088,7 @@ async def update_champs_supplementaires(
 
 # ==================== INTÉGRATION API FOURNISSEURS DE PAIE ====================
 
-@api_router.post("/{tenant_slug}/paie/api/save-credentials")
+@router.post("/{tenant_slug}/paie/api/save-credentials")
 async def save_api_credentials(
     tenant_slug: str,
     credentials: dict = Body(...),
@@ -2115,7 +2115,7 @@ async def save_api_credentials(
     return {"success": True}
 
 
-@api_router.post("/{tenant_slug}/paie/api/test-connection")
+@router.post("/{tenant_slug}/paie/api/test-connection")
 async def test_api_connection(
     tenant_slug: str,
     current_user: User = Depends(get_current_user)
@@ -2298,7 +2298,7 @@ async def test_api_connection(
         return {"success": False, "result": "error", "message": message}
 
 
-@api_router.post("/{tenant_slug}/paie/api/send")
+@router.post("/{tenant_slug}/paie/api/send")
 async def send_payroll_to_api(
     tenant_slug: str,
     export_params: dict = Body(...),
@@ -2599,7 +2599,7 @@ async def send_payroll_to_api(
         return {"success": False, "message": f"Erreur: {str(e)}"}
 
 
-@api_router.get("/{tenant_slug}/paie/api/fetch-codes")
+@router.get("/{tenant_slug}/paie/api/fetch-codes")
 async def fetch_pay_codes_from_api(
     tenant_slug: str,
     current_user: User = Depends(get_current_user)
