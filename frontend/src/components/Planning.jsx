@@ -807,12 +807,9 @@ const Planning = () => {
 
       // Vérifier si un avertissement de sureffectif a été retourné
       if (response.warning) {
-        toast({
-          title: "⚠️ Attention - Sureffectif",
-          description: response.warning,
-          variant: "warning",
-          duration: 5000
-        });
+        // Afficher un modal au centre de l'écran pour le sureffectif
+        setOverstaffWarningMessage(response.warning);
+        setShowOverstaffWarningModal(true);
       } else {
         toast({
           title: "Attribution réussie",
