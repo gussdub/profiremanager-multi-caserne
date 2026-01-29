@@ -490,6 +490,93 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    """Crée un token JWT avec expiration"""
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    return encoded_jwt
+
+
+# ==================== EMAIL FUNCTIONS ====================
+
+def send_welcome_email(user_email: str, user_name: str, user_role: str, temp_password: str, tenant_slug: str = ""):
+    """Envoie un email de bienvenue à un nouvel utilisateur"""
+    try:
+        import resend
+        resend_api_key = os.environ.get('RESEND_API_KEY')
+        if not resend_api_key:
+            logger.warning("RESEND_API_KEY non configuré - email non envoyé")
+            return False
+        
+        resend.api_key = resend_api_key
+        
+        login_url = f"https://profiremanager.com/{tenant_slug}/login" if tenant_slug else "https://profiremanager.com/login"
+        
+        html_content = f"""
+        <h1>Bienvenue sur ProFireManager</h1>
+        <p>Bonjour {user_name},</p>
+        <p>Votre compte a été créé avec le rôle: <strong>{user_role}</strong></p>
+        <p>Voici vos identifiants temporaires:</p>
+        <ul>
+            <li>Email: {user_email}</li>
+            <li>Mot de passe: {temp_password}</li>
+        </ul>
+        <p><a href="{login_url}">Se connecter</a></p>
+        <p>Nous vous recommandons de changer votre mot de passe après la première connexion.</p>
+        """
+        
+        resend.Emails.send({
+            "from": "ProFireManager <noreply@profiremanager.com>",
+            "to": [user_email],
+            "subject": "Bienvenue sur ProFireManager",
+            "html": html_content
+        })
+        return True
+    except Exception as e:
+        logger.error(f"Erreur envoi email de bienvenue: {e}")
+        return False
+
+
+def send_super_admin_welcome_email(user_email: str, user_name: str, temp_password: str):
+    """Envoie un email de bienvenue à un nouveau super admin"""
+    try:
+        import resend
+        resend_api_key = os.environ.get('RESEND_API_KEY')
+        if not resend_api_key:
+            logger.warning("RESEND_API_KEY non configuré - email non envoyé")
+            return False
+        
+        resend.api_key = resend_api_key
+        
+        html_content = f"""
+        <h1>Bienvenue - Accès Super Admin ProFireManager</h1>
+        <p>Bonjour {user_name},</p>
+        <p>Vous avez été ajouté comme <strong>Super Administrateur</strong> de ProFireManager.</p>
+        <p>Voici vos identifiants:</p>
+        <ul>
+            <li>Email: {user_email}</li>
+            <li>Mot de passe: {temp_password}</li>
+        </ul>
+        <p><a href="https://profiremanager.com/super-admin">Accéder au panneau Super Admin</a></p>
+        <p><strong>Important:</strong> Changez votre mot de passe dès votre première connexion.</p>
+        """
+        
+        resend.Emails.send({
+            "from": "ProFireManager <noreply@profiremanager.com>",
+            "to": [user_email],
+            "subject": "Accès Super Admin - ProFireManager",
+            "html": html_content
+        })
+        return True
+    except Exception as e:
+        logger.error(f"Erreur envoi email super admin: {e}")
+        return False
+
 
 # ==================== NOTIFICATIONS ====================
 
