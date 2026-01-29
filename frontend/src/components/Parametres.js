@@ -1763,6 +1763,38 @@ const Parametres = ({ user, tenantSlug }) => {
                   </div>
                 </div>
               )}
+              
+              {/* Section Compétences requises */}
+              <div style={{ marginTop: '12px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>📚 Compétences requises</label>
+                <div style={{ 
+                  maxHeight: '150px', 
+                  overflowY: 'auto', 
+                  border: '1px solid #d1d5db', 
+                  borderRadius: '6px', 
+                  padding: '8px'
+                }}>
+                  {competences.length === 0 ? (
+                    <p style={{ color: '#6b7280', fontSize: '14px', margin: 0 }}>Aucune compétence disponible</p>
+                  ) : (
+                    competences.map(comp => (
+                      <label key={comp.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={(createForm.competences_requises || []).includes(comp.id)}
+                          onChange={() => handleCreateCompetenceChange(comp.id)}
+                        />
+                        <span>{comp.nom}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+                {(createForm.competences_requises || []).length > 0 && (
+                  <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                    {(createForm.competences_requises || []).length} compétence(s) sélectionnée(s)
+                  </p>
+                )}
+              </div>
             </div>
             <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
               <Button variant="outline" onClick={() => setShowCreateTypeModal(false)}>
