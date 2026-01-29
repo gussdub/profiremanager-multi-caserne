@@ -6,6 +6,7 @@ Gestion des utilisateurs : création, modification, photos de profil, statistiqu
 """
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
@@ -20,7 +21,9 @@ from routes.dependencies import (
     get_current_user,
     get_tenant_from_slug,
     clean_mongo_doc,
-    User
+    User,
+    SECRET_KEY,
+    ALGORITHM
 )
 
 router = APIRouter(tags=["Users"])
