@@ -482,28 +482,37 @@ async def update_mon_profil(
     tenant = await get_tenant_from_slug(tenant_slug)
     
     try:
-        # Débug: vérifier le type de current_user
-        logger.info(f"Type current_user: {type(current_user)}, id: {getattr(current_user, 'id', 'NO ID')}")
-        
-        # L'utilisateur peut modifier son propre profil
-        # Utiliser exclude_unset=True pour ne mettre à jour que les champs modifiés
-        update_data = profile_data.dict(exclude_unset=True)
-        
         # Accéder à l'ID de manière sécurisée
         user_id = current_user.id if hasattr(current_user, 'id') else current_user.get('id') if isinstance(current_user, dict) else None
         tenant_id = tenant.id if hasattr(tenant, 'id') else tenant.get('id') if isinstance(tenant, dict) else None
         
+        logger.info(f"Update profil - user_id: {user_id}, tenant_id: {tenant_id}, tenant_slug: {tenant_slug}")
+        
         if not user_id:
             raise HTTPException(status_code=400, detail="ID utilisateur non trouvé")
         
+        # Chercher l'utilisateur - d'abord avec tenant_id, sinon juste par user_id
+        existing_user = await db.users.find_one({"id": user_id, "tenant_id": tenant_id})
+        
+        if not existing_user:
+            # Essayer de trouver l'utilisateur sans le tenant_id (pour compatibilité)
+            existing_user = await db.users.find_one({"id": user_id})
+            logger.warning(f"Utilisateur {user_id} trouvé sans correspondance tenant_id")
+        
+        if not existing_user:
+            logger.error(f"Utilisateur {user_id} non trouvé dans la base de données")
+            raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        
+        # Utiliser le tenant_id de l'utilisateur existant pour la mise à jour
+        actual_tenant_id = existing_user.get("tenant_id")
+        
+        update_data = profile_data.dict(exclude_unset=True)
+        
         if not update_data:
-            # Aucune modification
-            updated_user = await db.users.find_one({"id": user_id, "tenant_id": tenant_id})
-            updated_user = clean_mongo_doc(updated_user)
-            return User(**updated_user)
+            return User(**clean_mongo_doc(existing_user))
         
         result = await db.users.update_one(
-            {"id": user_id, "tenant_id": tenant_id}, 
+            {"id": user_id}, 
             {"$set": update_data}
         )
         
@@ -511,7 +520,7 @@ async def update_mon_profil(
             raise HTTPException(status_code=404, detail="Profil non trouvé")
         
         # Récupérer le profil mis à jour
-        updated_user = await db.users.find_one({"id": user_id, "tenant_id": tenant_id})
+        updated_user = await db.users.find_one({"id": user_id})
         updated_user = clean_mongo_doc(updated_user)
         return User(**updated_user)
         
