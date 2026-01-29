@@ -402,6 +402,14 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
     if (!item.roles.includes(user?.role)) return false;
     if (item.id === 'disponibilites' && !['temps_partiel', 'temporaire'].includes(user?.type_emploi) && !['admin', 'superviseur'].includes(user?.role)) return false;
     if (item.id === 'prevention' && !authTenant?.parametres?.module_prevention_active) return false;
+    
+    // Module Interventions : visible pour admin/superviseur OU si l'utilisateur est une personne ressource désignée
+    if (item.id === 'interventions') {
+      const isAdminOrSupervisor = ['admin', 'superviseur'].includes(user?.role);
+      const isPersonneRessource = (interventionSettings?.personnes_ressources || []).includes(user?.id);
+      if (!isAdminOrSupervisor && !isPersonneRessource) return false;
+    }
+    
     return true;
   });
 
