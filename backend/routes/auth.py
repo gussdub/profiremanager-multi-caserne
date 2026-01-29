@@ -371,6 +371,17 @@ async def forgot_password(tenant_slug: str, request: ForgotPasswordRequest):
                 "html": html_content
             })
             
+            # Logger l'envoi de l'email
+            await log_email_sent(
+                type_email="password_reset",
+                destinataire_email=user["email"],
+                destinataire_nom=user_name,
+                sujet="Réinitialisation de votre mot de passe - ProFireManager",
+                tenant_id=tenant.id,
+                tenant_slug=tenant_slug,
+                statut="sent"
+            )
+            
             logger.info(f"✅ Email de réinitialisation envoyé à {request.email}")
         else:
             logger.warning(f"⚠️ RESEND_API_KEY non configuré - email non envoyé pour {request.email}")
