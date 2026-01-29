@@ -3244,35 +3244,43 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         type_emploi = user.get("type_emploi", "temps_plein")
                         heures_semaine = get_heures_semaine(user_id, date_str, est_externe)
                         heures_max = get_heures_max_semaine(user)
-                        has_dispo = len(get_user_dispos(user_id)) > 0
-                        has_indispo = has_indisponibilite(user_id)
+                        
+                        # Vérification des plages horaires
+                        # 1. Vérifie si l'utilisateur a une DISPONIBILITÉ qui COUVRE la garde
+                        has_dispo_valide = est_disponible_pour_garde(user_id, date_str, heure_debut, heure_fin, type_garde_id)
+                        # 2. Vérifie si l'utilisateur a une INDISPONIBILITÉ qui CHEVAUCHE la garde
+                        has_indispo_bloquante = a_indisponibilite_bloquante(user_id, date_str, heure_debut, heure_fin)
+                        
+                        # RÈGLE PRIORITAIRE: Si indisponibilité chevauche la garde, l'utilisateur est BLOQUÉ
+                        if has_indispo_bloquante:
+                            continue
                         
                         # N2: Temps partiel DISPONIBLES
                         if niveau == 2:
-                            # IMPORTANT: L'indisponibilité est TOUJOURS prioritaire sur la disponibilité
-                            if type_emploi in ["temps_partiel", "temporaire"] and has_dispo and not has_indispo:
-                                # Vérifier qu'il n'a pas atteint son max
+                            if type_emploi in ["temps_partiel", "temporaire"] and has_dispo_valide:
+                                # Vérifier qu'il n'a pas atteint son max (sinon = heures sup)
                                 if heures_semaine + duree_garde <= heures_max:
                                     candidats.append(user)
                         
-                        # N3: Temps partiel STAND-BY (ni dispo ni indispo)
+                        # N3: Temps partiel STAND-BY (ni dispo explicite ni indispo bloquante)
                         elif niveau == 3:
-                            if type_emploi in ["temps_partiel", "temporaire"] and not has_dispo and not has_indispo:
+                            if type_emploi in ["temps_partiel", "temporaire"] and not has_dispo_valide:
+                                # Pas de dispo explicite mais pas d'indispo bloquante non plus
                                 if heures_semaine + duree_garde <= heures_max:
                                     candidats.append(user)
                         
-                        # N4: Temps plein INCOMPLETS (heures < max)
+                        # N4: Temps plein INCOMPLETS (heures < max de l'employé)
                         elif niveau == 4:
-                            # IMPORTANT: L'indisponibilité est TOUJOURS prioritaire
-                            if type_emploi == "temps_plein" and not has_indispo:
+                            if type_emploi == "temps_plein":
+                                # Pas encore au max d'heures de l'employé
                                 if heures_semaine + duree_garde <= heures_max:
                                     candidats.append(user)
                         
-                        # N5: Temps plein COMPLETS (heures sup)
+                        # N5: Temps plein COMPLETS (heures sup autorisées)
                         elif niveau == 5:
-                            # IMPORTANT: L'indisponibilité est TOUJOURS prioritaire
-                            if type_emploi == "temps_plein" and not has_indispo:
-                                if heures_semaine >= heures_max:  # Déjà au max
+                            if type_emploi == "temps_plein":
+                                # Déjà au max = heures supplémentaires
+                                if heures_semaine >= heures_max:
                                     candidats.append(user)
                     
                     # Trier par équité puis ancienneté, avec priorité officier si nécessaire
