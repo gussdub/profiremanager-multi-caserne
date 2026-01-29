@@ -79,6 +79,7 @@ from routes.parametres import router as parametres_router
 from routes.statistiques import router as statistiques_router
 from routes.dashboard import router as dashboard_router
 from routes.rapports import router as rapports_router
+from routes.super_admin import router as super_admin_router
 from io import BytesIO
 import base64
 from PIL import Image as PILImage
