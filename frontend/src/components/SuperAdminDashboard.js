@@ -1827,11 +1827,13 @@ const SuperAdminDashboard = ({ onLogout }) => {
           left: 0,
           right: 0,
           bottom: 0,
+          width: '100vw',
+          height: '100vh',
           backgroundColor: 'rgba(0,0,0,0.5)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 1000
+          zIndex: 9999
         }}>
           <div className="modal-content" style={{
             backgroundColor: 'white',
