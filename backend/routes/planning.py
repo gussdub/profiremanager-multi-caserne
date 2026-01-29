@@ -2905,6 +2905,33 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         
         logging.info(f"📋 Seuil hebdo temps plein: {seuil_hebdo_temps_plein}h")
         
+        # ==================== RÉCUPÉRATION DES GRADES ====================
+        grades_list = await db.grades.find({"tenant_id": tenant.id}).to_list(100)
+        grades_map = {g.get("nom"): g for g in grades_list}
+        
+        def est_officier(user):
+            """Vérifie si l'utilisateur est un officier basé sur son grade"""
+            grade_nom = user.get("grade", "")
+            grade_info = grades_map.get(grade_nom, {})
+            return grade_info.get("est_officier", False) == True
+        
+        def est_eligible_fonction_superieure(user):
+            """Vérifie si l'utilisateur peut opérer en fonction supérieure (grade +1)"""
+            return user.get("fonction_superieur", False) == True
+        
+        def get_niveau_grade(user):
+            """Retourne le niveau hiérarchique du grade de l'utilisateur"""
+            grade_nom = user.get("grade", "")
+            grade_info = grades_map.get(grade_nom, {})
+            return grade_info.get("niveau_hierarchique", 0) or 0
+        
+        def user_a_competences_requises(user, competences_requises):
+            """Vérifie si l'utilisateur possède toutes les compétences requises"""
+            if not competences_requises:
+                return True  # Pas de compétences requises
+            user_competences = set(user.get("competences", []) or [])
+            return all(comp_id in user_competences for comp_id in competences_requises)
+        
         # ==================== PRÉPARATION DES DONNÉES UTILISATEURS ====================
         # Créer un dictionnaire pour accès rapide aux infos utilisateurs
         users_map = {u["id"]: u for u in users}
