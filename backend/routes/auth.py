@@ -395,7 +395,15 @@ async def verify_reset_token(tenant_slug: str, token: str):
     if not token_data:
         raise HTTPException(status_code=400, detail="Token invalide ou expiré")
     
-    if token_data["expires_at"] < datetime.now(timezone.utc):
+    # Comparer les dates (gérer les datetime naive et aware)
+    expires_at = token_data["expires_at"]
+    now = datetime.now(timezone.utc)
+    
+    # Si expires_at n'a pas de timezone, le rendre aware en UTC
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    
+    if expires_at < now:
         raise HTTPException(status_code=400, detail="Token expiré")
     
     return {"valid": True}
