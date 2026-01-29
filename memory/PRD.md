@@ -24,29 +24,40 @@ Application de gestion des interventions et de la paie des pompiers. Solution mu
 
 ## Historique des Modifications
 
-### 29 Janvier 2026 - Session 2 - Corrections et Refactorisation
+### 29 Janvier 2026 - Session 2 - Corrections, Refactorisation et Nouvelle Fonctionnalité
 **Statut**: ✅ Terminé
 
 **Travail effectué**:
 1. **Bug accès module Interventions** - Corrigé
    - Les employés ne voient plus le menu "Interventions" sauf s'ils sont dans la liste des "Personnes ressources"
-   - Modification de `frontend/src/components/Sidebar.jsx` pour charger et vérifier `interventionSettings.personnes_ressources`
+   - Modification de `frontend/src/components/Sidebar.jsx`
 
 2. **Logo dans les e-mails** - Corrigé
-   - Logo maintenant hébergé sur CDN public (catbox.moe)
+   - Logo hébergé sur CDN public (catbox.moe)
    - Taille ajustée à 250px avec espacement réduit
    - Modification de `backend/routes/auth.py`
 
 3. **Refactorisation backend - Module Utils** - Terminé
    - Extraction des routes utilitaires vers `routes/utils.py`
-   - Routes extraites: `repair-demo-passwords`, `fix-all-passwords`, `fix-admin-password`, `cleanup-duplicates`, `init-demo-data`, `init-demo-data-realiste`
-   - `server.py` réduit de 6632 → 5909 lignes (-723 lignes, -11%)
+   - `server.py` réduit de 6632 → 5909 lignes (-723 lignes)
 
-**Fichiers modifiés/créés**:
+4. **NOUVEAU: Historique des E-mails** - Implémenté
+   - Backend: `routes/emails_history.py` avec APIs pour consultation et statistiques
+   - Frontend: `EmailsHistory.jsx` accessible depuis Paramètres (admin uniquement)
+   - Logging automatique des e-mails envoyés (réinitialisation mot de passe)
+   - Statistiques: total, réussis, échoués, taux de succès, répartition par type
+
+**Fichiers créés**:
+- `backend/routes/emails_history.py` (API historique e-mails)
+- `frontend/src/components/EmailsHistory.jsx` (interface admin)
+
+**Fichiers modifiés**:
 - `frontend/src/components/Sidebar.jsx` (vérification personnes ressources)
-- `backend/routes/auth.py` (logo email)
-- `backend/routes/utils.py` (nouveau - routes utilitaires)
-- `backend/server.py` (allégé)
+- `backend/routes/auth.py` (logo email + logging)
+- `backend/routes/utils.py` (routes utilitaires)
+- `backend/server.py` (allégé + import nouveau routeur)
+- `frontend/src/components/Parametres.js` (onglet E-mails)
+- `frontend/src/App.js` (import EmailsHistory)
 
 ### 29 Janvier 2026 - Session 1 - Refactorisation Module Rapports
 **Statut**: ✅ Terminé et validé
