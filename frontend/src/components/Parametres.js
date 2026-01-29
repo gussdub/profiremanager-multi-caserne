@@ -268,6 +268,7 @@ const Parametres = ({ user, tenantSlug }) => {
     if (user?.role === 'admin') {
       fetchData();
       fetchNiveauxAttribution();
+      fetchParametresDisponibilites();
     }
   }, [user]);
   
@@ -280,6 +281,25 @@ const Parametres = ({ user, tenantSlug }) => {
       }));
     } catch (error) {
       console.error("Erreur chargement niveaux:", error);
+    }
+  };
+
+  const fetchParametresDisponibilites = async () => {
+    try {
+      const response = await axios.get(`${API}/parametres/disponibilites`);
+      if (response.data) {
+        setSystemSettings(prev => ({
+          ...prev,
+          blocage_dispos_active: response.data.blocage_dispos_active ?? prev.blocage_dispos_active,
+          jour_blocage_dispos: response.data.jour_blocage_dispos ?? prev.jour_blocage_dispos,
+          exceptions_admin_superviseur: response.data.exceptions_admin_superviseur ?? prev.exceptions_admin_superviseur,
+          admin_peut_modifier_temps_partiel: response.data.admin_peut_modifier_temps_partiel ?? prev.admin_peut_modifier_temps_partiel,
+          notifications_dispos_actives: response.data.notifications_dispos_actives ?? prev.notifications_dispos_actives,
+          jours_avance_notification: response.data.jours_avance_notification ?? prev.jours_avance_notification
+        }));
+      }
+    } catch (error) {
+      console.error("Erreur chargement paramètres disponibilités:", error);
     }
   };
 
