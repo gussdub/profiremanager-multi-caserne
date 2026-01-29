@@ -551,32 +551,65 @@ async def get_dashboard_interne(tenant_slug: str, current_user: User = Depends(g
     try:
         # Récupérer les données
         users = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
-        budgets = await db.budgets.find({"tenant_id": tenant.id}).to_list(1000)
-        immobilisations = await db.immobilisations.find({"tenant_id": tenant.id}).to_list(1000)
-        interventions = await db.interventions.find({"tenant_id": tenant.id}).to_list(1000)
+        assignations = await db.assignations.find({"tenant_id": tenant.id}).to_list(10000)
+        types_garde = await db.types_garde.find({"tenant_id": tenant.id}).to_list(100)
+        disponibilites = await db.disponibilites.find({"tenant_id": tenant.id}).to_list(10000)
         
-        # Calculer les totaux
-        budget_total_prevu = sum(b.get("montant_prevu", 0) for b in budgets)
-        budget_total_realise = sum(b.get("montant_realise", 0) for b in budgets)
-        immob_total = sum(i.get("valeur_acquisition", 0) for i in immobilisations)
+        # Créer map des types de garde
+        types_map = {t["id"]: t for t in types_garde}
+        
+        # Calculer la période actuelle
+        now = datetime.now()
+        debut_mois = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        periode = now.strftime("%B %Y")
+        
+        # Calculer heures travaillées ce mois et coût salarial
+        heures_mois = 0
+        cout_salarial_mois = 0
+        users_map = {u["id"]: u for u in users}
+        
+        for assignation in assignations:
+            try:
+                date_str = assignation.get("date", "")
+                if date_str and date_str.startswith(now.strftime("%Y-%m")):
+                    type_garde_id = assignation.get("type_garde_id")
+                    user_id = assignation.get("user_id")
+                    
+                    type_garde = types_map.get(type_garde_id, {})
+                    user = users_map.get(user_id, {})
+                    
+                    duree = type_garde.get("duree_heures", 8)
+                    taux_horaire = user.get("taux_horaire", 25)
+                    
+                    heures_mois += duree
+                    cout_salarial_mois += duree * taux_horaire
+            except:
+                pass
+        
+        # Calculer pompiers disponibles (ont au moins une disponibilité ce mois)
+        users_disponibles = set()
+        for dispo in disponibilites:
+            try:
+                date_str = dispo.get("date", "")
+                if date_str and date_str.startswith(now.strftime("%Y-%m")):
+                    if dispo.get("type") != "indisponibilite":
+                        users_disponibles.add(dispo.get("user_id"))
+            except:
+                pass
+        
+        pompiers_disponibles = len(users_disponibles)
+        total_pompiers = len(users)
         
         return {
+            "periode": periode,
+            "heures_travaillees_mois": heures_mois,
+            "cout_salarial_mois": cout_salarial_mois,
+            "pompiers_disponibles": pompiers_disponibles,
+            "total_pompiers": total_pompiers,
+            # Structure additionnelle pour compatibilité
             "personnel": {
-                "total": len(users),
+                "total": total_pompiers,
                 "actifs": len([u for u in users if u.get("statut") == "Actif"])
-            },
-            "budget": {
-                "prevu": budget_total_prevu,
-                "realise": budget_total_realise,
-                "ecart": budget_total_prevu - budget_total_realise
-            },
-            "immobilisations": {
-                "total": len(immobilisations),
-                "valeur_totale": immob_total
-            },
-            "interventions": {
-                "total": len(interventions),
-                "ce_mois": len([i for i in interventions if i.get("date", "").startswith(datetime.now().strftime("%Y-%m"))])
             }
         }
     except Exception as e:
