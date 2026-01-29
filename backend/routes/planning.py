@@ -3185,6 +3185,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             "date": date_str,
                             "statut": "assigne",
                             "auto_attribue": True,
+                            "assignation_type": "auto",
                             "niveau_attribution": niveau,
                             "created_at": datetime.now(timezone.utc).isoformat()
                         }
