@@ -3372,8 +3372,28 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             "assignation_type": "auto",
                             "niveau_attribution": niveau,
                             "created_at": datetime.now(timezone.utc).isoformat(),
-                            # Données d'audit/justification pour traçabilité
+                            # Données d'audit/justification pour traçabilité (format attendu par le frontend)
                             "justification": {
+                                "assigned_user": {
+                                    "nom_complet": f"{user.get('prenom', '')} {user.get('nom', '')}",
+                                    "grade": user.get("grade", ""),
+                                    "type_emploi": type_emploi,
+                                    "details": {
+                                        "heures_ce_mois": user_monthly_hours_internes.get(user_id, 0),
+                                        "heures_externes_ce_mois": user_monthly_hours_externes.get(user_id, 0),
+                                        "heures_semaine": heures_travaillees,
+                                        "heures_max": heures_max,
+                                        "est_officier": est_officier(user),
+                                        "est_eligible": est_eligible_fonction_superieure(user),
+                                        "had_disponibilite": has_dispo_valide,
+                                        "date_embauche": user.get("date_embauche", "")
+                                    }
+                                },
+                                "type_garde_info": {
+                                    "nom": type_garde_nom,
+                                    "duree_heures": duree_garde,
+                                    "est_externe": est_externe
+                                },
                                 "niveau": niveau,
                                 "niveau_description": {
                                     2: "Temps partiel DISPONIBLE",
@@ -3381,18 +3401,9 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                     4: "Temps plein (heures incomplètes)",
                                     5: "Heures supplémentaires"
                                 }.get(niveau, f"Niveau {niveau}"),
-                                "type_emploi": type_emploi,
-                                "heures_travaillees_semaine": heures_travaillees,
-                                "heures_max_employe": heures_max,
-                                "heures_mensuelles_internes": user_monthly_hours_internes.get(user_id, 0),
-                                "heures_mensuelles_externes": user_monthly_hours_externes.get(user_id, 0),
-                                "est_officier": est_officier(user),
-                                "est_eligible": est_eligible_fonction_superieure(user),
-                                "had_disponibilite": has_dispo_valide,
-                                "duree_garde": duree_garde,
-                                "garde_externe": est_externe,
-                                "date_embauche": user.get("date_embauche", ""),
-                                "raison": f"Assigné au niveau {niveau} - {type_emploi} - {heures_travaillees}h/{heures_max}h max"
+                                "total_candidates_evaluated": len(candidats),
+                                "other_candidates": [],  # On ne stocke pas tous les candidats pour économiser l'espace
+                                "raison": f"Niveau {niveau} - {type_emploi} - {heures_travaillees}h travaillées/{heures_max}h max"
                             }
                         }
                         
