@@ -51,7 +51,7 @@ class Disponibilite(BaseModel):
 class DisponibiliteCreate(BaseModel):
     """Modèle pour la création d'une disponibilité"""
     date: str
-    type_garde_id: str
+    type_garde_id: Optional[str] = None
     est_disponible: bool = True
     commentaire: Optional[str] = None
 
