@@ -25,6 +25,7 @@ from routes.dependencies import (
     clean_mongo_doc,
     User
 )
+from routes.emails_history import log_email_sent
 
 router = APIRouter(tags=["Auth"])
 logger = logging.getLogger(__name__)
