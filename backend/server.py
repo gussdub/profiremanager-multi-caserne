@@ -6565,6 +6565,7 @@ class InspectionBorneSecheCreate(BaseModel):
 # IMPORTANT: L'ordre détermine la priorité des routes
 # Module personnel extrait et prioritaire
 app.include_router(super_admin_router, prefix="/api")  # Module Super Admin - DOIT être AVANT api_router pour priorité
+app.include_router(users_router, prefix="/api")  # Module Users - DOIT être AVANT personnel pour /users/mon-profil
 app.include_router(personnel_router, prefix="/api")  # Module Personnel (GET/PUT/DELETE users)
 app.include_router(actifs_router, prefix="/api")  # Module Actifs (véhicules, bornes, inventaires, rondes)
 app.include_router(formations_router, prefix="/api")  # Module Formations (CRUD + inscriptions)
