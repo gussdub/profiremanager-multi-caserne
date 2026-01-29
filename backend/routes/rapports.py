@@ -33,7 +33,7 @@ Routes migrées depuis server.py:
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone, timedelta, date
 from io import BytesIO
