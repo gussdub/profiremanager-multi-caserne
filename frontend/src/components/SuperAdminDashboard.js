@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import ReactDOM from 'react-dom';
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
@@ -9,6 +10,30 @@ import PayrollProvidersAdmin from "./PayrollProvidersAdmin";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+// Composant Modal avec portail pour s'afficher en dehors du conteneur parent
+const ModalPortal = ({ children, isOpen }) => {
+  if (!isOpen) return null;
+  return ReactDOM.createPortal(
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      width: '100vw',
+      height: '100vh',
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 99999
+    }}>
+      {children}
+    </div>,
+    document.body
+  );
+};
 
 // Durée d'inactivité avant déconnexion automatique (2 heures en ms)
 const INACTIVITY_TIMEOUT = 2 * 60 * 60 * 1000; // 2 heures
