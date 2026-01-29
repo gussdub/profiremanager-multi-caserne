@@ -91,17 +91,57 @@ const AuditModal = ({
               </div>
             </div>
             
-            <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.75rem', fontSize: '0.9rem' }}>
+            <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.75rem', fontSize: '0.9rem', flexWrap: 'wrap' }}>
               <span>📅 {assignation.date}</span>
-              <span>🚒 {justif.type_garde_info?.nom}</span>
-              <span>⏱️ {justif.type_garde_info?.duree_heures}h</span>
+              <span>🚒 {typeGardeInfo.nom} ({typeGardeInfo.heure_debut}-{typeGardeInfo.heure_fin})</span>
+              <span>⏱️ {typeGardeInfo.duree_heures}h</span>
+              <span>🎯 {niveauDescription}</span>
             </div>
           </div>
           
-          {/* ===== PARTIE 2: Tableau Comparatif Top 5 ===== */}
+          {/* ===== STATISTIQUES D'ÉVALUATION ===== */}
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(3, 1fr)', 
+            gap: '1rem', 
+            marginBottom: '1.5rem' 
+          }}>
+            <div style={{ 
+              background: '#f0f9ff', 
+              padding: '1rem', 
+              borderRadius: '8px', 
+              textAlign: 'center',
+              border: '1px solid #bae6fd'
+            }}>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#0284c7' }}>{totalCandidates}</div>
+              <div style={{ fontSize: '0.85rem', color: '#0369a1' }}>Candidats évalués</div>
+            </div>
+            <div style={{ 
+              background: '#f0fdf4', 
+              padding: '1rem', 
+              borderRadius: '8px', 
+              textAlign: 'center',
+              border: '1px solid #bbf7d0'
+            }}>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#16a34a' }}>{candidatesAcceptes}</div>
+              <div style={{ fontSize: '0.85rem', color: '#15803d' }}>Éligibles ce niveau</div>
+            </div>
+            <div style={{ 
+              background: '#fef2f2', 
+              padding: '1rem', 
+              borderRadius: '8px', 
+              textAlign: 'center',
+              border: '1px solid #fecaca'
+            }}>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#dc2626' }}>{candidatesRejetes}</div>
+              <div style={{ fontSize: '0.85rem', color: '#b91c1c' }}>Non éligibles</div>
+            </div>
+          </div>
+          
+          {/* ===== PARTIE 2: Tableau Comparatif ===== */}
           <div style={{ marginBottom: '1.5rem' }}>
             <h4 style={{ marginBottom: '1rem', color: '#1f2937', fontSize: '1.25rem' }}>
-              📊 Comparaison des Meilleurs Candidats
+              📊 Détail des Candidats Évalués
             </h4>
             
             <div style={{ overflowX: 'auto' }}>
