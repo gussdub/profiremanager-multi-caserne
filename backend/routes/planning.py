@@ -3304,6 +3304,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         continue  # Niveau désactivé
                     
                     candidats = []
+                    candidats_rejetes = []  # Pour l'audit: stocker les candidats non sélectionnés avec leurs raisons
                     
                     for user in users_avec_competences:  # Utiliser la liste filtrée par compétences
                         user_id = user["id"]
@@ -3316,12 +3317,24 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         if user_id in users_assignes_ce_jour:
                             if is_debug:
                                 logging.info(f"🔴 DEBUG Alva bloqué: déjà assigné à garde chevauchante")
+                            candidats_rejetes.append({
+                                "nom_complet": user_name,
+                                "grade": user.get("grade", ""),
+                                "type_emploi": user.get("type_emploi", ""),
+                                "raison_rejet": "Déjà assigné à une garde ce jour"
+                            })
                             continue
                         
                         # Ignorer si statut inactif
                         if user.get("statut") != "Actif":
                             if is_debug:
                                 logging.info(f"🔴 DEBUG Alva bloqué: statut inactif")
+                            candidats_rejetes.append({
+                                "nom_complet": user_name,
+                                "grade": user.get("grade", ""),
+                                "type_emploi": user.get("type_emploi", ""),
+                                "raison_rejet": "Statut inactif"
+                            })
                             continue
                         
                         type_emploi = user.get("type_emploi", "temps_plein")
@@ -3353,7 +3366,18 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         if has_indispo_bloquante:
                             if is_debug:
                                 logging.info(f"🔴 DEBUG Alva bloqué: indisponibilité")
+                            candidats_rejetes.append({
+                                "nom_complet": user_name,
+                                "grade": user.get("grade", ""),
+                                "type_emploi": type_emploi,
+                                "heures_ce_mois": user_monthly_hours_internes.get(user_id, 0),
+                                "raison_rejet": "Indisponibilité sur cette plage horaire"
+                            })
                             continue
+                        
+                        # Variables pour tracking des raisons de rejet par niveau
+                        accepte = False
+                        raison_rejet = ""
                         
                         # N2: Temps partiel DISPONIBLES
                         if niveau == 2:
