@@ -2963,7 +2963,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         # Calculer les heures hebdomadaires pour chaque utilisateur
         # (pour déterminer si temps plein incomplet ou complet)
         def get_heures_semaine(user_id, date_str, type_garde_externe=False):
-            """Calcule les heures travaillées dans la semaine contenant date_str"""
+            """Calcule les heures dans la semaine contenant date_str pour un type de garde (interne ou externe)"""
             date_obj = datetime.strptime(date_str, "%Y-%m-%d")
             # Trouver le lundi de cette semaine
             lundi = date_obj - timedelta(days=date_obj.weekday())
@@ -2980,6 +2980,34 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         if tg:
                             is_externe = tg.get("est_garde_externe", False)
                             if type_garde_externe == is_externe:  # Compter séparément
+                                heures += tg.get("duree_heures", 8)
+                except:
+                    pass
+            return heures
+        
+        def get_heures_travaillees_semaine(user_id, date_str):
+            """
+            Calcule les heures TRAVAILLÉES dans la semaine contenant date_str.
+            IMPORTANT: Seules les gardes INTERNES comptent comme heures travaillées.
+            Les gardes EXTERNES ne comptent PAS vers le max d'heures.
+            """
+            date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+            # Trouver le lundi de cette semaine
+            lundi = date_obj - timedelta(days=date_obj.weekday())
+            dimanche = lundi + timedelta(days=6)
+            
+            heures = 0
+            for a in existing_assignations:
+                if a.get("user_id") != user_id:
+                    continue
+                try:
+                    a_date = datetime.strptime(a.get("date", ""), "%Y-%m-%d")
+                    if lundi <= a_date <= dimanche:
+                        tg = next((t for t in types_garde if t["id"] == a.get("type_garde_id")), None)
+                        if tg:
+                            # IMPORTANT: Seules les gardes INTERNES comptent
+                            is_externe = tg.get("est_garde_externe", False)
+                            if not is_externe:
                                 heures += tg.get("duree_heures", 8)
                 except:
                     pass
