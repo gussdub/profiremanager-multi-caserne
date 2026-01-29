@@ -1768,6 +1768,12 @@ const Parametres = ({ user, tenantSlug }) => {
           </Suspense>
         )}
 
+        {activeTab === 'emails-history' && user?.role === 'admin' && (
+          <Suspense fallback={<div style={{ textAlign: 'center', padding: '40px' }}>Chargement...</div>}>
+            <EmailsHistory />
+          </Suspense>
+        )}
+
       </div>
 
       {/* ========== MODALS DE CRÉATION ET ÉDITION ========== */}
