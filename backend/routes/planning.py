@@ -3136,8 +3136,12 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                 if heures_semaine >= heures_max:  # Déjà au max
                                     candidats.append(user)
                     
-                    # Trier par équité puis ancienneté
-                    candidats_tries = trier_candidats_equite_anciennete(candidats, est_externe)
+                    # Trier par équité puis ancienneté, avec priorité officier si nécessaire
+                    candidats_tries = trier_candidats_equite_anciennete(
+                        candidats, 
+                        est_externe, 
+                        prioriser_officiers=(besoin_officier and not officier_assigne_cette_iteration)
+                    )
                     
                     # Assigner les candidats
                     for user in candidats_tries:
@@ -3145,6 +3149,11 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             break
                         
                         user_id = user["id"]
+                        
+                        # Si on a besoin d'un officier et qu'on vient d'en assigner un
+                        if besoin_officier and not officier_assigne_cette_iteration:
+                            if est_officier(user) or est_eligible_fonction_superieure(user):
+                                officier_assigne_cette_iteration = True
                         
                         # Créer l'assignation
                         assignation = {
@@ -3158,6 +3167,12 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             "niveau_attribution": niveau,
                             "created_at": datetime.now(timezone.utc).isoformat()
                         }
+                        
+                        # Si officier manquant, ajouter le flag
+                        if besoin_officier and not officier_assigne_cette_iteration and assignes_cette_garde == 0:
+                            # Ce sera le premier assigné et ce n'est pas un officier
+                            if not est_officier(user) and not est_eligible_fonction_superieure(user):
+                                assignation["officier_manquant"] = True
                         
                         # Insérer dans la DB
                         await db.assignations.insert_one(assignation)
@@ -3174,7 +3189,14 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         
                         assignes_cette_garde += 1
                         
-                        logging.info(f"✅ [N{niveau}] {user.get('prenom', '')} {user.get('nom', '')} → {type_garde_nom} le {date_str}")
+                        # Log avec info officier
+                        officier_tag = ""
+                        if est_officier(user):
+                            officier_tag = " [OFFICIER]"
+                        elif est_eligible_fonction_superieure(user):
+                            officier_tag = " [ÉLIGIBLE]"
+                        
+                        logging.info(f"✅ [N{niveau}]{officier_tag} {user.get('prenom', '')} {user.get('nom', '')} → {type_garde_nom} le {date_str}")
             
             current_date += timedelta(days=1)
         
