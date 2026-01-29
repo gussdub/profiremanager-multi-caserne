@@ -3031,6 +3031,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
             """
             Vérifie si deux plages horaires se chevauchent.
             Les heures sont au format 'HH:MM'.
+            Gère les gardes qui passent minuit (ex: 18:00-06:00).
             Retourne True si les plages se chevauchent.
             """
             # Convertir en minutes pour faciliter la comparaison
@@ -3049,6 +3050,23 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
             if end1 == 23 * 60 + 59:
                 end1 = 24 * 60
             if end2 == 23 * 60 + 59:
+                end2 = 24 * 60
+            
+            # Gérer les gardes qui passent minuit (fin < debut)
+            # Ex: 18:00-06:00 -> on considère que ça se termine à 06:00 le LENDEMAIN
+            # Pour la comparaison sur une même journée, une garde de nuit (18:00-06:00)
+            # ne chevauche PAS une garde de jour (06:00-18:00)
+            
+            # Si la plage 1 passe minuit (ex: 18:00-06:00)
+            if end1 < start1:
+                # Elle couvre [start1, 24:00] et [00:00, end1]
+                # Pour simplifier sur une journée: [start1, 24:00]
+                end1 = 24 * 60
+            
+            # Si la plage 2 passe minuit (ex: 18:00-06:00)
+            if end2 < start2:
+                # Elle couvre [start2, 24:00] et [00:00, end2]
+                # Pour simplifier sur une journée: [start2, 24:00]
                 end2 = 24 * 60
             
             # Les plages se chevauchent si: start1 < end2 AND start2 < end1
