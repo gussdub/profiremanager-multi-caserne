@@ -131,6 +131,20 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
     }
   }, [user, tenantSlug]);
 
+  // Charger les paramètres du module interventions pour vérifier les personnes ressources
+  useEffect(() => {
+    const loadInterventionSettings = async () => {
+      if (!tenantSlug || !user) return;
+      try {
+        const response = await apiGet(tenantSlug, '/interventions/settings');
+        setInterventionSettings(response.settings);
+      } catch (error) {
+        console.error('Erreur chargement paramètres interventions:', error);
+      }
+    };
+    loadInterventionSettings();
+  }, [tenantSlug, user]);
+
   // Ouvrir le modal de détails de demande de remplacement
   const openRemplacementModal = async (demande_id) => {
     try {
