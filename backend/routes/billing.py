@@ -168,7 +168,7 @@ async def get_billing_overview(admin: SuperAdmin = Depends(get_super_admin)):
                 past_due_tenants += 1
         
         billing_details.append({
-            "tenant_id": tenant.id,
+            "tenant_id": tenant_id,
             "tenant_slug": tenant.get("slug"),
             "tenant_nom": tenant.get("nom"),
             "user_count": user_count,
