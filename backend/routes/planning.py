@@ -3073,8 +3073,14 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 )
                 
                 # Récupérer les disponibilités pour ce jour/type_garde
+                # IMPORTANT: Inclure aussi les disponibilités générales (type_garde_id = None)
                 def get_user_dispos(user_id):
-                    return dispos_lookup.get(user_id, {}).get(date_str, {}).get(type_garde_id, [])
+                    user_dispos = dispos_lookup.get(user_id, {}).get(date_str, {})
+                    # Disponibilités spécifiques à ce type de garde
+                    specific_dispos = user_dispos.get(type_garde_id, [])
+                    # Disponibilités générales (toute la journée, sans type_garde spécifique)
+                    general_dispos = user_dispos.get(None, [])
+                    return specific_dispos + general_dispos
                 
                 # Récupérer les indisponibilités pour ce jour
                 def has_indisponibilite(user_id):
