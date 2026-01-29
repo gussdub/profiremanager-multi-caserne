@@ -3281,13 +3281,21 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     
                     for user in users_avec_competences:  # Utiliser la liste filtrée par compétences
                         user_id = user["id"]
+                        user_name = f"{user.get('prenom', '')} {user.get('nom', '')}"
                         
-                        # Ignorer si déjà assigné ce jour
+                        # Debug pour Alva le 12 février garde de jour
+                        is_debug = date_str == "2026-02-12" and "jour" in type_garde_nom.lower() and "Alva" in user_name
+                        
+                        # Ignorer si déjà assigné ce jour à une garde qui chevauche
                         if user_id in users_assignes_ce_jour:
+                            if is_debug:
+                                logging.info(f"🔴 DEBUG Alva bloqué: déjà assigné à garde chevauchante")
                             continue
                         
                         # Ignorer si statut inactif
                         if user.get("statut") != "Actif":
+                            if is_debug:
+                                logging.info(f"🔴 DEBUG Alva bloqué: statut inactif")
                             continue
                         
                         type_emploi = user.get("type_emploi", "temps_plein")
@@ -3312,8 +3320,13 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         # 2. Vérifie si l'utilisateur a une INDISPONIBILITÉ qui CHEVAUCHE la garde
                         has_indispo_bloquante = a_indisponibilite_bloquante(user_id, date_str, heure_debut, heure_fin)
                         
+                        if is_debug:
+                            logging.info(f"🔵 DEBUG Alva: niveau={niveau}, type_emploi={type_emploi}, heures={heures_travaillees}/{heures_max}, depasserait={depasserait_max}, dispo={has_dispo_valide}, indispo={has_indispo_bloquante}")
+                        
                         # RÈGLE PRIORITAIRE: Si indisponibilité chevauche la garde, l'utilisateur est BLOQUÉ
                         if has_indispo_bloquante:
+                            if is_debug:
+                                logging.info(f"🔴 DEBUG Alva bloqué: indisponibilité")
                             continue
                         
                         # N2: Temps partiel DISPONIBLES
