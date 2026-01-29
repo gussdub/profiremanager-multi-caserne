@@ -725,10 +725,11 @@ async def job_verifier_notifications_planning():
                     periode_fin=periode_fin
                 )
                 
-                # Mettre à jour la date de dernière notification
-                await db.parametres_validation_planning.update_one(
-                    {"tenant_id": tenant["id"]},
-                    {"$set": {"derniere_notification": now.isoformat()}}
+                # Mettre à jour la date de dernière notification dans tenant.parametres.validation_planning
+                params["derniere_notification"] = now.isoformat()
+                await db.tenants.update_one(
+                    {"id": tenant["id"]},
+                    {"$set": {"parametres.validation_planning": params}}
                 )
                 
                 logging.info(f"✅ Notifications envoyées avec succès pour {tenant['nom']}")
