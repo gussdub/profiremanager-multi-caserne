@@ -690,6 +690,8 @@ async def create_checkout_session(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
+    tenant_id = tenant.get("id")
+    
     # Si gratuit, pas besoin de checkout
     if tenant.get("is_gratuit", False):
         raise HTTPException(status_code=400, detail="Compte gratuit - pas de paiement requis")
@@ -697,7 +699,7 @@ async def create_checkout_session(
     try:
         # Compter les utilisateurs actifs
         user_count = await db.users.count_documents({
-            "tenant_id": tenant.id,
+            "tenant_id": tenant_id,
             "statut": "Actif"
         })
         if user_count == 0:
@@ -718,7 +720,7 @@ async def create_checkout_session(
             recurring={"interval": interval},
             product_data={
                 "name": f"ProFireManager - {tenant.get('nom', tenant_slug)}",
-                "metadata": {"tenant_id": tenant.id}
+                "metadata": {"tenant_id": tenant_id}
             }
         )
         
@@ -732,7 +734,7 @@ async def create_checkout_session(
                 email=customer_email,
                 name=tenant.get("nom", tenant_slug),
                 metadata={
-                    "tenant_id": tenant.id,
+                    "tenant_id": tenant_id,
                     "tenant_slug": tenant_slug
                 }
             )
@@ -740,7 +742,7 @@ async def create_checkout_session(
             
             # Sauvegarder le customer_id dans la base de données
             await db.tenants.update_one(
-                {"id": tenant.id},
+                {"id": tenant_id},
                 {"$set": {"stripe_customer_id": customer_id}}
             )
         
@@ -754,12 +756,12 @@ async def create_checkout_session(
             "success_url": return_url + "?checkout=success",
             "cancel_url": return_url + "?checkout=cancelled",
             "metadata": {
-                "tenant_id": tenant.id,
+                "tenant_id": tenant_id,
                 "tenant_slug": tenant_slug
             },
             "subscription_data": {
                 "metadata": {
-                    "tenant_id": tenant.id,
+                    "tenant_id": tenant_id,
                     "tenant_slug": tenant_slug
                 }
             }
