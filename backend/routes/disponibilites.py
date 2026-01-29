@@ -40,8 +40,12 @@ class Disponibilite(BaseModel):
     tenant_id: str
     date: str  # Format YYYY-MM-DD
     type_garde_id: Optional[str] = None
-    est_disponible: bool = True
+    heure_debut: str = "00:00"
+    heure_fin: str = "23:59"
+    statut: str = "disponible"  # "disponible" ou "indisponible"
+    est_disponible: bool = True  # Garder pour compatibilité
     commentaire: Optional[str] = None
+    origine: Optional[str] = "manuelle"
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     
     class Config:
