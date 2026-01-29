@@ -18,6 +18,7 @@ Application de gestion des interventions et de la paie des pompiers. Solution mu
 6. Formations & Compétences
 7. Remplacements
 8. Facturation & Paie
+9. **Historique des E-mails** (NOUVEAU)
 
 ---
 
