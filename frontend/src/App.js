@@ -193,6 +193,7 @@ const NonConformites = lazy(() => import("./components/NonConformites"));
 const InspectionTerrain = lazy(() => import("./components/InspectionTerrain"));
 const ModulePaie = lazy(() => import("./components/ModulePaie"));
 const DSIComplianceDashboard = lazy(() => import("./components/DSIComplianceDashboard"));
+const EmailsHistory = lazy(() => import("./components/EmailsHistory"));
 import OfflineManager from "./components/OfflineManager";
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
