@@ -143,9 +143,10 @@ async def get_billing_overview(admin: SuperAdmin = Depends(get_super_admin)):
     billing_details = []
     
     for tenant in tenants:
+        tenant_id = tenant.get("id") or tenant.get("_id")
         # Compter les utilisateurs actifs
         user_count = await db.users.count_documents({
-            "tenant_id": tenant.id,
+            "tenant_id": tenant_id,
             "statut": "Actif"
         })
         
