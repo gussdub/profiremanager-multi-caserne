@@ -3360,8 +3360,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             "assignation_type": "auto",
                             "niveau_attribution": niveau,
                             "created_at": datetime.now(timezone.utc).isoformat(),
-                            # Données d'audit pour traçabilité
-                            "audit": {
+                            # Données d'audit/justification pour traçabilité
+                            "justification": {
                                 "niveau": niveau,
                                 "niveau_description": {
                                     2: "Temps partiel DISPONIBLE",
