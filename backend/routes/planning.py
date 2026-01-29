@@ -2906,6 +2906,12 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         if not params_tenant_doc:
             params_tenant_doc = {}
         
+        # Lire aussi les paramètres de remplacement pour heures_supplementaires_activees
+        params_remplacements = await db.parametres_remplacements.find_one({"tenant_id": tenant.id})
+        heures_sup_from_params = False
+        if params_remplacements:
+            heures_sup_from_params = params_remplacements.get("heures_supplementaires_activees", False)
+        
         # Utiliser les niveaux chargés plus haut ou les défauts
         niveaux_actifs = {
             "niveau_2": params_tenant_doc.get("niveau_2_actif", True),  # Temps partiel DISPONIBLES
@@ -2913,13 +2919,16 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
             "niveau_4": params_tenant_doc.get("niveau_4_actif", True),  # Temps plein INCOMPLETS
             "niveau_5": params_tenant_doc.get("niveau_5_actif", True)   # Temps plein COMPLETS (heures sup)
         }
-        autoriser_heures_sup = params_tenant_doc.get("autoriser_heures_supplementaires", False) or activer_heures_sup
+        # Activer heures sup si:
+        # - Le paramètre dans la requête est True OU
+        # - Le paramètre dans parametres_remplacements est True
+        autoriser_heures_sup = activer_heures_sup or heures_sup_from_params or params_tenant_doc.get("autoriser_heures_supplementaires", False)
         
         # Si heures sup non autorisées, désactiver niveau 5
         if not autoriser_heures_sup:
             niveaux_actifs["niveau_5"] = False
         
-        logging.info(f"📋 Niveaux actifs: {niveaux_actifs}, Heures sup: {autoriser_heures_sup}")
+        logging.info(f"📋 Niveaux actifs: {niveaux_actifs}, Heures sup: {autoriser_heures_sup} (from_params={heures_sup_from_params}, activer_heures_sup={activer_heures_sup})")
         
         # Paramètres de paie pour seuil hebdomadaire temps plein
         params_paie = await db.parametres_paie.find_one({"tenant_id": tenant.id})
