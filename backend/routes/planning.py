@@ -3306,21 +3306,22 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         elif niveau == 3:
                             if type_emploi in ["temps_partiel", "temporaire"] and not has_dispo_valide:
                                 # Pas de dispo explicite mais pas d'indispo bloquante non plus
-                                if heures_semaine + duree_garde <= heures_max:
+                                if not depasserait_max:
                                     candidats.append(user)
                         
                         # N4: Temps plein INCOMPLETS (heures < max de l'employé)
                         elif niveau == 4:
                             if type_emploi == "temps_plein":
                                 # Pas encore au max d'heures de l'employé
-                                if heures_semaine + duree_garde <= heures_max:
+                                if not depasserait_max:
                                     candidats.append(user)
                         
                         # N5: Temps plein COMPLETS (heures sup autorisées)
                         elif niveau == 5:
                             if type_emploi == "temps_plein":
                                 # Déjà au max = heures supplémentaires
-                                if heures_semaine >= heures_max:
+                                # Note: Pour garde externe, on passe ici seulement si c'est nécessaire
+                                if heures_travaillees >= heures_max:
                                     candidats.append(user)
                     
                     # Trier par équité puis ancienneté, avec priorité officier si nécessaire
