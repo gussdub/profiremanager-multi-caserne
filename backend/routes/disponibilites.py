@@ -202,6 +202,9 @@ async def update_disponibilites(
     current_user: User = Depends(get_current_user)
 ):
     """Met à jour les disponibilités d'un utilisateur"""
+    import logging
+    logging.info(f"📅 [DISPOS] PUT reçu pour user_id={user_id}, {len(disponibilites)} disponibilités")
+    
     tenant = await get_tenant_from_slug(tenant_slug)
     
     if current_user.tenant_id != tenant.id:
@@ -219,22 +222,29 @@ async def update_disponibilites(
     if not target_user:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
     
+    logging.info(f"📅 [DISPOS] Utilisateur cible: {target_user.get('prenom')} {target_user.get('nom')}")
+    
     # Supprimer les anciennes disponibilités pour ce mois
     if disponibilites and len(disponibilites) > 0:
         mois = disponibilites[0].get("date", "")[:7]  # Format YYYY-MM
-        await db.disponibilites.delete_many({
+        delete_result = await db.disponibilites.delete_many({
             "user_id": user_id,
             "tenant_id": tenant.id,
             "date": {"$regex": f"^{mois}"}
         })
+        logging.info(f"📅 [DISPOS] Supprimées {delete_result.deleted_count} anciennes dispos du mois {mois}")
     
     # Insérer les nouvelles
+    inserted_count = 0
     for dispo in disponibilites:
         dispo["id"] = dispo.get("id") or str(uuid.uuid4())
         dispo["user_id"] = user_id
         dispo["tenant_id"] = tenant.id
         dispo["updated_at"] = datetime.now(timezone.utc)
         await db.disponibilites.insert_one(dispo)
+        inserted_count += 1
+    
+    logging.info(f"📅 [DISPOS] Insérées {inserted_count} nouvelles dispos")
     
     return {"message": f"{len(disponibilites)} disponibilités mises à jour"}
 
