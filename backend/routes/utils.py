@@ -298,7 +298,7 @@ async def init_demo_data_realiste():
 async def init_demo_data():
     """Initialise les données de démonstration de base"""
     db = get_db()
-    from server import User, Formation, TypeGarde
+    from server import User, TypeGarde
     
     # Clear existing data
     await db.users.delete_many({})
@@ -339,25 +339,29 @@ async def init_demo_data():
         }
     ]
     
-    # Create formations
-    demo_formations = [
-        {"nom": "Classe 4A", "description": "Formation de conduite véhicules lourds", "duree_heures": 40, "validite_mois": 60, "obligatoire": False},
-        {"nom": "Désincarcération", "description": "Techniques de désincarcération", "duree_heures": 24, "validite_mois": 36, "obligatoire": True},
-        {"nom": "Pompier 1", "description": "Formation de base pompier niveau 1", "duree_heures": 200, "validite_mois": 24, "obligatoire": True},
-        {"nom": "Officier 2", "description": "Formation officier niveau 2", "duree_heures": 120, "validite_mois": 36, "obligatoire": False}
+    # Create users
+    for user_data in demo_users:
+        user_dict = user_data.copy()
+        user_dict["mot_de_passe_hash"] = get_password_hash(user_dict.pop("mot_de_passe"))
+        user_dict["statut"] = "Actif"
+        user_obj = User(**user_dict)
+        await db.users.insert_one(user_obj.dict())
+    
+    # Create types de garde
+    demo_types_garde = [
+        {"nom": "Garde Interne Nuit", "heure_debut": "18:00", "heure_fin": "06:00", "heures": 12, "couleur": "#6B21A8"},
+        {"nom": "Garde Interne Jour", "heure_debut": "06:00", "heure_fin": "18:00", "heures": 12, "couleur": "#2563EB"},
+        {"nom": "Garde Externe", "heure_debut": "08:00", "heure_fin": "16:00", "heures": 8, "couleur": "#059669"},
+        {"nom": "Formation", "heure_debut": "09:00", "heure_fin": "17:00", "heures": 8, "couleur": "#D97706"}
     ]
     
-    formation_ids = {}
-    for formation_data in demo_formations:
-        formation_obj = Formation(**formation_data)
-        await db.formations.insert_one(formation_obj.dict())
-        formation_ids[formation_data["nom"]] = formation_obj.id
+    for type_garde_data in demo_types_garde:
+        type_garde_obj = TypeGarde(**type_garde_data)
+        await db.types_garde.insert_one(type_garde_obj.dict())
     
-    # Assign formations to users
-    demo_users[0]["formations"] = [formation_ids["Officier 2"], formation_ids["Pompier 1"]]
-    demo_users[1]["formations"] = [formation_ids["Pompier 1"]]
-    demo_users[2]["formations"] = [formation_ids["Classe 4A"], formation_ids["Désincarcération"]]
-    demo_users[3]["formations"] = [formation_ids["Pompier 1"]]
+    return {
+        "message": f"Données de démonstration créées: {len(demo_users)} utilisateurs, {len(demo_types_garde)} types de garde"
+    }
     
     # Create users
     for user_data in demo_users:
