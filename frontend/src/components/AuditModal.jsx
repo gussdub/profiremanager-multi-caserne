@@ -113,22 +113,27 @@ const AuditModal = ({
                   {topCandidates.map((candidate, index) => {
                     const isSelected = index === 0;
                     const details = candidate.details || {};
-                    const heures = details.heures_ce_mois || 0;
+                    // Supporter les deux formats : candidate.heures_ce_mois OU candidate.details.heures_ce_mois
+                    const heures = candidate.heures_ce_mois || details.heures_ce_mois || 0;
+                    const heuresSemaine = candidate.heures_semaine || details.heures_semaine || 0;
+                    const heuresMax = candidate.heures_max || details.heures_max || 0;
                     const annees = details.annees_service || 0;
-                    const excluded = candidate.excluded_reason;
+                    // Supporter les deux formats pour la raison de rejet
+                    const excluded = candidate.raison_rejet || candidate.raison_non_selection || candidate.excluded_reason;
                     
                     return (
                       <tr 
-                        key={candidate.user_id}
+                        key={candidate.user_id || index}
                         style={{
-                          background: isSelected ? '#ecfdf5' : 'white',
+                          background: isSelected ? '#ecfdf5' : excluded ? '#fef2f2' : 'white',
                           borderBottom: '1px solid #e5e7eb',
-                          borderLeft: isSelected ? '4px solid #10b981' : 'none'
+                          borderLeft: isSelected ? '4px solid #10b981' : excluded ? '4px solid #ef4444' : 'none'
                         }}
                       >
                         <td style={{ padding: '0.75rem' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             {isSelected && <span style={{ fontSize: '1.25rem' }}>🏆</span>}
+                            {excluded && !isSelected && <span style={{ fontSize: '1.25rem' }}>❌</span>}
                             <div>
                               <div style={{ fontWeight: '600' }}>{candidate.nom_complet}</div>
                               <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>{candidate.type_emploi}</div>
@@ -137,9 +142,14 @@ const AuditModal = ({
                         </td>
                         <td style={{ padding: '0.75rem', textAlign: 'center', fontWeight: '600' }}>
                           {heures}h
+                          {heuresSemaine > 0 && (
+                            <div style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: 'normal' }}>
+                              ({heuresSemaine}h/sem)
+                            </div>
+                          )}
                         </td>
                         <td style={{ padding: '0.75rem', textAlign: 'center' }}>
-                          {annees.toFixed(1)} ans
+                          {annees > 0 ? `${annees.toFixed(1)} ans` : '-'}
                         </td>
                         <td style={{ padding: '0.75rem', textAlign: 'center' }}>
                           <span style={{
@@ -149,7 +159,7 @@ const AuditModal = ({
                             fontSize: '0.85rem',
                             fontWeight: '500'
                           }}>
-                            {candidate.grade}
+                            {candidate.grade || '-'}
                           </span>
                         </td>
                         <td style={{ padding: '0.75rem' }}>
@@ -165,15 +175,20 @@ const AuditModal = ({
                               ✅ SÉLECTIONNÉ
                             </span>
                           ) : excluded ? (
-                            <span style={{
-                              padding: '0.25rem 0.75rem',
-                              background: '#fef3c7',
-                              color: '#d97706',
-                              borderRadius: '12px',
-                              fontSize: '0.85rem'
-                            }}>
-                              ❌ {excluded}
-                            </span>
+                            <div>
+                              <span style={{
+                                padding: '0.25rem 0.75rem',
+                                background: '#fef3c7',
+                                color: '#d97706',
+                                borderRadius: '12px',
+                                fontSize: '0.8rem',
+                                display: 'inline-block',
+                                maxWidth: '200px',
+                                wordWrap: 'break-word'
+                              }}>
+                                {excluded}
+                              </span>
+                            </div>
                           ) : (
                             <span style={{
                               padding: '0.25rem 0.75rem',
