@@ -598,7 +598,7 @@ async def job_check_overdue_payments():
                         try:
                             resend.api_key = os.environ.get("RESEND_API_KEY")
                             resend.Emails.send({
-                                "from": "ProFireManager <noreply@profiremanager.com>",
+                                "from": "ProFireManager <noreply@profiremanager.ca>",
                                 "to": [tenant["email_contact"]],
                                 "subject": "⚠️ Compte suspendu - ProFireManager",
                                 "html": f"""
@@ -618,7 +618,7 @@ async def job_check_overdue_payments():
                         try:
                             resend.api_key = os.environ.get("RESEND_API_KEY")
                             resend.Emails.send({
-                                "from": "ProFireManager <noreply@profiremanager.com>",
+                                "from": "ProFireManager <noreply@profiremanager.ca>",
                                 "to": [tenant["email_contact"]],
                                 "subject": "Dernier rappel de paiement - ProFireManager",
                                 "html": f"""
@@ -1350,7 +1350,7 @@ async def job_verifier_rappels_disponibilites():
                 
                 # Récupérer la config Resend pour les emails
                 resend_api_key = os.environ.get("RESEND_API_KEY")
-                sender_email = os.environ.get("RESEND_FROM_EMAIL", "noreply@resend.dev")
+                sender_email = os.environ.get("SENDER_EMAIL", "noreply@profiremanager.ca")
                 app_url = os.environ.get("FRONTEND_URL", os.environ.get("REACT_APP_BACKEND_URL", ""))
                 
                 for user in users_a_notifier:

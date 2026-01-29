@@ -296,7 +296,7 @@ async def forgot_password(tenant_slug: str, request: ForgotPasswordRequest):
             """
             
             resend.Emails.send({
-                "from": "ProFireManager <noreply@profiremanager.com>",
+                "from": "ProFireManager <noreply@profiremanager.ca>",
                 "to": [user["email"]],
                 "subject": "Réinitialisation de votre mot de passe - ProFireManager",
                 "html": html_content

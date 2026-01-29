@@ -268,7 +268,7 @@ async def trigger_rappels_disponibilites(
     message_notification = f"Vous avez jusqu'au {jour_blocage} {mois_noms[current_month - 1]} pour saisir vos disponibilités de {mois_suivant_texte}. Il vous reste {jours_restants} jour(s)."
     
     resend_api_key = os.environ.get("RESEND_API_KEY")
-    sender_email = os.environ.get("RESEND_FROM_EMAIL", "noreply@resend.dev")
+    sender_email = os.environ.get("SENDER_EMAIL", "noreply@profiremanager.ca")
     app_url = os.environ.get("FRONTEND_URL", os.environ.get("REACT_APP_BACKEND_URL", ""))
     
     notifications_envoyees = 0

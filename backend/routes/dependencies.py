@@ -531,7 +531,7 @@ def send_welcome_email(user_email: str, user_name: str, user_role: str, temp_pas
         """
         
         resend.Emails.send({
-            "from": "ProFireManager <noreply@profiremanager.com>",
+            "from": "ProFireManager <noreply@profiremanager.ca>",
             "to": [user_email],
             "subject": "Bienvenue sur ProFireManager",
             "html": html_content
@@ -567,7 +567,7 @@ def send_super_admin_welcome_email(user_email: str, user_name: str, temp_passwor
         """
         
         resend.Emails.send({
-            "from": "ProFireManager <noreply@profiremanager.com>",
+            "from": "ProFireManager <noreply@profiremanager.ca>",
             "to": [user_email],
             "subject": "Accès Super Admin - ProFireManager",
             "html": html_content

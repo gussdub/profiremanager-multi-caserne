@@ -1807,7 +1807,7 @@ async def envoyer_email_remise_propriete(tenant: dict, intervention: dict, remis
         # Construire l'adresse d'envoi
         tenant_slug = tenant.get("slug", "service")
         # Utiliser l'email configuré ou fallback
-        from_email = os.environ.get("RESEND_FROM_EMAIL", "noreply@resend.dev")
+        from_email = os.environ.get("SENDER_EMAIL", "noreply@profiremanager.ca")
         
         nom_service = tenant.get("nom_service") or tenant.get("nom", "Service de sécurité incendie")
         

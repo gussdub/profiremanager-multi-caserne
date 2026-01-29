@@ -386,7 +386,7 @@ async def send_payment_reminder(
         resend.api_key = os.environ.get("RESEND_API_KEY")
         if resend.api_key:
             resend.Emails.send({
-                "from": "ProFireManager <noreply@profiremanager.com>",
+                "from": "ProFireManager <noreply@profiremanager.ca>",
                 "to": [tenant.email_contact],
                 "subject": "Rappel de paiement - ProFireManager",
                 "html": f"""
