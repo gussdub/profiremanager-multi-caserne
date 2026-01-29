@@ -76,30 +76,107 @@ logger = logging.getLogger(__name__)
 
 # ==================== MODÈLES PYDANTIC ====================
 
+class Budget(BaseModel):
+    """Modèle complet pour les budgets"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    annee: int
+    categorie: str  # salaires, formations, equipements, carburant, entretien, autres
+    budget_alloue: float
+    budget_consomme: float = 0.0
+    notes: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 class BudgetCreate(BaseModel):
+    """Modèle pour création de budget"""
+    annee: int
     categorie: str
-    montant_prevu: float
+    budget_alloue: float
+    notes: str = ""
+    # Champs legacy pour compatibilité
+    montant_prevu: Optional[float] = None
     description: Optional[str] = None
+
+class Immobilisation(BaseModel):
+    """Modèle complet pour les immobilisations"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    type_immobilisation: str  # vehicule, equipement_majeur
+    nom: str
+    date_acquisition: str  # YYYY-MM-DD
+    cout_acquisition: float
+    cout_entretien_annuel: float = 0.0
+    etat: str = "bon"  # bon, moyen, mauvais
+    date_remplacement_prevue: Optional[str] = None
+    notes: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class ImmobilisationCreate(BaseModel):
+    """Modèle pour création d'immobilisation"""
+    type_immobilisation: str
     nom: str
-    categorie: str
-    valeur_acquisition: float
     date_acquisition: str
-    duree_amortissement: int = 5
+    cout_acquisition: float
+    cout_entretien_annuel: float = 0.0
+    etat: str = "bon"
+    date_remplacement_prevue: Optional[str] = None
+    notes: str = ""
+    # Champs legacy pour compatibilité
+    categorie: Optional[str] = None
+    valeur_acquisition: Optional[float] = None
+    duree_amortissement: Optional[int] = 5
+
+class ProjetTriennal(BaseModel):
+    """Modèle complet pour les projets triennaux"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    nom: str
+    description: str
+    type_projet: str  # acquisition, renovation, recrutement
+    annee_prevue: int
+    cout_estime: float
+    statut: str = "prevu"  # prevu, en_cours, termine, annule
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class ProjetTriennalCreate(BaseModel):
+    """Modèle pour création de projet triennal"""
     nom: str
-    description: Optional[str] = None
-    montant_total: float
-    annee_debut: int
-    annee_fin: int
+    description: str = ""
+    type_projet: str
+    annee_prevue: int
+    cout_estime: float
+    statut: str = "prevu"
+    # Champs legacy pour compatibilité
+    montant_total: Optional[float] = None
+    annee_debut: Optional[int] = None
+    annee_fin: Optional[int] = None
+
+class Intervention(BaseModel):
+    """Modèle complet pour les interventions"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    date_intervention: str
+    type_intervention: str  # incendie, medical, sauvetage, autre
+    duree_minutes: int
+    nombre_pompiers: int
+    temps_reponse_minutes: Optional[int] = None
+    notes: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class InterventionCreate(BaseModel):
-    date: str
+    """Modèle pour création d'intervention"""
+    date_intervention: str
     type_intervention: str
+    duree_minutes: int
+    nombre_pompiers: int
+    temps_reponse_minutes: Optional[int] = None
+    notes: str = ""
+    # Champs legacy pour compatibilité
+    date: Optional[str] = None
     description: Optional[str] = None
-    duree_minutes: int = 0
     ressources_utilisees: Optional[List[str]] = []
 
 
