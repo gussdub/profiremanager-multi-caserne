@@ -3463,11 +3463,31 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             break
                         
                         user_id = user["id"]
+                        user_type_emploi = user.get("type_emploi", "temps_plein")
+                        user_heures_travaillees = get_heures_travaillees_semaine(user_id, date_str)
+                        user_heures_max = get_heures_max_semaine(user)
+                        user_has_dispo = est_disponible_pour_garde(user_id, date_str, heure_debut, heure_fin, type_garde_id)
                         
                         # Si on a besoin d'un officier et qu'on vient d'en assigner un
                         if besoin_officier and not officier_assigne_cette_iteration:
                             if est_officier(user) or est_eligible_fonction_superieure(user):
                                 officier_assigne_cette_iteration = True
+                        
+                        # Construire la liste des autres candidats (ceux qui n'ont pas été sélectionnés)
+                        other_candidates_list = []
+                        for other in candidats_tries:
+                            if other["id"] != user_id:
+                                other_heures = user_monthly_hours_internes.get(other["id"], 0)
+                                other_candidates_list.append({
+                                    "nom_complet": f"{other.get('prenom', '')} {other.get('nom', '')}",
+                                    "grade": other.get("grade", ""),
+                                    "type_emploi": other.get("type_emploi", ""),
+                                    "heures_ce_mois": other_heures,
+                                    "raison_non_selection": "Moins prioritaire (équité/ancienneté)"
+                                })
+                        
+                        # Ajouter les candidats rejetés
+                        other_candidates_list.extend(candidats_rejetes[:10])  # Limiter à 10 pour l'espace
                         
                         # Créer l'assignation
                         assignation = {
@@ -3486,20 +3506,22 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                 "assigned_user": {
                                     "nom_complet": f"{user.get('prenom', '')} {user.get('nom', '')}",
                                     "grade": user.get("grade", ""),
-                                    "type_emploi": type_emploi,
+                                    "type_emploi": user_type_emploi,
                                     "details": {
                                         "heures_ce_mois": user_monthly_hours_internes.get(user_id, 0),
                                         "heures_externes_ce_mois": user_monthly_hours_externes.get(user_id, 0),
-                                        "heures_semaine": heures_travaillees,
-                                        "heures_max": heures_max,
+                                        "heures_semaine": user_heures_travaillees,
+                                        "heures_max": user_heures_max,
                                         "est_officier": est_officier(user),
                                         "est_eligible": est_eligible_fonction_superieure(user),
-                                        "had_disponibilite": has_dispo_valide,
+                                        "had_disponibilite": user_has_dispo,
                                         "date_embauche": user.get("date_embauche", "")
                                     }
                                 },
                                 "type_garde_info": {
                                     "nom": type_garde_nom,
+                                    "heure_debut": heure_debut,
+                                    "heure_fin": heure_fin,
                                     "duree_heures": duree_garde,
                                     "est_externe": est_externe
                                 },
@@ -3510,9 +3532,11 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                     4: "Temps plein (heures incomplètes)",
                                     5: "Heures supplémentaires"
                                 }.get(niveau, f"Niveau {niveau}"),
-                                "total_candidates_evaluated": len(candidats),
-                                "other_candidates": [],  # On ne stocke pas tous les candidats pour économiser l'espace
-                                "raison": f"Niveau {niveau} - {type_emploi} - {heures_travaillees}h travaillées/{heures_max}h max"
+                                "total_candidates_evaluated": len(users_avec_competences),
+                                "candidates_acceptes": len(candidats),
+                                "candidates_rejetes": len(candidats_rejetes),
+                                "other_candidates": other_candidates_list,
+                                "raison": f"Niveau {niveau} - {user_type_emploi} - {user_heures_travaillees}h travaillées/{user_heures_max}h max"
                             }
                         }
                         
