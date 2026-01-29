@@ -277,8 +277,8 @@ async def forgot_password(tenant_slug: str, request: ForgotPasswordRequest):
             
             user_name = f"{user.get('prenom', '')} {user.get('nom', '')}".strip() or "Utilisateur"
             
-            # URL du logo ProFireManager
-            logo_url = "https://www.profiremanager.ca/logo.png"
+            # Logo ProFireManager hébergé de manière permanente
+            logo_url = "https://i.ibb.co/4ZQZJzX/profiremanager-logo.png"
             
             html_content = f"""
             <!DOCTYPE html>
