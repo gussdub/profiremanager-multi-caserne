@@ -15,7 +15,7 @@ Routes de base (les routes avancées restent dans server.py pour l'instant):
 from fastapi import APIRouter, Depends, HTTPException, Body
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
-from datetime import datetime, timezone, date
+from datetime import datetime, timezone, date, timedelta
 import uuid
 import logging
 
