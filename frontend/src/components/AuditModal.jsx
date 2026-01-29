@@ -17,16 +17,26 @@ const AuditModal = ({
   const assignedUser = justif.assigned_user || {};
   const otherCandidates = justif.other_candidates || [];
   const totalCandidates = justif.total_candidates_evaluated || 0;
+  const candidatesAcceptes = justif.candidates_acceptes || 0;
+  const candidatesRejetes = justif.candidates_rejetes || 0;
+  const niveauDescription = justif.niveau_description || `Niveau ${justif.niveau}`;
+  const typeGardeInfo = justif.type_garde_info || {};
   
   // Déterminer la raison principale de sélection
   const getRaisonPrincipale = () => {
     const details = assignedUser.details || {};
     const heures = details.heures_ce_mois || 0;
-    return `Plus faible nombre d'heures ce mois (${heures}h)`;
+    const heuresSemaine = details.heures_semaine || 0;
+    const heuresMax = details.heures_max || 0;
+    
+    if (justif.niveau === 5) {
+      return `Heures supplémentaires autorisées (${heuresSemaine}h/${heuresMax}h max)`;
+    }
+    return `Plus faible nombre d'heures ce mois (${heures}h) - Équité respectée`;
   };
   
-  // Top 5 candidats pour la comparaison
-  const topCandidates = [assignedUser, ...otherCandidates].slice(0, 5);
+  // Tous les candidats pour la comparaison (sélectionné + autres)
+  const topCandidates = [assignedUser, ...otherCandidates].slice(0, 10);
   
   const handleSave = async () => {
     await onSaveNotes(notesEdit);
