@@ -1327,6 +1327,51 @@ const Parametres = ({ user, tenantSlug }) => {
                     </div>
                   </div>
                 )}
+                
+                {/* Section Compétences Requises */}
+                <div style={{ marginTop: '12px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>📜 Compétences requises pour cette garde</label>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', 
+                    gap: '8px',
+                    padding: '12px',
+                    background: '#f1f5f9',
+                    borderRadius: '8px',
+                    maxHeight: '200px',
+                    overflowY: 'auto'
+                  }}>
+                    {competences.map(comp => (
+                      <label 
+                        key={comp.id} 
+                        style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '8px', 
+                          cursor: 'pointer',
+                          padding: '6px 10px',
+                          background: (editForm.competences_requises || []).includes(comp.id) ? '#dcfce7' : 'white',
+                          border: (editForm.competences_requises || []).includes(comp.id) ? '2px solid #22c55e' : '1px solid #e5e7eb',
+                          borderRadius: '6px',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={(editForm.competences_requises || []).includes(comp.id)}
+                          onChange={() => handleEditCompetenceChange(comp.id)}
+                          style={{ accentColor: '#22c55e' }}
+                        />
+                        <span style={{ fontSize: '0.9rem' }}>{comp.nom}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {(editForm.competences_requises || []).length > 0 && (
+                    <p style={{ marginTop: '8px', fontSize: '0.875rem', color: '#22c55e', fontWeight: '500' }}>
+                      ✅ {(editForm.competences_requises || []).length} compétence(s) sélectionnée(s)
+                    </p>
+                  )}
+                </div>
               </div>
               <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
                 <Button variant="outline" onClick={() => setShowEditTypeModal(false)}>
