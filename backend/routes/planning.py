@@ -3325,11 +3325,29 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         if user_id in users_assignes_ce_jour:
                             if is_debug:
                                 logging.info(f"🔴 DEBUG Alva bloqué: déjà assigné à garde chevauchante")
+                            
+                            # Déterminer le message approprié
+                            if user_id in users_assignes_cette_garde:
+                                raison = f"Déjà assigné à cette garde ({type_garde_nom})"
+                            else:
+                                # Trouver le nom de l'autre garde
+                                autre_garde = next(
+                                    (a for a in existing_assignations 
+                                     if a.get("user_id") == user_id and a.get("date") == date_str and a.get("type_garde_id") != type_garde_id),
+                                    None
+                                )
+                                if autre_garde:
+                                    autre_tg = next((t for t in types_garde if t["id"] == autre_garde.get("type_garde_id")), None)
+                                    autre_nom = autre_tg.get("nom", "Autre garde") if autre_tg else "Autre garde"
+                                    raison = f"Déjà assigné à '{autre_nom}' ce jour"
+                                else:
+                                    raison = "Déjà assigné à une autre garde ce jour"
+                            
                             candidats_rejetes.append({
                                 "nom_complet": user_name,
                                 "grade": user.get("grade", ""),
                                 "type_emploi": user.get("type_emploi", ""),
-                                "raison_rejet": "Déjà assigné à une garde ce jour"
+                                "raison_rejet": raison
                             })
                             continue
                         
