@@ -295,8 +295,8 @@ async def forgot_password(tenant_slug: str, request: ForgotPasswordRequest):
                                 <!-- Header avec logo -->
                                 <tr>
                                     <td align="center" style="padding: 40px 40px 20px 40px;">
-                                        <img src="{logo_url}" alt="ProFireManager" style="width: 200px; height: auto;" />
-                                        <p style="color: #666666; font-size: 14px; margin: 15px 0 0 0;">Système de gestion des services d'incendie</p>
+                                        <img src="{logo_url}" alt="ProFireManager" style="width: 250px; height: auto;" />
+                                        <p style="color: #666666; font-size: 14px; margin: 5px 0 0 0;">Système de gestion des services d'incendie</p>
                                     </td>
                                 </tr>
                                 
