@@ -2971,11 +2971,105 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         
         def get_heures_max_semaine(user):
             """Retourne le max d'heures par semaine pour cet utilisateur"""
+            # Utiliser la valeur définie dans la fiche employé si disponible
+            user_max = user.get("heures_max_semaine")
+            if user_max is not None and user_max > 0:
+                return user_max
+            
+            # Sinon, utiliser la valeur par défaut selon le type d'emploi
             type_emploi = user.get("type_emploi", "temps_plein")
             if type_emploi in ["temps_partiel", "temporaire"]:
-                return user.get("heures_max_semaine", 20)
+                return 20  # Défaut temps partiel
             else:
-                return seuil_hebdo_temps_plein
+                return seuil_hebdo_temps_plein  # Défaut temps plein
+        
+        def plages_se_chevauchent(debut1, fin1, debut2, fin2):
+            """
+            Vérifie si deux plages horaires se chevauchent.
+            Les heures sont au format 'HH:MM'.
+            Retourne True si les plages se chevauchent.
+            """
+            # Convertir en minutes pour faciliter la comparaison
+            def to_minutes(time_str):
+                if not time_str:
+                    return 0
+                parts = time_str.split(':')
+                return int(parts[0]) * 60 + int(parts[1])
+            
+            start1 = to_minutes(debut1)
+            end1 = to_minutes(fin1)
+            start2 = to_minutes(debut2)
+            end2 = to_minutes(fin2)
+            
+            # Gérer le cas où fin = 23:59 (toute la journée)
+            if end1 == 23 * 60 + 59:
+                end1 = 24 * 60
+            if end2 == 23 * 60 + 59:
+                end2 = 24 * 60
+            
+            # Les plages se chevauchent si: start1 < end2 AND start2 < end1
+            return start1 < end2 and start2 < end1
+        
+        def est_disponible_pour_garde(user_id, date_str, garde_heure_debut, garde_heure_fin, type_garde_id):
+            """
+            Vérifie si l'utilisateur a une disponibilité qui couvre la plage horaire de la garde.
+            Retourne True si l'utilisateur est disponible pour cette garde.
+            """
+            user_dispos = dispos_lookup.get(user_id, {}).get(date_str, {})
+            
+            # Vérifier les disponibilités spécifiques à ce type de garde
+            specific_dispos = user_dispos.get(type_garde_id, [])
+            # Vérifier les disponibilités générales (sans type de garde spécifique)
+            general_dispos = user_dispos.get(None, [])
+            
+            all_dispos = specific_dispos + general_dispos
+            
+            for dispo in all_dispos:
+                dispo_debut = dispo.get("heure_debut", "00:00")
+                dispo_fin = dispo.get("heure_fin", "23:59")
+                
+                # Vérifier si la disponibilité COUVRE la garde
+                # La dispo doit commencer avant ou au même moment que la garde
+                # ET finir après ou au même moment que la garde
+                def to_minutes(time_str):
+                    if not time_str:
+                        return 0
+                    parts = time_str.split(':')
+                    return int(parts[0]) * 60 + int(parts[1])
+                
+                dispo_start = to_minutes(dispo_debut)
+                dispo_end = to_minutes(dispo_fin)
+                garde_start = to_minutes(garde_heure_debut)
+                garde_end = to_minutes(garde_heure_fin)
+                
+                # Gérer 23:59 comme fin de journée
+                if dispo_end == 23 * 60 + 59:
+                    dispo_end = 24 * 60
+                if garde_end == 23 * 60 + 59:
+                    garde_end = 24 * 60
+                
+                # La dispo couvre la garde si elle englobe complètement la plage horaire de la garde
+                if dispo_start <= garde_start and dispo_end >= garde_end:
+                    return True
+            
+            return False
+        
+        def a_indisponibilite_bloquante(user_id, date_str, garde_heure_debut, garde_heure_fin):
+            """
+            Vérifie si l'utilisateur a une indisponibilité qui chevauche la plage horaire de la garde.
+            Retourne True si l'utilisateur est BLOQUÉ par une indisponibilité.
+            """
+            user_indispos = indispos_details_lookup.get(user_id, {}).get(date_str, [])
+            
+            for indispo in user_indispos:
+                indispo_debut = indispo.get("heure_debut", "00:00")
+                indispo_fin = indispo.get("heure_fin", "23:59")
+                
+                # Si l'indisponibilité chevauche la garde, l'utilisateur est bloqué
+                if plages_se_chevauchent(garde_heure_debut, garde_heure_fin, indispo_debut, indispo_fin):
+                    return True
+            
+            return False
         
         def trier_candidats_equite_anciennete(candidats, type_garde_externe=False, prioriser_officiers=False, user_monthly_hours=None):
             """
