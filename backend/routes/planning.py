@@ -2882,14 +2882,19 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         logging.info(f"📊 [ÉQUITÉ] Heures calculées pour {len(users)} utilisateurs sur la période")
         
         # ==================== RÉCUPÉRATION DES PARAMÈTRES ====================
-        # Paramètres des niveaux d'attribution
+        # Paramètres des niveaux d'attribution depuis la collection parametres du tenant
+        params_tenant_doc = await db.parametres_niveaux_attribution.find_one({"tenant_id": tenant.id})
+        if not params_tenant_doc:
+            params_tenant_doc = {}
+        
+        # Utiliser les niveaux chargés plus haut ou les défauts
         niveaux_actifs = {
-            "niveau_2": params_tenant.get("niveau_2_actif", True),  # Temps partiel DISPONIBLES
-            "niveau_3": params_tenant.get("niveau_3_actif", True),  # Temps partiel STAND-BY
-            "niveau_4": params_tenant.get("niveau_4_actif", True),  # Temps plein INCOMPLETS
-            "niveau_5": params_tenant.get("niveau_5_actif", True)   # Temps plein COMPLETS (heures sup)
+            "niveau_2": params_tenant_doc.get("niveau_2_actif", True),  # Temps partiel DISPONIBLES
+            "niveau_3": params_tenant_doc.get("niveau_3_actif", True),  # Temps partiel STAND-BY
+            "niveau_4": params_tenant_doc.get("niveau_4_actif", True),  # Temps plein INCOMPLETS
+            "niveau_5": params_tenant_doc.get("niveau_5_actif", True)   # Temps plein COMPLETS (heures sup)
         }
-        autoriser_heures_sup = params_tenant.get("autoriser_heures_supplementaires", False)
+        autoriser_heures_sup = params_tenant_doc.get("autoriser_heures_supplementaires", False) or activer_heures_sup
         
         # Si heures sup non autorisées, désactiver niveau 5
         if not autoriser_heures_sup:
