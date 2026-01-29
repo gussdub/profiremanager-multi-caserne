@@ -1750,12 +1750,12 @@ const Parametres = ({ user, tenantSlug }) => {
       {/* Modal de création de type de garde */}
       {showCreateTypeModal && (
         <div className="modal-overlay" onClick={() => setShowCreateTypeModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '650px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
             <div className="modal-header">
               <h3>Créer un nouveau type de garde</h3>
               <button className="close-btn" onClick={() => setShowCreateTypeModal(false)}>×</button>
             </div>
-            <div className="modal-body" style={{ display: 'grid', gap: '16px' }}>
+            <div className="modal-body" style={{ display: 'grid', gap: '16px', overflowY: 'auto', flex: 1, paddingRight: '8px' }}>
               <div>
                 <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Nom du type *</label>
                 <input
@@ -1807,6 +1807,46 @@ const Parametres = ({ user, tenantSlug }) => {
                   />
                 </div>
               </div>
+              
+              {/* Section Jours d'application */}
+              <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>📅 Jours d'application</label>
+                <p style={{ fontSize: '0.8rem', color: '#6b7280', marginBottom: '8px' }}>
+                  Sélectionnez les jours où cette garde est active. Si aucun jour n'est sélectionné, la garde s'applique tous les jours.
+                </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {joursOptions.map(jour => (
+                    <label
+                      key={jour.value}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '8px 12px',
+                        background: (createForm.jours_application || []).includes(jour.value) ? '#dbeafe' : 'white',
+                        border: (createForm.jours_application || []).includes(jour.value) ? '2px solid #3b82f6' : '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={(createForm.jours_application || []).includes(jour.value)}
+                        onChange={() => handleCreateJourChange(jour.value)}
+                        style={{ accentColor: '#3b82f6' }}
+                      />
+                      <span style={{ fontSize: '0.9rem' }}>{jour.label}</span>
+                    </label>
+                  ))}
+                </div>
+                {(createForm.jours_application || []).length > 0 && (
+                  <p style={{ marginTop: '8px', fontSize: '0.875rem', color: '#3b82f6', fontWeight: '500' }}>
+                    📅 {(createForm.jours_application || []).length} jour(s) sélectionné(s)
+                  </p>
+                )}
+              </div>
+              
               <div>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                   <input
@@ -1855,38 +1895,57 @@ const Parametres = ({ user, tenantSlug }) => {
               )}
               
               {/* Section Compétences requises */}
-              <div style={{ marginTop: '12px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>📚 Compétences requises</label>
+              <div style={{ padding: '12px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>📜 Compétences requises</label>
+                <p style={{ fontSize: '0.8rem', color: '#6b7280', marginBottom: '8px' }}>
+                  Les candidats doivent posséder toutes les compétences sélectionnées pour être assignés à cette garde.
+                </p>
                 <div style={{ 
                   maxHeight: '150px', 
                   overflowY: 'auto', 
-                  border: '1px solid #d1d5db', 
+                  background: 'white',
                   borderRadius: '6px', 
                   padding: '8px'
                 }}>
                   {competences.length === 0 ? (
-                    <p style={{ color: '#6b7280', fontSize: '14px', margin: 0 }}>Aucune compétence disponible</p>
+                    <p style={{ color: '#6b7280', fontSize: '14px', margin: 0, fontStyle: 'italic' }}>Aucune compétence disponible</p>
                   ) : (
-                    competences.map(comp => (
-                      <label key={comp.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0', cursor: 'pointer' }}>
-                        <input
-                          type="checkbox"
-                          checked={(createForm.competences_requises || []).includes(comp.id)}
-                          onChange={() => handleCreateCompetenceChange(comp.id)}
-                        />
-                        <span>{comp.nom}</span>
-                      </label>
-                    ))
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '6px' }}>
+                      {competences.map(comp => (
+                        <label 
+                          key={comp.id} 
+                          style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '6px', 
+                            padding: '6px 8px', 
+                            cursor: 'pointer',
+                            background: (createForm.competences_requises || []).includes(comp.id) ? '#dcfce7' : '#f9fafb',
+                            border: (createForm.competences_requises || []).includes(comp.id) ? '2px solid #22c55e' : '1px solid #e5e7eb',
+                            borderRadius: '6px',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={(createForm.competences_requises || []).includes(comp.id)}
+                            onChange={() => handleCreateCompetenceChange(comp.id)}
+                            style={{ accentColor: '#22c55e' }}
+                          />
+                          <span style={{ fontSize: '0.85rem' }}>{comp.nom}</span>
+                        </label>
+                      ))}
+                    </div>
                   )}
                 </div>
                 {(createForm.competences_requises || []).length > 0 && (
-                  <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
-                    {(createForm.competences_requises || []).length} compétence(s) sélectionnée(s)
+                  <p style={{ marginTop: '8px', fontSize: '0.875rem', color: '#22c55e', fontWeight: '500' }}>
+                    ✅ {(createForm.competences_requises || []).length} compétence(s) sélectionnée(s)
                   </p>
                 )}
               </div>
             </div>
-            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px', borderTop: '1px solid #e5e7eb', paddingTop: '16px' }}>
               <Button variant="outline" onClick={() => setShowCreateTypeModal(false)}>
                 Annuler
               </Button>
