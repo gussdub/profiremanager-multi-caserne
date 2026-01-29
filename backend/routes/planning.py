@@ -3194,7 +3194,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         # Mettre à jour les heures mensuelles
                         if est_externe:
                             user_monthly_hours_externes[user_id] = user_monthly_hours_externes.get(user_id, 0) + duree_garde
-                        user_monthly_hours[user_id] = user_monthly_hours.get(user_id, 0) + duree_garde
+                        else:
+                            user_monthly_hours_internes[user_id] = user_monthly_hours_internes.get(user_id, 0) + duree_garde
                         
                         assignes_cette_garde += 1
                         
