@@ -848,6 +848,7 @@ const Parametres = ({ user, tenantSlug }) => {
   const handleSaveDisponibilitesParams = async () => {
     try {
       const paramsToSave = {
+        blocage_dispos_active: systemSettings.blocage_dispos_active,
         jour_blocage_dispos: systemSettings.jour_blocage_dispos,
         exceptions_admin_superviseur: systemSettings.exceptions_admin_superviseur,
         admin_peut_modifier_temps_partiel: systemSettings.admin_peut_modifier_temps_partiel,
