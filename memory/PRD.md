@@ -62,19 +62,16 @@ Application de gestion des interventions et de la paie des pompiers. Solution mu
 ### 29 Janvier 2026 - Session 1 - Refactorisation Module Rapports
 **Statut**: ✅ Terminé et validé
 
-**Travail effectué**:
-- Extraction du module Rapports de `server.py` vers `routes/rapports.py`
-- Réduction de `server.py` de 9346 → 7122 lignes (-24%)
-- Correction des APIs pour correspondre au format attendu par le frontend
+**Fichiers modifiés**:
+- `backend/routes/rapports.py` (enrichi)
+- `backend/server.py` (allégé de ~2200 lignes)
 
 ---
 
 ## Tâches Complétées (Sessions Précédentes)
-- ✅ Réécriture complète de l'attribution automatique des gardes (5 niveaux de priorité)
-- ✅ Gestion des compétences et officiers dans l'attribution
+- ✅ Réécriture complète de l'attribution automatique des gardes
 - ✅ Module d'audit pour l'attribution automatique
 - ✅ Correction bugs module Disponibilités
-- ✅ Amélioration UI modules Remplacements et EPI
 - ✅ Service d'intégration SFTP
 - ✅ Configuration par Tenant
 
@@ -86,6 +83,7 @@ Application de gestion des interventions et de la paie des pompiers. Solution mu
 1. Finaliser transmission DSI réelle (actuellement MOCK)
 2. Module de gestion des jours fériés
 3. Module de facturation pour l'entraide
+4. Étendre le logging e-mail aux autres fonctions (welcome, gardes notifications, etc.)
 
 ### P3 - Priorité Basse
 1. Améliorer messages d'import CSV
