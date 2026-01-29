@@ -3319,8 +3319,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         # N5: HEURES SUPPLÉMENTAIRES (tous types d'emploi si autorisé)
                         elif niveau == 5:
                             # Les heures sup s'appliquent à TOUS les types d'emploi
-                            # L'employé a déjà atteint ou dépassé son max d'heures
-                            if heures_travaillees >= heures_max:
+                            # L'employé DÉPASSERAIT son max avec cette garde = heures supplémentaires
+                            if depasserait_max:
                                 candidats.append(user)
                     
                     # Trier par équité puis ancienneté, avec priorité officier si nécessaire
