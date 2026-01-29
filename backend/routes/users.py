@@ -473,57 +473,83 @@ async def import_users_csv(
 async def update_mon_profil(
     tenant_slug: str,
     profile_data: ProfileUpdate,
-    current_user: User = Depends(get_current_user)
+    credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer())
 ):
     """
     Permet à un utilisateur de modifier son propre profil
+    Supporte les utilisateurs normaux ET les super-admins
     """
+    import jwt
+    from routes.dependencies import SECRET_KEY, ALGORITHM
+    
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
     
     try:
-        # Accéder à l'ID de manière sécurisée
-        user_id = current_user.id if hasattr(current_user, 'id') else current_user.get('id') if isinstance(current_user, dict) else None
-        tenant_id = tenant.id if hasattr(tenant, 'id') else tenant.get('id') if isinstance(tenant, dict) else None
-        
-        logger.info(f"Update profil - user_id: {user_id}, tenant_id: {tenant_id}, tenant_slug: {tenant_slug}")
+        # Décoder le token pour obtenir l'ID et le type d'utilisateur
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        is_super_admin = payload.get("is_super_admin", False)
         
         if not user_id:
-            raise HTTPException(status_code=400, detail="ID utilisateur non trouvé")
-        
-        # Chercher l'utilisateur - d'abord avec tenant_id, sinon juste par user_id
-        existing_user = await db.users.find_one({"id": user_id, "tenant_id": tenant_id})
-        
-        if not existing_user:
-            # Essayer de trouver l'utilisateur sans le tenant_id (pour compatibilité)
-            existing_user = await db.users.find_one({"id": user_id})
-            logger.warning(f"Utilisateur {user_id} trouvé sans correspondance tenant_id")
-        
-        if not existing_user:
-            logger.error(f"Utilisateur {user_id} non trouvé dans la base de données")
-            raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
-        
-        # Utiliser le tenant_id de l'utilisateur existant pour la mise à jour
-        actual_tenant_id = existing_user.get("tenant_id")
+            raise HTTPException(status_code=400, detail="ID utilisateur non trouvé dans le token")
         
         update_data = profile_data.dict(exclude_unset=True)
         
-        if not update_data:
-            return User(**clean_mongo_doc(existing_user))
+        if is_super_admin:
+            # C'est un super-admin - chercher dans super_admins
+            existing_user = await db.super_admins.find_one({"id": user_id})
+            
+            if not existing_user:
+                raise HTTPException(status_code=404, detail="Super admin non trouvé")
+            
+            if update_data:
+                # Mapper les champs du profil vers les champs super_admin
+                sa_update = {}
+                if "prenom" in update_data or "nom" in update_data:
+                    prenom = update_data.get("prenom", existing_user.get("prenom", ""))
+                    nom = update_data.get("nom", existing_user.get("nom", ""))
+                    sa_update["nom"] = f"{prenom} {nom}".strip()
+                if "email" in update_data:
+                    sa_update["email"] = update_data["email"]
+                if "telephone" in update_data:
+                    sa_update["telephone"] = update_data["telephone"]
+                
+                if sa_update:
+                    await db.super_admins.update_one({"id": user_id}, {"$set": sa_update})
+            
+            # Retourner un objet User compatible
+            updated = await db.super_admins.find_one({"id": user_id})
+            nom_parts = updated.get("nom", "Admin").split(" ", 1)
+            return User(
+                id=updated["id"],
+                tenant_id=tenant.id if hasattr(tenant, 'id') else tenant.get('id'),
+                email=updated["email"],
+                prenom=nom_parts[0] if nom_parts else "Admin",
+                nom=nom_parts[1] if len(nom_parts) > 1 else "",
+                role="admin",
+                grade="Super Admin",
+                type_emploi="temps_plein",
+                statut="Actif",
+                telephone=updated.get("telephone", "")
+            )
+        else:
+            # Utilisateur normal - chercher dans users
+            existing_user = await db.users.find_one({"id": user_id})
+            
+            if not existing_user:
+                raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+            
+            if update_data:
+                await db.users.update_one({"id": user_id}, {"$set": update_data})
+            
+            updated_user = await db.users.find_one({"id": user_id})
+            return User(**clean_mongo_doc(updated_user))
         
-        result = await db.users.update_one(
-            {"id": user_id}, 
-            {"$set": update_data}
-        )
-        
-        if result.matched_count == 0:
-            raise HTTPException(status_code=404, detail="Profil non trouvé")
-        
-        # Récupérer le profil mis à jour
-        updated_user = await db.users.find_one({"id": user_id})
-        updated_user = clean_mongo_doc(updated_user)
-        return User(**updated_user)
-        
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expiré")
+    except jwt.InvalidTokenError as e:
+        raise HTTPException(status_code=401, detail=f"Token invalide: {str(e)}")
     except HTTPException:
         raise
     except Exception as e:
