@@ -567,9 +567,11 @@ async def get_tenant_billing_info(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
+    tenant_id = tenant.get("id")
+    
     # Compter les utilisateurs actifs
     user_count = await db.users.count_documents({
-        "tenant_id": tenant.id,
+        "tenant_id": tenant_id,
         "statut": "Actif"
     })
     
