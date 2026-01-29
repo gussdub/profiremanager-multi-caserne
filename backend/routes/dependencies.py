@@ -40,6 +40,10 @@ MONGO_URL = os.environ.get('MONGO_URL')
 DB_NAME = os.environ.get('DB_NAME', 'profiremanager')  # Même défaut que server.py
 JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key-here')  # Même valeur que server.py
 JWT_ALGORITHM = "HS256"
+SECRET_KEY = JWT_SECRET  # Alias pour compatibilité
+ALGORITHM = JWT_ALGORITHM  # Alias pour compatibilité
+SUPER_ADMIN_TOKEN_EXPIRE_MINUTES = 2 * 60  # 2 heures pour super-admins (sécurité)
+ACCESS_TOKEN_EXPIRE_MINUTES = 24 * 60  # 24 heures pour utilisateurs normaux
 
 # Connexion MongoDB asynchrone (réutilisée par tous les modules)
 _client = None
