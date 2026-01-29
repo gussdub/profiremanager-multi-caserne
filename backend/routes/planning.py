@@ -3204,10 +3204,22 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             officier_deja_assigne = True
                             break
                 
-                # Utilisateurs déjà assignés ce jour (pour éviter doubles assignations)
+                # Utilisateurs déjà assignés à des gardes qui CHEVAUCHENT cette garde
+                # Une personne peut faire garde de jour + garde de nuit le même jour si elles ne se chevauchent pas
+                def garde_chevauche(assignation_existante):
+                    """Vérifie si une assignation existante chevauche la garde actuelle"""
+                    tg_existant = next((t for t in types_garde if t["id"] == assignation_existante.get("type_garde_id")), None)
+                    if not tg_existant:
+                        return False
+                    
+                    existing_debut = tg_existant.get("heure_debut", "00:00")
+                    existing_fin = tg_existant.get("heure_fin", "23:59")
+                    
+                    return plages_se_chevauchent(heure_debut, heure_fin, existing_debut, existing_fin)
+                
                 users_assignes_ce_jour = set(
                     a.get("user_id") for a in existing_assignations
-                    if a.get("date") == date_str
+                    if a.get("date") == date_str and garde_chevauche(a)
                 )
                 
                 # Récupérer les disponibilités pour ce jour/type_garde
