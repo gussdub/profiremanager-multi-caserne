@@ -388,6 +388,16 @@ async def forgot_password(tenant_slug: str, request: ForgotPasswordRequest):
             logger.info(f"Token de reset (debug): {reset_token}")
     except Exception as e:
         logger.error(f"❌ Erreur envoi email reset password: {str(e)}")
+        # Logger l'échec
+        await log_email_sent(
+            type_email="password_reset",
+            destinataire_email=request.email,
+            sujet="Réinitialisation de votre mot de passe - ProFireManager",
+            tenant_id=tenant.id if tenant else None,
+            tenant_slug=tenant_slug,
+            statut="failed",
+            erreur=str(e)
+        )
         # On ne fait pas échouer la requête, l'utilisateur ne doit pas savoir
     
     return {"message": "Si cet email existe, un lien de réinitialisation a été envoyé"}
