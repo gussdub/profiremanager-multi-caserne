@@ -649,11 +649,20 @@ async def job_verifier_notifications_planning():
     S'exécute toutes les heures
     """
     try:
-        now = datetime.now(timezone.utc)
+        # Utiliser le fuseau horaire de l'Est du Canada (UTC-5 / UTC-4 en été)
+        try:
+            from zoneinfo import ZoneInfo
+            tz_canada = ZoneInfo("America/Montreal")
+        except ImportError:
+            # Fallback pour Python < 3.9
+            from datetime import timezone as tz
+            tz_canada = tz(timedelta(hours=-5))  # UTC-5 (heure standard de l'Est)
+        
+        now = datetime.now(tz_canada)
         current_hour = now.hour
         current_day = now.day
         
-        logging.info(f"🔍 Vérification des notifications planning - Jour {current_day}, Heure {current_hour}h")
+        logging.info(f"🔍 Vérification des notifications planning - Jour {current_day}, Heure {current_hour}h (heure locale Canada)")
         
         # Récupérer tous les tenants
         tenants = await db.tenants.find().to_list(None)
@@ -677,7 +686,7 @@ async def job_verifier_notifications_planning():
                 if current_day != jour_envoi:
                     continue
                 
-                # Vérifier si c'est la bonne heure
+                # Vérifier si c'est la bonne heure (heure locale Canada)
                 heure_envoi = params.get("heure_envoi", "17:00")
                 heure_cible = int(heure_envoi.split(":")[0])
                 
