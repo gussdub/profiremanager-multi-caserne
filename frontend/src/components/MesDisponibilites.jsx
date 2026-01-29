@@ -618,8 +618,8 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       // Réinitialiser la config
       setAvailabilityConfig({
         type_garde_id: '',
-        heure_debut: '08:00',
-        heure_fin: '16:00',
+        heure_debut: '00:00',
+        heure_fin: '23:59',
         statut: 'disponible',
         mode: 'calendrier',
         date_debut: new Date().toISOString().split('T')[0],
