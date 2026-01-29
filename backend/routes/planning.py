@@ -2803,10 +2803,16 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         # Structure: {user_id: {date: True}}
         # PRIORITÉ: Les disponibilités manuelles ont priorité sur les indisponibilités auto-générées
         indispos_lookup = {}
+        # Nouveau: Stocker aussi les détails horaires des indisponibilités
+        # Structure: {user_id: {date: [{heure_debut, heure_fin}, ...]}}
+        indispos_details_lookup = {}
+        
         for indispo in all_indisponibilites:
             user_id = indispo.get("user_id")
             date = indispo.get("date")
             source = indispo.get("source", "manuel")  # Par défaut: manuel
+            heure_debut = indispo.get("heure_debut", "00:00")
+            heure_fin = indispo.get("heure_fin", "23:59")
             
             # Vérifier s'il existe une disponibilité manuelle pour ce user/date
             has_manual_dispo = any(
@@ -2823,6 +2829,16 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 if user_id not in indispos_lookup:
                     indispos_lookup[user_id] = {}
                 indispos_lookup[user_id][date] = True
+                
+                # Stocker les détails horaires
+                if user_id not in indispos_details_lookup:
+                    indispos_details_lookup[user_id] = {}
+                if date not in indispos_details_lookup[user_id]:
+                    indispos_details_lookup[user_id][date] = []
+                indispos_details_lookup[user_id][date].append({
+                    "heure_debut": heure_debut,
+                    "heure_fin": heure_fin
+                })
             else:
                 logging.info(f"✅ [CONFLIT RÉSOLU] Indispo auto-générée ignorée pour {user_id} le {date} (dispo manuelle trouvée)")
         
