@@ -263,8 +263,52 @@ async def forgot_password(tenant_slug: str, request: ForgotPasswordRequest):
         "created_at": datetime.now(timezone.utc)
     })
     
-    # TODO: Envoyer l'email avec le lien de réinitialisation
-    logger.info(f"Password reset token generated for {request.email}: {reset_token}")
+    # Envoyer l'email avec le lien de réinitialisation
+    try:
+        import resend
+        resend_api_key = os.environ.get('RESEND_API_KEY')
+        
+        if resend_api_key:
+            resend.api_key = resend_api_key
+            
+            # Construire le lien de réinitialisation
+            frontend_url = os.environ.get('FRONTEND_URL', 'https://profiremanager.com')
+            reset_link = f"{frontend_url}/{tenant_slug}/reset-password?token={reset_token}"
+            
+            user_name = f"{user.get('prenom', '')} {user.get('nom', '')}".strip() or "Utilisateur"
+            
+            html_content = f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #1e40af;">Réinitialisation de mot de passe</h2>
+                <p>Bonjour {user_name},</p>
+                <p>Vous avez demandé la réinitialisation de votre mot de passe pour ProFireManager.</p>
+                <p>Cliquez sur le bouton ci-dessous pour créer un nouveau mot de passe :</p>
+                <p style="text-align: center; margin: 30px 0;">
+                    <a href="{reset_link}" style="background-color: #1e40af; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                        Réinitialiser mon mot de passe
+                    </a>
+                </p>
+                <p style="color: #666; font-size: 14px;">Ce lien expire dans 24 heures.</p>
+                <p style="color: #666; font-size: 14px;">Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.</p>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                <p style="color: #999; font-size: 12px;">ProFireManager - Gestion des services d'incendie</p>
+            </div>
+            """
+            
+            resend.Emails.send({
+                "from": "ProFireManager <noreply@profiremanager.com>",
+                "to": [user["email"]],
+                "subject": "Réinitialisation de votre mot de passe - ProFireManager",
+                "html": html_content
+            })
+            
+            logger.info(f"✅ Email de réinitialisation envoyé à {request.email}")
+        else:
+            logger.warning(f"⚠️ RESEND_API_KEY non configuré - email non envoyé pour {request.email}")
+            logger.info(f"Token de reset (debug): {reset_token}")
+    except Exception as e:
+        logger.error(f"❌ Erreur envoi email reset password: {str(e)}")
+        # On ne fait pas échouer la requête, l'utilisateur ne doit pas savoir
     
     return {"message": "Si cet email existe, un lien de réinitialisation a été envoyé"}
 
