@@ -1328,6 +1328,12 @@ const AppLayout = () => {
         );
       case 'monprofil':
         return <MonProfil />;
+      case 'emails-history':
+        return (
+          <Suspense fallback={<LoadingComponent />}>
+            <EmailsHistory />
+          </Suspense>
+        );
       default:
         return <Dashboard />;
     }
