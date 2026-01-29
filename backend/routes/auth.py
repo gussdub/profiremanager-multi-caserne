@@ -272,27 +272,95 @@ async def forgot_password(tenant_slug: str, request: ForgotPasswordRequest):
             resend.api_key = resend_api_key
             
             # Construire le lien de réinitialisation
-            frontend_url = os.environ.get('FRONTEND_URL', 'https://profiremanager.com')
+            frontend_url = os.environ.get('FRONTEND_URL', 'https://www.profiremanager.ca')
             reset_link = f"{frontend_url}/{tenant_slug}/reset-password?token={reset_token}"
             
             user_name = f"{user.get('prenom', '')} {user.get('nom', '')}".strip() or "Utilisateur"
             
             html_content = f"""
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #1e40af;">Réinitialisation de mot de passe</h2>
-                <p>Bonjour {user_name},</p>
-                <p>Vous avez demandé la réinitialisation de votre mot de passe pour ProFireManager.</p>
-                <p>Cliquez sur le bouton ci-dessous pour créer un nouveau mot de passe :</p>
-                <p style="text-align: center; margin: 30px 0;">
-                    <a href="{reset_link}" style="background-color: #1e40af; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
-                        Réinitialiser mon mot de passe
-                    </a>
-                </p>
-                <p style="color: #666; font-size: 14px;">Ce lien expire dans 24 heures.</p>
-                <p style="color: #666; font-size: 14px;">Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.</p>
-                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-                <p style="color: #999; font-size: 12px;">ProFireManager - Gestion des services d'incendie</p>
-            </div>
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: Arial, sans-serif;">
+                <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 20px;">
+                    <tr>
+                        <td align="center">
+                            <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                                <!-- Header avec logo -->
+                                <tr>
+                                    <td align="center" style="padding: 40px 40px 20px 40px;">
+                                        <div style="width: 80px; height: 80px; background-color: #ffffff; border: 3px solid #dc2626; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;">
+                                            <span style="font-size: 40px;">🔥</span>
+                                        </div>
+                                        <h1 style="color: #dc2626; font-size: 28px; margin: 20px 0 5px 0; font-weight: bold;">ProFireManager v2.0</h1>
+                                        <p style="color: #666666; font-size: 14px; margin: 0;">Système de gestion des services d'incendie</p>
+                                    </td>
+                                </tr>
+                                
+                                <!-- Contenu principal -->
+                                <tr>
+                                    <td style="padding: 20px 40px;">
+                                        <h2 style="color: #1f2937; font-size: 20px; margin: 0 0 20px 0;">Bonjour {user_name},</h2>
+                                        <p style="color: #4b5563; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
+                                            Nous avons reçu une demande de réinitialisation de mot de passe pour votre compte ProFireManager.
+                                        </p>
+                                        
+                                        <!-- Avertissement sécurité -->
+                                        <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+                                            <p style="color: #92400e; font-size: 14px; margin: 0 0 5px 0; font-weight: bold;">⚠️ IMPORTANT - Sécurité</p>
+                                            <p style="color: #92400e; font-size: 13px; margin: 0 0 10px 0;">
+                                                Si vous n'avez pas demandé cette réinitialisation, ignorez cet email. Votre mot de passe actuel reste inchangé.
+                                            </p>
+                                            <p style="color: #92400e; font-size: 13px; margin: 0;">
+                                                Ce lien est valide pendant <strong>1 heure</strong> seulement.
+                                            </p>
+                                        </div>
+                                        
+                                        <!-- Bouton principal -->
+                                        <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                                            <tr>
+                                                <td align="center">
+                                                    <a href="{reset_link}" style="display: inline-block; background-color: #dc2626; color: #ffffff; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-size: 16px; font-weight: bold;">
+                                                        🔐 Réinitialiser mon mot de passe
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        
+                                        <!-- Lien alternatif -->
+                                        <div style="background-color: #f9fafb; border-left: 4px solid #3b82f6; padding: 15px 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+                                            <p style="color: #1f2937; font-size: 13px; margin: 0 0 10px 0; font-weight: bold;">💡 Le lien ne fonctionne pas?</p>
+                                            <p style="color: #6b7280; font-size: 12px; margin: 0;">
+                                                Copiez et collez cette adresse dans votre navigateur :
+                                            </p>
+                                            <p style="color: #3b82f6; font-size: 11px; margin: 10px 0 0 0; word-break: break-all;">
+                                                <a href="{reset_link}" style="color: #3b82f6;">{reset_link}</a>
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                
+                                <!-- Footer -->
+                                <tr>
+                                    <td style="padding: 30px 40px; border-top: 1px solid #e5e7eb;">
+                                        <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0 0 10px 0;">
+                                            Cet email a été envoyé automatiquement par ProFireManager v2.0.<br>
+                                            Pour des questions de sécurité, contactez votre administrateur.
+                                        </p>
+                                        <p style="color: #6b7280; font-size: 11px; text-align: center; margin: 0;">
+                                            ProFireManager v2.0 - Système de gestion des services d'incendie du Canada
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </body>
+            </html>
             """
             
             resend.Emails.send({
