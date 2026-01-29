@@ -49,6 +49,9 @@ from utils.pdf_helpers import (
     create_pdf_footer_text
 )
 
+# Import de la classe ParametresRemplacements
+from routes.remplacements import ParametresRemplacements
+
 router = APIRouter(tags=["Planning"])
 logger = logging.getLogger(__name__)
 
