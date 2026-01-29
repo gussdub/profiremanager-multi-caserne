@@ -362,27 +362,3 @@ async def init_demo_data():
     return {
         "message": f"Données de démonstration créées: {len(demo_users)} utilisateurs, {len(demo_types_garde)} types de garde"
     }
-    
-    # Create users
-    for user_data in demo_users:
-        user_dict = user_data.copy()
-        user_dict["mot_de_passe_hash"] = get_password_hash(user_dict.pop("mot_de_passe"))
-        user_dict["statut"] = "Actif"
-        user_obj = User(**user_dict)
-        await db.users.insert_one(user_obj.dict())
-    
-    # Create types de garde
-    demo_types_garde = [
-        {"nom": "Garde Interne Nuit", "heure_debut": "18:00", "heure_fin": "06:00", "heures": 12, "couleur": "#6B21A8"},
-        {"nom": "Garde Interne Jour", "heure_debut": "06:00", "heure_fin": "18:00", "heures": 12, "couleur": "#2563EB"},
-        {"nom": "Garde Externe", "heure_debut": "08:00", "heure_fin": "16:00", "heures": 8, "couleur": "#059669"},
-        {"nom": "Formation", "heure_debut": "09:00", "heure_fin": "17:00", "heures": 8, "couleur": "#D97706"}
-    ]
-    
-    for type_garde_data in demo_types_garde:
-        type_garde_obj = TypeGarde(**type_garde_data)
-        await db.types_garde.insert_one(type_garde_obj.dict())
-    
-    return {
-        "message": f"Données de démonstration créées: {len(demo_users)} utilisateurs, {len(demo_formations)} formations, {len(demo_types_garde)} types de garde"
-    }
