@@ -3195,6 +3195,9 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 duree_garde = type_garde.get("duree_heures", 8)
                 competences_requises = type_garde.get("competences_requises", [])
                 officier_obligatoire = type_garde.get("officier_obligatoire", False)
+                # IMPORTANT: Extraire les heures de début et fin de la garde
+                heure_debut = type_garde.get("heure_debut", "00:00")
+                heure_fin = type_garde.get("heure_fin", "23:59")
                 
                 # Vérifier si ce type de garde s'applique ce jour
                 jours_app = type_garde.get("jours_application", [])
