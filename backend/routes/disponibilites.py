@@ -188,6 +188,9 @@ async def create_disponibilite(
     
     await db.disponibilites.insert_one(dispo_dict)
     
+    # Supprimer _id ajouté par MongoDB avant de retourner
+    dispo_dict.pop("_id", None)
+    
     return Disponibilite(**dispo_dict)
 
 
