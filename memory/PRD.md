@@ -23,20 +23,37 @@ Application de gestion des interventions et de la paie des pompiers. Solution mu
 
 ## Historique des Modifications
 
-### 29 Janvier 2026 - Refactorisation Module Rapports
+### 29 Janvier 2026 - Session 2 - Corrections et Refactorisation
+**Statut**: ✅ Terminé
+
+**Travail effectué**:
+1. **Bug accès module Interventions** - Corrigé
+   - Les employés ne voient plus le menu "Interventions" sauf s'ils sont dans la liste des "Personnes ressources"
+   - Modification de `frontend/src/components/Sidebar.jsx` pour charger et vérifier `interventionSettings.personnes_ressources`
+
+2. **Logo dans les e-mails** - Corrigé
+   - Logo maintenant hébergé sur CDN public (catbox.moe)
+   - Taille ajustée à 250px avec espacement réduit
+   - Modification de `backend/routes/auth.py`
+
+3. **Refactorisation backend - Module Utils** - Terminé
+   - Extraction des routes utilitaires vers `routes/utils.py`
+   - Routes extraites: `repair-demo-passwords`, `fix-all-passwords`, `fix-admin-password`, `cleanup-duplicates`, `init-demo-data`, `init-demo-data-realiste`
+   - `server.py` réduit de 6632 → 5909 lignes (-723 lignes, -11%)
+
+**Fichiers modifiés/créés**:
+- `frontend/src/components/Sidebar.jsx` (vérification personnes ressources)
+- `backend/routes/auth.py` (logo email)
+- `backend/routes/utils.py` (nouveau - routes utilitaires)
+- `backend/server.py` (allégé)
+
+### 29 Janvier 2026 - Session 1 - Refactorisation Module Rapports
 **Statut**: ✅ Terminé et validé
 
 **Travail effectué**:
 - Extraction du module Rapports de `server.py` vers `routes/rapports.py`
 - Réduction de `server.py` de 9346 → 7122 lignes (-24%)
-- Correction des APIs pour correspondre au format attendu par le frontend:
-  - `/rapports/dashboard-interne`: Ajout des champs `cout_salarial_mois`, `heures_travaillees_mois`, `pompiers_disponibles`, `total_pompiers`, `periode`
-  - `/rapports/rapport-immobilisations`: Restructuration avec `statistiques`, `vehicules`, `equipements`
-- Mise à jour des modèles Pydantic pour compatibilité
-
-**Fichiers modifiés**:
-- `backend/routes/rapports.py` (enrichi)
-- `backend/server.py` (allégé de ~2200 lignes)
+- Correction des APIs pour correspondre au format attendu par le frontend
 
 ---
 
@@ -54,12 +71,9 @@ Application de gestion des interventions et de la paie des pompiers. Solution mu
 ## Backlog
 
 ### P2 - Priorité Moyenne
-1. Extraire modules restants de `server.py`:
-   - Routes Admin/Super-Admin (~500 lignes)
-   - Routes utilitaires/demo (~600 lignes)
-2. Finaliser transmission DSI réelle (actuellement MOCK)
-3. Module de gestion des jours fériés
-4. Module de facturation pour l'entraide
+1. Finaliser transmission DSI réelle (actuellement MOCK)
+2. Module de gestion des jours fériés
+3. Module de facturation pour l'entraide
 
 ### P3 - Priorité Basse
 1. Améliorer messages d'import CSV
