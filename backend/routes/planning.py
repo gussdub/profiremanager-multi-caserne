@@ -3153,13 +3153,15 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         
                         # N4: Temps plein INCOMPLETS (heures < max)
                         elif niveau == 4:
-                            if type_emploi == "temps_plein":
+                            # IMPORTANT: L'indisponibilité est TOUJOURS prioritaire
+                            if type_emploi == "temps_plein" and not has_indispo:
                                 if heures_semaine + duree_garde <= heures_max:
                                     candidats.append(user)
                         
                         # N5: Temps plein COMPLETS (heures sup)
                         elif niveau == 5:
-                            if type_emploi == "temps_plein":
+                            # IMPORTANT: L'indisponibilité est TOUJOURS prioritaire
+                            if type_emploi == "temps_plein" and not has_indispo:
                                 if heures_semaine >= heures_max:  # Déjà au max
                                     candidats.append(user)
                     
