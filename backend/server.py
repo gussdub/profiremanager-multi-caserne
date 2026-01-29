@@ -661,7 +661,9 @@ async def job_verifier_notifications_planning():
         for tenant in tenants:
             try:
                 # Récupérer les paramètres de notification de ce tenant
-                params = await db.parametres_validation_planning.find_one({"tenant_id": tenant["id"]})
+                # Les paramètres sont stockés dans tenant.parametres.validation_planning
+                tenant_params = tenant.get("parametres", {})
+                params = tenant_params.get("validation_planning", {})
                 
                 if not params:
                     continue
