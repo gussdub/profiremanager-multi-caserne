@@ -3244,10 +3244,18 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     
                     return plages_se_chevauchent(heure_debut, heure_fin, existing_debut, existing_fin)
                 
-                users_assignes_ce_jour = set(
+                # Séparer les utilisateurs déjà assignés à cette même garde vs une autre garde
+                users_assignes_cette_garde = set(
                     a.get("user_id") for a in existing_assignations
-                    if a.get("date") == date_str and garde_chevauche(a)
+                    if a.get("date") == date_str and a.get("type_garde_id") == type_garde_id
                 )
+                
+                users_assignes_autre_garde = set(
+                    a.get("user_id") for a in existing_assignations
+                    if a.get("date") == date_str and a.get("type_garde_id") != type_garde_id and garde_chevauche(a)
+                )
+                
+                users_assignes_ce_jour = users_assignes_cette_garde | users_assignes_autre_garde
                 
                 # Debug log pour le 12 février garde de jour
                 if date_str == "2026-02-12" and "jour" in type_garde_nom.lower():
