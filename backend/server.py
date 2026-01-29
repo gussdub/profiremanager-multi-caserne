@@ -1204,7 +1204,7 @@ async def job_verifier_alertes_equipements():
 async def job_verifier_rappels_disponibilites():
     """
     Job qui vérifie les rappels de disponibilités pour les employés temps partiel
-    S'exécute tous les jours à 9h00 du matin
+    S'exécute tous les jours à 9h00 du matin (heure locale Canada)
     
     Logique:
     - Pour chaque tenant, lire les paramètres de disponibilités
@@ -1215,8 +1215,16 @@ async def job_verifier_rappels_disponibilites():
     try:
         logging.info("🔍 Vérification des rappels de disponibilités pour tous les tenants")
         
-        # Date du jour
-        today = datetime.now(timezone.utc).date()
+        # Utiliser le fuseau horaire de l'Est du Canada
+        try:
+            from zoneinfo import ZoneInfo
+            tz_canada = ZoneInfo("America/Montreal")
+        except ImportError:
+            from datetime import timezone as tz
+            tz_canada = tz(timedelta(hours=-5))
+        
+        # Date du jour en heure locale Canada
+        today = datetime.now(tz_canada).date()
         current_day = today.day
         current_month = today.month
         current_year = today.year
