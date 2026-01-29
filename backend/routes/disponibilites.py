@@ -167,29 +167,49 @@ async def create_disponibilite(
     current_user: User = Depends(get_current_user)
 ):
     """Créer une nouvelle disponibilité"""
+    import logging
+    
     tenant = await get_tenant_from_slug(tenant_slug)
     
     if current_user.tenant_id != tenant.id:
         raise HTTPException(status_code=403, detail="Accès interdit à cette caserne")
     
-    # Vérifier si l'utilisateur peut soumettre (deadline)
-    params = await db.parametres_disponibilites.find_one({"tenant_id": tenant.id})
-    if params and params.get("bloquer_apres_deadline"):
-        today = date.today()
-        jour_fin = params.get("jour_fin_soumission", 25)
-        
-        if today.day > jour_fin and current_user.role not in ["admin", "superviseur"]:
+    # Déterminer le user_id cible
+    target_user_id = dispo.user_id if dispo.user_id else current_user.id
+    
+    # Si l'admin/superviseur crée pour quelqu'un d'autre, vérifier les permissions
+    if target_user_id != current_user.id:
+        if current_user.role not in ["admin", "superviseur"]:
             raise HTTPException(
-                status_code=400,
-                detail=f"La période de soumission est terminée (deadline: jour {jour_fin})"
+                status_code=403,
+                detail="Vous ne pouvez pas créer des disponibilités pour un autre utilisateur"
             )
+        # Vérifier que l'utilisateur cible existe dans le même tenant
+        target_user = await db.users.find_one({"id": target_user_id, "tenant_id": tenant.id})
+        if not target_user:
+            raise HTTPException(status_code=404, detail="Utilisateur cible non trouvé")
+    
+    # Vérifier si l'utilisateur peut soumettre (deadline) - seulement pour les non-admins
+    if current_user.role not in ["admin", "superviseur"]:
+        params = await db.parametres_disponibilites.find_one({"tenant_id": tenant.id})
+        if params and params.get("bloquer_apres_deadline"):
+            today = date.today()
+            jour_fin = params.get("jour_fin_soumission", 25)
+            
+            if today.day > jour_fin:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"La période de soumission est terminée (deadline: jour {jour_fin})"
+                )
     
     # Créer la disponibilité
     dispo_dict = dispo.dict()
     dispo_dict["id"] = str(uuid.uuid4())
-    dispo_dict["user_id"] = current_user.id
+    dispo_dict["user_id"] = target_user_id
     dispo_dict["tenant_id"] = tenant.id
     dispo_dict["created_at"] = datetime.now(timezone.utc)
+    
+    logging.info(f"📅 [DISPOS] POST - Création dispo pour user={target_user_id}, date={dispo.date}, statut={dispo.statut}")
     
     await db.disponibilites.insert_one(dispo_dict)
     
