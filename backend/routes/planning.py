@@ -2969,10 +2969,27 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
             else:
                 return seuil_hebdo_temps_plein
         
-        def trier_candidats_equite_anciennete(candidats, type_garde_externe=False):
-            """Trie les candidats par équité (moins d'heures) puis ancienneté (plus ancien)"""
+        def trier_candidats_equite_anciennete(candidats, type_garde_externe=False, prioriser_officiers=False):
+            """
+            Trie les candidats selon:
+            1. Si prioriser_officiers: Officiers d'abord, puis éligibles, puis autres
+            2. Équité (moins d'heures d'abord)
+            3. Ancienneté (plus ancien d'abord)
+            """
             def sort_key(user):
                 user_id = user["id"]
+                
+                # Priorité officier (0=officier, 1=éligible, 2=autre)
+                if prioriser_officiers:
+                    if est_officier(user):
+                        officier_priority = 0
+                    elif est_eligible_fonction_superieure(user):
+                        officier_priority = 1
+                    else:
+                        officier_priority = 2
+                else:
+                    officier_priority = 0  # Pas de tri par officier
+                
                 # Heures selon le type de garde (interne ou externe)
                 if type_garde_externe:
                     heures = user_monthly_hours_externes.get(user_id, 0)
@@ -2982,7 +2999,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 # Ancienneté (date_embauche)
                 date_embauche = user.get("date_embauche", "2099-12-31")
                 
-                return (heures, date_embauche)
+                return (officier_priority, heures, date_embauche)
             
             return sorted(candidats, key=sort_key)
         
