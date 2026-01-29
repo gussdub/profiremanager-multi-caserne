@@ -128,8 +128,8 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
   const [quickAddConfig, setQuickAddConfig] = useState({
     date: new Date().toISOString().split('T')[0],
     type_garde_id: '',
-    heure_debut: '08:00',
-    heure_fin: '16:00'
+    heure_debut: '00:00',
+    heure_fin: '23:59'
   });
   
   // État pour le nouveau modal de résolution de conflits multiples
