@@ -376,15 +376,23 @@ async def create_immobilisation(
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
+    # Supporter les deux formats (nouveau et legacy)
+    cout_acquisition = immob.cout_acquisition if hasattr(immob, 'cout_acquisition') and immob.cout_acquisition else (immob.valeur_acquisition or 0)
+    type_immob = immob.type_immobilisation if hasattr(immob, 'type_immobilisation') and immob.type_immobilisation else (immob.categorie or "equipement_majeur")
+    
     immob_doc = {
         "id": str(uuid.uuid4()),
         "tenant_id": tenant.id,
+        "type_immobilisation": type_immob,
         "nom": immob.nom,
-        "categorie": immob.categorie,
-        "valeur_acquisition": immob.valeur_acquisition,
         "date_acquisition": immob.date_acquisition,
-        "duree_amortissement": immob.duree_amortissement,
-        "created_at": datetime.now(timezone.utc)
+        "cout_acquisition": cout_acquisition,
+        "cout_entretien_annuel": immob.cout_entretien_annuel if hasattr(immob, 'cout_entretien_annuel') else 0,
+        "etat": immob.etat if hasattr(immob, 'etat') else "bon",
+        "date_remplacement_prevue": immob.date_remplacement_prevue if hasattr(immob, 'date_remplacement_prevue') else None,
+        "notes": immob.notes if hasattr(immob, 'notes') else "",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
     }
     
     await db.immobilisations.insert_one(immob_doc)
