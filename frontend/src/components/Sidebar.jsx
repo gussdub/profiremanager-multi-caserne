@@ -64,6 +64,9 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
   const [remplacementCommentaire, setRemplacementCommentaire] = useState('');
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   
+  // État pour les paramètres du module interventions (pour vérifier personnes_ressources)
+  const [interventionSettings, setInterventionSettings] = useState(null);
+  
   // Effet pour bloquer le scroll du body quand le menu mobile est ouvert
   useEffect(() => {
     let scrollY = 0;
