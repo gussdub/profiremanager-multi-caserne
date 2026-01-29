@@ -277,6 +277,9 @@ async def forgot_password(tenant_slug: str, request: ForgotPasswordRequest):
             
             user_name = f"{user.get('prenom', '')} {user.get('nom', '')}".strip() or "Utilisateur"
             
+            # URL du logo ProFireManager
+            logo_url = "https://www.profiremanager.ca/logo.png"
+            
             html_content = f"""
             <!DOCTYPE html>
             <html>
@@ -292,11 +295,8 @@ async def forgot_password(tenant_slug: str, request: ForgotPasswordRequest):
                                 <!-- Header avec logo -->
                                 <tr>
                                     <td align="center" style="padding: 40px 40px 20px 40px;">
-                                        <div style="width: 80px; height: 80px; background-color: #ffffff; border: 3px solid #dc2626; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;">
-                                            <span style="font-size: 40px;">🔥</span>
-                                        </div>
-                                        <h1 style="color: #dc2626; font-size: 28px; margin: 20px 0 5px 0; font-weight: bold;">ProFireManager v2.0</h1>
-                                        <p style="color: #666666; font-size: 14px; margin: 0;">Système de gestion des services d'incendie</p>
+                                        <img src="{logo_url}" alt="ProFireManager" style="width: 150px; height: auto;" />
+                                        <p style="color: #666666; font-size: 14px; margin: 15px 0 0 0;">Système de gestion des services d'incendie</p>
                                     </td>
                                 </tr>
                                 
@@ -347,11 +347,11 @@ async def forgot_password(tenant_slug: str, request: ForgotPasswordRequest):
                                 <tr>
                                     <td style="padding: 30px 40px; border-top: 1px solid #e5e7eb;">
                                         <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0 0 10px 0;">
-                                            Cet email a été envoyé automatiquement par ProFireManager v2.0.<br>
+                                            Cet email a été envoyé automatiquement par ProFireManager.<br>
                                             Pour des questions de sécurité, contactez votre administrateur.
                                         </p>
                                         <p style="color: #6b7280; font-size: 11px; text-align: center; margin: 0;">
-                                            ProFireManager v2.0 - Système de gestion des services d'incendie du Canada
+                                            ProFireManager - Système de gestion des services d'incendie du Canada
                                         </p>
                                     </td>
                                 </tr>
