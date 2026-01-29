@@ -3407,6 +3407,9 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         accepte = False
                         raison_rejet = ""
                         
+                        # Construire une explication détaillée
+                        explication_niveaux = []
+                        
                         # N2: Temps partiel DISPONIBLES
                         if niveau == 2:
                             if type_emploi in ["temps_partiel", "temporaire"] and has_dispo_valide:
@@ -3415,11 +3418,11 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                     candidats.append(user)
                                     accepte = True
                                 else:
-                                    raison_rejet = f"Dépasserait max heures ({heures_travaillees}h + {duree_garde}h > {heures_max}h)"
+                                    raison_rejet = f"A une dispo mais dépasserait {heures_max}h max ({heures_travaillees}h + {duree_garde}h)"
                             elif type_emploi not in ["temps_partiel", "temporaire"]:
-                                raison_rejet = f"Type emploi {type_emploi} (N2 = temps partiel uniquement)"
+                                raison_rejet = f"Temps plein (N2 = temps partiel)"
                             else:
-                                raison_rejet = "Pas de disponibilité explicite (N2 requiert dispo)"
+                                raison_rejet = f"Pas de disponibilité (N2 requiert dispo)"
                         
                         # N3: Temps partiel STAND-BY (ni dispo explicite ni indispo bloquante)
                         elif niveau == 3:
@@ -3429,11 +3432,15 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                     candidats.append(user)
                                     accepte = True
                                 else:
-                                    raison_rejet = f"Dépasserait max heures ({heures_travaillees}h + {duree_garde}h > {heures_max}h)"
+                                    raison_rejet = f"Dépasserait {heures_max}h max ({heures_travaillees}h + {duree_garde}h)"
                             elif type_emploi not in ["temps_partiel", "temporaire"]:
-                                raison_rejet = f"Type emploi {type_emploi} (N3 = temps partiel uniquement)"
+                                raison_rejet = f"Temps plein (N3 = temps partiel)"
                             else:
-                                raison_rejet = "A une disponibilité explicite (N3 = stand-by sans dispo)"
+                                # A une dispo - expliquer pourquoi pas éligible N2 aussi
+                                if depasserait_max:
+                                    raison_rejet = f"A une dispo mais dépasserait {heures_max}h max → éligible N5 si heures sup autorisées"
+                                else:
+                                    raison_rejet = f"A une dispo → devrait être au N2 (vérifier les assignations)"
                         
                         # N4: Temps plein INCOMPLETS (heures < max de l'employé)
                         elif niveau == 4:
@@ -3443,9 +3450,9 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                     candidats.append(user)
                                     accepte = True
                                 else:
-                                    raison_rejet = f"Dépasserait max heures ({heures_travaillees}h + {duree_garde}h > {heures_max}h)"
+                                    raison_rejet = f"Dépasserait {heures_max}h max ({heures_travaillees}h + {duree_garde}h) → éligible N5"
                             else:
-                                raison_rejet = f"Type emploi {type_emploi} (N4 = temps plein uniquement)"
+                                raison_rejet = f"Temps partiel (N4 = temps plein)"
                         
                         # N5: HEURES SUPPLÉMENTAIRES (tous types d'emploi si autorisé)
                         elif niveau == 5:
@@ -3457,13 +3464,13 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                         candidats.append(user)
                                         accepte = True
                                     else:
-                                        raison_rejet = "Temps partiel sans disponibilité (N5 requiert dispo pour TP)"
+                                        raison_rejet = f"Temps partiel en heures sup MAIS sans disponibilité"
                                 else:
                                     # Temps plein : PAS besoin de dispo pour heures sup
                                     candidats.append(user)
                                     accepte = True
                             else:
-                                raison_rejet = f"N'est pas en heures sup ({heures_travaillees}h/{heures_max}h max)"
+                                raison_rejet = f"Pas en heures sup ({heures_travaillees}h < {heures_max}h max)"
                         
                         # Si pas accepté, ajouter aux rejetés
                         if not accepte and raison_rejet:
