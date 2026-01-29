@@ -3139,7 +3139,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         
                         # N2: Temps partiel DISPONIBLES
                         if niveau == 2:
-                            if type_emploi in ["temps_partiel", "temporaire"] and has_dispo:
+                            # IMPORTANT: L'indisponibilité est TOUJOURS prioritaire sur la disponibilité
+                            if type_emploi in ["temps_partiel", "temporaire"] and has_dispo and not has_indispo:
                                 # Vérifier qu'il n'a pas atteint son max
                                 if heures_semaine + duree_garde <= heures_max:
                                     candidats.append(user)
