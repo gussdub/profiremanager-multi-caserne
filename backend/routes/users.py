@@ -482,18 +482,28 @@ async def update_mon_profil(
     tenant = await get_tenant_from_slug(tenant_slug)
     
     try:
+        # Débug: vérifier le type de current_user
+        logger.info(f"Type current_user: {type(current_user)}, id: {getattr(current_user, 'id', 'NO ID')}")
+        
         # L'utilisateur peut modifier son propre profil
         # Utiliser exclude_unset=True pour ne mettre à jour que les champs modifiés
         update_data = profile_data.dict(exclude_unset=True)
         
+        # Accéder à l'ID de manière sécurisée
+        user_id = current_user.id if hasattr(current_user, 'id') else current_user.get('id') if isinstance(current_user, dict) else None
+        tenant_id = tenant.id if hasattr(tenant, 'id') else tenant.get('id') if isinstance(tenant, dict) else None
+        
+        if not user_id:
+            raise HTTPException(status_code=400, detail="ID utilisateur non trouvé")
+        
         if not update_data:
             # Aucune modification
-            updated_user = await db.users.find_one({"id": current_user.id, "tenant_id": tenant.id})
+            updated_user = await db.users.find_one({"id": user_id, "tenant_id": tenant_id})
             updated_user = clean_mongo_doc(updated_user)
             return User(**updated_user)
         
         result = await db.users.update_one(
-            {"id": current_user.id, "tenant_id": tenant.id}, 
+            {"id": user_id, "tenant_id": tenant_id}, 
             {"$set": update_data}
         )
         
@@ -501,11 +511,14 @@ async def update_mon_profil(
             raise HTTPException(status_code=404, detail="Profil non trouvé")
         
         # Récupérer le profil mis à jour
-        updated_user = await db.users.find_one({"id": current_user.id, "tenant_id": tenant.id})
+        updated_user = await db.users.find_one({"id": user_id, "tenant_id": tenant_id})
         updated_user = clean_mongo_doc(updated_user)
         return User(**updated_user)
         
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"Erreur mise à jour profil: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Erreur mise à jour profil: {str(e)}")
 
 
