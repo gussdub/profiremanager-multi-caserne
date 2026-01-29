@@ -3270,8 +3270,20 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             continue
                         
                         type_emploi = user.get("type_emploi", "temps_plein")
-                        heures_semaine = get_heures_semaine(user_id, date_str, est_externe)
+                        
+                        # Heures travaillées = UNIQUEMENT les gardes INTERNES
+                        # Les gardes externes ne comptent PAS vers le max d'heures
+                        heures_travaillees = get_heures_travaillees_semaine(user_id, date_str)
                         heures_max = get_heures_max_semaine(user)
+                        
+                        # Pour une garde INTERNE : vérifier si on dépasse le max
+                        # Pour une garde EXTERNE : pas de vérification du max (ne compte pas comme travaillé)
+                        if est_externe:
+                            # Garde externe - ne compte pas vers le max, toujours OK niveau heures
+                            depasserait_max = False
+                        else:
+                            # Garde interne - vérifier le max
+                            depasserait_max = (heures_travaillees + duree_garde) > heures_max
                         
                         # Vérification des plages horaires
                         # 1. Vérifie si l'utilisateur a une DISPONIBILITÉ qui COUVRE la garde
@@ -3286,8 +3298,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         # N2: Temps partiel DISPONIBLES
                         if niveau == 2:
                             if type_emploi in ["temps_partiel", "temporaire"] and has_dispo_valide:
-                                # Vérifier qu'il n'a pas atteint son max (sinon = heures sup)
-                                if heures_semaine + duree_garde <= heures_max:
+                                # Vérifier qu'il n'a pas atteint son max (sauf garde externe)
+                                if not depasserait_max:
                                     candidats.append(user)
                         
                         # N3: Temps partiel STAND-BY (ni dispo explicite ni indispo bloquante)
