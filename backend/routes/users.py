@@ -483,7 +483,6 @@ async def update_mon_profil(
     Supporte les utilisateurs normaux ET les super-admins
     """
     import jwt
-    from routes.dependencies import SECRET_KEY, ALGORITHM
     
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
