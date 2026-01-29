@@ -3215,8 +3215,13 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     existing_debut = tg_existant.get("heure_debut", "00:00")
                     existing_fin = tg_existant.get("heure_fin", "23:59")
                     
-                    chevauche = plages_se_chevauchent(heure_debut, heure_fin, existing_debut, existing_fin)
-                    return chevauche
+                    # Debug pour le 12 février
+                    if date_str == "2026-02-12" and "jour" in type_garde_nom.lower():
+                        chevauche = plages_se_chevauchent(heure_debut, heure_fin, existing_debut, existing_fin)
+                        logging.info(f"🔎 Comparaison: {type_garde_nom}({heure_debut}-{heure_fin}) vs {tg_existant.get('nom')}({existing_debut}-{existing_fin}) = {chevauche}")
+                        return chevauche
+                    
+                    return plages_se_chevauchent(heure_debut, heure_fin, existing_debut, existing_fin)
                 
                 users_assignes_ce_jour = set(
                     a.get("user_id") for a in existing_assignations
