@@ -210,7 +210,7 @@ const ResetPassword = () => {
     try {
       await axios.post(`${API}/${tenantSlug}/auth/reset-password`, {
         token,
-        nouveau_mot_de_passe: password
+        new_password: password
       });
 
       setSuccess(true);
