@@ -3385,6 +3385,13 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                 # Vérifier qu'il n'a pas atteint son max (sauf garde externe)
                                 if not depasserait_max:
                                     candidats.append(user)
+                                    accepte = True
+                                else:
+                                    raison_rejet = f"Dépasserait max heures ({heures_travaillees}h + {duree_garde}h > {heures_max}h)"
+                            elif type_emploi not in ["temps_partiel", "temporaire"]:
+                                raison_rejet = f"Type emploi {type_emploi} (N2 = temps partiel uniquement)"
+                            else:
+                                raison_rejet = "Pas de disponibilité explicite (N2 requiert dispo)"
                         
                         # N3: Temps partiel STAND-BY (ni dispo explicite ni indispo bloquante)
                         elif niveau == 3:
@@ -3392,6 +3399,13 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                 # Pas de dispo explicite mais pas d'indispo bloquante non plus
                                 if not depasserait_max:
                                     candidats.append(user)
+                                    accepte = True
+                                else:
+                                    raison_rejet = f"Dépasserait max heures ({heures_travaillees}h + {duree_garde}h > {heures_max}h)"
+                            elif type_emploi not in ["temps_partiel", "temporaire"]:
+                                raison_rejet = f"Type emploi {type_emploi} (N3 = temps partiel uniquement)"
+                            else:
+                                raison_rejet = "A une disponibilité explicite (N3 = stand-by sans dispo)"
                         
                         # N4: Temps plein INCOMPLETS (heures < max de l'employé)
                         elif niveau == 4:
@@ -3399,6 +3413,11 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                 # Pas encore au max d'heures de l'employé
                                 if not depasserait_max:
                                     candidats.append(user)
+                                    accepte = True
+                                else:
+                                    raison_rejet = f"Dépasserait max heures ({heures_travaillees}h + {duree_garde}h > {heures_max}h)"
+                            else:
+                                raison_rejet = f"Type emploi {type_emploi} (N4 = temps plein uniquement)"
                         
                         # N5: HEURES SUPPLÉMENTAIRES (tous types d'emploi si autorisé)
                         elif niveau == 5:
@@ -3408,9 +3427,27 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                     # Temps partiel : DOIT avoir une dispo pour faire des heures sup
                                     if has_dispo_valide:
                                         candidats.append(user)
+                                        accepte = True
+                                    else:
+                                        raison_rejet = "Temps partiel sans disponibilité (N5 requiert dispo pour TP)"
                                 else:
                                     # Temps plein : PAS besoin de dispo pour heures sup
                                     candidats.append(user)
+                                    accepte = True
+                            else:
+                                raison_rejet = f"N'est pas en heures sup ({heures_travaillees}h/{heures_max}h max)"
+                        
+                        # Si pas accepté, ajouter aux rejetés
+                        if not accepte and raison_rejet:
+                            candidats_rejetes.append({
+                                "nom_complet": user_name,
+                                "grade": user.get("grade", ""),
+                                "type_emploi": type_emploi,
+                                "heures_ce_mois": user_monthly_hours_internes.get(user_id, 0),
+                                "heures_semaine": heures_travaillees,
+                                "heures_max": heures_max,
+                                "raison_rejet": raison_rejet
+                            })
                     
                     # Trier par équité puis ancienneté, avec priorité officier si nécessaire
                     candidats_tries = trier_candidats_equite_anciennete(
