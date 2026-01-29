@@ -6596,7 +6596,6 @@ app.include_router(rondes_securite_router, prefix="/api")  # Module Rondes de S�
 app.include_router(parametres_disponibilites_router, prefix="/api")  # Module Paramètres Disponibilités
 app.include_router(generation_indisponibilites_router, prefix="/api")  # Module Génération Indisponibilités
 app.include_router(equipements_exports_router, prefix="/api")  # Module Équipements Exports/Imports
-app.include_router(users_router, prefix="/api")  # Module Users
 app.include_router(disponibilites_router, prefix="/api")  # Module Disponibilités
 app.include_router(approvisionnement_eau_router, prefix="/api")  # Module Approvisionnement Eau
 app.include_router(validations_competences_router, prefix="/api")  # Module Validations Compétences
