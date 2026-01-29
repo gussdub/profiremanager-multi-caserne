@@ -1224,12 +1224,12 @@ const Parametres = ({ user, tenantSlug }) => {
         {/* Modal d'édition de type de garde */}
         {showEditTypeModal && editingItem && (
           <div className="modal-overlay" onClick={() => setShowEditTypeModal(false)}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '650px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
               <div className="modal-header">
                 <h3>Modifier le type de garde</h3>
                 <button className="close-btn" onClick={() => setShowEditTypeModal(false)}>×</button>
               </div>
-              <div className="modal-body" style={{ display: 'grid', gap: '16px' }}>
+              <div className="modal-body" style={{ display: 'grid', gap: '16px', overflowY: 'auto', flex: 1, paddingRight: '8px' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Nom du type *</label>
                   <input
@@ -1281,6 +1281,46 @@ const Parametres = ({ user, tenantSlug }) => {
                     />
                   </div>
                 </div>
+                
+                {/* Section Jours d'application */}
+                <div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>📅 Jours d'application</label>
+                  <p style={{ fontSize: '0.8rem', color: '#6b7280', marginBottom: '8px' }}>
+                    Si aucun jour n'est sélectionné, la garde s'applique tous les jours
+                  </p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {joursOptions.map(jour => (
+                      <label
+                        key={jour.value}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '8px 12px',
+                          background: (editForm.jours_application || []).includes(jour.value) ? '#dbeafe' : '#f9fafb',
+                          border: (editForm.jours_application || []).includes(jour.value) ? '2px solid #3b82f6' : '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={(editForm.jours_application || []).includes(jour.value)}
+                          onChange={() => handleJourChange(jour.value)}
+                          style={{ accentColor: '#3b82f6' }}
+                        />
+                        <span style={{ fontSize: '0.9rem' }}>{jour.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {(editForm.jours_application || []).length > 0 && (
+                    <p style={{ marginTop: '8px', fontSize: '0.875rem', color: '#3b82f6', fontWeight: '500' }}>
+                      📅 {(editForm.jours_application || []).length} jour(s) sélectionné(s)
+                    </p>
+                  )}
+                </div>
+                
                 <div>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                     <input
@@ -1329,25 +1369,28 @@ const Parametres = ({ user, tenantSlug }) => {
                 )}
                 
                 {/* Section Compétences Requises */}
-                <div style={{ marginTop: '12px' }}>
+                <div>
                   <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>📜 Compétences requises pour cette garde</label>
+                  <p style={{ fontSize: '0.8rem', color: '#6b7280', marginBottom: '8px' }}>
+                    Les candidats doivent posséder toutes les compétences sélectionnées pour être assignés
+                  </p>
                   <div style={{ 
                     display: 'grid', 
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', 
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', 
                     gap: '8px',
                     padding: '12px',
                     background: '#f1f5f9',
                     borderRadius: '8px',
-                    maxHeight: '200px',
+                    maxHeight: '150px',
                     overflowY: 'auto'
                   }}>
-                    {competences.map(comp => (
+                    {competences.length > 0 ? competences.map(comp => (
                       <label 
                         key={comp.id} 
                         style={{ 
                           display: 'flex', 
                           alignItems: 'center', 
-                          gap: '8px', 
+                          gap: '6px', 
                           cursor: 'pointer',
                           padding: '6px 10px',
                           background: (editForm.competences_requises || []).includes(comp.id) ? '#dcfce7' : 'white',
@@ -1362,9 +1405,11 @@ const Parametres = ({ user, tenantSlug }) => {
                           onChange={() => handleEditCompetenceChange(comp.id)}
                           style={{ accentColor: '#22c55e' }}
                         />
-                        <span style={{ fontSize: '0.9rem' }}>{comp.nom}</span>
+                        <span style={{ fontSize: '0.85rem' }}>{comp.nom}</span>
                       </label>
-                    ))}
+                    )) : (
+                      <p style={{ color: '#9ca3af', fontStyle: 'italic' }}>Aucune compétence définie</p>
+                    )}
                   </div>
                   {(editForm.competences_requises || []).length > 0 && (
                     <p style={{ marginTop: '8px', fontSize: '0.875rem', color: '#22c55e', fontWeight: '500' }}>
@@ -1373,7 +1418,7 @@ const Parametres = ({ user, tenantSlug }) => {
                   )}
                 </div>
               </div>
-              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
+              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px', borderTop: '1px solid #e5e7eb', paddingTop: '16px' }}>
                 <Button variant="outline" onClick={() => setShowEditTypeModal(false)}>
                   Annuler
                 </Button>
