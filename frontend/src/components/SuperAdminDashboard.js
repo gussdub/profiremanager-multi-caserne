@@ -2271,8 +2271,7 @@ const SuperAdminDashboard = ({ onLogout }) => {
               </Button>
             </div>
           </div>
-        </div>
-      )}
+      </ModalPortal>
 
       {/* Modal Configuration SFTP */}
       {showSftpConfigModal && selectedTenant && (
