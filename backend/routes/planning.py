@@ -3085,6 +3085,15 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     if user_a_competences_requises(u, competences_requises)
                 ]
                 
+                # ==================== N0-bis: FILTRE GARDES EXTERNES ====================
+                # Si c'est une garde externe, ne garder que les utilisateurs qui acceptent les gardes externes
+                if est_externe:
+                    users_avec_competences = [
+                        u for u in users_avec_competences
+                        if u.get("accepter_gardes_externes", False) == True
+                    ]
+                    logging.info(f"  🏠 Garde externe: {len(users_avec_competences)} candidats acceptant les gardes externes")
+                
                 # ==================== LOGIQUE OFFICIER OBLIGATOIRE ====================
                 # Si officier obligatoire et pas encore d'officier assigné
                 besoin_officier = officier_obligatoire and not officier_deja_assigne
