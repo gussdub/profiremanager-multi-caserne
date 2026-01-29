@@ -2571,8 +2571,7 @@ const SuperAdminDashboard = ({ onLogout }) => {
               </Button>
             </div>
           </div>
-        </div>
-      )}
+      </ModalPortal>
 
       {/* Modal Créer un super admin */}
       {showCreateSuperAdminModal && (
