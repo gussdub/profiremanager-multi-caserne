@@ -484,14 +484,21 @@ async def update_mon_profil(
     """
     import jwt
     
+    logger.info(f"=== UPDATE MON PROFIL START === tenant_slug={tenant_slug}")
+    
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
+    tenant_id = tenant.id if hasattr(tenant, 'id') else tenant.get('id')
+    logger.info(f"Tenant trouvé: {tenant_id}")
     
     try:
         # Décoder le token pour obtenir l'ID et le type d'utilisateur
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
         is_super_admin = payload.get("is_super_admin", False)
+        token_tenant_id = payload.get("tenant_id")
+        
+        logger.info(f"Token decoded: user_id={user_id}, is_super_admin={is_super_admin}, token_tenant_id={token_tenant_id}")
         
         if not user_id:
             raise HTTPException(status_code=400, detail="ID utilisateur non trouvé dans le token")
