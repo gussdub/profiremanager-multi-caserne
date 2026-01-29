@@ -261,15 +261,21 @@ async def create_budget(
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
+    # Supporter les deux formats (nouveau et legacy)
+    annee = budget.annee if hasattr(budget, 'annee') and budget.annee else datetime.now().year
+    budget_alloue = budget.budget_alloue if hasattr(budget, 'budget_alloue') and budget.budget_alloue else (budget.montant_prevu or 0)
+    notes = budget.notes if hasattr(budget, 'notes') and budget.notes else (budget.description or "")
+    
     budget_doc = {
         "id": str(uuid.uuid4()),
         "tenant_id": tenant.id,
+        "annee": annee,
         "categorie": budget.categorie,
-        "montant_prevu": budget.montant_prevu,
-        "montant_realise": 0,
-        "description": budget.description,
-        "created_at": datetime.now(timezone.utc),
-        "created_by": current_user.id
+        "budget_alloue": budget_alloue,
+        "budget_consomme": 0,
+        "notes": notes,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
     }
     
     await db.budgets.insert_one(budget_doc)
@@ -279,14 +285,22 @@ async def create_budget(
 
 
 @router.get("/{tenant_slug}/rapports/budgets")
-async def get_budgets(tenant_slug: str, current_user: User = Depends(get_current_user)):
+async def get_budgets(
+    tenant_slug: str, 
+    annee: Optional[int] = None,
+    current_user: User = Depends(get_current_user)
+):
     """Récupérer tous les budgets"""
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    budgets = await db.budgets.find({"tenant_id": tenant.id}).to_list(1000)
+    query = {"tenant_id": tenant.id}
+    if annee:
+        query["annee"] = annee
+    
+    budgets = await db.budgets.find(query).to_list(1000)
     return [clean_mongo_doc(b) for b in budgets]
 
 
@@ -303,14 +317,23 @@ async def update_budget(
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
+    # Supporter les deux formats (nouveau et legacy)
+    budget_alloue = budget.budget_alloue if hasattr(budget, 'budget_alloue') and budget.budget_alloue else (budget.montant_prevu or 0)
+    notes = budget.notes if hasattr(budget, 'notes') and budget.notes else (budget.description or "")
+    
+    update_data = {
+        "categorie": budget.categorie,
+        "budget_alloue": budget_alloue,
+        "notes": notes,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    if hasattr(budget, 'annee') and budget.annee:
+        update_data["annee"] = budget.annee
+    
     result = await db.budgets.update_one(
         {"id": budget_id, "tenant_id": tenant.id},
-        {"$set": {
-            "categorie": budget.categorie,
-            "montant_prevu": budget.montant_prevu,
-            "description": budget.description,
-            "updated_at": datetime.now(timezone.utc)
-        }}
+        {"$set": update_data}
     )
     
     if result.modified_count == 0:
