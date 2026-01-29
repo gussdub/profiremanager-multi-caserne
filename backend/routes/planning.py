@@ -3009,6 +3009,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 personnel_requis = type_garde.get("personnel_requis", 1)
                 est_externe = type_garde.get("est_garde_externe", False)
                 duree_garde = type_garde.get("duree_heures", 8)
+                competences_requises = type_garde.get("competences_requises", [])
+                officier_obligatoire = type_garde.get("officier_obligatoire", False)
                 
                 # Vérifier si ce type de garde s'applique ce jour
                 jours_app = type_garde.get("jours_application", [])
@@ -3016,15 +3018,25 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     continue
                 
                 # N1: Compter les assignations MANUELLES existantes (ne jamais écraser)
-                existing_count = sum(
-                    1 for a in existing_assignations
+                existing_this_garde = [
+                    a for a in existing_assignations
                     if a.get("date") == date_str and a.get("type_garde_id") == type_garde_id
-                )
+                ]
+                existing_count = len(existing_this_garde)
                 
                 places_restantes = personnel_requis - existing_count
                 
                 if places_restantes <= 0:
                     continue  # Garde complète
+                
+                # Vérifier si un officier est déjà assigné à cette garde
+                officier_deja_assigne = False
+                if officier_obligatoire:
+                    for a in existing_this_garde:
+                        assigned_user = users_map.get(a.get("user_id"))
+                        if assigned_user and est_officier(assigned_user):
+                            officier_deja_assigne = True
+                            break
                 
                 # Utilisateurs déjà assignés ce jour (pour éviter doubles assignations)
                 users_assignes_ce_jour = set(
@@ -3041,6 +3053,18 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     user_indispos = indispos_lookup.get(user_id, {})
                     return date_str in user_indispos
                 
+                # ==================== N0: FILTRE COMPÉTENCES ====================
+                # Pré-filtrer les utilisateurs qui ont les compétences requises
+                users_avec_competences = [
+                    u for u in users 
+                    if user_a_competences_requises(u, competences_requises)
+                ]
+                
+                # ==================== LOGIQUE OFFICIER OBLIGATOIRE ====================
+                # Si officier obligatoire et pas encore d'officier assigné
+                besoin_officier = officier_obligatoire and not officier_deja_assigne
+                officier_assigne_cette_iteration = False
+                
                 # ==================== NIVEAUX 2-5 ====================
                 assignes_cette_garde = 0
                 
@@ -3053,7 +3077,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     
                     candidats = []
                     
-                    for user in users:
+                    for user in users_avec_competences:  # Utiliser la liste filtrée par compétences
                         user_id = user["id"]
                         
                         # Ignorer si déjà assigné ce jour
