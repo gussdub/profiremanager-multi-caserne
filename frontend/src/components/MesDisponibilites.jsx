@@ -65,8 +65,8 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
   const [pendingConfigurations, setPendingConfigurations] = useState([]);
   const [availabilityConfig, setAvailabilityConfig] = useState({
     type_garde_id: '',
-    heure_debut: '08:00',
-    heure_fin: '16:00',
+    heure_debut: '00:00',
+    heure_fin: '23:59',
     statut: 'disponible',
     // Pour mode récurrence
     mode: 'calendrier', // 'calendrier' ou 'recurrence'
