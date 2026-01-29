@@ -1966,21 +1966,7 @@ const SuperAdminDashboard = ({ onLogout }) => {
       )}
 
       {/* Modal Modifier Caserne */}
-      {showEditModal && selectedTenant && (
-        <div className="modal-overlay" style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          width: '100vw',
-          height: '100vh',
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999
-        }}>
+      <ModalPortal isOpen={showEditModal && selectedTenant}>
           <div className="modal-content" style={{
             backgroundColor: 'white',
             borderRadius: '8px',
