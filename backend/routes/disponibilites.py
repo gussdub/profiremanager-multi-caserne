@@ -50,10 +50,15 @@ class Disponibilite(BaseModel):
 
 class DisponibiliteCreate(BaseModel):
     """Modèle pour la création d'une disponibilité"""
+    user_id: Optional[str] = None  # Optionnel car peut être fourni par current_user
     date: str
     type_garde_id: Optional[str] = None
-    est_disponible: bool = True
+    heure_debut: str = "00:00"
+    heure_fin: str = "23:59"
+    statut: str = "disponible"  # "disponible" ou "indisponible"
+    est_disponible: bool = True  # Garder pour compatibilité
     commentaire: Optional[str] = None
+    origine: Optional[str] = "manuelle"  # "manuelle", "recurrence", etc.
 
 
 class DisponibiliteReinitialiser(BaseModel):
