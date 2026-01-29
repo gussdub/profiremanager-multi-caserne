@@ -3215,12 +3215,21 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     existing_debut = tg_existant.get("heure_debut", "00:00")
                     existing_fin = tg_existant.get("heure_fin", "23:59")
                     
-                    return plages_se_chevauchent(heure_debut, heure_fin, existing_debut, existing_fin)
+                    chevauche = plages_se_chevauchent(heure_debut, heure_fin, existing_debut, existing_fin)
+                    return chevauche
                 
                 users_assignes_ce_jour = set(
                     a.get("user_id") for a in existing_assignations
                     if a.get("date") == date_str and garde_chevauche(a)
                 )
+                
+                # Debug log pour le 12 février garde de jour
+                if date_str == "2026-02-12" and "jour" in type_garde_nom.lower():
+                    logging.info(f"🔍 DEBUG {date_str} {type_garde_nom}: users_assignes_ce_jour = {len(users_assignes_ce_jour)}")
+                    for uid in users_assignes_ce_jour:
+                        u = users_map.get(uid)
+                        if u:
+                            logging.info(f"   - {u.get('prenom')} {u.get('nom')} bloqué")
                 
                 # Récupérer les disponibilités pour ce jour/type_garde
                 # IMPORTANT: Inclure aussi les disponibilités générales (type_garde_id = None)
