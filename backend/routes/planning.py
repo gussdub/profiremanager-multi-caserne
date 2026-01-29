@@ -3326,9 +3326,11 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             if is_debug:
                                 logging.info(f"🔴 DEBUG Alva bloqué: déjà assigné à garde chevauchante")
                             
-                            # Déterminer le message approprié
+                            # Si déjà assigné à CETTE MÊME garde, ne pas l'ajouter aux rejetés
+                            # car il a été sélectionné pour un slot précédent
                             if user_id in users_assignes_cette_garde:
-                                raison = f"Déjà assigné à cette garde ({type_garde_nom})"
+                                # Ne rien faire - il est déjà sur cette garde
+                                pass
                             else:
                                 # Trouver le nom de l'autre garde
                                 autre_garde = next(
@@ -3339,16 +3341,16 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                 if autre_garde:
                                     autre_tg = next((t for t in types_garde if t["id"] == autre_garde.get("type_garde_id")), None)
                                     autre_nom = autre_tg.get("nom", "Autre garde") if autre_tg else "Autre garde"
-                                    raison = f"Déjà assigné à '{autre_nom}' ce jour"
+                                    raison = f"Déjà assigné à '{autre_nom}' ce jour (conflit d'horaire)"
                                 else:
                                     raison = "Déjà assigné à une autre garde ce jour"
-                            
-                            candidats_rejetes.append({
-                                "nom_complet": user_name,
-                                "grade": user.get("grade", ""),
-                                "type_emploi": user.get("type_emploi", ""),
-                                "raison_rejet": raison
-                            })
+                                
+                                candidats_rejetes.append({
+                                    "nom_complet": user_name,
+                                    "grade": user.get("grade", ""),
+                                    "type_emploi": user.get("type_emploi", ""),
+                                    "raison_rejet": raison
+                                })
                             continue
                         
                         # Ignorer si statut inactif
