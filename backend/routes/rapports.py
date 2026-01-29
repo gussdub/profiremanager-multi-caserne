@@ -1,0 +1,1182 @@
+"""
+Routes API pour le module Rapports
+==================================
+
+STATUT: ACTIF
+Ce module gère les rapports, exports PDF/Excel, et statistiques.
+
+Routes migrées depuis server.py:
+- GET    /{tenant_slug}/rapports/statistiques-avancees
+- POST   /{tenant_slug}/rapports/budgets
+- POST   /{tenant_slug}/rapports/import-csv
+- GET    /{tenant_slug}/rapports/budgets
+- PUT    /{tenant_slug}/rapports/budgets/{budget_id}
+- DELETE /{tenant_slug}/rapports/budgets/{budget_id}
+- POST   /{tenant_slug}/rapports/immobilisations
+- GET    /{tenant_slug}/rapports/immobilisations
+- DELETE /{tenant_slug}/rapports/immobilisations/{immob_id}
+- POST   /{tenant_slug}/rapports/projets-triennaux
+- GET    /{tenant_slug}/rapports/projets-triennaux
+- DELETE /{tenant_slug}/rapports/projets-triennaux/{projet_id}
+- POST   /{tenant_slug}/rapports/interventions
+- GET    /{tenant_slug}/rapports/interventions
+- GET    /{tenant_slug}/rapports/dashboard-interne
+- GET    /{tenant_slug}/rapports/couts-salariaux
+- GET    /{tenant_slug}/rapports/tableau-bord-budgetaire
+- GET    /{tenant_slug}/rapports/rapport-immobilisations
+- GET    /{tenant_slug}/rapports/export-dashboard-pdf
+- GET    /{tenant_slug}/rapports/export-salaires-pdf
+- GET    /{tenant_slug}/rapports/export-salaires-excel
+- GET    /{tenant_slug}/personnel/export-pdf
+- GET    /{tenant_slug}/personnel/export-excel
+"""
+
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+from typing import List, Optional, Dict, Any
+from datetime import datetime, timezone, timedelta, date
+from io import BytesIO
+import uuid
+import logging
+import csv
+import io
+
+from routes.dependencies import (
+    db,
+    get_current_user,
+    get_tenant_from_slug,
+    clean_mongo_doc,
+    User
+)
+
+# Import des helpers PDF partagés
+from utils.pdf_helpers import (
+    create_branded_pdf,
+    get_modern_pdf_styles,
+    create_pdf_footer_text
+)
+
+# Imports pour PDF
+from reportlab.lib.pagesizes import letter, A4, landscape
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch, cm
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image, PageBreak
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+
+# Imports pour Excel
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+
+router = APIRouter(tags=["Rapports"])
+logger = logging.getLogger(__name__)
+
+
+# ==================== MODÈLES PYDANTIC ====================
+
+class BudgetCreate(BaseModel):
+    categorie: str
+    montant_prevu: float
+    description: Optional[str] = None
+
+class ImmobilisationCreate(BaseModel):
+    nom: str
+    categorie: str
+    valeur_acquisition: float
+    date_acquisition: str
+    duree_amortissement: int = 5
+
+class ProjetTriennalCreate(BaseModel):
+    nom: str
+    description: Optional[str] = None
+    montant_total: float
+    annee_debut: int
+    annee_fin: int
+
+class InterventionCreate(BaseModel):
+    date: str
+    type_intervention: str
+    description: Optional[str] = None
+    duree_minutes: int = 0
+    ressources_utilisees: Optional[List[str]] = []
+
+
+# ==================== ROUTES STATISTIQUES ====================
+
+@router.get("/{tenant_slug}/rapports/statistiques-avancees")
+async def get_statistiques_avancees(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    try:
+        # Récupérer toutes les données nécessaires filtrées par tenant
+        users = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+        assignations = await db.assignations.find({"tenant_id": tenant.id}).to_list(1000)
+        types_garde = await db.types_garde.find({"tenant_id": tenant.id}).to_list(1000)
+        formations = await db.formations.find({"tenant_id": tenant.id}).to_list(1000)
+        demandes_remplacement = await db.demandes_remplacement.find({"tenant_id": tenant.id}).to_list(1000)
+        
+        # Statistiques générales
+        stats_generales = {
+            "personnel_total": len(users),
+            "personnel_actif": len([u for u in users if u.get("statut") == "Actif"]),
+            "assignations_mois": len(assignations),
+            "taux_couverture": 94.5,
+            "formations_disponibles": len(formations),
+            "remplacements_demandes": len(demandes_remplacement)
+        }
+        
+        # Statistiques par rôle
+        stats_par_role = {}
+        for role in ["admin", "superviseur", "employe"]:
+            users_role = [u for u in users if u.get("role") == role]
+            assignations_role = [a for a in assignations if any(u["id"] == a["user_id"] and u.get("role") == role for u in users)]
+            
+            stats_par_role[role] = {
+                "nombre_utilisateurs": len(users_role),
+                "assignations_totales": len(assignations_role),
+                "heures_moyennes": len(assignations_role) * 8,
+                "formations_completees": sum(len(u.get("formations", [])) for u in users_role)
+            }
+        
+        # Statistiques par employé
+        stats_par_employe = []
+        for user in users:
+            user_assignations = [a for a in assignations if a["user_id"] == user["id"]]
+            user_disponibilites = await db.disponibilites.find({"user_id": user["id"], "tenant_id": tenant.id}).to_list(100)
+            
+            stats_par_employe.append({
+                "id": user["id"],
+                "nom": f"{user.get('prenom', '')} {user.get('nom', '')}",
+                "grade": user.get("grade", "N/A"),
+                "role": user.get("role", "pompier"),
+                "assignations": len(user_assignations),
+                "disponibilites": len(user_disponibilites),
+                "formations": len(user.get("formations", [])),
+                "heures_totales": len(user_assignations) * 8
+            })
+        
+        return {
+            "generales": stats_generales,
+            "par_role": stats_par_role,
+            "par_employe": stats_par_employe
+        }
+    except Exception as e:
+        logger.error(f"Erreur statistiques avancées: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== ROUTES BUDGETS ====================
+
+@router.post("/{tenant_slug}/rapports/budgets")
+async def create_budget(
+    tenant_slug: str,
+    budget: BudgetCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer une entrée budget"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    budget_doc = {
+        "id": str(uuid.uuid4()),
+        "tenant_id": tenant.id,
+        "categorie": budget.categorie,
+        "montant_prevu": budget.montant_prevu,
+        "montant_realise": 0,
+        "description": budget.description,
+        "created_at": datetime.now(timezone.utc),
+        "created_by": current_user.id
+    }
+    
+    await db.budgets.insert_one(budget_doc)
+    budget_doc.pop("_id", None)
+    
+    return budget_doc
+
+
+@router.get("/{tenant_slug}/rapports/budgets")
+async def get_budgets(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Récupérer tous les budgets"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    budgets = await db.budgets.find({"tenant_id": tenant.id}).to_list(1000)
+    return [clean_mongo_doc(b) for b in budgets]
+
+
+@router.put("/{tenant_slug}/rapports/budgets/{budget_id}")
+async def update_budget(
+    tenant_slug: str,
+    budget_id: str,
+    budget: BudgetCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Modifier un budget"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    result = await db.budgets.update_one(
+        {"id": budget_id, "tenant_id": tenant.id},
+        {"$set": {
+            "categorie": budget.categorie,
+            "montant_prevu": budget.montant_prevu,
+            "description": budget.description,
+            "updated_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Budget non trouvé")
+    
+    return {"message": "Budget mis à jour"}
+
+
+@router.delete("/{tenant_slug}/rapports/budgets/{budget_id}")
+async def delete_budget(
+    tenant_slug: str,
+    budget_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer un budget"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    result = await db.budgets.delete_one({"id": budget_id, "tenant_id": tenant.id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Budget non trouvé")
+    
+    return {"message": "Budget supprimé"}
+
+
+# ==================== ROUTES IMMOBILISATIONS ====================
+
+@router.post("/{tenant_slug}/rapports/immobilisations")
+async def create_immobilisation(
+    tenant_slug: str,
+    immob: ImmobilisationCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer une immobilisation"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    immob_doc = {
+        "id": str(uuid.uuid4()),
+        "tenant_id": tenant.id,
+        "nom": immob.nom,
+        "categorie": immob.categorie,
+        "valeur_acquisition": immob.valeur_acquisition,
+        "date_acquisition": immob.date_acquisition,
+        "duree_amortissement": immob.duree_amortissement,
+        "created_at": datetime.now(timezone.utc)
+    }
+    
+    await db.immobilisations.insert_one(immob_doc)
+    immob_doc.pop("_id", None)
+    
+    return immob_doc
+
+
+@router.get("/{tenant_slug}/rapports/immobilisations")
+async def get_immobilisations(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Récupérer toutes les immobilisations"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    immobs = await db.immobilisations.find({"tenant_id": tenant.id}).to_list(1000)
+    return [clean_mongo_doc(i) for i in immobs]
+
+
+@router.delete("/{tenant_slug}/rapports/immobilisations/{immob_id}")
+async def delete_immobilisation(
+    tenant_slug: str,
+    immob_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer une immobilisation"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    result = await db.immobilisations.delete_one({"id": immob_id, "tenant_id": tenant.id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Immobilisation non trouvée")
+    
+    return {"message": "Immobilisation supprimée"}
+
+
+# ==================== ROUTES PROJETS TRIENNAUX ====================
+
+@router.post("/{tenant_slug}/rapports/projets-triennaux")
+async def create_projet_triennal(
+    tenant_slug: str,
+    projet: ProjetTriennalCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer un projet triennal"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    projet_doc = {
+        "id": str(uuid.uuid4()),
+        "tenant_id": tenant.id,
+        "nom": projet.nom,
+        "description": projet.description,
+        "montant_total": projet.montant_total,
+        "annee_debut": projet.annee_debut,
+        "annee_fin": projet.annee_fin,
+        "statut": "planifie",
+        "created_at": datetime.now(timezone.utc)
+    }
+    
+    await db.projets_triennaux.insert_one(projet_doc)
+    projet_doc.pop("_id", None)
+    
+    return projet_doc
+
+
+@router.get("/{tenant_slug}/rapports/projets-triennaux")
+async def get_projets_triennaux(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Récupérer tous les projets triennaux"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    projets = await db.projets_triennaux.find({"tenant_id": tenant.id}).to_list(1000)
+    return [clean_mongo_doc(p) for p in projets]
+
+
+@router.delete("/{tenant_slug}/rapports/projets-triennaux/{projet_id}")
+async def delete_projet_triennal(
+    tenant_slug: str,
+    projet_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer un projet triennal"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    result = await db.projets_triennaux.delete_one({"id": projet_id, "tenant_id": tenant.id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Projet non trouvé")
+    
+    return {"message": "Projet supprimé"}
+
+
+# ==================== ROUTES INTERVENTIONS ====================
+
+@router.post("/{tenant_slug}/rapports/interventions")
+async def create_intervention(
+    tenant_slug: str,
+    intervention: InterventionCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer une intervention"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    intervention_doc = {
+        "id": str(uuid.uuid4()),
+        "tenant_id": tenant.id,
+        "date": intervention.date,
+        "type_intervention": intervention.type_intervention,
+        "description": intervention.description,
+        "duree_minutes": intervention.duree_minutes,
+        "ressources_utilisees": intervention.ressources_utilisees,
+        "created_at": datetime.now(timezone.utc),
+        "created_by": current_user.id
+    }
+    
+    await db.interventions.insert_one(intervention_doc)
+    intervention_doc.pop("_id", None)
+    
+    return intervention_doc
+
+
+@router.get("/{tenant_slug}/rapports/interventions")
+async def get_interventions(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Récupérer toutes les interventions"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    interventions = await db.interventions.find({"tenant_id": tenant.id}).to_list(1000)
+    return [clean_mongo_doc(i) for i in interventions]
+
+
+# ==================== ROUTES DASHBOARD INTERNE ====================
+
+@router.get("/{tenant_slug}/rapports/dashboard-interne")
+async def get_dashboard_interne(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Données du dashboard interne"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    try:
+        # Récupérer les données
+        users = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+        budgets = await db.budgets.find({"tenant_id": tenant.id}).to_list(1000)
+        immobilisations = await db.immobilisations.find({"tenant_id": tenant.id}).to_list(1000)
+        interventions = await db.interventions.find({"tenant_id": tenant.id}).to_list(1000)
+        
+        # Calculer les totaux
+        budget_total_prevu = sum(b.get("montant_prevu", 0) for b in budgets)
+        budget_total_realise = sum(b.get("montant_realise", 0) for b in budgets)
+        immob_total = sum(i.get("valeur_acquisition", 0) for i in immobilisations)
+        
+        return {
+            "personnel": {
+                "total": len(users),
+                "actifs": len([u for u in users if u.get("statut") == "Actif"])
+            },
+            "budget": {
+                "prevu": budget_total_prevu,
+                "realise": budget_total_realise,
+                "ecart": budget_total_prevu - budget_total_realise
+            },
+            "immobilisations": {
+                "total": len(immobilisations),
+                "valeur_totale": immob_total
+            },
+            "interventions": {
+                "total": len(interventions),
+                "ce_mois": len([i for i in interventions if i.get("date", "").startswith(datetime.now().strftime("%Y-%m"))])
+            }
+        }
+    except Exception as e:
+        logger.error(f"Erreur dashboard interne: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== ROUTES COÛTS SALARIAUX ====================
+
+@router.get("/{tenant_slug}/rapports/couts-salariaux")
+async def get_rapport_couts_salariaux(
+    tenant_slug: str,
+    mois: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Rapport des coûts salariaux"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    try:
+        # Mois par défaut: mois courant
+        if not mois:
+            mois = datetime.now().strftime("%Y-%m")
+        
+        # Récupérer les assignations du mois
+        assignations = await db.assignations.find({
+            "tenant_id": tenant.id,
+            "date": {"$regex": f"^{mois}"}
+        }).to_list(10000)
+        
+        # Récupérer les utilisateurs et types de garde
+        users = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+        types_garde = await db.types_garde.find({"tenant_id": tenant.id}).to_list(100)
+        
+        users_map = {u["id"]: u for u in users}
+        types_map = {t["id"]: t for t in types_garde}
+        
+        # Calculer les coûts par employé
+        couts_par_employe = {}
+        for a in assignations:
+            user_id = a.get("user_id")
+            type_garde_id = a.get("type_garde_id")
+            
+            user = users_map.get(user_id, {})
+            type_garde = types_map.get(type_garde_id, {})
+            
+            taux_horaire = user.get("taux_horaire", 25)
+            duree = type_garde.get("duree_heures", 8)
+            cout = taux_horaire * duree
+            
+            if user_id not in couts_par_employe:
+                couts_par_employe[user_id] = {
+                    "nom": f"{user.get('prenom', '')} {user.get('nom', '')}",
+                    "grade": user.get("grade", ""),
+                    "heures_totales": 0,
+                    "cout_total": 0,
+                    "assignations": 0
+                }
+            
+            couts_par_employe[user_id]["heures_totales"] += duree
+            couts_par_employe[user_id]["cout_total"] += cout
+            couts_par_employe[user_id]["assignations"] += 1
+        
+        # Totaux
+        total_heures = sum(c["heures_totales"] for c in couts_par_employe.values())
+        total_cout = sum(c["cout_total"] for c in couts_par_employe.values())
+        
+        return {
+            "mois": mois,
+            "par_employe": list(couts_par_employe.values()),
+            "totaux": {
+                "heures": total_heures,
+                "cout": total_cout,
+                "nb_employes": len(couts_par_employe)
+            }
+        }
+    except Exception as e:
+        logger.error(f"Erreur rapport coûts salariaux: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== ROUTES TABLEAU DE BORD BUDGÉTAIRE ====================
+
+@router.get("/{tenant_slug}/rapports/tableau-bord-budgetaire")
+async def get_tableau_bord_budgetaire(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Tableau de bord budgétaire"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    try:
+        budgets = await db.budgets.find({"tenant_id": tenant.id}).to_list(1000)
+        
+        # Grouper par catégorie
+        par_categorie = {}
+        for b in budgets:
+            cat = b.get("categorie", "Autre")
+            if cat not in par_categorie:
+                par_categorie[cat] = {"prevu": 0, "realise": 0}
+            par_categorie[cat]["prevu"] += b.get("montant_prevu", 0)
+            par_categorie[cat]["realise"] += b.get("montant_realise", 0)
+        
+        # Totaux
+        total_prevu = sum(c["prevu"] for c in par_categorie.values())
+        total_realise = sum(c["realise"] for c in par_categorie.values())
+        
+        return {
+            "par_categorie": par_categorie,
+            "totaux": {
+                "prevu": total_prevu,
+                "realise": total_realise,
+                "ecart": total_prevu - total_realise,
+                "pourcentage_utilise": (total_realise / total_prevu * 100) if total_prevu > 0 else 0
+            }
+        }
+    except Exception as e:
+        logger.error(f"Erreur tableau bord budgétaire: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== ROUTES RAPPORT IMMOBILISATIONS ====================
+
+@router.get("/{tenant_slug}/rapports/rapport-immobilisations")
+async def get_rapport_immobilisations(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Rapport détaillé des immobilisations"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    try:
+        immobs = await db.immobilisations.find({"tenant_id": tenant.id}).to_list(1000)
+        
+        # Calculer l'amortissement pour chaque immobilisation
+        today = datetime.now()
+        immobs_avec_amort = []
+        
+        for immob in immobs:
+            valeur = immob.get("valeur_acquisition", 0)
+            duree = immob.get("duree_amortissement", 5)
+            date_acq_str = immob.get("date_acquisition", "")
+            
+            try:
+                date_acq = datetime.strptime(date_acq_str, "%Y-%m-%d")
+                annees_ecoulees = (today - date_acq).days / 365
+                amort_annuel = valeur / duree if duree > 0 else 0
+                amort_cumule = min(amort_annuel * annees_ecoulees, valeur)
+                valeur_nette = valeur - amort_cumule
+            except:
+                amort_cumule = 0
+                valeur_nette = valeur
+            
+            immobs_avec_amort.append({
+                **clean_mongo_doc(immob),
+                "amortissement_cumule": round(amort_cumule, 2),
+                "valeur_nette": round(valeur_nette, 2)
+            })
+        
+        # Totaux
+        total_acquisition = sum(i.get("valeur_acquisition", 0) for i in immobs)
+        total_amort = sum(i.get("amortissement_cumule", 0) for i in immobs_avec_amort)
+        total_net = sum(i.get("valeur_nette", 0) for i in immobs_avec_amort)
+        
+        return {
+            "immobilisations": immobs_avec_amort,
+            "totaux": {
+                "valeur_acquisition": total_acquisition,
+                "amortissement_cumule": round(total_amort, 2),
+                "valeur_nette": round(total_net, 2)
+            }
+        }
+    except Exception as e:
+        logger.error(f"Erreur rapport immobilisations: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== ROUTES IMPORT CSV ====================
+
+@router.post("/{tenant_slug}/rapports/import-csv")
+async def import_rapports_csv(
+    tenant_slug: str,
+    file: UploadFile = File(...),
+    type_import: str = "budgets",
+    current_user: User = Depends(get_current_user)
+):
+    """Import CSV pour rapports (budgets, immobilisations, etc.)"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    try:
+        content = await file.read()
+        decoded = content.decode('utf-8-sig')
+        reader = csv.DictReader(io.StringIO(decoded))
+        
+        imported = 0
+        errors = []
+        
+        for row in reader:
+            try:
+                if type_import == "budgets":
+                    doc = {
+                        "id": str(uuid.uuid4()),
+                        "tenant_id": tenant.id,
+                        "categorie": row.get("categorie", ""),
+                        "montant_prevu": float(row.get("montant_prevu", 0)),
+                        "montant_realise": float(row.get("montant_realise", 0)),
+                        "description": row.get("description", ""),
+                        "created_at": datetime.now(timezone.utc)
+                    }
+                    await db.budgets.insert_one(doc)
+                elif type_import == "immobilisations":
+                    doc = {
+                        "id": str(uuid.uuid4()),
+                        "tenant_id": tenant.id,
+                        "nom": row.get("nom", ""),
+                        "categorie": row.get("categorie", ""),
+                        "valeur_acquisition": float(row.get("valeur_acquisition", 0)),
+                        "date_acquisition": row.get("date_acquisition", ""),
+                        "duree_amortissement": int(row.get("duree_amortissement", 5)),
+                        "created_at": datetime.now(timezone.utc)
+                    }
+                    await db.immobilisations.insert_one(doc)
+                
+                imported += 1
+            except Exception as e:
+                errors.append(str(e))
+        
+        return {
+            "message": f"{imported} enregistrements importés",
+            "imported": imported,
+            "errors": errors[:10]
+        }
+    except Exception as e:
+        logger.error(f"Erreur import CSV: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== ROUTES EXPORT PDF ====================
+
+@router.get("/{tenant_slug}/rapports/export-dashboard-pdf")
+async def export_dashboard_pdf(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Export PDF du dashboard"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    try:
+        # Récupérer les données
+        users = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+        budgets = await db.budgets.find({"tenant_id": tenant.id}).to_list(1000)
+        
+        # Créer le PDF
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4)
+        styles = getSampleStyleSheet()
+        elements = []
+        
+        # Titre
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=18,
+            textColor=colors.HexColor("#DC2626"),
+            spaceAfter=30
+        )
+        elements.append(Paragraph("Rapport Dashboard", title_style))
+        elements.append(Paragraph(f"Généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')}", styles['Normal']))
+        elements.append(Spacer(1, 20))
+        
+        # Stats personnel
+        elements.append(Paragraph("Personnel", styles['Heading2']))
+        data = [
+            ["Métrique", "Valeur"],
+            ["Total", str(len(users))],
+            ["Actifs", str(len([u for u in users if u.get("statut") == "Actif"]))],
+        ]
+        table = Table(data, colWidths=[200, 100])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#DC2626")),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ]))
+        elements.append(table)
+        elements.append(Spacer(1, 20))
+        
+        # Stats budgets
+        elements.append(Paragraph("Budgets", styles['Heading2']))
+        total_prevu = sum(b.get("montant_prevu", 0) for b in budgets)
+        total_realise = sum(b.get("montant_realise", 0) for b in budgets)
+        data = [
+            ["Métrique", "Valeur"],
+            ["Budget prévu", f"{total_prevu:,.2f} $"],
+            ["Budget réalisé", f"{total_realise:,.2f} $"],
+            ["Écart", f"{total_prevu - total_realise:,.2f} $"],
+        ]
+        table = Table(data, colWidths=[200, 100])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#DC2626")),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ]))
+        elements.append(table)
+        
+        doc.build(elements)
+        buffer.seek(0)
+        
+        return StreamingResponse(
+            buffer,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename=dashboard_{datetime.now().strftime('%Y%m%d')}.pdf"}
+        )
+    except Exception as e:
+        logger.error(f"Erreur export dashboard PDF: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{tenant_slug}/rapports/export-salaires-pdf")
+async def export_salaires_pdf(
+    tenant_slug: str,
+    mois: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Export PDF des salaires"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not mois:
+        mois = datetime.now().strftime("%Y-%m")
+    
+    try:
+        # Récupérer les données
+        assignations = await db.assignations.find({
+            "tenant_id": tenant.id,
+            "date": {"$regex": f"^{mois}"}
+        }).to_list(10000)
+        
+        users = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+        types_garde = await db.types_garde.find({"tenant_id": tenant.id}).to_list(100)
+        
+        users_map = {u["id"]: u for u in users}
+        types_map = {t["id"]: t for t in types_garde}
+        
+        # Calculer par employé
+        salaires = {}
+        for a in assignations:
+            user_id = a.get("user_id")
+            type_garde_id = a.get("type_garde_id")
+            
+            user = users_map.get(user_id, {})
+            type_garde = types_map.get(type_garde_id, {})
+            
+            taux = user.get("taux_horaire", 25)
+            duree = type_garde.get("duree_heures", 8)
+            
+            if user_id not in salaires:
+                salaires[user_id] = {
+                    "nom": f"{user.get('prenom', '')} {user.get('nom', '')}",
+                    "heures": 0,
+                    "montant": 0
+                }
+            
+            salaires[user_id]["heures"] += duree
+            salaires[user_id]["montant"] += taux * duree
+        
+        # Créer le PDF
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4)
+        styles = getSampleStyleSheet()
+        elements = []
+        
+        # Titre
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=18,
+            textColor=colors.HexColor("#DC2626"),
+            spaceAfter=30
+        )
+        elements.append(Paragraph(f"Rapport des Salaires - {mois}", title_style))
+        elements.append(Spacer(1, 20))
+        
+        # Tableau
+        data = [["Employé", "Heures", "Montant"]]
+        for s in salaires.values():
+            data.append([s["nom"], f"{s['heures']}h", f"{s['montant']:,.2f} $"])
+        
+        # Totaux
+        total_heures = sum(s["heures"] for s in salaires.values())
+        total_montant = sum(s["montant"] for s in salaires.values())
+        data.append(["TOTAL", f"{total_heures}h", f"{total_montant:,.2f} $"])
+        
+        table = Table(data, colWidths=[250, 80, 100])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#DC2626")),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+            ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor("#FEE2E2")),
+        ]))
+        elements.append(table)
+        
+        doc.build(elements)
+        buffer.seek(0)
+        
+        return StreamingResponse(
+            buffer,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename=salaires_{mois}.pdf"}
+        )
+    except Exception as e:
+        logger.error(f"Erreur export salaires PDF: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== ROUTES EXPORT EXCEL ====================
+
+@router.get("/{tenant_slug}/rapports/export-salaires-excel")
+async def export_salaires_excel(
+    tenant_slug: str,
+    mois: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Export Excel des salaires"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not mois:
+        mois = datetime.now().strftime("%Y-%m")
+    
+    try:
+        # Récupérer les données
+        assignations = await db.assignations.find({
+            "tenant_id": tenant.id,
+            "date": {"$regex": f"^{mois}"}
+        }).to_list(10000)
+        
+        users = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+        types_garde = await db.types_garde.find({"tenant_id": tenant.id}).to_list(100)
+        
+        users_map = {u["id"]: u for u in users}
+        types_map = {t["id"]: t for t in types_garde}
+        
+        # Calculer par employé
+        salaires = {}
+        for a in assignations:
+            user_id = a.get("user_id")
+            type_garde_id = a.get("type_garde_id")
+            
+            user = users_map.get(user_id, {})
+            type_garde = types_map.get(type_garde_id, {})
+            
+            taux = user.get("taux_horaire", 25)
+            duree = type_garde.get("duree_heures", 8)
+            
+            if user_id not in salaires:
+                salaires[user_id] = {
+                    "nom": f"{user.get('prenom', '')} {user.get('nom', '')}",
+                    "heures": 0,
+                    "montant": 0
+                }
+            
+            salaires[user_id]["heures"] += duree
+            salaires[user_id]["montant"] += taux * duree
+        
+        # Créer Excel
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Salaires"
+        
+        # Titre
+        ws['A1'] = f"Rapport des Salaires - {mois}"
+        ws['A1'].font = Font(size=14, bold=True, color="DC2626")
+        ws.merge_cells('A1:C1')
+        
+        # En-têtes
+        headers = ["Employé", "Heures", "Montant"]
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=3, column=col, value=header)
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = PatternFill(start_color="DC2626", end_color="DC2626", fill_type="solid")
+        
+        # Données
+        row = 4
+        for s in salaires.values():
+            ws.cell(row=row, column=1, value=s["nom"])
+            ws.cell(row=row, column=2, value=s["heures"])
+            ws.cell(row=row, column=3, value=s["montant"])
+            row += 1
+        
+        # Totaux
+        total_heures = sum(s["heures"] for s in salaires.values())
+        total_montant = sum(s["montant"] for s in salaires.values())
+        ws.cell(row=row, column=1, value="TOTAL").font = Font(bold=True)
+        ws.cell(row=row, column=2, value=total_heures).font = Font(bold=True)
+        ws.cell(row=row, column=3, value=total_montant).font = Font(bold=True)
+        
+        # Largeur colonnes
+        ws.column_dimensions['A'].width = 30
+        ws.column_dimensions['B'].width = 15
+        ws.column_dimensions['C'].width = 15
+        
+        buffer = BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+        
+        return StreamingResponse(
+            buffer,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename=salaires_{mois}.xlsx"}
+        )
+    except Exception as e:
+        logger.error(f"Erreur export salaires Excel: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== ROUTES EXPORT PERSONNEL ====================
+
+@router.get("/{tenant_slug}/personnel/export-pdf")
+async def export_personnel_pdf(
+    tenant_slug: str,
+    user_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Export PDF de la liste personnel ou d'un utilisateur"""
+    if current_user.role == "employe":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    try:
+        # Récupérer les utilisateurs
+        if user_id:
+            users_data = await db.users.find({"id": user_id, "tenant_id": tenant.id}).to_list(1)
+        else:
+            users_data = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+        
+        # Créer le PDF
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4)
+        styles = getSampleStyleSheet()
+        elements = []
+        
+        # Titre
+        title = "Fiche Employé" if user_id else "Liste du Personnel"
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=18,
+            textColor=colors.HexColor("#DC2626"),
+            spaceAfter=30
+        )
+        elements.append(Paragraph(title, title_style))
+        elements.append(Spacer(1, 20))
+        
+        if user_id and users_data:
+            # Fiche individuelle
+            user = users_data[0]
+            info = [
+                ["Champ", "Valeur"],
+                ["Nom", f"{user.get('prenom', '')} {user.get('nom', '')}"],
+                ["Email", user.get("email", "")],
+                ["Grade", user.get("grade", "")],
+                ["Matricule", user.get("matricule", "")],
+                ["Statut", user.get("statut", "")],
+                ["Type d'emploi", user.get("type_emploi", "")],
+            ]
+            table = Table(info, colWidths=[150, 250])
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#DC2626")),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ]))
+            elements.append(table)
+        else:
+            # Liste
+            data = [["Nom", "Grade", "Statut", "Type"]]
+            for u in users_data:
+                data.append([
+                    f"{u.get('prenom', '')} {u.get('nom', '')}",
+                    u.get("grade", ""),
+                    u.get("statut", ""),
+                    u.get("type_emploi", "")
+                ])
+            
+            table = Table(data, colWidths=[150, 100, 80, 100])
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#DC2626")),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ]))
+            elements.append(table)
+        
+        doc.build(elements)
+        buffer.seek(0)
+        
+        filename = f"fiche_employe_{user_id}.pdf" if user_id else "liste_personnel.pdf"
+        return StreamingResponse(
+            buffer,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    except Exception as e:
+        logger.error(f"Erreur export personnel PDF: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{tenant_slug}/personnel/export-excel")
+async def export_personnel_excel(
+    tenant_slug: str,
+    user_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Export Excel de la liste personnel ou d'un utilisateur"""
+    if current_user.role == "employe":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    try:
+        # Récupérer les utilisateurs
+        if user_id:
+            users_data = await db.users.find({"id": user_id, "tenant_id": tenant.id}).to_list(1)
+        else:
+            users_data = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+        
+        # Créer Excel
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Personnel"
+        
+        # Titre
+        titre = "Fiche Employé" if user_id else "Liste du Personnel"
+        ws['A1'] = titre
+        ws['A1'].font = Font(size=14, bold=True, color="DC2626")
+        ws.merge_cells('A1:F1')
+        
+        if not user_id:
+            # Stats
+            total = len(users_data)
+            actifs = len([u for u in users_data if u.get("statut") == "Actif"])
+            
+            ws['A3'] = "Total personnel"
+            ws['B3'] = total
+            ws['A4'] = "Personnel actif"
+            ws['B4'] = actifs
+            
+            # En-têtes tableau
+            headers = ["Nom", "Prénom", "Grade", "Matricule", "Statut", "Type"]
+            for col, header in enumerate(headers, 1):
+                cell = ws.cell(row=6, column=col, value=header)
+                cell.font = Font(bold=True, color="FFFFFF")
+                cell.fill = PatternFill(start_color="DC2626", end_color="DC2626", fill_type="solid")
+            
+            # Données
+            for row, u in enumerate(users_data, 7):
+                ws.cell(row=row, column=1, value=u.get("nom", ""))
+                ws.cell(row=row, column=2, value=u.get("prenom", ""))
+                ws.cell(row=row, column=3, value=u.get("grade", ""))
+                ws.cell(row=row, column=4, value=u.get("matricule", ""))
+                ws.cell(row=row, column=5, value=u.get("statut", ""))
+                ws.cell(row=row, column=6, value=u.get("type_emploi", ""))
+        else:
+            # Fiche individuelle
+            if users_data:
+                u = users_data[0]
+                ws['A3'] = "Nom"
+                ws['B3'] = u.get("nom", "")
+                ws['A4'] = "Prénom"
+                ws['B4'] = u.get("prenom", "")
+                ws['A5'] = "Email"
+                ws['B5'] = u.get("email", "")
+                ws['A6'] = "Grade"
+                ws['B6'] = u.get("grade", "")
+                ws['A7'] = "Matricule"
+                ws['B7'] = u.get("matricule", "")
+                ws['A8'] = "Statut"
+                ws['B8'] = u.get("statut", "")
+                ws['A9'] = "Type d'emploi"
+                ws['B9'] = u.get("type_emploi", "")
+        
+        # Largeur colonnes
+        for col in range(1, 7):
+            ws.column_dimensions[get_column_letter(col)].width = 15
+        
+        buffer = BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+        
+        filename = f"fiche_employe_{user_id}.xlsx" if user_id else "liste_personnel.xlsx"
+        return StreamingResponse(
+            buffer,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    except Exception as e:
+        logger.error(f"Erreur export personnel Excel: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
