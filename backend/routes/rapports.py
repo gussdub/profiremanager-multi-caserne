@@ -746,43 +746,64 @@ async def get_rapport_immobilisations(tenant_slug: str, current_user: User = Dep
     try:
         immobs = await db.immobilisations.find({"tenant_id": tenant.id}).to_list(1000)
         
-        # Calculer l'amortissement pour chaque immobilisation
+        # Calculer l'amortissement et séparer véhicules/équipements
         today = datetime.now()
-        immobs_avec_amort = []
+        vehicules = []
+        equipements = []
+        
+        cout_acquisition_total = 0
+        cout_entretien_annuel_total = 0
+        ages_vehicules = []
+        ages_equipements = []
         
         for immob in immobs:
-            valeur = immob.get("valeur_acquisition", 0)
-            duree = immob.get("duree_amortissement", 5)
+            valeur = immob.get("cout_acquisition", immob.get("valeur_acquisition", 0))
+            entretien = immob.get("cout_entretien_annuel", 0)
             date_acq_str = immob.get("date_acquisition", "")
+            type_immob = immob.get("type_immobilisation", immob.get("categorie", "equipement_majeur"))
             
+            # Calculer l'âge
+            age = 0
             try:
                 date_acq = datetime.strptime(date_acq_str, "%Y-%m-%d")
-                annees_ecoulees = (today - date_acq).days / 365
-                amort_annuel = valeur / duree if duree > 0 else 0
-                amort_cumule = min(amort_annuel * annees_ecoulees, valeur)
-                valeur_nette = valeur - amort_cumule
+                age = round((today - date_acq).days / 365, 1)
             except:
-                amort_cumule = 0
-                valeur_nette = valeur
+                pass
             
-            immobs_avec_amort.append({
+            cout_acquisition_total += valeur
+            cout_entretien_annuel_total += entretien
+            
+            item = {
                 **clean_mongo_doc(immob),
-                "amortissement_cumule": round(amort_cumule, 2),
-                "valeur_nette": round(valeur_nette, 2)
-            })
+                "cout_acquisition": valeur,
+                "cout_entretien_annuel": entretien,
+                "age": age
+            }
+            
+            if type_immob == "vehicule":
+                vehicules.append(item)
+                if age > 0:
+                    ages_vehicules.append(age)
+            else:
+                equipements.append(item)
+                if age > 0:
+                    ages_equipements.append(age)
         
-        # Totaux
-        total_acquisition = sum(i.get("valeur_acquisition", 0) for i in immobs)
-        total_amort = sum(i.get("amortissement_cumule", 0) for i in immobs_avec_amort)
-        total_net = sum(i.get("valeur_nette", 0) for i in immobs_avec_amort)
+        # Calculer les moyennes d'âge
+        age_moyen_vehicules = round(sum(ages_vehicules) / len(ages_vehicules), 1) if ages_vehicules else 0
+        age_moyen_equipements = round(sum(ages_equipements) / len(ages_equipements), 1) if ages_equipements else 0
         
         return {
-            "immobilisations": immobs_avec_amort,
-            "totaux": {
-                "valeur_acquisition": total_acquisition,
-                "amortissement_cumule": round(total_amort, 2),
-                "valeur_nette": round(total_net, 2)
-            }
+            "statistiques": {
+                "nombre_vehicules": len(vehicules),
+                "nombre_equipements": len(equipements),
+                "cout_acquisition_total": cout_acquisition_total,
+                "cout_entretien_annuel_total": cout_entretien_annuel_total,
+                "age_moyen_vehicules": age_moyen_vehicules,
+                "age_moyen_equipements": age_moyen_equipements
+            },
+            "vehicules": vehicules,
+            "equipements": equipements
         }
     except Exception as e:
         logger.error(f"Erreur rapport immobilisations: {str(e)}")
