@@ -10,7 +10,7 @@ import sys
 from datetime import datetime, timedelta
 
 # Configuration
-BACKEND_URL = "https://objective-zhukovsky.preview.emergentagent.com/api"
+BACKEND_URL = "https://firemanager-4.preview.emergentagent.com/api"
 
 # Credentials pour les tests
 DEMO_ADMIN = {
