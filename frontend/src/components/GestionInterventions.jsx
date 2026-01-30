@@ -1938,10 +1938,12 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
                 className="w-5 h-5"
               />
               <div>
-                <span className="font-medium">Permettre aux employés de consulter l'historique des interventions</span>
+                <span className="font-medium">Permettre aux employés de consulter le module Interventions</span>
                 <p className="text-sm text-gray-500 mt-1">
-                  Si activé, les employés pourront voir les cartes d'appel ET l'historique complet. 
-                  Sinon, ils n'auront accès qu'aux cartes d'appel actuelles (lecture seule).
+                  <strong>Si activé :</strong> Les employés (non personnes ressources) pourront voir les cartes d'appel et l'historique en <strong>lecture seule</strong> (aucune modification possible).
+                </p>
+                <p className="text-sm text-gray-500 mt-1">
+                  <strong>Si désactivé :</strong> Seuls les admins, superviseurs et personnes ressources auront accès au module.
                 </p>
               </div>
             </label>
