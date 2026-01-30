@@ -421,6 +421,12 @@ async def envoyer_email_remplacement(
             logger.warning(f"Email non trouvé pour remplaçant {remplacant['user_id']}")
             return False
         
+        # Vérifier les préférences de notification
+        preferences = remplacant_user.get("preferences_notifications", {})
+        if not preferences.get("email_actif", True):  # Par défaut activé
+            logger.info(f"📧 Email désactivé pour {remplacant_user.get('prenom')} - préférences utilisateur")
+            return False
+        
         remplacant_email = remplacant_user["email"]
         remplacant_prenom = remplacant_user.get("prenom", "")
         
