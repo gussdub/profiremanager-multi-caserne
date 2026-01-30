@@ -820,7 +820,8 @@ const MonProfil = () => {
                   }}>
                     {/* Option: Prendre une photo */}
                     <button
-                      onClick={openCameraCapture}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => { e.stopPropagation(); openCameraCapture(); }}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -843,7 +844,8 @@ const MonProfil = () => {
 
                     {/* Option: Photothèque */}
                     <button
-                      onClick={openPhotoLibrary}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => { e.stopPropagation(); openPhotoLibrary(); }}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -866,7 +868,8 @@ const MonProfil = () => {
 
                     {/* Option: Fichier */}
                     <button
-                      onClick={openFilePicker}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => { e.stopPropagation(); openFilePicker(); }}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
