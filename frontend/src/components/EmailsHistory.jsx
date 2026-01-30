@@ -179,12 +179,12 @@ const EmailsHistory = () => {
             </div>
             <div className="w-[180px]">
               <label className="block text-sm font-medium text-gray-700 mb-1">Type d'email</label>
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <Select value={typeFilter || "all"} onValueChange={(v) => setTypeFilter(v === "all" ? "" : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Tous les types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Tous les types</SelectItem>
+                  <SelectItem value="all">Tous les types</SelectItem>
                   <SelectItem value="welcome">Bienvenue</SelectItem>
                   <SelectItem value="password_reset">Réinitialisation MDP</SelectItem>
                   <SelectItem value="temp_password">MDP Temporaire</SelectItem>
