@@ -28,7 +28,6 @@ from routes.dependencies import (
     get_password_hash,
     creer_activite
 )
-from server import send_welcome_email
 
 router = APIRouter(tags=["Users"])
 logger = logging.getLogger(__name__)
