@@ -101,7 +101,12 @@ const MonProfil = () => {
           contact_urgence: userData.contact_urgence || '',
           numero_employe: userData.numero_employe || '',
           taux_horaire: userData.taux_horaire || 0,
-          heures_max_semaine: userData.heures_max_semaine || 25
+          heures_max_semaine: userData.heures_max_semaine || 25,
+          preferences_notifications: userData.preferences_notifications || {
+            email_actif: true,
+            sms_actif: true,
+            push_actif: true
+          }
         });
 
       } catch (error) {
