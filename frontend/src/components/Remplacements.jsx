@@ -304,8 +304,9 @@ const Remplacements = () => {
   const getStatutColor = (statut) => {
     switch (statut) {
       case 'en_cours': case 'en_attente': return '#F59E0B';
-      case 'approuve': return '#10B981';
-      case 'refuse': return '#EF4444';
+      case 'approuve': case 'accepte': case 'approuve_manuellement': return '#10B981';
+      case 'refuse': case 'refusee': case 'annulee': return '#EF4444';
+      case 'expiree': return '#9CA3AF';
       default: return '#6B7280';
     }
   };
@@ -314,8 +315,11 @@ const Remplacements = () => {
     switch (statut) {
       case 'en_cours': return 'En cours';
       case 'en_attente': return 'En attente';
-      case 'approuve': return 'Approuvé';
-      case 'refuse': return 'Refusé';
+      case 'approuve': case 'accepte': return 'Acceptée';
+      case 'approuve_manuellement': return 'Approuvée manuellement';
+      case 'refuse': case 'refusee': return 'Refusée';
+      case 'annulee': return 'Annulée';
+      case 'expiree': return 'Expirée';
       default: return statut;
     }
   };
