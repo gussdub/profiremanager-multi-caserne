@@ -81,6 +81,7 @@ class UserUpdate(BaseModel):
     photo_profil: Optional[str] = None
     tailles_epi: Optional[Dict[str, str]] = None
     mot_de_passe: Optional[str] = None
+    preferences_notifications: Optional[Dict[str, bool]] = None
 
 class ProfileUpdate(BaseModel):
     prenom: str
