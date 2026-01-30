@@ -35,7 +35,7 @@ async def creer_validation_competence(
     validation: ValidationCompetenceCreate,
     current_user: User = Depends(get_current_user)
 ):
-    """Créer une validation manuelle de compétence"""
+    """Créer une validation manuelle de compétence (rattrapage de formation)"""
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
@@ -61,15 +61,45 @@ async def creer_validation_competence(
     # Récupérer l'employé concerné
     user = await db.users.find_one({"id": validation.user_id, "tenant_id": tenant.id})
     
-    # Créer une activité
     if user:
+        # Ajouter la compétence à l'utilisateur si elle n'y est pas déjà
+        user_competences = user.get("competences", [])
+        if validation.competence_id not in user_competences:
+            user_competences.append(validation.competence_id)
+            await db.users.update_one(
+                {"id": validation.user_id, "tenant_id": tenant.id},
+                {"$set": {"competences": user_competences}}
+            )
+            logger.info(f"✅ Compétence '{competence['nom']}' ajoutée à {user['prenom']} {user['nom']}")
+        
+        # Créer une présence fictive pour comptabiliser les heures de formation
+        if validation.duree_heures > 0:
+            import uuid as uuid_module
+            presence_rattrapage = {
+                "id": str(uuid_module.uuid4()),
+                "tenant_id": tenant.id,
+                "formation_id": f"rattrapage_{validation_obj.id}",  # ID spécial pour rattrapage
+                "user_id": validation.user_id,
+                "statut": "present",
+                "date": validation.date_validation,
+                "heures_validees": validation.duree_heures,
+                "est_rattrapage": True,
+                "validation_id": validation_obj.id,
+                "competence_id": validation.competence_id,
+                "justification": validation.justification,
+                "created_at": validation_obj.created_at.isoformat()
+            }
+            await db.presences_formations.insert_one(presence_rattrapage)
+            logger.info(f"✅ {validation.duree_heures}h de formation comptabilisées pour {user['prenom']} {user['nom']} (rattrapage)")
+        
+        # Créer une activité
         await creer_activite(
             tenant_id=tenant.id,
             type_activite="validation_competence",
-            description=f"✅ {current_user.prenom} {current_user.nom} a validé la compétence '{competence['nom']}' pour {user['prenom']} {user['nom']}",
+            description=f"✅ {current_user.prenom} {current_user.nom} a validé la compétence '{competence['nom']}' pour {user['prenom']} {user['nom']}" + (f" ({validation.duree_heures}h)" if validation.duree_heures > 0 else ""),
             user_id=current_user.id,
             user_nom=f"{current_user.prenom} {current_user.nom}",
-            data={"concerne_user_id": validation.user_id}
+            data={"concerne_user_id": validation.user_id, "duree_heures": validation.duree_heures}
         )
     
     return validation_obj
