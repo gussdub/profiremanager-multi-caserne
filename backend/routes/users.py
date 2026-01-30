@@ -92,6 +92,7 @@ class ProfileUpdate(BaseModel):
     contact_urgence: str = ""
     heures_max_semaine: int = 25
     tailles_epi: Optional[Dict[str, str]] = None
+    preferences_notifications: Optional[Dict[str, bool]] = None
 
 class PhotoProfilUpload(BaseModel):
     photo_base64: str
