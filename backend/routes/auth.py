@@ -88,11 +88,15 @@ async def tenant_login(tenant_slug: str, login: LoginRequest):
     """
     tenant = await get_tenant_from_slug(tenant_slug)
     
+    logger.info(f"🔍 Login attempt for {login.email} in tenant {tenant_slug} (id: {tenant.id})")
+    
     # D'abord chercher l'utilisateur dans le tenant
     user = await db.users.find_one({
         "tenant_id": tenant.id,
         "email": login.email.lower().strip()
     })
+    
+    logger.info(f"🔍 User found: {user is not None}")
     
     # Si pas trouvé, vérifier si c'est un super-admin
     if not user:
