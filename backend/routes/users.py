@@ -23,7 +23,8 @@ from routes.dependencies import (
     clean_mongo_doc,
     User,
     SECRET_KEY,
-    ALGORITHM
+    ALGORITHM,
+    validate_complex_password
 )
 
 router = APIRouter(tags=["Users"])
