@@ -896,7 +896,11 @@ const MonProfil = () => {
                           margin: '0.25rem 0' 
                         }} />
                         <button
-                          onClick={openCropExisting}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openCropExisting();
+                          }}
                           style={{
                             display: 'flex',
                             alignItems: 'center',
