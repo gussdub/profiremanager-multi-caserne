@@ -223,8 +223,11 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
   };
 
   // Jouer un son quand il y a de nouvelles notifications
+  const [previousUnreadCount, setPreviousUnreadCount] = useState(0);
+  
   useEffect(() => {
-    if (unreadCount > 0) {
+    // Jouer le son seulement si le nombre de non-lues a AUGMENTÉ (nouvelle notification)
+    if (unreadCount > previousUnreadCount && previousUnreadCount >= 0) {
       // Vérifier s'il y a une notification urgente (remplacement)
       const hasUrgent = notifications.some(n => !n.lu && (n.urgent || n.type === 'remplacement_proposition'));
       if (hasUrgent) {
@@ -234,6 +237,7 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
         playNotificationSound();
       }
     }
+    setPreviousUnreadCount(unreadCount);
   }, [unreadCount]);
 
   const marquerCommeLue = async (notifId) => {
