@@ -234,17 +234,27 @@ const MonProfil = () => {
       canvas.height = outputSize;
       const ctx = canvas.getContext('2d');
       
-      // Calculer la zone de crop basée sur la position et le zoom
+      // Obtenir les dimensions réelles du conteneur et de l'image affichée
       const container = cropContainerRef.current;
-      const containerSize = container ? container.offsetWidth : 300;
+      const imgElement = cropImageRef.current;
       
-      // Ratio entre la taille affichée et la taille réelle
-      const displayRatio = containerSize / (Math.min(imageSize.width, imageSize.height) * zoom);
+      if (!container || !imgElement) {
+        throw new Error("Références manquantes");
+      }
+      
+      const containerSize = container.offsetWidth;
+      const imgDisplayWidth = imgElement.offsetWidth;
+      const imgDisplayHeight = imgElement.offsetHeight;
+      
+      // Ratio entre l'image affichée et l'image réelle
+      const scaleX = imageSize.width / imgDisplayWidth;
+      const scaleY = imageSize.height / imgDisplayHeight;
       
       // Position du crop dans l'image originale
-      const sourceX = -cropPosition.x / displayRatio / zoom;
-      const sourceY = -cropPosition.y / displayRatio / zoom;
-      const sourceSize = containerSize / displayRatio / zoom;
+      // cropPosition est la position du coin supérieur gauche de l'image par rapport au conteneur
+      const sourceX = Math.max(0, -cropPosition.x * scaleX);
+      const sourceY = Math.max(0, -cropPosition.y * scaleY);
+      const sourceSize = containerSize * Math.max(scaleX, scaleY);
       
       // Dessiner l'image croppée
       ctx.drawImage(
