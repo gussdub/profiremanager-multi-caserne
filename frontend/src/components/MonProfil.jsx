@@ -65,6 +65,7 @@ const MonProfil = () => {
       console.log('🔍 Mon Profil - Début chargement:', {
         tenantSlug,
         userId: user.id,
+        userPhotoFromAuth: user?.photo_profil ? 'PRÉSENTE' : 'ABSENTE',
         token: localStorage.getItem('token') ? 'Présent' : 'Absent'
       });
       
