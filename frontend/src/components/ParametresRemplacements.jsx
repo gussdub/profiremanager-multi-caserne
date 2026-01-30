@@ -115,19 +115,6 @@ const ParametresRemplacements = ({
               <label className="validation-rule-compact">
                 <input
                   type="checkbox"
-                  checked={systemSettings.grade_egal}
-                  onChange={(e) => handleSettingChange('grade_egal', e.target.checked)}
-                  data-testid="toggle-grade-egal"
-                />
-                <div className="rule-content-compact">
-                  <span className="rule-title">Grade équivalent ou supérieur</span>
-                  <span className="rule-description">Accepter uniquement les grades égaux ou supérieurs</span>
-                </div>
-              </label>
-              
-              <label className="validation-rule-compact">
-                <input
-                  type="checkbox"
                   checked={systemSettings.competences_egales}
                   onChange={(e) => handleSettingChange('competences_egales', e.target.checked)}
                   data-testid="toggle-competences-egales"
