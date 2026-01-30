@@ -822,6 +822,8 @@ async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
         for remplacant in remplacants_a_contacter:
             try:
                 token = await generer_token_remplacement(demande_id, remplacant["user_id"], tenant_id)
+                
+                # Envoyer l'email
                 await envoyer_email_remplacement(
                     demande_data=demande_data,
                     remplacant=remplacant,
@@ -830,8 +832,19 @@ async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
                     tenant_id=tenant_id,
                     token=token
                 )
-            except Exception as email_error:
-                logger.error(f"Erreur envoi email à {remplacant['nom_complet']}: {email_error}")
+                
+                # Envoyer le SMS
+                await envoyer_sms_remplacement(
+                    remplacant=remplacant,
+                    demande_data=demande_data,
+                    demandeur=demandeur,
+                    type_garde=type_garde,
+                    tenant_id=tenant_id,
+                    token=token
+                )
+                
+            except Exception as notif_error:
+                logger.error(f"Erreur envoi notification à {remplacant['nom_complet']}: {notif_error}")
         
         logger.info(f"✅ Recherche lancée pour demande {demande_id}: {nombre_a_contacter} remplaçant(s) contacté(s)")
         
