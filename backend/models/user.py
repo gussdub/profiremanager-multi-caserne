@@ -35,6 +35,11 @@ class User(BaseModel):
     est_preventionniste: bool = False  # Désigné comme préventionniste
     equipe_garde: Optional[int] = None  # Équipe de garde (1, 2, 3, 4, 5 selon config)
     photo_profil: Optional[str] = None  # Photo de profil en base64
+    preferences_notifications: Optional[Dict[str, Any]] = Field(default_factory=lambda: {
+        "email_actif": True,
+        "sms_actif": True,
+        "push_actif": True
+    })  # Préférences de notification
     mot_de_passe_hash: str = ""
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
