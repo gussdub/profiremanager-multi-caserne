@@ -1156,7 +1156,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
 
 // ==================== ONGLET HISTORIQUE ====================
 
-const TabHistorique = ({ user, tenantSlug, toast, readOnly = false }) => {
+const TabHistorique = ({ user, tenantSlug, toast, readOnly = false, settings = {} }) => {
   const [interventions, setInterventions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ status: 'signed', dateFrom: '', dateTo: '' });
@@ -1167,6 +1167,70 @@ const TabHistorique = ({ user, tenantSlug, toast, readOnly = false }) => {
 
   const getToken = () => {
     return localStorage.getItem(`${tenantSlug}_token`) || localStorage.getItem('token');
+  };
+
+  // Calcul du temps de réponse et indicateur couleur
+  const getResponseTimeInfo = (intervention) => {
+    const threshold = settings.alert_response_time_threshold || 480; // 8 min par défaut
+    
+    if (!intervention.xml_time_call_received || !intervention.xml_time_arrival_1st) {
+      return { color: 'gray', label: '-', seconds: null, tooltip: 'Heure d\'arrivée (10-17) non disponible' };
+    }
+    
+    try {
+      const callTime = new Date(intervention.xml_time_call_received);
+      const arrivalTime = new Date(intervention.xml_time_arrival_1st);
+      const diffSeconds = Math.round((arrivalTime - callTime) / 1000);
+      
+      if (diffSeconds < 0) {
+        return { color: 'gray', label: '-', seconds: null, tooltip: 'Données incohérentes' };
+      }
+      
+      const minutes = Math.floor(diffSeconds / 60);
+      const seconds = diffSeconds % 60;
+      const label = `${minutes}m${seconds.toString().padStart(2, '0')}s`;
+      
+      let color, tooltip;
+      if (diffSeconds <= threshold) {
+        color = 'green';
+        tooltip = `✅ Dans les temps (≤ ${Math.floor(threshold/60)} min)`;
+      } else if (diffSeconds <= threshold * 1.5) {
+        color = 'yellow';
+        tooltip = `⚠️ Légèrement au-dessus du seuil`;
+      } else {
+        color = 'red';
+        tooltip = `🔴 Dépasse le seuil de ${Math.floor(threshold/60)} min`;
+      }
+      
+      return { color, label, seconds: diffSeconds, tooltip };
+    } catch {
+      return { color: 'gray', label: '-', seconds: null, tooltip: 'Erreur de calcul' };
+    }
+  };
+
+  const ResponseTimeIndicator = ({ intervention }) => {
+    const info = getResponseTimeInfo(intervention);
+    
+    const colorClasses = {
+      green: 'bg-green-500',
+      yellow: 'bg-yellow-500',
+      red: 'bg-red-500',
+      gray: 'bg-gray-300'
+    };
+    
+    const textClasses = {
+      green: 'text-green-700',
+      yellow: 'text-yellow-700',
+      red: 'text-red-700',
+      gray: 'text-gray-500'
+    };
+    
+    return (
+      <div className="flex items-center gap-2" title={info.tooltip}>
+        <span className={`w-3 h-3 rounded-full ${colorClasses[info.color]}`}></span>
+        <span className={`text-sm font-mono ${textClasses[info.color]}`}>{info.label}</span>
+      </div>
+    );
   };
 
   const fetchInterventions = async () => {
