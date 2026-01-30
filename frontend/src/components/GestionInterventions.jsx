@@ -1833,6 +1833,32 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
                 ({Math.floor((settings.alert_response_time_threshold || 480) / 60)} min {(settings.alert_response_time_threshold || 480) % 60} sec)
               </span>
             </div>
+            
+            {/* Légende du code couleur */}
+            <div className="mt-3 p-3 bg-gray-50 rounded-lg border">
+              <p className="text-xs font-medium text-gray-600 mb-2">Code couleur temps de réponse :</p>
+              <div className="flex flex-col gap-1.5 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="w-4 h-4 rounded-full bg-green-500 inline-block"></span>
+                  <span><strong>Vert</strong> : Temps de réponse ≤ seuil ({Math.floor((settings.alert_response_time_threshold || 480) / 60)} min)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-4 h-4 rounded-full bg-yellow-500 inline-block"></span>
+                  <span><strong>Jaune</strong> : Temps de réponse entre {Math.floor((settings.alert_response_time_threshold || 480) / 60)} et {Math.floor((settings.alert_response_time_threshold || 480) * 1.5 / 60)} min</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-4 h-4 rounded-full bg-red-500 inline-block"></span>
+                  <span><strong>Rouge</strong> : Temps de réponse &gt; {Math.floor((settings.alert_response_time_threshold || 480) * 1.5 / 60)} min</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-4 h-4 rounded-full bg-gray-300 inline-block"></span>
+                  <span><strong>Gris</strong> : Heure d'arrivée (10-17) non disponible</span>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-2 italic">
+                Le temps de réponse est calculé entre l'heure d'appel et l'heure d'arrivée sur les lieux (10-17).
+              </p>
+            </div>
           </div>
 
           {/* Accès des employés */}
