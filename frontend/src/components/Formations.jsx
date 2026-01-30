@@ -43,7 +43,8 @@ const Formations = () => {
   const [newValidation, setNewValidation] = useState({
     competence_id: '',
     justification: '',
-    date_validation: new Date().toISOString().split('T')[0]
+    date_validation: new Date().toISOString().split('T')[0],
+    duree_heures: 0
   });
   
   const [formationForm, setFormationForm] = useState({
