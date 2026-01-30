@@ -194,12 +194,12 @@ const EmailsHistory = () => {
             </div>
             <div className="w-[150px]">
               <label className="block text-sm font-medium text-gray-700 mb-1">Statut</label>
-              <Select value={statutFilter} onValueChange={setStatutFilter}>
+              <Select value={statutFilter || "all"} onValueChange={(v) => setStatutFilter(v === "all" ? "" : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Tous" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Tous</SelectItem>
+                  <SelectItem value="all">Tous</SelectItem>
                   <SelectItem value="sent">Envoyés</SelectItem>
                   <SelectItem value="failed">Échoués</SelectItem>
                 </SelectContent>
