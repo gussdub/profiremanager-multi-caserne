@@ -1453,6 +1453,51 @@ async def remove_intervention_resource(
     return {"success": True}
 
 
+@router.delete("/{tenant_slug}/interventions/{intervention_id}")
+async def delete_intervention(
+    tenant_slug: str,
+    intervention_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Supprime une carte d'appel (intervention).
+    RÉSERVÉ AUX SUPERADMINS uniquement - pour nettoyer les données de test.
+    """
+    # Vérifier que c'est un superadmin
+    if not getattr(current_user, 'is_super_admin', False):
+        raise HTTPException(
+            status_code=403, 
+            detail="Cette action est réservée aux superadmins uniquement"
+        )
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # Vérifier que l'intervention existe
+    intervention = await db.interventions.find_one({
+        "id": intervention_id,
+        "tenant_id": tenant.id
+    })
+    
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    # Supprimer l'intervention
+    await db.interventions.delete_one({"id": intervention_id})
+    
+    # Supprimer les données associées
+    await db.intervention_resources.delete_many({"intervention_id": intervention_id})
+    await db.intervention_personnel.delete_many({"intervention_id": intervention_id})
+    
+    logger.warning(f"🗑️ SUPERADMIN {current_user.email} a supprimé l'intervention {intervention.get('external_call_id', intervention_id)} du tenant {tenant_slug}")
+    
+    return {
+        "success": True,
+        "message": f"Carte d'appel {intervention.get('external_call_id', intervention_id)} supprimée"
+    }
+
+
 @router.put("/{tenant_slug}/interventions/{intervention_id}/assign-reporters")
 async def assign_intervention_reporters(
     tenant_slug: str,
