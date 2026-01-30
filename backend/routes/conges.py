@@ -84,24 +84,23 @@ async def create_demande_conge(
     demande_obj = DemandeCongé(**demande_dict)
     await db.demandes_conge.insert_one(demande_obj.dict())
     
-    # Créer notification pour approbation
-    if current_user.role == "employe":
-        # Notifier les superviseurs et admins de ce tenant
-        superviseurs_admins = await db.users.find({
-            "tenant_id": tenant.id,
-            "role": {"$in": ["superviseur", "admin"]}
-        }).to_list(100)
-        
-        for superviseur in superviseurs_admins:
-            await creer_notification(
-                tenant_id=tenant.id,
-                destinataire_id=superviseur["id"],
-                type="conge_demande",
-                titre="Nouvelle demande de congé",
-                message=f"{current_user.prenom} {current_user.nom} demande un congé ({demande.type_conge}) du {demande.date_debut} au {demande.date_fin}",
-                lien="/conges",
-                data={"demande_id": demande_obj.id}
-            )
+    # Créer notification pour approbation - notifier tous les superviseurs/admins sauf le demandeur
+    superviseurs_admins = await db.users.find({
+        "tenant_id": tenant.id,
+        "role": {"$in": ["superviseur", "admin"]},
+        "id": {"$ne": current_user.id}  # Exclure le demandeur lui-même
+    }).to_list(100)
+    
+    for superviseur in superviseurs_admins:
+        await creer_notification(
+            tenant_id=tenant.id,
+            destinataire_id=superviseur["id"],
+            type="conge_demande",
+            titre="📅 Nouvelle demande de congé",
+            message=f"{current_user.prenom} {current_user.nom} demande un congé ({demande.type_conge}) du {demande.date_debut} au {demande.date_fin}",
+            lien="/conges",
+            data={"demande_id": demande_obj.id}
+        )
     
     logger.info(f"📅 Nouvelle demande de congé créée par {current_user.email}: {demande.type_conge} du {demande.date_debut} au {demande.date_fin}")
     
