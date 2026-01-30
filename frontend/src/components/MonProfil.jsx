@@ -82,10 +82,17 @@ const MonProfil = () => {
           grade: userData?.grade,
           date_embauche: userData?.date_embauche,
           adresse: userData?.adresse,
-          tailles_epi: userData?.tailles_epi
+          tailles_epi: userData?.tailles_epi,
+          photo_profil: userData?.photo_profil ? 'PRÉSENTE' : 'ABSENTE'
         });
         
-        setUserProfile(userData);
+        // S'assurer que la photo_profil du user global est utilisée si celle de l'API est absente
+        const userDataWithPhoto = {
+          ...userData,
+          photo_profil: userData.photo_profil || user?.photo_profil
+        };
+        
+        setUserProfile(userDataWithPhoto);
         setCompetences(competencesData || []);
         setMonthlyStats(statsData);
         
