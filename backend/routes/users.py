@@ -25,8 +25,10 @@ from routes.dependencies import (
     SECRET_KEY,
     ALGORITHM,
     validate_complex_password,
-    get_password_hash
+    get_password_hash,
+    creer_activite
 )
+from server import send_welcome_email
 
 router = APIRouter(tags=["Users"])
 logger = logging.getLogger(__name__)
