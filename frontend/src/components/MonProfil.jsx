@@ -834,6 +834,7 @@ const MonProfil = () => {
                   }}>
                     {/* Option: Prendre une photo */}
                     <button
+                      className="photo-menu-button"
                       onMouseDown={(e) => e.stopPropagation()}
                       onClick={(e) => { e.stopPropagation(); openCameraCapture(); }}
                       style={{
@@ -858,6 +859,7 @@ const MonProfil = () => {
 
                     {/* Option: Photothèque */}
                     <button
+                      className="photo-menu-button"
                       onMouseDown={(e) => e.stopPropagation()}
                       onClick={(e) => { e.stopPropagation(); openPhotoLibrary(); }}
                       style={{
@@ -882,6 +884,7 @@ const MonProfil = () => {
 
                     {/* Option: Fichier */}
                     <button
+                      className="photo-menu-button"
                       onMouseDown={(e) => e.stopPropagation()}
                       onClick={(e) => { e.stopPropagation(); openFilePicker(); }}
                       style={{
