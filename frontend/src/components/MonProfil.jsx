@@ -1350,6 +1350,111 @@ const MonProfil = () => {
             </div>
           </div>
 
+          {/* Préférences de notification */}
+          <div className="formation-card">
+            <div className="formation-header">
+              <h3>🔔 Préférences de notification</h3>
+            </div>
+            <div style={{padding: '1rem 1.5rem'}}>
+              <p style={{marginBottom: '15px', fontSize: '14px', color: '#6B7280'}}>
+                Choisissez comment vous souhaitez être notifié pour les demandes de remplacement et autres alertes.
+              </p>
+              
+              <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+                <label style={{display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer'}}>
+                  <input
+                    type="checkbox"
+                    checked={profileData.preferences_notifications?.email_actif ?? true}
+                    onChange={(e) => setProfileData({
+                      ...profileData,
+                      preferences_notifications: {
+                        ...profileData.preferences_notifications,
+                        email_actif: e.target.checked
+                      }
+                    })}
+                    style={{width: '18px', height: '18px', accentColor: '#DC2626'}}
+                    data-testid="pref-email-checkbox"
+                  />
+                  <div>
+                    <span style={{fontWeight: '500', color: '#1F2937'}}>📧 Notifications par e-mail</span>
+                    <p style={{fontSize: '12px', color: '#6B7280', margin: '2px 0 0 0'}}>
+                      Recevoir les demandes de remplacement par courriel
+                    </p>
+                  </div>
+                </label>
+                
+                <label style={{display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer'}}>
+                  <input
+                    type="checkbox"
+                    checked={profileData.preferences_notifications?.sms_actif ?? true}
+                    onChange={(e) => setProfileData({
+                      ...profileData,
+                      preferences_notifications: {
+                        ...profileData.preferences_notifications,
+                        sms_actif: e.target.checked
+                      }
+                    })}
+                    style={{width: '18px', height: '18px', accentColor: '#DC2626'}}
+                    data-testid="pref-sms-checkbox"
+                  />
+                  <div>
+                    <span style={{fontWeight: '500', color: '#1F2937'}}>📱 Notifications par SMS</span>
+                    <p style={{fontSize: '12px', color: '#6B7280', margin: '2px 0 0 0'}}>
+                      Recevoir les demandes de remplacement par texto
+                    </p>
+                  </div>
+                </label>
+                
+                <label style={{display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer'}}>
+                  <input
+                    type="checkbox"
+                    checked={profileData.preferences_notifications?.push_actif ?? true}
+                    onChange={(e) => setProfileData({
+                      ...profileData,
+                      preferences_notifications: {
+                        ...profileData.preferences_notifications,
+                        push_actif: e.target.checked
+                      }
+                    })}
+                    style={{width: '18px', height: '18px', accentColor: '#DC2626'}}
+                    data-testid="pref-push-checkbox"
+                  />
+                  <div>
+                    <span style={{fontWeight: '500', color: '#1F2937'}}>🔔 Notifications push</span>
+                    <p style={{fontSize: '12px', color: '#6B7280', margin: '2px 0 0 0'}}>
+                      Recevoir les notifications dans l'application
+                    </p>
+                  </div>
+                </label>
+              </div>
+              
+              <Button 
+                variant="outline" 
+                onClick={async () => {
+                  try {
+                    await apiPut(tenantSlug, `/users/${user.id}`, {
+                      preferences_notifications: profileData.preferences_notifications
+                    });
+                    toast({
+                      title: "✅ Préférences sauvegardées",
+                      description: "Vos préférences de notification ont été mises à jour.",
+                    });
+                  } catch (error) {
+                    toast({
+                      title: "❌ Erreur",
+                      description: "Impossible de sauvegarder les préférences.",
+                      variant: "destructive"
+                    });
+                  }
+                }}
+                data-testid="save-notification-prefs-btn"
+                style={{marginTop: '16px', width: '100%'}}
+              >
+                💾 Sauvegarder les préférences
+              </Button>
+            </div>
+          </div>
+
           {/* Sécurité du compte */}
           <div className="formation-card">
             <div className="formation-header">
