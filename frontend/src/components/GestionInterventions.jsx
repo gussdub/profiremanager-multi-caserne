@@ -350,6 +350,9 @@ const TabRapports = ({ user, tenantSlug, toast, readOnly = false, isSuperAdmin =
                   formatDate={formatDate}
                   getStatusBadge={getStatusBadge}
                   onSelect={() => setSelectedIntervention(intervention)}
+                  isSuperAdmin={isSuperAdmin}
+                  onDelete={(e) => handleDeleteIntervention(intervention, e)}
+                  deleting={deleting === intervention.id}
                 />
               ))
             )}
@@ -374,6 +377,9 @@ const TabRapports = ({ user, tenantSlug, toast, readOnly = false, isSuperAdmin =
                   formatDate={formatDate}
                   getStatusBadge={getStatusBadge}
                   onSelect={() => setSelectedIntervention(intervention)}
+                  isSuperAdmin={isSuperAdmin}
+                  onDelete={(e) => handleDeleteIntervention(intervention, e)}
+                  deleting={deleting === intervention.id}
                 />
               ))
             )}
@@ -398,6 +404,9 @@ const TabRapports = ({ user, tenantSlug, toast, readOnly = false, isSuperAdmin =
                   formatDate={formatDate}
                   getStatusBadge={getStatusBadge}
                   onSelect={() => setSelectedIntervention(intervention)}
+                  isSuperAdmin={isSuperAdmin}
+                  onDelete={(e) => handleDeleteIntervention(intervention, e)}
+                  deleting={deleting === intervention.id}
                 />
               ))
             )}
