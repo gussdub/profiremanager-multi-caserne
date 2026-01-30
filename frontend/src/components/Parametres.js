@@ -140,7 +140,6 @@ const Parametres = ({ user, tenantSlug }) => {
     niveau_5_actif: true,  // Temps plein complets (heures sup)
     // Nouvelles règles de validation pour remplacements
     privilegier_disponibles: true,
-    grade_egal: true,
     competences_egales: true,
     // Paramètres de notification de remplacement
     mode_notification: 'simultane',
