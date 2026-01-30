@@ -1348,6 +1348,7 @@ const TabHistorique = ({ user, tenantSlug, toast, readOnly = false, settings = {
                 <th className="text-left p-3 border-b">Date</th>
                 <th className="text-left p-3 border-b">Type</th>
                 <th className="text-left p-3 border-b">Adresse</th>
+                <th className="text-left p-3 border-b">⏱️ Temps réponse</th>
                 <th className="text-left p-3 border-b">Statut</th>
                 <th className="text-left p-3 border-b">Actions</th>
               </tr>
@@ -1355,7 +1356,7 @@ const TabHistorique = ({ user, tenantSlug, toast, readOnly = false, settings = {
             <tbody>
               {interventions.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-8 text-gray-500">
+                  <td colSpan={7} className="text-center py-8 text-gray-500">
                     Aucune intervention trouvée
                   </td>
                 </tr>
@@ -1366,6 +1367,9 @@ const TabHistorique = ({ user, tenantSlug, toast, readOnly = false, settings = {
                     <td className="p-3 border-b">{formatDate(intervention.xml_time_call_received || intervention.created_at)}</td>
                     <td className="p-3 border-b">{intervention.type_intervention || '-'}</td>
                     <td className="p-3 border-b">{intervention.address_full || '-'}</td>
+                    <td className="p-3 border-b">
+                      <ResponseTimeIndicator intervention={intervention} />
+                    </td>
                     <td className="p-3 border-b">
                       <span className={`px-2 py-1 rounded text-sm ${
                         intervention.status === 'signed' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
