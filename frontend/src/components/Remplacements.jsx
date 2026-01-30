@@ -413,10 +413,10 @@ const Remplacements = () => {
 
   // Calculer les KPIs sur MES demandes (pour pompiers) ou TOUTES (pour admins)
   const totalDemandes = mesDemandes.length;
-  const enAttente = mesDemandes.filter(d => d.statut === 'en_cours').length;
-  const acceptees = mesDemandes.filter(d => d.statut === 'approuve').length;
-  const refusees = mesDemandes.filter(d => d.statut === 'refuse').length;
-  const remplacementsTrouves = mesDemandes.filter(d => d.statut === 'approuve' && d.remplacant_id).length;
+  const enAttente = mesDemandes.filter(d => ['en_cours', 'en_attente'].includes(d.statut)).length;
+  const acceptees = mesDemandes.filter(d => ['approuve', 'accepte', 'approuve_manuellement'].includes(d.statut)).length;
+  const refusees = mesDemandes.filter(d => ['refuse', 'refusee', 'annulee', 'expiree'].includes(d.statut)).length;
+  const remplacementsTrouves = mesDemandes.filter(d => ['approuve', 'accepte', 'approuve_manuellement'].includes(d.statut) && d.remplacant_id).length;
   const tauxSucces = totalDemandes > 0 ? Math.round((remplacementsTrouves / totalDemandes) * 100) : 0;
   const congesDuMois = mesConges.length;
 
