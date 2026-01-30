@@ -1687,12 +1687,6 @@ async def action_remplacement_via_email(token: str, action: str):
                     url=f"{frontend_url}/remplacement-resultat?status=erreur&message=Erreur lors du refus",
                     status_code=302
                 )
-        
-        else:
-            return RedirectResponse(
-                url=f"{frontend_url}/remplacement-resultat?status=erreur&message=Action non reconnue",
-                status_code=302
-            )
             
     except Exception as e:
         logger.error(f"Erreur traitement action email: {e}", exc_info=True)
