@@ -15,7 +15,8 @@ import CameraCapture, { isIOS } from "./CameraCapture";
 const MonProfil = () => {
   const { user, setUser, tenant } = useAuth();
   const { tenantSlug } = useTenant();
-  const [userProfile, setUserProfile] = useState(null);
+  // Initialiser userProfile avec user pour avoir la photo immédiatement
+  const [userProfile, setUserProfile] = useState(() => user ? { ...user } : null);
   const [formations, setFormations] = useState([]);
   const [competences, setCompetences] = useState([]);
   const [monthlyStats, setMonthlyStats] = useState({
