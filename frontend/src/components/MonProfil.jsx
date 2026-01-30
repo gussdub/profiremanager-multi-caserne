@@ -78,11 +78,21 @@ const MonProfil = () => {
       });
       
       try {
-        const [userData, competencesData, statsData] = await Promise.all([
+        // Charger les données principales en parallèle, mais gérer les erreurs individuellement
+        const [userResult, competencesResult, statsResult] = await Promise.allSettled([
           apiGet(tenantSlug, `/users/${user.id}`),
           apiGet(tenantSlug, '/competences'),
           apiGet(tenantSlug, `/users/${user.id}/stats-mensuelles`)
         ]);
+        
+        // Extraire les données (ou null si erreur)
+        const userData = userResult.status === 'fulfilled' ? userResult.value : null;
+        const competencesData = competencesResult.status === 'fulfilled' ? competencesResult.value : [];
+        const statsData = statsResult.status === 'fulfilled' ? statsResult.value : { heures_mois_courant: 0 };
+        
+        if (!userData) {
+          throw new Error('Impossible de charger les données utilisateur');
+        }
         
         console.log('📊 Mon Profil - userData chargé:', userData);
         console.log('🔍 Champs critiques:', {
