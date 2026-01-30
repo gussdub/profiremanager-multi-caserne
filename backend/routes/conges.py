@@ -157,6 +157,10 @@ async def approuver_demande_conge(
     if not demande:
         raise HTTPException(status_code=404, detail="Demande non trouvée")
     
+    # Empêcher le demandeur d'approuver sa propre demande
+    if demande["demandeur_id"] == current_user.id:
+        raise HTTPException(status_code=403, detail="Vous ne pouvez pas approuver votre propre demande de congé")
+    
     # Vérifier les permissions : superviseur peut approuver employés, admin peut tout approuver
     demandeur = await db.users.find_one({"id": demande["demandeur_id"], "tenant_id": tenant.id})
     if current_user.role == "superviseur" and demandeur and demandeur.get("role") != "employe":
