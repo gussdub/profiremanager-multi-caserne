@@ -916,6 +916,7 @@ const MonProfil = () => {
                           margin: '0.25rem 0' 
                         }} />
                         <button
+                          className="photo-menu-button"
                           onMouseDown={(e) => e.stopPropagation()}
                           onClick={(e) => {
                             e.stopPropagation();
