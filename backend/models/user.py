@@ -4,7 +4,7 @@ Gestion des utilisateurs (pompiers, admins)
 """
 
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 import uuid
 
