@@ -89,7 +89,12 @@ const EmailsHistory = () => {
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
-    const date = new Date(dateStr);
+    // Ajouter 'Z' si absent pour forcer l'interprétation UTC
+    let utcDateStr = dateStr;
+    if (!dateStr.endsWith('Z') && !dateStr.includes('+')) {
+      utcDateStr = dateStr + 'Z';
+    }
+    const date = new Date(utcDateStr);
     return date.toLocaleString('fr-CA', {
       timeZone: 'America/Montreal',
       day: '2-digit',
