@@ -176,7 +176,7 @@ const GestionInterventions = ({ user, tenantSlug }) => {
         <TabRapports user={user} tenantSlug={tenantSlug} toast={toast} readOnly={isReadOnlyMode} />
       )}
       {activeTab === 'historique' && (
-        <TabHistorique user={user} tenantSlug={tenantSlug} toast={toast} readOnly={isReadOnlyMode} />
+        <TabHistorique user={user} tenantSlug={tenantSlug} toast={toast} readOnly={isReadOnlyMode} settings={settings} />
       )}
       {activeTab === 'conformite-dsi' && (isAdmin || isValidateur) && (
         <TabConformiteDSI user={user} tenantSlug={tenantSlug} toast={toast} />
