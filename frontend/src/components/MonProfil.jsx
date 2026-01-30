@@ -129,6 +129,10 @@ const MonProfil = () => {
   // Fermer le menu photo si on clique en dehors
   useEffect(() => {
     const handleClickOutside = (event) => {
+      // Ne pas fermer si on clique sur un bouton du menu (ils gèrent leur propre fermeture)
+      if (event.target.closest('.photo-menu-button')) {
+        return;
+      }
       if (showPhotoMenu && !event.target.closest('.photo-menu-container')) {
         setShowPhotoMenu(false);
       }
