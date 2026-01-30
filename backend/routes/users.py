@@ -24,7 +24,8 @@ from routes.dependencies import (
     User,
     SECRET_KEY,
     ALGORITHM,
-    validate_complex_password
+    validate_complex_password,
+    get_password_hash
 )
 
 router = APIRouter(tags=["Users"])
