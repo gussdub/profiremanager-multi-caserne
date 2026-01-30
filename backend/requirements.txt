@@ -33,7 +33,6 @@ fastuuid==0.14.0
 filelock==3.20.3
 firebase_admin==7.1.0
 flake8==7.3.0
-fonttools==4.60.1
 frozenlist==1.8.0
 fsspec==2026.1.0
 google-ai-generativelanguage==0.6.15
