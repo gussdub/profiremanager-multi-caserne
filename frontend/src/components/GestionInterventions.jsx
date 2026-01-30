@@ -436,7 +436,7 @@ const TabRapports = ({ user, tenantSlug, toast, readOnly = false, isSuperAdmin =
 
 // ==================== CARTE INTERVENTION ====================
 
-const InterventionCard = ({ intervention, formatDate, getStatusBadge, onSelect }) => {
+const InterventionCard = ({ intervention, formatDate, getStatusBadge, onSelect, isSuperAdmin = false, onDelete, deleting = false }) => {
   return (
     <div 
       className="bg-white border border-gray-200 rounded-lg p-3 cursor-pointer hover:shadow-md transition-shadow"
@@ -447,7 +447,19 @@ const InterventionCard = ({ intervention, formatDate, getStatusBadge, onSelect }
         <span className="font-mono text-sm text-gray-500">
           #{intervention.external_call_id}
         </span>
-        {getStatusBadge(intervention.status)}
+        <div className="flex items-center gap-2">
+          {getStatusBadge(intervention.status)}
+          {isSuperAdmin && (
+            <button
+              onClick={onDelete}
+              disabled={deleting}
+              className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded transition-colors"
+              title="Supprimer (Superadmin)"
+            >
+              {deleting ? '⏳' : '🗑️'}
+            </button>
+          )}
+        </div>
       </div>
       
       <div className="text-sm font-medium text-gray-900 mb-1">
