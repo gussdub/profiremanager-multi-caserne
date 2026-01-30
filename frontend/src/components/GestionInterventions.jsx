@@ -173,10 +173,10 @@ const GestionInterventions = ({ user, tenantSlug }) => {
 
       {/* Contenu des onglets */}
       {activeTab === 'rapports' && (
-        <TabRapports user={user} tenantSlug={tenantSlug} toast={toast} readOnly={isReadOnlyMode} />
+        <TabRapports user={user} tenantSlug={tenantSlug} toast={toast} readOnly={isReadOnlyMode} isSuperAdmin={isSuperAdmin} />
       )}
       {activeTab === 'historique' && (
-        <TabHistorique user={user} tenantSlug={tenantSlug} toast={toast} readOnly={isReadOnlyMode} settings={settings} />
+        <TabHistorique user={user} tenantSlug={tenantSlug} toast={toast} readOnly={isReadOnlyMode} settings={settings} isSuperAdmin={isSuperAdmin} />
       )}
       {activeTab === 'conformite-dsi' && (isAdmin || isValidateur) && (
         <TabConformiteDSI user={user} tenantSlug={tenantSlug} toast={toast} />
@@ -191,7 +191,7 @@ const GestionInterventions = ({ user, tenantSlug }) => {
 
 // ==================== ONGLET RAPPORTS ====================
 
-const TabRapports = ({ user, tenantSlug, toast, readOnly = false }) => {
+const TabRapports = ({ user, tenantSlug, toast, readOnly = false, isSuperAdmin = false }) => {
   const [dashboard, setDashboard] = useState({ counts: {}, new: [], drafts: [], review: [] });
   const [loading, setLoading] = useState(true);
   const [selectedIntervention, setSelectedIntervention] = useState(null);
