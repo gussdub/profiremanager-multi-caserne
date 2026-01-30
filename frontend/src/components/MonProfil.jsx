@@ -124,6 +124,12 @@ const MonProfil = () => {
             push_actif: true
           }
         });
+        
+        console.log('📝 Mon Profil - profileData initialisé:', {
+          telephone: userData.telephone,
+          adresse: userData.adresse,
+          contact_urgence: userData.contact_urgence
+        });
 
       } catch (error) {
         console.error('❌ Mon Profil - Erreur chargement:', {
