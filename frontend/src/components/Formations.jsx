@@ -181,14 +181,15 @@ const Formations = () => {
         user_id: selectedUser.id,
         competence_id: newValidation.competence_id,
         justification: newValidation.justification,
-        date_validation: newValidation.date_validation
+        date_validation: newValidation.date_validation,
+        duree_heures: parseFloat(newValidation.duree_heures) || 0
       };
 
       await apiPost(tenantSlug, '/validations-competences', validation);
 
       toast({
         title: "Succès",
-        description: "Rattrapage enregistré avec succès",
+        description: `Rattrapage enregistré avec succès${validation.duree_heures > 0 ? ` (${validation.duree_heures}h comptabilisées)` : ''}`,
         variant: "success"
       });
 
@@ -196,7 +197,8 @@ const Formations = () => {
       setNewValidation({
         competence_id: '',
         justification: '',
-        date_validation: new Date().toISOString().split('T')[0]
+        date_validation: new Date().toISOString().split('T')[0],
+        duree_heures: 0
       });
       setShowValidateCompetenceModal(false);
       
