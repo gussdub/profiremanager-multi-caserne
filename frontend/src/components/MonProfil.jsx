@@ -1432,7 +1432,14 @@ const MonProfil = () => {
                 variant="outline" 
                 onClick={async () => {
                   try {
-                    await apiPut(tenantSlug, `/users/${user.id}`, {
+                    await apiPut(tenantSlug, '/users/mon-profil', {
+                      prenom: profileData.prenom,
+                      nom: profileData.nom,
+                      email: profileData.email,
+                      telephone: profileData.telephone || '',
+                      adresse: profileData.adresse || '',
+                      contact_urgence: profileData.contact_urgence || '',
+                      heures_max_semaine: profileData.heures_max_semaine || 40,
                       preferences_notifications: profileData.preferences_notifications
                     });
                     toast({
