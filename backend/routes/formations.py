@@ -891,6 +891,20 @@ async def rapport_conformite(tenant_slug: str, annee: int, current_user: User = 
                 except (ValueError, TypeError, AttributeError):
                     continue
         
+        # Ajouter les heures des rattrapages de l'année en cours
+        heures_rattrapage = 0
+        for rat in rattrapages:
+            try:
+                date_rat = rat.get("date", "")
+                if date_rat:
+                    annee_rat = int(date_rat[:4])  # Extraire l'année du format YYYY-MM-DD
+                    if annee_rat == annee:
+                        heures_rattrapage += rat.get("heures_validees", 0)
+            except (ValueError, TypeError):
+                continue
+        
+        total_heures += heures_rattrapage
+        
         # Taux de présence = formations présentes / formations passées (pas futures)
         taux_presence = round((presences / formations_passees * 100) if formations_passees > 0 else 100, 1)
         conforme_presence = taux_presence >= pourcentage_min
@@ -915,6 +929,7 @@ async def rapport_conformite(tenant_slug: str, annee: int, current_user: User = 
         
         pompier_data = clean_mongo_doc(pompier)
         pompier_data["total_heures"] = total_heures
+        pompier_data["heures_rattrapage"] = heures_rattrapage
         pompier_data["heures_requises"] = heures_min
         pompier_data["conforme"] = conforme
         pompier_data["pourcentage"] = round((total_heures / heures_min * 100) if heures_min > 0 else 0, 1)
