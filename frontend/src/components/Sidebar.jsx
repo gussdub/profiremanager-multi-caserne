@@ -269,46 +269,106 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
       const gainNode = audioContext.createGain();
       gainNode.connect(audioContext.destination);
       
-      // Configuration des sonneries - MINIMUM 2 secondes
+      // Configuration des sonneries - Sons variés et distinctifs
       const soundConfigs = {
+        // === SONNERIES DOUCES (notifications générales) ===
         default: { 
+          name: "Mélodie classique",
           freqs: [523.25, 659.25, 783.99, 659.25, 523.25, 659.25, 783.99, 1046.50], 
           duration: 2.0, 
           noteLength: 0.25,
           volumeMultiplier: 1.2 
         },
         chime: { 
+          name: "Carillon doux",
           freqs: [659.25, 783.99, 1046.50, 783.99, 659.25, 783.99, 1046.50, 1318.51], 
           duration: 2.0, 
           noteLength: 0.25,
           volumeMultiplier: 1.3 
         },
+        gentle: {
+          name: "Notification douce",
+          freqs: [392, 523, 659, 784, 659, 523],
+          duration: 1.8,
+          noteLength: 0.3,
+          volumeMultiplier: 1.0
+        },
+        bubble: {
+          name: "Bulles",
+          freqs: [600, 800, 1000, 1200, 1000, 800, 600],
+          duration: 1.8,
+          noteLength: 0.25,
+          volumeMultiplier: 1.1
+        },
+        
+        // === SONNERIES MOYENNES (messages, rappels) ===
         bell: { 
+          name: "Cloche",
           freqs: [830.61, 987.77, 830.61, 987.77, 830.61, 987.77, 1174.66, 987.77], 
           duration: 2.0, 
           noteLength: 0.25,
           volumeMultiplier: 1.4 
         },
         doorbell: { 
+          name: "Sonnette",
           freqs: [523, 659, 784, 1047, 784, 659, 523, 659, 784, 1047], 
           duration: 2.5, 
           noteLength: 0.25,
           volumeMultiplier: 1.5 
         },
         triple: { 
+          name: "Triple bip",
           freqs: [784, 988, 1175, 988, 784, 988, 1175, 1319, 1175, 988], 
           duration: 2.5, 
           noteLength: 0.25,
           volumeMultiplier: 1.6 
         },
+        marimba: {
+          name: "Marimba",
+          freqs: [523, 659, 784, 1047, 784, 523, 659, 784],
+          duration: 2.0,
+          noteLength: 0.25,
+          volumeMultiplier: 1.4,
+          waveType: 'triangle'
+        },
+        xylophone: {
+          name: "Xylophone",
+          freqs: [1047, 988, 880, 784, 698, 659, 587, 523, 587, 659],
+          duration: 2.5,
+          noteLength: 0.25,
+          volumeMultiplier: 1.3,
+          waveType: 'triangle'
+        },
+        
+        // === SONNERIES FORTES (alertes, remplacements) ===
         alert: { 
+          name: "Alerte",
           freqs: [1000, 800, 1000, 800, 1000, 800, 1000, 800], 
           duration: 2.4, 
           noteLength: 0.3,
           volumeMultiplier: 1.8,
           waveType: 'triangle'
         },
+        radar: {
+          name: "Radar",
+          freqs: [440, 880, 440, 880, 440, 880, 440, 880],
+          duration: 2.4,
+          noteLength: 0.3,
+          volumeMultiplier: 1.7,
+          waveType: 'sine'
+        },
+        pulse: {
+          name: "Pulsation",
+          freqs: [600, 600, 800, 800, 1000, 1000, 800, 800, 600, 600],
+          duration: 2.5,
+          noteLength: 0.25,
+          volumeMultiplier: 1.6,
+          waveType: 'triangle'
+        },
+        
+        // === SONNERIES URGENTES (urgences, remplacements critiques) ===
         alarm: { 
+          name: "Alarme",
           freqs: [880, 1100, 880, 1100, 880, 1100, 880, 1100, 880, 1100], 
           duration: 3.0, 
           noteLength: 0.3,
@@ -316,6 +376,7 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
           waveType: 'square'
         },
         siren: { 
+          name: "Sirène",
           freqs: [600, 900, 600, 900, 600, 900, 600, 900, 600, 900, 600, 900], 
           duration: 3.5, 
           noteLength: 0.28,
@@ -323,6 +384,7 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
           waveType: 'sawtooth'
         },
         emergency: { 
+          name: "Urgence",
           freqs: [1200, 800, 1200, 800, 1200, 800, 1200, 800, 1200, 800, 1200, 800, 1200, 800], 
           duration: 4.0, 
           noteLength: 0.28,
@@ -330,11 +392,20 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
           waveType: 'square'
         },
         urgent: { 
+          name: "Urgent (Pompiers)",
           freqs: [880, 1100, 880, 1100, 880, 1100, 880, 1100, 880, 1100], 
           duration: 3.0, 
           noteLength: 0.3,
           volumeMultiplier: 2.0,
           waveType: 'square'
+        },
+        firestation: {
+          name: "Caserne",
+          freqs: [587, 880, 587, 880, 587, 880, 1175, 880, 587, 880, 587, 880],
+          duration: 3.5,
+          noteLength: 0.28,
+          volumeMultiplier: 2.0,
+          waveType: 'sawtooth'
         }
       };
       
