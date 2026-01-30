@@ -1635,6 +1635,21 @@ async def action_remplacement_via_email(token: str, action: str):
                 status_code=302
             )
         
+        # Si action = "choix", afficher une page avec les deux boutons
+        if action == "choix":
+            # Rediriger vers une page frontend qui affiche les deux options
+            return RedirectResponse(
+                url=f"{frontend_url}/remplacement-choix?token={token}",
+                status_code=302
+            )
+        
+        # Valider l'action avant de marquer le token comme utilisé
+        if action not in ["accepter", "refuser"]:
+            return RedirectResponse(
+                url=f"{frontend_url}/remplacement-resultat?status=erreur&message=Action non reconnue",
+                status_code=302
+            )
+        
         await db.tokens_remplacement.update_one(
             {"token": token},
             {"$set": {"utilise": True, "action": action, "date_utilisation": datetime.now(timezone.utc).isoformat()}}
