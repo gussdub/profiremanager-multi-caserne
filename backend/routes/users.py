@@ -84,13 +84,13 @@ class UserUpdate(BaseModel):
     preferences_notifications: Optional[Dict[str, bool]] = None
 
 class ProfileUpdate(BaseModel):
-    prenom: str
-    nom: str
-    email: str
-    telephone: str = ""
-    adresse: str = ""
-    contact_urgence: str = ""
-    heures_max_semaine: int = 25
+    prenom: Optional[str] = None
+    nom: Optional[str] = None
+    email: Optional[str] = None
+    telephone: Optional[str] = None
+    adresse: Optional[str] = None
+    contact_urgence: Optional[str] = None
+    heures_max_semaine: Optional[int] = None
     tailles_epi: Optional[Dict[str, str]] = None
     preferences_notifications: Optional[Dict[str, bool]] = None
 
