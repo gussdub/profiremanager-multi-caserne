@@ -724,7 +724,7 @@ const MonProfil = () => {
         <div className="profil-main-column">
           
           {/* Section Photo de Profil */}
-          <div className="formation-card" style={{ marginBottom: '1.5rem', overflow: 'visible' }}>
+          <div className="formation-card" style={{ marginBottom: '1.5rem', overflow: 'visible', position: 'relative', zIndex: 100 }}>
             <div className="formation-header">
               <h3>📷 Photo de profil</h3>
             </div>
@@ -734,7 +734,9 @@ const MonProfil = () => {
               gap: '1.5rem',
               padding: '1rem',
               flexWrap: 'wrap',
-              overflow: 'visible'
+              overflow: 'visible',
+              position: 'relative',
+              zIndex: 100
             }}>
               {/* Photo preview */}
               <div style={{
