@@ -90,7 +90,8 @@ const EmailsHistory = () => {
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
     const date = new Date(dateStr);
-    return date.toLocaleDateString('fr-CA', {
+    return date.toLocaleString('fr-CA', {
+      timeZone: 'America/Montreal',
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
