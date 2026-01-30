@@ -57,6 +57,13 @@ const MonProfil = () => {
   
   const { toast } = useToast();
 
+  // Synchroniser la photo_profil de userProfile avec celle de user (contexte global)
+  useEffect(() => {
+    if (user?.photo_profil && userProfile && userProfile.photo_profil !== user.photo_profil) {
+      setUserProfile(prev => ({ ...prev, photo_profil: user.photo_profil }));
+    }
+  }, [user?.photo_profil]);
+
   useEffect(() => {
     const fetchUserProfile = async () => {
       if (!tenantSlug || !user?.id) {
