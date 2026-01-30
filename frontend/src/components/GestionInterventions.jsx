@@ -118,17 +118,16 @@ const GestionInterventions = ({ user, tenantSlug }) => {
   const isDesignatedPerson = (settings?.personnes_ressources || []).includes(user?.id);
   const isValidateur = (settings?.validateurs || []).includes(user?.id);
   
-  // Les employés ont accès en lecture seule aux cartes d'appel
-  // L'accès à l'historique dépend du paramètre acces_employes_historique
-  const employeeCanAccessHistory = settings?.acces_employes_historique || false;
+  // Paramètre permettant aux employés de consulter le module en lecture seule
+  const employeeCanAccessReadOnly = settings?.acces_employes_historique || false;
   
   // Mode lecture seule pour les employés (sauf s'ils sont personnes ressources)
   const isReadOnlyMode = isEmployee && !isDesignatedPerson;
 
   const tabs = [
-    { id: 'rapports', label: 'Rapports d\'intervention', icon: '📋' },
+    { id: 'rapports', label: 'Cartes d\'appel', icon: '📋' },
     { id: 'conformite-dsi', label: 'Conformité DSI', icon: '📊', validatorsOnly: true },
-    { id: 'historique', label: 'Historique', icon: '📚', hideForEmployee: !employeeCanAccessHistory },
+    { id: 'historique', label: 'Historique', icon: '📚' },
     { id: 'parametres', label: 'Paramètres', icon: '⚙️', adminOnly: true },
   ];
 
@@ -136,7 +135,6 @@ const GestionInterventions = ({ user, tenantSlug }) => {
   const visibleTabs = tabs.filter(tab => {
     if (tab.adminOnly && !isAdmin) return false;
     if (tab.validatorsOnly && !isAdmin && !isValidateur) return false;
-    if (tab.hideForEmployee && isEmployee && !isDesignatedPerson) return false;
     return true;
   });
 
@@ -146,7 +144,7 @@ const GestionInterventions = ({ user, tenantSlug }) => {
         <h1 className="text-2xl font-bold text-gray-900">Gestion des Interventions</h1>
         <p className="text-gray-600">
           {isReadOnlyMode 
-            ? "Consultation des cartes d'appel (lecture seule)" 
+            ? "📖 Mode consultation (lecture seule)" 
             : "Gérez vos rapports d'intervention et importez les données du 911"
           }
         </p>
