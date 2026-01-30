@@ -1218,17 +1218,58 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
 
 // ==================== ONGLET HISTORIQUE ====================
 
-const TabHistorique = ({ user, tenantSlug, toast, readOnly = false, settings = {} }) => {
+const TabHistorique = ({ user, tenantSlug, toast, readOnly = false, settings = {}, isSuperAdmin = false }) => {
   const [interventions, setInterventions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ status: 'signed', dateFrom: '', dateTo: '' });
   const [selectedIntervention, setSelectedIntervention] = useState(null);
   const [unlocking, setUnlocking] = useState(null);
+  const [deleting, setDeleting] = useState(null);
 
   const API = `${BACKEND_URL}/api/${tenantSlug}`;
 
   const getToken = () => {
     return localStorage.getItem(`${tenantSlug}_token`) || localStorage.getItem('token');
+  };
+
+  // Fonction de suppression (superadmin uniquement)
+  const handleDeleteIntervention = async (intervention, e) => {
+    e.stopPropagation();
+    
+    const confirmMsg = `⚠️ ATTENTION - SUPPRESSION DÉFINITIVE\n\nVoulez-vous vraiment supprimer la carte d'appel #${intervention.external_call_id || intervention.id} ?\n\nCette action est irréversible et supprimera toutes les données associées.`;
+    
+    if (!window.confirm(confirmMsg)) return;
+    
+    setDeleting(intervention.id);
+    try {
+      const response = await fetch(`${API}/interventions/${intervention.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      
+      if (response.ok) {
+        toast({
+          title: "✅ Carte d'appel supprimée",
+          description: `La carte #${intervention.external_call_id || intervention.id} a été supprimée.`
+        });
+        fetchInterventions();
+      } else {
+        const error = await response.json();
+        toast({
+          title: "❌ Erreur",
+          description: error.detail || "Impossible de supprimer",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "❌ Erreur",
+        description: "Erreur de connexion",
+        variant: "destructive"
+      });
+    } finally {
+      setDeleting(null);
+    }
   };
 
   // Calcul du temps de réponse et indicateur couleur
