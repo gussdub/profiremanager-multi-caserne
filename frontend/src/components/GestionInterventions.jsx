@@ -1497,6 +1497,16 @@ const TabHistorique = ({ user, tenantSlug, toast, readOnly = false, settings = {
                             {unlocking === intervention.id ? '⏳' : '🔓'} Déverrouiller
                           </button>
                         )}
+                        {isSuperAdmin && (
+                          <button 
+                            onClick={(e) => handleDeleteIntervention(intervention, e)}
+                            disabled={deleting === intervention.id}
+                            className="text-red-600 hover:text-red-800 text-sm font-medium disabled:opacity-50"
+                            title="Supprimer (Superadmin)"
+                          >
+                            {deleting === intervention.id ? '⏳' : '🗑️'} Supprimer
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
