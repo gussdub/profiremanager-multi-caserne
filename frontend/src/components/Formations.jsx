@@ -1182,8 +1182,12 @@ const Formations = () => {
                 Employé: <strong>{selectedUser.prenom} {selectedUser.nom}</strong>
               </p>
               
+              <div style={{ background: '#f0f9ff', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.85rem', color: '#0369a1' }}>
+                💡 Un rattrapage est une formation effectuée ailleurs qui sera comptabilisée comme si elle avait été faite par le service incendie.
+              </div>
+              
               <div className="form-field">
-                <Label>Compétence</Label>
+                <Label>Compétence *</Label>
                 <select
                   value={newValidation.competence_id}
                   onChange={(e) => setNewValidation({...newValidation, competence_id: e.target.value})}
@@ -1196,23 +1200,37 @@ const Formations = () => {
                 </select>
               </div>
               
-              <div className="form-field">
-                <Label>Justification</Label>
-                <textarea
-                  value={newValidation.justification}
-                  onChange={(e) => setNewValidation({...newValidation, justification: e.target.value})}
-                  placeholder="Expliquez pourquoi cette compétence doit être validée manuellement..."
-                  rows="4"
-                  className="form-input"
-                />
+              <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-field">
+                  <Label>Date de la formation *</Label>
+                  <Input
+                    type="date"
+                    value={newValidation.date_validation}
+                    onChange={(e) => setNewValidation({...newValidation, date_validation: e.target.value})}
+                  />
+                </div>
+                
+                <div className="form-field">
+                  <Label>Durée (heures) *</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    value={newValidation.duree_heures}
+                    onChange={(e) => setNewValidation({...newValidation, duree_heures: e.target.value})}
+                    placeholder="Ex: 4"
+                  />
+                </div>
               </div>
               
               <div className="form-field">
-                <Label>Date de validation</Label>
-                <Input
-                  type="date"
-                  value={newValidation.date_validation}
-                  onChange={(e) => setNewValidation({...newValidation, date_validation: e.target.value})}
+                <Label>Justification / Lieu de formation *</Label>
+                <textarea
+                  value={newValidation.justification}
+                  onChange={(e) => setNewValidation({...newValidation, justification: e.target.value})}
+                  placeholder="Ex: Formation suivie à l'École nationale des pompiers du Québec, certificat #12345..."
+                  rows="3"
+                  className="form-input"
                 />
               </div>
             </div>
@@ -1222,7 +1240,7 @@ const Formations = () => {
                 Annuler
               </Button>
               <Button onClick={handleValidateCompetence}>
-                ✅ Enregistrer
+                ✅ Enregistrer le rattrapage
               </Button>
             </div>
           </div>
