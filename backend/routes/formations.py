@@ -813,6 +813,12 @@ async def rapport_conformite(tenant_slug: str, annee: int, current_user: User = 
         "tenant_id": tenant.id
     }, {"_id": 0}).to_list(10000)
     
+    # Charger les rattrapages (présences fictives créées pour comptabiliser les heures)
+    rattrapages_db = await db.presences_formations.find({
+        "tenant_id": tenant.id,
+        "est_rattrapage": True
+    }, {"_id": 0}).to_list(10000)
+    
     # Grouper par user_id pour accès rapide
     inscriptions_par_user = {}
     for insc in toutes_inscriptions_db:
@@ -828,11 +834,19 @@ async def rapport_conformite(tenant_slug: str, annee: int, current_user: User = 
             validations_par_user[user_id] = []
         validations_par_user[user_id].append(val)
     
+    rattrapages_par_user = {}
+    for rat in rattrapages_db:
+        user_id = rat.get("user_id")
+        if user_id not in rattrapages_par_user:
+            rattrapages_par_user[user_id] = []
+        rattrapages_par_user[user_id].append(rat)
+    
     rapport = []
     for pompier in pompiers:
-        # Récupérer les inscriptions et validations depuis les dictionnaires
+        # Récupérer les inscriptions, validations et rattrapages depuis les dictionnaires
         toutes_inscriptions = inscriptions_par_user.get(pompier["id"], [])
         validations = validations_par_user.get(pompier["id"], [])
+        rattrapages = rattrapages_par_user.get(pompier["id"], [])
         competences_validees = {v["competence_id"] for v in validations}
         
         total_heures = 0
