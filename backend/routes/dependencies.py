@@ -136,13 +136,14 @@ class Activite(BaseModel):
 
 
 class ValidationCompetence(BaseModel):
-    """Validation manuelle d'une compétence pour un employé"""
+    """Validation manuelle d'une compétence pour un employé (rattrapage)"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     tenant_id: str
     user_id: str
     competence_id: str
     justification: str
     date_validation: str
+    duree_heures: float = 0  # Durée de la formation en heures
     validee_par: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -152,6 +153,7 @@ class ValidationCompetenceCreate(BaseModel):
     competence_id: str
     justification: str
     date_validation: str
+    duree_heures: float = 0  # Durée de la formation en heures
 
 
 # ==================== CACHE TENANT ====================
