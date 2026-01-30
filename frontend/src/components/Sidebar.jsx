@@ -478,11 +478,17 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
     if (item.id === 'disponibilites' && !['temps_partiel', 'temporaire'].includes(user?.type_emploi) && !['admin', 'superviseur'].includes(user?.role)) return false;
     if (item.id === 'prevention' && !authTenant?.parametres?.module_prevention_active) return false;
     
-    // Module Interventions : visible pour admin/superviseur OU si l'utilisateur est une personne ressource désignée
+    // Module Interventions : 
+    // - Admin/Superviseur : accès complet
+    // - Personne ressource : accès complet (remplir rapports)
+    // - Employé normal : accès lecture seule SI paramètre acces_employes_historique activé
     if (item.id === 'interventions') {
       const isAdminOrSupervisor = ['admin', 'superviseur'].includes(user?.role);
       const isPersonneRessource = (interventionSettings?.personnes_ressources || []).includes(user?.id);
-      if (!isAdminOrSupervisor && !isPersonneRessource) return false;
+      const employeesCanAccess = interventionSettings?.acces_employes_historique === true;
+      
+      // Accès autorisé si: admin/superviseur OU personne ressource OU (employé + paramètre activé)
+      if (!isAdminOrSupervisor && !isPersonneRessource && !employeesCanAccess) return false;
     }
     
     return true;
