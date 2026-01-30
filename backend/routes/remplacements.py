@@ -529,6 +529,118 @@ async def envoyer_email_remplacement(
         return False
 
 
+async def envoyer_sms_remplacement(
+    remplacant: Dict[str, Any],
+    demande_data: Dict[str, Any],
+    demandeur: Dict[str, Any],
+    type_garde: Dict[str, Any],
+    tenant_id: str,
+    token: str
+) -> bool:
+    """Envoie un SMS au remplaçant potentiel avec un lien pour accepter/refuser"""
+    try:
+        from twilio.rest import Client
+        
+        # Récupérer les credentials Twilio depuis les variables d'environnement
+        account_sid = os.environ.get('TWILIO_ACCOUNT_SID')
+        auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
+        twilio_phone = os.environ.get('TWILIO_PHONE_NUMBER')
+        
+        if not all([account_sid, auth_token, twilio_phone]):
+            logger.warning("⚠️ Configuration Twilio incomplète - SMS non envoyé")
+            return False
+        
+        # Récupérer les infos du remplaçant
+        remplacant_user = await db.users.find_one({"id": remplacant["user_id"]})
+        if not remplacant_user:
+            logger.warning(f"Utilisateur non trouvé: {remplacant['user_id']}")
+            return False
+        
+        # Vérifier les préférences de notification
+        preferences = remplacant_user.get("preferences_notifications", {})
+        if not preferences.get("sms_actif", True):  # Par défaut activé
+            logger.info(f"📵 SMS désactivé pour {remplacant_user.get('prenom')} - préférences utilisateur")
+            return False
+        
+        # Récupérer et formater le numéro de téléphone
+        telephone = remplacant_user.get("telephone", "")
+        if not telephone:
+            logger.warning(f"Pas de téléphone pour {remplacant_user.get('prenom')} {remplacant_user.get('nom')}")
+            return False
+        
+        # Formater le numéro au format E.164 si nécessaire
+        telephone_formate = formater_numero_telephone(telephone)
+        if not telephone_formate:
+            logger.warning(f"Numéro de téléphone invalide: {telephone}")
+            return False
+        
+        # Préparer le message
+        demandeur_nom = f"{demandeur.get('prenom', '')} {demandeur.get('nom', '')}"
+        type_garde_nom = type_garde.get("nom", "Garde")
+        date_garde = demande_data.get("date", "")
+        heure_debut = type_garde.get("heure_debut", "")
+        heure_fin = type_garde.get("heure_fin", "")
+        
+        frontend_url = os.environ.get('FRONTEND_URL', 'https://www.profiremanager.ca')
+        backend_url = os.environ.get('REACT_APP_BACKEND_URL', frontend_url)
+        lien_reponse = f"{backend_url}/api/remplacement-action/{token}/choix"
+        
+        message = (
+            f"🚨 ProFireManager: {demandeur_nom} cherche un remplaçant le {date_garde} "
+            f"({type_garde_nom} {heure_debut}-{heure_fin}). "
+            f"Répondez ici: {lien_reponse}"
+        )
+        
+        # Envoyer le SMS via Twilio
+        client = Client(account_sid, auth_token)
+        
+        sms = client.messages.create(
+            body=message,
+            from_=twilio_phone,
+            to=telephone_formate
+        )
+        
+        logger.info(f"✅ SMS envoyé à {telephone_formate} (SID: {sms.sid})")
+        return True
+        
+    except Exception as e:
+        logger.error(f"❌ Erreur envoi SMS remplacement: {e}", exc_info=True)
+        return False
+
+
+def formater_numero_telephone(numero: str) -> str:
+    """
+    Formate un numéro de téléphone au format E.164 (+1XXXXXXXXXX pour l'Amérique du Nord)
+    """
+    if not numero:
+        return ""
+    
+    # Nettoyer le numéro (garder uniquement les chiffres et le +)
+    numero_clean = ''.join(c for c in numero if c.isdigit() or c == '+')
+    
+    # Si déjà au format E.164
+    if numero_clean.startswith('+'):
+        return numero_clean
+    
+    # Enlever le 1 au début si présent (indicatif Amérique du Nord)
+    if numero_clean.startswith('1') and len(numero_clean) == 11:
+        numero_clean = numero_clean[1:]
+    
+    # Si 10 chiffres, ajouter +1 (Amérique du Nord - Canada/USA)
+    if len(numero_clean) == 10:
+        return f"+1{numero_clean}"
+    
+    # Si 11 chiffres commençant par 1
+    if len(numero_clean) == 11 and numero_clean.startswith('1'):
+        return f"+{numero_clean}"
+    
+    # Sinon, retourner avec + si valide
+    if len(numero_clean) >= 10:
+        return f"+{numero_clean}"
+    
+    return ""
+
+
 # Import de send_push_notification_to_users depuis server.py (sera appelé dynamiquement)
 async def get_send_push_notification():
     """Récupère la fonction send_push_notification_to_users depuis server.py"""
