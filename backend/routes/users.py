@@ -242,6 +242,7 @@ async def create_user(tenant_slug: str, user_create: UserCreate, current_user: U
     
     # Envoyer l'email de bienvenue
     try:
+        from server import send_welcome_email
         user_name = f"{user_create.prenom} {user_create.nom}"
         email_sent = send_welcome_email(user_create.email, user_name, user_create.role, temp_password, tenant_slug)
         
