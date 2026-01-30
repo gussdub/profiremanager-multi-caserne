@@ -572,15 +572,31 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
                             fontSize: '0.85rem'
                           }}
                         >
-                          <option value="default">Son par défaut</option>
-                          <option value="chime">Carillon</option>
-                          <option value="bell">Cloche</option>
-                          <option value="doorbell">Sonnette</option>
-                          <option value="triple">Triple tonalité</option>
-                          <option value="alert">⚠️ Alerte</option>
-                          <option value="alarm">🔔 Alarme (fort)</option>
-                          <option value="siren">🚨 Sirène (long)</option>
-                          <option value="emergency">🚒 Urgence (très fort)</option>
+                          <optgroup label="🔔 Sonneries douces">
+                            <option value="default">Mélodie classique</option>
+                            <option value="chime">Carillon doux</option>
+                            <option value="gentle">Notification douce</option>
+                            <option value="bubble">Bulles</option>
+                          </optgroup>
+                          <optgroup label="🎵 Sonneries moyennes">
+                            <option value="bell">Cloche</option>
+                            <option value="doorbell">Sonnette</option>
+                            <option value="triple">Triple bip</option>
+                            <option value="marimba">Marimba</option>
+                            <option value="xylophone">Xylophone</option>
+                          </optgroup>
+                          <optgroup label="⚠️ Alertes">
+                            <option value="alert">Alerte</option>
+                            <option value="radar">Radar</option>
+                            <option value="pulse">Pulsation</option>
+                          </optgroup>
+                          <optgroup label="🚨 Urgences (fort)">
+                            <option value="alarm">Alarme</option>
+                            <option value="siren">Sirène</option>
+                            <option value="emergency">Urgence</option>
+                            <option value="urgent">Urgent (Pompiers)</option>
+                            <option value="firestation">Caserne</option>
+                          </optgroup>
                         </select>
                       </div>
                       
