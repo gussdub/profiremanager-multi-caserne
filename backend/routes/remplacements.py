@@ -358,6 +358,13 @@ async def trouver_remplacants_potentiels(
                     candidat_data["raison"] = "N5 - Heures sup (temps plein)"
                     candidats_par_priorite[6].append(candidat_data)
                     logger.info(f"✅ {user_name} → Priorité 6 (N5 - Heures sup)")
+                continue
+            
+            # Si aucune catégorie ne correspond, logger pourquoi
+            logger.warning(f"⚠️ {user_name} ne correspond à aucune catégorie: "
+                          f"grade_equiv={est_grade_equivalent}, fonc_sup={est_fonction_superieure}, "
+                          f"type={user_type_emploi}, depasserait_max={depasserait_max}, "
+                          f"grade_user={user_grade_niveau}, grade_demandeur={demandeur_grade_niveau}")
         
         # ========== ASSEMBLER LA LISTE FINALE ==========
         remplacants_potentiels = []
