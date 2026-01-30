@@ -195,6 +195,7 @@ const TabRapports = ({ user, tenantSlug, toast, readOnly = false, isSuperAdmin =
   const [dashboard, setDashboard] = useState({ counts: {}, new: [], drafts: [], review: [] });
   const [loading, setLoading] = useState(true);
   const [selectedIntervention, setSelectedIntervention] = useState(null);
+  const [deleting, setDeleting] = useState(null);
 
   const API = `${BACKEND_URL}/api/${tenantSlug}`;
 
@@ -217,6 +218,46 @@ const TabRapports = ({ user, tenantSlug, toast, readOnly = false, isSuperAdmin =
       setLoading(false);
     }
   }, [API]);
+
+  // Fonction de suppression (superadmin uniquement)
+  const handleDeleteIntervention = async (intervention, e) => {
+    e.stopPropagation();
+    
+    const confirmMsg = `⚠️ ATTENTION - SUPPRESSION DÉFINITIVE\n\nVoulez-vous vraiment supprimer la carte d'appel #${intervention.external_call_id || intervention.id} ?\n\nCette action est irréversible et supprimera toutes les données associées.`;
+    
+    if (!window.confirm(confirmMsg)) return;
+    
+    setDeleting(intervention.id);
+    try {
+      const response = await fetch(`${API}/interventions/${intervention.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      
+      if (response.ok) {
+        toast({
+          title: "✅ Carte d'appel supprimée",
+          description: `La carte #${intervention.external_call_id || intervention.id} a été supprimée.`
+        });
+        fetchDashboard();
+      } else {
+        const error = await response.json();
+        toast({
+          title: "❌ Erreur",
+          description: error.detail || "Impossible de supprimer",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "❌ Erreur",
+        description: "Erreur de connexion",
+        variant: "destructive"
+      });
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   useEffect(() => {
     fetchDashboard();
