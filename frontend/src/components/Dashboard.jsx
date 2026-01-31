@@ -341,6 +341,217 @@ const Dashboard = () => {
         </p>
       </div>
 
+      {/* ===================== ALERTES ÉQUIPEMENTS ===================== */}
+      {alertesEquipements.actif && alertesEquipements.total > 0 && (
+        <div style={{ marginBottom: '2.5rem' }}>
+          <h2 style={{ 
+            fontSize: '1.25rem', 
+            fontWeight: '600', 
+            color: '#374151', 
+            marginBottom: '1rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            🔔 Alertes Équipements
+            {alertesEquipements.en_retard > 0 && (
+              <span style={{
+                background: '#ef4444',
+                color: 'white',
+                fontSize: '0.75rem',
+                padding: '2px 8px',
+                borderRadius: '12px',
+                fontWeight: '600'
+              }}>
+                {alertesEquipements.en_retard} en retard
+              </span>
+            )}
+          </h2>
+
+          {/* Compteurs par type */}
+          <div style={{ 
+            display: 'flex', 
+            flexWrap: 'wrap',
+            gap: '0.75rem',
+            marginBottom: '1rem'
+          }}>
+            {alertesEquipements.compteurs.maintenance > 0 && (
+              <div style={{
+                background: '#fef3c7',
+                border: '1px solid #f59e0b',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                fontSize: '0.85rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                🔧 <strong>{alertesEquipements.compteurs.maintenance}</strong> Maintenance
+              </div>
+            )}
+            {alertesEquipements.compteurs.inspection > 0 && (
+              <div style={{
+                background: '#dbeafe',
+                border: '1px solid #3b82f6',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                fontSize: '0.85rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                🔍 <strong>{alertesEquipements.compteurs.inspection}</strong> Inspection
+              </div>
+            )}
+            {alertesEquipements.compteurs.fin_vie > 0 && (
+              <div style={{
+                background: '#fee2e2',
+                border: '1px solid #ef4444',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                fontSize: '0.85rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                ⏰ <strong>{alertesEquipements.compteurs.fin_vie}</strong> Fin de vie
+              </div>
+            )}
+            {alertesEquipements.compteurs.peremption > 0 && (
+              <div style={{
+                background: '#fce7f3',
+                border: '1px solid #ec4899',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                fontSize: '0.85rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                📅 <strong>{alertesEquipements.compteurs.peremption}</strong> Péremption
+              </div>
+            )}
+            {(alertesEquipements.compteurs.epi_expiration > 0 || 
+              alertesEquipements.compteurs.epi_fin_vie > 0 ||
+              alertesEquipements.compteurs.epi_inspection_mensuelle > 0) && (
+              <div style={{
+                background: '#ecfdf5',
+                border: '1px solid #10b981',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                fontSize: '0.85rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                🦺 <strong>
+                  {(alertesEquipements.compteurs.epi_expiration || 0) + 
+                   (alertesEquipements.compteurs.epi_fin_vie || 0) +
+                   (alertesEquipements.compteurs.epi_inspection_mensuelle || 0)}
+                </strong> EPI
+              </div>
+            )}
+          </div>
+
+          {/* Liste des alertes */}
+          <Card>
+            <CardContent style={{ padding: '1rem' }}>
+              <div style={{ 
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.75rem',
+                maxHeight: '400px',
+                overflowY: 'auto'
+              }}>
+                {alertesEquipements.alertes.slice(0, 15).map((alerte, index) => (
+                  <div 
+                    key={index}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '10px 12px',
+                      background: alerte.en_retard ? '#fef2f2' : '#f8fafc',
+                      border: `1px solid ${alerte.en_retard ? '#fecaca' : '#e2e8f0'}`,
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onClick={() => {
+                      if (alerte.lien) {
+                        window.location.href = alerte.lien;
+                      }
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.background = alerte.en_retard ? '#fee2e2' : '#f1f5f9';
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.background = alerte.en_retard ? '#fef2f2' : '#f8fafc';
+                    }}
+                  >
+                    <span style={{ fontSize: '1.5rem' }}>{alerte.icone}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ 
+                        fontWeight: '600', 
+                        fontSize: '0.9rem',
+                        color: alerte.en_retard ? '#dc2626' : '#1e293b'
+                      }}>
+                        {alerte.titre}
+                        {alerte.en_retard && (
+                          <span style={{
+                            marginLeft: '8px',
+                            fontSize: '0.7rem',
+                            background: '#ef4444',
+                            color: 'white',
+                            padding: '2px 6px',
+                            borderRadius: '4px'
+                          }}>
+                            EN RETARD
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                        {alerte.description}
+                        {alerte.categorie && <span style={{ marginLeft: '8px', color: '#94a3b8' }}>• {alerte.categorie}</span>}
+                      </div>
+                    </div>
+                    {alerte.date_echeance && (
+                      <div style={{
+                        fontSize: '0.8rem',
+                        color: alerte.en_retard ? '#dc2626' : '#64748b',
+                        fontWeight: '500',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {formatDate(alerte.date_echeance)}
+                      </div>
+                    )}
+                  </div>
+                ))}
+                
+                {alertesEquipements.total > 15 && (
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '10px',
+                    color: '#64748b',
+                    fontSize: '0.85rem'
+                  }}>
+                    Et {alertesEquipements.total - 15} autres alertes...
+                    <Button
+                      variant="link"
+                      size="sm"
+                      onClick={() => window.location.href = '/actifs'}
+                      style={{ marginLeft: '8px' }}
+                    >
+                      Voir tout →
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* ===================== SECTION PERSONNELLE ===================== */}
       <div style={{ marginBottom: '2.5rem' }}>
         <h2 style={{ 
