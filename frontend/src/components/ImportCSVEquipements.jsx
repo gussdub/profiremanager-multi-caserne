@@ -3,6 +3,7 @@ import { Button } from './ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/card';
 import { Upload, Download, AlertCircle } from 'lucide-react';
 import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 import { apiPost } from '../utils/api';
 
 const ImportCSVEquipements = ({ tenantSlug, onImportComplete }) => {
@@ -11,24 +12,76 @@ const ImportCSVEquipements = ({ tenantSlug, onImportComplete }) => {
   const [importing, setImporting] = useState(false);
   const [importResults, setImportResults] = useState(null);
   const [step, setStep] = useState(1); // 1: Upload, 2: Preview, 3: Results
+  const [fileType, setFileType] = useState(null);
 
   const handleFileUpload = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+    const uploadedFile = event.target.files[0];
+    if (!uploadedFile) return;
 
-    setFile(file);
+    const fileName = uploadedFile.name.toLowerCase();
+    const extension = fileName.split('.').pop();
+    
+    const supportedExtensions = ['csv', 'xls', 'xlsx', 'txt'];
+    if (!supportedExtensions.includes(extension)) {
+      alert(`Format non supporté. Formats acceptés: ${supportedExtensions.join(', ').toUpperCase()}`);
+      return;
+    }
 
-    Papa.parse(file, {
-      complete: (results) => {
-        const rows = results.data.filter(row => Object.values(row).some(val => val));
-        setCsvData(rows);
-        if (rows.length > 0) {
-          setStep(2);
-        }
-      },
-      header: true,
-      skipEmptyLines: true
-    });
+    setFile(uploadedFile);
+    setFileType(extension);
+
+    if (extension === 'csv' || extension === 'txt') {
+      Papa.parse(uploadedFile, {
+        complete: (results) => {
+          const rows = results.data.filter(row => Object.values(row).some(val => val));
+          setCsvData(rows);
+          if (rows.length > 0) {
+            setStep(2);
+          }
+        },
+        header: true,
+        skipEmptyLines: true
+      });
+    } else if (extension === 'xls' || extension === 'xlsx') {
+      parseExcel(uploadedFile);
+    }
+  };
+
+  const parseExcel = async (excelFile) => {
+    try {
+      const arrayBuffer = await excelFile.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      
+      // Prendre la première feuille
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      
+      // Convertir en JSON avec headers
+      const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+      
+      // Convertir les dates Excel si nécessaire
+      const processedData = jsonData.map(row => {
+        const newRow = { ...row };
+        Object.keys(newRow).forEach(key => {
+          let value = newRow[key];
+          // Convertir les dates Excel (nombres entre 25569 et 50000) en format lisible
+          if (typeof value === 'number' && value > 25569 && value < 50000) {
+            const date = new Date((value - 25569) * 86400 * 1000);
+            newRow[key] = date.toISOString().split('T')[0];
+          }
+        });
+        return newRow;
+      });
+      
+      const rows = processedData.filter(row => Object.values(row).some(val => val));
+      setCsvData(rows);
+      if (rows.length > 0) {
+        setStep(2);
+      }
+    } catch (error) {
+      console.error('Erreur parsing Excel:', error);
+      alert(`Erreur de lecture du fichier Excel: ${error.message}`);
+    }
   };
 
   const handleImport = async () => {
