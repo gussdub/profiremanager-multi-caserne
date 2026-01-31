@@ -1062,6 +1062,8 @@ async def get_epi_parametres(
     return {
         "epi_jours_avance_expiration": parametres.get('epi_jours_avance_expiration', 30),
         "epi_jour_alerte_inspection_mensuelle": parametres.get('epi_jour_alerte_inspection_mensuelle', 20),
+        "epi_alerte_inspection_mensuelle": parametres.get('epi_alerte_inspection_mensuelle', False),
+        "epi_envoyer_rappel_email": parametres.get('epi_envoyer_rappel_email', False),
         "emails_notifications_epi": parametres.get('emails_notifications_epi', [])
     }
 
@@ -1081,15 +1083,18 @@ async def update_epi_parametres(
     # Récupérer les paramètres actuels
     current_parametres = tenant.parametres if hasattr(tenant, 'parametres') and tenant.parametres else {}
     
-    # Mettre à jour seulement les champs EPI fournis
-    if 'epi_jours_avance_expiration' in parametres_data:
-        current_parametres['epi_jours_avance_expiration'] = parametres_data['epi_jours_avance_expiration']
+    # Mettre à jour les champs EPI fournis
+    epi_fields = [
+        'epi_jours_avance_expiration',
+        'epi_jour_alerte_inspection_mensuelle',
+        'epi_alerte_inspection_mensuelle',
+        'epi_envoyer_rappel_email',
+        'emails_notifications_epi'
+    ]
     
-    if 'epi_jour_alerte_inspection_mensuelle' in parametres_data:
-        current_parametres['epi_jour_alerte_inspection_mensuelle'] = parametres_data['epi_jour_alerte_inspection_mensuelle']
-    
-    if 'emails_notifications_epi' in parametres_data:
-        current_parametres['emails_notifications_epi'] = parametres_data['emails_notifications_epi']
+    for field in epi_fields:
+        if field in parametres_data:
+            current_parametres[field] = parametres_data[field]
     
     # Sauvegarder dans la base de données
     await db.tenants.update_one(
