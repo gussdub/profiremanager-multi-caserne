@@ -605,6 +605,40 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
                       </p>
                     </div>
                     
+                    {/* Affichage des types d'EPI créés automatiquement */}
+                    {importResults.types_created && importResults.types_created.length > 0 && (
+                      <div style={{ 
+                        padding: '1rem', 
+                        backgroundColor: '#ecfdf5', 
+                        border: '1px solid #6ee7b7',
+                        borderRadius: '0.5rem',
+                        marginBottom: '1rem'
+                      }}>
+                        <h4 style={{ margin: '0 0 0.75rem 0', color: '#065f46', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          ✨ Types d'EPI créés automatiquement ({importResults.types_created.length})
+                        </h4>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                          {importResults.types_created.map((type, idx) => (
+                            <span key={idx} style={{ 
+                              padding: '4px 10px', 
+                              backgroundColor: 'white', 
+                              borderRadius: '20px',
+                              fontSize: '0.85rem',
+                              border: '1px solid #a7f3d0',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}>
+                              {type.icone} {type.nom}
+                            </span>
+                          ))}
+                        </div>
+                        <p style={{ fontSize: '0.8rem', color: '#047857', marginTop: '0.5rem', marginBottom: 0 }}>
+                          💡 Vous pouvez modifier ces types dans Actifs → Gestion EPI → Types d'EPI
+                        </p>
+                      </div>
+                    )}
+                    
                     {/* Affichage des matchs fuzzy (approximatifs) */}
                     {importResults.fuzzy_matches && importResults.fuzzy_matches.length > 0 && (
                       <div style={{ 
