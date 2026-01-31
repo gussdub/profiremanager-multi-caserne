@@ -254,12 +254,13 @@ class EPI(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     tenant_id: str
     numero_serie: str  # Numéro de série interne (format libre)
-    type_epi: str  # ID du type d'EPI personnalisé
-    marque: str
-    modele: str
+    type_epi_id: Optional[str] = None  # ID du type d'EPI personnalisé (nouveau format)
+    type_epi: Optional[str] = None  # Ancien format (nom textuel) - déprécié
+    marque: str = ""
+    modele: str = ""
     numero_serie_fabricant: str = ""
     date_fabrication: Optional[str] = None
-    date_mise_en_service: str
+    date_mise_en_service: str = ""
     norme_certification: str = ""  # ex: NFPA 1971, édition 2018
     cout_achat: float = 0.0
     couleur: str = ""
