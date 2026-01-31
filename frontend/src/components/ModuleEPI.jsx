@@ -168,6 +168,10 @@ const ModuleEPI = ({ user }) => {
   const [rapportRetraits, setRapportRetraits] = useState(null);
   const [rapportTCO, setRapportTCO] = useState(null);
   
+  // État pour la correction des types EPI (bouton intelligent)
+  const [fixTypesStatus, setFixTypesStatus] = useState({ count_to_fix: 0, all_ok: true, types_to_create: [] });
+  const [fixingTypes, setFixingTypes] = useState(false);
+  
   // États pour l'inspection unifiée (nouveau système de formulaires)
   const [showUnifiedInspectionModal, setShowUnifiedInspectionModal] = useState(false);
   const [formulairesEPI, setFormulairesEPI] = useState([]);
