@@ -2114,6 +2114,11 @@ async def demander_remplacement_epi(
     if not epi:
         raise HTTPException(status_code=404, detail="EPI non trouvé ou non assigné à vous")
     
+    # Vérifier si la raison requiert une photo
+    raisons_photo_requise = ["Usé", "Défectueux"]
+    if demande.raison in raisons_photo_requise and not demande.photo_defaut:
+        raise HTTPException(status_code=400, detail="Une photo est requise pour cette raison de remplacement")
+    
     # Vérifier s'il n'y a pas déjà une demande en attente pour cet EPI
     demande_existante = await db.demandes_remplacement_epi.find_one({
         "epi_id": epi_id,
@@ -2124,13 +2129,14 @@ async def demander_remplacement_epi(
     if demande_existante:
         raise HTTPException(status_code=400, detail="Une demande de remplacement est déjà en attente pour cet EPI")
     
-    # Créer la demande
+    # Créer la demande avec la photo
     demande_obj = DemandeRemplacementEPI(
         tenant_id=tenant.id,
         epi_id=epi_id,
         user_id=current_user.id,
         raison=demande.raison,
-        notes_employe=demande.notes_employe
+        notes_employe=demande.notes_employe,
+        photo_defaut=demande.photo_defaut
     )
     
     await db.demandes_remplacement_epi.insert_one(demande_obj.dict())
@@ -2141,15 +2147,16 @@ async def demander_remplacement_epi(
         "role": {"$in": ["admin", "superviseur"]}
     }).to_list(1000)
     
+    photo_indicator = " 📷" if demande.photo_defaut else ""
     for admin in admins:
         await creer_notification(
             tenant_id=tenant.id,
             destinataire_id=admin["id"],
             type="demande_remplacement_epi",
             titre="🔄 Demande de remplacement EPI",
-            message=f"{current_user.prenom} {current_user.nom} demande le remplacement de {epi['type_epi']} - Raison: {demande.raison}",
+            message=f"{current_user.prenom} {current_user.nom} demande le remplacement de {epi['type_epi']} - Raison: {demande.raison}{photo_indicator}",
             lien=f"/gestion-epi",
-            data={"epi_id": epi_id, "demande_id": demande_obj.id, "raison": demande.raison}
+            data={"epi_id": epi_id, "demande_id": demande_obj.id, "raison": demande.raison, "has_photo": bool(demande.photo_defaut)}
         )
     
     return {"message": "Demande de remplacement créée avec succès", "demande_id": demande_obj.id}
