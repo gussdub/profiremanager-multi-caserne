@@ -1148,7 +1148,12 @@ const MesEPI = ({ user }) => {
                         textAlign: 'center'
                       }}
                     >
-                      <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>{raison.icon}</div>
+                      <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>
+                        {raison.icon}
+                        {raison.requiresPhoto && (
+                          <span style={{ fontSize: '0.9rem', marginLeft: '0.25rem' }}>📷</span>
+                        )}
+                      </div>
                       <div style={{ 
                         fontWeight: '600', 
                         fontSize: '0.95rem',
@@ -1160,10 +1165,126 @@ const MesEPI = ({ user }) => {
                       <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
                         {raison.desc}
                       </div>
+                      {raison.requiresPhoto && (
+                        <div style={{ fontSize: '0.75rem', color: '#dc2626', marginTop: '0.25rem', fontStyle: 'italic' }}>
+                          Photo obligatoire
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
               </div>
+
+              {/* Section Photo - Affichée seulement si la raison requiert une photo */}
+              {photoRequired && (
+                <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                  <Label className="form-label-bold" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    📷 Photo du défaut / usure *
+                  </Label>
+                  <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0.25rem 0 0.75rem 0' }}>
+                    Joignez une photo montrant clairement le défaut ou l'usure constatée.
+                  </p>
+                  
+                  {!photoPreview ? (
+                    <div style={{
+                      border: '2px dashed #e2e8f0',
+                      borderRadius: '0.75rem',
+                      padding: '2rem',
+                      textAlign: 'center',
+                      backgroundColor: '#f8fafc'
+                    }}>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        id="photo-defaut-input"
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setPhotoFile(file);
+                            const reader = new FileReader();
+                            reader.onload = (ev) => setPhotoPreview(ev.target.result);
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                      <label 
+                        htmlFor="photo-defaut-input"
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          cursor: 'pointer',
+                          gap: '0.5rem'
+                        }}
+                      >
+                        <span style={{ fontSize: '2.5rem' }}>📸</span>
+                        <span style={{ fontWeight: '600', color: '#3B82F6' }}>
+                          Prendre une photo ou choisir un fichier
+                        </span>
+                        <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
+                          JPG, PNG ou WEBP
+                        </span>
+                      </label>
+                    </div>
+                  ) : (
+                    <div style={{
+                      position: 'relative',
+                      borderRadius: '0.75rem',
+                      overflow: 'hidden',
+                      border: '2px solid #22c55e'
+                    }}>
+                      <img 
+                        src={photoPreview} 
+                        alt="Aperçu du défaut" 
+                        style={{
+                          width: '100%',
+                          maxHeight: '200px',
+                          objectFit: 'cover'
+                        }}
+                      />
+                      <button
+                        onClick={() => {
+                          setPhotoFile(null);
+                          setPhotoPreview(null);
+                        }}
+                        style={{
+                          position: 'absolute',
+                          top: '0.5rem',
+                          right: '0.5rem',
+                          background: '#ef4444',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '2rem',
+                          height: '2rem',
+                          cursor: 'pointer',
+                          fontSize: '1rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        ✕
+                      </button>
+                      <div style={{
+                        position: 'absolute',
+                        bottom: '0',
+                        left: '0',
+                        right: '0',
+                        background: 'rgba(34, 197, 94, 0.9)',
+                        color: 'white',
+                        padding: '0.5rem',
+                        textAlign: 'center',
+                        fontSize: '0.85rem',
+                        fontWeight: '500'
+                      }}>
+                        ✅ Photo ajoutée
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Détails complémentaires */}
               <div className="form-group">
