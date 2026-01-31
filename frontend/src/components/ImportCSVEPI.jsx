@@ -340,9 +340,9 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>📥 Import CSV - Équipements EPI</CardTitle>
+        <CardTitle>📥 Import - Équipements EPI</CardTitle>
         <CardDescription>
-          Étape {step}/4
+          Étape {step}/4 • Formats acceptés: CSV, XLS, XLSX, TXT
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -350,14 +350,14 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
           <div className="import-step">
             <div className="step-header">
               <h3>📁 Étape 1: Sélectionner le fichier</h3>
-              <p>Choisissez votre fichier CSV contenant les EPI</p>
+              <p>Choisissez votre fichier contenant les EPI</p>
             </div>
 
             <div className="file-upload-area">
               <Input
                 id="csv-upload"
                 type="file"
-                accept=".csv,.CSV"
+                accept=".csv,.CSV,.xls,.XLS,.xlsx,.XLSX,.txt,.TXT"
                 onChange={handleFileUpload}
                 className="hidden"
               />
@@ -376,9 +376,29 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
                 <div style={{ textAlign: 'center' }}>
                   <strong>Cliquer pour sélectionner</strong> ou glisser votre fichier ici
                   <br />
-                  <small>Format accepté: .csv</small>
+                  <small style={{ color: '#64748b' }}>Formats acceptés: <strong>.csv, .xls, .xlsx, .txt</strong></small>
                 </div>
               </Label>
+            </div>
+            
+            {/* Info sur le mapping intelligent */}
+            <div style={{
+              marginTop: '1.5rem',
+              padding: '1rem',
+              background: '#f0fdf4',
+              border: '1px solid #86efac',
+              borderRadius: '0.5rem'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                <span style={{ fontSize: '1.25rem' }}>🧠</span>
+                <div>
+                  <strong style={{ color: '#166534' }}>Mapping intelligent</strong>
+                  <p style={{ fontSize: '0.875rem', color: '#15803d', margin: '0.25rem 0 0 0' }}>
+                    Le système détecte automatiquement les colonnes de votre fichier et les associe aux champs correspondants.
+                    Vous pourrez ajuster le mapping manuellement si nécessaire.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         )}
