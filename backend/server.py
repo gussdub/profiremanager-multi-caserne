@@ -556,8 +556,16 @@ async def start_notification_scheduler():
         replace_existing=True
     )
     
+    # Job pour rappeler aux pompiers de faire leur inspection EPI mensuelle
+    scheduler.add_job(
+        job_rappel_inspection_epi_mensuelle,
+        CronTrigger(hour=9, minute=30),  # Tous les jours à 9h30
+        id='rappel_inspection_epi',
+        replace_existing=True
+    )
+    
     scheduler.start()
-    logging.info("✅ Scheduler de notifications automatiques démarré (planning + équipements + disponibilités + paiements)")
+    logging.info("✅ Scheduler de notifications automatiques démarré (planning + équipements + disponibilités + paiements + inspections EPI)")
 
 
 async def job_check_overdue_payments():
