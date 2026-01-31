@@ -251,6 +251,76 @@ const ParametresAlertesEquipements = ({ tenantSlug, user }) => {
         </label>
       </div>
 
+      {/* Section Rappels Inspection EPI Mensuelle */}
+      <div style={{
+        background: '#f0f9ff',
+        padding: '15px',
+        borderRadius: '8px',
+        marginBottom: '20px',
+        border: '1px solid #bae6fd'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#0369a1', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span>🔔</span> Rappels d'inspection EPI mensuelle
+        </h4>
+        <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 15px 0' }}>
+          Envoyez automatiquement des rappels aux pompiers qui n'ont pas effectué leur inspection mensuelle des EPI.
+        </p>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={parametres.epi_alerte_inspection_mensuelle}
+              onChange={(e) => setParametres({...parametres, epi_alerte_inspection_mensuelle: e.target.checked})}
+              data-testid="checkbox-epi-alerte-inspection"
+            />
+            <span style={{ fontSize: '14px' }}>✅ Activer les rappels d'inspection EPI</span>
+          </label>
+          
+          {parametres.epi_alerte_inspection_mensuelle && (
+            <>
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '8px',
+                paddingLeft: '24px'
+              }}>
+                <span style={{ fontSize: '13px', color: '#475569' }}>📅 Envoyer le rappel le</span>
+                <Input
+                  type="number"
+                  min="1"
+                  max="28"
+                  value={parametres.epi_jour_alerte_inspection_mensuelle}
+                  onChange={(e) => setParametres({...parametres, epi_jour_alerte_inspection_mensuelle: parseInt(e.target.value) || 20})}
+                  style={{ width: '60px', padding: '6px 8px', fontSize: '14px' }}
+                  data-testid="input-jour-alerte"
+                />
+                <span style={{ fontSize: '13px', color: '#475569' }}>de chaque mois</span>
+              </div>
+              
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', paddingLeft: '24px' }}>
+                <input
+                  type="checkbox"
+                  checked={parametres.epi_envoyer_rappel_email}
+                  onChange={(e) => setParametres({...parametres, epi_envoyer_rappel_email: e.target.checked})}
+                  data-testid="checkbox-epi-email"
+                />
+                <span style={{ fontSize: '14px' }}>📧 Envoyer aussi par email</span>
+              </label>
+              
+              <p style={{ 
+                fontSize: '11px', 
+                color: '#94a3b8', 
+                margin: '5px 0 0 24px',
+                fontStyle: 'italic'
+              }}>
+                Les pompiers recevront une notification dans l'app (et par email si activé) s'ils n'ont pas effectué d'inspection ce mois-ci.
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+
       {/* Boutons d'action */}
       <div style={{ display: 'flex', gap: '10px' }}>
         <button
