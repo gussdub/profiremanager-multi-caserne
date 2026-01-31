@@ -1711,7 +1711,7 @@ const ModuleEPI = ({ user }) => {
               epis.filter(e => e.statut === 'En réparation').map(epi => (
                 <div key={epi.id} className="reparation-epi-card">
                   <div className="reparation-epi-header">
-                    <span>{getTypeIcon(epi.type_epi)} {getTypeName(epi.type_epi)} - #{epi.numero_serie}</span>
+                    <span>{getTypeIcon(getEpiType(epi))} {getTypeName(getEpiType(epi))} - #{epi.numero_serie}</span>
                     <span className="epi-statut-badge" style={{backgroundColor: getStatutColor(epi.statut)}}>
                       {epi.statut}
                     </span>
