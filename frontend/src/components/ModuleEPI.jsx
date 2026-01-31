@@ -1265,6 +1265,38 @@ const ModuleEPI = ({ user }) => {
               ➕ Nouvel EPI
             </Button>
             
+            {/* Bouton correction des types EPI (admin uniquement) */}
+            {user?.role === 'admin' && (
+              fixTypesStatus.all_ok ? (
+                <span style={{
+                  padding: '0.5rem 0.75rem',
+                  background: '#d1fae5',
+                  color: '#065f46',
+                  borderRadius: '0.375rem',
+                  fontSize: '0.85rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem'
+                }}>
+                  ✅ Types EPI OK
+                </span>
+              ) : (
+                <Button 
+                  onClick={handleFixTypes}
+                  disabled={fixingTypes}
+                  style={{ 
+                    background: '#f59e0b',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                  data-testid="btn-fix-types"
+                >
+                  {fixingTypes ? '⏳ Correction...' : `🔧 Corriger ${fixTypesStatus.count_to_fix} EPI(s)`}
+                </Button>
+              )
+            )}
+            
             <Input
               placeholder="🔍 Rechercher..."
               value={filtreRecherche}
