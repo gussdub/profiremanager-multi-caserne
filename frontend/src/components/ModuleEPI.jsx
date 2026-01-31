@@ -2351,7 +2351,7 @@ const ModuleEPI = ({ user }) => {
           <div className="modal-content extra-large-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
               <h2 style={{ fontSize: 'clamp(0.9rem, 3vw, 1.25rem)', margin: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {getTypeIcon(selectedEPI.type_epi)} Détails EPI - #{selectedEPI.numero_serie}
+                {getTypeIcon(getEpiType(selectedEPI))} Détails EPI - #{selectedEPI.numero_serie}
               </h2>
               <Button 
                 variant="ghost" 
@@ -2366,7 +2366,7 @@ const ModuleEPI = ({ user }) => {
               <div className="epi-detail-grid">
                 <div className="detail-section">
                   <h3>Informations générales</h3>
-                  <p><strong>Type:</strong> {getTypeName(selectedEPI.type_epi)}</p>
+                  <p><strong>Type:</strong> {getTypeName(getEpiType(selectedEPI))}</p>
                   <p><strong>Marque:</strong> {selectedEPI.marque}</p>
                   <p><strong>Modèle:</strong> {selectedEPI.modele}</p>
                   <p><strong>N° série fabricant:</strong> {selectedEPI.numero_serie_fabricant || 'N/A'}</p>
@@ -2589,7 +2589,7 @@ const ModuleEPI = ({ user }) => {
               formulaire={selectedFormulaireEPI}
               equipement={{
                 id: selectedEPI.id,
-                nom: `${getTypeName(selectedEPI.type_epi)} - #${selectedEPI.numero_serie}`,
+                nom: `${getTypeName(getEpiType(selectedEPI))} - #${selectedEPI.numero_serie}`,
                 type: 'epi',
                 type_epi: selectedEPI.type_epi,
                 type_inspection: 'avancee'  // Inspection avancée annuelle
@@ -2693,7 +2693,7 @@ const ModuleEPI = ({ user }) => {
         <div className="modal-overlay" onClick={() => setShowNettoyageModal(false)}>
           <div className="modal-content large-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>🧼 Nouveau Nettoyage - {getTypeName(selectedEPI.type_epi)} #{selectedEPI.numero_serie}</h2>
+              <h2>🧼 Nouveau Nettoyage - {getTypeName(getEpiType(selectedEPI))} #{selectedEPI.numero_serie}</h2>
               <Button variant="ghost" onClick={() => setShowNettoyageModal(false)}>✕</Button>
             </div>
             
@@ -2820,7 +2820,7 @@ const ModuleEPI = ({ user }) => {
         <div className="modal-overlay" onClick={() => setShowReparationModal(false)}>
           <div className="modal-content large-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>🔧 {selectedReparation ? 'Mise à jour Réparation' : 'Nouvelle Réparation'} - {getTypeName(selectedEPI.type_epi)} #{selectedEPI.numero_serie}</h2>
+              <h2>🔧 {selectedReparation ? 'Mise à jour Réparation' : 'Nouvelle Réparation'} - {getTypeName(getEpiType(selectedEPI))} #{selectedEPI.numero_serie}</h2>
               <Button variant="ghost" onClick={() => setShowReparationModal(false)}>✕</Button>
             </div>
             
@@ -2944,7 +2944,7 @@ const ModuleEPI = ({ user }) => {
         <div className="modal-overlay" onClick={() => setShowRetraitModal(false)}>
           <div className="modal-content large-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header" style={{background: '#DC2626', color: 'white'}}>
-              <h2>🚫 Retrait Définitif EPI - {getTypeName(selectedEPI.type_epi)} #{selectedEPI.numero_serie}</h2>
+              <h2>🚫 Retrait Définitif EPI - {getTypeName(getEpiType(selectedEPI))} #{selectedEPI.numero_serie}</h2>
               <Button variant="ghost" onClick={() => setShowRetraitModal(false)}>✕</Button>
             </div>
             
