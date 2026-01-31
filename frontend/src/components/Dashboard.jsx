@@ -120,7 +120,13 @@ const Dashboard = () => {
       // Index 4: Mon taux présence
       // Index 5: Assignations mois suivant
       // Index 6: Formations année suivante
-      // Index 7-11: Données admin (si isAdmin)
+      // Index 7: Alertes équipements (pour tous)
+      // Index 8-12: Données admin (si isAdmin)
+      
+      // 8. Alertes équipements (index 7)
+      if (results[7]?.data) {
+        setAlertesEquipements(results[7].data);
+      }
       
       // Combiner les formations des deux années pour trouver les prochaines
       const formationsAnneeCourante = results[0]?.data || [];
