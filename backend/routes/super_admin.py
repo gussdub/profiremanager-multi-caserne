@@ -254,17 +254,20 @@ async def create_tenant(tenant_create: TenantCreate, admin: SuperAdmin = Depends
     tenant = Tenant(**tenant_data)
     await db.tenants.insert_one(tenant.dict())
     
+    # Initialiser les catégories d'équipements par défaut
+    categories_creees = await initialiser_categories_equipements_defaut(tenant.id)
+    
     # Enregistrer l'action dans le journal d'audit
     await log_super_admin_action(
         admin=admin,
         action="tenant_create",
-        details={"tenant_slug": tenant.slug, "tenant_nom": tenant.nom},
+        details={"tenant_slug": tenant.slug, "tenant_nom": tenant.nom, "categories_equipements_creees": categories_creees},
         tenant_id=tenant.id,
         tenant_slug=tenant.slug,
         tenant_nom=tenant.nom
     )
     
-    return {"message": f"Caserne '{tenant.nom}' créée avec succès", "tenant": tenant}
+    return {"message": f"Caserne '{tenant.nom}' créée avec succès", "tenant": tenant, "categories_creees": categories_creees}
 
 
 @router.put("/admin/tenants/{tenant_id}")
