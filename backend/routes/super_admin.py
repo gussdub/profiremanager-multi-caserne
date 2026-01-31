@@ -56,6 +56,258 @@ logger = logging.getLogger(__name__)
 security = HTTPBearer()
 
 
+# ==================== HELPER FUNCTIONS ====================
+
+async def initialiser_categories_equipements_defaut(tenant_id: str) -> int:
+    """
+    Initialise les catégories d'équipements par défaut pour un nouveau tenant.
+    Retourne le nombre de catégories créées.
+    """
+    categories_defaut = [
+        {
+            "nom": "APRIA",
+            "description": "Appareils de protection respiratoire isolant autonome (SCBA)",
+            "norme_reference": "NFPA 1852",
+            "frequence_inspection": "annuelle",
+            "icone": "🫁",
+            "couleur": "#ef4444",
+            "permet_assignation_employe": False,
+            "champs_supplementaires": [
+                {"nom": "numero_serie", "type": "text", "obligatoire": True},
+                {"nom": "marque", "type": "text", "obligatoire": False},
+                {"nom": "modele", "type": "text", "obligatoire": False},
+                {"nom": "date_fabrication", "type": "date", "obligatoire": False},
+                {"nom": "date_derniere_certification", "type": "date", "obligatoire": False}
+            ]
+        },
+        {
+            "nom": "Bouteilles APRIA",
+            "description": "Bouteilles d'air comprimé pour APRIA - Test hydrostatique requis",
+            "norme_reference": "DOT/TC",
+            "frequence_inspection": "5 ans",
+            "icone": "🧪",
+            "couleur": "#3b82f6",
+            "permet_assignation_employe": False,
+            "champs_supplementaires": [
+                {"nom": "numero_serie", "type": "text", "obligatoire": True},
+                {"nom": "capacite_litres", "type": "number", "obligatoire": False},
+                {"nom": "pression_bar", "type": "number", "obligatoire": False},
+                {"nom": "date_test_hydro", "type": "date", "obligatoire": True},
+                {"nom": "date_prochain_test_hydro", "type": "date", "obligatoire": False}
+            ]
+        },
+        {
+            "nom": "Détecteurs 4 gaz",
+            "description": "Détecteurs multigaz portables (O2, CO, H2S, LEL)",
+            "norme_reference": "",
+            "frequence_inspection": "semestrielle",
+            "icone": "📟",
+            "couleur": "#f59e0b",
+            "permet_assignation_employe": False,
+            "champs_supplementaires": [
+                {"nom": "numero_serie", "type": "text", "obligatoire": True},
+                {"nom": "marque", "type": "text", "obligatoire": False},
+                {"nom": "date_derniere_calibration", "type": "date", "obligatoire": True},
+                {"nom": "date_prochaine_calibration", "type": "date", "obligatoire": False}
+            ]
+        },
+        {
+            "nom": "Détecteurs CO",
+            "description": "Détecteurs de monoxyde de carbone personnels",
+            "norme_reference": "",
+            "frequence_inspection": "semestrielle",
+            "icone": "⚠️",
+            "couleur": "#f97316",
+            "permet_assignation_employe": True,
+            "champs_supplementaires": [
+                {"nom": "numero_serie", "type": "text", "obligatoire": True},
+                {"nom": "date_derniere_calibration", "type": "date", "obligatoire": False}
+            ]
+        },
+        {
+            "nom": "Extincteurs",
+            "description": "Extincteurs portatifs (ABC, CO2, eau, mousse)",
+            "norme_reference": "NFPA 10",
+            "frequence_inspection": "annuelle",
+            "icone": "🧯",
+            "couleur": "#dc2626",
+            "permet_assignation_employe": False,
+            "champs_supplementaires": [
+                {"nom": "numero_serie", "type": "text", "obligatoire": True},
+                {"nom": "type_agent", "type": "select", "options": ["ABC", "CO2", "Eau", "Mousse", "Classe K"], "obligatoire": True},
+                {"nom": "capacite", "type": "text", "obligatoire": False},
+                {"nom": "date_derniere_verification", "type": "date", "obligatoire": False},
+                {"nom": "date_test_hydro", "type": "date", "obligatoire": False}
+            ]
+        },
+        {
+            "nom": "Lances",
+            "description": "Lances d'incendie et embouts (fog, jet, combinées)",
+            "norme_reference": "",
+            "frequence_inspection": "annuelle",
+            "icone": "💧",
+            "couleur": "#0ea5e9",
+            "permet_assignation_employe": False,
+            "champs_supplementaires": [
+                {"nom": "type_lance", "type": "select", "options": ["Fog", "Jet", "Combinée", "Monitor"], "obligatoire": False},
+                {"nom": "debit_gpm", "type": "number", "obligatoire": False}
+            ]
+        },
+        {
+            "nom": "Parties faciales",
+            "description": "Masques APRIA assignés individuellement aux pompiers",
+            "norme_reference": "NFPA 1852",
+            "frequence_inspection": "annuelle",
+            "icone": "😷",
+            "couleur": "#8b5cf6",
+            "permet_assignation_employe": True,
+            "champs_supplementaires": [
+                {"nom": "numero_serie", "type": "text", "obligatoire": True},
+                {"nom": "taille", "type": "select", "options": ["S", "M", "L", "XL"], "obligatoire": False},
+                {"nom": "marque", "type": "text", "obligatoire": False}
+            ]
+        },
+        {
+            "nom": "Radios portatives",
+            "description": "Radios de communication portatives",
+            "norme_reference": "",
+            "frequence_inspection": "annuelle",
+            "icone": "📻",
+            "couleur": "#10b981",
+            "permet_assignation_employe": True,
+            "champs_supplementaires": [
+                {"nom": "numero_serie", "type": "text", "obligatoire": True},
+                {"nom": "marque", "type": "text", "obligatoire": False},
+                {"nom": "modele", "type": "text", "obligatoire": False},
+                {"nom": "frequence", "type": "text", "obligatoire": False}
+            ]
+        },
+        {
+            "nom": "Tuyaux",
+            "description": "Tuyaux d'incendie (attaque, alimentation, aspiration)",
+            "norme_reference": "NFPA 1962",
+            "frequence_inspection": "annuelle",
+            "icone": "🔴",
+            "couleur": "#ef4444",
+            "permet_assignation_employe": False,
+            "champs_supplementaires": [
+                {"nom": "type_tuyau", "type": "select", "options": ["Attaque 1.5\"", "Attaque 1.75\"", "Alimentation 2.5\"", "Alimentation 4\"", "Aspiration"], "obligatoire": False},
+                {"nom": "longueur_pieds", "type": "number", "obligatoire": False},
+                {"nom": "date_dernier_test", "type": "date", "obligatoire": False}
+            ]
+        },
+        {
+            "nom": "Échelles portatives",
+            "description": "Échelles à main (coulissantes, à crochets, de toit)",
+            "norme_reference": "NFPA 1932",
+            "frequence_inspection": "annuelle",
+            "icone": "🪜",
+            "couleur": "#ca8a04",
+            "permet_assignation_employe": False,
+            "champs_supplementaires": [
+                {"nom": "type_echelle", "type": "select", "options": ["Coulissante", "À crochets", "De toit", "Combinée", "Pliante"], "obligatoire": False},
+                {"nom": "longueur_pieds", "type": "number", "obligatoire": False},
+                {"nom": "materiau", "type": "select", "options": ["Aluminium", "Fibre de verre", "Bois"], "obligatoire": False}
+            ]
+        },
+        {
+            "nom": "Équipement médical",
+            "description": "DEA, oxygène portable, trousses médicales",
+            "norme_reference": "",
+            "frequence_inspection": "semestrielle",
+            "icone": "🏥",
+            "couleur": "#ec4899",
+            "permet_assignation_employe": False,
+            "champs_supplementaires": [
+                {"nom": "numero_serie", "type": "text", "obligatoire": False},
+                {"nom": "type_equipement", "type": "select", "options": ["DEA", "Oxygène", "Trousse premiers soins", "Matériel de réanimation", "Autre"], "obligatoire": False},
+                {"nom": "date_expiration_pads", "type": "date", "obligatoire": False},
+                {"nom": "date_expiration_batterie", "type": "date", "obligatoire": False}
+            ]
+        },
+        {
+            "nom": "Outils hydrauliques",
+            "description": "Équipement de désincarcération (écarteurs, cisailles, vérins)",
+            "norme_reference": "",
+            "frequence_inspection": "annuelle",
+            "icone": "🔧",
+            "couleur": "#6b7280",
+            "permet_assignation_employe": False,
+            "champs_supplementaires": [
+                {"nom": "numero_serie", "type": "text", "obligatoire": True},
+                {"nom": "type_outil", "type": "select", "options": ["Écarteur", "Cisaille", "Vérin", "Combiné", "Pompe"], "obligatoire": False},
+                {"nom": "marque", "type": "text", "obligatoire": False}
+            ]
+        },
+        {
+            "nom": "Équipement de sauvetage",
+            "description": "Cordes, harnais, mousquetons, planches dorsales",
+            "norme_reference": "NFPA 1983",
+            "frequence_inspection": "annuelle",
+            "icone": "🪢",
+            "couleur": "#14b8a6",
+            "permet_assignation_employe": False,
+            "champs_supplementaires": [
+                {"nom": "type_equipement", "type": "select", "options": ["Corde", "Harnais", "Mousqueton", "Planche dorsale", "Civière", "Autre"], "obligatoire": False},
+                {"nom": "longueur_metres", "type": "number", "obligatoire": False},
+                {"nom": "charge_max_kg", "type": "number", "obligatoire": False}
+            ]
+        },
+        {
+            "nom": "Ventilateurs",
+            "description": "Ventilateurs de désenfumage (PPV, extracteurs)",
+            "norme_reference": "",
+            "frequence_inspection": "annuelle",
+            "icone": "💨",
+            "couleur": "#64748b",
+            "permet_assignation_employe": False,
+            "champs_supplementaires": [
+                {"nom": "numero_serie", "type": "text", "obligatoire": False},
+                {"nom": "type_ventilateur", "type": "select", "options": ["PPV électrique", "PPV essence", "Extracteur", "Turbo"], "obligatoire": False},
+                {"nom": "debit_cfm", "type": "number", "obligatoire": False}
+            ]
+        },
+        {
+            "nom": "Outils manuels",
+            "description": "Haches, halligans, pieds-de-biche, masse",
+            "norme_reference": "",
+            "frequence_inspection": "annuelle",
+            "icone": "🪓",
+            "couleur": "#78716c",
+            "permet_assignation_employe": False,
+            "champs_supplementaires": [
+                {"nom": "type_outil", "type": "select", "options": ["Hache", "Halligan", "Pied-de-biche", "Masse", "Pike pole", "Autre"], "obligatoire": False}
+            ]
+        }
+    ]
+    
+    created_count = 0
+    
+    for cat_data in categories_defaut:
+        categorie_obj = {
+            "id": str(uuid.uuid4()),
+            "tenant_id": tenant_id,
+            "nom": cat_data["nom"],
+            "description": cat_data.get("description", ""),
+            "norme_reference": cat_data.get("norme_reference", ""),
+            "frequence_inspection": cat_data.get("frequence_inspection", ""),
+            "couleur": cat_data.get("couleur", "#6366F1"),
+            "icone": cat_data.get("icone", "📦"),
+            "permet_assignation_employe": cat_data.get("permet_assignation_employe", False),
+            "champs_supplementaires": cat_data.get("champs_supplementaires", []),
+            "personnes_ressources": [],
+            "est_predefinit": True,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.categories_equipements.insert_one(categorie_obj)
+        created_count += 1
+    
+    logger.info(f"✅ {created_count} catégories d'équipements créées pour le tenant {tenant_id}")
+    return created_count
+
+
 # ==================== AUTHENTIFICATION SUPER ADMIN ====================
 
 @router.post("/admin/auth/login")
