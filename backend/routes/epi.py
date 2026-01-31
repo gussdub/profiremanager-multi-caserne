@@ -30,6 +30,167 @@ router = APIRouter(tags=["EPI - Équipements de Protection"])
 logger = logging.getLogger(__name__)
 
 
+# ==================== FONCTIONS UTILITAIRES DE MATCHING ====================
+
+def normalize_string_for_matching(s: str) -> str:
+    """
+    Normalise une chaîne pour le matching intelligent :
+    - Enlève les accents (é → e, à → a, etc.)
+    - Convertit en minuscules
+    - Remplace les tirets par des espaces (Jean-Pierre → Jean Pierre)
+    - Normalise les espaces multiples
+    """
+    import unicodedata
+    import re
+    
+    if not s:
+        return ""
+    
+    # Enlever les accents
+    s = ''.join(c for c in unicodedata.normalize('NFD', s) 
+                if unicodedata.category(c) != 'Mn')
+    
+    # Minuscules
+    s = s.lower()
+    
+    # Remplacer les tirets par des espaces
+    s = s.replace('-', ' ')
+    
+    # Normaliser les espaces multiples
+    s = re.sub(r'\s+', ' ', s)
+    
+    return s.strip()
+
+
+def create_user_matching_index(users_list: list) -> dict:
+    """
+    Crée un index de matching pour recherche rapide d'utilisateurs.
+    Gère automatiquement l'ordre normal (Prénom Nom) et inversé (Nom Prénom).
+    """
+    index = {}
+    for user in users_list:
+        prenom = user.get('prenom', '').strip()
+        nom = user.get('nom', '').strip()
+        
+        if prenom and nom:
+            # Index 1: Prénom Nom
+            key1 = normalize_string_for_matching(f"{prenom} {nom}")
+            index[key1] = user
+            
+            # Index 2: Nom Prénom
+            key2 = normalize_string_for_matching(f"{nom} {prenom}")
+            index[key2] = user
+            
+            # Index 3: Juste le nom (pour les cas où on n'a que le nom)
+            key3 = normalize_string_for_matching(nom)
+            if key3 not in index:  # Ne pas écraser si déjà présent
+                index[key3] = user
+    
+    return index
+
+
+def calculate_name_similarity(str1: str, str2: str) -> float:
+    """
+    Calcule un score de similarité entre deux chaînes normalisées.
+    Retourne un score entre 0 et 1.
+    """
+    words1 = set(str1.split())
+    words2 = set(str2.split())
+    
+    if not words1 or not words2:
+        return 0.0
+    
+    # Mots en commun
+    common_words = words1.intersection(words2)
+    
+    # Score basé sur le ratio de mots en commun
+    score = len(common_words) / max(len(words1), len(words2))
+    
+    # Bonus si tous les mots sont inclus
+    if words1.issubset(words2) or words2.issubset(words1):
+        score += 0.3
+    
+    return min(score, 1.0)
+
+
+def find_user_intelligent(
+    search_string: str, 
+    users_by_name: dict, 
+    users_by_num: dict = None,
+    numero_field: str = "numero_employe"
+) -> tuple:
+    """
+    Recherche intelligente d'un utilisateur avec matching flexible.
+    
+    Retourne: (user_object, match_type, confidence)
+    - match_type: 'exact', 'numero', 'fuzzy', None
+    - confidence: 0.0 à 1.0
+    
+    Stratégie:
+    1. Par numéro d'employé (si présent entre parenthèses)
+    2. Par nom normalisé exact
+    3. Par parsing de noms composés
+    4. Par similarité (best fit avec seuil minimum 60%)
+    """
+    if not search_string:
+        return None, None, 0.0
+    
+    # Extraire le nom sans numéro entre parenthèses
+    nom_complet = search_string.split("(")[0].strip()
+    
+    # Tentative 1: Par numéro d'employé
+    if users_by_num and "(" in search_string and ")" in search_string:
+        try:
+            num = search_string.split("(")[1].split(")")[0].strip()
+            if num and num in users_by_num:
+                return users_by_num[num], 'numero', 1.0
+        except:
+            pass
+    
+    # Tentative 2: Matching exact par nom normalisé
+    if nom_complet:
+        normalized = normalize_string_for_matching(nom_complet)
+        if normalized in users_by_name:
+            return users_by_name[normalized], 'exact', 1.0
+    
+    # Tentative 3: Parsing de noms composés (toutes les combinaisons)
+    if nom_complet:
+        parts = nom_complet.split()
+        if len(parts) >= 2:
+            for i in range(len(parts)):
+                possible_prenom = " ".join(parts[:i+1])
+                possible_nom = " ".join(parts[i+1:])
+                
+                if possible_nom:
+                    # Essayer ordre normal et inversé
+                    for test_name in [
+                        f"{possible_prenom} {possible_nom}",
+                        f"{possible_nom} {possible_prenom}"
+                    ]:
+                        test_key = normalize_string_for_matching(test_name)
+                        if test_key in users_by_name:
+                            return users_by_name[test_key], 'exact', 1.0
+    
+    # Tentative 4: Best fit par similarité
+    normalized = normalize_string_for_matching(nom_complet)
+    
+    best_match = None
+    best_score = 0.6  # Seuil minimum 60%
+    
+    for db_name_normalized, user in users_by_name.items():
+        similarity = calculate_name_similarity(normalized, db_name_normalized)
+        
+        if similarity > best_score:
+            best_score = similarity
+            best_match = user
+    
+    if best_match:
+        logger.info(f"✨ Best fit pour '{nom_complet}': {best_match.get('prenom')} {best_match.get('nom')} (score: {best_score:.2f})")
+        return best_match, 'fuzzy', best_score
+    
+    return None, None, 0.0
+
+
 # ==================== MODÈLES IMPORT CSV ====================
 
 class ImportFieldConfig(BaseModel):
