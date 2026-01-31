@@ -335,6 +335,7 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
     setDefaultValues({});
     setPreviewData([]);
     setImportResults(null);
+    setFileType(null);
   };
 
   return (
