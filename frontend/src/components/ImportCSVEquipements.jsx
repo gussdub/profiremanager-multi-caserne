@@ -127,6 +127,7 @@ const ImportCSVEquipements = ({ tenantSlug, onImportComplete }) => {
     setCsvData([]);
     setImportResults(null);
     setStep(1);
+    setFileType(null);
   };
 
   const downloadTemplate = () => {
