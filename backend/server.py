@@ -1240,10 +1240,9 @@ async def job_rappel_inspection_epi_mensuelle():
                 tenant_slug = tenant.get("slug", "")
                 
                 # Récupérer les paramètres EPI pour ce tenant
-                parametres = await db.parametres_equipements.find_one(
-                    {"tenant_id": tenant_id},
-                    {"_id": 0}
-                )
+                # Les paramètres sont stockés dans tenant.parametres.equipements
+                tenant_parametres = tenant.get("parametres", {})
+                parametres = tenant_parametres.get("equipements", {})
                 
                 if not parametres:
                     continue
