@@ -185,13 +185,13 @@ const Dashboard = () => {
       }
 
       // ===== DONNÉES ADMIN UNIQUEMENT =====
-      // Index admin: 7=Users, 8=Véhicules, 9=Congés, 10=Planning, 11=Notifications
-      if (isAdmin && results.length > 7) {
-        const usersData = results[7]?.data;
-        const vehiculesData = results[8]?.data;
-        const congesData = results[9]?.data;
-        const planningDataAdmin = results[10]?.data;
-        const notificationsData = results[11]?.data;
+      // Index admin: 8=Users, 9=Véhicules, 10=Congés, 11=Planning, 12=Notifications
+      if (isAdmin && results.length > 8) {
+        const usersData = results[8]?.data;
+        const vehiculesData = results[9]?.data;
+        const congesData = results[10]?.data;
+        const planningDataAdmin = results[11]?.data;
+        const notificationsData = results[12]?.data;
         
         // Calculer toutes les valeurs avant de mettre à jour le state
         const personnelCount = Array.isArray(usersData) ? usersData.length : 0;
