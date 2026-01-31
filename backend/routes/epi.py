@@ -2466,3 +2466,141 @@ async def demander_remplacement_epi(
 
 
 
+
+
+# ==================== CORRECTION DES TYPES EPI ====================
+
+@router.post("/{tenant_slug}/epi/fix-types")
+async def fix_epi_types(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Corrige les EPI qui ont un nom de type au lieu d'un ID de type.
+    - Trouve tous les EPI avec type_epi (texte) au lieu de type_epi_id
+    - Crée les types manquants automatiquement
+    - Met à jour les EPI pour utiliser type_epi_id
+    """
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin requis")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    results = {
+        "epis_analyzed": 0,
+        "epis_fixed": 0,
+        "types_created": [],
+        "errors": []
+    }
+    
+    # Charger les types existants
+    types_epi_list = await db.types_epi.find({"tenant_id": tenant.id}).to_list(1000)
+    types_by_name = {}
+    types_by_id = {}
+    
+    for t in types_epi_list:
+        nom_normalise = normalize_string_for_matching(t.get("nom", ""))
+        types_by_name[nom_normalise] = t
+        types_by_id[t.get("id")] = t
+    
+    # Trouver tous les EPI qui ont type_epi (texte) mais pas type_epi_id
+    epis_to_fix = await db.epis.find({
+        "tenant_id": tenant.id,
+        "$or": [
+            {"type_epi": {"$exists": True, "$ne": ""}},
+            {"type_epi_id": {"$exists": False}}
+        ]
+    }).to_list(10000)
+    
+    results["epis_analyzed"] = len(epis_to_fix)
+    
+    for epi in epis_to_fix:
+        try:
+            epi_id = epi.get("id")
+            type_name = epi.get("type_epi", "")
+            existing_type_id = epi.get("type_epi_id")
+            
+            # Si déjà un type_epi_id valide, vérifier qu'il existe
+            if existing_type_id and existing_type_id in types_by_id:
+                # Nettoyer le champ type_epi obsolète
+                await db.epis.update_one(
+                    {"id": epi_id, "tenant_id": tenant.id},
+                    {"$unset": {"type_epi": ""}}
+                )
+                continue
+            
+            # Pas de type_epi_id ou invalide, utiliser type_epi (nom)
+            if not type_name:
+                results["errors"].append({
+                    "epi_id": epi_id,
+                    "numero_serie": epi.get("numero_serie"),
+                    "error": "Aucun type défini"
+                })
+                continue
+            
+            # Chercher le type par nom
+            type_name_normalized = normalize_string_for_matching(type_name)
+            
+            if type_name_normalized in types_by_name:
+                # Type existe, utiliser son ID
+                type_obj = types_by_name[type_name_normalized]
+                type_id = type_obj.get("id")
+            else:
+                # Créer le nouveau type
+                icone, couleur = determine_epi_icon_color(type_name)
+                
+                max_ordre = await db.types_epi.find_one(
+                    {"tenant_id": tenant.id},
+                    sort=[("ordre", -1)]
+                )
+                next_ordre = (max_ordre.get("ordre", 0) + 1) if max_ordre else 1
+                
+                type_id = str(uuid.uuid4())
+                new_type = {
+                    "id": type_id,
+                    "tenant_id": tenant.id,
+                    "nom": type_name.strip(),
+                    "icone": icone,
+                    "couleur": couleur,
+                    "duree_vie_annees": 10,
+                    "frequence_inspection_mois": 12,
+                    "ordre": next_ordre,
+                    "actif": True,
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                
+                await db.types_epi.insert_one(new_type)
+                types_by_name[type_name_normalized] = new_type
+                types_by_id[type_id] = new_type
+                
+                results["types_created"].append({
+                    "nom": type_name.strip(),
+                    "id": type_id,
+                    "icone": icone
+                })
+                
+                logger.info(f"✨ Type EPI créé: {type_name} ({icone})")
+            
+            # Mettre à jour l'EPI
+            await db.epis.update_one(
+                {"id": epi_id, "tenant_id": tenant.id},
+                {
+                    "$set": {"type_epi_id": type_id},
+                    "$unset": {"type_epi": ""}
+                }
+            )
+            
+            results["epis_fixed"] += 1
+            
+        except Exception as e:
+            results["errors"].append({
+                "epi_id": epi.get("id"),
+                "numero_serie": epi.get("numero_serie"),
+                "error": str(e)
+            })
+    
+    return {
+        "success": True,
+        "message": f"{results['epis_fixed']} EPI(s) corrigé(s), {len(results['types_created'])} type(s) créé(s)",
+        "results": results
+    }
