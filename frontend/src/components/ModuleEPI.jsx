@@ -1821,7 +1821,7 @@ const ModuleEPI = ({ user }) => {
               {rapportEcheances.echeances.map(epi => (
                 <div key={epi.id} className="echeance-card">
                   <div>
-                    <strong>{getTypeIcon(epi.type_epi)} {getTypeName(epi.type_epi)}</strong>
+                    <strong>{getTypeIcon(getEpiType(epi))} {getTypeName(getEpiType(epi))}</strong>
                     <p>#{epi.numero_serie}</p>
                   </div>
                   <div>
@@ -1844,7 +1844,7 @@ const ModuleEPI = ({ user }) => {
               {rapportRetraits.epis.map(epi => (
                 <div key={epi.id} className="retrait-card">
                   <div>
-                    <strong>{getTypeIcon(epi.type_epi)} {getTypeName(epi.type_epi)}</strong>
+                    <strong>{getTypeIcon(getEpiType(epi))} {getTypeName(getEpiType(epi))}</strong>
                     <p>#{epi.numero_serie} - {epi.marque} {epi.modele}</p>
                   </div>
                   <div>
@@ -1888,7 +1888,7 @@ const ModuleEPI = ({ user }) => {
                 {rapportTCO.epis.slice(0, 10).map(epi => (
                   <div key={epi.id} className="tco-card">
                     <div>
-                      <strong>{getTypeIcon(epi.type_epi)} {getTypeName(epi.type_epi)}</strong>
+                      <strong>{getTypeIcon(getEpiType(epi))} {getTypeName(getEpiType(epi))}</strong>
                       <p>#{epi.numero_serie}</p>
                     </div>
                     <div className="tco-details">
