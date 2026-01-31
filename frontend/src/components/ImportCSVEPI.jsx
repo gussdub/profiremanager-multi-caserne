@@ -5,6 +5,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Upload, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { apiGet } from '../utils/api';
+import * as XLSX from 'xlsx';
 
 const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
   const [step, setStep] = useState(1);
@@ -17,6 +18,7 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
   const [importing, setImporting] = useState(false);
   const [importResults, setImportResults] = useState(null);
   const [duplicateActions, setDuplicateActions] = useState({});
+  const [fileType, setFileType] = useState(null); // Type de fichier détecté
   const [availableFields, setAvailableFields] = useState([
     { key: 'numero_serie', label: 'Numéro de série interne (optionnel)', required: false },
     { key: 'type_epi', label: 'Type d\'EPI', required: true },
