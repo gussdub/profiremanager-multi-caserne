@@ -387,14 +387,13 @@ async def test_job_rappel_inspection_epi(tenant_slug: str):
         tenant_id = tenant.get("id")
         tenant_nom = tenant.get("nom", "Unknown")
         
-        # Récupérer les paramètres EPI depuis tenant.parametres.equipements
-        tenant_parametres = tenant.get("parametres", {})
-        parametres = tenant_parametres.get("equipements", {})
+        # Récupérer les paramètres EPI depuis tenant.parametres directement
+        parametres = tenant.get("parametres", {})
         
         if not parametres:
             return {
                 "success": False,
-                "message": "Aucun paramètre d'équipement configuré pour ce tenant",
+                "message": "Aucun paramètre configuré pour ce tenant",
                 "tenant": tenant_nom,
                 "parametres": None
             }
