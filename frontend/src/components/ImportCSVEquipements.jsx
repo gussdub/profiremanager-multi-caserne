@@ -146,9 +146,9 @@ const ImportCSVEquipements = ({ tenantSlug, onImportComplete }) => {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Import CSV/Excel - Équipements</CardTitle>
+        <CardTitle>📥 Import - Équipements</CardTitle>
         <CardDescription>
-          Importez en masse vos équipements depuis un fichier CSV ou Excel
+          Importez en masse vos équipements depuis un fichier CSV, Excel ou TXT
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -166,13 +166,13 @@ const ImportCSVEquipements = ({ tenantSlug, onImportComplete }) => {
                     {file ? file.name : 'Cliquez pour sélectionner un fichier'}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    CSV, XLS, XLSX acceptés
+                    <strong>CSV, XLS, XLSX, TXT</strong> acceptés
                   </p>
                 </div>
                 <input 
                   id="file-upload"
                   type="file"
-                  accept=".csv,.xls,.xlsx"
+                  accept=".csv,.CSV,.xls,.XLS,.xlsx,.XLSX,.txt,.TXT"
                   onChange={handleFileUpload}
                   className="hidden"
                 />
