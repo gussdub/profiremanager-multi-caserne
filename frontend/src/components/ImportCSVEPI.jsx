@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Upload, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import { apiGet } from '../utils/api';
+import { apiGet, apiPost } from '../utils/api';
 import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
 
