@@ -424,6 +424,11 @@ const ModuleEPI = ({ user }) => {
       setEpis(episData || []);
       setIsps(ispsData || []);
       setUsers(usersData || []);
+      
+      // Charger le status de correction des types EPI (admin uniquement)
+      if (user?.role === 'admin') {
+        loadFixTypesStatus();
+      }
     } catch (error) {
       console.error('Erreur:', error);
       toast({
@@ -433,6 +438,56 @@ const ModuleEPI = ({ user }) => {
       });
     }
     setLoading(false);
+  };
+  
+  // Charger le status de correction des types EPI
+  const loadFixTypesStatus = async () => {
+    try {
+      const status = await apiGet(tenantSlug, '/epi/fix-types/status');
+      setFixTypesStatus(status || { count_to_fix: 0, all_ok: true, types_to_create: [] });
+    } catch (error) {
+      console.log('Status fix-types non disponible');
+    }
+  };
+  
+  // Corriger les types EPI
+  const handleFixTypes = async () => {
+    if (!window.confirm(`Voulez-vous corriger ${fixTypesStatus.count_to_fix} EPI(s) ?\n\nCeci va créer automatiquement les types manquants et mettre à jour les EPI.`)) {
+      return;
+    }
+    
+    setFixingTypes(true);
+    try {
+      const result = await apiPost(tenantSlug, '/epi/fix-types', {});
+      
+      toast({
+        title: "✅ Correction terminée",
+        description: result.message,
+      });
+      
+      // Recharger les données
+      loadData();
+      loadFixTypesStatus();
+      
+      // Recharger les types EPI
+      const typesData = await apiGet(tenantSlug, '/types-epi');
+      if (typesData && typesData.length > 0) {
+        setTypesEPI(typesData.map(t => ({
+          id: t.nom,
+          nom: t.nom,
+          icone: t.icone
+        })));
+      }
+    } catch (error) {
+      console.error('Erreur correction:', error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de corriger les types",
+        variant: "destructive"
+      });
+    } finally {
+      setFixingTypes(false);
+    }
   };
   
   const loadRapports = async () => {
