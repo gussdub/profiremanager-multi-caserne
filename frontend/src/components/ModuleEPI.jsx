@@ -948,7 +948,7 @@ const ModuleEPI = ({ user }) => {
     }
     
     // Filtre par type EPI
-    if (filtreTypeEPI && epi.type_epi !== filtreTypeEPI) return false;
+    if (filtreTypeEPI && getEpiType(epi) !== filtreTypeEPI) return false;
     
     // Filtre par personne assignée
     if (filtrePersonne) {
