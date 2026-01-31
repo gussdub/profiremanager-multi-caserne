@@ -1238,9 +1238,8 @@ async def job_rappel_inspection_epi_mensuelle():
                 tenant_slug = tenant.get("slug", "")
                 
                 # Récupérer les paramètres EPI pour ce tenant
-                # Les paramètres sont stockés dans tenant.parametres.equipements
-                tenant_parametres = tenant.get("parametres", {})
-                parametres = tenant_parametres.get("equipements", {})
+                # Les paramètres EPI sont stockés directement dans tenant.parametres
+                parametres = tenant.get("parametres", {})
                 
                 if not parametres:
                     continue
