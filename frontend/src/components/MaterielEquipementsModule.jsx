@@ -1004,7 +1004,7 @@ const EquipementCard = ({ equipement, onEdit, onDelete, onMaintenance, onInspect
 };
 
 // ===== Tab Catégories =====
-const CategoriesTab = ({ categories, equipements, onCreateCategorie, onEditCategorie, onDeleteCategorie, user }) => {
+const CategoriesTab = ({ categories, equipements, onCreateCategorie, onEditCategorie, onDeleteCategorie, onInitialiserCategories, user }) => {
   // Compter les équipements par catégorie
   const countByCategorie = {};
   equipements.forEach(e => {
@@ -1015,9 +1015,22 @@ const CategoriesTab = ({ categories, equipements, onCreateCategorie, onEditCateg
     <div>
       {/* Barre d'actions */}
       {user?.role === 'admin' && (
-        <div style={{ marginBottom: '1rem' }}>
+        <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           <Button onClick={onCreateCategorie} style={{ background: '#22c55e' }}>
             ➕ Créer une catégorie
+          </Button>
+          <Button 
+            onClick={onInitialiserCategories} 
+            variant="outline"
+            style={{ 
+              borderColor: '#3b82f6', 
+              color: '#3b82f6',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+          >
+            📦 Initialiser catégories par défaut
           </Button>
         </div>
       )}
@@ -1028,8 +1041,16 @@ const CategoriesTab = ({ categories, equipements, onCreateCategorie, onEditCateg
           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📁</div>
           <p>Aucune catégorie</p>
           <p style={{ fontSize: '0.875rem', marginTop: '0.5rem' }}>
-            Cliquez sur "Initialiser les catégories" pour commencer
+            Cliquez sur "Initialiser catégories par défaut" pour commencer avec les catégories standards
           </p>
+          {user?.role === 'admin' && (
+            <Button 
+              onClick={onInitialiserCategories}
+              style={{ marginTop: '1rem', background: '#3b82f6' }}
+            >
+              📦 Initialiser les catégories
+            </Button>
+          )}
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
