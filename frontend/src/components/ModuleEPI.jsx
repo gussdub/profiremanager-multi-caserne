@@ -2034,7 +2034,41 @@ const ModuleEPI = ({ user }) => {
                         <strong>EPI actuel :</strong> {epi ? `${getTypeName(epi.type_epi)} - #${epi.numero_serie}` : 'Inconnu'}<br/>
                         <strong>Employé :</strong> {employe ? `${employe.prenom} ${employe.nom}` : 'Inconnu'}<br/>
                         <strong>Raison :</strong> {selectedDemandeRemplacement.raison}
+                        {selectedDemandeRemplacement.notes_employe && (
+                          <>
+                            <br/><strong>Notes employé :</strong> {selectedDemandeRemplacement.notes_employe}
+                          </>
+                        )}
                       </p>
+                      
+                      {/* Afficher la photo du défaut si elle existe */}
+                      {selectedDemandeRemplacement.photo_defaut && (
+                        <div style={{ marginTop: '1rem' }}>
+                          <strong>📷 Photo du défaut :</strong>
+                          <div style={{ 
+                            marginTop: '0.5rem', 
+                            borderRadius: '0.5rem', 
+                            overflow: 'hidden',
+                            border: '2px solid #f59e0b',
+                            maxWidth: '400px'
+                          }}>
+                            <img 
+                              src={selectedDemandeRemplacement.photo_defaut} 
+                              alt="Photo du défaut" 
+                              style={{ 
+                                width: '100%', 
+                                display: 'block',
+                                cursor: 'pointer'
+                              }}
+                              onClick={() => window.open(selectedDemandeRemplacement.photo_defaut, '_blank')}
+                              title="Cliquez pour agrandir"
+                            />
+                          </div>
+                          <p style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                            Cliquez sur l'image pour l'agrandir
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     <h4 style={{ marginBottom: '1rem' }}>🆕 Informations du nouvel EPI</h4>
