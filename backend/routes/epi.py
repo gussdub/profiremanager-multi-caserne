@@ -1027,7 +1027,7 @@ async def import_epis_csv(
                 new_epi = {
                     "id": str(uuid.uuid4()),
                     "tenant_id": tenant.id,
-                    "type_epi": epi_data["type_epi"],
+                    "type_epi_id": type_epi_id,  # Utiliser l'ID du type, pas le nom
                     "numero_serie": epi_data["numero_serie"],
                     "marque": epi_data.get("marque", ""),
                     "modele": epi_data.get("modele", ""),
