@@ -723,29 +723,64 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
               <p style={{ fontSize: '11px', color: '#055160', marginBottom: '10px' }}>
                 Tous les utilisateurs seront notifiés le X du mois s&apos;ils n&apos;ont pas effectué leur inspection mensuelle
               </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '12px', fontWeight: '600', color: '#055160' }}>
-                  Le
-                </span>
-                <Input
-                  type="number"
-                  min="1"
-                  max="31"
-                  value={epiSettings.epi_jour_alerte_inspection_mensuelle}
-                  onChange={(e) => handleEpiSettingChange('epi_jour_alerte_inspection_mensuelle', parseInt(e.target.value))}
-                  style={{ 
-                    width: '70px',
-                    padding: '8px',
-                    fontSize: '14px',
-                    fontWeight: '600'
-                  }}
+              
+              {/* Toggle pour activer/désactiver */}
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={epiSettings.epi_alerte_inspection_mensuelle}
+                  onChange={(e) => handleEpiSettingChange('epi_alerte_inspection_mensuelle', e.target.checked)}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                  data-testid="checkbox-epi-alerte-inspection"
                 />
-                <span style={{ fontSize: '12px', fontWeight: '600', color: '#055160' }}>
-                  de chaque mois
+                <span style={{ fontSize: '13px', fontWeight: '600', color: '#055160' }}>
+                  ✅ Activer les rappels d&apos;inspection
                 </span>
-              </div>
-              <small style={{ fontSize: '10px', color: '#055160', display: 'block', marginTop: '8px', fontStyle: 'italic' }}>
-                💡 Si non fait avant ce jour, notification envoyée
+              </label>
+              
+              {epiSettings.epi_alerte_inspection_mensuelle && (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#055160' }}>
+                      📅 Envoyer le rappel le
+                    </span>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="28"
+                      value={epiSettings.epi_jour_alerte_inspection_mensuelle}
+                      onChange={(e) => handleEpiSettingChange('epi_jour_alerte_inspection_mensuelle', parseInt(e.target.value))}
+                      style={{ 
+                        width: '70px',
+                        padding: '8px',
+                        fontSize: '14px',
+                        fontWeight: '600'
+                      }}
+                      data-testid="input-jour-alerte-epi"
+                    />
+                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#055160' }}>
+                      de chaque mois
+                    </span>
+                  </div>
+                  
+                  {/* Option envoi par email */}
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginTop: '8px' }}>
+                    <input
+                      type="checkbox"
+                      checked={epiSettings.epi_envoyer_rappel_email}
+                      onChange={(e) => handleEpiSettingChange('epi_envoyer_rappel_email', e.target.checked)}
+                      style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                      data-testid="checkbox-epi-email"
+                    />
+                    <span style={{ fontSize: '12px', color: '#055160' }}>
+                      📧 Envoyer aussi par email
+                    </span>
+                  </label>
+                </>
+              )}
+              
+              <small style={{ fontSize: '10px', color: '#055160', display: 'block', marginTop: '10px', fontStyle: 'italic' }}>
+                💡 Si non fait avant ce jour, notification envoyée aux pompiers avec EPI assignés
               </small>
             </div>
           </div>
