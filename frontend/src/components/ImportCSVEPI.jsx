@@ -268,27 +268,17 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
       const result = await apiPost(tenantSlug, '/epi/import-csv', {
         epis: mappedData
       });
-
-      const result = await response.json();
       
       // Formater les résultats pour l'affichage
-      if (response.ok) {
-        setImportResults({
-          success: true,
-          imported_count: result.created || 0,
-          updated_count: result.updated || 0,
-          skipped_count: (result.duplicates?.length || 0) + (result.errors?.length || 0),
-          errors: result.errors || [],
-          fuzzy_matches: result.fuzzy_matches || [],
-          duplicates: result.duplicates || []
-        });
-      } else {
-        setImportResults({
-          success: false,
-          message: result.detail || 'Erreur lors de l\'import',
-          errors: result.errors || []
-        });
-      }
+      setImportResults({
+        success: true,
+        imported_count: result.created || 0,
+        updated_count: result.updated || 0,
+        skipped_count: (result.duplicates?.length || 0) + (result.errors?.length || 0),
+        errors: result.errors || [],
+        fuzzy_matches: result.fuzzy_matches || [],
+        duplicates: result.duplicates || []
+      });
       
       if (onImportComplete) {
         onImportComplete(result);
@@ -297,8 +287,8 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
       console.error('Erreur import:', error);
       setImportResults({
         success: false,
-        message: 'Erreur lors de l\'import: ' + error.message,
-        errors: [error.message]
+        message: error.response?.data?.detail || error.message || 'Erreur lors de l\'import',
+        errors: error.response?.data?.errors || [error.message]
       });
     } finally {
       setImporting(false);
