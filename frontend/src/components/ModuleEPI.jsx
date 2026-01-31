@@ -1408,9 +1408,9 @@ const ModuleEPI = ({ user }) => {
             {episFiltres.map(epi => (
               <div key={epi.id} className="epi-card" data-testid={`epi-card-${epi.id}`}>
                 <div className="epi-card-header">
-                  <span className="epi-icon">{getTypeIcon(epi.type_epi)}</span>
+                  <span className="epi-icon">{getTypeIcon(getEpiType(epi))}</span>
                   <div>
-                    <h3>{getTypeName(epi.type_epi)}</h3>
+                    <h3>{getTypeName(getEpiType(epi))}</h3>
                     <p className="epi-numero">#{epi.numero_serie}</p>
                   </div>
                   <span 
