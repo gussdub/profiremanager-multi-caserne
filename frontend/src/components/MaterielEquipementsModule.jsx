@@ -206,6 +206,22 @@ const MaterielEquipementsModule = ({ user }) => {
     }
   };
 
+  // Initialiser les catégories par défaut
+  const handleInitialiserCategories = async () => {
+    if (!window.confirm('Voulez-vous initialiser les catégories d\'équipements par défaut ?\n\nCeci ajoutera toutes les catégories standards pour un service d\'incendie (APRIA, extincteurs, tuyaux, etc.)')) return;
+    
+    try {
+      setLoading(true);
+      const response = await apiPost(tenantSlug, '/equipements/categories/initialiser', {});
+      alert(`✅ ${response.created} catégories créées${response.skipped > 0 ? `, ${response.skipped} déjà existantes` : ''}`);
+      fetchData();
+    } catch (err) {
+      alert('❌ Erreur: ' + (err.response?.data?.detail || err.message || 'Impossible d\'initialiser les catégories'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading && !equipements.length) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
