@@ -88,6 +88,8 @@ const Dashboard = () => {
         axios.get(`${API}/${tenantSlug}/planning/assignations/${premierJourMoisSuivant}?mode=mois`, { headers, timeout: 10000 }).catch(() => null),
         // 7. Formations année suivante (backup)
         axios.get(`${API}/${tenantSlug}/formations?annee=${now.getFullYear() + 1}`, { headers, timeout: 10000 }).catch(() => null),
+        // 8. Alertes équipements (visible selon rôle: admin voit tout, personne ressource voit ses catégories)
+        axios.get(`${API}/${tenantSlug}/dashboard/alertes-equipements`, { headers, timeout: 10000 }).catch(() => null),
       ];
       
       // Ajouter les appels admin uniquement
