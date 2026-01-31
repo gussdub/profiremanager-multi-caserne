@@ -959,7 +959,7 @@ const ModuleEPI = ({ user }) => {
     // Filtre par recherche texte
     if (filtreRecherche) {
       const search = filtreRecherche.toLowerCase();
-      const typeName = getTypeName(epi.type_epi).toLowerCase();
+      const typeName = getTypeName(getEpiType(epi)).toLowerCase();
       const userName = getUserName(epi.user_id).toLowerCase();
       return (
         epi.numero_serie?.toLowerCase().includes(search) ||
