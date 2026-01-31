@@ -792,13 +792,93 @@ async def import_epis_csv(
         "updated": 0,
         "errors": [],
         "duplicates": [],
-        "fuzzy_matches": []  # Matches approximatifs qui nécessitent confirmation
+        "fuzzy_matches": [],
+        "types_created": []  # Types d'EPI créés automatiquement
     }
     
     # Précharger les utilisateurs pour matching intelligent
     users_list = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
     users_by_name = create_user_matching_index(users_list)
     users_by_num = {u.get("numero_employe"): u for u in users_list if u.get("numero_employe")}
+    
+    # Précharger les types d'EPI existants (par nom normalisé pour matching)
+    types_epi_list = await db.types_epi.find({"tenant_id": tenant.id}).to_list(1000)
+    types_epi_by_name = {}
+    for t in types_epi_list:
+        # Index par nom normalisé (minuscule, sans accents)
+        nom_normalise = normalize_string_for_matching(t.get("nom", ""))
+        types_epi_by_name[nom_normalise] = t
+        # Index aussi par ID au cas où
+        types_epi_by_name[t.get("id", "")] = t
+    
+    # Fonction helper pour trouver ou créer un type d'EPI
+    async def get_or_create_type_epi(type_name: str) -> str:
+        """Retourne l'ID du type d'EPI, le crée s'il n'existe pas"""
+        if not type_name:
+            return None
+        
+        type_name_clean = type_name.strip()
+        type_name_normalized = normalize_string_for_matching(type_name_clean)
+        
+        # Chercher par nom normalisé
+        if type_name_normalized in types_epi_by_name:
+            return types_epi_by_name[type_name_normalized].get("id")
+        
+        # Chercher directement par ID (au cas où c'est déjà un ID)
+        if type_name_clean in types_epi_by_name:
+            return types_epi_by_name[type_name_clean].get("id")
+        
+        # Chercher en base de données par nom exact (case insensitive)
+        existing = await db.types_epi.find_one({
+            "tenant_id": tenant.id,
+            "nom": {"$regex": f"^{type_name_clean}$", "$options": "i"}
+        })
+        
+        if existing:
+            # Ajouter au cache
+            types_epi_by_name[type_name_normalized] = existing
+            return existing.get("id")
+        
+        # Créer le nouveau type d'EPI
+        logger.info(f"📦 Création automatique du type EPI: '{type_name_clean}'")
+        
+        # Déterminer l'icône et la couleur par défaut selon le nom
+        icone, couleur = determine_epi_icon_color(type_name_clean)
+        
+        # Trouver le prochain ordre
+        max_ordre = await db.types_epi.find_one(
+            {"tenant_id": tenant.id},
+            sort=[("ordre", -1)]
+        )
+        next_ordre = (max_ordre.get("ordre", 0) + 1) if max_ordre else 1
+        
+        new_type_id = str(uuid.uuid4())
+        new_type = {
+            "id": new_type_id,
+            "tenant_id": tenant.id,
+            "nom": type_name_clean,
+            "icone": icone,
+            "couleur": couleur,
+            "duree_vie_annees": 10,  # Valeur par défaut
+            "frequence_inspection_mois": 12,
+            "ordre": next_ordre,
+            "actif": True,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.types_epi.insert_one(new_type)
+        
+        # Ajouter au cache
+        types_epi_by_name[type_name_normalized] = new_type
+        
+        # Ajouter aux résultats pour informer l'utilisateur
+        results["types_created"].append({
+            "nom": type_name_clean,
+            "id": new_type_id,
+            "icone": icone
+        })
+        
+        return new_type_id
     
     for index, epi_data in enumerate(epis):
         try:
@@ -807,6 +887,16 @@ async def import_epis_csv(
                 results["errors"].append({
                     "line": index + 1,
                     "error": "Type EPI et Numéro de série requis",
+                    "data": epi_data
+                })
+                continue
+            
+            # Résoudre le type d'EPI (créer si nécessaire)
+            type_epi_id = await get_or_create_type_epi(epi_data["type_epi"])
+            if not type_epi_id:
+                results["errors"].append({
+                    "line": index + 1,
+                    "error": "Impossible de créer le type EPI",
                     "data": epi_data
                 })
                 continue
