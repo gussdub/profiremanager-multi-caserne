@@ -387,11 +387,9 @@ async def test_job_rappel_inspection_epi(tenant_slug: str):
         tenant_id = tenant.get("id")
         tenant_nom = tenant.get("nom", "Unknown")
         
-        # Récupérer les paramètres EPI
-        parametres = await db.parametres_equipements.find_one(
-            {"tenant_id": tenant_id},
-            {"_id": 0}
-        )
+        # Récupérer les paramètres EPI depuis tenant.parametres.equipements
+        tenant_parametres = tenant.get("parametres", {})
+        parametres = tenant_parametres.get("equipements", {})
         
         if not parametres:
             return {
