@@ -29,6 +29,15 @@ const Dashboard = () => {
     formationsAVenir: 0
   });
   
+  // État pour les alertes équipements (visible selon rôle)
+  const [alertesEquipements, setAlertesEquipements] = useState({
+    actif: false,
+    total: 0,
+    compteurs: {},
+    en_retard: 0,
+    alertes: []
+  });
+  
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(Date.now());
 
