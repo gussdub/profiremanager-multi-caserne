@@ -791,7 +791,8 @@ async def import_epis_csv(
         "created": 0,
         "updated": 0,
         "errors": [],
-        "duplicates": []
+        "duplicates": [],
+        "fuzzy_matches": []  # Matches approximatifs qui nécessitent confirmation
     }
     
     # Précharger les utilisateurs pour matching intelligent
@@ -812,11 +813,13 @@ async def import_epis_csv(
             
             # Rechercher l'employé avec matching intelligent
             user_id = None
+            match_info = None
+            
             if epi_data.get("employe_nom"):
                 employe_str = epi_data["employe_nom"].strip()
                 
-                # Utiliser le matching intelligent
-                user_obj = find_user_intelligent(
+                # Utiliser le matching intelligent (retourne tuple)
+                user_obj, match_type, confidence = find_user_intelligent(
                     search_string=employe_str,
                     users_by_name=users_by_name,
                     users_by_num=users_by_num,
@@ -825,10 +828,24 @@ async def import_epis_csv(
                 
                 if user_obj:
                     user_id = user_obj["id"]
+                    user_full_name = f"{user_obj.get('prenom', '')} {user_obj.get('nom', '')}"
+                    
+                    # Si c'est un match fuzzy et pas une confirmation explicite, demander validation
+                    if match_type == 'fuzzy' and not epi_data.get("confirm_fuzzy_match"):
+                        results["fuzzy_matches"].append({
+                            "line": index + 1,
+                            "searched": employe_str,
+                            "found": user_full_name,
+                            "found_id": user_id,
+                            "confidence": round(confidence * 100),
+                            "data": epi_data
+                        })
+                        # On continue quand même avec le match proposé
+                        # Le frontend peut afficher ces matchs pour confirmation
                 else:
                     results["errors"].append({
                         "line": index + 1,
-                        "error": f"Employé non trouvé: {employe_str}",
+                        "error": f"Employé non trouvé: '{employe_str}'. Vérifiez que le nom existe dans le module Personnel.",
                         "data": epi_data
                     })
                     continue
