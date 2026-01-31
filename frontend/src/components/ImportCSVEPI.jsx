@@ -57,29 +57,58 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    if (!file.name.toLowerCase().endsWith('.csv')) {
-      alert('Seuls les fichiers CSV sont acceptés');
+    const fileName = file.name.toLowerCase();
+    const extension = fileName.split('.').pop();
+    
+    const supportedExtensions = ['csv', 'xls', 'xlsx', 'txt'];
+    if (!supportedExtensions.includes(extension)) {
+      alert(`Format non supporté. Formats acceptés: ${supportedExtensions.join(', ').toUpperCase()}`);
       return;
     }
 
     setCsvFile(file);
-    parseCSV(file);
+    setFileType(extension);
+    parseFile(file, extension);
+  };
+
+  const parseFile = async (file, extension) => {
+    try {
+      if (extension === 'csv' || extension === 'txt') {
+        await parseCSV(file);
+      } else if (extension === 'xls' || extension === 'xlsx') {
+        await parseExcel(file);
+      }
+    } catch (error) {
+      console.error('Erreur parsing fichier:', error);
+      alert(`Erreur d'analyse du fichier: ${error.message}`);
+    }
   };
 
   const parseCSV = async (file) => {
     try {
       const text = await file.text();
+      
+      // Détecter le séparateur (virgule, point-virgule ou tabulation)
+      const firstLine = text.split('\n')[0];
+      let separator = ',';
+      if (firstLine.includes(';') && !firstLine.includes(',')) {
+        separator = ';';
+      } else if (firstLine.includes('\t')) {
+        separator = '\t';
+      }
+      
       const lines = text.split('\n').filter(line => line.trim() !== '');
       
       if (lines.length < 2) {
         throw new Error("Le fichier doit contenir au moins un en-tête et une ligne de données");
       }
 
-      const headers = lines[0].split(',').map(h => h.trim().replace(/['"]/g, ''));
+      // Parser avec le bon séparateur
+      const headers = parseCSVLine(lines[0], separator);
       setCsvHeaders(headers);
 
       const data = lines.slice(1).map((line, index) => {
-        const values = line.split(',').map(v => v.trim().replace(/['"]/g, ''));
+        const values = parseCSVLine(line, separator);
         const row = { _index: index };
         headers.forEach((header, i) => {
           row[header] = values[i] || '';
@@ -88,12 +117,121 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
       });
 
       setCsvData(data);
+      autoMapColumns(headers);
       setStep(2);
       
     } catch (error) {
       console.error('Erreur parsing CSV:', error);
-      alert('Erreur d\'analyse du fichier CSV');
+      throw error;
     }
+  };
+
+  // Parser une ligne CSV en gérant les guillemets
+  const parseCSVLine = (line, separator) => {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      
+      if (char === '"' || char === "'") {
+        inQuotes = !inQuotes;
+      } else if (char === separator && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+    
+    return result.map(v => v.replace(/^["']|["']$/g, '').trim());
+  };
+
+  const parseExcel = async (file) => {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      
+      // Prendre la première feuille
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      
+      // Convertir en JSON
+      const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+      
+      if (jsonData.length < 2) {
+        throw new Error("Le fichier doit contenir au moins un en-tête et une ligne de données");
+      }
+      
+      // La première ligne contient les headers
+      const headers = jsonData[0].map(h => String(h || '').trim()).filter(h => h !== '');
+      setCsvHeaders(headers);
+      
+      // Les lignes suivantes sont les données
+      const data = jsonData.slice(1)
+        .filter(row => row.some(cell => cell !== '')) // Filtrer les lignes vides
+        .map((row, index) => {
+          const rowObj = { _index: index };
+          headers.forEach((header, i) => {
+            let value = row[i];
+            // Convertir les dates Excel en format lisible
+            if (typeof value === 'number' && value > 25569 && value < 50000) {
+              // C'est probablement une date Excel
+              const date = new Date((value - 25569) * 86400 * 1000);
+              value = date.toISOString().split('T')[0];
+            }
+            rowObj[header] = value !== undefined && value !== null ? String(value) : '';
+          });
+          return rowObj;
+        });
+      
+      setCsvData(data);
+      autoMapColumns(headers);
+      setStep(2);
+      
+    } catch (error) {
+      console.error('Erreur parsing Excel:', error);
+      throw error;
+    }
+  };
+
+  // Mapping automatique intelligent des colonnes
+  const autoMapColumns = (headers) => {
+    const mapping = {};
+    const normalizedHeaders = headers.map(h => h.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
+    
+    const mappingRules = {
+      'numero_serie': ['numero_serie', 'num_serie', 'no_serie', 'numero serie', 'n° serie', 'serie'],
+      'type_epi': ['type_epi', 'type', 'type epi', 'categorie', 'category'],
+      'marque': ['marque', 'brand', 'fabricant', 'manufacturer'],
+      'modele': ['modele', 'model', 'reference', 'ref'],
+      'numero_serie_fabricant': ['numero_serie_fabricant', 'num_serie_fab', 'serial', 'serial_number', 'n° fabricant'],
+      'date_fabrication': ['date_fabrication', 'date_fab', 'fabrication', 'manufacturing_date', 'date fab'],
+      'date_mise_en_service': ['date_mise_en_service', 'date_service', 'mise_service', 'in_service', 'date service'],
+      'norme_certification': ['norme', 'certification', 'norme_certification', 'standard'],
+      'cout_achat': ['cout', 'cout_achat', 'prix', 'price', 'cost', 'montant'],
+      'couleur': ['couleur', 'color', 'colour'],
+      'taille': ['taille', 'size', 'grandeur'],
+      'user_id': ['user_id', 'utilisateur', 'assigne', 'assigned', 'employe', 'pompier'],
+      'statut': ['statut', 'status', 'etat', 'state', 'condition'],
+      'notes': ['notes', 'note', 'commentaire', 'comment', 'remarque', 'description']
+    };
+    
+    availableFields.forEach(field => {
+      const rules = mappingRules[field.key] || [field.key];
+      
+      for (let i = 0; i < normalizedHeaders.length; i++) {
+        const header = normalizedHeaders[i];
+        if (rules.some(rule => header.includes(rule) || rule.includes(header))) {
+          mapping[field.key] = headers[i]; // Utiliser le header original
+          break;
+        }
+      }
+    });
+    
+    setColumnMapping(mapping);
   };
 
   const handleColumnMapping = (csvColumn, fieldKey) => {
