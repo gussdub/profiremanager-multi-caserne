@@ -987,7 +987,7 @@ async def import_epis_csv(
                 # Si action_doublon = update, mettre à jour
                 if epi_data.get("action_doublon") == "update":
                     update_data = {
-                        "type_epi": epi_data.get("type_epi"),
+                        "type_epi_id": type_epi_id,  # Utiliser l'ID du type
                         "marque": epi_data.get("marque", ""),
                         "modele": epi_data.get("modele", ""),
                         "taille": epi_data.get("taille", ""),
