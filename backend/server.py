@@ -1211,6 +1211,187 @@ async def job_verifier_alertes_equipements():
         logging.error(f"❌ Erreur dans job_verifier_alertes_equipements: {str(e)}", exc_info=True)
 
 
+async def job_rappel_inspection_epi_mensuelle():
+    """
+    Job qui rappelle aux pompiers de faire leur inspection EPI mensuelle.
+    S'exécute tous les jours à 9h30 du matin.
+    
+    Logique:
+    - Pour chaque tenant, vérifier si les alertes inspection sont activées
+    - Si aujourd'hui est le jour configuré (ex: le 20 du mois)
+    - Vérifier pour chaque pompier s'il a fait son inspection ce mois-ci
+    - Si non, lui envoyer une notification
+    """
+    try:
+        logging.info("🔍 Vérification des rappels d'inspection EPI mensuelle")
+        
+        today = datetime.now(timezone.utc)
+        jour_actuel = today.day
+        mois_actuel = today.month
+        annee_actuelle = today.year
+        
+        # Récupérer tous les tenants actifs
+        tenants = await db.tenants.find({"actif": True}).to_list(None)
+        
+        for tenant in tenants:
+            try:
+                tenant_id = tenant.get("id")
+                tenant_nom = tenant.get("nom", "Unknown")
+                tenant_slug = tenant.get("slug", "")
+                
+                # Récupérer les paramètres EPI pour ce tenant
+                parametres = await db.parametres_equipements.find_one(
+                    {"tenant_id": tenant_id},
+                    {"_id": 0}
+                )
+                
+                if not parametres:
+                    continue
+                
+                # Vérifier si les alertes sont activées
+                alerte_activee = parametres.get("epi_alerte_inspection_mensuelle", False)
+                jour_alerte = parametres.get("epi_jour_alerte_inspection_mensuelle", 20)
+                
+                if not alerte_activee:
+                    continue
+                
+                # Vérifier si c'est le bon jour
+                if jour_actuel != jour_alerte:
+                    continue
+                
+                logging.info(f"📅 {tenant_nom}: Jour d'alerte inspection EPI (jour {jour_alerte})")
+                
+                # Récupérer tous les pompiers actifs du tenant
+                pompiers = await db.users.find({
+                    "tenant_id": tenant_id,
+                    "statut": "actif"
+                }).to_list(None)
+                
+                if not pompiers:
+                    continue
+                
+                # Récupérer tous les EPI assignés à des pompiers
+                epis_assignes = await db.epis.find({
+                    "tenant_id": tenant_id,
+                    "user_id": {"$ne": None, "$ne": ""}
+                }).to_list(None)
+                
+                # Grouper les EPI par user_id
+                epis_par_user = {}
+                for epi in epis_assignes:
+                    user_id = epi.get("user_id")
+                    if user_id:
+                        if user_id not in epis_par_user:
+                            epis_par_user[user_id] = []
+                        epis_par_user[user_id].append(epi)
+                
+                # Début et fin du mois courant
+                debut_mois = datetime(annee_actuelle, mois_actuel, 1, tzinfo=timezone.utc)
+                if mois_actuel == 12:
+                    fin_mois = datetime(annee_actuelle + 1, 1, 1, tzinfo=timezone.utc)
+                else:
+                    fin_mois = datetime(annee_actuelle, mois_actuel + 1, 1, tzinfo=timezone.utc)
+                
+                notifications_envoyees = 0
+                
+                for pompier in pompiers:
+                    pompier_id = pompier.get("id")
+                    pompier_nom = f"{pompier.get('prenom', '')} {pompier.get('nom', '')}"
+                    
+                    # Vérifier si ce pompier a des EPI assignés
+                    if pompier_id not in epis_par_user:
+                        continue
+                    
+                    epis_pompier = epis_par_user[pompier_id]
+                    
+                    # Vérifier si le pompier a fait au moins une inspection ce mois-ci
+                    inspection_ce_mois = await db.inspections_epi.find_one({
+                        "tenant_id": tenant_id,
+                        "inspecteur_id": pompier_id,
+                        "date_inspection": {
+                            "$gte": debut_mois.isoformat(),
+                            "$lt": fin_mois.isoformat()
+                        }
+                    })
+                    
+                    if inspection_ce_mois:
+                        # Le pompier a déjà fait son inspection ce mois-ci
+                        continue
+                    
+                    # Le pompier n'a pas fait son inspection - envoyer notification
+                    nb_epi = len(epis_pompier)
+                    
+                    # Créer notification dans l'app
+                    await creer_notification(
+                        tenant_id=tenant_id,
+                        destinataire_id=pompier_id,
+                        type="rappel_inspection_epi",
+                        titre="🔔 Rappel: Inspection EPI mensuelle",
+                        message=f"Vous n'avez pas encore effectué votre inspection mensuelle des EPI ce mois-ci. Vous avez {nb_epi} EPI à inspecter.",
+                        lien="/mes-epi",
+                        data={"nb_epi": nb_epi, "mois": mois_actuel, "annee": annee_actuelle}
+                    )
+                    
+                    notifications_envoyees += 1
+                    logging.info(f"📩 Rappel inspection EPI envoyé à {pompier_nom} ({nb_epi} EPI)")
+                    
+                    # Optionnel: Envoyer aussi par email si l'email est disponible
+                    email_pompier = pompier.get("email")
+                    if email_pompier and parametres.get("epi_envoyer_rappel_email", False):
+                        try:
+                            mois_noms = ["", "janvier", "février", "mars", "avril", "mai", "juin", 
+                                        "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
+                            mois_nom = mois_noms[mois_actuel]
+                            
+                            html_content = f'''
+                            <html>
+                            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                                <div style="background: linear-gradient(135deg, #1e3a5f, #2d5a87); color: white; padding: 20px; border-radius: 10px 10px 0 0; text-align: center;">
+                                    <h1 style="margin: 0;">🔔 Rappel d'inspection</h1>
+                                </div>
+                                <div style="background: #f8fafc; padding: 20px; border: 1px solid #e2e8f0; border-radius: 0 0 10px 10px;">
+                                    <p>Bonjour {pompier.get('prenom', '')},</p>
+                                    <p>Ceci est un rappel automatique: <strong>vous n'avez pas encore effectué votre inspection mensuelle des EPI pour le mois de {mois_nom} {annee_actuelle}</strong>.</p>
+                                    <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+                                        <strong>📦 Vous avez {nb_epi} EPI à inspecter</strong>
+                                    </div>
+                                    <p>Veuillez vous connecter à l'application pour effectuer votre inspection dans la section "Mes EPI".</p>
+                                    <p style="color: #64748b; font-size: 0.9em; margin-top: 30px;">
+                                        Cet email a été envoyé automatiquement par ProFireManager.<br>
+                                        {tenant_nom}
+                                    </p>
+                                </div>
+                            </body>
+                            </html>
+                            '''
+                            
+                            params = {
+                                "from": "ProFireManager <notifications@profiremanager.ca>",
+                                "to": [email_pompier],
+                                "subject": f"🔔 Rappel: Inspection EPI mensuelle - {mois_nom} {annee_actuelle}",
+                                "html": html_content
+                            }
+                            
+                            resend.Emails.send(params)
+                            logging.info(f"📧 Email rappel inspection envoyé à {email_pompier}")
+                            
+                        except Exception as e:
+                            logging.error(f"❌ Erreur envoi email rappel à {email_pompier}: {str(e)}")
+                
+                if notifications_envoyees > 0:
+                    logging.info(f"✅ {tenant_nom}: {notifications_envoyees} rappel(s) d'inspection EPI envoyé(s)")
+                else:
+                    logging.info(f"✅ {tenant_nom}: Tous les pompiers ont fait leur inspection ce mois")
+                    
+            except Exception as e:
+                logging.error(f"❌ Erreur rappel inspection EPI pour {tenant.get('nom', 'Unknown')}: {str(e)}", exc_info=True)
+        
+        logging.info("✅ Vérification des rappels d'inspection EPI terminée")
+        
+    except Exception as e:
+        logging.error(f"❌ Erreur dans job_rappel_inspection_epi_mensuelle: {str(e)}", exc_info=True)
+
+
 async def job_verifier_rappels_disponibilites():
     """
     Job qui vérifie les rappels de disponibilités pour les employés temps partiel
