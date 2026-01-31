@@ -423,9 +423,19 @@ const MesEPI = ({ user }) => {
     
     if (!item || !remplacementForm.raison) return;
 
+    // Vérifier si la photo est requise
+    const raisonObj = raisonsRemplacement.find(r => r.id === remplacementForm.raison);
+    if (raisonObj?.requiresPhoto && !photoFile) {
+      toast({
+        title: "Photo requise",
+        description: "Veuillez joindre une photo du défaut ou de l'usure constatée.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       // Trouver la raison sélectionnée pour obtenir la valeur backend
-      const raisonObj = raisonsRemplacement.find(r => r.id === remplacementForm.raison);
       const raisonBackend = raisonObj ? raisonObj.backendValue : remplacementForm.raison;
       
       // Utiliser l'endpoint approprié selon le type
@@ -433,9 +443,21 @@ const MesEPI = ({ user }) => {
         ? `/equipements/${item.id}/demander-remplacement`
         : `/mes-epi/${item.id}/demander-remplacement`;
       
+      // Préparer les données
+      let photoBase64 = null;
+      if (photoFile) {
+        // Convertir la photo en base64
+        photoBase64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.readAsDataURL(photoFile);
+        });
+      }
+      
       await apiPost(tenantSlug, endpoint, {
         raison: raisonBackend,
-        notes_employe: remplacementForm.details
+        notes_employe: remplacementForm.details,
+        photo_defaut: photoBase64
       });
       
       toast({
@@ -448,6 +470,8 @@ const MesEPI = ({ user }) => {
         raison: '',
         details: ''
       });
+      setPhotoFile(null);
+      setPhotoPreview(null);
       setSelectedEquipement(null);
       
       // Recharger les données appropriées
