@@ -265,7 +265,9 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
 
     try {
       const token = localStorage.getItem(`${tenantSlug}_token`);
-      const response = await fetch(`/api/${tenantSlug}/epi/import-csv`, {
+      const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+      
+      const response = await fetch(`${API_URL}/api/${tenantSlug}/epi/import-csv`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
