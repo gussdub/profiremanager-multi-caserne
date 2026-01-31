@@ -264,18 +264,9 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
     });
 
     try {
-      const token = localStorage.getItem(`${tenantSlug}_token`);
-      const API_URL = process.env.REACT_APP_BACKEND_URL || '';
-      
-      const response = await fetch(`${API_URL}/api/${tenantSlug}/epi/import-csv`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          epis: mappedData
-        })
+      // Utiliser apiPost qui gère correctement l'URL et le token
+      const result = await apiPost(tenantSlug, '/epi/import-csv', {
+        epis: mappedData
       });
 
       const result = await response.json();
