@@ -2152,7 +2152,7 @@ const ModuleEPI = ({ user }) => {
                     <div style={{ backgroundColor: '#fef3c7', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1.5rem' }}>
                       <strong>📋 Demande de remplacement :</strong>
                       <p style={{ marginTop: '0.5rem' }}>
-                        <strong>EPI actuel :</strong> {epi ? `${getTypeName(epi.type_epi)} - #${epi.numero_serie}` : 'Inconnu'}<br/>
+                        <strong>EPI actuel :</strong> {epi ? `${getTypeName(getEpiType(epi))} - #${epi.numero_serie}` : 'Inconnu'}<br/>
                         <strong>Employé :</strong> {employe ? `${employe.prenom} ${employe.nom}` : 'Inconnu'}<br/>
                         <strong>Raison :</strong> {selectedDemandeRemplacement.raison}
                         {selectedDemandeRemplacement.notes_employe && (
