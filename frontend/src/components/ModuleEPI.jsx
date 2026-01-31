@@ -1666,7 +1666,7 @@ const ModuleEPI = ({ user }) => {
               epis.filter(e => e.statut === 'En nettoyage' || e.statut === 'En maintenance').map(epi => (
                 <div key={epi.id} className="nettoyage-epi-card">
                   <div className="nettoyage-epi-header">
-                    <span>{getTypeIcon(epi.type_epi)} {getTypeName(epi.type_epi)}</span>
+                    <span>{getTypeIcon(getEpiType(epi))} {getTypeName(getEpiType(epi))}</span>
                     <span>#{epi.numero_serie}</span>
                     <Button 
                       size="sm"
