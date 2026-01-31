@@ -362,3 +362,189 @@ async def init_demo_data():
     return {
         "message": f"Données de démonstration créées: {len(demo_users)} utilisateurs, {len(demo_types_garde)} types de garde"
     }
+
+
+# ==================== DEBUG: TEST JOB RAPPEL INSPECTION EPI ====================
+
+@router.post("/debug/test-job-rappel-inspection-epi/{tenant_slug}")
+async def test_job_rappel_inspection_epi(tenant_slug: str):
+    """
+    Endpoint de TEST pour déclencher manuellement le job de rappel d'inspection EPI.
+    Cet endpoint permet de tester la logique sans attendre le scheduler.
+    
+    ATTENTION: Cet endpoint crée réellement des notifications et peut envoyer des emails!
+    """
+    db = get_db()
+    
+    try:
+        from datetime import datetime, timezone
+        
+        # Trouver le tenant
+        tenant = await db.tenants.find_one({"slug": tenant_slug}, {"_id": 0})
+        if not tenant:
+            raise HTTPException(status_code=404, detail=f"Tenant '{tenant_slug}' non trouvé")
+        
+        tenant_id = tenant.get("id")
+        tenant_nom = tenant.get("nom", "Unknown")
+        
+        # Récupérer les paramètres EPI
+        parametres = await db.parametres_equipements.find_one(
+            {"tenant_id": tenant_id},
+            {"_id": 0}
+        )
+        
+        if not parametres:
+            return {
+                "success": False,
+                "message": "Aucun paramètre d'équipement configuré pour ce tenant",
+                "tenant": tenant_nom,
+                "parametres": None
+            }
+        
+        alerte_activee = parametres.get("epi_alerte_inspection_mensuelle", False)
+        jour_alerte = parametres.get("epi_jour_alerte_inspection_mensuelle", 20)
+        envoyer_email = parametres.get("epi_envoyer_rappel_email", False)
+        
+        if not alerte_activee:
+            return {
+                "success": False,
+                "message": "Les alertes d'inspection EPI ne sont pas activées pour ce tenant",
+                "tenant": tenant_nom,
+                "parametres": {
+                    "epi_alerte_inspection_mensuelle": alerte_activee,
+                    "epi_jour_alerte_inspection_mensuelle": jour_alerte,
+                    "epi_envoyer_rappel_email": envoyer_email
+                }
+            }
+        
+        today = datetime.now(timezone.utc)
+        mois_actuel = today.month
+        annee_actuelle = today.year
+        
+        # Récupérer les pompiers actifs
+        pompiers = await db.users.find({
+            "tenant_id": tenant_id,
+            "statut": "actif"
+        }).to_list(None)
+        
+        # Récupérer les EPI assignés
+        epis_assignes = await db.epis.find({
+            "tenant_id": tenant_id,
+            "user_id": {"$ne": None, "$ne": ""}
+        }).to_list(None)
+        
+        # Grouper par user
+        epis_par_user = {}
+        for epi in epis_assignes:
+            user_id = epi.get("user_id")
+            if user_id:
+                if user_id not in epis_par_user:
+                    epis_par_user[user_id] = []
+                epis_par_user[user_id].append(epi)
+        
+        # Calculer la période du mois
+        debut_mois = datetime(annee_actuelle, mois_actuel, 1, tzinfo=timezone.utc)
+        if mois_actuel == 12:
+            fin_mois = datetime(annee_actuelle + 1, 1, 1, tzinfo=timezone.utc)
+        else:
+            fin_mois = datetime(annee_actuelle, mois_actuel + 1, 1, tzinfo=timezone.utc)
+        
+        resultats = {
+            "pompiers_analyses": 0,
+            "pompiers_avec_epi": 0,
+            "pompiers_inspection_faite": 0,
+            "pompiers_sans_inspection": 0,
+            "notifications_creees": 0,
+            "details": []
+        }
+        
+        for pompier in pompiers:
+            pompier_id = pompier.get("id")
+            pompier_nom = f"{pompier.get('prenom', '')} {pompier.get('nom', '')}"
+            pompier_email = pompier.get("email")
+            
+            resultats["pompiers_analyses"] += 1
+            
+            # Vérifier si ce pompier a des EPI
+            if pompier_id not in epis_par_user:
+                resultats["details"].append({
+                    "nom": pompier_nom,
+                    "statut": "pas_epi",
+                    "message": "Aucun EPI assigné"
+                })
+                continue
+            
+            resultats["pompiers_avec_epi"] += 1
+            epis_pompier = epis_par_user[pompier_id]
+            nb_epi = len(epis_pompier)
+            
+            # Vérifier si le pompier a fait une inspection ce mois-ci
+            inspection_ce_mois = await db.inspections_epi.find_one({
+                "tenant_id": tenant_id,
+                "inspecteur_id": pompier_id,
+                "date_inspection": {
+                    "$gte": debut_mois.isoformat(),
+                    "$lt": fin_mois.isoformat()
+                }
+            })
+            
+            if inspection_ce_mois:
+                resultats["pompiers_inspection_faite"] += 1
+                resultats["details"].append({
+                    "nom": pompier_nom,
+                    "statut": "inspection_ok",
+                    "message": f"Inspection déjà faite ce mois ({nb_epi} EPI)",
+                    "date_inspection": inspection_ce_mois.get("date_inspection")
+                })
+                continue
+            
+            # Créer la notification
+            resultats["pompiers_sans_inspection"] += 1
+            
+            notif_id = str(uuid.uuid4())
+            notification = {
+                "id": notif_id,
+                "tenant_id": tenant_id,
+                "destinataire_id": pompier_id,
+                "type": "rappel_inspection_epi",
+                "titre": "🔔 Rappel: Inspection EPI mensuelle (TEST)",
+                "message": f"Vous n'avez pas encore effectué votre inspection mensuelle des EPI ce mois-ci. Vous avez {nb_epi} EPI à inspecter.",
+                "lien": "/mes-epi",
+                "data": {"nb_epi": nb_epi, "mois": mois_actuel, "annee": annee_actuelle},
+                "statut": "non_lu",
+                "date_creation": datetime.now(timezone.utc).isoformat()
+            }
+            
+            await db.notifications.insert_one(notification)
+            resultats["notifications_creees"] += 1
+            
+            resultats["details"].append({
+                "nom": pompier_nom,
+                "email": pompier_email,
+                "statut": "notification_envoyee",
+                "message": f"Notification créée ({nb_epi} EPI à inspecter)",
+                "notification_id": notif_id,
+                "email_sera_envoye": envoyer_email and bool(pompier_email)
+            })
+        
+        return {
+            "success": True,
+            "tenant": tenant_nom,
+            "parametres": {
+                "epi_alerte_inspection_mensuelle": alerte_activee,
+                "epi_jour_alerte_inspection_mensuelle": jour_alerte,
+                "epi_envoyer_rappel_email": envoyer_email
+            },
+            "periode": {
+                "mois": mois_actuel,
+                "annee": annee_actuelle,
+                "debut_mois": debut_mois.isoformat(),
+                "fin_mois": fin_mois.isoformat()
+            },
+            "resultats": resultats
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
