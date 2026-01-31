@@ -2604,3 +2604,52 @@ async def fix_epi_types(
         "message": f"{results['epis_fixed']} EPI(s) corrigé(s), {len(results['types_created'])} type(s) créé(s)",
         "results": results
     }
+
+
+@router.get("/{tenant_slug}/epi/fix-types/status")
+async def get_fix_types_status(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Retourne le nombre d'EPI qui ont besoin d'être corrigés (type texte au lieu d'ID).
+    """
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Admin requis")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Compter les EPI avec type_epi (texte) mais sans type_epi_id valide
+    count_to_fix = await db.epis.count_documents({
+        "tenant_id": tenant.id,
+        "$or": [
+            {"type_epi": {"$exists": True, "$ne": ""}, "type_epi_id": {"$exists": False}},
+            {"type_epi": {"$exists": True, "$ne": ""}, "type_epi_id": None},
+            {"type_epi": {"$exists": True, "$ne": ""}, "type_epi_id": ""}
+        ]
+    })
+    
+    # Lister les types uniques à créer
+    if count_to_fix > 0:
+        pipeline = [
+            {"$match": {
+                "tenant_id": tenant.id,
+                "type_epi": {"$exists": True, "$ne": ""},
+                "$or": [
+                    {"type_epi_id": {"$exists": False}},
+                    {"type_epi_id": None},
+                    {"type_epi_id": ""}
+                ]
+            }},
+            {"$group": {"_id": "$type_epi", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}}
+        ]
+        types_to_create = await db.epis.aggregate(pipeline).to_list(100)
+    else:
+        types_to_create = []
+    
+    return {
+        "count_to_fix": count_to_fix,
+        "types_to_create": [{"nom": t["_id"], "count": t["count"]} for t in types_to_create],
+        "all_ok": count_to_fix == 0
+    }
