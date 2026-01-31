@@ -421,7 +421,10 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
                 borderRadius: '0.5rem'
               }}>
                 <div className="file-info">
-                  📊 <strong>{csvFile?.name}</strong> - {csvData.length} ligne(s), {csvHeaders.length} colonne(s)
+                  {fileType === 'xlsx' || fileType === 'xls' ? '📊' : '📄'} <strong>{csvFile?.name}</strong> - {csvData.length} ligne(s), {csvHeaders.length} colonne(s)
+                  <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', background: '#e2e8f0', padding: '2px 6px', borderRadius: '4px' }}>
+                    {fileType?.toUpperCase()}
+                  </span>
                 </div>
               </div>
 
