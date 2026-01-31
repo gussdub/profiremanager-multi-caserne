@@ -113,6 +113,36 @@ def calculate_name_similarity(str1: str, str2: str) -> float:
     return min(score, 1.0)
 
 
+def determine_epi_icon_color(type_name: str) -> tuple:
+    """
+    Détermine l'icône et la couleur appropriées pour un type d'EPI
+    basé sur son nom.
+    """
+    name_lower = type_name.lower()
+    
+    # Mapping des mots-clés vers icône et couleur
+    mappings = [
+        (["casque", "helmet"], "🪖", "#f59e0b"),
+        (["manteau", "veste", "jacket", "coat", "habit", "combat", "bunker"], "🧥", "#3b82f6"),
+        (["pantalon", "pants", "surpantalon"], "👖", "#6366f1"),
+        (["botte", "boot", "chaussure"], "🥾", "#78716c"),
+        (["gant", "glove"], "🧤", "#ef4444"),
+        (["cagoule", "hood", "particule"], "😷", "#8b5cf6"),
+        (["lunette", "goggle", "visière"], "🥽", "#0ea5e9"),
+        (["ceinture", "belt", "harnais"], "🪢", "#14b8a6"),
+        (["lampe", "light", "torch"], "🔦", "#fbbf24"),
+        (["radio", "communication"], "📻", "#10b981"),
+        (["respirat", "masque", "apria", "scba"], "🫁", "#dc2626"),
+    ]
+    
+    for keywords, icon, color in mappings:
+        if any(kw in name_lower for kw in keywords):
+            return icon, color
+    
+    # Défaut
+    return "🛡️", "#6b7280"
+
+
 def find_user_intelligent(
     search_string: str, 
     users_by_name: dict, 
