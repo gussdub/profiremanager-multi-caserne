@@ -609,12 +609,106 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
             ) : importResults ? (
               <div>
                 {importResults.success ? (
-                  <div style={{ padding: '2rem', textAlign: 'center', backgroundColor: '#f0fdf4', borderRadius: '0.5rem' }}>
-                    <CheckCircle size={48} style={{ color: '#22c55e', marginBottom: '1rem' }} />
-                    <h3>Import réussi !</h3>
-                    <p>{importResults.imported_count} EPI(s) importé(s)</p>
-                    {importResults.skipped_count > 0 && (
-                      <p style={{ color: '#f59e0b' }}>{importResults.skipped_count} ligne(s) ignorée(s)</p>
+                  <div>
+                    <div style={{ padding: '1.5rem', textAlign: 'center', backgroundColor: '#f0fdf4', borderRadius: '0.5rem', marginBottom: '1rem' }}>
+                      <CheckCircle size={48} style={{ color: '#22c55e', marginBottom: '1rem' }} />
+                      <h3>Import terminé !</h3>
+                      <p style={{ fontSize: '1.1rem' }}>
+                        <strong>{importResults.imported_count}</strong> EPI(s) créé(s)
+                        {importResults.updated_count > 0 && (
+                          <span> • <strong>{importResults.updated_count}</strong> mis à jour</span>
+                        )}
+                      </p>
+                    </div>
+                    
+                    {/* Affichage des matchs fuzzy (approximatifs) */}
+                    {importResults.fuzzy_matches && importResults.fuzzy_matches.length > 0 && (
+                      <div style={{ 
+                        padding: '1rem', 
+                        backgroundColor: '#fffbeb', 
+                        border: '1px solid #fbbf24',
+                        borderRadius: '0.5rem',
+                        marginBottom: '1rem'
+                      }}>
+                        <h4 style={{ margin: '0 0 0.75rem 0', color: '#92400e', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <AlertCircle size={20} />
+                          Correspondances approximatives ({importResults.fuzzy_matches.length})
+                        </h4>
+                        <p style={{ fontSize: '0.85rem', color: '#92400e', marginBottom: '0.75rem' }}>
+                          Ces employés ont été associés automatiquement mais vérifiez les correspondances :
+                        </p>
+                        <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                          {importResults.fuzzy_matches.map((match, idx) => (
+                            <div key={idx} style={{ 
+                              padding: '0.5rem', 
+                              backgroundColor: 'white', 
+                              borderRadius: '4px',
+                              marginBottom: '0.5rem',
+                              fontSize: '0.85rem',
+                              border: '1px solid #fcd34d'
+                            }}>
+                              <strong>Ligne {match.line}:</strong> "{match.searched}" → <strong>{match.found}</strong>
+                              <span style={{ 
+                                marginLeft: '0.5rem', 
+                                padding: '2px 6px', 
+                                backgroundColor: match.confidence >= 80 ? '#d1fae5' : '#fef3c7',
+                                borderRadius: '4px',
+                                fontSize: '0.75rem'
+                              }}>
+                                {match.confidence}% de confiance
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Affichage des erreurs */}
+                    {importResults.errors && importResults.errors.length > 0 && (
+                      <div style={{ 
+                        padding: '1rem', 
+                        backgroundColor: '#fef2f2', 
+                        border: '1px solid #fca5a5',
+                        borderRadius: '0.5rem',
+                        marginBottom: '1rem'
+                      }}>
+                        <h4 style={{ margin: '0 0 0.75rem 0', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <XCircle size={20} />
+                          Erreurs ({importResults.errors.length} ligne(s) ignorée(s))
+                        </h4>
+                        <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                          {importResults.errors.map((err, idx) => (
+                            <div key={idx} style={{ 
+                              padding: '0.5rem', 
+                              backgroundColor: 'white', 
+                              borderRadius: '4px',
+                              marginBottom: '0.5rem',
+                              fontSize: '0.85rem',
+                              border: '1px solid #fecaca'
+                            }}>
+                              <strong>Ligne {err.line || idx + 1}:</strong> {err.error || err}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Affichage des doublons */}
+                    {importResults.duplicates && importResults.duplicates.length > 0 && (
+                      <div style={{ 
+                        padding: '1rem', 
+                        backgroundColor: '#f0f9ff', 
+                        border: '1px solid #7dd3fc',
+                        borderRadius: '0.5rem',
+                        marginBottom: '1rem'
+                      }}>
+                        <h4 style={{ margin: '0 0 0.5rem 0', color: '#0369a1' }}>
+                          ℹ️ Doublons détectés ({importResults.duplicates.length})
+                        </h4>
+                        <p style={{ fontSize: '0.85rem', color: '#0369a1' }}>
+                          Ces numéros de série existaient déjà et ont été ignorés.
+                        </p>
+                      </div>
                     )}
                   </div>
                 ) : (
@@ -622,6 +716,23 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
                     <XCircle size={48} style={{ color: '#ef4444', marginBottom: '1rem' }} />
                     <h3>Erreur lors de l'import</h3>
                     <p>{importResults.message}</p>
+                    
+                    {importResults.errors && importResults.errors.length > 0 && (
+                      <div style={{ marginTop: '1rem', textAlign: 'left', maxHeight: '200px', overflowY: 'auto' }}>
+                        {importResults.errors.map((err, idx) => (
+                          <div key={idx} style={{ 
+                            padding: '0.5rem', 
+                            backgroundColor: 'white', 
+                            borderRadius: '4px',
+                            marginBottom: '0.5rem',
+                            fontSize: '0.85rem',
+                            border: '1px solid #fecaca'
+                          }}>
+                            {typeof err === 'string' ? err : `Ligne ${err.line}: ${err.error}`}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 
