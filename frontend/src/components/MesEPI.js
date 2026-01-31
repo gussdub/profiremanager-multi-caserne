@@ -57,11 +57,15 @@ const MesEPI = ({ user }) => {
   });
 
   const raisonsRemplacement = [
-    { id: 'usure', label: 'Usure normale', icon: '⏳', desc: 'L\'EPI montre des signes d\'usure normale', backendValue: 'Usé' },
-    { id: 'defaut', label: 'Défaut constaté', icon: '⚠️', desc: 'Défaut technique ou matériel', backendValue: 'Défectueux' },
-    { id: 'perte', label: 'Perte/Vol', icon: '🔍', desc: 'EPI perdu ou volé', backendValue: 'Perdu' },
-    { id: 'taille', label: 'Taille inadaptée', icon: '📏', desc: 'Besoin d\'une autre taille', backendValue: 'Taille inadaptée' }
+    { id: 'usure', label: 'Usure normale', icon: '⏳', desc: 'L\'EPI montre des signes d\'usure normale', backendValue: 'Usé', requiresPhoto: true },
+    { id: 'defaut', label: 'Défaut constaté', icon: '⚠️', desc: 'Défaut technique ou matériel', backendValue: 'Défectueux', requiresPhoto: true },
+    { id: 'perte', label: 'Perte/Vol', icon: '🔍', desc: 'EPI perdu ou volé', backendValue: 'Perdu', requiresPhoto: false },
+    { id: 'taille', label: 'Taille inadaptée', icon: '📏', desc: 'Besoin d\'une autre taille', backendValue: 'Taille inadaptée', requiresPhoto: false }
   ];
+
+  // Vérifier si la raison sélectionnée requiert une photo
+  const selectedRaison = raisonsRemplacement.find(r => r.id === remplacementForm.raison);
+  const photoRequired = selectedRaison?.requiresPhoto || false;
 
   // Critères d'inspection par type d'EPI (basés sur les documents fournis)
   const criteresParType = {
