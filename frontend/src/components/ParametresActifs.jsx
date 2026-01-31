@@ -115,7 +115,9 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
       if (data) {
         setEpiSettings({
           epi_jours_avance_expiration: data.epi_jours_avance_expiration || 30,
-          epi_jour_alerte_inspection_mensuelle: data.epi_jour_alerte_inspection_mensuelle || 20
+          epi_jour_alerte_inspection_mensuelle: data.epi_jour_alerte_inspection_mensuelle || 20,
+          epi_alerte_inspection_mensuelle: data.epi_alerte_inspection_mensuelle === true,
+          epi_envoyer_rappel_email: data.epi_envoyer_rappel_email === true
         });
       }
     } catch (error) {
