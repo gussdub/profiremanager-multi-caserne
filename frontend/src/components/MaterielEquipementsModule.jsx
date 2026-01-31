@@ -396,6 +396,7 @@ const MaterielEquipementsModule = ({ user }) => {
           onCreateCategorie={openCreateCategorie}
           onEditCategorie={openEditCategorie}
           onDeleteCategorie={handleDeleteCategorie}
+          onInitialiserCategories={handleInitialiserCategories}
           user={user}
         />
       )}
