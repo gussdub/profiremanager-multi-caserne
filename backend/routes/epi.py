@@ -217,6 +217,7 @@ class DemandeRemplacementEPI(BaseModel):
     user_id: str  # Employé qui fait la demande
     raison: str  # "Usé", "Perdu", "Défectueux", "Taille inadaptée"
     notes_employe: str = ""
+    photo_defaut: Optional[str] = None  # Photo du défaut en base64
     statut: str = "En attente"  # "En attente", "Approuvée", "Refusée"
     date_demande: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     date_traitement: Optional[datetime] = None
@@ -226,6 +227,7 @@ class DemandeRemplacementEPI(BaseModel):
 class DemandeRemplacementEPICreate(BaseModel):
     raison: str
     notes_employe: Optional[str] = ""
+    photo_defaut: Optional[str] = None  # Photo du défaut en base64
 
 class ISP(BaseModel):
     """Fournisseur de Services Indépendant"""
