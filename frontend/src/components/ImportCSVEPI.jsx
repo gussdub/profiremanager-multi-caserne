@@ -6,6 +6,7 @@ import { Label } from './ui/label';
 import { Upload, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { apiGet } from '../utils/api';
 import * as XLSX from 'xlsx';
+import Papa from 'papaparse';
 
 const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
   const [step, setStep] = useState(1);
@@ -13,12 +14,12 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
   const [csvData, setCsvData] = useState([]);
   const [csvHeaders, setCsvHeaders] = useState([]);
   const [columnMapping, setColumnMapping] = useState({});
-  const [defaultValues, setDefaultValues] = useState({}); // NOUVEAU: Valeurs par défaut
+  const [defaultValues, setDefaultValues] = useState({});
   const [previewData, setPreviewData] = useState([]);
   const [importing, setImporting] = useState(false);
   const [importResults, setImportResults] = useState(null);
   const [duplicateActions, setDuplicateActions] = useState({});
-  const [fileType, setFileType] = useState(null); // Type de fichier détecté
+  const [fileType, setFileType] = useState(null);
   const [availableFields, setAvailableFields] = useState([
     { key: 'numero_serie', label: 'Numéro de série interne (optionnel)', required: false },
     { key: 'type_epi', label: 'Type d\'EPI', required: true },
@@ -49,7 +50,6 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
       }
     } catch (error) {
       console.error('Erreur lors du chargement de la configuration:', error);
-      // Continuer avec les champs par défaut en cas d'erreur
     }
   };
 
@@ -68,85 +68,46 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
 
     setCsvFile(file);
     setFileType(extension);
-    parseFile(file, extension);
-  };
 
-  const parseFile = async (file, extension) => {
-    try {
-      if (extension === 'csv' || extension === 'txt') {
-        await parseCSV(file);
-      } else if (extension === 'xls' || extension === 'xlsx') {
-        await parseExcel(file);
-      }
-    } catch (error) {
-      console.error('Erreur parsing fichier:', error);
-      alert(`Erreur d'analyse du fichier: ${error.message}`);
+    if (extension === 'csv' || extension === 'txt') {
+      parseCSV(file);
+    } else if (extension === 'xls' || extension === 'xlsx') {
+      parseExcel(file);
     }
   };
 
-  const parseCSV = async (file) => {
-    try {
-      const text = await file.text();
-      
-      // Détecter le séparateur (virgule, point-virgule ou tabulation)
-      const firstLine = text.split('\n')[0];
-      let separator = ',';
-      if (firstLine.includes(';') && !firstLine.includes(',')) {
-        separator = ';';
-      } else if (firstLine.includes('\t')) {
-        separator = '\t';
-      }
-      
-      const lines = text.split('\n').filter(line => line.trim() !== '');
-      
-      if (lines.length < 2) {
-        throw new Error("Le fichier doit contenir au moins un en-tête et une ligne de données");
-      }
+  const parseCSV = (file) => {
+    Papa.parse(file, {
+      complete: (results) => {
+        if (results.data.length < 1) {
+          alert("Le fichier doit contenir au moins un en-tête et une ligne de données");
+          return;
+        }
 
-      // Parser avec le bon séparateur
-      const headers = parseCSVLine(lines[0], separator);
-      setCsvHeaders(headers);
+        // Filtrer les lignes vides
+        const rows = results.data.filter(row => Object.values(row).some(val => val && val.toString().trim() !== ''));
+        
+        if (rows.length === 0) {
+          alert("Le fichier ne contient pas de données valides");
+          return;
+        }
 
-      const data = lines.slice(1).map((line, index) => {
-        const values = parseCSVLine(line, separator);
-        const row = { _index: index };
-        headers.forEach((header, i) => {
-          row[header] = values[i] || '';
-        });
-        return row;
-      });
+        // Récupérer les headers depuis le meta de Papa
+        const headers = results.meta.fields || Object.keys(rows[0]);
+        setCsvHeaders(headers);
 
-      setCsvData(data);
-      autoMapColumns(headers);
-      setStep(2);
-      
-    } catch (error) {
-      console.error('Erreur parsing CSV:', error);
-      throw error;
-    }
-  };
-
-  // Parser une ligne CSV en gérant les guillemets
-  const parseCSVLine = (line, separator) => {
-    const result = [];
-    let current = '';
-    let inQuotes = false;
-    
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      
-      if (char === '"' || char === "'") {
-        inQuotes = !inQuotes;
-      } else if (char === separator && !inQuotes) {
-        result.push(current.trim());
-        current = '';
-      } else {
-        current += char;
-      }
-    }
-    result.push(current.trim());
-    
-    return result.map(v => v.replace(/^["']|["']$/g, '').trim());
+        // Transformer les données pour avoir un index
+        const data = rows.map((row, index) => ({ ...row, _index: index }));
+        setCsvData(data);
+        
+        // Auto-mapping des colonnes
+        autoMapColumns(headers);
+        setStep(2);
+      },
+      header: true,
+      skipEmptyLines: true,
+      encoding: 'UTF-8'
+    });
   };
 
   const parseExcel = async (file) => {
@@ -154,38 +115,33 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
       const arrayBuffer = await file.arrayBuffer();
       const workbook = XLSX.read(arrayBuffer, { type: 'array' });
       
-      // Prendre la première feuille
       const sheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[sheetName];
       
-      // Convertir en JSON
-      const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+      // Convertir en JSON avec headers
+      const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: '' });
       
-      if (jsonData.length < 2) {
-        throw new Error("Le fichier doit contenir au moins un en-tête et une ligne de données");
+      if (jsonData.length === 0) {
+        alert("Le fichier ne contient pas de données");
+        return;
       }
-      
-      // La première ligne contient les headers
-      const headers = jsonData[0].map(h => String(h || '').trim()).filter(h => h !== '');
+
+      // Récupérer les headers
+      const headers = Object.keys(jsonData[0]);
       setCsvHeaders(headers);
       
-      // Les lignes suivantes sont les données
-      const data = jsonData.slice(1)
-        .filter(row => row.some(cell => cell !== '')) // Filtrer les lignes vides
-        .map((row, index) => {
-          const rowObj = { _index: index };
-          headers.forEach((header, i) => {
-            let value = row[i];
-            // Convertir les dates Excel en format lisible
-            if (typeof value === 'number' && value > 25569 && value < 50000) {
-              // C'est probablement une date Excel
-              const date = new Date((value - 25569) * 86400 * 1000);
-              value = date.toISOString().split('T')[0];
-            }
-            rowObj[header] = value !== undefined && value !== null ? String(value) : '';
-          });
-          return rowObj;
+      // Convertir les dates Excel si nécessaire et ajouter l'index
+      const data = jsonData.map((row, index) => {
+        const newRow = { ...row, _index: index };
+        Object.keys(newRow).forEach(key => {
+          let value = newRow[key];
+          if (typeof value === 'number' && value > 25569 && value < 50000) {
+            const date = new Date((value - 25569) * 86400 * 1000);
+            newRow[key] = date.toISOString().split('T')[0];
+          }
         });
+        return newRow;
+      });
       
       setCsvData(data);
       autoMapColumns(headers);
@@ -193,7 +149,7 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
       
     } catch (error) {
       console.error('Erreur parsing Excel:', error);
-      throw error;
+      alert(`Erreur de lecture du fichier Excel: ${error.message}`);
     }
   };
 
@@ -225,7 +181,7 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
       for (let i = 0; i < normalizedHeaders.length; i++) {
         const header = normalizedHeaders[i];
         if (rules.some(rule => header.includes(rule) || rule.includes(header))) {
-          mapping[field.key] = headers[i]; // Utiliser le header original
+          mapping[field.key] = headers[i];
           break;
         }
       }
