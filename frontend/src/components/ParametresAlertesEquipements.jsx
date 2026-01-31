@@ -12,11 +12,7 @@ const ParametresAlertesEquipements = ({ tenantSlug, user }) => {
     jours_alerte_expiration: 30,
     jours_alerte_fin_vie: 90,
     activer_alertes_email: true,
-    activer_alertes_dashboard: true,
-    // Paramètres inspection EPI mensuelle
-    epi_alerte_inspection_mensuelle: false,
-    epi_jour_alerte_inspection_mensuelle: 20,
-    epi_envoyer_rappel_email: false
+    activer_alertes_dashboard: true
   });
   const [alertes, setAlertes] = useState(null);
   const [loading, setLoading] = useState(true);
