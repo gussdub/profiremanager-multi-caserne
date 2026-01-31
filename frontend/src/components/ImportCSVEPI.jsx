@@ -277,7 +277,8 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
         skipped_count: (result.duplicates?.length || 0) + (result.errors?.length || 0),
         errors: result.errors || [],
         fuzzy_matches: result.fuzzy_matches || [],
-        duplicates: result.duplicates || []
+        duplicates: result.duplicates || [],
+        types_created: result.types_created || []
       });
       
       if (onImportComplete) {
