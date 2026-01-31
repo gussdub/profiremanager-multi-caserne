@@ -1509,7 +1509,7 @@ const ModuleEPI = ({ user }) => {
                   <div key={demande.id} className="demande-card">
                     <div className="demande-header">
                       <div className="demande-info">
-                        <h4>{epi ? `${getTypeIcon(epi.type_epi)} ${getTypeName(epi.type_epi)} - #${epi.numero_serie}` : 'EPI inconnu'}</h4>
+                        <h4>{epi ? `${getTypeIcon(getEpiType(epi))} ${getTypeName(getEpiType(epi))} - #${epi.numero_serie}` : 'EPI inconnu'}</h4>
                         <p>Demandé par: <strong>{employe ? `${employe.prenom} ${employe.nom}` : 'Inconnu'}</strong></p>
                         <p>Date: {new Date(demande.date_demande).toLocaleDateString('fr-FR')} à {new Date(demande.date_demande).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
                       </div>
