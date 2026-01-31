@@ -878,8 +878,20 @@ const ModuleEPI = ({ user }) => {
     }
   };
   
-  const getTypeIcon = (type) => typesEPI.find(t => t.id === type)?.icone || '🛡️';
-  const getTypeName = (type) => typesEPI.find(t => t.id === type)?.nom || type;
+  const getTypeIcon = (typeIdOrName) => {
+    // Chercher par ID d'abord, puis par nom
+    const found = typesEPI.find(t => t.id === typeIdOrName) || typesEPI.find(t => t.nom === typeIdOrName);
+    return found?.icone || '🛡️';
+  };
+  
+  const getTypeName = (typeIdOrName) => {
+    // Chercher par ID d'abord, puis par nom
+    const found = typesEPI.find(t => t.id === typeIdOrName) || typesEPI.find(t => t.nom === typeIdOrName);
+    return found?.nom || typeIdOrName || 'Type inconnu';
+  };
+  
+  // Helper pour obtenir le type d'un EPI (priorité à type_epi_id)
+  const getEpiType = (epi) => epi?.type_epi_id || epi?.type_epi || '';
   const getStatutColor = (statut) => {
     const colors = {
       'En service': '#10B981',
