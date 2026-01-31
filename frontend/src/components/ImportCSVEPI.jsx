@@ -237,6 +237,7 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
     setImporting(true);
     setStep(4);
 
+    // Mapper les données avec le bon format pour l'API
     const mappedData = csvData.map(row => {
       const mapped = {};
       availableFields.forEach(field => {
@@ -247,25 +248,54 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
           mapped[field.key] = csvColumn ? row[csvColumn] : '';
         }
       });
+      
+      // Mapping spécifique pour l'assignation employé
+      // L'API attend "employe_nom" pour le matching intelligent
+      if (mapped.user_id) {
+        mapped.employe_nom = mapped.user_id;  // Le champ user_id contient le nom de l'employé
+      }
+      
+      // Mapper numero_serie à partir du bon champ
+      if (!mapped.numero_serie && mapped.numero_serie_fabricant) {
+        mapped.numero_serie = mapped.numero_serie_fabricant;
+      }
+      
       return mapped;
     });
 
     try {
       const token = localStorage.getItem(`${tenantSlug}_token`);
-      const response = await fetch(`/api/${tenantSlug}/epi/import`, {
+      const response = await fetch(`/api/${tenantSlug}/epi/import-csv`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          data: mappedData,
-          custom_required_fields: availableFields.filter(f => f.required).map(f => f.key)
+          epis: mappedData
         })
       });
 
       const result = await response.json();
-      setImportResults(result);
+      
+      // Formater les résultats pour l'affichage
+      if (response.ok) {
+        setImportResults({
+          success: true,
+          imported_count: result.created || 0,
+          updated_count: result.updated || 0,
+          skipped_count: (result.duplicates?.length || 0) + (result.errors?.length || 0),
+          errors: result.errors || [],
+          fuzzy_matches: result.fuzzy_matches || [],
+          duplicates: result.duplicates || []
+        });
+      } else {
+        setImportResults({
+          success: false,
+          message: result.detail || 'Erreur lors de l\'import',
+          errors: result.errors || []
+        });
+      }
       
       if (onImportComplete) {
         onImportComplete(result);
@@ -274,7 +304,7 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
       console.error('Erreur import:', error);
       setImportResults({
         success: false,
-        message: 'Erreur lors de l\'import',
+        message: 'Erreur lors de l\'import: ' + error.message,
         errors: [error.message]
       });
     } finally {
