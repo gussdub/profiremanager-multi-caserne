@@ -1424,9 +1424,27 @@ const ModuleEPI = ({ user }) => {
                     </div>
                     
                     <div className="demande-body">
-                      <p><strong>Raison:</strong> {demande.raison}</p>
+                      <p><strong>Raison:</strong> {demande.raison} {demande.photo_defaut && <span title="Photo jointe">📷</span>}</p>
                       {demande.notes_employe && (
                         <p><strong>Détails:</strong> {demande.notes_employe}</p>
+                      )}
+                      {demande.photo_defaut && (
+                        <div style={{ marginTop: '0.5rem' }}>
+                          <img 
+                            src={demande.photo_defaut} 
+                            alt="Photo du défaut" 
+                            style={{ 
+                              maxWidth: '150px', 
+                              maxHeight: '100px', 
+                              objectFit: 'cover',
+                              borderRadius: '0.25rem',
+                              border: '1px solid #e5e7eb',
+                              cursor: 'pointer'
+                            }}
+                            onClick={() => window.open(demande.photo_defaut, '_blank')}
+                            title="Cliquez pour agrandir"
+                          />
+                        </div>
                       )}
                       {demande.notes_admin && (
                         <p><strong>Notes admin:</strong> {demande.notes_admin}</p>
