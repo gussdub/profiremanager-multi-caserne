@@ -32,11 +32,7 @@ const ParametresAlertesEquipements = ({ tenantSlug, user }) => {
         jours_alerte_expiration: data.jours_alerte_expiration || 30,
         jours_alerte_fin_vie: data.jours_alerte_fin_vie || 90,
         activer_alertes_email: data.activer_alertes_email !== false,
-        activer_alertes_dashboard: data.activer_alertes_dashboard !== false,
-        // Paramètres inspection EPI mensuelle
-        epi_alerte_inspection_mensuelle: data.epi_alerte_inspection_mensuelle === true,
-        epi_jour_alerte_inspection_mensuelle: data.epi_jour_alerte_inspection_mensuelle || 20,
-        epi_envoyer_rappel_email: data.epi_envoyer_rappel_email === true
+        activer_alertes_dashboard: data.activer_alertes_dashboard !== false
       });
     } catch (error) {
       console.error('Erreur chargement paramètres:', error);
