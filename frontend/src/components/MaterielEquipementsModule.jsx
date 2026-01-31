@@ -107,6 +107,8 @@ const MaterielEquipementsModule = ({ user }) => {
 
   // Initialiser les catégories par défaut
   const handleInitialiserCategories = async () => {
+    if (!window.confirm('Voulez-vous initialiser les catégories d\'équipements par défaut ?\n\nCeci ajoutera toutes les catégories standards pour un service d\'incendie (APRIA, extincteurs, tuyaux, etc.)')) return;
+    
     try {
       setLoading(true);
       const result = await apiPost(tenantSlug, '/equipements/categories/initialiser');
