@@ -209,7 +209,14 @@ const ImportCSVEquipements = ({ tenantSlug, onImportComplete }) => {
         {step === 2 && (
           <div className="space-y-4">
             <div>
-              <h3 className="font-semibold mb-2">Aperçu des données ({csvData.length} équipements)</h3>
+              <h3 className="font-semibold mb-2">
+                Aperçu des données ({csvData.length} équipements)
+                {fileType && (
+                  <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>
+                    {fileType.toUpperCase()}
+                  </span>
+                )}
+              </h3>
               <p className="text-sm text-gray-600 mb-4">
                 Vérifiez les 5 premières lignes avant d'importer
               </p>
