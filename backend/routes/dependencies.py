@@ -50,10 +50,20 @@ _client = None
 _db = None
 
 def get_db():
-    """Retourne la connexion à la base de données MongoDB"""
+    """Retourne la connexion à la base de données MongoDB avec reconnexion automatique"""
     global _client, _db
     if _db is None:
-        _client = AsyncIOMotorClient(MONGO_URL)
+        _client = AsyncIOMotorClient(
+            MONGO_URL,
+            serverSelectionTimeoutMS=10000,  # 10 secondes timeout
+            connectTimeoutMS=10000,
+            socketTimeoutMS=30000,
+            maxPoolSize=50,
+            minPoolSize=5,
+            maxIdleTimeMS=60000,  # Fermer les connexions inactives après 60s
+            retryWrites=True,
+            retryReads=True
+        )
         _db = _client[DB_NAME]
     return _db
 
