@@ -807,11 +807,9 @@ async def job_verifier_alertes_equipements():
                 tenant_id = tenant.get("id")
                 tenant_nom = tenant.get("nom", "Unknown")
                 
-                # Récupérer les paramètres d'alertes pour ce tenant
-                parametres = await db.parametres_equipements.find_one(
-                    {"tenant_id": tenant_id},
-                    {"_id": 0}
-                )
+                # Récupérer les paramètres d'alertes pour ce tenant depuis tenant.parametres.equipements
+                tenant_parametres = tenant.get("parametres", {})
+                parametres = tenant_parametres.get("equipements", {})
                 
                 # Si pas de paramètres ou alertes email désactivées, passer au suivant
                 if not parametres or not parametres.get("activer_alertes_email", True):
