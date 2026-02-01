@@ -490,34 +490,49 @@ const ModuleEPI = ({ user }) => {
     }
   };
   
-  // Supprimer tous les EPI
-  const handleDeleteAllEpis = async () => {
-    if (!window.confirm(`⚠️ ATTENTION: Voulez-vous vraiment supprimer TOUS les ${epis.length} EPI(s) ?\n\nCette action est IRRÉVERSIBLE !`)) {
-      return;
-    }
+  // Supprimer tous les EPI - Version réécrite avec POST
+  const [supprimantTous, setSupprimantTous] = useState(false);
+  
+  const handleSupprimerTousEpis = async () => {
+    // Première confirmation
+    const confirmation1 = window.confirm(
+      `⚠️ ATTENTION ⚠️\n\nVoulez-vous vraiment supprimer TOUS les ${epis.length} EPI ?\n\nCette action est IRRÉVERSIBLE !`
+    );
+    if (!confirmation1) return;
     
-    // Double confirmation
-    if (!window.confirm(`Êtes-vous ABSOLUMENT sûr ? Tous les EPI seront supprimés définitivement.`)) {
-      return;
-    }
+    // Deuxième confirmation
+    const confirmation2 = window.confirm(
+      `🚨 DERNIÈRE CONFIRMATION 🚨\n\nÊtes-vous ABSOLUMENT certain de vouloir supprimer définitivement ${epis.length} EPI ?\n\nCliquez OK pour confirmer la suppression.`
+    );
+    if (!confirmation2) return;
+    
+    setSupprimantTous(true);
     
     try {
-      const result = await apiDelete(tenantSlug, '/epi/delete-all');
+      console.log('[SUPPRIMER-TOUS] Envoi de la requête POST...');
+      
+      // Utiliser POST au lieu de DELETE pour éviter les problèmes de proxy
+      const response = await apiPost(tenantSlug, '/epi/supprimer-tous', {});
+      
+      console.log('[SUPPRIMER-TOUS] Réponse:', response);
       
       toast({
-        title: "✅ Suppression terminée",
-        description: result.message,
+        title: "✅ Suppression réussie",
+        description: response.message || `${response.deleted} EPI supprimés`,
       });
       
-      // Recharger les données
-      loadData();
+      // Recharger toutes les données
+      await loadData();
+      
     } catch (error) {
-      console.error('Erreur suppression:', error);
+      console.error('[SUPPRIMER-TOUS] Erreur:', error);
       toast({
-        title: "Erreur",
-        description: error.message || "Impossible de supprimer les EPI",
+        title: "❌ Erreur de suppression",
+        description: error.message || "Une erreur est survenue lors de la suppression",
         variant: "destructive"
       });
+    } finally {
+      setSupprimantTous(false);
     }
   };
   
