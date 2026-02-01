@@ -2654,3 +2654,32 @@ async def get_fix_types_status(
         "types_to_create": [{"nom": t["_id"], "count": t["count"]} for t in types_to_create],
         "all_ok": count_to_fix == 0
     }
+
+
+@router.delete("/{tenant_slug}/epi/delete-all")
+async def delete_all_epis(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Supprime TOUS les EPI du tenant. Admin uniquement.
+    Utile pour réimporter proprement.
+    """
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin requis")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Compter avant suppression
+    count_before = await db.epis.count_documents({"tenant_id": tenant.id})
+    
+    if count_before == 0:
+        return {"message": "Aucun EPI à supprimer", "deleted": 0}
+    
+    # Supprimer tous les EPI
+    result = await db.epis.delete_many({"tenant_id": tenant.id})
+    
+    return {
+        "message": f"{result.deleted_count} EPI(s) supprimé(s)",
+        "deleted": result.deleted_count
+    }
