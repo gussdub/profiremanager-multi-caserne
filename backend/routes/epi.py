@@ -2672,30 +2672,39 @@ async def get_fix_types_status(
     }
 
 
-@router.delete("/{tenant_slug}/epi/delete-all")
-async def delete_all_epis(
+@router.post("/{tenant_slug}/epi/supprimer-tous")
+async def supprimer_tous_les_epis(
     tenant_slug: str,
     current_user: User = Depends(get_current_user)
 ):
     """
     Supprime TOUS les EPI du tenant. Admin uniquement.
-    Utile pour réimporter proprement.
+    Utilise POST pour éviter les problèmes de proxy avec DELETE.
     """
+    logger.info(f"[SUPPRIMER-TOUS] Demande de suppression de tous les EPI pour {tenant_slug} par {current_user.email}")
+    
+    # Vérification admin
     if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Admin requis")
+        logger.warning(f"[SUPPRIMER-TOUS] Refusé - utilisateur non admin: {current_user.email}")
+        raise HTTPException(status_code=403, detail="Seul un administrateur peut supprimer tous les EPI")
     
+    # Récupérer le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
+    logger.info(f"[SUPPRIMER-TOUS] Tenant trouvé: {tenant.id}")
     
-    # Compter avant suppression
-    count_before = await db.epis.count_documents({"tenant_id": tenant.id})
+    # Compter les EPI avant suppression
+    count_avant = await db.epis.count_documents({"tenant_id": tenant.id})
+    logger.info(f"[SUPPRIMER-TOUS] Nombre d'EPI à supprimer: {count_avant}")
     
-    if count_before == 0:
-        return {"message": "Aucun EPI à supprimer", "deleted": 0}
+    if count_avant == 0:
+        return {"success": True, "message": "Aucun EPI à supprimer", "deleted": 0}
     
-    # Supprimer tous les EPI
+    # Supprimer tous les EPI du tenant
     result = await db.epis.delete_many({"tenant_id": tenant.id})
+    logger.info(f"[SUPPRIMER-TOUS] Résultat: {result.deleted_count} EPI supprimés")
     
     return {
-        "message": f"{result.deleted_count} EPI(s) supprimé(s)",
+        "success": True,
+        "message": f"{result.deleted_count} EPI supprimé(s) avec succès",
         "deleted": result.deleted_count
     }
