@@ -1358,15 +1358,17 @@ const ModuleEPI = ({ user }) => {
             {/* Bouton supprimer tous les EPI (admin uniquement) */}
             {user?.role === 'admin' && epis.length > 0 && (
               <Button 
-                onClick={handleDeleteAllEpis}
+                onClick={handleSupprimerTousEpis}
+                disabled={supprimantTous}
                 variant="outline"
                 style={{ 
-                  borderColor: '#ef4444',
-                  color: '#ef4444'
+                  borderColor: '#dc2626',
+                  color: '#dc2626',
+                  fontWeight: 'bold'
                 }}
-                data-testid="btn-delete-all-epis"
+                data-testid="btn-supprimer-tous-epis"
               >
-                🗑️ Supprimer tous ({epis.length})
+                {supprimantTous ? '⏳ Suppression...' : `🗑️ Supprimer tous (${epis.length})`}
               </Button>
             )}
             
