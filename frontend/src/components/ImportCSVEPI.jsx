@@ -255,11 +255,6 @@ const ImportCSVEPI = ({ tenantSlug, onImportComplete }) => {
         mapped.employe_nom = mapped.user_id;  // Le champ user_id contient le nom de l'employé
       }
       
-      // Mapper numero_serie à partir du bon champ
-      if (!mapped.numero_serie && mapped.numero_serie_fabricant) {
-        mapped.numero_serie = mapped.numero_serie_fabricant;
-      }
-      
       return mapped;
     });
 
