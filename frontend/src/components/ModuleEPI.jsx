@@ -490,6 +490,37 @@ const ModuleEPI = ({ user }) => {
     }
   };
   
+  // Supprimer tous les EPI
+  const handleDeleteAllEpis = async () => {
+    if (!window.confirm(`⚠️ ATTENTION: Voulez-vous vraiment supprimer TOUS les ${epis.length} EPI(s) ?\n\nCette action est IRRÉVERSIBLE !`)) {
+      return;
+    }
+    
+    // Double confirmation
+    if (!window.confirm(`Êtes-vous ABSOLUMENT sûr ? Tous les EPI seront supprimés définitivement.`)) {
+      return;
+    }
+    
+    try {
+      const result = await apiDelete(tenantSlug, '/epi/delete-all');
+      
+      toast({
+        title: "✅ Suppression terminée",
+        description: result.message,
+      });
+      
+      // Recharger les données
+      loadData();
+    } catch (error) {
+      console.error('Erreur suppression:', error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de supprimer les EPI",
+        variant: "destructive"
+      });
+    }
+  };
+  
   const loadRapports = async () => {
     try {
       const [conformite, echeances, retraits, tco] = await Promise.all([
