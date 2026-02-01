@@ -1309,6 +1309,21 @@ const ModuleEPI = ({ user }) => {
               )
             )}
             
+            {/* Bouton supprimer tous les EPI (admin uniquement) */}
+            {user?.role === 'admin' && epis.length > 0 && (
+              <Button 
+                onClick={handleDeleteAllEpis}
+                variant="outline"
+                style={{ 
+                  borderColor: '#ef4444',
+                  color: '#ef4444'
+                }}
+                data-testid="btn-delete-all-epis"
+              >
+                🗑️ Supprimer tous ({epis.length})
+              </Button>
+            )}
+            
             <Input
               placeholder="🔍 Rechercher..."
               value={filtreRecherche}
