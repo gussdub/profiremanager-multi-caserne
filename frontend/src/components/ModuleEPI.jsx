@@ -650,9 +650,11 @@ const ModuleEPI = ({ user }) => {
   };
   
   const resetEPIForm = () => {
+    // Utiliser l'ID du premier type disponible, ou chaîne vide
+    const defaultTypeId = typesEPI.length > 0 ? typesEPI[0].id : '';
     setEpiForm({
       numero_serie: '',
-      type_epi: 'casque',
+      type_epi: defaultTypeId,
       marque: '',
       modele: '',
       numero_serie_fabricant: '',
