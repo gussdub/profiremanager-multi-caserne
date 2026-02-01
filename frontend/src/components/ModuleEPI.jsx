@@ -473,7 +473,7 @@ const ModuleEPI = ({ user }) => {
       const typesData = await apiGet(tenantSlug, '/types-epi');
       if (typesData && typesData.length > 0) {
         setTypesEPI(typesData.map(t => ({
-          id: t.nom,
+          id: t.id,
           nom: t.nom,
           icone: t.icone
         })));
