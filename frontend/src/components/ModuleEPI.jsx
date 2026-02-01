@@ -52,7 +52,7 @@ const ModuleEPI = ({ user }) => {
   
   const [epiForm, setEpiForm] = useState({
     numero_serie: '',
-    type_epi: 'casque',
+    type_epi: '', // Sera initialisé avec le premier type disponible
     marque: '',
     modele: '',
     numero_serie_fabricant: '',
