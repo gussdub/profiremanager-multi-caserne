@@ -674,9 +674,16 @@ const ModuleEPI = ({ user }) => {
   
   const openEditEPI = (epi) => {
     setSelectedEPI(epi);
+    // Utiliser type_epi_id si disponible, sinon chercher l'ID correspondant au nom type_epi
+    let typeEpiValue = epi.type_epi_id || '';
+    if (!typeEpiValue && epi.type_epi) {
+      // Chercher l'ID du type par son nom
+      const foundType = typesEPI.find(t => t.nom === epi.type_epi || t.id === epi.type_epi);
+      typeEpiValue = foundType ? foundType.id : '';
+    }
     setEpiForm({
       numero_serie: epi.numero_serie,
-      type_epi: epi.type_epi,
+      type_epi: typeEpiValue,
       marque: epi.marque,
       modele: epi.modele,
       numero_serie_fabricant: epi.numero_serie_fabricant || '',
