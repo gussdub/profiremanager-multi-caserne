@@ -1029,21 +1029,37 @@ async def import_epis_csv(
                     "id": str(uuid.uuid4()),
                     "tenant_id": tenant.id,
                     "type_epi_id": type_epi_id,  # Utiliser l'ID du type, pas le nom
-                    "numero_serie": epi_data["numero_serie"],
+                    "numero_serie": epi_data.get("numero_serie", ""),
+                    "numero_serie_fabricant": epi_data.get("numero_serie_fabricant", ""),
                     "marque": epi_data.get("marque", ""),
                     "modele": epi_data.get("modele", ""),
                     "taille": epi_data.get("taille", ""),
-                    "statut": epi_data.get("statut", "bon"),
+                    "couleur": epi_data.get("couleur", ""),
+                    "statut": epi_data.get("statut", "En service"),
                     "norme_certification": epi_data.get("norme_certification", ""),
                     "notes": epi_data.get("notes", ""),
                     "created_at": datetime.now(timezone.utc).isoformat(),
                     "updated_at": datetime.now(timezone.utc).isoformat()
                 }
                 
+                # Coût d'achat
+                cout = epi_data.get("cout_achat")
+                if cout:
+                    try:
+                        # Nettoyer le coût (enlever $, espaces, etc.)
+                        cout_clean = str(cout).replace("$", "").replace(" ", "").replace(",", ".")
+                        new_epi["cout_achat"] = float(cout_clean)
+                    except:
+                        new_epi["cout_achat"] = 0.0
+                else:
+                    new_epi["cout_achat"] = 0.0
+                
                 if user_id:
                     new_epi["user_id"] = user_id
                 
                 # Dates optionnelles
+                if epi_data.get("date_fabrication"):
+                    new_epi["date_fabrication"] = epi_data["date_fabrication"]
                 if epi_data.get("date_mise_en_service"):
                     new_epi["date_mise_en_service"] = epi_data["date_mise_en_service"]
                 if epi_data.get("date_dernier_controle"):
