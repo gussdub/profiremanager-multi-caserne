@@ -1,178 +1,570 @@
 <analysis>**original_problem_statement:**
-L'utilisateur a initialement demandé une application pour gérer les interventions et la paie des pompiers. Au cours de cette session, l'agent a corrigé une très longue liste de bugs et implémenté plusieurs fonctionnalités demandées par l'utilisateur.
+L'utilisateur a initialement demandé une application pour gérer les interventions et la paie des pompiers. Au cours des sessions, l'agent a corrigé de nombreux bugs, implémenté plusieurs fonctionnalités et a récemment travaillé sur une série de corrections et d'ajouts de fonctionnalités rapides demandés par l'utilisateur, principalement axés sur un module d'importation CSV pour les Équipements de Protection Individuelle (EPI).
 
-Les principaux points abordés étaient :
--   **Finalisation de l'intégration Twilio** : Correction des bugs liés aux liens SMS et à la sauvegarde des préférences de notification.
--   **Correction de bugs multiples** : Résolution de problèmes liés aux KPI, à l'affichage des badges, aux notifications de congés, au son des notifications, et à la logique d'auto-approbation.
--   **Amélioration des fonctionnalités existantes** : Ajout d'une durée et d'une comptabilisation des heures pour les rattrapages de formation, et implémentation d'un indicateur visuel pour les temps de réponse des interventions.
--   **Nouvelles fonctionnalités** : Mise en place d'un accès en lecture seule pour les employés au module Interventions, et ajout d'une fonction de suppression des cartes d'appel pour les super-admins.
--   **Correction de bugs UI** : Résolution de problèmes complexes avec le menu de la photo de profil (clignotement, z-index) et le recadrage de l'image.
--   **Correction de bugs de données** : Résolution de la non-synchronisation des données entre Mon Profil et la base de données, causée par une erreur API et un manque de résilience du frontend.
--   **Débogage de l'environnement** : Résolution de problèmes de connexion intermittents en mode preview et correction de multiples erreurs de déploiement sur Render en nettoyant le fichier .
--   **Fonctionnalité EPI** : Ajout d'une obligation de joindre une photo pour certaines raisons de remplacement d'EPI.
--   **Début d'une nouvelle fonctionnalité** : L'agent a commencé à implémenter un système de rappel par notification pour les pompiers qui n'ont pas effectué leur inspection mensuelle d'EPI.
+La demande la plus récente et la plus urgente de l'utilisateur était de faire fonctionner correctement l'importation d'EPI via un fichier, car elle échouait de plusieurs manières (parsing, mappage de données, logique de la base de données).
 
 **PRODUCT REQUIREMENTS:**
-1.  **Notifications SMS** : Le flux de notification par SMS pour les remplacements doit être fonctionnel, y compris les liens d'action.
-2.  **Synchronisation des données** : Les informations personnelles de l'utilisateur doivent être cohérentes entre le module Personnel et la page Mon Profil.
-3.  **Permissions d'accès** : Les employés réguliers doivent pouvoir consulter le module Interventions en mode lecture seule si un paramètre est activé.
-4.  **Documentation EPI** : Une photo doit être obligatoire pour les demandes de remplacement d'EPI pour cause d'usure ou de défaut.
-5.  **Rappels d'inspection** : Un système doit notifier les pompiers individuellement s'ils n'ont pas complété leur inspection mensuelle d'EPI.
-6.  **Fonctionnalités Super-Admin** : Les super-admins doivent pouvoir supprimer des cartes d'appel pour nettoyer les données de test sur un tenant.
-7.  **Indicateurs de performance** : Le temps de réponse des interventions doit être visible et comparé à un seuil défini.
-8.  **Stabilité de l'environnement** : L'application doit se déployer sans erreur et la connexion en mode preview doit être stable.
+1.  **Importation de données EPI** : Le système doit permettre l'importation d'EPI à partir de fichiers CSV, XLS, XLSX et TXT.
+2.  **Mappage intelligent** : L'importateur doit faire correspondre intelligemment les employés (assigné à) même avec des variations de noms, et créer automatiquement les types d'EPI manquants.
+3.  **Intégrité des données** : Tous les champs du fichier source (coût d'achat, numéro de série du fabricant, etc.) doivent être correctement sauvegardés dans la base de données.
+4.  **Alertes sur le tableau de bord** : Les personnes ressources et les administrateurs doivent voir les alertes pertinentes concernant les équipements (maintenance, expiration, etc.) sur leur tableau de bord principal.
+5.  **Catégories par défaut** : Les nouveaux tenants doivent être initialisés avec une liste prédéfinie de catégories d'équipement.
+6.  **Rappels d'inspection EPI** : Un système doit notifier les pompiers qui n'ont pas effectué leur inspection mensuelle d'EPI.
 
 **User's preferred language**: French. You MUST respond in French.
 
 **what currently exists?**
-Une application full-stack (React/FastAPI/MongoDB) qui a subi une session intensive de corrections de bugs et d'ajouts de fonctionnalités. De nombreux problèmes critiques liés au profil utilisateur, aux notifications, aux remplacements, à la gestion des EPI et au déploiement ont été résolus. De nouvelles fonctionnalités, comme la suppression de cartes d'appel par les super-admins, les indicateurs de temps de réponse et l'accès en lecture seule, sont maintenant implémentées. L'agent a commencé à mettre en place un nouveau job scheduler pour les rappels d'inspection EPI.
+Une application full-stack (React/FastAPI/MongoDB) avec une large gamme de fonctionnalités, y compris la gestion du personnel, les interventions, les formations, les remplacements et la gestion des EPI. La session actuelle s'est concentrée sur la correction d'un module d'importation CSV pour les EPI qui était profondément défectueux. L'agent a également commencé l'implémentation de nouvelles fonctionnalités demandées par l'utilisateur, telles que les alertes sur le tableau de bord et les catégories d'équipement par défaut. Le code de base est complexe, avec des composants frontend très volumineux.
 
 **Last working item**:
--   **Last item agent was working**: Implémentation d'un système de rappel pour les inspections mensuelles d'EPI non effectuées. L'agent a ajouté un nouveau job planifié () dans  pour vérifier chaque jour si les pompiers ont effectué leur inspection et créer une notification si ce n'est pas le cas.
--   **Status**: IN PROGRESS
+-   **Last item agent was working**: Correction d'une série de bugs dans le flux d'importation CSV des EPI. L'utilisateur a signalé que même après plusieurs tentatives de correction, les données importées étaient incorrectes (mauvais numéro de série, coût d'achat à 0). L'agent a corrigé le mappage des champs dans le backend () et le frontend (), et a ajouté un bouton Supprimer tous pour permettre à l'utilisateur de nettoyer les données incorrectes et de réessayer l'importation.
+-   **Status**: USER VERIFICATION PENDING
 -   **Agent Testing Done**: N
--   **Which testing method agent to use?**: backend testing agent. Le testeur devra valider que le nouveau job planifié s'exécute correctement et crée les notifications attendues dans la base de données pour les utilisateurs concernés. Une méthode de test efficace serait de créer un endpoint de débogage temporaire qui déclenche manuellement le job  pour une vérification immédiate.
+-   **Which testing method agent to use?**: Manual testing by user. L'utilisateur doit d'abord utiliser le nouveau bouton Supprimer tous les EPI pour nettoyer la base de données, puis tenter de réimporter son fichier CSV. Si l'importation échoue à nouveau, le prochain agent devra inspecter les logs du backend.
 -   **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
--   Aucun problème en cours signalé par l'utilisateur.
+-   **Issue 1: (P0) Le flux d'importation CSV des EPI est défectueux et peu fiable.**
+    -   **Attempted fixes**:
+        -   Ajout du support pour les fichiers XLS, XLSX et TXT en utilisant la bibliothèque .
+        -   Correction du parsing CSV en rétablissant l'utilisation de .
+        -   Implémentation d'une logique de correspondance fuzzy pour associer les noms des employés.
+        -   Ajout de la création automatique des types d'EPI (par exemple, Habit de combat) s'ils n'existent pas.
+        -   Création d'un endpoint de correction () et d'un bouton intelligent dans l'interface utilisateur pour réparer les EPI précédemment mal importés.
+        -   Correction des modèles Pydantic du backend et de la logique d'affichage du frontend pour gérer correctement la relation entre  (nom) et  (UUID).
+        -   Correction de la logique de mappage dans le backend pour sauvegarder correctement tous les champs, y compris  et .
+        -   Ajout d'un bouton Supprimer tous les EPI pour permettre à l'utilisateur de recommencer à zéro.
+    -   **Next debug checklist**:
+        1.  Confirmer avec l'utilisateur qu'il a sauvegardé le code sur Github et l'a déployé sur son environnement de production (Render), car il était confus à ce sujet.
+        2.  Demander à l'utilisateur de cliquer sur le bouton 🗑️ Supprimer tous les EPI dans l'onglet Inventaire de la gestion des EPI.
+        3.  Demander à l'utilisateur de réimporter son fichier CSV.
+        4.  Si l'importation échoue ou si les données sont toujours incorrectes, inspecter les logs du backend (==> /var/log/supervisor/backend.err.log <==
+  File "/root/.venv/lib/python3.11/site-packages/pymongo/mongo_client.py", line 1801, in _process_periodic_tasks
+    self._topology.update_pool()
+  File "/root/.venv/lib/python3.11/site-packages/pymongo/topology.py", line 537, in update_pool
+    server.pool.remove_stale_sockets(generation)
+  File "/root/.venv/lib/python3.11/site-packages/pymongo/pool.py", line 1510, in remove_stale_sockets
+    conn = self.connect()
+           ^^^^^^^^^^^^^^
+  File "/root/.venv/lib/python3.11/site-packages/pymongo/pool.py", line 1556, in connect
+    _raise_connection_failure(self.address, error)
+  File "/root/.venv/lib/python3.11/site-packages/pymongo/pool.py", line 398, in _raise_connection_failure
+    raise NetworkTimeout(msg) from error
+pymongo.errors.NetworkTimeout: ac-mwksu0n-shard-00-01.crqjvsp.mongodb.net:27017: timed out
+INFO:     Will watch for changes in these directories: ['/app/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [48] using WatchFiles
+INFO:     Started server process [86]
+INFO:     Waiting for application startup.
+2026-01-31 21:18:09,517 - server - INFO - Service SFTP initialisé
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'routes/epi.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [86]
+INFO:     Started server process [1343]
+INFO:     Waiting for application startup.
+2026-01-31 21:49:25,762 - server - INFO - Service SFTP initialisé
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'routes/epi.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [1343]
+INFO:     Started server process [1456]
+INFO:     Waiting for application startup.
+2026-01-31 21:50:01,169 - server - INFO - Service SFTP initialisé
+INFO:     Application startup complete.
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [1456]
+INFO:     Stopping reloader process [48]
+INFO:     Will watch for changes in these directories: ['/app/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [1874] using WatchFiles
+INFO:     Started server process [1876]
+INFO:     Waiting for application startup.
+2026-01-31 21:52:26,809 - server - INFO - Service SFTP initialisé
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'routes/epi.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [1876]
+INFO:     Started server process [2662]
+INFO:     Waiting for application startup.
+2026-01-31 22:36:32,836 - server - INFO - Service SFTP initialisé
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'routes/epi.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [2662]
+INFO:     Started server process [2721]
+INFO:     Waiting for application startup.
+2026-01-31 22:36:51,174 - server - INFO - Service SFTP initialisé
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'routes/epi.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [2721]
+INFO:     Started server process [2780]
+INFO:     Waiting for application startup.
+2026-01-31 22:37:02,942 - server - INFO - Service SFTP initialisé
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'routes/epi.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [2780]
+INFO:     Started server process [2839]
+INFO:     Waiting for application startup.
+2026-01-31 22:37:14,137 - server - INFO - Service SFTP initialisé
+INFO:     Application startup complete.
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [2839]
+INFO:     Stopping reloader process [1874]
+INFO:     Will watch for changes in these directories: ['/app/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [3055] using WatchFiles
+INFO:     Started server process [3057]
+INFO:     Waiting for application startup.
+2026-01-31 22:38:36,510 - server - INFO - Service SFTP initialisé
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'routes/epi.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3057]
+INFO:     Started server process [3212]
+INFO:     Waiting for application startup.
+2026-01-31 22:42:30,356 - server - INFO - Service SFTP initialisé
+INFO:     Application startup complete.
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3212]
+INFO:     Stopping reloader process [3055]
+INFO:     Will watch for changes in these directories: ['/app/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [3290] using WatchFiles
+INFO:     Started server process [3292]
+INFO:     Waiting for application startup.
+2026-01-31 22:42:45,337 - server - INFO - Service SFTP initialisé
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'routes/epi.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3292]
+INFO:     Started server process [3424]
+INFO:     Waiting for application startup.
+2026-01-31 22:47:02,130 - server - INFO - Service SFTP initialisé
+INFO:     Application startup complete.
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3424]
+INFO:     Stopping reloader process [3290]
+INFO:     Will watch for changes in these directories: ['/app/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [3915] using WatchFiles
+INFO:     Started server process [3917]
+INFO:     Waiting for application startup.
+2026-01-31 22:49:33,211 - server - INFO - Service SFTP initialisé
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'routes/epi.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3917]
+INFO:     Started server process [4300]
+INFO:     Waiting for application startup.
+2026-01-31 22:57:45,360 - server - INFO - Service SFTP initialisé
+INFO:     Application startup complete.
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [4300]
+INFO:     Stopping reloader process [3915]
+INFO:     Will watch for changes in these directories: ['/app/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [5999] using WatchFiles
+INFO:     Started server process [6001]
+INFO:     Waiting for application startup.
+2026-01-31 23:02:50,185 - server - INFO - Service SFTP initialisé
+INFO:     Application startup complete.
+INFO:     Will watch for changes in these directories: ['/app/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [47] using WatchFiles
+INFO:     Started server process [89]
+INFO:     Waiting for application startup.
+2026-02-01 01:59:00,516 - server - INFO - Service SFTP initialisé
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'routes/epi.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [89]
+INFO:     Started server process [257]
+INFO:     Waiting for application startup.
+2026-02-01 02:14:22,554 - server - INFO - Service SFTP initialisé
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'routes/epi.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [257]
+INFO:     Started server process [424]
+INFO:     Waiting for application startup.
+2026-02-01 02:15:23,299 - server - INFO - Service SFTP initialisé
+INFO:     Application startup complete.
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [424]
+INFO:     Stopping reloader process [47]
+INFO:     Will watch for changes in these directories: ['/app/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [843] using WatchFiles
+INFO:     Started server process [845]
+INFO:     Waiting for application startup.
+2026-02-01 02:17:41,647 - server - INFO - Service SFTP initialisé
+INFO:     Application startup complete.
+INFO:     Will watch for changes in these directories: ['/app/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [47] using WatchFiles
+
+==> /var/log/supervisor/backend.out.log <==
+INFO:     10.64.129.7:39828 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.129.10:45502 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.129.10:45502 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.136.226:52120 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.135.173:39660 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.136.226:43704 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.135.173:50288 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.129.10:34050 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.129.10:34050 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.136.245:47724 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.135.173:46638 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.129.7:56020 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.136.245:43756 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.136.245:42712 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.129.9:57982 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.129.9:57990 - "GET /api/shefford/planning/assignations/2026-02-01?mode=mois HTTP/1.1" 200 OK
+INFO:     10.64.129.9:57982 - "GET /api/shefford/planning/assignations/2026-01-01?mode=mois HTTP/1.1" 200 OK
+INFO:     10.64.129.10:50172 - "GET /api/shefford/users HTTP/1.1" 200 OK
+INFO:     10.64.129.7:50322 - "GET /api/shefford/mes-epi HTTP/1.1" 200 OK
+INFO:     10.64.129.13:49482 - "GET /api/shefford/formations/mon-taux-presence?annee=2026 HTTP/1.1" 200 OK
+INFO:     10.64.129.13:49504 - "GET /api/shefford/demandes-conge?statut=approuve&date_actuelle=2026-01-31 HTTP/1.1" 200 OK
+INFO:     10.64.135.173:51176 - "GET /api/shefford/notifications?limit=10 HTTP/1.1" 200 OK
+INFO:     10.64.129.10:50148 - "GET /api/shefford/formations?annee=2026 HTTP/1.1" 200 OK
+INFO:     10.64.129.10:50158 - "GET /api/shefford/planning/mes-heures?date_debut=2026-01-01&date_fin=2026-01-31 HTTP/1.1" 200 OK
+INFO:     10.64.135.173:51170 - "GET /api/shefford/planning/assignations/2026-01-01 HTTP/1.1" 200 OK
+INFO:     10.64.135.173:51164 - "GET /api/shefford/actifs/vehicules HTTP/1.1" 200 OK
+INFO:     10.64.129.13:49496 - "GET /api/shefford/formations?annee=2027 HTTP/1.1" 200 OK
+INFO:     10.64.129.10:50168 - "GET /api/shefford/dashboard/alertes-equipements HTTP/1.1" 200 OK
+INFO:     10.64.129.7:52920 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.129.9:33382 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.129.10:44680 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.129.13:38698 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.136.245:49700 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.136.226:35308 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.129.10:33158 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.129.13:52060 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.129.10:37668 - "GET /api/shefford/planning/assignations/2026-01-01?mode=mois HTTP/1.1" 200 OK
+INFO:     10.64.129.13:40994 - "GET /api/shefford/formations/mon-taux-presence?annee=2026 HTTP/1.1" 200 OK
+INFO:     10.64.129.10:37674 - "GET /api/shefford/users HTTP/1.1" 200 OK
+INFO:     10.64.129.13:41016 - "GET /api/shefford/planning/assignations/2026-01-01 HTTP/1.1" 200 OK
+INFO:     10.64.136.245:53872 - "GET /api/shefford/actifs/vehicules HTTP/1.1" 200 OK
+INFO:     10.64.135.173:44702 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.129.13:40996 - "GET /api/shefford/notifications?limit=10 HTTP/1.1" 200 OK
+INFO:     10.64.135.173:44718 - "GET /api/shefford/demandes-conge?statut=approuve&date_actuelle=2026-01-31 HTTP/1.1" 200 OK
+INFO:     10.64.129.7:59612 - "GET /api/shefford/formations?annee=2027 HTTP/1.1" 200 OK
+INFO:     10.64.129.7:59598 - "GET /api/shefford/formations?annee=2026 HTTP/1.1" 200 OK
+INFO:     10.64.136.226:51144 - "GET /api/shefford/planning/mes-heures?date_debut=2026-01-01&date_fin=2026-01-31 HTTP/1.1" 200 OK
+INFO:     10.64.136.245:53866 - "GET /api/shefford/mes-epi HTTP/1.1" 200 OK
+INFO:     10.64.129.10:37672 - "GET /api/shefford/dashboard/alertes-equipements HTTP/1.1" 200 OK
+INFO:     10.64.129.13:41002 - "GET /api/shefford/planning/assignations/2026-02-01?mode=mois HTTP/1.1" 200 OK
+INFO:     10.64.129.10:37674 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.135.173:48122 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.136.245:60934 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.136.226:42934 - "GET /api/shefford/users HTTP/1.1" 200 OK
+INFO:     10.64.136.245:35614 - "GET /api/shefford/competences HTTP/1.1" 200 OK
+INFO:     10.64.129.7:59978 - "GET /api/shefford/competences HTTP/1.1" 200 OK
+INFO:     10.64.135.173:60728 - "GET /api/shefford/users HTTP/1.1" 200 OK
+INFO:     10.64.136.245:35604 - "GET /api/shefford/grades HTTP/1.1" 200 OK
+INFO:     10.64.129.7:59988 - "GET /api/shefford/parametres/equipes-garde HTTP/1.1" 200 OK
+INFO:     10.64.129.9:58824 - "GET /api/shefford/parametres/equipes-garde HTTP/1.1" 200 OK
+INFO:     10.64.129.13:46020 - "GET /api/shefford/grades HTTP/1.1" 200 OK
+INFO:     10.64.136.226:42934 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.129.10:38546 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.136.245:57358 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.129.13:38870 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.129.13:44724 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.129.13:44724 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.136.226:46086 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.129.7:55554 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.129.9:58168 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.129.10:51220 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.129.13:52150 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.135.173:50678 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.129.10:37426 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.129.9:59900 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.129.9:37168 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.129.10:41166 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.135.173:35568 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.129.9:35564 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.129.7:39832 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.136.245:39872 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.135.173:49634 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.136.245:38108 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.135.173:36154 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.129.9:39616 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.129.7:38610 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.136.245:59542 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.129.9:40130 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.129.7:39254 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.129.9:59326 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.129.10:37264 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.129.7:48254 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.129.10:50446 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.136.226:51088 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.136.245:52758 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.136.226:34174 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.135.173:57106 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.136.226:57358 - "GET /api/shefford/actifs/vehicules HTTP/1.1" 200 OK
+INFO:     10.64.129.9:59828 - "GET /api/shefford/actifs/vehicules HTTP/1.1" 200 OK
+INFO:     10.64.136.226:57358 - "GET /api/shefford/users HTTP/1.1" 200 OK
+INFO:     10.64.136.245:54744 - "GET /api/shefford/formulaires-inspection HTTP/1.1" 200 OK
+INFO:     10.64.135.173:52582 - "GET /api/shefford/formulaires-inspection HTTP/1.1" 200 OK
+INFO:     10.64.136.245:54758 - "GET /api/shefford/users HTTP/1.1" 200 OK
+INFO:     10.64.129.10:35942 - "GET /api/shefford/epi HTTP/1.1" 200 OK
+INFO:     10.64.129.13:39192 - "GET /api/shefford/isp HTTP/1.1" 200 OK
+INFO:     10.64.136.245:54732 - "GET /api/shefford/types-epi HTTP/1.1" 200 OK
+INFO:     10.64.129.10:35940 - "GET /api/shefford/types-epi HTTP/1.1" 200 OK
+INFO:     10.64.129.13:39176 - "GET /api/shefford/epi HTTP/1.1" 200 OK
+INFO:     10.64.129.13:39168 - "GET /api/shefford/isp HTTP/1.1" 200 OK
+INFO:     10.64.129.7:34152 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.135.173:50292 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.135.173:41914 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.129.7:57124 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.129.13:48872 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.136.226:51398 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.136.245:40000 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.129.10:33036 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.135.173:56356 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.136.226:57214 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.136.226:52610 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.129.9:51914 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.129.7:51990 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.129.10:59758 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.131.206:43402 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.131.204:41250 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.131.204:55190 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.131.205:46418 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.136.245:59440 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.135.173:56386 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.129.9:38758 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.129.13:53040 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.135.173:54706 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.129.9:50268 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+✅ Firebase Admin SDK initialized from environment variable
+✅ Index MongoDB créés avec succès (optimisations complètes)
+INFO:     10.64.135.173:51638 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.129.7:35258 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.131.204:58610 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.136.245:37840 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.136.226:48978 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.136.226:48978 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.129.7:34212 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.136.226:41208 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+✅ Firebase Admin SDK initialized from environment variable
+✅ Index MongoDB créés avec succès (optimisations complètes)
+✅ Firebase Admin SDK initialized from environment variable
+✅ Index MongoDB créés avec succès (optimisations complètes)
+✅ Firebase Admin SDK initialized from environment variable
+✅ Index MongoDB créés avec succès (optimisations complètes)
+INFO:     10.64.131.202:38724 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.131.205:41528 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.131.203:48306 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.131.204:38176 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.138.62:60044 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.131.34:49436 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+✅ Firebase Admin SDK initialized from environment variable
+✅ Index MongoDB créés avec succès (optimisations complètes)
+✅ Firebase Admin SDK initialized from environment variable
+✅ Index MongoDB créés avec succès (optimisations complètes)
+✅ Firebase Admin SDK initialized from environment variable
+✅ Index MongoDB créés avec succès (optimisations complètes)
+✅ Firebase Admin SDK initialized from environment variable
+✅ Index MongoDB créés avec succès (optimisations complètes)
+INFO:     10.64.136.226:35334 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.129.9:57286 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+✅ Firebase Admin SDK initialized from environment variable
+✅ Index MongoDB créés avec succès (optimisations complètes)
+✅ Firebase Admin SDK initialized from environment variable
+✅ Index MongoDB créés avec succès (optimisations complètes)
+✅ Firebase Admin SDK initialized from environment variable
+✅ Index MongoDB créés avec succès (optimisations complètes)
+INFO:     10.64.131.205:54410 - "GET /api/health HTTP/1.1" 200 OK
+✅ Firebase Admin SDK initialized from environment variable
+✅ Index MongoDB créés avec succès (optimisations complètes)
+INFO:     10.64.131.205:33718 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.131.202:37946 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+✅ Firebase Admin SDK initialized from environment variable
+✅ Index MongoDB créés avec succès (optimisations complètes)
+INFO:     10.64.131.34:52980 - "GET /api/demo/epi HTTP/1.1" 401 Unauthorized
+✅ Firebase Admin SDK initialized from environment variable
+✅ Index MongoDB créés avec succès (optimisations complètes)
+INFO:     10.64.131.7:46710 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.138.62:47440 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+✅ Firebase Admin SDK initialized from environment variable
+✅ Index MongoDB créés avec succès (optimisations complètes)
+INFO:     10.64.129.9:59584 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.129.7:43612 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.131.202:58938 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.131.203:43066 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+✅ Firebase Admin SDK initialized from environment variable
+✅ Index MongoDB créés avec succès (optimisations complètes)
+✅ Firebase Admin SDK initialized from environment variable
+✅ Index MongoDB créés avec succès (optimisations complètes)
+INFO:     10.64.136.245:52532 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.136.245:52532 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+✅ Firebase Admin SDK initialized from environment variable
+✅ Index MongoDB créés avec succès (optimisations complètes)
+INFO:     10.64.135.173:37926 - "GET /api/shefford/notifications HTTP/1.1" 200 OK
+INFO:     10.64.136.226:38238 - "GET /api/shefford/notifications/non-lues/count HTTP/1.1" 200 OK
+INFO:     10.64.138.62:34796 - "GET /api/health HTTP/1.1" 200 OK) pour les erreurs lors de l'appel à .
+        5.  Vérifier les données envoyées par le frontend dans la console du navigateur (onglet Réseau) pour s'assurer que le mappage est correct avant l'envoi.
+    -   **Why fix this issue and what will be achieved with the fix?**: C'est une fonctionnalité de saisie de données essentielle pour l'utilisateur, qui est actuellement bloqué et frustré. La résolution de ce problème permettra à l'utilisateur de peupler son système avec des données d'EPI correctes.
+    -   **Status**: USER VERIFICATION PENDING
+    -   **Is recurring issue?**: Y
+    -   **Should Test frontend/backend/both after fix?**: both
 
 **In progress Task List**:
--   **Task 1: (P0) Finaliser la fonctionnalité de rappel d'inspection EPI.**
-    -   **Where to resume**: Le code backend pour le job planifié a été ajouté dans .
-    -   **What will be achieved with this?**: Les pompiers recevront des rappels automatiques, ce qui augmentera la conformité des inspections d'équipement.
+-   **Task 1: (P1) Finaliser la fonctionnalité de rappel d'inspection EPI.**
+    -   **Where to resume**: Le code du job planifié ( dans ) et l'interface utilisateur des paramètres () sont en place. L'agent a corrigé une incohérence de source de données, mais la fonctionnalité n'a jamais été entièrement testée. La prochaine étape consiste à utiliser l'endpoint de débogage () pour déclencher manuellement le job et vérifier que les notifications sont créées et envoyées correctement.
+    -   **What will be achieved with this?**: Les pompiers recevront des rappels automatiques pour effectuer leurs inspections mensuelles d'EPI, augmentant ainsi la conformité.
     -   **Status**: IN PROGRESS
     -   **Should Test frontend/backend/both after fix?**: both
-    -   **Blocked on something**: Non.
-
-**Task Detail**:
--   **Task 1: Finaliser la fonctionnalité de rappel d'inspection EPI.**
-    -   **Where to resume**:
-        1.  **Frontend**: Ajouter le sélecteur (checkbox) dans l'interface des paramètres EPI () pour activer l'envoi de rappels par e-mail ().
-        2.  **Backend**: Tester rigoureusement le job  dans . Comme il est difficile de tester un scheduler, la meilleure approche est de créer un endpoint de débogage temporaire qui déclenche le job à la demande.
-    -   **What will be achieved with this?**: Les pompiers recevront des rappels automatiques, ce qui augmentera la conformité des inspections d'équipement.
-    -   **Status**: IN PROGRESS
+-   **Task 2: (P1) Valider l'implémentation des alertes d'équipement sur le tableau de bord.**
+    -   **Where to resume**: L'agent a créé un endpoint backend () et ajouté une section d'interface utilisateur dans . L'implémentation semble terminée mais n'a pas été validée par l'utilisateur. La prochaine étape est de demander à l'utilisateur de vérifier si la section 🔔 Alertes Équipements s'affiche sur son tableau de bord et si les données sont correctes.
+    -   **What will be achieved with this?**: Les administrateurs et les personnes ressources auront une vue centralisée des alertes critiques concernant les équipements directement sur leur tableau de bord.
+    -   **Status**: USER VERIFICATION PENDING
+    -   **Should Test frontend/backend/both after fix?**: both
+-   **Task 3: (P2) Valider l'initialisation des catégories d'équipement par défaut.**
+    -   **Where to resume**: L'agent a implémenté la logique pour créer un ensemble de catégories d'équipement par défaut pour les nouveaux tenants () et a ajouté un bouton () pour que les tenants existants puissent les initialiser. Cela n'a pas été testé par l'utilisateur. La prochaine étape est de demander à l'utilisateur de tester le bouton 📦 Initialiser catégories par défaut.
+    -   **What will be achieved with this?**: Les utilisateurs auront une base de catégories d'équipement pour commencer, ce qui simplifie la configuration.
+    -   **Status**: USER VERIFICATION PENDING
     -   **Should Test frontend/backend/both after fix?**: both
 
 **Upcoming and Future Tasks**
 -   **Upcoming Tasks:**
-    -   (P2) Terminer la refactorisation du backend (ex: centraliser la logique d'envoi d'email).
+    -   (P2) Refactoriser le backend, par exemple en centralisant la logique d'envoi d'e-mails.
+    -   (P2) Refactoriser les composants frontend monolithiques (, ).
 -   **Future Tasks:**
     -   (P2) Finaliser la transmission DSI réelle (actuellement MOCK).
     -   (P2) Module de gestion des jours fériés.
     -   (P2) Module de facturation pour l'entraide.
     -   (P2) Module Schéma de couverture de risque (statistiques avancées sur les temps de réponse).
-    -   (P3) Améliorer les messages d'import CSV.
     -   (P3) Gestion véhiculaire (implémenter les codes radio 10-07, 10-17, 10-90).
 
 **Completed work in this session**
--   **Fiabilisation et Déploiement** :
-    -   Correction des dépendances , ,  et des packages Google dans  pour résoudre les erreurs de déploiement sur Render.
-    -   Amélioration de la stabilité de la connexion MongoDB en mode preview.
--   **Profil Utilisateur et Authentification** :
-    -   Correction de la sauvegarde des préférences de notification.
-    -   Correction du bug d'affichage de la photo de profil dans Mon Profil.
-    -   Correction du clignotement, du  et de la logique de recadrage de la photo de profil.
-    -   Correction de la synchronisation des données entre les modules Personnel et Mon Profil.
--   **Remplacements et Notifications** :
-    -   Création d'une page de choix () pour les liens SMS, rendant le flux fonctionnel.
-    -   Correction du calcul des KPIs et de la couleur du badge Acceptée.
-    -   Correction de la logique de notification pour les demandes de congés (les admins reçoivent les notifs même si le demandeur est admin).
-    -   Implémentation du blocage de l'auto-approbation des congés.
-    -   Amélioration des notifications sonores avec 16 sonneries au choix.
--   **Nouvelles fonctionnalités et améliorations majeures** :
-    -   **Formations** : La fonctionnalité de rattrapage inclut désormais une durée et met à jour les heures de formation et les compétences de l'employé.
-    -   **Interventions** : Un indicateur visuel (vert/jaune/rouge) basé sur un seuil affiche désormais le temps de réponse dans l'historique.
-    -   **Permissions** : Un paramètre permet de donner aux employés un accès en lecture seule au module Interventions.
-    -   **Super-admin** : Une fonctionnalité a été ajoutée pour permettre aux super-admins de supprimer définitivement des cartes d'appel.
-    -   **EPI** : Une photo est maintenant obligatoire pour les demandes de remplacement pour cause d'usure ou de défaut, avec affichage de la photo pour l'admin.
+-   Ajout de la prise en charge des formats XLS, XLSX et TXT pour l'importation d'EPI et d'équipements.
+-   Correction de multiples bugs dans la logique de l'importateur CSV, y compris le mappage des champs (, ), la correspondance intelligente des utilisateurs et la création automatique des types d'EPI.
+-   Implémentation d'un bouton Supprimer tous les EPI dans l'interface de gestion des EPI pour faciliter le nettoyage des données.
+-   Implémentation d'un bouton intelligent pour corriger les types d'EPI mal importés, qui n'apparaît que si des corrections sont nécessaires.
+-   Correction de la logique d'affichage dans le module EPI pour afficher le nom du type d'EPI au lieu de son ID.
+-   Confirmation que la fonctionnalité d'envoi de PDF par e-mail pour la remise de propriété est opérationnelle.
+-   Implémentation de la base pour les alertes d'équipement sur le tableau de bord (backend et frontend).
+-   Implémentation de la création de catégories d'équipement par défaut pour les nouveaux tenants et les tenants existants.
 
 **Earlier issues found/mentioned but not fixed**
 -   Aucun.
 
 **Known issue recurrence from previous fork**
--   Aucune récurrence directe, mais la session a confirmé que les modifications dans une partie de l'application (ex: API backend) peuvent avoir des effets de bord inattendus sur le frontend, nécessitant des corrections en cascade.
+-   La complexité de la base de code, en particulier dans les grands composants React comme , continue de provoquer des régressions et des effets de bord inattendus. Les modifications apportées à une partie du flux d'importation CSV ont à plusieurs reprises révélé ou causé des problèmes dans d'autres parties.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Débogage de déploiement** : Isolation et nettoyage des dépendances conflictuelles dans .
--   **Gestion de la connexion DB** : Amélioration de la robustesse de la connexion  (MongoDB) avec des timeouts et des options de pool pour éviter les connexions stales.
--   **Jobs Planifiés (APScheduler)** : Implémentation d'un nouveau job quotidien pour envoyer des notifications de rappel.
--   **Frontend Résilient** : Utilisation de  pour s'assurer que l'échec d'une API secondaire ne bloque pas le rendu de la page principale.
--   **Gestion des événements DOM** : Résolution de conflits entre les événements  et  en utilisant  pour corriger un menu clignotant.
--   **CSS Stacking Context** : Correction d'un bug de  où un menu apparaissait derrière d'autres éléments.
--   **Upload de Fichiers (React/FastAPI)** : Implémentation d'un flux complet pour téléverser une image, la valider et la stocker côté backend.
+-   **Analyse de fichiers Frontend** : Utilisation des bibliothèques  pour les fichiers CSV/TXT et  pour les fichiers Excel afin de permettre l'importation multi-format.
+-   **Correspondance de chaînes Fuzzy** : Implémentation d'une logique de correspondance intelligente dans  pour trouver des utilisateurs même avec des variations dans leurs noms.
+-   **Gestion d'état dynamique de l'UI** : Création de boutons dans React qui n'apparaissent que lorsque certaines conditions sont remplies sur le backend (par exemple, le bouton Corriger X EPIs).
+-   **Incohérences de modèle de données** : Débogage de problèmes causés par des désynchronisations entre les données stockées dans MongoDB (par exemple, ) et les modèles Pydantic ( model) et l'état React qui les attendent.
 
 **key DB schema**
--   ****: Ajout du champ optionnel .
--   ****: Utilisation du champ  pour différencier les heures de formation classiques des rattrapages.
-
-**changes in tech stack**
--   Nettoyage de , suppression de  et de versions figées de  et packages Google.
+-   ****: Le champ  (string) est en cours de dépréciation au profit de  (string, UUID d'un document dans ). Le code doit gérer les deux pour la rétrocompatibilité.
+-   ****: Les paramètres liés aux EPI et aux équipements sont maintenant lus depuis  plutôt que depuis une collection distincte ou un sous-document.
+-   ****: Collection contenant les définitions des types d'EPI, maintenant créée automatiquement lors de l'import si un type est manquant.
 
 **All files of reference**
--   : Contient la logique du nouveau job planifié.
--   : A été le focus de nombreuses corrections de bugs UI et de données.
--   : A été lourdement modifié pour de nouvelles fonctionnalités de permissions et de visualisation.
--   : Contient la nouvelle logique de photo obligatoire.
--   : Fichier qui a été nettoyé pour permettre le déploiement.
+-   : Contient toute la logique complexe de l'importation, de la correction et de la suppression des EPI. C'est le fichier le plus critique.
+-   : Le composant frontend pour le flux d'importation des EPI.
+-   : Un composant God component de plus de 3000 lignes qui gère tout l'affichage et l'interaction avec les EPI.
+-   : Contient le nouvel endpoint pour les alertes du tableau de bord.
+-   : Contient la logique de création des catégories par défaut.
 
 **Areas that need refactoring**:
--   Les composants React  (>2800 lignes),  (>1500 lignes), et  (>1200 lignes) sont devenus excessivement grands et complexes. Ils devraient être décomposés en composants plus petits et spécialisés pour améliorer la maintenabilité.
+-   Les composants React  (>3k lignes),  (>2.8k lignes), et  (>1.5k lignes) sont extrêmement volumineux et difficiles à maintenir. Ils doivent être décomposés en composants plus petits et plus ciblés. La complexité de  a directement contribué aux difficultés de débogage dans cette session.
 
 **key api endpoints**
--   : (Nouveau) Permet aux super-admins de supprimer une intervention.
--   : (Modifié) Accepte désormais une  dans le corps de la requête.
--   : (Modifié) Accepte une  pour enregistrer un rattrapage.
--   : (Corrigé) Ne crashe plus à cause d'un import  manquant.
--   : (Nouveau) Redirige l'utilisateur vers une page pour accepter/refuser un remplacement depuis un lien SMS.
+-   : Endpoint principal pour l'importation des EPI.
+-   : Endpoint pour corriger les EPI existants avec des types incorrects.
+-   : Endpoint pour vérifier s'il y a des EPI à corriger.
+-   : Endpoint pour supprimer tous les EPI d'un tenant.
+-   : Endpoint pour récupérer les alertes d'équipement pour le tableau de bord.
+-   : Endpoint de débogage pour tester le job de rappel.
 
 **Critical Info for New Agent**
 -   **Parlez exclusivement en français.**
--   **Priorité absolue** : Terminer et tester la fonctionnalité de rappel d'inspection EPI. Le code backend est écrit ( dans ) mais n'est pas testé et la partie frontend (le paramètre pour activer les emails) est manquante.
--   **Test du Scheduler** : Pour tester le job planifié sans attendre, il est fortement recommandé de créer un endpoint de débogage temporaire et sécurisé qui déclenche la fonction  manuellement.
--   **Composants God** : Soyez extrêmement prudent en modifiant ,  et . Ce sont des fichiers très volumineux où les changements peuvent avoir des conséquences imprévues.
--   **Dépendances Backend** : Le fichier  a été une source de problèmes. Évitez d'y figer des dépendances sans raison, surtout celles qui sont des sous-dépendances d'autres librairies.
+-   **Priorité absolue (P0)** : Aider l'utilisateur à réussir l'importation de ses EPI. Guidez-le dans le processus de suppression des anciennes données et de réimportation. Soyez prêt à analyser les logs du backend car le flux a été très fragile.
+-   **Confusion Preview vs Production** : L'utilisateur est confus sur la différence entre l'environnement de prévisualisation Emergent et son déploiement de production sur Render. Rappelez-lui clairement que les modifications ne sont disponibles en production qu'après avoir utilisé Save to Github et que le déploiement de Render est terminé.
+-   **Base de code fragile** : Soyez extrêmement prudent lors de la modification du code. Les composants sont très grands et les changements peuvent avoir des conséquences inattendues. Testez minutieusement avant de conclure qu'un problème est résolu.
 
 **documents and test reports created in this job**
--   
+-   Aucun document ou rapport de test formel n'a été créé.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: Signale que les informations personnelles ne se synchronisent pas entre le module Personnel et Mon Profil.
-2.  **Agent**: Investigue et trouve une erreur API () et un  fragile.
-3.  **User**: Confirme via une capture d'écran l'erreur et le fait que les données sont maintenant affichées après la correction.
-4.  **Agent**: Confirme les corrections.
-5.  **User**: Signale des problèmes de connexion intermittents en mode preview pour son compte .
-6.  **Agent**: Investigue, améliore la robustesse de la connexion MongoDB, et conclut que c'est un problème de mot de passe.
-7.  **User**: Confirme ne pas recevoir l'email de réinitialisation, bien qu'il existe dans la base de données.
-8.  **User**: Finalement, reçoit l'email, réinitialise le mot de passe et confirme que la connexion fonctionne.
-9.  **User**: Demande une nouvelle fonctionnalité : exiger une photo pour les demandes de remplacement d'EPI pour usure normale ou défaut constaté.
-10. **Agent**: Implémente la fonctionnalité sur le front et le back.
-11. **User**: Demande la confirmation que la fonctionnalité de rappel pour les inspections EPI est bien en place. L'agent découvre qu'elle ne notifie que les admins, pas les pompiers. L'utilisateur demande à ce que la fonctionnalité complète soit implémentée. *(Ceci est le dernier point sur lequel l'agent travaillait)*.
+-   **User**: Signale que même si le bouton de correction a fonctionné, les EPI ne sont toujours pas visibles.
+-   **Agent**: Découvre une incohérence entre le modèle Pydantic du backend et l'état du frontend ( vs ) et la corrige.
+-   **User**: Confirme que les EPI sont maintenant visibles, mais se plaint que les données sont incorrectes (l'UUID est affiché au lieu du nom, le numéro de série est mauvais, le coût d'achat est à zéro) et demande de tout supprimer pour recommencer.
+-   **Agent**: Comprend la frustration, corrige la logique de mappage de l'importation et la logique d'affichage, et ajoute un bouton Supprimer tous les EPI.
+-   **User**: Signale que le bouton de suppression ne fonctionne pas (il reçoit une erreur 404).
+-   **Agent**: Explique que l'erreur est due au fait que le code du bouton n'a pas encore été déployé en production sur Render et se trouve uniquement dans l'environnement de prévisualisation.
+-   **User**: Confirme qu'il a déployé sur Render il y a moins d'une minute.
+-   **Agent**: Clarifie que le déploiement de Render provient de Github, pas de l'environnement de prévisualisation, et explique que l'utilisateur doit d'abord Sauvegarder sur Github. Propose de supprimer les données manuellement depuis l'environnement de prévisualisation comme solution de contournement.
 
 **Project Health Check:**
--   **Broken**: Le nouveau job planifié () est untested et pourrait contenir des bugs. La fonctionnalité est incomplète sans l'interface frontend.
--   **Mocked**: La transmission DSI est toujours une fonctionnalité fictive.
+-   **Broken**: Le flux d'importation d'EPI est toujours considéré comme défectueux jusqu'à ce que l'utilisateur confirme qu'une importation complète réussit avec des données correctes.
+-   **Mocked**: La transmission des données DSI est toujours une fonctionnalité fictive.
 
 **3rd Party Integrations**
 -   **Resend**: Pour les e-mails transactionnels.
 -   **Stripe**: Pour les paiements.
 -   **Twilio**: Pour les notifications SMS.
+-   **xlsx & papaparse**: Bibliothèques frontend pour l'analyse de fichiers.
 
 **Testing status**
--   Testing agent used after significant changes: NO
--   Troubleshoot agent used after agent stuck in loop: NO
--   Test files created: Aucun.
--   Known regressions: Aucun régression connue à la fin de la session.
+-   **Testing agent used after significant changes**: NO
+-   **Troubleshoot agent used after agent stuck in loop**: NO
+-   **Test files created**: Aucun.
+-   **Known regressions**: L'implémentation du support multi-format pour l'importation a initialement cassé le parsing CSV existant, ce qui a nécessité une correction.
 
 **Credentials to test flow:**
--   Le compte super-admin de l'utilisateur () fonctionne.
--   Le compte utilisateur  sur le tenant  fonctionne après une réinitialisation de mot de passe.
--   Un compte de test  /  peut exister depuis une session précédente.
+-   Le compte super-admin de l'utilisateur () est disponible.
+-   Le tenant principal pour les tests est .
 
 **What agent forgot to execute**
--   L'agent a écrit le code backend pour le job de rappel d'inspection EPI mais a oublié/n'a pas eu le temps de :
-    1.  **Créer l'interface frontend** (la checkbox dans les paramètres EPI) pour activer/désactiver l'envoi d'e-mails de rappel.
-    2.  **Tester** de quelque manière que ce soit le nouveau job planifié. Le code a été écrit et le serveur redémarré, mais son bon fonctionnement n'a jamais été vérifié.</analysis>
+-   L'agent a été détourné par une longue série de corrections de bugs urgentes demandées par l'utilisateur et n'a pas pu finaliser et faire valider plusieurs fonctionnalités qu'il a commencées :
+    1.  La fonctionnalité de **rappel d'inspection EPI** est à moitié terminée et non testée.
+    2.  La fonctionnalité d'**alertes sur le tableau de bord** est implémentée mais non validée par l'utilisateur.
+    3.  La fonctionnalité de **catégories par défaut** est implémentée mais non validée par l'utilisateur.
+-   Il n'a pas non plus eu l'occasion d'aborder la refactorisation des grands composants, qui est une dette technique importante.</analysis>
