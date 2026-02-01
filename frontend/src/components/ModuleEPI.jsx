@@ -193,9 +193,9 @@ const ModuleEPI = ({ user }) => {
       try {
         const data = await apiGet(tenantSlug, '/types-epi');
         if (data && data.length > 0) {
-          // Mapper les données pour utiliser le nom comme ID (pour compatibilité)
+          // Mapper les données en gardant l'ID réel pour le matching
           setTypesEPI(data.map(t => ({
-            id: t.nom,  // Utiliser le nom comme ID pour compatibilité
+            id: t.id,  // Utiliser l'ID réel (UUID)
             nom: t.nom,
             icone: t.icone
           })));
