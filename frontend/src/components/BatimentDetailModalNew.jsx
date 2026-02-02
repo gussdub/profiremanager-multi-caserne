@@ -1846,6 +1846,68 @@ const BatimentForm = ({
                     />
                   </div>
                 </div>
+                {/* Adresse postale du gestionnaire */}
+                <h5 style={{ fontWeight: '500', marginTop: '1rem', marginBottom: '0.5rem', color: '#6b7280', fontSize: '0.875rem' }}>
+                  📬 Adresse postale (si différente du bâtiment)
+                </h5>
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ fontWeight: '500', fontSize: '0.75rem', color: '#9ca3af', display: 'block', marginBottom: '0.25rem' }}>
+                      Adresse
+                    </label>
+                    <input
+                      type="text"
+                      value={editData.gestionnaire_adresse || ''}
+                      onChange={(e) => handleChange('gestionnaire_adresse', e.target.value)}
+                      disabled={!isEditing}
+                      placeholder="123 rue Exemple"
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        fontSize: '0.875rem'
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontWeight: '500', fontSize: '0.75rem', color: '#9ca3af', display: 'block', marginBottom: '0.25rem' }}>
+                      Ville
+                    </label>
+                    <input
+                      type="text"
+                      value={editData.gestionnaire_ville || ''}
+                      onChange={(e) => handleChange('gestionnaire_ville', e.target.value)}
+                      disabled={!isEditing}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        fontSize: '0.875rem'
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontWeight: '500', fontSize: '0.75rem', color: '#9ca3af', display: 'block', marginBottom: '0.25rem' }}>
+                      Code Postal
+                    </label>
+                    <input
+                      type="text"
+                      value={editData.gestionnaire_code_postal || ''}
+                      onChange={(e) => handleChange('gestionnaire_code_postal', e.target.value.toUpperCase())}
+                      disabled={!isEditing}
+                      placeholder="J2X 1X1"
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        fontSize: '0.875rem'
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
             </Card>
 
