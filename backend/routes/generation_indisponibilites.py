@@ -267,6 +267,112 @@ def generer_indisponibilites_longueuil(user_id: str, tenant_id: str, equipe: str
     return indisponibilites
 
 
+async def generer_indisponibilites_personnalise(
+    user_id: str, 
+    tenant_id: str, 
+    horaire: dict, 
+    equipe_nom: str, 
+    date_debut: str, 
+    date_fin: str
+) -> List[Dict]:
+    """
+    Génère les indisponibilités pour un horaire personnalisé.
+    Tient compte du type de quart (24h ou jour/nuit) et des heures configurées.
+    """
+    indisponibilites = []
+    
+    # Trouver l'équipe
+    equipe_config = None
+    for eq in horaire.get("equipes", []):
+        if eq.get("nom") == equipe_nom:
+            equipe_config = eq
+            break
+    
+    if not equipe_config:
+        logging.warning(f"Équipe '{equipe_nom}' non trouvée dans l'horaire {horaire.get('nom')}")
+        return []
+    
+    # Paramètres de l'horaire
+    duree_cycle = horaire.get("duree_cycle", 28)
+    date_reference = datetime.strptime(horaire.get("date_reference", "2026-01-01"), "%Y-%m-%d").date()
+    type_quart = horaire.get("type_quart", "24h")
+    heures_quart = horaire.get("heures_quart", {})
+    
+    # Heures par défaut
+    jour_debut = heures_quart.get("jour_debut", "07:00")
+    jour_fin = heures_quart.get("jour_fin", "19:00")
+    nuit_debut = heures_quart.get("nuit_debut", "19:00")
+    nuit_fin = heures_quart.get("nuit_fin", "07:00")
+    
+    # Jours de travail de cette équipe
+    jours_travail = equipe_config.get("jours_travail", [])
+    
+    # Construire un dictionnaire des jours de travail avec leurs segments
+    jours_segments = {}
+    for jt in jours_travail:
+        if isinstance(jt, int):
+            # Ancien format: jour entier
+            jours_segments[jt] = ["24h"]
+        elif isinstance(jt, dict):
+            jour = jt.get("jour")
+            segment = jt.get("segment", "24h")
+            if jour not in jours_segments:
+                jours_segments[jour] = []
+            jours_segments[jour].append(segment)
+    
+    # Parcourir chaque jour de la période
+    start = datetime.strptime(date_debut, "%Y-%m-%d").date()
+    end = datetime.strptime(date_fin, "%Y-%m-%d").date()
+    current_date = start
+    
+    while current_date <= end:
+        # Calculer le jour du cycle
+        jours_depuis_ref = (current_date - date_reference).days
+        jour_cycle = (jours_depuis_ref % duree_cycle) + 1
+        if jours_depuis_ref < 0:
+            jour_cycle = duree_cycle - ((-jours_depuis_ref - 1) % duree_cycle)
+        
+        # Vérifier si cette équipe travaille ce jour
+        if jour_cycle in jours_segments:
+            segments = jours_segments[jour_cycle]
+            
+            for segment in segments:
+                if segment == "24h":
+                    # Quart de 24h - indisponible toute la journée
+                    heure_debut = "00:00"
+                    heure_fin = "23:59"
+                elif segment == "jour":
+                    # Quart de jour
+                    heure_debut = jour_debut
+                    heure_fin = jour_fin
+                elif segment == "nuit":
+                    # Quart de nuit
+                    heure_debut = nuit_debut
+                    heure_fin = nuit_fin
+                else:
+                    continue
+                
+                indispo = {
+                    "id": str(uuid.uuid4()),
+                    "user_id": user_id,
+                    "tenant_id": tenant_id,
+                    "date": current_date.strftime("%Y-%m-%d"),
+                    "heure_debut": heure_debut,
+                    "heure_fin": heure_fin,
+                    "statut": "indisponible",
+                    "type_garde_id": None,
+                    "origine": f"horaire_{horaire.get('id', 'personnalise')}",
+                    "motif": f"Horaire {horaire.get('nom', 'personnalisé')} - {equipe_nom} ({segment})",
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                indisponibilites.append(indispo)
+        
+        current_date += timedelta(days=1)
+    
+    logging.info(f"✅ {horaire.get('nom')} - {equipe_nom}: {len(indisponibilites)} indisponibilités générées de {date_debut} à {date_fin}")
+    return indisponibilites
+
+
 # ==================== ROUTE API ====================
 
 @router.post("/{tenant_slug}/disponibilites/generer")
