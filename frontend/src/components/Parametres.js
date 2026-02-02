@@ -1828,6 +1828,12 @@ const Parametres = ({ user, tenantSlug }) => {
           <Personnalisation tenantSlug={tenantSlug} toast={toast} />
         )}
 
+        {activeTab === 'secteurs' && (
+          <Suspense fallback={<div style={{ textAlign: 'center', padding: '40px' }}>Chargement...</div>}>
+            <ParametresSecteurs tenantSlug={tenantSlug} toast={toast} />
+          </Suspense>
+        )}
+
         {activeTab === 'facturation' && user?.role === 'admin' && (
           <Suspense fallback={<div style={{ textAlign: 'center', padding: '40px' }}>Chargement...</div>}>
             <ParametresFacturation user={user} tenantSlug={tenantSlug} />
