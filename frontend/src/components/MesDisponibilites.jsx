@@ -2294,14 +2294,6 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                         </button>
                       ));
                     })()}
-                          background: generationConfig.equipe === equipe.nom ? '#fef2f2' : 'white',
-                          cursor: 'pointer',
-                          fontWeight: generationConfig.equipe === equipe.nom ? 'bold' : 'normal'
-                        }}
-                      >
-                        {equipe.nom} (#{equipe.numero})
-                      </button>
-                    ))}
                   </div>
                 </div>
 
