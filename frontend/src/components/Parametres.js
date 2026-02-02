@@ -1180,6 +1180,7 @@ const Parametres = ({ user, tenantSlug }) => {
           { id: 'disponibilites', icon: '📅', title: 'Disponibilités', desc: 'Configuration' },
           { id: 'formations', icon: '📚', title: 'Formations', desc: 'NFPA 1500' },
           { id: 'personnalisation', icon: '🎨', title: 'Personnalisation', desc: 'Logo et branding' },
+          { id: 'secteurs', icon: '📍', title: 'Secteurs', desc: 'Zones géographiques' },
           { id: 'imports', icon: '📥', title: 'Imports CSV', desc: 'Import en masse' },
           // Onglets admin uniquement
           ...(user?.role === 'admin' ? [
