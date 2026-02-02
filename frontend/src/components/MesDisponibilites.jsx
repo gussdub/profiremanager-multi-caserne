@@ -791,11 +791,14 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       
     } catch (error) {
       console.error('Erreur suppression:', error);
+      const errorMessage = error?.response?.data?.detail || error?.message || "Impossible de supprimer";
       toast({
         title: "Erreur",
-        description: error?.message || "Impossible de supprimer",
+        description: errorMessage,
         variant: "destructive"
       });
+      // Propager l'erreur pour que le modal puisse réagir
+      throw error;
     }
   };
 
