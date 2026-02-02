@@ -245,12 +245,29 @@ const ParametresEquipesGarde = ({ tenantSlug, toast }) => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
+                        {/* Horaires prédéfinis */}
                         <SelectItem value="montreal">Montréal (4 équipes, 28 jours)</SelectItem>
-                        <SelectItem value="quebec">Québec (4 équipes, 4 jours)</SelectItem>
+                        <SelectItem value="quebec">Québec (4 équipes, 28 jours)</SelectItem>
                         <SelectItem value="longueuil">Longueuil 7/24</SelectItem>
-                        <SelectItem value="personnalisee">Personnalisée</SelectItem>
+                        {/* Horaires personnalisés */}
+                        {horairesPersonnalises.filter(h => !h.predefini).length > 0 && (
+                          <>
+                            <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 border-t mt-1">
+                              Horaires personnalisés
+                            </div>
+                            {horairesPersonnalises.filter(h => !h.predefini).map(h => (
+                              <SelectItem key={h.id} value={h.id}>
+                                {h.nom} ({h.nombre_equipes} équipes, {h.duree_cycle} jours)
+                              </SelectItem>
+                            ))}
+                          </>
+                        )}
+                        <SelectItem value="personnalisee">Configuration manuelle...</SelectItem>
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Créez vos propres horaires dans l&apos;onglet &quot;Horaires&quot;
+                    </p>
                   </div>
 
                   {params.temps_plein.type_rotation === "personnalisee" && (
