@@ -1,102 +1,106 @@
-# ProFireManager - Document de Référence Produit
+# ProFireManager - Product Requirements Document
 
 ## Description
-Application de gestion des interventions et de la paie des pompiers. Solution multi-tenant complète pour les services d'incendie.
+Application de gestion complète pour les services de pompiers. Gère le personnel, les interventions, les formations, les EPI, les équipements, les remplacements et la paie.
 
 ## Architecture
-- **Frontend**: React 18 + TailwindCSS + Shadcn/UI
-- **Backend**: FastAPI + Python 3.11
-- **Base de données**: MongoDB Atlas
-- **Intégrations**: SFTP, Stripe, Firebase FCM, Resend
-
-## Modules Principaux
-1. Planning & Attribution automatique des gardes
-2. Gestion du personnel
-3. Disponibilités & Indisponibilités
-4. Rapports & Exports (PDF/Excel)
-5. Équipements & EPI
-6. Formations & Compétences
-7. Remplacements
-8. Facturation & Paie
-9. **Historique des E-mails** (NOUVEAU)
+- **Frontend**: React avec Shadcn/UI
+- **Backend**: FastAPI (Python)
+- **Base de données**: MongoDB
+- **Intégrations**: Resend (emails), Stripe (paiements), Twilio (SMS)
 
 ---
 
-## Historique des Modifications
+## Fonctionnalités Implémentées
 
-### 29 Janvier 2026 - Session 2 - Corrections, Refactorisation et Nouvelle Fonctionnalité
-**Statut**: ✅ Terminé
+### Module Horaires Personnalisés (Février 2026)
+- ✅ Création d'horaires de rotation personnalisés (cycles 7-56 jours)
+- ✅ Support des quarts 24h et Jour/Nuit (12h)
+- ✅ Configuration des heures de travail (ex: 7h-18h jour, 18h-7h nuit)
+- ✅ Calendrier visuel interactif pour "peindre" les jours de chaque équipe
+- ✅ Aperçu du calendrier avec dates réelles
+- ✅ Duplication d'horaires (prédéfinis ou personnalisés)
+- ✅ Intégration dans le module "Mes disponibilités"
+- ✅ Génération automatique des indisponibilités selon les heures configurées
+- ✅ Équipes dynamiques selon l'horaire sélectionné
 
-**Travail effectué**:
-1. **Bug accès module Interventions** - Corrigé
-   - Les employés ne voient plus le menu "Interventions" sauf s'ils sont dans la liste des "Personnes ressources"
-   - Modification de `frontend/src/components/Sidebar.jsx`
+### Module EPI (Janvier-Février 2026)
+- ✅ Importation CSV/XLS/XLSX/TXT des EPI
+- ✅ Correspondance intelligente des employés (fuzzy matching)
+- ✅ Création automatique des types d'EPI manquants
+- ✅ Bouton "Supprimer tous les EPI" pour nettoyage
+- ✅ Correction du type d'EPI dans le modal d'édition
 
-2. **Logo dans les e-mails** - Corrigé
-   - Logo hébergé sur CDN public (catbox.moe)
-   - Taille ajustée à 250px avec espacement réduit
-   - Modification de `backend/routes/auth.py`
-
-3. **Refactorisation backend - Module Utils** - Terminé
-   - Extraction des routes utilitaires vers `routes/utils.py`
-   - `server.py` réduit de 6632 → 5909 lignes (-723 lignes)
-
-4. **NOUVEAU: Historique des E-mails** - Implémenté
-   - Backend: `routes/emails_history.py` avec APIs pour consultation et statistiques
-   - Frontend: `EmailsHistory.jsx` accessible depuis Paramètres (admin uniquement)
-   - Logging automatique des e-mails envoyés (réinitialisation mot de passe)
-   - Statistiques: total, réussis, échoués, taux de succès, répartition par type
-
-**Fichiers créés**:
-- `backend/routes/emails_history.py` (API historique e-mails)
-- `frontend/src/components/EmailsHistory.jsx` (interface admin)
-
-**Fichiers modifiés**:
-- `frontend/src/components/Sidebar.jsx` (vérification personnes ressources)
-- `backend/routes/auth.py` (logo email + logging)
-- `backend/routes/utils.py` (routes utilitaires)
-- `backend/server.py` (allégé + import nouveau routeur)
-- `frontend/src/components/Parametres.js` (onglet E-mails)
-- `frontend/src/App.js` (import EmailsHistory)
-
-### 29 Janvier 2026 - Session 1 - Refactorisation Module Rapports
-**Statut**: ✅ Terminé et validé
-
-**Fichiers modifiés**:
-- `backend/routes/rapports.py` (enrichi)
-- `backend/server.py` (allégé de ~2200 lignes)
+### Autres Modules
+- ✅ Gestion du personnel (temps plein/partiel)
+- ✅ Gestion des interventions
+- ✅ Gestion des formations (NFPA 1500)
+- ✅ Gestion des remplacements
+- ✅ Module de disponibilités/indisponibilités
+- ✅ Alertes équipements sur le tableau de bord
+- ✅ Catégories d'équipement par défaut
 
 ---
 
-## Tâches Complétées (Sessions Précédentes)
-- ✅ Réécriture complète de l'attribution automatique des gardes
-- ✅ Module d'audit pour l'attribution automatique
-- ✅ Correction bugs module Disponibilités
-- ✅ Service d'intégration SFTP
-- ✅ Configuration par Tenant
+## Tâches en Attente de Validation
+- [ ] Fonctionnalité de rappel d'inspection EPI mensuelle
+- [ ] Alertes d'équipement sur le tableau de bord
+- [ ] Initialisation des catégories d'équipement par défaut
 
 ---
 
-## Backlog
+## Backlog (P2-P3)
 
 ### P2 - Priorité Moyenne
-1. Finaliser transmission DSI réelle (actuellement MOCK)
-2. Module de gestion des jours fériés
-3. Module de facturation pour l'entraide
-4. Étendre le logging e-mail aux autres fonctions (welcome, gardes notifications, etc.)
+- Refactorisation des composants volumineux (ModuleEPI.jsx >3k lignes, GestionInterventions.jsx >2.8k lignes)
+- Finaliser la transmission DSI réelle (actuellement **MOCK**)
+- Module de gestion des jours fériés
+- Module de facturation pour l'entraide
+- Module "Schéma de couverture de risque"
 
 ### P3 - Priorité Basse
-1. Améliorer messages d'import CSV
-2. Optimisations diverses UI
+- Gestion véhiculaire (codes radio 10-07, 10-17, 10-90)
 
 ---
 
-## APIs MOCK
-- **Transmission DSI**: L'API de transmission vers les systèmes externes est simulée
+## Informations Techniques
 
-## Intégrations Tierces
-- SFTP (paramiko)
-- Stripe (paiements)
-- Firebase Cloud Messaging (notifications push)
-- Resend (emails)
-- Web Speech API, Open-Meteo, OpenStreetMap
+### Horaires Prédéfinis
+- **Montréal 7/24**: Cycle 28 jours, 4 équipes, 7 jours/cycle
+- **Québec 10/14**: Cycle 28 jours, 4 équipes, 13 jours/cycle
+- **Longueuil 7/24**: Cycle 28 jours, 4 équipes, 7 jours/cycle
+
+### Format des Horaires Personnalisés
+```json
+{
+  "nom": "Granby",
+  "duree_cycle": 28,
+  "nombre_equipes": 4,
+  "type_quart": "12h_jour_nuit",
+  "heures_quart": {
+    "jour_debut": "07:00",
+    "jour_fin": "18:00",
+    "nuit_debut": "18:00",
+    "nuit_fin": "07:00"
+  },
+  "equipes": [
+    {
+      "numero": 1,
+      "nom": "Vert",
+      "couleur": "#22C55E",
+      "jours_travail": [{"jour": 1, "segment": "jour"}, {"jour": 2, "segment": "nuit"}]
+    }
+  ]
+}
+```
+
+### Collections MongoDB
+- `horaires_personnalises`: Horaires créés par les utilisateurs
+- `disponibilites`: Disponibilités/indisponibilités avec champ `origine` pour tracer la source
+- `epis`: Équipements de protection individuelle
+- `types_epi`: Types d'EPI disponibles
+
+---
+
+## Dernière mise à jour
+2 février 2026
