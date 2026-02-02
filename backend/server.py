@@ -6069,6 +6069,7 @@ app.include_router(parametres_router, prefix="/api")  # Module Paramètres Gén�
 app.include_router(statistiques_router, prefix="/api")  # Module Statistiques Dashboard
 app.include_router(dashboard_router, prefix="/api")  # Module Dashboard Données Complètes
 app.include_router(rapports_router, prefix="/api")  # Module Rapports (exports PDF/Excel, statistiques)
+app.include_router(rapports_interventions_router, prefix="/api")  # Module Rapports Interventions
 app.include_router(utils_router, prefix="/api")  # Module Utils (demo data, repair passwords)
 app.include_router(emails_history_router, prefix="/api")  # Module Historique E-mails
 app.include_router(horaires_personnalises_router, prefix="/api")  # Module Horaires Personnalisés
