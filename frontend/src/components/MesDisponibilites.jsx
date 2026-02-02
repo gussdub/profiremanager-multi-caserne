@@ -141,6 +141,9 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorModalContent, setErrorModalContent] = useState({ title: '', messages: [] });
   
+  // État pour les horaires personnalisés
+  const [horairesPersonnalises, setHorairesPersonnalises] = useState([]);
+  
   const { toast } = useToast();
 
   // Fonction pour vérifier le blocage pour un mois donné
