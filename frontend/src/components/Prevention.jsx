@@ -741,6 +741,13 @@ const Prevention = () => {
             ⚠️ Non-conformités
           </Button>
           <Button 
+            variant={currentView === 'avis-nc' || currentView === 'ref-violations' ? 'default' : 'outline'}
+            onClick={() => setCurrentView('avis-nc')}
+            style={{ backgroundColor: currentView === 'avis-nc' || currentView === 'ref-violations' ? '#dc2626' : undefined }}
+          >
+            📋 Avis NC
+          </Button>
+          <Button 
             variant={currentView === 'grilles' ? 'default' : 'outline'}
             onClick={() => setCurrentView('grilles')}
           >
