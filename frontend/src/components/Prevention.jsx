@@ -666,6 +666,36 @@ const Prevention = () => {
           />
         );
       
+      case 'avis-nc':
+        return (
+          <Suspense fallback={<LoadingComponent />}>
+            <div className="avis-nc-container">
+              <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <div>
+                  <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>📋 Avis de Non-Conformité</h2>
+                  <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>Gestion des avis générés suite aux inspections</p>
+                </div>
+                <Button onClick={() => setCurrentView('ref-violations')} variant="outline">
+                  ⚙️ Gérer le référentiel
+                </Button>
+              </div>
+              <AvisNonConformiteModule tenantSlug={tenantSlug} toast={toast} />
+            </div>
+          </Suspense>
+        );
+      
+      case 'ref-violations':
+        return (
+          <Suspense fallback={<LoadingComponent />}>
+            <div style={{ marginBottom: '1rem' }}>
+              <Button onClick={() => setCurrentView('avis-nc')} variant="outline" size="sm">
+                ← Retour aux avis
+              </Button>
+            </div>
+            <ParametresRefViolations tenantSlug={tenantSlug} toast={toast} />
+          </Suspense>
+        );
+      
       default:
         return <div>Vue en développement...</div>;
     }
