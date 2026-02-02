@@ -154,15 +154,39 @@ async def get_horaires(
         {"tenant_id": tenant.id}
     ).to_list(100)
     
-    # Nettoyer et formater
+    # Créer un dict des horaires personnalisés par ID
+    custom_by_id = {}
     horaires_custom_clean = []
     for h in horaires_custom:
         h_clean = clean_mongo_doc(h)
-        h_clean["predefini"] = False
+        # Si l'ID correspond à un prédéfini, c'est une version modifiée
+        if h_clean.get("id") in HORAIRES_PREDEFINIS or h_clean.get("base_predefini_id"):
+            h_clean["predefini"] = False
+            h_clean["modifie_depuis_predefini"] = True
+        else:
+            h_clean["predefini"] = False
+        custom_by_id[h_clean.get("id")] = h_clean
+        # Si c'est basé sur un prédéfini, utiliser l'ID de base pour le remplacement
+        base_id = h_clean.get("base_predefini_id")
+        if base_id:
+            custom_by_id[base_id] = h_clean
         horaires_custom_clean.append(h_clean)
     
-    # Combiner avec les prédéfinis
-    all_horaires = list(HORAIRES_PREDEFINIS.values()) + horaires_custom_clean
+    # Combiner: prédéfinis (sauf ceux remplacés) + personnalisés
+    all_horaires = []
+    for predefini in HORAIRES_PREDEFINIS.values():
+        predefini_id = predefini.get("id")
+        # Vérifier si ce prédéfini a une version modifiée
+        if predefini_id in custom_by_id:
+            # Utiliser la version modifiée
+            all_horaires.append(custom_by_id[predefini_id])
+        else:
+            all_horaires.append(predefini)
+    
+    # Ajouter les horaires totalement personnalisés (pas basés sur un prédéfini)
+    for h in horaires_custom_clean:
+        if not h.get("base_predefini_id") and h.get("id") not in HORAIRES_PREDEFINIS:
+            all_horaires.append(h)
     
     return {
         "horaires": all_horaires,
