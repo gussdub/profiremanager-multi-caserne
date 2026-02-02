@@ -79,6 +79,17 @@ const ParametresEquipesGarde = ({ tenantSlug, toast }) => {
     }
   };
 
+  const fetchHorairesPersonnalises = async () => {
+    try {
+      const response = await axios.get(`${API}/horaires-personnalises`);
+      if (response.data?.horaires) {
+        setHorairesPersonnalises(response.data.horaires);
+      }
+    } catch (error) {
+      console.error("Erreur chargement horaires personnalisés:", error);
+    }
+  };
+
   const handleSave = async () => {
     try {
       setSaving(true);
