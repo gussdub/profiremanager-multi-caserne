@@ -17,6 +17,7 @@ const ParametresEquipesGarde = lazy(() => import("./ParametresEquipesGarde.jsx")
 const ParametresFacturation = lazy(() => import("./ParametresFacturation.jsx"));
 const ParametresHorairesPersonnalises = lazy(() => import("./ParametresHorairesPersonnalises.jsx"));
 const EmailsHistory = lazy(() => import("./EmailsHistory.jsx"));
+const ParametresSecteurs = lazy(() => import("./ParametresSecteurs.jsx"));
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
