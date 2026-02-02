@@ -19,6 +19,7 @@ const ParametresEquipesGarde = ({ tenantSlug, toast }) => {
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [horairesPersonnalises, setHorairesPersonnalises] = useState([]);
   const [params, setParams] = useState({
     actif: false,
     temps_plein: {
@@ -56,6 +57,7 @@ const ParametresEquipesGarde = ({ tenantSlug, toast }) => {
 
   useEffect(() => {
     fetchParams();
+    fetchHorairesPersonnalises();
   }, [API]);
 
   const fetchParams = async () => {
