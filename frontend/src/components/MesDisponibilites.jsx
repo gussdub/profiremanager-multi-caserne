@@ -182,14 +182,16 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       if (!tenantSlug || !targetUser || !targetUser.id) return;
       
       try {
-        const [dispoData, typesData, usersData] = await Promise.all([
+        const [dispoData, typesData, usersData, horairesData] = await Promise.all([
           apiGet(tenantSlug, `/disponibilites/${targetUser.id}`),
           apiGet(tenantSlug, '/types-garde'),
-          apiGet(tenantSlug, '/users') // Tous les rôles peuvent voir les users (lecture seule)
+          apiGet(tenantSlug, '/users'), // Tous les rôles peuvent voir les users (lecture seule)
+          apiGet(tenantSlug, '/horaires-personnalises').catch(() => ({ horaires: [] })) // Charger les horaires personnalisés
         ]);
         setUserDisponibilites(dispoData);
         setTypesGarde(typesData);
         setUsers(usersData);
+        setHorairesPersonnalises(horairesData.horaires || []);
       } catch (error) {
         console.error('Erreur lors du chargement des disponibilités:', error);
         // Ne pas afficher de toast si c'est une erreur 401/403 (déjà gérée par apiCall)
