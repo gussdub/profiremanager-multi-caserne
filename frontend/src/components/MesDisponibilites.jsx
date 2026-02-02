@@ -2227,37 +2227,73 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                     onChange={(e) => setGenerationConfig({...generationConfig, horaire_type: e.target.value})}
                     className="form-select"
                   >
-                    <option value="montreal">Montreal 7/24 (Cycle 28 jours)</option>
-                    <option value="quebec">Quebec 10/14 (Cycle 28 jours)</option>
+                    {/* Horaires prédéfinis */}
+                    <option value="montreal">Montréal 7/24 (Cycle 28 jours)</option>
+                    <option value="quebec">Québec 10/14 (Cycle 28 jours)</option>
                     <option value="longueuil">Longueuil 7/24 (Cycle 28 jours)</option>
+                    {/* Horaires personnalisés - mélangés sans séparateur */}
+                    {horairesPersonnalises.filter(h => !h.predefini).map(h => (
+                      <option key={h.id} value={h.id}>
+                        {h.nom} ({h.nombre_equipes} équipes, {h.duree_cycle} jours)
+                      </option>
+                    ))}
                   </select>
                   <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
                     {generationConfig.horaire_type === 'montreal' 
-                      ? 'Horaire Montreal 7/24 : Cycle de 28 jours commençant par lundi rouge. Vous serez INDISPONIBLE les 7 jours où votre équipe travaille.'
+                      ? 'Horaire Montréal 7/24 : Cycle de 28 jours. Vous serez INDISPONIBLE les 7 jours où votre équipe travaille.'
                       : generationConfig.horaire_type === 'quebec'
-                      ? 'Horaire Quebec 10/14 : 2J + 1×24h + 3N + REPOS + 4J + 3N + REPOS (cycle 28 jours). Vous serez INDISPONIBLE les 13 jours travaillés par cycle (~169 jours/an).'
-                      : 'Horaire Longueuil 7/24 : Cycle de 28 jours commençant par dimanche rouge. Vous serez INDISPONIBLE les 7 jours de 24h où votre équipe travaille.'}
+                      ? 'Horaire Québec 10/14 : Cycle de 28 jours. Vous serez INDISPONIBLE les 13 jours travaillés par cycle.'
+                      : generationConfig.horaire_type === 'longueuil'
+                      ? 'Horaire Longueuil 7/24 : Cycle de 28 jours. Vous serez INDISPONIBLE les 7 jours de 24h où votre équipe travaille.'
+                      : (() => {
+                          const horaire = horairesPersonnalises.find(h => h.id === generationConfig.horaire_type);
+                          return horaire 
+                            ? `${horaire.nom} : Cycle de ${horaire.duree_cycle} jours avec ${horaire.nombre_equipes} équipes. ${horaire.type_quart === '12h_jour_nuit' ? 'Quarts jour/nuit.' : 'Quarts de 24h.'}`
+                            : 'Sélectionnez un horaire';
+                        })()
+                    }
                   </small>
                 </div>
 
-                {/* Sélection de l'équipe */}
+                {/* Sélection de l'équipe - dynamique selon l'horaire choisi */}
                 <div className="config-section">
                   <h4>👥 Équipe</h4>
                   <div className="equipe-selection" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
-                    {[
-                      {nom: 'Vert', numero: 1},
-                      {nom: 'Bleu', numero: 2},
-                      {nom: 'Jaune', numero: 3},
-                      {nom: 'Rouge', numero: 4}
-                    ].map(equipe => (
-                      <button
-                        key={equipe.nom}
-                        onClick={() => setGenerationConfig({...generationConfig, equipe: equipe.nom})}
-                        className={`equipe-button ${generationConfig.equipe === equipe.nom ? 'selected' : ''}`}
-                        style={{
-                          padding: '12px',
-                          border: generationConfig.equipe === equipe.nom ? '2px solid #dc2626' : '2px solid #e2e8f0',
-                          borderRadius: '8px',
+                    {(() => {
+                      // Récupérer les équipes de l'horaire sélectionné
+                      const horaireSelectionne = horairesPersonnalises.find(h => h.id === generationConfig.horaire_type);
+                      const equipes = horaireSelectionne?.equipes || [
+                        {nom: 'Vert', numero: 1, couleur: '#22C55E'},
+                        {nom: 'Bleu', numero: 2, couleur: '#3B82F6'},
+                        {nom: 'Jaune', numero: 3, couleur: '#EAB308'},
+                        {nom: 'Rouge', numero: 4, couleur: '#EF4444'}
+                      ];
+                      return equipes.map(equipe => (
+                        <button
+                          key={equipe.nom}
+                          onClick={() => setGenerationConfig({...generationConfig, equipe: equipe.nom})}
+                          className={`equipe-button ${generationConfig.equipe === equipe.nom ? 'selected' : ''}`}
+                          style={{
+                            padding: '12px',
+                            border: generationConfig.equipe === equipe.nom ? '2px solid #dc2626' : '2px solid #e2e8f0',
+                            borderRadius: '8px',
+                            backgroundColor: generationConfig.equipe === equipe.nom ? (equipe.couleur || '#fff') + '30' : '#fff',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          <span style={{ 
+                            display: 'inline-block', 
+                            width: '12px', 
+                            height: '12px', 
+                            borderRadius: '50%', 
+                            backgroundColor: equipe.couleur || '#6b7280',
+                            marginRight: '8px'
+                          }}></span>
+                          {equipe.nom}
+                        </button>
+                      ));
+                    })()}
                           background: generationConfig.equipe === equipe.nom ? '#fef2f2' : 'white',
                           cursor: 'pointer',
                           fontWeight: generationConfig.equipe === equipe.nom ? 'bold' : 'normal'
