@@ -1069,10 +1069,10 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
                   onClick={() => openEditModal(horaire)}
                   disabled={saving}
                   data-testid={`btn-edit-${horaire.id}`}
-                  title={horaire.predefini ? "Crée une copie modifiable" : "Modifier"}
+                  title="Modifier cet horaire"
                 >
                   <Edit2 className="w-3 h-3 mr-1" />
-                  {horaire.predefini ? "Personnaliser" : "Modifier"}
+                  Modifier
                 </Button>
                 {!horaire.predefini && (
                   <Button 
