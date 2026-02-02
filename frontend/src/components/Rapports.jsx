@@ -10,6 +10,9 @@ import { apiGet, apiPost } from '../utils/api';
 // Chart dynamique
 const Chart = lazy(() => import("react-apexcharts"));
 
+// Rapport Interventions
+const RapportInterventions = lazy(() => import("./RapportInterventions.jsx"));
+
 const Rapports = () => {
   const { user, tenant } = useAuth();
   const { tenantSlug } = useTenant();
