@@ -680,4 +680,4 @@ const ListeAvisNonConformite = ({ tenantSlug, toast, batimentId = null }) => {
 };
 
 export { GenerateAvisModal, ListeAvisNonConformite };
-export default GenerateAvisModal;
+export default ListeAvisNonConformite;
