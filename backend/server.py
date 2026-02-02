@@ -6039,6 +6039,7 @@ app.include_router(actifs_router, prefix="/api")  # Module Actifs (véhicules, b
 app.include_router(formations_router, prefix="/api")  # Module Formations (CRUD + inscriptions)
 app.include_router(equipements_router, prefix="/api")  # Module Équipements (CRUD + maintenance + alertes)
 app.include_router(prevention_router, prefix="/api")  # Module Prévention (bâtiments, inspections, grilles, secteurs)
+app.include_router(avis_non_conformite_router, prefix="/api")  # Module Avis Non-Conformité
 app.include_router(planning_router, prefix="/api")  # Module Planning (assignations, rapports heures)
 app.include_router(sftp_router, prefix="/api")  # Module SFTP (cartes d'appel 911, WebSocket)
 app.include_router(billing_router, prefix="/api")  # Module Billing (Stripe, facturation)
