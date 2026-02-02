@@ -781,17 +781,19 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
       setUserDisponibilites(dispoData);
       
-      // Mettre à jour le modal
-      const dateStr = selectedDayForDetail.toISOString().split('T')[0];
-      const disponibilites = dispoData.filter(d => d.date === dateStr && d.statut === 'disponible');
-      const indisponibilites = dispoData.filter(d => d.date === dateStr && d.statut === 'indisponible');
-      setDayDetailData({ disponibilites, indisponibilites });
+      // Mettre à jour le modal si un jour est sélectionné
+      if (selectedDayForDetail) {
+        const dateStr = selectedDayForDetail.toISOString().split('T')[0];
+        const disponibilites = dispoData.filter(d => d.date === dateStr && d.statut === 'disponible');
+        const indisponibilites = dispoData.filter(d => d.date === dateStr && d.statut === 'indisponible');
+        setDayDetailData({ disponibilites, indisponibilites });
+      }
       
     } catch (error) {
       console.error('Erreur suppression:', error);
       toast({
         title: "Erreur",
-        description: "Impossible de supprimer",
+        description: error?.message || "Impossible de supprimer",
         variant: "destructive"
       });
     }
