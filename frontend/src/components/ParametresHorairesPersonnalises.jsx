@@ -7,17 +7,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select.jsx";
 import { 
   Calendar, Clock, Users, Plus, Edit2, Trash2, Copy, Eye, 
-  Save, RefreshCw, ChevronLeft, ChevronRight, Check, X
+  Save, RefreshCw, Check, Sun, Moon
 } from "lucide-react";
 import { apiGet, apiPost, apiPut, apiDelete } from "../utils/api";
 
 /**
  * ParametresHorairesPersonnalises - Module de création d'horaires de rotation
- * 
- * Permet de créer et gérer des horaires personnalisés pour:
- * - Le planning des gardes (internes/externes)
- * - Le module disponibilité/indisponibilité
- * - La rotation des équipes
  */
 const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
   // États principaux
@@ -41,17 +36,18 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
     date_reference: new Date().toISOString().split('T')[0],
     type_quart: "24h",
     heures_quart: {
-      jour_debut: "08:00",
-      jour_fin: "20:00",
-      nuit_debut: "20:00",
-      nuit_fin: "08:00"
+      jour_debut: "07:00",
+      jour_fin: "19:00",
+      nuit_debut: "19:00",
+      nuit_fin: "07:00"
     },
     equipes: []
   });
   
-  // État du calendrier d'édition (28 jours)
+  // État du calendrier d'édition - chaque jour peut avoir des segments jour/nuit
   const [calendrierEdition, setCalendrierEdition] = useState([]);
   const [equipeSelectionnee, setEquipeSelectionnee] = useState(1);
+  const [segmentSelectionne, setSegmentSelectionne] = useState("jour"); // "jour", "nuit", ou "24h"
   
   // État aperçu
   const [apercu, setApercu] = useState(null);
@@ -107,14 +103,26 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
     return equipes;
   };
 
-  // Initialiser le calendrier d'édition vide
-  const initCalendrier = (duree) => {
+  // Initialiser le calendrier d'édition avec segments jour/nuit
+  const initCalendrier = (duree, typeQuart) => {
     const cal = [];
     for (let i = 1; i <= duree; i++) {
-      cal.push({
-        jour: i,
-        equipe: null // Aucune équipe assignée par défaut
-      });
+      if (typeQuart === "12h_jour_nuit") {
+        cal.push({
+          jour: i,
+          segments: {
+            jour: null,   // équipe assignée au jour (null = repos)
+            nuit: null    // équipe assignée à la nuit (null = repos)
+          }
+        });
+      } else {
+        cal.push({
+          jour: i,
+          segments: {
+            "24h": null   // équipe assignée sur 24h
+          }
+        });
+      }
     }
     return cal;
   };
@@ -123,23 +131,25 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
   const openCreateModal = () => {
     const nbEquipes = 4;
     const dureeCycle = 28;
+    const typeQuart = "24h";
     setFormData({
       nom: "",
       description: "",
       duree_cycle: dureeCycle,
       nombre_equipes: nbEquipes,
       date_reference: new Date().toISOString().split('T')[0],
-      type_quart: "24h",
+      type_quart: typeQuart,
       heures_quart: {
-        jour_debut: "08:00",
-        jour_fin: "20:00",
-        nuit_debut: "20:00",
-        nuit_fin: "08:00"
+        jour_debut: "07:00",
+        jour_fin: "19:00",
+        nuit_debut: "19:00",
+        nuit_fin: "07:00"
       },
       equipes: initEquipes(nbEquipes)
     });
-    setCalendrierEdition(initCalendrier(dureeCycle));
+    setCalendrierEdition(initCalendrier(dureeCycle, typeQuart));
     setEquipeSelectionnee(1);
+    setSegmentSelectionne(typeQuart === "12h_jour_nuit" ? "jour" : "24h");
     setShowCreateModal(true);
   };
 
@@ -149,34 +159,58 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
       toast({
         title: "Information",
         description: "Les horaires prédéfinis ne peuvent pas être modifiés. Utilisez 'Dupliquer' pour créer une copie modifiable.",
-        variant: "default"
       });
       return;
     }
     
     setSelectedHoraire(horaire);
+    const typeQuart = horaire.type_quart || "24h";
     setFormData({
       nom: horaire.nom,
       description: horaire.description || "",
       duree_cycle: horaire.duree_cycle,
       nombre_equipes: horaire.nombre_equipes,
       date_reference: horaire.date_reference,
-      type_quart: horaire.type_quart || "24h",
-      heures_quart: horaire.heures_quart || {},
+      type_quart: typeQuart,
+      heures_quart: horaire.heures_quart || {
+        jour_debut: "07:00",
+        jour_fin: "19:00",
+        nuit_debut: "19:00",
+        nuit_fin: "07:00"
+      },
       equipes: horaire.equipes || []
     });
     
     // Reconstruire le calendrier à partir des équipes
-    const cal = initCalendrier(horaire.duree_cycle);
+    const cal = initCalendrier(horaire.duree_cycle, typeQuart);
     horaire.equipes?.forEach(eq => {
-      eq.jours_travail?.forEach(jour => {
-        if (jour >= 1 && jour <= horaire.duree_cycle) {
-          cal[jour - 1].equipe = eq.numero;
+      eq.jours_travail?.forEach(jourInfo => {
+        if (typeof jourInfo === 'number') {
+          // Ancien format: juste le numéro du jour
+          const idx = jourInfo - 1;
+          if (idx >= 0 && idx < cal.length) {
+            if (typeQuart === "12h_jour_nuit") {
+              cal[idx].segments.jour = eq.numero;
+              cal[idx].segments.nuit = eq.numero;
+            } else {
+              cal[idx].segments["24h"] = eq.numero;
+            }
+          }
+        } else if (typeof jourInfo === 'object') {
+          // Nouveau format: {jour: 1, segment: "jour"} ou {jour: 1, segment: "24h"}
+          const idx = jourInfo.jour - 1;
+          if (idx >= 0 && idx < cal.length) {
+            const seg = jourInfo.segment || "24h";
+            if (cal[idx].segments[seg] !== undefined) {
+              cal[idx].segments[seg] = eq.numero;
+            }
+          }
         }
       });
     });
     setCalendrierEdition(cal);
     setEquipeSelectionnee(1);
+    setSegmentSelectionne(typeQuart === "12h_jour_nuit" ? "jour" : "24h");
     setShowEditModal(true);
   };
 
@@ -188,7 +222,6 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
     let newEquipes = [...formData.equipes];
     
     if (count > newEquipes.length) {
-      // Ajouter des équipes
       for (let i = newEquipes.length; i < count; i++) {
         newEquipes.push({
           numero: i + 1,
@@ -198,13 +231,17 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
         });
       }
     } else {
-      // Réduire les équipes
       newEquipes = newEquipes.slice(0, count);
       // Nettoyer le calendrier des équipes supprimées
-      setCalendrierEdition(prev => prev.map(j => ({
-        ...j,
-        equipe: j.equipe && j.equipe > count ? null : j.equipe
-      })));
+      setCalendrierEdition(prev => prev.map(j => {
+        const newSegments = { ...j.segments };
+        Object.keys(newSegments).forEach(seg => {
+          if (newSegments[seg] && newSegments[seg] > count) {
+            newSegments[seg] = null;
+          }
+        });
+        return { ...j, segments: newSegments };
+      }));
     }
     
     setFormData(prev => ({
@@ -212,6 +249,10 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
       nombre_equipes: count,
       equipes: newEquipes
     }));
+    
+    if (equipeSelectionnee > count) {
+      setEquipeSelectionnee(count);
+    }
   };
 
   // Mettre à jour la durée du cycle
@@ -220,21 +261,34 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
     if (duree < 7 || duree > 56) return;
     
     setFormData(prev => ({ ...prev, duree_cycle: duree }));
-    setCalendrierEdition(initCalendrier(duree));
+    setCalendrierEdition(initCalendrier(duree, formData.type_quart));
   };
 
-  // Cliquer sur un jour du calendrier pour assigner/désassigner une équipe
-  const handleJourClick = (jour) => {
+  // Mettre à jour le type de quart
+  const handleTypeQuartChange = (newType) => {
+    setFormData(prev => ({ ...prev, type_quart: newType }));
+    setCalendrierEdition(initCalendrier(formData.duree_cycle, newType));
+    setSegmentSelectionne(newType === "12h_jour_nuit" ? "jour" : "24h");
+  };
+
+  // Cliquer sur un segment du calendrier
+  const handleSegmentClick = (jour, segment) => {
     setCalendrierEdition(prev => {
       const newCal = [...prev];
       const idx = jour - 1;
       
-      if (newCal[idx].equipe === equipeSelectionnee) {
+      if (newCal[idx].segments[segment] === equipeSelectionnee) {
         // Désassigner si déjà assigné à cette équipe
-        newCal[idx].equipe = null;
+        newCal[idx] = {
+          ...newCal[idx],
+          segments: { ...newCal[idx].segments, [segment]: null }
+        };
       } else {
         // Assigner l'équipe sélectionnée
-        newCal[idx].equipe = equipeSelectionnee;
+        newCal[idx] = {
+          ...newCal[idx],
+          segments: { ...newCal[idx].segments, [segment]: equipeSelectionnee }
+        };
       }
       
       return newCal;
@@ -252,13 +306,20 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
 
   // Construire les données finales avec les jours de travail
   const buildFinalData = () => {
-    // Calculer les jours de travail pour chaque équipe à partir du calendrier
-    const equipesAvecJours = formData.equipes.map(eq => ({
-      ...eq,
-      jours_travail: calendrierEdition
-        .filter(j => j.equipe === eq.numero)
-        .map(j => j.jour)
-    }));
+    const equipesAvecJours = formData.equipes.map(eq => {
+      const joursData = [];
+      calendrierEdition.forEach(jourData => {
+        Object.keys(jourData.segments).forEach(seg => {
+          if (jourData.segments[seg] === eq.numero) {
+            joursData.push({ jour: jourData.jour, segment: seg });
+          }
+        });
+      });
+      return {
+        ...eq,
+        jours_travail: joursData
+      };
+    });
     
     return {
       ...formData,
@@ -402,8 +463,20 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
     }
   };
 
+  // Obtenir la couleur d'une équipe
+  const getEquipeCouleur = (numero) => {
+    const eq = formData.equipes.find(e => e.numero === numero);
+    return eq?.couleur || "#6B7280";
+  };
+
+  const getEquipeNom = (numero) => {
+    const eq = formData.equipes.find(e => e.numero === numero);
+    return eq?.nom || `Éq.${numero}`;
+  };
+
   // Rendu du calendrier d'édition
   const renderCalendrierEdition = () => {
+    const is12h = formData.type_quart === "12h_jour_nuit";
     const semaines = [];
     for (let i = 0; i < calendrierEdition.length; i += 7) {
       semaines.push(calendrierEdition.slice(i, i + 7));
@@ -412,36 +485,70 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
     return (
       <div className="space-y-4">
         {/* Sélecteur d'équipe */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-medium">Peindre avec :</span>
-          {formData.equipes.map((eq, idx) => (
+        <div className="p-4 bg-gray-50 rounded-lg space-y-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-medium">Peindre avec l'équipe :</span>
+            {formData.equipes.map((eq) => (
+              <button
+                key={eq.numero}
+                onClick={() => setEquipeSelectionnee(eq.numero)}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                  equipeSelectionnee === eq.numero 
+                    ? 'ring-2 ring-offset-2 ring-gray-600 scale-105' 
+                    : 'opacity-60 hover:opacity-100'
+                }`}
+                style={{ 
+                  backgroundColor: eq.couleur, 
+                  color: ['#EAB308', '#22C55E', '#14B8A6', '#F97316'].includes(eq.couleur) ? '#000' : '#fff'
+                }}
+              >
+                {eq.nom}
+              </button>
+            ))}
             <button
-              key={eq.numero}
-              onClick={() => setEquipeSelectionnee(eq.numero)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                equipeSelectionnee === eq.numero 
-                  ? 'ring-2 ring-offset-2 ring-gray-400 scale-105' 
-                  : 'opacity-70 hover:opacity-100'
+              onClick={() => setEquipeSelectionnee(null)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium border-2 border-dashed transition-all ${
+                equipeSelectionnee === null 
+                  ? 'ring-2 ring-offset-2 ring-gray-600 border-gray-600 bg-gray-200' 
+                  : 'border-gray-300 opacity-60 hover:opacity-100'
               }`}
-              style={{ 
-                backgroundColor: eq.couleur, 
-                color: ['#EAB308', '#22C55E', '#14B8A6'].includes(eq.couleur) ? '#000' : '#fff'
-              }}
             >
-              {eq.nom}
+              ⬜ Repos
             </button>
-          ))}
-          <button
-            onClick={() => setEquipeSelectionnee(null)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium border-2 border-dashed transition-all ${
-              equipeSelectionnee === null 
-                ? 'ring-2 ring-offset-2 ring-gray-400 border-gray-400' 
-                : 'border-gray-300 opacity-70 hover:opacity-100'
-            }`}
-          >
-            ⬜ Repos
-          </button>
+          </div>
+          
+          {/* Sélecteur de segment si 12h */}
+          {is12h && (
+            <div className="flex items-center gap-2 pt-2 border-t">
+              <span className="text-sm font-medium">Segment :</span>
+              <button
+                onClick={() => setSegmentSelectionne("jour")}
+                className={`px-3 py-1.5 rounded text-sm font-medium flex items-center gap-1 transition-all ${
+                  segmentSelectionne === "jour"
+                    ? 'bg-yellow-400 text-black ring-2 ring-offset-1 ring-yellow-600'
+                    : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                }`}
+              >
+                <Sun className="w-4 h-4" /> Jour ({formData.heures_quart.jour_debut}-{formData.heures_quart.jour_fin})
+              </button>
+              <button
+                onClick={() => setSegmentSelectionne("nuit")}
+                className={`px-3 py-1.5 rounded text-sm font-medium flex items-center gap-1 transition-all ${
+                  segmentSelectionne === "nuit"
+                    ? 'bg-indigo-600 text-white ring-2 ring-offset-1 ring-indigo-800'
+                    : 'bg-indigo-100 text-indigo-800 hover:bg-indigo-200'
+                }`}
+              >
+                <Moon className="w-4 h-4" /> Nuit ({formData.heures_quart.nuit_debut}-{formData.heures_quart.nuit_fin})
+              </button>
+            </div>
+          )}
         </div>
+        
+        {/* Instructions */}
+        <p className="text-sm text-gray-600">
+          👆 Cliquez sur les cases pour assigner l'équipe sélectionnée. Cliquez à nouveau pour retirer.
+        </p>
         
         {/* Grille du calendrier */}
         <div className="border rounded-lg overflow-hidden">
@@ -452,52 +559,120 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
           </div>
           {semaines.map((semaine, sIdx) => (
             <div key={sIdx} className="grid grid-cols-7 border-t">
-              {semaine.map((jour, jIdx) => {
-                const equipe = jour.equipe ? formData.equipes.find(e => e.numero === jour.equipe) : null;
-                return (
-                  <button
-                    key={jour.jour}
-                    onClick={() => handleJourClick(jour.jour)}
-                    className="aspect-square flex flex-col items-center justify-center border-r last:border-r-0 hover:bg-gray-50 transition-colors relative"
-                    style={equipe ? { 
-                      backgroundColor: equipe.couleur + '40',
-                      borderColor: equipe.couleur
-                    } : {}}
-                  >
-                    <span className="text-xs text-gray-500">J{jour.jour}</span>
-                    {equipe && (
-                      <span 
-                        className="text-xs font-bold mt-0.5 px-1 rounded"
-                        style={{ 
-                          backgroundColor: equipe.couleur,
-                          color: ['#EAB308', '#22C55E', '#14B8A6'].includes(equipe.couleur) ? '#000' : '#fff'
-                        }}
+              {semaine.map((jourData) => {
+                if (is12h) {
+                  // Mode 12h: afficher jour et nuit séparément
+                  const jourEquipe = jourData.segments.jour;
+                  const nuitEquipe = jourData.segments.nuit;
+                  return (
+                    <div
+                      key={jourData.jour}
+                      className="border-r last:border-r-0 flex flex-col"
+                    >
+                      <div className="text-xs text-gray-500 text-center py-1 bg-gray-50 border-b">
+                        J{jourData.jour}
+                      </div>
+                      {/* Segment Jour */}
+                      <button
+                        onClick={() => handleSegmentClick(jourData.jour, "jour")}
+                        className="flex-1 p-1 min-h-[40px] flex items-center justify-center transition-all hover:opacity-80 border-b"
+                        style={jourEquipe ? { 
+                          backgroundColor: getEquipeCouleur(jourEquipe),
+                        } : { backgroundColor: '#fff' }}
+                        title={`Jour: ${jourEquipe ? getEquipeNom(jourEquipe) : 'Repos'}`}
                       >
-                        {equipe.nom.substring(0, 3)}
-                      </span>
-                    )}
-                  </button>
-                );
+                        {jourEquipe ? (
+                          <span 
+                            className="text-xs font-bold px-1 rounded flex items-center gap-0.5"
+                            style={{ color: ['#EAB308', '#22C55E', '#14B8A6', '#F97316'].includes(getEquipeCouleur(jourEquipe)) ? '#000' : '#fff' }}
+                          >
+                            <Sun className="w-3 h-3" />
+                            {getEquipeNom(jourEquipe).substring(0, 2)}
+                          </span>
+                        ) : (
+                          <Sun className="w-3 h-3 text-gray-300" />
+                        )}
+                      </button>
+                      {/* Segment Nuit */}
+                      <button
+                        onClick={() => handleSegmentClick(jourData.jour, "nuit")}
+                        className="flex-1 p-1 min-h-[40px] flex items-center justify-center transition-all hover:opacity-80"
+                        style={nuitEquipe ? { 
+                          backgroundColor: getEquipeCouleur(nuitEquipe),
+                        } : { backgroundColor: '#1e293b' }}
+                        title={`Nuit: ${nuitEquipe ? getEquipeNom(nuitEquipe) : 'Repos'}`}
+                      >
+                        {nuitEquipe ? (
+                          <span 
+                            className="text-xs font-bold px-1 rounded flex items-center gap-0.5"
+                            style={{ color: ['#EAB308', '#22C55E', '#14B8A6', '#F97316'].includes(getEquipeCouleur(nuitEquipe)) ? '#000' : '#fff' }}
+                          >
+                            <Moon className="w-3 h-3" />
+                            {getEquipeNom(nuitEquipe).substring(0, 2)}
+                          </span>
+                        ) : (
+                          <Moon className="w-3 h-3 text-gray-500" />
+                        )}
+                      </button>
+                    </div>
+                  );
+                } else {
+                  // Mode 24h
+                  const equipe = jourData.segments["24h"];
+                  return (
+                    <button
+                      key={jourData.jour}
+                      onClick={() => handleSegmentClick(jourData.jour, "24h")}
+                      className="aspect-square flex flex-col items-center justify-center border-r last:border-r-0 transition-all hover:opacity-80 cursor-pointer"
+                      style={equipe ? { 
+                        backgroundColor: getEquipeCouleur(equipe) + 'cc',
+                      } : { backgroundColor: '#fff' }}
+                      title={equipe ? getEquipeNom(equipe) : 'Repos'}
+                    >
+                      <span className="text-xs text-gray-500 mb-1">J{jourData.jour}</span>
+                      {equipe && (
+                        <span 
+                          className="text-xs font-bold px-1.5 py-0.5 rounded"
+                          style={{ 
+                            backgroundColor: getEquipeCouleur(equipe),
+                            color: ['#EAB308', '#22C55E', '#14B8A6', '#F97316'].includes(getEquipeCouleur(equipe)) ? '#000' : '#fff'
+                          }}
+                        >
+                          {getEquipeNom(equipe).substring(0, 3)}
+                        </span>
+                      )}
+                    </button>
+                  );
+                }
               })}
               {/* Remplir les jours manquants de la dernière semaine */}
               {semaine.length < 7 && Array(7 - semaine.length).fill(null).map((_, i) => (
-                <div key={`empty-${i}`} className="aspect-square border-r last:border-r-0 bg-gray-50" />
+                <div key={`empty-${i}`} className="aspect-square border-r last:border-r-0 bg-gray-100" />
               ))}
             </div>
           ))}
         </div>
         
         {/* Résumé des jours assignés */}
-        <div className="flex flex-wrap gap-2 text-sm">
+        <div className="flex flex-wrap gap-2 text-sm p-3 bg-gray-50 rounded-lg">
+          <span className="font-medium">Résumé :</span>
           {formData.equipes.map(eq => {
-            const nbJours = calendrierEdition.filter(j => j.equipe === eq.numero).length;
+            let nbJours = 0;
+            calendrierEdition.forEach(j => {
+              Object.values(j.segments).forEach(seg => {
+                if (seg === eq.numero) nbJours++;
+              });
+            });
             return (
               <span 
                 key={eq.numero}
-                className="px-2 py-1 rounded"
-                style={{ backgroundColor: eq.couleur + '30' }}
+                className="px-2 py-1 rounded font-medium"
+                style={{ 
+                  backgroundColor: eq.couleur + '40',
+                  color: eq.couleur
+                }}
               >
-                {eq.nom}: {nbJours} jour{nbJours > 1 ? 's' : ''}
+                {eq.nom}: {nbJours} {is12h ? 'segment(s)' : 'jour(s)'}
               </span>
             );
           })}
@@ -542,7 +717,7 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
           </div>
           {semaines.map((semaine, sIdx) => (
             <div key={sIdx} className="grid grid-cols-7 border-t">
-              {semaine.map((jour, jIdx) => (
+              {semaine.map((jour) => (
                 <div
                   key={jour.date}
                   className="p-2 border-r last:border-r-0 min-h-[80px]"
@@ -574,6 +749,170 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
     );
   };
 
+  // Formulaire commun pour création/édition
+  const renderFormulaire = () => (
+    <div className="space-y-6">
+      {/* Informations de base */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>Nom de l'horaire *</Label>
+          <Input
+            value={formData.nom}
+            onChange={(e) => setFormData(prev => ({ ...prev, nom: e.target.value }))}
+            placeholder="Ex: Horaire Granby"
+            data-testid="input-horaire-nom"
+          />
+        </div>
+        <div>
+          <Label>Date de référence *</Label>
+          <Input
+            type="date"
+            value={formData.date_reference}
+            onChange={(e) => setFormData(prev => ({ ...prev, date_reference: e.target.value }))}
+            data-testid="input-horaire-date-ref"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Date où l'équipe 1 commence le jour 1 du cycle
+          </p>
+        </div>
+      </div>
+      
+      <div>
+        <Label>Description</Label>
+        <Input
+          value={formData.description}
+          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+          placeholder="Description optionnelle"
+        />
+      </div>
+      
+      <div className="grid grid-cols-3 gap-4">
+        <div>
+          <Label>Durée du cycle (jours)</Label>
+          <Input
+            type="number"
+            min="7"
+            max="56"
+            value={formData.duree_cycle}
+            onChange={(e) => handleDureeCycleChange(e.target.value)}
+            data-testid="input-horaire-duree"
+          />
+        </div>
+        <div>
+          <Label>Nombre d'équipes</Label>
+          <Input
+            type="number"
+            min="1"
+            max="8"
+            value={formData.nombre_equipes}
+            onChange={(e) => handleNombreEquipesChange(e.target.value)}
+            data-testid="input-horaire-nb-equipes"
+          />
+        </div>
+        <div>
+          <Label>Type de quart</Label>
+          <Select
+            value={formData.type_quart}
+            onValueChange={handleTypeQuartChange}
+          >
+            <SelectTrigger data-testid="select-type-quart">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="24h">24 heures</SelectItem>
+              <SelectItem value="12h_jour_nuit">Jour / Nuit (12h)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      
+      {/* Configuration des heures si jour/nuit */}
+      {formData.type_quart === '12h_jour_nuit' && (
+        <div className="grid grid-cols-4 gap-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+          <div>
+            <Label className="text-xs flex items-center gap-1"><Sun className="w-3 h-3" /> Début jour</Label>
+            <Input
+              type="time"
+              value={formData.heures_quart.jour_debut}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                heures_quart: { ...prev.heures_quart, jour_debut: e.target.value }
+              }))}
+            />
+          </div>
+          <div>
+            <Label className="text-xs flex items-center gap-1"><Sun className="w-3 h-3" /> Fin jour</Label>
+            <Input
+              type="time"
+              value={formData.heures_quart.jour_fin}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                heures_quart: { ...prev.heures_quart, jour_fin: e.target.value }
+              }))}
+            />
+          </div>
+          <div>
+            <Label className="text-xs flex items-center gap-1"><Moon className="w-3 h-3" /> Début nuit</Label>
+            <Input
+              type="time"
+              value={formData.heures_quart.nuit_debut}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                heures_quart: { ...prev.heures_quart, nuit_debut: e.target.value }
+              }))}
+            />
+          </div>
+          <div>
+            <Label className="text-xs flex items-center gap-1"><Moon className="w-3 h-3" /> Fin nuit</Label>
+            <Input
+              type="time"
+              value={formData.heures_quart.nuit_fin}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                heures_quart: { ...prev.heures_quart, nuit_fin: e.target.value }
+              }))}
+            />
+          </div>
+        </div>
+      )}
+      
+      {/* Configuration des équipes */}
+      <div>
+        <Label className="mb-2 block">Configuration des équipes</Label>
+        <div className="space-y-2">
+          {formData.equipes.map((eq, idx) => (
+            <div key={idx} className="flex items-center gap-2">
+              <input
+                type="color"
+                value={eq.couleur}
+                onChange={(e) => updateEquipe(idx, 'couleur', e.target.value)}
+                className="w-10 h-10 rounded cursor-pointer border-2 border-gray-300"
+                style={{ padding: '2px' }}
+              />
+              <Input
+                value={eq.nom}
+                onChange={(e) => updateEquipe(idx, 'nom', e.target.value)}
+                className="flex-1"
+                placeholder={`Équipe ${idx + 1}`}
+              />
+              <span className="text-sm text-gray-500 w-16 text-center">
+                #{eq.numero}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      {/* Calendrier d'édition */}
+      <div>
+        <Label className="mb-2 block text-lg font-semibold">
+          📅 Calendrier du cycle ({formData.duree_cycle} jours)
+        </Label>
+        {renderCalendrierEdition()}
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -585,7 +924,7 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
 
   return (
     <div className="horaires-personnalises-tab" data-testid="parametres-horaires">
-      <div className="tab-header mb-6">
+      <div className="flex justify-between items-start mb-6">
         <div>
           <h2 className="text-xl font-bold flex items-center gap-2">
             <Calendar className="w-6 h-6" />
@@ -643,16 +982,16 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
               <div className="text-xs text-gray-500 space-y-1 mb-3">
                 <div className="flex items-center gap-1">
                   <Clock className="w-3 h-3" />
-                  <span>Type: {horaire.type_quart === '24h' ? 'Quarts de 24h' : 'Jour/Nuit'}</span>
+                  <span>Type: {horaire.type_quart === '12h_jour_nuit' ? 'Jour/Nuit' : '24h'}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Users className="w-3 h-3" />
-                  <span>{horaire.nombre_equipes} équipes</span>
+                  <span>{horaire.nombre_equipes} équipes • {horaire.duree_cycle} jours</span>
                 </div>
               </div>
               
               {/* Actions */}
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button 
                   variant="outline" 
                   size="sm"
@@ -686,7 +1025,7 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
                         setSelectedHoraire(horaire);
                         setShowDeleteConfirm(true);
                       }}
-                      className="text-red-600 hover:text-red-700"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
                       data-testid={`btn-delete-${horaire.id}`}
                     >
                       <Trash2 className="w-3 h-3" />
@@ -709,169 +1048,7 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
             </DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-6">
-            {/* Informations de base */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Nom de l'horaire *</Label>
-                <Input
-                  value={formData.nom}
-                  onChange={(e) => setFormData(prev => ({ ...prev, nom: e.target.value }))}
-                  placeholder="Ex: Horaire Granby"
-                  data-testid="input-horaire-nom"
-                />
-              </div>
-              <div>
-                <Label>Date de référence *</Label>
-                <Input
-                  type="date"
-                  value={formData.date_reference}
-                  onChange={(e) => setFormData(prev => ({ ...prev, date_reference: e.target.value }))}
-                  data-testid="input-horaire-date-ref"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Date où l'équipe 1 commence le jour 1 du cycle
-                </p>
-              </div>
-            </div>
-            
-            <div>
-              <Label>Description</Label>
-              <Input
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Description optionnelle"
-              />
-            </div>
-            
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <Label>Durée du cycle (jours)</Label>
-                <Input
-                  type="number"
-                  min="7"
-                  max="56"
-                  value={formData.duree_cycle}
-                  onChange={(e) => handleDureeCycleChange(e.target.value)}
-                  data-testid="input-horaire-duree"
-                />
-              </div>
-              <div>
-                <Label>Nombre d'équipes</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  max="8"
-                  value={formData.nombre_equipes}
-                  onChange={(e) => handleNombreEquipesChange(e.target.value)}
-                  data-testid="input-horaire-nb-equipes"
-                />
-              </div>
-              <div>
-                <Label>Type de quart</Label>
-                <Select
-                  value={formData.type_quart}
-                  onValueChange={(v) => setFormData(prev => ({ ...prev, type_quart: v }))}
-                >
-                  <SelectTrigger data-testid="select-type-quart">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="24h">24 heures</SelectItem>
-                    <SelectItem value="12h_jour_nuit">12h Jour/Nuit</SelectItem>
-                    <SelectItem value="8h">8 heures</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            {/* Configuration des heures si jour/nuit */}
-            {formData.type_quart === '12h_jour_nuit' && (
-              <div className="grid grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <Label className="text-xs">Début jour</Label>
-                  <Input
-                    type="time"
-                    value={formData.heures_quart.jour_debut || '08:00'}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      heures_quart: { ...prev.heures_quart, jour_debut: e.target.value }
-                    }))}
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Fin jour</Label>
-                  <Input
-                    type="time"
-                    value={formData.heures_quart.jour_fin || '20:00'}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      heures_quart: { ...prev.heures_quart, jour_fin: e.target.value }
-                    }))}
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Début nuit</Label>
-                  <Input
-                    type="time"
-                    value={formData.heures_quart.nuit_debut || '20:00'}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      heures_quart: { ...prev.heures_quart, nuit_debut: e.target.value }
-                    }))}
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Fin nuit</Label>
-                  <Input
-                    type="time"
-                    value={formData.heures_quart.nuit_fin || '08:00'}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      heures_quart: { ...prev.heures_quart, nuit_fin: e.target.value }
-                    }))}
-                  />
-                </div>
-              </div>
-            )}
-            
-            {/* Configuration des équipes */}
-            <div>
-              <Label className="mb-2 block">Configuration des équipes</Label>
-              <div className="space-y-2">
-                {formData.equipes.map((eq, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      value={eq.couleur}
-                      onChange={(e) => updateEquipe(idx, 'couleur', e.target.value)}
-                      className="w-8 h-8 rounded cursor-pointer border-0"
-                    />
-                    <Input
-                      value={eq.nom}
-                      onChange={(e) => updateEquipe(idx, 'nom', e.target.value)}
-                      className="flex-1"
-                      placeholder={`Équipe ${idx + 1}`}
-                    />
-                    <span className="text-xs text-gray-500 w-20">
-                      #{eq.numero}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            {/* Calendrier d'édition */}
-            <div>
-              <Label className="mb-2 block">
-                Calendrier du cycle ({formData.duree_cycle} jours)
-              </Label>
-              <p className="text-xs text-gray-500 mb-3">
-                Cliquez sur les jours pour assigner l'équipe sélectionnée. Cliquez à nouveau pour désassigner.
-              </p>
-              {renderCalendrierEdition()}
-            </div>
-          </div>
+          {renderFormulaire()}
           
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreateModal(false)}>
@@ -885,7 +1062,7 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
         </DialogContent>
       </Dialog>
 
-      {/* Modal Édition - similaire au modal création */}
+      {/* Modal Édition */}
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -895,149 +1072,7 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
             </DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-6">
-            {/* Mêmes champs que création */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Nom de l'horaire *</Label>
-                <Input
-                  value={formData.nom}
-                  onChange={(e) => setFormData(prev => ({ ...prev, nom: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label>Date de référence *</Label>
-                <Input
-                  type="date"
-                  value={formData.date_reference}
-                  onChange={(e) => setFormData(prev => ({ ...prev, date_reference: e.target.value }))}
-                />
-              </div>
-            </div>
-            
-            <div>
-              <Label>Description</Label>
-              <Input
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              />
-            </div>
-            
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <Label>Durée du cycle (jours)</Label>
-                <Input
-                  type="number"
-                  min="7"
-                  max="56"
-                  value={formData.duree_cycle}
-                  onChange={(e) => handleDureeCycleChange(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label>Nombre d'équipes</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  max="8"
-                  value={formData.nombre_equipes}
-                  onChange={(e) => handleNombreEquipesChange(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label>Type de quart</Label>
-                <Select
-                  value={formData.type_quart}
-                  onValueChange={(v) => setFormData(prev => ({ ...prev, type_quart: v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="24h">24 heures</SelectItem>
-                    <SelectItem value="12h_jour_nuit">12h Jour/Nuit</SelectItem>
-                    <SelectItem value="8h">8 heures</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            {formData.type_quart === '12h_jour_nuit' && (
-              <div className="grid grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <Label className="text-xs">Début jour</Label>
-                  <Input
-                    type="time"
-                    value={formData.heures_quart.jour_debut || '08:00'}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      heures_quart: { ...prev.heures_quart, jour_debut: e.target.value }
-                    }))}
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Fin jour</Label>
-                  <Input
-                    type="time"
-                    value={formData.heures_quart.jour_fin || '20:00'}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      heures_quart: { ...prev.heures_quart, jour_fin: e.target.value }
-                    }))}
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Début nuit</Label>
-                  <Input
-                    type="time"
-                    value={formData.heures_quart.nuit_debut || '20:00'}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      heures_quart: { ...prev.heures_quart, nuit_debut: e.target.value }
-                    }))}
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Fin nuit</Label>
-                  <Input
-                    type="time"
-                    value={formData.heures_quart.nuit_fin || '08:00'}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      heures_quart: { ...prev.heures_quart, nuit_fin: e.target.value }
-                    }))}
-                  />
-                </div>
-              </div>
-            )}
-            
-            <div>
-              <Label className="mb-2 block">Configuration des équipes</Label>
-              <div className="space-y-2">
-                {formData.equipes.map((eq, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      value={eq.couleur}
-                      onChange={(e) => updateEquipe(idx, 'couleur', e.target.value)}
-                      className="w-8 h-8 rounded cursor-pointer border-0"
-                    />
-                    <Input
-                      value={eq.nom}
-                      onChange={(e) => updateEquipe(idx, 'nom', e.target.value)}
-                      className="flex-1"
-                    />
-                    <span className="text-xs text-gray-500 w-20">#{eq.numero}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            <div>
-              <Label className="mb-2 block">Calendrier du cycle</Label>
-              {renderCalendrierEdition()}
-            </div>
-          </div>
+          {renderFormulaire()}
           
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowEditModal(false)}>
