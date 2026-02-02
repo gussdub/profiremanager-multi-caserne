@@ -409,7 +409,12 @@ async def generer_indisponibilites(
                 "quebec": "quebec_10_14",
                 "longueuil": "longueuil_7_24"
             }
-            origine_type = origine_map.get(generation_data.horaire_type, "montreal_7_24")
+            # Pour les horaires personnalisés, l'origine est "horaire_{id}"
+            if generation_data.horaire_type in origine_map:
+                origine_type = origine_map[generation_data.horaire_type]
+            else:
+                origine_type = f"horaire_{generation_data.horaire_type}"
+            
             await db.disponibilites.delete_many({
                 "user_id": generation_data.user_id,
                 "tenant_id": tenant.id,
@@ -446,9 +451,25 @@ async def generer_indisponibilites(
                 date_fin=generation_data.date_fin
             )
         else:
-            raise HTTPException(
-                status_code=400,
-                detail="horaire_type doit être 'montreal', 'quebec' ou 'longueuil'"
+            # Horaire personnalisé - chercher dans la base de données
+            horaire_personnalise = await db.horaires_personnalises.find_one({
+                "tenant_id": tenant.id,
+                "id": generation_data.horaire_type
+            })
+            
+            if not horaire_personnalise:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Horaire '{generation_data.horaire_type}' non trouvé"
+                )
+            
+            indispos = await generer_indisponibilites_personnalise(
+                user_id=generation_data.user_id,
+                tenant_id=tenant.id,
+                horaire=horaire_personnalise,
+                equipe_nom=generation_data.equipe,
+                date_debut=generation_data.date_debut,
+                date_fin=generation_data.date_fin
             )
         
         # Insérer les indisponibilités dans la base de données
