@@ -1702,6 +1702,15 @@ const Parametres = ({ user, tenantSlug }) => {
           </Suspense>
         )}
 
+        {activeTab === 'horaires-personnalises' && (
+          <Suspense fallback={<div style={{ padding: '40px', textAlign: 'center' }}>Chargement...</div>}>
+            <ParametresHorairesPersonnalises
+              tenantSlug={tenantSlug}
+              toast={toast}
+            />
+          </Suspense>
+        )}
+
         {activeTab === 'remplacements' && (
           <Suspense fallback={<div style={{ padding: '40px', textAlign: 'center' }}>Chargement...</div>}>
             <ParametresRemplacements
