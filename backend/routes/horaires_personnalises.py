@@ -441,6 +441,7 @@ async def apercu_horaire(
     
     date_ref = datetime.strptime(horaire["date_reference"], "%Y-%m-%d").date()
     duree_cycle = horaire.get("duree_cycle", 28)
+    type_quart = horaire.get("type_quart", "24h")
     
     apercu = []
     for i in range(nb_jours):
@@ -452,17 +453,44 @@ async def apercu_horaire(
             jour_cycle = duree_cycle - ((-jours_depuis_ref - 1) % duree_cycle)
         
         # Trouver quelle équipe travaille ce jour
-        equipe_travail = None
+        # Le format de jours_travail peut être:
+        # - Liste d'entiers: [1, 2, 3] (ancien format)
+        # - Liste d'objets: [{jour: 1, segment: "jour"}, {jour: 2, segment: "nuit"}] (nouveau format)
+        equipe_jour = None
+        equipe_nuit = None
+        
         for eq in horaire.get("equipes", []):
-            if jour_cycle in eq.get("jours_travail", []):
-                equipe_travail = eq
-                break
+            jours_travail = eq.get("jours_travail", [])
+            for jt in jours_travail:
+                if isinstance(jt, int):
+                    # Ancien format: simple entier
+                    if jt == jour_cycle:
+                        equipe_jour = eq
+                        equipe_nuit = eq
+                        break
+                elif isinstance(jt, dict):
+                    # Nouveau format: {jour: int, segment: str}
+                    if jt.get("jour") == jour_cycle:
+                        seg = jt.get("segment", "24h")
+                        if seg == "24h":
+                            equipe_jour = eq
+                            equipe_nuit = eq
+                        elif seg == "jour":
+                            equipe_jour = eq
+                        elif seg == "nuit":
+                            equipe_nuit = eq
+        
+        # Pour l'aperçu, on affiche l'équipe principale (jour ou 24h)
+        equipe_travail = equipe_jour or equipe_nuit
         
         apercu.append({
             "date": current_date.strftime("%Y-%m-%d"),
             "jour_semaine": current_date.strftime("%A"),
             "jour_cycle": jour_cycle,
-            "equipe": equipe_travail
+            "equipe": equipe_travail,
+            "equipe_jour": equipe_jour,
+            "equipe_nuit": equipe_nuit,
+            "type_quart": type_quart
         })
     
     return {
