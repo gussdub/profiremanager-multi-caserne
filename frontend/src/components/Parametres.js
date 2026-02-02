@@ -1107,6 +1107,7 @@ const Parametres = ({ user, tenantSlug }) => {
           { id: 'grades', icon: '🎖️', title: 'Grades', desc: 'Hiérarchie' },
           { id: 'attribution', icon: '📅', title: 'Horaire', desc: 'Attribution auto' },
           { id: 'equipes-garde', icon: '👥', title: 'Équipes', desc: 'Rotations' },
+          { id: 'horaires-personnalises', icon: '📆', title: 'Horaires', desc: 'Cycles personnalisés' },
           { id: 'comptes', icon: '🔐', title: 'Comptes', desc: 'Utilisateurs' },
           { id: 'remplacements', icon: '🔄', title: 'Remplacements', desc: 'Règles' },
           { id: 'disponibilites', icon: '📅', title: 'Disponibilités', desc: 'Configuration' },
