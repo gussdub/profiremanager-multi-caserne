@@ -281,18 +281,90 @@ async def update_horaire(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Met à jour un horaire personnalisé
+    Met à jour un horaire personnalisé ou crée une version modifiée d'un prédéfini
     """
     if current_user.role not in ["admin", "superadmin"]:
         raise HTTPException(status_code=403, detail="Admin requis")
     
-    # Empêcher la modification des prédéfinis
-    if horaire_id in HORAIRES_PREDEFINIS:
-        raise HTTPException(status_code=400, detail="Les horaires prédéfinis ne peuvent pas être modifiés")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Vérifier que l'horaire existe
+    # Si c'est un horaire prédéfini, créer ou mettre à jour une version en base
+    if horaire_id in HORAIRES_PREDEFINIS:
+        # Vérifier si une version modifiée existe déjà
+        existing = await db.horaires_personnalises.find_one({
+            "tenant_id": tenant.id,
+            "base_predefini_id": horaire_id
+        })
+        
+        predefini = HORAIRES_PREDEFINIS[horaire_id]
+        
+        if existing:
+            # Mettre à jour la version existante
+            updates = {"updated_at": datetime.now(timezone.utc).isoformat()}
+            
+            if data.nom is not None:
+                updates["nom"] = data.nom
+            if data.description is not None:
+                updates["description"] = data.description
+            if data.duree_cycle is not None:
+                updates["duree_cycle"] = data.duree_cycle
+            if data.nombre_equipes is not None:
+                updates["nombre_equipes"] = data.nombre_equipes
+            if data.date_reference is not None:
+                updates["date_reference"] = data.date_reference
+            if data.equipes is not None:
+                updates["equipes"] = [e.dict() for e in data.equipes]
+            if data.jours_config is not None:
+                updates["jours_config"] = [j.dict() for j in data.jours_config]
+            if data.type_quart is not None:
+                updates["type_quart"] = data.type_quart
+            if data.heures_quart is not None:
+                updates["heures_quart"] = data.heures_quart
+            
+            await db.horaires_personnalises.update_one(
+                {"tenant_id": tenant.id, "base_predefini_id": horaire_id},
+                {"$set": updates}
+            )
+            
+            updated = await db.horaires_personnalises.find_one({
+                "tenant_id": tenant.id,
+                "base_predefini_id": horaire_id
+            })
+            result = clean_mongo_doc(updated)
+            result["predefini"] = False
+            result["modifie_depuis_predefini"] = True
+            logger.info(f"[HORAIRE] Prédéfini '{horaire_id}' mis à jour par {current_user.email}")
+            return result
+        else:
+            # Créer une nouvelle version basée sur le prédéfini
+            new_id = str(uuid.uuid4())
+            horaire_doc = {
+                "id": new_id,
+                "tenant_id": tenant.id,
+                "base_predefini_id": horaire_id,  # Référence au prédéfini d'origine
+                "nom": data.nom if data.nom is not None else predefini.get("nom"),
+                "description": data.description if data.description is not None else predefini.get("description", ""),
+                "duree_cycle": data.duree_cycle if data.duree_cycle is not None else predefini.get("duree_cycle", 28),
+                "nombre_equipes": data.nombre_equipes if data.nombre_equipes is not None else predefini.get("nombre_equipes", 4),
+                "date_reference": data.date_reference if data.date_reference is not None else predefini.get("date_reference"),
+                "equipes": [e.dict() for e in data.equipes] if data.equipes is not None else predefini.get("equipes", []),
+                "jours_config": [j.dict() for j in data.jours_config] if data.jours_config is not None else [],
+                "type_quart": data.type_quart if data.type_quart is not None else predefini.get("type_quart", "24h"),
+                "heures_quart": data.heures_quart if data.heures_quart is not None else predefini.get("heures_quart"),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "created_by": current_user.email,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+            
+            await db.horaires_personnalises.insert_one(horaire_doc)
+            logger.info(f"[HORAIRE] Version modifiée du prédéfini '{horaire_id}' créée par {current_user.email}")
+            
+            result = clean_mongo_doc(horaire_doc)
+            result["predefini"] = False
+            result["modifie_depuis_predefini"] = True
+            return result
+    
+    # Sinon, c'est un horaire personnalisé existant
     horaire = await db.horaires_personnalises.find_one({
         "tenant_id": tenant.id,
         "id": horaire_id
@@ -335,6 +407,8 @@ async def update_horaire(
     
     result = clean_mongo_doc(updated)
     result["predefini"] = False
+    if horaire.get("base_predefini_id"):
+        result["modifie_depuis_predefini"] = True
     return result
 
 
