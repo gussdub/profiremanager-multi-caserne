@@ -1693,21 +1693,9 @@ const Parametres = ({ user, tenantSlug }) => {
           </div>
         )}
 
-        {activeTab === 'equipes-garde' && (
+        {activeTab === 'rotation-equipes' && (
           <Suspense fallback={<div style={{ padding: '40px', textAlign: 'center' }}>Chargement...</div>}>
-            <ParametresEquipesGarde
-              tenantSlug={tenantSlug}
-              toast={toast}
-            />
-          </Suspense>
-        )}
-
-        {activeTab === 'horaires-personnalises' && (
-          <Suspense fallback={<div style={{ padding: '40px', textAlign: 'center' }}>Chargement...</div>}>
-            <ParametresHorairesPersonnalises
-              tenantSlug={tenantSlug}
-              toast={toast}
-            />
+            <RotationEquipesTab tenantSlug={tenantSlug} toast={toast} />
           </Suspense>
         )}
 
