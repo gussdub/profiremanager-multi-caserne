@@ -1043,3 +1043,145 @@ async def update_tache_suivi(
     
     updated = await db.taches_suivi_prevention.find_one({"id": tache_id})
     return clean_mongo_doc(updated)
+
+
+
+# ==================== ENVOI PAR COURRIEL ====================
+
+class EnvoiAvisRequest(BaseModel):
+    email: str
+    mode: str = "courriel"
+    message_personnalise: Optional[str] = None
+
+
+@router.post("/{tenant_slug}/prevention/avis-non-conformite/{avis_id}/envoyer")
+async def envoyer_avis_courriel(
+    tenant_slug: str,
+    avis_id: str,
+    data: EnvoiAvisRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Envoyer l'avis de non-conformité par courriel
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer l'avis
+    avis = await db.avis_non_conformite.find_one({
+        "id": avis_id,
+        "tenant_id": tenant.id
+    })
+    
+    if not avis:
+        raise HTTPException(status_code=404, detail="Avis non trouvé")
+    
+    # Récupérer les infos du tenant
+    tenant_doc = await db.tenants.find_one({"id": tenant.id})
+    tenant_nom = tenant_doc.get("nom", "Service Incendie") if tenant_doc else "Service Incendie"
+    
+    # Générer le PDF
+    pdf_buffer = await generer_avis_pdf(avis, tenant_doc)
+    pdf_content = pdf_buffer.getvalue()
+    
+    # Préparer l'email
+    try:
+        import resend
+        import base64
+        import os
+        
+        resend.api_key = os.environ.get("RESEND_API_KEY")
+        sender_email = os.environ.get("SENDER_EMAIL", "noreply@profiremanager.ca")
+        
+        # Contenu de l'email
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background-color: #dc2626; color: white; padding: 20px; text-align: center;">
+                <h1 style="margin: 0;">Avis de Non-Conformité</h1>
+            </div>
+            
+            <div style="padding: 20px; background-color: #f9fafb;">
+                <p>Bonjour,</p>
+                
+                <p>
+                    Suite à l'inspection effectuée le <strong>{avis.get('date_inspection', 'N/A')}</strong> 
+                    à l'adresse <strong>{avis.get('batiment_adresse', 'N/A')}, {avis.get('batiment_ville', '')}</strong>, 
+                    nous vous transmettons ci-joint l'avis de non-conformité <strong>N° {avis.get('numero_avis', 'N/A')}</strong>.
+                </p>
+                
+                <p>
+                    Cet avis contient {len(avis.get('violations', []))} non-conformité(s) à corriger 
+                    dans les délais prescrits.
+                </p>
+                
+                <div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin: 20px 0;">
+                    <strong>Date limite de correction la plus proche:</strong><br/>
+                    {avis.get('date_echeance_min', 'Voir document ci-joint')}
+                </div>
+                
+                {f'<p><em>Message du préventionniste:</em><br/>{data.message_personnalise}</p>' if data.message_personnalise else ''}
+                
+                <p>
+                    Veuillez consulter le document PDF ci-joint pour les détails complets des non-conformités 
+                    et les délais de correction.
+                </p>
+                
+                <p>
+                    Pour toute question, veuillez contacter notre service de prévention incendie.
+                </p>
+                
+                <p>Cordialement,</p>
+                <p>
+                    <strong>{avis.get('preventionniste_nom', 'Préventionniste')}</strong><br/>
+                    Service de prévention incendie<br/>
+                    {tenant_nom}
+                </p>
+            </div>
+            
+            <div style="background-color: #1f2937; color: #9ca3af; padding: 15px; text-align: center; font-size: 12px;">
+                Ce courriel et ses pièces jointes sont des documents officiels.<br/>
+                Veuillez les conserver pour vos dossiers.
+            </div>
+        </div>
+        """
+        
+        # Envoyer avec Resend
+        params = {
+            "from": f"{tenant_nom} <{sender_email}>",
+            "to": [data.email],
+            "subject": f"Avis de Non-Conformité N° {avis.get('numero_avis', 'N/A')} - {avis.get('batiment_adresse', 'N/A')}",
+            "html": html_content,
+            "attachments": [
+                {
+                    "filename": f"avis_{avis.get('numero_avis', 'NC')}.pdf",
+                    "content": base64.b64encode(pdf_content).decode('utf-8')
+                }
+            ]
+        }
+        
+        email_response = resend.Emails.send(params)
+        
+        # Mettre à jour le statut de l'avis
+        await db.avis_non_conformite.update_one(
+            {"id": avis_id, "tenant_id": tenant.id},
+            {"$set": {
+                "statut": "envoye",
+                "date_envoi": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+                "mode_envoi": "courriel",
+                "email_envoye_a": data.email,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        logger.info(f"[AVIS] Courriel envoyé pour {avis.get('numero_avis')} à {data.email}")
+        
+        return {
+            "message": f"Avis envoyé avec succès à {data.email}",
+            "email_id": email_response.get("id") if isinstance(email_response, dict) else str(email_response)
+        }
+        
+    except Exception as e:
+        logger.error(f"[AVIS] Erreur envoi courriel: {str(e)}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Erreur lors de l'envoi du courriel: {str(e)}"
+        )
