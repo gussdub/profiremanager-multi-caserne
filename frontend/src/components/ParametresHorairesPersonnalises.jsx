@@ -1095,29 +1095,30 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
                 >
                   <Copy className="w-3 h-3 mr-1" /> Dupliquer
                 </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => openEditModal(horaire)}
+                  disabled={saving}
+                  data-testid={`btn-edit-${horaire.id}`}
+                  title={horaire.predefini ? "Crée une copie modifiable" : "Modifier"}
+                >
+                  <Edit2 className="w-3 h-3 mr-1" />
+                  {horaire.predefini ? "Personnaliser" : "Modifier"}
+                </Button>
                 {!horaire.predefini && (
-                  <>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => openEditModal(horaire)}
-                      data-testid={`btn-edit-${horaire.id}`}
-                    >
-                      <Edit2 className="w-3 h-3" />
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        setSelectedHoraire(horaire);
-                        setShowDeleteConfirm(true);
-                      }}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      data-testid={`btn-delete-${horaire.id}`}
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      setSelectedHoraire(horaire);
+                      setShowDeleteConfirm(true);
+                    }}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    data-testid={`btn-delete-${horaire.id}`}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
                 )}
               </div>
             </CardContent>
