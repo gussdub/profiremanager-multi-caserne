@@ -41,6 +41,11 @@ class SegmentJour(BaseModel):
     heure_fin: str  # "20:00"
     couleur: str = "#22C55E"  # Couleur pour l'affichage
 
+class JourTravail(BaseModel):
+    """Un jour de travail avec son segment"""
+    jour: int  # 1-28
+    segment: str = "24h"  # "24h", "jour", "nuit"
+
 class JourCycle(BaseModel):
     """Configuration d'un jour dans le cycle"""
     jour: int  # 1-28
@@ -51,7 +56,7 @@ class EquipeConfig(BaseModel):
     numero: int
     nom: str
     couleur: str
-    jours_travail: List[int]  # Liste des jours du cycle où cette équipe travaille
+    jours_travail: List[Any]  # Liste mixte: int ou {jour: int, segment: str}
 
 class HorairePersonnaliseCreate(BaseModel):
     """Modèle pour créer un horaire personnalisé"""
