@@ -20,6 +20,73 @@ const EmailsHistory = lazy(() => import("./EmailsHistory.jsx"));
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
+/**
+ * Composant combiné pour Rotation des équipes + Horaires personnalisés
+ */
+const RotationEquipesTab = ({ tenantSlug, toast }) => {
+  const [subTab, setSubTab] = useState('horaires'); // 'horaires' ou 'configuration'
+  
+  return (
+    <div>
+      {/* Sous-navigation */}
+      <div style={{ 
+        display: 'flex', 
+        gap: '8px', 
+        marginBottom: '20px',
+        borderBottom: '2px solid #e5e7eb',
+        paddingBottom: '12px'
+      }}>
+        <button
+          onClick={() => setSubTab('horaires')}
+          style={{
+            padding: '10px 20px',
+            borderRadius: '8px 8px 0 0',
+            border: 'none',
+            background: subTab === 'horaires' ? '#dc2626' : '#f3f4f6',
+            color: subTab === 'horaires' ? 'white' : '#374151',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+        >
+          📆 Horaires de rotation
+        </button>
+        <button
+          onClick={() => setSubTab('configuration')}
+          style={{
+            padding: '10px 20px',
+            borderRadius: '8px 8px 0 0',
+            border: 'none',
+            background: subTab === 'configuration' ? '#dc2626' : '#f3f4f6',
+            color: subTab === 'configuration' ? 'white' : '#374151',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+        >
+          ⚙️ Configuration des équipes
+        </button>
+      </div>
+      
+      {/* Contenu */}
+      <Suspense fallback={<div style={{ padding: '40px', textAlign: 'center' }}>Chargement...</div>}>
+        {subTab === 'horaires' && (
+          <ParametresHorairesPersonnalises tenantSlug={tenantSlug} toast={toast} />
+        )}
+        {subTab === 'configuration' && (
+          <ParametresEquipesGarde tenantSlug={tenantSlug} toast={toast} />
+        )}
+      </Suspense>
+    </div>
+  );
+};
+
 const Parametres = ({ user, tenantSlug }) => {
   // Construire l'API URL avec le tenant
   const API = `${BACKEND_URL}/api/${tenantSlug}`;
