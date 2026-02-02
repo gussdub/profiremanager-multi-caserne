@@ -690,6 +690,8 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
       semaines.push(apercu.apercu.slice(i, i + 7));
     }
     
+    const is12h = apercu.apercu[0]?.type_quart === "12h_jour_nuit";
+    
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-4">
@@ -717,31 +719,89 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
           </div>
           {semaines.map((semaine, sIdx) => (
             <div key={sIdx} className="grid grid-cols-7 border-t">
-              {semaine.map((jour) => (
-                <div
-                  key={jour.date}
-                  className="p-2 border-r last:border-r-0 min-h-[80px]"
-                  style={jour.equipe ? { 
-                    backgroundColor: jour.equipe.couleur + '30'
-                  } : {}}
-                >
-                  <div className="text-xs text-gray-500">
-                    {new Date(jour.date).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' })}
-                  </div>
-                  <div className="text-xs text-gray-400">J{jour.jour_cycle}</div>
-                  {jour.equipe && (
-                    <div 
-                      className="mt-1 text-xs font-bold px-1 py-0.5 rounded text-center"
-                      style={{ 
-                        backgroundColor: jour.equipe.couleur,
-                        color: ['#EAB308', '#22C55E', '#14B8A6'].includes(jour.equipe.couleur) ? '#000' : '#fff'
-                      }}
+              {semaine.map((jour) => {
+                if (is12h) {
+                  // Mode jour/nuit
+                  return (
+                    <div
+                      key={jour.date}
+                      className="border-r last:border-r-0 min-h-[100px] flex flex-col"
                     >
-                      {jour.equipe.nom}
+                      <div className="text-xs text-gray-500 p-1 bg-gray-50 border-b">
+                        {new Date(jour.date).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' })}
+                        <span className="text-gray-400 ml-1">J{jour.jour_cycle}</span>
+                      </div>
+                      {/* Segment Jour */}
+                      <div 
+                        className="flex-1 flex items-center justify-center p-1"
+                        style={jour.equipe_jour ? { 
+                          backgroundColor: jour.equipe_jour.couleur + '40'
+                        } : {}}
+                      >
+                        {jour.equipe_jour && (
+                          <span 
+                            className="text-xs font-bold px-1.5 py-0.5 rounded flex items-center gap-1"
+                            style={{ 
+                              backgroundColor: jour.equipe_jour.couleur,
+                              color: ['#EAB308', '#22C55E', '#14B8A6', '#F97316'].includes(jour.equipe_jour.couleur) ? '#000' : '#fff'
+                            }}
+                          >
+                            <Sun className="w-3 h-3" />
+                            {jour.equipe_jour.nom}
+                          </span>
+                        )}
+                      </div>
+                      {/* Segment Nuit */}
+                      <div 
+                        className="flex-1 flex items-center justify-center p-1"
+                        style={jour.equipe_nuit ? { 
+                          backgroundColor: jour.equipe_nuit.couleur + '60'
+                        } : { backgroundColor: '#1e293b20' }}
+                      >
+                        {jour.equipe_nuit && (
+                          <span 
+                            className="text-xs font-bold px-1.5 py-0.5 rounded flex items-center gap-1"
+                            style={{ 
+                              backgroundColor: jour.equipe_nuit.couleur,
+                              color: ['#EAB308', '#22C55E', '#14B8A6', '#F97316'].includes(jour.equipe_nuit.couleur) ? '#000' : '#fff'
+                            }}
+                          >
+                            <Moon className="w-3 h-3" />
+                            {jour.equipe_nuit.nom}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))}
+                  );
+                } else {
+                  // Mode 24h
+                  return (
+                    <div
+                      key={jour.date}
+                      className="p-2 border-r last:border-r-0 min-h-[80px]"
+                      style={jour.equipe ? { 
+                        backgroundColor: jour.equipe.couleur + '30'
+                      } : {}}
+                    >
+                      <div className="text-xs text-gray-500">
+                        {new Date(jour.date).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' })}
+                      </div>
+                      <div className="text-xs text-gray-400">J{jour.jour_cycle}</div>
+                      {jour.equipe && (
+                        <div 
+                          className="mt-1 text-xs font-bold px-1 py-0.5 rounded text-center"
+                          style={{ 
+                            backgroundColor: jour.equipe.couleur,
+                            color: ['#EAB308', '#22C55E', '#14B8A6', '#F97316'].includes(jour.equipe.couleur) ? '#000' : '#fff'
+                          }}
+                        >
+                          {jour.equipe.nom}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+              })}
             </div>
           ))}
         </div>
