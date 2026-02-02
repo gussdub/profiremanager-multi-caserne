@@ -82,6 +82,7 @@ from routes.rapports import router as rapports_router
 from routes.super_admin import router as super_admin_router
 from routes.utils import router as utils_router
 from routes.emails_history import router as emails_history_router, log_email_sent
+from routes.horaires_personnalises import router as horaires_personnalises_router
 from io import BytesIO
 import base64
 from PIL import Image as PILImage
