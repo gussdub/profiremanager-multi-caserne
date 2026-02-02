@@ -155,62 +155,30 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
 
   // Ouvrir le modal d'édition
   const openEditModal = async (horaire) => {
-    let horaireToEdit = horaire;
+    // Édition directe - plus de duplication automatique
+    // Le backend gère automatiquement la création d'une version modifiée si c'est un prédéfini
     
-    // Si c'est un horaire prédéfini, le dupliquer d'abord automatiquement
-    if (horaire.predefini) {
-      try {
-        setSaving(true);
-        toast({
-          title: "Création d'une copie modifiable...",
-          description: `L'horaire "${horaire.nom}" est prédéfini. Une copie va être créée.`
-        });
-        
-        const result = await apiPost(tenantSlug, `/horaires-personnalises/${horaire.id}/dupliquer`, {});
-        horaireToEdit = result;
-        
-        // Recharger la liste pour inclure la nouvelle copie
-        await loadHoraires();
-        
-        toast({
-          title: "Copie créée",
-          description: `Vous pouvez maintenant modifier "${result.nom}"`
-        });
-      } catch (error) {
-        console.error("Erreur duplication:", error);
-        toast({
-          title: "Erreur",
-          description: "Impossible de créer une copie modifiable",
-          variant: "destructive"
-        });
-        setSaving(false);
-        return;
-      } finally {
-        setSaving(false);
-      }
-    }
-    
-    setSelectedHoraire(horaireToEdit);
-    const typeQuart = horaireToEdit.type_quart || "24h";
+    setSelectedHoraire(horaire);
+    const typeQuart = horaire.type_quart || "24h";
     setFormData({
-      nom: horaireToEdit.nom,
-      description: horaireToEdit.description || "",
-      duree_cycle: horaireToEdit.duree_cycle,
-      nombre_equipes: horaireToEdit.nombre_equipes,
-      date_reference: horaireToEdit.date_reference,
+      nom: horaire.nom,
+      description: horaire.description || "",
+      duree_cycle: horaire.duree_cycle,
+      nombre_equipes: horaire.nombre_equipes,
+      date_reference: horaire.date_reference,
       type_quart: typeQuart,
-      heures_quart: horaireToEdit.heures_quart || {
+      heures_quart: horaire.heures_quart || {
         jour_debut: "07:00",
         jour_fin: "19:00",
         nuit_debut: "19:00",
         nuit_fin: "07:00"
       },
-      equipes: horaireToEdit.equipes || []
+      equipes: horaire.equipes || []
     });
     
     // Reconstruire le calendrier à partir des équipes
-    const cal = initCalendrier(horaireToEdit.duree_cycle, typeQuart);
-    horaireToEdit.equipes?.forEach(eq => {
+    const cal = initCalendrier(horaire.duree_cycle, typeQuart);
+    horaire.equipes?.forEach(eq => {
       eq.jours_travail?.forEach(jourInfo => {
         if (typeof jourInfo === 'number') {
           // Ancien format: juste le numéro du jour
