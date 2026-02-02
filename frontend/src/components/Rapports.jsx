@@ -301,6 +301,14 @@ const Rapports = () => {
             </button>
             <button 
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                activeRapport === 'interventions' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+              onClick={() => setActiveRapport('interventions')}
+            >
+              🚒 Interventions
+            </button>
+            <button 
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                 activeRapport === 'salaires' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
               onClick={() => setActiveRapport('salaires')}
@@ -324,6 +332,13 @@ const Rapports = () => {
               🎓 Formations
             </button>
           </div>
+
+          {/* Rapport Interventions */}
+          {activeRapport === 'interventions' && (
+            <Suspense fallback={<div className="text-center py-8">Chargement...</div>}>
+              <RapportInterventions tenantSlug={tenantSlug} toast={toast} />
+            </Suspense>
+          )}
 
           {/* Dashboard Interne */}
           {activeRapport === 'dashboard' && dashboardData && (
