@@ -115,12 +115,12 @@ const CarteBatiments = ({ batiments, batimentsAvecPlan, onBatimentClick }) => {
   useEffect(() => {
     // Calculer les statistiques
     const batimentsAvecCoords = batiments.filter(b => b.latitude && b.longitude);
-    const rouge = batimentsAvecCoords.filter(b => !b.derniere_inspection_date && !b.plan_intervention_id).length;
+    const rouge = batimentsAvecCoords.filter(b => !b.derniere_inspection_date && !(batimentsAvecPlan && batimentsAvecPlan.has(b.id)) && !b.plan_intervention_id).length;
     const orange = batimentsAvecCoords.filter(b => b.derniere_inspection_statut === 'en_attente_validation').length;
     const vert = batimentsAvecCoords.filter(b => b.derniere_inspection_statut === 'valide' || b.derniere_inspection_statut === 'conforme').length;
-    const bleu = batimentsAvecCoords.filter(b => b.plan_intervention_id || b.has_plan_intervention).length;
+    const bleu = batimentsAvecCoords.filter(b => (batimentsAvecPlan && batimentsAvecPlan.has(b.id)) || b.plan_intervention_id || b.has_plan_intervention).length;
     setStats({ rouge, orange, vert, bleu });
-  }, [batiments]);
+  }, [batiments, batimentsAvecPlan]);
 
   // Centre par défaut (Québec)
   const defaultCenter = [45.5, -73.5];
