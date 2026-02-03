@@ -9,7 +9,7 @@ import {
 
 // Lazy load des composants
 const ParametresRefViolations = lazy(() => import('./ParametresRefViolations'));
-const GrillesInspection = lazy(() => import('./GrillesInspection'));
+const GrillesInspection = lazy(() => import('./GrillesInspectionComponents'));
 
 /**
  * ParametresPrevention - Paramètres du module prévention
