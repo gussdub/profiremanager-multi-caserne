@@ -210,7 +210,7 @@ const CarteBatiments = ({ batiments, batimentsAvecPlan, onBatimentClick }) => {
             <Marker
               key={batiment.id}
               position={[batiment.latitude, batiment.longitude]}
-              icon={getBatimentIcon(batiment)}
+              icon={getBatimentIcon(batiment, batimentsAvecPlan)}
               eventHandlers={{
                 click: () => onBatimentClick && onBatimentClick(batiment)
               }}
@@ -266,7 +266,7 @@ const CarteBatiments = ({ batiments, batimentsAvecPlan, onBatimentClick }) => {
                     fontSize: '0.8rem',
                     fontWeight: '500'
                   }}>
-                    {getStatutLabel(batiment)}
+                    {getStatutLabel(batiment, batimentsAvecPlan)}
                   </div>
                 </div>
               </Tooltip>
