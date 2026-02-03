@@ -129,31 +129,30 @@ const Prevention = () => {
     // Si une seule grille, la retourner
     if (grilles.length === 1) return grilles[0];
     
-    // Mapping type de bâtiment → grille
-    const grilleMapping = {
-      'C': 'residentiel',
-      'A-1': 'residentiel',
-      'A-2': 'soins',
-      'B': 'soins',
-      'D': 'commercial',
-      'E': 'commercial',
-      'F-1': 'industriel_elevé',
-      'F-2': 'industriel_moyen',
-      'F-3': 'industriel_faible',
-      'I': 'assemblée'
-    };
+    // Récupérer le groupe d'occupation du bâtiment (ex: "C", "A", "B", etc.)
+    const groupeOccupation = batiment.groupe_occupation;
+    const sousType = batiment.sous_type_batiment;
     
-    const key = batiment.sous_groupe || batiment.groupe_occupation;
-    const grilleType = grilleMapping[key];
+    if (groupeOccupation) {
+      // D'abord, chercher une grille qui correspond au sous-type spécifique (ex: "A-1", "F-2")
+      if (sousType) {
+        const grilleSousType = grilles.find(g => 
+          g.groupe_occupation === sousType ||
+          g.nom?.toLowerCase().includes(sousType.toLowerCase())
+        );
+        if (grilleSousType) return grilleSousType;
+      }
+      
+      // Sinon, chercher une grille qui correspond au groupe principal (ex: "C", "A", "B")
+      const grilleGroupe = grilles.find(g => 
+        g.groupe_occupation === groupeOccupation ||
+        g.nom?.toLowerCase().includes(`groupe ${groupeOccupation.toLowerCase()}`)
+      );
+      if (grilleGroupe) return grilleGroupe;
+    }
     
-    // Chercher une grille correspondante
-    const grille = grilles.find(g => 
-      g.nom.toLowerCase().includes(grilleType) ||
-      g.type_batiment === grilleType
-    );
-    
-    // Si pas trouvé, retourner la première grille générique
-    return grille || grilles.find(g => g.nom.toLowerCase().includes('générique')) || grilles[0];
+    // Si pas trouvé, retourner la première grille générique ou la première disponible
+    return grilles.find(g => g.nom?.toLowerCase().includes('générique')) || grilles[0];
   };
 
   // Ouvrir le nouveau composant InspectionTerrain pour réaliser l'inspection
