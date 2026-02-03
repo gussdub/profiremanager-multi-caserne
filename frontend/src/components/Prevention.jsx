@@ -123,7 +123,124 @@ const Prevention = () => {
     fetchStats();
     fetchNotifications();
     fetchGrilles();
+    fetchPreventionnistes();
   }, [tenantSlug]);
+
+  const fetchPreventionnistes = async () => {
+    try {
+      const data = await apiGet(tenantSlug, '/employes');
+      const prevs = (data || []).filter(e => e.est_preventionniste || e.role === 'admin' || e.role === 'superviseur');
+      setPreventionnistes(prevs);
+    } catch (error) {
+      console.error('Erreur chargement préventionnistes:', error);
+    }
+  };
+
+  // Fonction de filtrage des bâtiments
+  const getFilteredBatiments = () => {
+    const isPreventionnisteOrAdmin = user?.est_preventionniste || user?.role === 'admin' || user?.role === 'superviseur';
+    
+    let filtered = isPreventionnisteOrAdmin 
+      ? batiments 
+      : batiments.filter(b => b.niveau_risque === 'Faible');
+
+    // Recherche textuelle
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(b => 
+        (b.adresse_civique || '').toLowerCase().includes(query) ||
+        (b.ville || '').toLowerCase().includes(query) ||
+        (b.nom || '').toLowerCase().includes(query) ||
+        (b.code_postal || '').toLowerCase().includes(query)
+      );
+    }
+
+    // Filtre par statut
+    if (filters.statut) {
+      filtered = filtered.filter(b => {
+        const hasInspection = b.derniere_inspection_date;
+        const inspectionStatus = b.derniere_inspection_statut;
+        
+        switch (filters.statut) {
+          case 'a_inspecter':
+            return !hasInspection || inspectionStatus === 'expire';
+          case 'en_attente':
+            return inspectionStatus === 'en_attente_validation';
+          case 'valide':
+            return inspectionStatus === 'valide' || inspectionStatus === 'conforme';
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Filtre par plan d'intervention
+    if (filters.planIntervention) {
+      filtered = filtered.filter(b => {
+        const hasPlan = b.plan_intervention_id || b.has_plan_intervention;
+        return filters.planIntervention === 'avec' ? hasPlan : !hasPlan;
+      });
+    }
+
+    // Filtre par catégorie/groupe d'occupation
+    if (filters.categorie) {
+      filtered = filtered.filter(b => b.groupe_occupation === filters.categorie);
+    }
+
+    // Filtre par préventionniste assigné
+    if (filters.preventionniste) {
+      filtered = filtered.filter(b => b.preventionniste_assigne_id === filters.preventionniste);
+    }
+
+    // Filtre par niveau de risque
+    if (filters.niveauRisque) {
+      filtered = filtered.filter(b => b.niveau_risque === filters.niveauRisque);
+    }
+
+    // Filtre par date de dernière inspection
+    if (filters.derniereInspection) {
+      const now = new Date();
+      filtered = filtered.filter(b => {
+        if (filters.derniereInspection === 'jamais') {
+          return !b.derniere_inspection_date;
+        }
+        
+        if (!b.derniere_inspection_date) return false;
+        
+        const lastInspection = new Date(b.derniere_inspection_date);
+        const monthsAgo = (now - lastInspection) / (1000 * 60 * 60 * 24 * 30);
+        
+        switch (filters.derniereInspection) {
+          case '3mois':
+            return monthsAgo > 3;
+          case '6mois':
+            return monthsAgo > 6;
+          case '12mois':
+            return monthsAgo > 12;
+          default:
+            return true;
+        }
+      });
+    }
+
+    return filtered;
+  };
+
+  // Réinitialiser les filtres
+  const resetFilters = () => {
+    setSearchQuery('');
+    setFilters({
+      statut: '',
+      planIntervention: '',
+      categorie: '',
+      preventionniste: '',
+      niveauRisque: '',
+      derniereInspection: ''
+    });
+  };
+
+  // Vérifier si des filtres sont actifs
+  const hasActiveFilters = searchQuery.trim() || Object.values(filters).some(v => v !== '');
 
   const fetchGrilles = async () => {
     try {
