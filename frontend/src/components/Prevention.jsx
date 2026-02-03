@@ -760,6 +760,7 @@ const Prevention = () => {
                 <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center' }}>Chargement de la carte...</div>}>
                   <CarteBatiments 
                     batiments={filteredBatimentsList}
+                    batimentsAvecPlan={batimentsAvecPlan}
                     onBatimentClick={(batiment) => {
                       setSelectedBatiment(batiment);
                       setShowBatimentModal(true);
