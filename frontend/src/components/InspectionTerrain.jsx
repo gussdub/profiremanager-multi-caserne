@@ -75,8 +75,49 @@ const InspectionTerrain = ({ tenantSlug, grille, batiment, onComplete, onCancel 
   };
 
   // Filtrer les questions selon les conditions
+  // Compatible avec l'ancien format (questions) et le nouveau format (items)
   const getFilteredQuestions = (section) => {
-    return section.questions.filter(q => evalCondition(q.condition));
+    const questions = section.items || section.questions || [];
+    // Convertir les questions au format standardisé si nécessaire
+    return questions.map(q => {
+      // Si c'est une string (ancien format), convertir en objet
+      if (typeof q === 'string') {
+        return {
+          label: q,
+          type: 'choix',
+          options: ['Conforme', 'Non-conforme', 'S.O.']
+        };
+      }
+      // Mapper les nouveaux types vers les types du composant d'inspection
+      const typeMapping = {
+        'radio': 'choix',
+        'checkbox': 'checkbox',
+        'conforme_non_conforme': 'choix',
+        'oui_non': 'choix',
+        'etat': 'choix',
+        'texte': 'texte',
+        'nombre': 'nombre',
+        'date': 'date',
+        'photo': 'photo',
+        'signature': 'signature',
+        'liste': 'choix'
+      };
+      
+      // Options par défaut selon le type
+      const defaultOptions = {
+        'conforme_non_conforme': ['Conforme', 'Non-conforme', 'S.O.'],
+        'oui_non': ['Oui', 'Non'],
+        'etat': ['Bon', 'Moyen', 'Mauvais']
+      };
+      
+      return {
+        ...q,
+        // Utiliser label comme texte de la question
+        texte: q.label || q.texte,
+        type: typeMapping[q.type] || q.type || 'choix',
+        options: q.options || defaultOptions[q.type] || ['Conforme', 'Non-conforme', 'S.O.']
+      };
+    }).filter(q => evalCondition(q.condition));
   };
 
   const currentSection = grille.sections[currentSectionIndex];
