@@ -1360,7 +1360,7 @@ const BatimentForm = ({
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem', maxWidth: '900px', margin: '0 auto' }}>
             
             {/* Section 1 - LOCALISATION */}
-            <Card style={{ padding: '1.5rem', border: '2px solid #e0e7ff' }}>
+            <Card style={{ padding: '1.5rem', border: '2px solid #e0e7ff', opacity: (!canEditAll && isEditing) ? 0.7 : 1 }}>
               <h3 style={{ 
                 fontSize: '1.25rem', 
                 fontWeight: '600', 
@@ -1371,11 +1371,16 @@ const BatimentForm = ({
                 gap: '0.5rem'
               }}>
                 📍 Localisation
+                {!canEditAll && isEditing && (
+                  <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: '#9ca3af', marginLeft: '0.5rem' }}>
+                    🔒 Réservé aux préventionnistes
+                  </span>
+                )}
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div style={{ gridColumn: '1 / -1', position: 'relative' }}>
                   <label style={{ fontWeight: '500', fontSize: '0.875rem', color: '#374151', display: 'block', marginBottom: '0.5rem' }}>
-                    Adresse civique * {isEditing && <span style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: 'normal' }}>(Commencez à taper pour l'autocomplétion)</span>}
+                    Adresse civique * {isEditing && canEditAll && <span style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: 'normal' }}>(Commencez à taper pour l'autocomplétion)</span>}
                   </label>
                   <div style={{ width: '100%', position: 'relative' }}>
                     <input
@@ -1390,7 +1395,7 @@ const BatimentForm = ({
                         if (suggestions.length > 0) setShowSuggestions(true);
                       }}
                       placeholder="Commencez à taper votre adresse..."
-                      disabled={!isEditing}
+                      disabled={!isEditing || !canEditAll}
                       style={{
                         width: '100%',
                         padding: '0.75rem',
@@ -1399,7 +1404,7 @@ const BatimentForm = ({
                         borderRadius: '8px',
                         fontSize: '1rem',
                         transition: 'all 0.2s',
-                        backgroundColor: addressValidated ? '#d1fae5' : 'white'
+                        backgroundColor: addressValidated ? '#d1fae5' : (!canEditAll && isEditing) ? '#f3f4f6' : 'white'
                       }}
                     />
                     {isSearching && (
@@ -1415,7 +1420,7 @@ const BatimentForm = ({
                     )}
                     
                     {/* Suggestions dropdown */}
-                    {isEditing && showSuggestions && suggestions.length > 0 && (
+                    {isEditing && canEditAll && showSuggestions && suggestions.length > 0 && (
                       <div style={{
                         position: 'absolute',
                         top: '100%',
