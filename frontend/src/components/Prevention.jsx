@@ -28,7 +28,7 @@ const InspectionsAValider = lazy(() => import('./InspectionsAValider'));
 const GestionPreventionnistes = lazy(() => import('./GestionPreventionnistes'));
 const ImportBatiments = lazy(() => import('./ImportBatiments'));
 const ModuleRapports = lazy(() => import('./ModuleRapports'));
-const GrillesInspection = lazy(() => import('./GrillesInspectionComponents').then(m => ({ default: m.GrillesInspection })));
+const GrillesInspection = lazy(() => import('./GrillesInspectionComponents'));
 const CreateGrilleInspection = lazy(() => import('./GrillesInspectionComponents').then(m => ({ default: m.CreateGrilleInspection })));
 const ListeInspections = lazy(() => import('./InspectionComponents').then(m => ({ default: m.ListeInspections })));
 const NouvelleInspection = lazy(() => import('./InspectionComponents').then(m => ({ default: m.NouvelleInspection })));
