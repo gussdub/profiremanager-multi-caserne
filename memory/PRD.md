@@ -94,3 +94,11 @@ Application de gestion complète pour les services de pompiers. Gère le personn
 
 ## Dernière mise à jour
 3 février 2026
+
+### Changements récents (3 février 2026)
+- Nettoyage du code dupliqué : composant Prevention retiré de App.js, maintenant importé depuis Prevention.jsx
+- App.js réduit de 1423 à 568 lignes
+- Module Prévention accessible à tous les rôles (permissions différenciées à l'intérieur)
+- Bouton "Inspecter" ouvre la grille correspondant au groupe d'occupation du bâtiment
+- API grilles-inspection retourne les grilles globales + spécifiques au tenant
+- Permissions granulaires sur la fiche bâtiment (préventionnistes = tout modifier, autres = contacts/notes)
