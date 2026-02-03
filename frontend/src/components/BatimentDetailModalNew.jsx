@@ -2052,16 +2052,16 @@ const BatimentForm = ({
                       <button
                         key={niveau}
                         type="button"
-                        onClick={() => isEditing && handleChange('niveau_risque', niveau)}
-                        disabled={!isEditing}
+                        onClick={() => isEditing && canEditAll && handleChange('niveau_risque', niveau)}
+                        disabled={!isEditing || !canEditAll}
                         style={{
                           padding: '1rem 0.75rem',
                           border: `3px solid ${isSelected ? color.border : '#d1d5db'}`,
                           borderRadius: '8px',
-                          backgroundColor: isSelected ? color.bg : 'white',
+                          backgroundColor: isSelected ? color.bg : ((!canEditAll && isEditing) ? '#f3f4f6' : 'white'),
                           color: isSelected ? color.text : '#6b7280',
                           fontWeight: isSelected ? '700' : '500',
-                          cursor: isEditing ? 'pointer' : 'not-allowed',
+                          cursor: (isEditing && canEditAll) ? 'pointer' : 'not-allowed',
                           transition: 'all 0.2s',
                           fontSize: '0.875rem',
                           textAlign: 'center'
