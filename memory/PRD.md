@@ -1,17 +1,35 @@
 # ProFireManager - Product Requirements Document
 
 ## Description
-Application de gestion complète pour les services de pompiers. Gère le personnel, les interventions, les formations, les EPI, les équipements, les remplacements et la paie.
+Application de gestion complète pour les services de pompiers. Gère le personnel, les interventions, les formations, les EPI, les équipements, les remplacements, la paie et la prévention incendie.
 
 ## Architecture
 - **Frontend**: React avec Shadcn/UI
 - **Backend**: FastAPI (Python)
 - **Base de données**: MongoDB
-- **Intégrations**: Resend (emails), Stripe (paiements), Twilio (SMS)
+- **Intégrations**: Resend (emails), Stripe (paiements), Twilio (SMS), ReportLab (PDF)
 
 ---
 
 ## Fonctionnalités Implémentées
+
+### Module Prévention - Avis de Non-Conformité (Février 2026)
+- ✅ Référentiel des infractions (`ref_violations`) avec codes, descriptions, délais
+- ✅ Workflow de validation des inspections (en_attente_validation → validé/rejeté)
+- ✅ Génération de PDF d'avis de non-conformité avec ReportLab
+- ✅ Envoi de courriels aux contacts/propriétaires
+- ✅ Vue "À valider" pour les préventionnistes
+- ✅ Adressage intelligent (adresses postales différentes du bâtiment)
+- ✅ Permissions d'édition granulaires sur la fiche bâtiment :
+  - Préventionnistes/admins : modification complète
+  - Autres utilisateurs : modification contacts et notes uniquement
+- ✅ Bouton "Inspecter" retiré de la liste des bâtiments (disponible dans fiche détail)
+- ✅ Grilles d'inspection dans les paramètres du module
+
+### Module de Gestion des Secteurs (Février 2026)
+- ✅ Définition de secteurs par municipalités, codes postaux ou polygones
+- ✅ Carte interactive avec Leaflet pour dessiner les secteurs
+- ✅ Intégration dans les paramètres généraux
 
 ### Module Horaires Personnalisés (Février 2026)
 - ✅ Création d'horaires de rotation personnalisés (cycles 7-56 jours)
@@ -22,14 +40,11 @@ Application de gestion complète pour les services de pompiers. Gère le personn
 - ✅ Duplication d'horaires (prédéfinis ou personnalisés)
 - ✅ Intégration dans le module "Mes disponibilités"
 - ✅ Génération automatique des indisponibilités selon les heures configurées
-- ✅ Équipes dynamiques selon l'horaire sélectionné
 
 ### Module EPI (Janvier-Février 2026)
 - ✅ Importation CSV/XLS/XLSX/TXT des EPI
 - ✅ Correspondance intelligente des employés (fuzzy matching)
 - ✅ Création automatique des types d'EPI manquants
-- ✅ Bouton "Supprimer tous les EPI" pour nettoyage
-- ✅ Correction du type d'EPI dans le modal d'édition
 
 ### Autres Modules
 - ✅ Gestion du personnel (temps plein/partiel)
@@ -38,21 +53,18 @@ Application de gestion complète pour les services de pompiers. Gère le personn
 - ✅ Gestion des remplacements
 - ✅ Module de disponibilités/indisponibilités
 - ✅ Alertes équipements sur le tableau de bord
-- ✅ Catégories d'équipement par défaut
 
 ---
 
-## Tâches en Attente de Validation
-- [ ] Fonctionnalité de rappel d'inspection EPI mensuelle
-- [ ] Alertes d'équipement sur le tableau de bord
-- [ ] Initialisation des catégories d'équipement par défaut
+## En Cours (P1)
+- [ ] Module de rapport d'interventions (squelettes existants)
 
 ---
 
 ## Backlog (P2-P3)
 
 ### P2 - Priorité Moyenne
-- Refactorisation des composants volumineux (ModuleEPI.jsx >3k lignes, GestionInterventions.jsx >2.8k lignes)
+- Refactorisation des composants volumineux (ModuleEPI.jsx, GestionInterventions.jsx)
 - Finaliser la transmission DSI réelle (actuellement **MOCK**)
 - Module de gestion des jours fériés
 - Module de facturation pour l'entraide
@@ -65,42 +77,20 @@ Application de gestion complète pour les services de pompiers. Gère le personn
 
 ## Informations Techniques
 
-### Horaires Prédéfinis
-- **Montréal 7/24**: Cycle 28 jours, 4 équipes, 7 jours/cycle
-- **Québec 10/14**: Cycle 28 jours, 4 équipes, 13 jours/cycle
-- **Longueuil 7/24**: Cycle 28 jours, 4 équipes, 7 jours/cycle
+### Collections MongoDB Prévention
+- `ref_violations`: Référentiel des infractions (code_article, description, délai, sévérité)
+- `inspections_visuelles`: Inspections avec statuts (brouillon, en_attente_validation, validé, rejeté)
+- `avis_non_conformite`: Avis générés avec PDF et historique d'envoi
+- `batiments`: Bâtiments avec adresses postales propriétaire/gestionnaire
 
-### Format des Horaires Personnalisés
-```json
-{
-  "nom": "Granby",
-  "duree_cycle": 28,
-  "nombre_equipes": 4,
-  "type_quart": "12h_jour_nuit",
-  "heures_quart": {
-    "jour_debut": "07:00",
-    "jour_fin": "18:00",
-    "nuit_debut": "18:00",
-    "nuit_fin": "07:00"
-  },
-  "equipes": [
-    {
-      "numero": 1,
-      "nom": "Vert",
-      "couleur": "#22C55E",
-      "jours_travail": [{"jour": 1, "segment": "jour"}, {"jour": 2, "segment": "nuit"}]
-    }
-  ]
-}
-```
-
-### Collections MongoDB
-- `horaires_personnalises`: Horaires créés par les utilisateurs
-- `disponibilites`: Disponibilités/indisponibilités avec champ `origine` pour tracer la source
-- `epis`: Équipements de protection individuelle
-- `types_epi`: Types d'EPI disponibles
+### APIs Clés Prévention
+- `GET/POST /api/{tenant}/ref-violations` - CRUD référentiel infractions
+- `POST /api/{tenant}/inspections-visuelles/{id}/soumettre` - Soumettre pour validation
+- `POST /api/{tenant}/inspections-visuelles/{id}/valider` - Valider inspection
+- `POST /api/{tenant}/inspections/{id}/generer-avis` - Générer PDF avis
+- `POST /api/{tenant}/avis-non-conformite/{id}/envoyer-courriel` - Envoyer par email
 
 ---
 
 ## Dernière mise à jour
-2 février 2026
+3 février 2026
