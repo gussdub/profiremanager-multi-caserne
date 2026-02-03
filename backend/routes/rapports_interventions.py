@@ -535,3 +535,143 @@ async def get_historique_interventions(
     }).sort("annee", -1).to_list(100)
     
     return [clean_mongo_doc(h) for h in historiques]
+
+
+
+@router.post("/{tenant_slug}/rapports/interventions/seed-test-data")
+async def seed_test_interventions(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Génère des données de test d'interventions pour le tenant.
+    ATTENTION: À utiliser uniquement en mode développement/preview.
+    """
+    if current_user.role not in ["admin", "superadmin"]:
+        raise HTTPException(status_code=403, detail="Admin requis")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    import random
+    import uuid
+    
+    # Types d'incidents avec probabilités réalistes
+    natures_incidents = [
+        ("Incendie de bâtiment", 0.08),
+        ("Incendie de véhicule", 0.05),
+        ("Alarme incendie", 0.20),
+        ("Premier répondant - Urgence médicale", 0.25),
+        ("Accident de la route", 0.12),
+        ("Feu de végétation", 0.04),
+        ("Assistance à la population", 0.08),
+        ("Fuite de gaz", 0.05),
+        ("Désincarcération", 0.03),
+        ("Inondation/Dégât d'eau", 0.04),
+        ("Monoxyde de carbone", 0.03),
+        ("Entraide mutuelle", 0.03)
+    ]
+    
+    secteurs = ["Nord", "Sud", "Est", "Ouest", "Centre", "Périphérie"]
+    
+    # Récupérer les utilisateurs du tenant pour les assignations
+    users = await db.users.find({"tenant_id": tenant.id}).to_list(100)
+    user_ids = [u.get("id") or str(u.get("_id")) for u in users if u]
+    
+    if not user_ids:
+        user_ids = ["user-test-1", "user-test-2", "user-test-3"]
+    
+    interventions_creees = 0
+    annees = [2024, 2025]
+    
+    for annee in annees:
+        # Nombre d'interventions par année (réaliste pour une petite caserne)
+        nb_interventions = random.randint(180, 280)
+        
+        for _ in range(nb_interventions):
+            # Date aléatoire dans l'année
+            mois = random.randint(1, 12)
+            jour = random.randint(1, 28)  # Simplifié pour éviter les problèmes de fin de mois
+            heure = random.randint(0, 23)
+            minute = random.randint(0, 59)
+            
+            date_intervention = f"{annee}-{mois:02d}-{jour:02d}"
+            heure_appel = f"{heure:02d}:{minute:02d}:00"
+            
+            # Durée de l'intervention (5 min à 4h)
+            duree_minutes = random.randint(5, 240)
+            
+            # Temps de réponse (3 à 15 min selon le secteur)
+            temps_reponse = random.randint(3, 15)
+            
+            # Sélectionner la nature de l'incident selon les probabilités
+            r = random.random()
+            cumul = 0
+            nature = "Autre"
+            for nat, prob in natures_incidents:
+                cumul += prob
+                if r <= cumul:
+                    nature = nat
+                    break
+            
+            # Sélectionner des pompiers participants (2 à 8)
+            nb_participants = random.randint(2, 8)
+            participants = random.sample(user_ids, min(nb_participants, len(user_ids)))
+            
+            intervention = {
+                "id": str(uuid.uuid4()),
+                "tenant_id": tenant.id,
+                "date_intervention": date_intervention,
+                "heure_appel": heure_appel,
+                "nature_incident": nature,
+                "type_incident": nature,
+                "secteur": random.choice(secteurs),
+                "adresse": f"{random.randint(1, 999)} rue {random.choice(['Principale', 'du Parc', 'Sainte-Marie', 'des Érables', 'du Lac', 'de la Montagne'])}",
+                "duree_minutes": duree_minutes,
+                "temps_reponse_minutes": temps_reponse,
+                "status": "completed",
+                "pompiers_presents": participants,
+                "nb_pompiers": len(participants),
+                "vehicules_utilises": random.sample(["Autopompe 101", "Échelle 102", "Citerne 103", "Unité de secours 104"], random.randint(1, 3)),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "source": "seed_test_data"
+            }
+            
+            await db.interventions.insert_one(intervention)
+            interventions_creees += 1
+    
+    logger.info(f"[SEED] {interventions_creees} interventions de test créées pour {tenant_slug}")
+    
+    return {
+        "success": True,
+        "message": f"{interventions_creees} interventions de test créées",
+        "annees": annees,
+        "tenant": tenant_slug
+    }
+
+
+@router.delete("/{tenant_slug}/rapports/interventions/clear-test-data")
+async def clear_test_interventions(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Supprime les données de test d'interventions (celles marquées source=seed_test_data).
+    """
+    if current_user.role not in ["admin", "superadmin"]:
+        raise HTTPException(status_code=403, detail="Admin requis")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    result = await db.interventions.delete_many({
+        "tenant_id": tenant.id,
+        "source": "seed_test_data"
+    })
+    
+    logger.info(f"[CLEAR] {result.deleted_count} interventions de test supprimées pour {tenant_slug}")
+    
+    return {
+        "success": True,
+        "message": f"{result.deleted_count} interventions de test supprimées",
+        "tenant": tenant_slug
+    }
