@@ -1002,76 +1002,200 @@ const Prevention = () => {
   };
 
   return (
-    <div className="prevention-container">
-      <div className="prevention-header">
-        <div className="header-content">
-          <h1>🔥 Module Prévention</h1>
-          <p>Gestion des inspections et de la sécurité incendie</p>
-        </div>
-        
-        <div className="prevention-nav">
-          <Button 
-            variant={currentView === 'dashboard' ? 'default' : 'outline'}
-            onClick={() => setCurrentView('dashboard')}
+    <div className="prevention-container" style={{ padding: '12px', position: 'relative', zIndex: 1, isolation: 'isolate' }}>
+      {/* Header simple comme Gestion des Actifs */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+        <h1 style={{ margin: 0, fontSize: 'clamp(1.1rem, 4vw, 1.5rem)' }}>🔥 Module Prévention</h1>
+      </div>
+      
+      {/* Onglets en style carte comme Gestion des Actifs */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+        gap: '8px',
+        marginBottom: '16px'
+      }}>
+        {/* Tableau de bord */}
+        <button
+          onClick={() => setCurrentView('dashboard')}
+          style={{
+            padding: '12px 8px',
+            backgroundColor: currentView === 'dashboard' ? '#fef2f2' : 'white',
+            border: currentView === 'dashboard' ? '2px solid #e74c3c' : '1px solid #e5e7eb',
+            borderRadius: '12px',
+            cursor: 'pointer',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px',
+            transition: 'all 0.2s'
+          }}
+        >
+          <span style={{ fontSize: '1.5rem' }}>📊</span>
+          <span style={{ fontSize: '0.75rem', fontWeight: '600', color: currentView === 'dashboard' ? '#dc2626' : '#374151', textAlign: 'center' }}>Tableau de bord</span>
+        </button>
+
+        {/* Bâtiments */}
+        <button
+          onClick={() => setCurrentView('batiments')}
+          style={{
+            padding: '12px 8px',
+            backgroundColor: currentView === 'batiments' ? '#eff6ff' : 'white',
+            border: currentView === 'batiments' ? '2px solid #3b82f6' : '1px solid #e5e7eb',
+            borderRadius: '12px',
+            cursor: 'pointer',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px',
+            transition: 'all 0.2s'
+          }}
+        >
+          <span style={{ fontSize: '1.5rem' }}>🏢</span>
+          <span style={{ fontSize: '0.75rem', fontWeight: '600', color: currentView === 'batiments' ? '#2563eb' : '#374151', textAlign: 'center' }}>Bâtiments</span>
+        </button>
+
+        {/* À Valider - visible pour préventionnistes et admins */}
+        {(user?.est_preventionniste || user?.role === 'admin' || user?.role === 'superadmin') && (
+          <button
+            onClick={() => setCurrentView('a-valider')}
+            style={{
+              padding: '12px 8px',
+              backgroundColor: currentView === 'a-valider' ? '#fff7ed' : 'white',
+              border: currentView === 'a-valider' ? '2px solid #f97316' : '1px solid #e5e7eb',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '4px',
+              transition: 'all 0.2s'
+            }}
           >
-            📊 Tableau de bord
-          </Button>
-          <Button 
-            variant={currentView === 'batiments' ? 'default' : 'outline'}
-            onClick={() => setCurrentView('batiments')}
-          >
-            🏢 Bâtiments
-          </Button>
-          {/* Bouton À Valider - visible pour préventionnistes et admins */}
-          {(user?.est_preventionniste || user?.role === 'admin' || user?.role === 'superadmin') && (
-            <Button 
-              variant={currentView === 'a-valider' ? 'default' : 'outline'}
-              onClick={() => setCurrentView('a-valider')}
-              style={{ 
-                backgroundColor: currentView === 'a-valider' ? '#f97316' : undefined,
-                borderColor: currentView === 'a-valider' ? '#f97316' : undefined 
-              }}
-            >
-              ⏳ À valider
-            </Button>
-          )}
-          <Button 
-            variant={currentView === 'preventionnistes' ? 'default' : 'outline'}
-            onClick={() => setCurrentView('preventionnistes')}
-          >
-            👨‍🚒 Préventionnistes
-          </Button>
-          <Button 
-            variant={currentView === 'calendrier' ? 'default' : 'outline'}
-            onClick={() => setCurrentView('calendrier')}
-          >
-            📅 Planification
-          </Button>
-          <Button 
-            variant={currentView === 'non-conformites' ? 'default' : 'outline'}
-            onClick={() => setCurrentView('non-conformites')}
-          >
-            ⚠️ Non-conformités
-          </Button>
-          <Button 
-            variant={currentView === 'rapports' ? 'default' : 'outline'}
-            onClick={() => setCurrentView('rapports')}
-          >
-            📈 Rapports
-          </Button>
-          <Button 
-            variant={currentView === 'plans-intervention' ? 'default' : 'outline'}
-            onClick={() => setCurrentView('plans-intervention')}
-          >
-            🗺️ Plans d'Intervention
-          </Button>
-          <Button 
-            variant={currentView === 'parametres' ? 'default' : 'outline'}
-            onClick={() => setCurrentView('parametres')}
-          >
-            ⚙️ Paramètres
-          </Button>
-        </div>
+            <span style={{ fontSize: '1.5rem' }}>⏳</span>
+            <span style={{ fontSize: '0.75rem', fontWeight: '600', color: currentView === 'a-valider' ? '#ea580c' : '#374151', textAlign: 'center' }}>À valider</span>
+          </button>
+        )}
+
+        {/* Préventionnistes */}
+        <button
+          onClick={() => setCurrentView('preventionnistes')}
+          style={{
+            padding: '12px 8px',
+            backgroundColor: currentView === 'preventionnistes' ? '#fefce8' : 'white',
+            border: currentView === 'preventionnistes' ? '2px solid #eab308' : '1px solid #e5e7eb',
+            borderRadius: '12px',
+            cursor: 'pointer',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px',
+            transition: 'all 0.2s'
+          }}
+        >
+          <span style={{ fontSize: '1.5rem' }}>👨‍🚒</span>
+          <span style={{ fontSize: '0.75rem', fontWeight: '600', color: currentView === 'preventionnistes' ? '#ca8a04' : '#374151', textAlign: 'center' }}>Préventionnistes</span>
+        </button>
+
+        {/* Planification */}
+        <button
+          onClick={() => setCurrentView('calendrier')}
+          style={{
+            padding: '12px 8px',
+            backgroundColor: currentView === 'calendrier' ? '#f0fdf4' : 'white',
+            border: currentView === 'calendrier' ? '2px solid #22c55e' : '1px solid #e5e7eb',
+            borderRadius: '12px',
+            cursor: 'pointer',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px',
+            transition: 'all 0.2s'
+          }}
+        >
+          <span style={{ fontSize: '1.5rem' }}>📅</span>
+          <span style={{ fontSize: '0.75rem', fontWeight: '600', color: currentView === 'calendrier' ? '#16a34a' : '#374151', textAlign: 'center' }}>Planification</span>
+        </button>
+
+        {/* Non-conformités */}
+        <button
+          onClick={() => setCurrentView('non-conformites')}
+          style={{
+            padding: '12px 8px',
+            backgroundColor: currentView === 'non-conformites' ? '#fef2f2' : 'white',
+            border: currentView === 'non-conformites' ? '2px solid #ef4444' : '1px solid #e5e7eb',
+            borderRadius: '12px',
+            cursor: 'pointer',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px',
+            transition: 'all 0.2s'
+          }}
+        >
+          <span style={{ fontSize: '1.5rem' }}>⚠️</span>
+          <span style={{ fontSize: '0.75rem', fontWeight: '600', color: currentView === 'non-conformites' ? '#dc2626' : '#374151', textAlign: 'center' }}>Non-conformités</span>
+        </button>
+
+        {/* Rapports */}
+        <button
+          onClick={() => setCurrentView('rapports')}
+          style={{
+            padding: '12px 8px',
+            backgroundColor: currentView === 'rapports' ? '#faf5ff' : 'white',
+            border: currentView === 'rapports' ? '2px solid #a855f7' : '1px solid #e5e7eb',
+            borderRadius: '12px',
+            cursor: 'pointer',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px',
+            transition: 'all 0.2s'
+          }}
+        >
+          <span style={{ fontSize: '1.5rem' }}>📈</span>
+          <span style={{ fontSize: '0.75rem', fontWeight: '600', color: currentView === 'rapports' ? '#9333ea' : '#374151', textAlign: 'center' }}>Rapports</span>
+        </button>
+
+        {/* Plans d'Intervention */}
+        <button
+          onClick={() => setCurrentView('plans-intervention')}
+          style={{
+            padding: '12px 8px',
+            backgroundColor: currentView === 'plans-intervention' ? '#ecfeff' : 'white',
+            border: currentView === 'plans-intervention' ? '2px solid #06b6d4' : '1px solid #e5e7eb',
+            borderRadius: '12px',
+            cursor: 'pointer',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px',
+            transition: 'all 0.2s'
+          }}
+        >
+          <span style={{ fontSize: '1.5rem' }}>🗺️</span>
+          <span style={{ fontSize: '0.75rem', fontWeight: '600', color: currentView === 'plans-intervention' ? '#0891b2' : '#374151', textAlign: 'center' }}>Plans</span>
+        </button>
+
+        {/* Paramètres */}
+        <button
+          onClick={() => setCurrentView('parametres')}
+          style={{
+            padding: '12px 8px',
+            backgroundColor: currentView === 'parametres' ? '#f1f5f9' : 'white',
+            border: currentView === 'parametres' ? '2px solid #64748b' : '1px solid #e5e7eb',
+            borderRadius: '12px',
+            cursor: 'pointer',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px',
+            transition: 'all 0.2s'
+          }}
+        >
+          <span style={{ fontSize: '1.5rem' }}>⚙️</span>
+          <span style={{ fontSize: '0.75rem', fontWeight: '600', color: currentView === 'parametres' ? '#475569' : '#374151', textAlign: 'center' }}>Paramètres</span>
+        </button>
       </div>
       
       <div className="prevention-content">
