@@ -674,14 +674,19 @@ async def get_grilles_inspection(
     tenant_slug: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Récupérer toutes les grilles d'inspection"""
+    """Récupérer toutes les grilles d'inspection (spécifiques au tenant + globales)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     if not tenant.parametres.get('module_prevention_active', False):
         raise HTTPException(status_code=403, detail="Module prévention non activé")
     
+    # Récupérer les grilles du tenant ET les grilles globales (tenant_id null ou absent)
     grilles = await db.grilles_inspection.find(
-        {"tenant_id": tenant.id},
+        {"$or": [
+            {"tenant_id": tenant.id},
+            {"tenant_id": None},
+            {"tenant_id": {"$exists": False}}
+        ]},
         {"_id": 0}
     ).sort("nom", 1).to_list(1000)
     
