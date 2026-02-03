@@ -1164,7 +1164,7 @@ class InspectionVisuelle(BaseModel):
     checklist_reponses: Dict[str, Any] = {}
     
     # Statuts
-    statut: str = "en_cours"  # en_cours, validee, non_conforme, suivi_requis
+    statut: str = "en_cours"  # en_cours, en_attente_validation, validee, non_conforme, suivi_requis
     statut_conformite: str = "conforme"  # conforme, non_conforme, partiellement_conforme
     
     # Plan d'intervention
