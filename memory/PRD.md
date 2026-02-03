@@ -102,3 +102,6 @@ Application de gestion complète pour les services de pompiers. Gère le personn
 - Bouton "Inspecter" ouvre la grille correspondant au groupe d'occupation du bâtiment
 - API grilles-inspection retourne les grilles globales + spécifiques au tenant
 - Permissions granulaires sur la fiche bâtiment (préventionnistes = tout modifier, autres = contacts/notes)
+- **Nouvel éditeur de grilles d'inspection** avec drag & drop, types de champs variés (Conforme/NC, Radio, Checkbox, Texte, Photo), photos de référence par section
+- Réorganisation du menu sidebar : Mes disponibilités au-dessus de Mes EPI, Rapports et Paramètres en dessous de Mon profil
+- Calendriers de disponibilités : affichage des disponibilités existantes en bleu clair avec bords arrondis, sélection prioritaire
