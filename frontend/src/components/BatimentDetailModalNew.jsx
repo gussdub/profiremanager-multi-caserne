@@ -1930,7 +1930,7 @@ const BatimentForm = ({
             </Card>
 
             {/* Section 2 - TYPE DE BÂTIMENT & CLASSIFICATION */}
-            <Card style={{ padding: '1.5rem', border: '2px solid #dbeafe' }}>
+            <Card style={{ padding: '1.5rem', border: '2px solid #dbeafe', opacity: (!canEditAll && isEditing) ? 0.7 : 1 }}>
               <h3 style={{ 
                 fontSize: '1.25rem', 
                 fontWeight: '600', 
@@ -1941,6 +1941,11 @@ const BatimentForm = ({
                 gap: '0.5rem'
               }}>
                 🏗️ Type de bâtiment & Classification
+                {!canEditAll && isEditing && (
+                  <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: '#9ca3af', marginLeft: '0.5rem' }}>
+                    🔒 Réservé aux préventionnistes
+                  </span>
+                )}
               </h3>
               
               {/* Ligne 1: Groupe d'occupation */}
@@ -1954,13 +1959,14 @@ const BatimentForm = ({
                     handleChange('groupe_occupation', e.target.value);
                     handleChange('sous_type_batiment', ''); // Reset sous-type car dépend du groupe
                   }}
-                  disabled={!isEditing}
+                  disabled={!isEditing || !canEditAll}
                   style={{
                     width: '100%',
                     padding: '0.75rem',
                     border: '2px solid #d1d5db',
                     borderRadius: '8px',
-                    fontSize: '1rem'
+                    fontSize: '1rem',
+                    backgroundColor: (!canEditAll && isEditing) ? '#f3f4f6' : 'white'
                   }}
                 >
                   <option value="">Sélectionner...</option>
