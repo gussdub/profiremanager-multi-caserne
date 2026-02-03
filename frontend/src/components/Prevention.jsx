@@ -84,11 +84,23 @@ const Prevention = () => {
     setShowBatimentModal(true);
   };
 
+  // État pour stocker les IDs de bâtiments ayant un plan
+  const [batimentsAvecPlan, setBatimentsAvecPlan] = useState(new Set());
+
   const fetchBatiments = async () => {
     try {
       setLoading(true);
       const data = await apiGet(tenantSlug, '/prevention/batiments');
       setBatiments(data);
+      
+      // Charger aussi les plans pour savoir quels bâtiments en ont
+      try {
+        const plans = await apiGet(tenantSlug, '/prevention/plans-intervention');
+        const batimentIdsAvecPlan = new Set((plans || []).map(p => p.batiment_id).filter(Boolean));
+        setBatimentsAvecPlan(batimentIdsAvecPlan);
+      } catch (e) {
+        console.log('Pas de plans chargés');
+      }
     } catch (error) {
       console.error('Erreur chargement bâtiments:', error);
       toast({
