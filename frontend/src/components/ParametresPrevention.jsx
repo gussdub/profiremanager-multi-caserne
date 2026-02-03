@@ -4,11 +4,12 @@ import { Card, CardContent } from './ui/card';
 import { apiGet, apiPut, apiPost, apiDelete } from '../utils/api';
 import { 
   Settings, FileText, Building2, Calendar, Users, BookOpen, 
-  Save, RefreshCw, Plus, Edit2, Trash2, Clock, Search, Filter, AlertTriangle
+  Save, RefreshCw, Plus, Edit2, Trash2, Clock, Search, Filter, AlertTriangle, ClipboardList
 } from 'lucide-react';
 
-// Lazy load du composant ParametresRefViolations
+// Lazy load des composants
 const ParametresRefViolations = lazy(() => import('./ParametresRefViolations'));
+const GrillesInspection = lazy(() => import('./GrillesInspection'));
 
 /**
  * ParametresPrevention - Paramètres du module prévention
@@ -45,8 +46,8 @@ const ParametresPrevention = ({ tenantSlug, currentUser, onRefreshBatiments, Imp
   const TABS = [
     { id: 'general', label: 'Paramètres généraux', icon: Settings, description: 'Configuration de base' },
     { id: 'referentiel', label: 'Référentiel Violations', icon: BookOpen, description: 'Articles de loi CNPI' },
+    { id: 'grilles', label: 'Grilles d\'inspection', icon: ClipboardList, description: 'Modèles de formulaires' },
     { id: 'import', label: 'Import Bâtiments', icon: Building2, description: 'Import CSV bâtiments' },
-    { id: 'categories', label: 'Catégories', icon: FileText, description: 'Catégories d\'inspection' },
   ];
 
   useEffect(() => {
