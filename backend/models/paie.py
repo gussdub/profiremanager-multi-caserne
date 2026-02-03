@@ -30,7 +30,15 @@ class ParametresPaie(BaseModel):
     
     # Rappel (hors garde planifiée)
     rappel_taux: float = 1.0  # Multiplicateur du taux horaire
-    rappel_minimum_heures: float = 3.0  # Minimum payé
+    rappel_minimum_heures: float = 3.0  # Minimum payé (legacy, utiliser les minimums par source)
+    
+    # Minimums par source d'appel (pour rappel et garde externe)
+    # CAUCA = appels pompiers (incendie, alarme, désincarcération, etc.)
+    minimum_heures_cauca: float = 3.0  # Minimum payé pour appels CAUCA
+    # Urgence Santé = appels premiers répondants (PR)
+    minimum_heures_urgence_sante: float = 2.0  # Minimum payé pour appels Urgence Santé
+    # Utiliser les minimums par source au lieu du minimum global
+    utiliser_minimum_par_source: bool = True
     
     # Formations
     formation_taux: float = 1.0  # Multiplicateur pour les formations
