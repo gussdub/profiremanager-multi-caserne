@@ -10,7 +10,8 @@ function Calendar({
   className,
   classNames,
   showOutsideDays = true,
-  indisponibilites = [], // Nouvelle props pour afficher les indisponibilités
+  indisponibilites = [], // Props pour afficher les indisponibilités
+  disponibilites = [], // Nouvelle props pour afficher les disponibilités existantes
   ...props
 }) {
   // Detect screen size for responsive calendar
@@ -32,11 +33,8 @@ function Calendar({
   // Créer un modifier pour les jours avec indisponibilités
   const indisponibiliteDates = React.useMemo(() => {
     if (!indisponibilites || indisponibilites.length === 0) {
-      console.log('📅 Calendar: Aucune indisponibilité fournie');
       return [];
     }
-    
-    console.log(`📅 Calendar: ${indisponibilites.length} indisponibilités reçues`, indisponibilites.slice(0, 3));
     
     const dates = indisponibilites.map(indispo => {
       try {
@@ -45,23 +43,44 @@ function Calendar({
         const date = new Date(year, month - 1, day);
         return date;
       } catch (e) {
-        console.error('Erreur parsing date:', indispo.date, e);
+        console.error('Erreur parsing date indispo:', indispo.date, e);
         return null;
       }
     }).filter(Boolean);
     
-    console.log('📅 Calendar: Dates d\'indisponibilité créées:', dates.slice(0, 3));
     return dates;
   }, [indisponibilites]);
 
-  // Ajouter les modifiers pour les indisponibilités
+  // Créer un modifier pour les jours avec disponibilités existantes
+  const disponibiliteDates = React.useMemo(() => {
+    if (!disponibilites || disponibilites.length === 0) {
+      return [];
+    }
+    
+    const dates = disponibilites.map(dispo => {
+      try {
+        const [year, month, day] = dispo.date.split('-').map(Number);
+        const date = new Date(year, month - 1, day);
+        return date;
+      } catch (e) {
+        console.error('Erreur parsing date dispo:', dispo.date, e);
+        return null;
+      }
+    }).filter(Boolean);
+    
+    return dates;
+  }, [disponibilites]);
+
+  // Ajouter les modifiers pour les indisponibilités et disponibilités
   const modifiers = {
     indisponible: indisponibiliteDates,
+    disponible: disponibiliteDates,
     ...props.modifiers
   };
 
   const modifiersClassNames = {
     indisponible: "indisponible",
+    disponible: "disponible-existant",
     ...props.modifiersClassNames
   };
 
@@ -71,6 +90,12 @@ function Calendar({
       color: '#991b1b',
       textDecoration: 'line-through',
       fontWeight: 'bold'
+    },
+    disponible: {
+      backgroundColor: '#1e3a5f',
+      color: '#ffffff',
+      fontWeight: 'bold',
+      borderRadius: '4px'
     },
     ...props.modifiersStyles
   };
