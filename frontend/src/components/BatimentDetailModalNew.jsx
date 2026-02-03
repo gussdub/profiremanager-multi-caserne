@@ -1472,13 +1472,14 @@ const BatimentForm = ({
                     onChange={(e) => handleChange('ville', e.target.value)}
                     onBlur={validateAddress}
                     placeholder="Montréal"
-                    disabled={!isEditing}
+                    disabled={!isEditing || !canEditAll}
                     style={{
                       width: '100%',
                       padding: '0.75rem',
                       border: '2px solid #d1d5db',
                       borderRadius: '8px',
-                      fontSize: '1rem'
+                      fontSize: '1rem',
+                      backgroundColor: (!canEditAll && isEditing) ? '#f3f4f6' : 'white'
                     }}
                   />
                 </div>
@@ -1489,13 +1490,14 @@ const BatimentForm = ({
                   <select
                     value={editData.province || 'QC'}
                     onChange={(e) => handleChange('province', e.target.value)}
-                    disabled={!isEditing}
+                    disabled={!isEditing || !canEditAll}
                     style={{
                       width: '100%',
                       padding: '0.75rem',
                       border: '2px solid #d1d5db',
                       borderRadius: '8px',
-                      fontSize: '1rem'
+                      fontSize: '1rem',
+                      backgroundColor: (!canEditAll && isEditing) ? '#f3f4f6' : 'white'
                     }}
                   >
                     <option value="QC">Québec</option>
@@ -1513,13 +1515,14 @@ const BatimentForm = ({
                     value={editData.code_postal || ''}
                     onChange={(e) => handleChange('code_postal', e.target.value)}
                     placeholder="J0J 0J0"
-                    disabled={!isEditing}
+                    disabled={!isEditing || !canEditAll}
                     style={{
                       width: '100%',
                       padding: '0.75rem',
                       border: '2px solid #d1d5db',
                       borderRadius: '8px',
-                      fontSize: '1rem'
+                      fontSize: '1rem',
+                      backgroundColor: (!canEditAll && isEditing) ? '#f3f4f6' : 'white'
                     }}
                   />
                 </div>
@@ -1536,7 +1539,7 @@ const BatimentForm = ({
                     </div>
                   </div>
                 )}
-                {isEditing && !addressValidated && (
+                {isEditing && canEditAll && !addressValidated && (
                   <div style={{ gridColumn: '1 / -1', padding: '0.75rem', backgroundColor: '#fef3c7', borderRadius: '8px', color: '#92400e', fontSize: '0.875rem' }}>
                     ⚠️ Utilisez l'autocomplétion ci-dessus pour valider automatiquement l'adresse et obtenir les coordonnées GPS
                   </div>
