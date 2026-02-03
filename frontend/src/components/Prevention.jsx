@@ -487,6 +487,17 @@ const Prevention = () => {
       case 'preventionnistes':
         return <GestionPreventionnistes />;
       
+      case 'a-valider':
+        return (
+          <Suspense fallback={<LoadingComponent />}>
+            <InspectionsAValider 
+              tenantSlug={tenantSlug} 
+              toast={toast} 
+              currentUser={user}
+            />
+          </Suspense>
+        );
+      
       case 'assigner-preventionniste':
         return (
           <div className="prevention-assigner">
