@@ -996,29 +996,6 @@ const ModulePaie = ({ tenant }) => {
           </div>
         </div>
       </div>
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Minimum global (mode legacy) */}
-        {parametres?.utiliser_minimum_par_source === false && (
-          <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
-              Heures minimum payées (tous appels)
-            </label>
-            <Input
-              type="number"
-              step="0.5"
-              min="0"
-              value={parametres?.rappel_minimum_heures || 3}
-              onChange={(e) => setParametres({...parametres, rappel_minimum_heures: parseFloat(e.target.value)})}
-              style={{ maxWidth: '200px' }}
-            />
-          </div>
-        )}
-      </div>
 
       {/* Formations */}
       <div style={{ background: 'white', borderRadius: '12px', padding: '24px', border: '1px solid #e5e7eb' }}>
