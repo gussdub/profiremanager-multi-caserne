@@ -734,6 +734,19 @@ const Prevention = () => {
           >
             🏢 Bâtiments
           </Button>
+          {/* Bouton À Valider - visible pour préventionnistes et admins */}
+          {(user?.est_preventionniste || user?.role === 'admin' || user?.role === 'superadmin') && (
+            <Button 
+              variant={currentView === 'a-valider' ? 'default' : 'outline'}
+              onClick={() => setCurrentView('a-valider')}
+              style={{ 
+                backgroundColor: currentView === 'a-valider' ? '#f97316' : undefined,
+                borderColor: currentView === 'a-valider' ? '#f97316' : undefined 
+              }}
+            >
+              ⏳ À valider
+            </Button>
+          )}
           <Button 
             variant={currentView === 'preventionnistes' ? 'default' : 'outline'}
             onClick={() => setCurrentView('preventionnistes')}
