@@ -871,42 +871,6 @@ const ModulePaie = ({ tenant }) => {
         </div>
       </div>
 
-      {/* Garde externe */}
-      <div style={{ background: 'white', borderRadius: '12px', padding: '24px', border: '1px solid #e5e7eb' }}>
-        <h3 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', color: '#1e293b' }}>
-          📱 Garde externe (astreinte à domicile)
-        </h3>
-        <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '16px' }}>
-          Le montant fixe par garde est défini dans Paramètres &gt; Types de garde.
-        </p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-          <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
-              Taux multiplicateur
-            </label>
-            <Input
-              type="number"
-              step="0.1"
-              min="0"
-              value={parametres?.garde_externe_taux || 1}
-              onChange={(e) => setParametres({...parametres, garde_externe_taux: parseFloat(e.target.value)})}
-            />
-          </div>
-          <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
-              Heures minimum payées
-            </label>
-            <Input
-              type="number"
-              step="0.5"
-              min="0"
-              value={parametres?.garde_externe_minimum_heures || 3}
-              onChange={(e) => setParametres({...parametres, garde_externe_minimum_heures: parseFloat(e.target.value)})}
-            />
-          </div>
-        </div>
-      </div>
-
       {/* Rappel / Interventions */}
       <div style={{ background: 'white', borderRadius: '12px', padding: '24px', border: '1px solid #e5e7eb' }}>
         <h3 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', color: '#1e293b' }}>
@@ -914,64 +878,58 @@ const ModulePaie = ({ tenant }) => {
         </h3>
         <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '16px' }}>
           Lorsqu'un pompier intervient en garde externe ou est rappelé, il est payé un minimum d'heures selon la source de l'appel.
+          Activez uniquement les sources d'appel applicables à votre caserne.
         </p>
         
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px' }}>
-          <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
-              Taux multiplicateur
-            </label>
-            <Input
-              type="number"
-              step="0.1"
-              min="0"
-              value={parametres?.rappel_taux || 1}
-              onChange={(e) => setParametres({...parametres, rappel_taux: parseFloat(e.target.value)})}
-            />
-          </div>
-          <div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
-              <input
-                type="checkbox"
-                checked={parametres?.utiliser_minimum_par_source ?? true}
-                onChange={(e) => setParametres({...parametres, utiliser_minimum_par_source: e.target.checked})}
-                style={{ width: '16px', height: '16px' }}
-              />
-              Minimum d'heures selon la source
-            </label>
-            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-              Si décoché, utilise le minimum global pour tous les appels
-            </span>
-          </div>
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
+            Taux multiplicateur
+          </label>
+          <Input
+            type="number"
+            step="0.1"
+            min="0"
+            value={parametres?.rappel_taux || 1}
+            onChange={(e) => setParametres({...parametres, rappel_taux: parseFloat(e.target.value)})}
+            style={{ maxWidth: '200px' }}
+          />
         </div>
 
-        {/* Minimums par source */}
-        {parametres?.utiliser_minimum_par_source !== false && (
+        {/* Sources d'appel */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+          gap: '16px'
+        }}>
+          {/* CAUCA */}
           <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
-            gap: '16px',
-            background: '#f8fafc',
-            padding: '16px',
+            background: parametres?.activer_cauca !== false ? '#fef2f2' : '#f8fafc', 
+            padding: '16px', 
             borderRadius: '8px',
-            border: '1px solid #e2e8f0'
+            border: parametres?.activer_cauca !== false ? '2px solid #ef4444' : '2px solid #e2e8f0',
+            opacity: parametres?.activer_cauca !== false ? 1 : 0.7
           }}>
-            {/* CAUCA */}
-            <div style={{ 
-              background: 'white', 
-              padding: '16px', 
-              borderRadius: '8px',
-              border: '2px solid #ef4444'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '1.25rem' }}>🚒</span>
                 <div>
-                  <div style={{ fontWeight: '600', color: '#dc2626' }}>Appels CAUCA</div>
+                  <div style={{ fontWeight: '600', color: parametres?.activer_cauca !== false ? '#dc2626' : '#64748b' }}>Appels CAUCA</div>
                   <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
                     Incendie, alarme, désincarcération, etc.
                   </div>
                 </div>
               </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={parametres?.activer_cauca !== false}
+                  onChange={(e) => setParametres({...parametres, activer_cauca: e.target.checked})}
+                  style={{ width: '18px', height: '18px', accentColor: '#ef4444' }}
+                />
+                <span style={{ fontSize: '0.875rem', fontWeight: '500' }}>Actif</span>
+              </label>
+            </div>
+            {parametres?.activer_cauca !== false && (
               <div>
                 <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
                   Heures minimum payées
@@ -987,24 +945,38 @@ const ModulePaie = ({ tenant }) => {
                   Dossier SFTP: intervention_cauca
                 </span>
               </div>
-            </div>
+            )}
+          </div>
 
-            {/* Urgence Santé */}
-            <div style={{ 
-              background: 'white', 
-              padding: '16px', 
-              borderRadius: '8px',
-              border: '2px solid #3b82f6'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+          {/* Urgence Santé / PR */}
+          <div style={{ 
+            background: parametres?.activer_urgence_sante ? '#eff6ff' : '#f8fafc', 
+            padding: '16px', 
+            borderRadius: '8px',
+            border: parametres?.activer_urgence_sante ? '2px solid #3b82f6' : '2px solid #e2e8f0',
+            opacity: parametres?.activer_urgence_sante ? 1 : 0.7
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '1.25rem' }}>🏥</span>
                 <div>
-                  <div style={{ fontWeight: '600', color: '#2563eb' }}>Appels Urgence Santé</div>
+                  <div style={{ fontWeight: '600', color: parametres?.activer_urgence_sante ? '#2563eb' : '#64748b' }}>Appels Urgence Santé</div>
                   <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
                     Premiers répondants (PR)
                   </div>
                 </div>
               </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={parametres?.activer_urgence_sante || false}
+                  onChange={(e) => setParametres({...parametres, activer_urgence_sante: e.target.checked})}
+                  style={{ width: '18px', height: '18px', accentColor: '#3b82f6' }}
+                />
+                <span style={{ fontSize: '0.875rem', fontWeight: '500' }}>Actif</span>
+              </label>
+            </div>
+            {parametres?.activer_urgence_sante && (
               <div>
                 <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
                   Heures minimum payées
@@ -1018,6 +990,12 @@ const ModulePaie = ({ tenant }) => {
                 />
                 <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
                   Dossier SFTP: intervention_urgence_sante
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
                 </span>
               </div>
             </div>
