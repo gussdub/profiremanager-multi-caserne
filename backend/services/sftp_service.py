@@ -164,6 +164,24 @@ class SFTPService:
         # Si c'est un seul fichier XML, c'est probablement le détail
         return "details"
     
+    def _detect_source_appel(self, remote_path: str) -> str:
+        """
+        Détecte la source de l'appel selon le chemin SFTP.
+        
+        - intervention_cauca ou cauca → 'cauca' (appels pompiers)
+        - intervention_urgence_sante ou urgence_sante → 'urgence_sante' (premiers répondants)
+        - Sinon → 'cauca' par défaut
+        """
+        path_lower = remote_path.lower()
+        
+        if "urgence_sante" in path_lower or "urgencesante" in path_lower or "urgence-sante" in path_lower:
+            return "urgence_sante"
+        elif "cauca" in path_lower:
+            return "cauca"
+        else:
+            # Par défaut, considérer comme CAUCA
+            return "cauca"
+
     async def process_intervention_files(
         self, 
         tenant_id: str, 
@@ -197,12 +215,17 @@ class SFTPService:
             logger.error(f"Erreur parsing carte {card_number}: {e}")
             return None
         
+        # Détecter la source de l'appel selon le chemin SFTP
+        source_appel = self._detect_source_appel(remote_path)
+        
         # Ajouter les métadonnées
         intervention_data["tenant_id"] = tenant_id
         intervention_data["status"] = "new"
         intervention_data["created_at"] = datetime.now(timezone.utc)
         intervention_data["source"] = "sftp_auto"
+        intervention_data["source_appel"] = source_appel  # 'cauca' ou 'urgence_sante'
         intervention_data["sftp_files"] = filenames
+        intervention_data["sftp_remote_path"] = remote_path  # Pour traçabilité
         
         # Vérifier si l'intervention existe déjà
         external_id = intervention_data.get("external_call_id") or card_number
