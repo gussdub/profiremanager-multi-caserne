@@ -400,23 +400,23 @@ const ParametresRefViolations = ({ tenantSlug, toast }) => {
             />
           </div>
         </div>
-        <Select value={filterCategorie} onValueChange={setFilterCategorie}>
+        <Select value={filterCategorie || "all"} onValueChange={(v) => setFilterCategorie(v === "all" ? "" : v)}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Toutes catégories" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Toutes catégories</SelectItem>
+            <SelectItem value="all">Toutes catégories</SelectItem>
             {categories.map(cat => (
               <SelectItem key={cat} value={cat}>{cat}</SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Select value={filterSeverite} onValueChange={setFilterSeverite}>
+        <Select value={filterSeverite || "all"} onValueChange={(v) => setFilterSeverite(v === "all" ? "" : v)}>
           <SelectTrigger className="w-[150px]">
             <SelectValue placeholder="Toute sévérité" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Toute sévérité</SelectItem>
+            <SelectItem value="all">Toute sévérité</SelectItem>
             {SEVERITES.map(s => (
               <SelectItem key={s.value} value={s.value}>
                 <div className="flex items-center gap-2">
