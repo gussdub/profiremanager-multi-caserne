@@ -215,7 +215,7 @@ const InspectionTerrain = ({ tenantSlug, grille, batiment, onComplete, onCancel 
         photos: photosParQuestion,
         score_conformite: scoreConformite,
         statut_global: statutGlobal,
-        statut: 'terminee',
+        statut: 'en_attente_validation',  // Soumis pour validation par le préventionniste
         notes_inspection: '',
         recommandations: ''
       };
