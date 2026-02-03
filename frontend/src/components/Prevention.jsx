@@ -479,12 +479,186 @@ const Prevention = () => {
               </div>
             </div>
             
+            {/* Barre de recherche et filtres */}
+            <div style={{
+              background: '#fff',
+              borderRadius: '12px',
+              padding: '1rem',
+              marginBottom: '1rem',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+            }}>
+              {/* Ligne 1: Recherche + Compteur + Reset */}
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: '250px', position: 'relative' }}>
+                  <input
+                    type="text"
+                    placeholder="🔍 Rechercher par adresse, ville, nom..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem 1rem',
+                      paddingLeft: '1rem',
+                      border: '2px solid #e5e7eb',
+                      borderRadius: '8px',
+                      fontSize: '0.95rem',
+                      transition: 'border-color 0.2s',
+                      outline: 'none'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+                    onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                  />
+                </div>
+                <div style={{ 
+                  padding: '0.5rem 1rem', 
+                  background: '#f0f9ff', 
+                  borderRadius: '8px',
+                  fontWeight: '600',
+                  color: '#0369a1',
+                  fontSize: '0.9rem',
+                  whiteSpace: 'nowrap'
+                }}>
+                  {filteredBatimentsList.length} / {batiments.length} bâtiments
+                </div>
+                {hasActiveFilters && (
+                  <Button variant="outline" size="sm" onClick={resetFilters} style={{ whiteSpace: 'nowrap' }}>
+                    ✕ Réinitialiser
+                  </Button>
+                )}
+              </div>
+              
+              {/* Ligne 2: Filtres */}
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                {/* Filtre Statut */}
+                <select
+                  value={filters.statut}
+                  onChange={(e) => setFilters({ ...filters, statut: e.target.value })}
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    border: filters.statut ? '2px solid #3b82f6' : '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '0.875rem',
+                    background: filters.statut ? '#eff6ff' : 'white',
+                    cursor: 'pointer',
+                    minWidth: '150px'
+                  }}
+                >
+                  <option value="">📊 Statut inspection</option>
+                  <option value="a_inspecter">🔴 À inspecter</option>
+                  <option value="en_attente">🟠 En attente validation</option>
+                  <option value="valide">🟢 Validé</option>
+                </select>
+
+                {/* Filtre Plan intervention */}
+                <select
+                  value={filters.planIntervention}
+                  onChange={(e) => setFilters({ ...filters, planIntervention: e.target.value })}
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    border: filters.planIntervention ? '2px solid #3b82f6' : '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '0.875rem',
+                    background: filters.planIntervention ? '#eff6ff' : 'white',
+                    cursor: 'pointer',
+                    minWidth: '150px'
+                  }}
+                >
+                  <option value="">📋 Plan intervention</option>
+                  <option value="avec">🔵 Avec plan</option>
+                  <option value="sans">⚪ Sans plan</option>
+                </select>
+
+                {/* Filtre Catégorie */}
+                <select
+                  value={filters.categorie}
+                  onChange={(e) => setFilters({ ...filters, categorie: e.target.value })}
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    border: filters.categorie ? '2px solid #3b82f6' : '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '0.875rem',
+                    background: filters.categorie ? '#eff6ff' : 'white',
+                    cursor: 'pointer',
+                    minWidth: '120px'
+                  }}
+                >
+                  <option value="">🏗️ Catégorie</option>
+                  <option value="A">A - Réunion</option>
+                  <option value="B">B - Soins</option>
+                  <option value="C">C - Habitations</option>
+                  <option value="D">D - Affaires</option>
+                  <option value="E">E - Commerciaux</option>
+                  <option value="F">F - Industriels</option>
+                  <option value="I">I - Assemblée</option>
+                </select>
+
+                {/* Filtre Niveau de risque */}
+                <select
+                  value={filters.niveauRisque}
+                  onChange={(e) => setFilters({ ...filters, niveauRisque: e.target.value })}
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    border: filters.niveauRisque ? '2px solid #3b82f6' : '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '0.875rem',
+                    background: filters.niveauRisque ? '#eff6ff' : 'white',
+                    cursor: 'pointer',
+                    minWidth: '130px'
+                  }}
+                >
+                  <option value="">⚠️ Niveau risque</option>
+                  <option value="Faible">🟢 Faible</option>
+                  <option value="Moyen">🟡 Moyen</option>
+                  <option value="Élevé">🟠 Élevé</option>
+                  <option value="Très élevé">🔴 Très élevé</option>
+                </select>
+
+                {/* Filtre Préventionniste */}
+                <select
+                  value={filters.preventionniste}
+                  onChange={(e) => setFilters({ ...filters, preventionniste: e.target.value })}
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    border: filters.preventionniste ? '2px solid #3b82f6' : '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '0.875rem',
+                    background: filters.preventionniste ? '#eff6ff' : 'white',
+                    cursor: 'pointer',
+                    minWidth: '160px'
+                  }}
+                >
+                  <option value="">👤 Préventionniste</option>
+                  <option value="non_assigne">Non assigné</option>
+                  {preventionnistes.map(p => (
+                    <option key={p.id} value={p.id}>{p.prenom} {p.nom}</option>
+                  ))}
+                </select>
+
+                {/* Filtre Dernière inspection */}
+                <select
+                  value={filters.derniereInspection}
+                  onChange={(e) => setFilters({ ...filters, derniereInspection: e.target.value })}
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    border: filters.derniereInspection ? '2px solid #3b82f6' : '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '0.875rem',
+                    background: filters.derniereInspection ? '#eff6ff' : 'white',
+                    cursor: 'pointer',
+                    minWidth: '160px'
+                  }}
+                >
+                  <option value="">📅 Dernière inspection</option>
+                  <option value="jamais">❌ Jamais inspecté</option>
+                  <option value="3mois">📆 &gt; 3 mois</option>
+                  <option value="6mois">📆 &gt; 6 mois</option>
+                  <option value="12mois">📆 &gt; 12 mois</option>
+                </select>
+              </div>
+            </div>
+            
             {(() => {
-              // Filtrer les bâtiments selon le rôle de l'utilisateur
               const isPreventionnisteOrAdmin = user?.est_preventionniste || user?.role === 'admin' || user?.role === 'superviseur';
-              const filteredBatiments = isPreventionnisteOrAdmin 
-                ? batiments 
-                : batiments.filter(b => b.niveau_risque === 'Faible');
               
               if (loading) {
                 return <div className="loading">Chargement des bâtiments...</div>;
@@ -503,10 +677,14 @@ const Prevention = () => {
                 );
               }
               
-              if (filteredBatiments.length === 0 && !isPreventionnisteOrAdmin) {
+              if (filteredBatimentsList.length === 0) {
                 return (
-                  <div className="empty-state">
-                    <p>Aucun bâtiment à risque faible à inspecter</p>
+                  <div className="empty-state" style={{ background: '#fef3c7', padding: '2rem', borderRadius: '12px' }}>
+                    <p style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>🔍 Aucun bâtiment ne correspond aux critères</p>
+                    <p style={{ color: '#92400e', fontSize: '0.9rem' }}>Essayez de modifier vos filtres ou votre recherche</p>
+                    <Button variant="outline" onClick={resetFilters} style={{ marginTop: '1rem' }}>
+                      Réinitialiser les filtres
+                    </Button>
                   </div>
                 );
               }
