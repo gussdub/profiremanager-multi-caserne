@@ -932,6 +932,7 @@ const Prevention = () => {
               }
             }}
             canEdit={['admin', 'superviseur', 'preventionniste'].includes(user?.role)}
+            currentUser={user}
             tenantSlug={tenantSlug}
           />
         </Suspense>
