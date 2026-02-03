@@ -106,7 +106,7 @@ function Calendar({
       backgroundColor: '#dbeafe',
       color: '#1e40af',
       fontWeight: '500',
-      borderRadius: '4px',
+      borderRadius: '12px',
       border: '2px solid #93c5fd'
     },
     ...props.modifiersStyles
