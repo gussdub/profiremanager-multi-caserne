@@ -272,29 +272,16 @@ const ParametresPrevention = ({ tenantSlug, currentUser, onRefreshBatiments, Imp
           </Card>
         );
 
-      case 'categories':
+      case 'grilles':
         return (
-          <Card>
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                Catégories d'Inspection
-              </h3>
-              
-              <p className="text-gray-600 mb-4">
-                Les catégories sont définies dans les grilles d'inspection. Accédez au module 
-                "Grilles d'Inspection" pour créer et personnaliser vos catégories.
-              </p>
-              
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-800">
-                  💡 <strong>Astuce :</strong> Utilisez les catégories standard du CNPI 
-                  (Extérieur et accès, Locaux techniques, Moyens d'évacuation, etc.) 
-                  pour une meilleure cohérence avec les rapports d'inspection.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <Suspense fallback={
+            <div className="flex items-center justify-center p-8">
+              <RefreshCw className="w-6 h-6 animate-spin mr-2" />
+              <span>Chargement des grilles...</span>
+            </div>
+          }>
+            <GrillesInspection tenantSlug={tenantSlug} toast={toast} currentUser={currentUser} />
+          </Suspense>
         );
 
       default:
