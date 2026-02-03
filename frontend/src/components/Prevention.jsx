@@ -745,34 +745,15 @@ const Prevention = () => {
                   </table>
                 </div>
               ) : (
-                <div className="batiments-list">
-                    <div className="batiments-grid">
-                      {filteredBatimentsList.map(batiment => (
-                      <div key={batiment.id} className="batiment-card">
-                        <div className="batiment-header">
-                          <h4>{batiment.nom_etablissement || batiment.adresse_civique}</h4>
-                          <span className="groupe-badge">{batiment.groupe_occupation}</span>
-                        </div>
-                        <div className="batiment-info">
-                          <p>{batiment.adresse_civique}</p>
-                          <p>{batiment.ville}</p>
-                        </div>
-                        <div className="batiment-actions">
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedBatiment(batiment);
-                              setShowBatimentModal(true);
-                            }}
-                          >
-                            Voir
-                          </Button>
-                        </div>
-                      </div>
-                      ))}
-                    </div>
-                </div>
+                <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center' }}>Chargement de la carte...</div>}>
+                  <CarteBatiments 
+                    batiments={filteredBatimentsList}
+                    onBatimentClick={(batiment) => {
+                      setSelectedBatiment(batiment);
+                      setShowBatimentModal(true);
+                    }}
+                  />
+                </Suspense>
               );
             })()}
           </div>
