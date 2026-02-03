@@ -439,16 +439,22 @@ async def calculer_feuille_temps(
                 taux = params_paie.get("rappel_taux", 1.0)
                 
                 # Déterminer le minimum selon la source de l'appel
-                if params_paie.get("utiliser_minimum_par_source", True):
-                    source_appel = intervention.get("source_appel", "cauca")
-                    if source_appel == "urgence_sante":
+                source_appel = intervention.get("source_appel", "cauca")
+                
+                # Vérifier si la source est activée et déterminer le minimum
+                if source_appel == "urgence_sante":
+                    if params_paie.get("activer_urgence_sante", False):
                         minimum = params_paie.get("minimum_heures_urgence_sante", 2.0)
                     else:
-                        # Par défaut: CAUCA (pompiers)
+                        # Urgence Santé pas activé, utiliser le minimum CAUCA par défaut
                         minimum = params_paie.get("minimum_heures_cauca", 3.0)
                 else:
-                    # Mode legacy: utiliser le minimum global
-                    minimum = params_paie.get("rappel_minimum_heures", 3.0)
+                    # CAUCA (pompiers) - toujours activé par défaut
+                    if params_paie.get("activer_cauca", True):
+                        minimum = params_paie.get("minimum_heures_cauca", 3.0)
+                    else:
+                        # Si CAUCA désactivé (rare), pas de minimum
+                        minimum = 0
                 
                 heures_payees = max(duree_heures, minimum)
                 montant = heures_payees * taux_horaire_intervention * taux
@@ -458,7 +464,7 @@ async def calculer_feuille_temps(
                 totaux["montant_brut"] += montant
                 
                 # Description avec info sur la source
-                source_label = "PR" if intervention.get("source_appel") == "urgence_sante" else "CAUCA"
+                source_label = "PR" if source_appel == "urgence_sante" else "CAUCA"
                 description = f"Intervention #{intervention.get('external_call_id')} [{source_label}] - {intervention.get('type_intervention', 'N/A')}"
                 if utilise_fonction_superieure:
                     description += f" (Fonction supérieure +{int(prime_fonction_superieure_pct*100)}%)"
@@ -475,7 +481,7 @@ async def calculer_feuille_temps(
                     "montant": round(montant, 2),
                     "source_id": intervention.get("id"),
                     "source_type": "intervention",
-                    "source_appel": intervention.get("source_appel", "cauca"),
+                    "source_appel": source_appel,
                     "minimum_applique": minimum if heures_payees > duree_heures else None,
                     "fonction_superieure": utilise_fonction_superieure
                 })
