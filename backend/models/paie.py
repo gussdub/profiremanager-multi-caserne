@@ -34,8 +34,10 @@ class ParametresPaie(BaseModel):
     
     # Minimums par source d'appel (pour rappel et garde externe)
     # CAUCA = appels pompiers (incendie, alarme, désincarcération, etc.)
+    activer_cauca: bool = True  # Activer les appels CAUCA
     minimum_heures_cauca: float = 3.0  # Minimum payé pour appels CAUCA
     # Urgence Santé = appels premiers répondants (PR)
+    activer_urgence_sante: bool = False  # Activer les appels Urgence Santé (PR) - désactivé par défaut
     minimum_heures_urgence_sante: float = 2.0  # Minimum payé pour appels Urgence Santé
     # Utiliser les minimums par source au lieu du minimum global
     utiliser_minimum_par_source: bool = True
