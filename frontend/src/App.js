@@ -637,15 +637,6 @@ const Prevention = () => {
                             >
                               👁️ Voir
                             </Button>
-                            <Button 
-                              size="sm"
-                              onClick={() => {
-                                setSelectedBatiment(batiment);
-                                setCurrentView('nouvelle-inspection');
-                              }}
-                            >
-                              📋 Inspecter
-                            </Button>
                           </div>
                         </td>
                       </tr>
@@ -676,15 +667,6 @@ const Prevention = () => {
                             }}
                           >
                             Voir
-                          </Button>
-                          <Button 
-                            size="sm"
-                            onClick={() => {
-                              setSelectedBatiment(batiment);
-                              setCurrentView('nouvelle-inspection');
-                            }}
-                          >
-                            Inspecter
                           </Button>
                         </div>
                       </div>
@@ -922,12 +904,6 @@ const Prevention = () => {
             onClick={() => setCurrentView('non-conformites')}
           >
             ⚠️ Non-conformités
-          </Button>
-          <Button 
-            variant={currentView === 'grilles' ? 'default' : 'outline'}
-            onClick={() => setCurrentView('grilles')}
-          >
-            📋 Grilles d'Inspection
           </Button>
           <Button 
             variant={currentView === 'rapports' ? 'default' : 'outline'}
