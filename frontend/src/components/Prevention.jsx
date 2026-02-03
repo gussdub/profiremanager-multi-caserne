@@ -701,7 +701,7 @@ const Prevention = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredBatiments.map(batiment => (
+                      {filteredBatimentsList.map(batiment => (
                       <tr key={batiment.id} style={{borderBottom: '1px solid #e5e7eb', transition: 'background 0.2s'}} onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'} onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}>
                         <td style={{padding: '1rem'}}>
                           <div>
@@ -746,7 +746,7 @@ const Prevention = () => {
               ) : (
                 <div className="batiments-list">
                     <div className="batiments-grid">
-                      {filteredBatiments.map(batiment => (
+                      {filteredBatimentsList.map(batiment => (
                       <div key={batiment.id} className="batiment-card">
                         <div className="batiment-header">
                           <h4>{batiment.nom_etablissement || batiment.adresse_civique}</h4>
