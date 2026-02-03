@@ -25,12 +25,16 @@ const BatimentDetailModal = lazy(() => import('./BatimentDetailModalNew'));
 const ParametresRefViolations = lazy(() => import('./ParametresRefViolations'));
 const AvisNonConformiteModule = lazy(() => import('./AvisNonConformite'));
 const InspectionsAValider = lazy(() => import('./InspectionsAValider'));
-
-// Components that will be imported from parent or need to be passed
-// GestionPreventionnistes, AssignerPreventionniste, GrillesInspection, 
-// CreateGrilleInspection, ImportBatiments, ListeInspections, 
-// DetailInspection, NouvelleInspection, RealiserInspection, ModuleRapports
-// These are defined in App.js and passed via context or props
+const GestionPreventionnistes = lazy(() => import('./GestionPreventionnistes'));
+const ImportBatiments = lazy(() => import('./ImportBatiments'));
+const ModuleRapports = lazy(() => import('./ModuleRapports'));
+const GrillesInspection = lazy(() => import('./GrillesInspectionComponents').then(m => ({ default: m.GrillesInspection })));
+const CreateGrilleInspection = lazy(() => import('./GrillesInspectionComponents').then(m => ({ default: m.CreateGrilleInspection })));
+const ListeInspections = lazy(() => import('./InspectionComponents').then(m => ({ default: m.ListeInspections })));
+const NouvelleInspection = lazy(() => import('./InspectionComponents').then(m => ({ default: m.NouvelleInspection })));
+const RealiserInspection = lazy(() => import('./InspectionComponents').then(m => ({ default: m.RealiserInspection })));
+const DetailInspection = lazy(() => import('./InspectionComponents').then(m => ({ default: m.DetailInspection })));
+const AssignerPreventionniste = lazy(() => import('./MapComponents').then(m => ({ default: m.AssignerPreventionniste })));
 
 // Loading component
 const LoadingComponent = () => (
