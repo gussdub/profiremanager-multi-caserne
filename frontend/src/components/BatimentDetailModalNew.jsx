@@ -1547,18 +1547,23 @@ const BatimentForm = ({
               </div>
             </Card>
 
-            {/* Section 3 - CONTACTS (avant Type) */}
-            <Card style={{ padding: '1.5rem', border: '2px solid #fef3c7' }}>
+            {/* Section 3 - CONTACTS - Accessible à tous */}
+            <Card style={{ padding: '1.5rem', border: '2px solid #10b981' }}>
               <h3 style={{ 
                 fontSize: '1.25rem', 
                 fontWeight: '600', 
                 marginBottom: '1rem',
-                color: '#f59e0b',
+                color: '#059669',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem'
               }}>
                 👥 Contacts
+                {isEditing && !canEditAll && (
+                  <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: '#10b981', marginLeft: '0.5rem' }}>
+                    ✓ Vous pouvez modifier cette section
+                  </span>
+                )}
               </h3>
               
               {/* Propriétaire */}
