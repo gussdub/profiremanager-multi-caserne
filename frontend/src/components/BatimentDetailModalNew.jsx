@@ -2195,7 +2195,7 @@ const BatimentForm = ({
             </Card>
 
             {/* Section 6 - GESTION ET ASSIGNATION */}
-            <Card style={{ padding: '1.5rem', border: '2px solid #e5e7eb' }}>
+            <Card style={{ padding: '1.5rem', border: '2px solid #e5e7eb', opacity: (!canEditAll && isEditing) ? 0.7 : 1 }}>
               <h3 style={{ 
                 fontSize: '1.25rem', 
                 fontWeight: '600', 
@@ -2206,6 +2206,11 @@ const BatimentForm = ({
                 gap: '0.5rem'
               }}>
                 🎯 Gestion
+                {!canEditAll && isEditing && (
+                  <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: '#9ca3af', marginLeft: '0.5rem' }}>
+                    🔒 Réservé aux préventionnistes
+                  </span>
+                )}
               </h3>
               <div style={{ display: 'grid', gap: '1rem' }}>
                 <div>
@@ -2215,15 +2220,15 @@ const BatimentForm = ({
                   <select
                     value={editData.preventionniste_assigne_id || ''}
                     onChange={(e) => handleChange('preventionniste_assigne_id', e.target.value || null)}
-                    disabled={!isEditing}
+                    disabled={!isEditing || !canEditAll}
                     style={{
                       width: '100%',
                       padding: '0.625rem',
                       border: '1px solid #d1d5db',
                       borderRadius: '6px',
                       fontSize: '0.875rem',
-                      backgroundColor: isEditing ? 'white' : '#f9fafb',
-                      cursor: isEditing ? 'pointer' : 'not-allowed'
+                      backgroundColor: (!canEditAll && isEditing) ? '#f3f4f6' : (isEditing ? 'white' : '#f9fafb'),
+                      cursor: (isEditing && canEditAll) ? 'pointer' : 'not-allowed'
                     }}
                   >
                     <option value="">Aucun préventionniste assigné</option>
