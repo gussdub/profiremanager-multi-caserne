@@ -1202,3 +1202,4 @@ const CreateGrilleInspection = ({ onClose, onSave }) => {
 };
 
 export { GrillesInspection, EditerGrille, CreateGrilleInspection };
+export default GrillesInspection;
