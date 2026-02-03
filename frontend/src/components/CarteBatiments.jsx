@@ -66,9 +66,9 @@ const MapBounds = ({ batiments }) => {
 };
 
 // Déterminer la couleur/icône d'un bâtiment
-const getBatimentIcon = (batiment) => {
+const getBatimentIcon = (batiment, batimentsAvecPlan) => {
   // Priorité 1: Plan d'intervention
-  if (batiment.plan_intervention_id || batiment.has_plan_intervention) {
+  if ((batimentsAvecPlan && batimentsAvecPlan.has(batiment.id)) || batiment.plan_intervention_id || batiment.has_plan_intervention) {
     return icons.avec_plan;
   }
   
@@ -90,8 +90,8 @@ const getBatimentIcon = (batiment) => {
 };
 
 // Obtenir le label de statut
-const getStatutLabel = (batiment) => {
-  if (batiment.plan_intervention_id || batiment.has_plan_intervention) {
+const getStatutLabel = (batiment, batimentsAvecPlan) => {
+  if ((batimentsAvecPlan && batimentsAvecPlan.has(batiment.id)) || batiment.plan_intervention_id || batiment.has_plan_intervention) {
     return '📋 Plan d\'intervention';
   }
   
@@ -109,7 +109,7 @@ const getStatutLabel = (batiment) => {
   return '⚪ Statut inconnu';
 };
 
-const CarteBatiments = ({ batiments, onBatimentClick }) => {
+const CarteBatiments = ({ batiments, batimentsAvecPlan, onBatimentClick }) => {
   const [stats, setStats] = useState({ rouge: 0, orange: 0, vert: 0, bleu: 0 });
 
   useEffect(() => {
