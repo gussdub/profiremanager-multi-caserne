@@ -1990,13 +1990,14 @@ const BatimentForm = ({
                   <select
                     value={editData.sous_type_batiment || ''}
                     onChange={(e) => handleChange('sous_type_batiment', e.target.value)}
-                    disabled={!isEditing}
+                    disabled={!isEditing || !canEditAll}
                     style={{
                       width: '100%',
                       padding: '0.75rem',
                       border: '2px solid #d1d5db',
                       borderRadius: '8px',
-                      fontSize: '1rem'
+                      fontSize: '1rem',
+                      backgroundColor: (!canEditAll && isEditing) ? '#f3f4f6' : 'white'
                     }}
                   >
                     <option value="">Sélectionner...</option>
