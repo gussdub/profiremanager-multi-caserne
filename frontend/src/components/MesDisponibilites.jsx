@@ -2529,11 +2529,15 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
                             className="interactive-calendar"
                             locale={fr}
                             indisponibilites={userDisponibilites.filter(d => d.statut === 'indisponible')}
+                            disponibilites={userDisponibilites.filter(d => d.statut === 'disponible')}
                           />
                           <small style={{ display: 'block', marginTop: '8px', color: '#64748b' }}>
                             📌 Cliquez sur plusieurs dates pour sélectionner vos jours d'indisponibilité
                           </small>
-                          <small style={{color: '#ef4444', marginTop: '0.5rem', display: 'block'}}>
+                          <small style={{color: '#1e3a5f', marginTop: '0.5rem', display: 'block'}}>
+                            🔵 Les dates en bleu foncé indiquent des disponibilités déjà saisies
+                          </small>
+                          <small style={{color: '#ef4444', marginTop: '0.25rem', display: 'block'}}>
                             ❌ Les dates barrées en rouge indiquent des indisponibilités existantes
                           </small>
                           {manualIndispoConfig.dates.length > 0 && (
