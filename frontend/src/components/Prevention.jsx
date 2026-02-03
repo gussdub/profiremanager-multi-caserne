@@ -425,15 +425,6 @@ const Prevention = () => {
                             >
                               👁️ Voir
                             </Button>
-                            <Button 
-                              size="sm"
-                              onClick={() => {
-                                setSelectedBatiment(batiment);
-                                setCurrentView('nouvelle-inspection');
-                              }}
-                            >
-                              📋 Inspecter
-                            </Button>
                           </div>
                         </td>
                       </tr>
@@ -464,15 +455,6 @@ const Prevention = () => {
                             }}
                           >
                             Voir
-                          </Button>
-                          <Button 
-                            size="sm"
-                            onClick={() => {
-                              setSelectedBatiment(batiment);
-                              setCurrentView('nouvelle-inspection');
-                            }}
-                          >
-                            Inspecter
                           </Button>
                         </div>
                       </div>
