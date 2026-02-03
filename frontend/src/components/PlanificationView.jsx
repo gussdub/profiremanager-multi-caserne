@@ -121,7 +121,7 @@ const PlanificationView = ({
             user={user}
             toast={toast}
             setCurrentView={setCurrentView}
-            batiments={batiments}
+            batiments={filteredBatiments}
             filteredBatimentId={filteredBatimentId}
             setFilteredBatimentId={setFilteredBatimentId}
             openBatimentModal={openBatimentModal}
@@ -131,6 +131,8 @@ const PlanificationView = ({
             tenantSlug={tenantSlug}
             onBatimentClick={handleBatimentClick}
             parametres={parametres}
+            batiments={filteredBatiments}
+            user={user}
           />
         )}
       </div>
