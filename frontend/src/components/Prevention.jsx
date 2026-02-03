@@ -24,6 +24,7 @@ const PlanificationView = lazy(() => import('./PlanificationView'));
 const BatimentDetailModal = lazy(() => import('./BatimentDetailModalNew'));
 const ParametresRefViolations = lazy(() => import('./ParametresRefViolations'));
 const AvisNonConformiteModule = lazy(() => import('./AvisNonConformite'));
+const InspectionsAValider = lazy(() => import('./InspectionsAValider'));
 
 // Components that will be imported from parent or need to be passed
 // GestionPreventionnistes, AssignerPreventionniste, GrillesInspection, 
