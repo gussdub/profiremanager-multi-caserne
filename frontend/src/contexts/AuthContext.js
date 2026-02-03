@@ -63,8 +63,8 @@ export const AuthProvider = ({ children }) => {
           setUser(response.data);
           setLoading(false);
           
-          // Récupérer les informations du tenant si ce n'est pas un super admin
-          if (!isSuperAdmin && tenantSlug) {
+          // Récupérer les informations du tenant (pour tous les utilisateurs, y compris super admin)
+          if (tenantSlug) {
             try {
               const tenantResponse = await axios.get(`${API}/admin/tenants/by-slug/${tenantSlug}`);
               setTenant(tenantResponse.data);
