@@ -114,6 +114,7 @@ const InspectionTerrain = ({ tenantSlug, grille, batiment, onComplete, onCancel 
         ...q,
         // Utiliser label comme texte de la question
         texte: q.label || q.texte,
+        question: q.label || q.texte || q.question, // Pour compatibilité avec le rendu
         type: typeMapping[q.type] || q.type || 'choix',
         options: q.options || defaultOptions[q.type] || ['Conforme', 'Non-conforme', 'S.O.']
       };
