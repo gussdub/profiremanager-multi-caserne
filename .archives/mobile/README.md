@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://emergency-shifts-3.preview.emergentagent.com
+- **URL** : https://emergency-tracker-18.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://emergency-shifts-3.preview.emergentagent.com"
+  "apiUrl": "https://emergency-tracker-18.preview.emergentagent.com"
 }
 ```
 

@@ -28,7 +28,7 @@ from datetime import datetime
 
 class RapportsPDFTester:
     def __init__(self):
-        self.base_url = "https://emergency-shifts-3.preview.emergentagent.com/api"
+        self.base_url = "https://emergency-tracker-18.preview.emergentagent.com/api"
         self.headers = {}
         self.token = None
         
