@@ -1,256 +1,895 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { Textarea } from './ui/textarea';
 import { useToast } from '../hooks/use-toast';
 import { useTenant } from '../contexts/TenantContext';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
-const EditerGrille = ({ grille, onClose, onSave }) => {
-  const { tenantSlug } = useTenant();
-  const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    nom: grille.nom,
-    groupe_occupation: grille.groupe_occupation || '',
-    sections: grille.sections || [],
-    actif: grille.actif !== false,
-    version: grille.version || '1.0'
-  });
-  const [saving, setSaving] = useState(false);
+// ====== COMPOSANTS DRAG & DROP ======
 
-  const addSection = () => {
-    setFormData({
-      ...formData,
-      sections: [...formData.sections, { titre: '', questions: [] }]
-    });
-  };
+// Composant draggable pour les sections
+const SortableSection = ({ section, sectionIndex, children }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: section.id || `section-${sectionIndex}` });
 
-  const removeSection = (index) => {
-    setFormData({
-      ...formData,
-      sections: formData.sections.filter((_, i) => i !== index)
-    });
-  };
-
-  const updateSection = (index, field, value) => {
-    const newSections = [...formData.sections];
-    newSections[index] = { ...newSections[index], [field]: value };
-    setFormData({ ...formData, sections: newSections });
-  };
-
-  const addQuestion = (sectionIndex) => {
-    const newSections = [...formData.sections];
-    newSections[sectionIndex].questions = [...(newSections[sectionIndex].questions || []), ''];
-    setFormData({ ...formData, sections: newSections });
-  };
-
-  const removeQuestion = (sectionIndex, questionIndex) => {
-    const newSections = [...formData.sections];
-    newSections[sectionIndex].questions = newSections[sectionIndex].questions.filter((_, i) => i !== questionIndex);
-    setFormData({ ...formData, sections: newSections });
-  };
-
-  const updateQuestion = (sectionIndex, questionIndex, value) => {
-    const newSections = [...formData.sections];
-    newSections[sectionIndex].questions[questionIndex] = value;
-    setFormData({ ...formData, sections: newSections });
-  };
-
-  const handleSave = async () => {
-    if (!formData.nom) {
-      toast({
-        title: "Validation",
-        description: "Le nom de la grille est requis",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (formData.sections.length === 0) {
-      toast({
-        title: "Validation",
-        description: "La grille doit contenir au moins une section",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      setSaving(true);
-      await apiPut(tenantSlug, `/prevention/grilles-inspection/${grille.id}`, formData);
-      
-      toast({
-        title: "Succès",
-        description: "Grille mise à jour avec succès"
-      });
-      
-      onSave();
-    } catch (error) {
-      console.error('Erreur sauvegarde:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de sauvegarder la grille",
-        variant: "destructive"
-      });
-    } finally {
-      setSaving(false);
-    }
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
   };
 
   return (
-    <div className="editer-grille-container">
-      <div className="page-header">
-        <h2>✏️ Modifier la Grille: {grille.nom}</h2>
-        <div className="header-actions">
-          <Button variant="outline" onClick={onClose}>
-            ✕ Annuler
-          </Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? 'Sauvegarde...' : '💾 Enregistrer'}
-          </Button>
-        </div>
+    <div ref={setNodeRef} style={style}>
+      <div style={{
+        backgroundColor: '#f8fafc',
+        borderRadius: '12px',
+        padding: '1rem',
+        marginBottom: '1rem',
+        border: isDragging ? '2px dashed #3b82f6' : '1px solid #e5e7eb'
+      }}>
+        {typeof children === 'function' 
+          ? children({ dragHandleProps: { ...attributes, ...listeners } })
+          : children
+        }
       </div>
+    </div>
+  );
+};
 
-      <div className="grille-form">
-        {/* Informations générales */}
-        <div className="form-section">
-          <h3>Informations Générales</h3>
-          <div className="form-grid">
-            <div className="form-field">
-              <label>Nom de la grille *</label>
-              <input
-                type="text"
-                value={formData.nom}
-                onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-                className="form-input"
-                placeholder="Ex: Grille Résidentielle Personnalisée"
-              />
-            </div>
-            <div className="form-field">
-              <label>Groupe d'occupation</label>
-              <select
-                value={formData.groupe_occupation}
-                onChange={(e) => setFormData({ ...formData, groupe_occupation: e.target.value })}
-                className="form-select"
-              >
-                <option value="">-- Sélectionner --</option>
-                <option value="A">A - Habitation</option>
-                <option value="B">B - Soins et détention</option>
-                <option value="C">C - Résidentiel</option>
-                <option value="D">D - Affaires</option>
-                <option value="E">E - Commerce</option>
-                <option value="F">F - Industriel</option>
-                <option value="I">I - Assemblée</option>
-              </select>
-            </div>
-            <div className="form-field">
-              <label>Version</label>
-              <input
-                type="text"
-                value={formData.version}
-                onChange={(e) => setFormData({ ...formData, version: e.target.value })}
-                className="form-input"
-                placeholder="1.0"
-              />
-            </div>
-            <div className="form-field checkbox-field">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={formData.actif}
-                  onChange={(e) => setFormData({ ...formData, actif: e.target.checked })}
-                />
-                <span>Grille active</span>
-              </label>
-            </div>
-          </div>
-        </div>
+// Composant draggable pour les items/questions
+const SortableItem = ({ item, itemIndex, sectionIndex, children }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id || `item-${sectionIndex}-${itemIndex}` });
 
-        {/* Sections */}
-        <div className="form-section">
-          <div className="section-header">
-            <h3>Sections ({formData.sections.length})</h3>
-            <Button size="sm" onClick={addSection}>
-              ➕ Ajouter une section
-            </Button>
-          </div>
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
 
-          <div className="sections-list">
-            {formData.sections.map((section, sectionIndex) => (
-              <div key={sectionIndex} className="section-editor">
-                <div className="section-editor-header">
-                  <h4>Section {sectionIndex + 1}</h4>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => removeSection(sectionIndex)}
-                  >
-                    🗑️ Supprimer section
-                  </Button>
-                </div>
-
-                <div className="section-editor-content">
-                  <div className="form-field">
-                    <label>Titre de la section *</label>
-                    <input
-                      type="text"
-                      value={section.titre}
-                      onChange={(e) => updateSection(sectionIndex, 'titre', e.target.value)}
-                      className="form-input"
-                      placeholder="Ex: Voies d'évacuation"
-                    />
-                  </div>
-
-                  <div className="questions-editor">
-                    <div className="questions-header">
-                      <label>Questions ({section.questions?.length || 0})</label>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => addQuestion(sectionIndex)}
-                      >
-                        ➕ Ajouter question
-                      </Button>
-                    </div>
-
-                    <div className="questions-list-editor">
-                      {(section.questions || []).map((question, questionIndex) => (
-                        <div key={questionIndex} className="question-editor-item">
-                          <span className="question-number">{questionIndex + 1}.</span>
-                          <input
-                            type="text"
-                            value={question}
-                            onChange={(e) => updateQuestion(sectionIndex, questionIndex, e.target.value)}
-                            className="question-input"
-                            placeholder="Entrez votre question..."
-                          />
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => removeQuestion(sectionIndex, questionIndex)}
-                            className="remove-question-btn"
-                          >
-                            ✕
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {formData.sections.length === 0 && (
-            <div className="empty-state">
-              <p>Aucune section. Cliquez sur "Ajouter une section" pour commencer.</p>
-            </div>
-          )}
+  return (
+    <div ref={setNodeRef} style={style}>
+      <div style={{
+        backgroundColor: 'white',
+        borderRadius: '8px',
+        padding: '0.75rem',
+        marginBottom: '0.5rem',
+        border: isDragging ? '2px dashed #3b82f6' : '1px solid #e5e7eb',
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '0.5rem'
+      }}>
+        {/* Handle de drag */}
+        <button
+          {...attributes}
+          {...listeners}
+          type="button"
+          style={{
+            cursor: 'grab',
+            padding: '0.25rem',
+            background: 'none',
+            border: 'none',
+            fontSize: '1rem',
+            color: '#9ca3af',
+            touchAction: 'none',
+            flexShrink: 0
+          }}
+          title="Glisser pour réorganiser"
+        >
+          ⋮⋮
+        </button>
+        <div style={{ flex: 1 }}>
+          {children}
         </div>
       </div>
     </div>
   );
 };
+
+// ====== EDITEUR DE GRILLE AVEC DRAG & DROP ======
+
+const EditerGrille = ({ grille, onClose, onSave }) => {
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
+  
+  // État du formulaire
+  const [formData, setFormData] = useState({
+    nom: grille.nom || '',
+    groupe_occupation: grille.groupe_occupation || '',
+    description: grille.description || '',
+    sections: (grille.sections || []).map((s, i) => ({
+      ...s,
+      id: s.id || `section-${Date.now()}-${i}`,
+      items: (s.items || s.questions || []).map((item, j) => {
+        // Convertir l'ancien format (string) vers le nouveau format (objet)
+        if (typeof item === 'string') {
+          return {
+            id: `item-${Date.now()}-${i}-${j}`,
+            label: item,
+            type: 'radio',
+            options: ['Conforme', 'Non conforme', 'N/A'],
+            obligatoire: false
+          };
+        }
+        return { ...item, id: item.id || `item-${Date.now()}-${i}-${j}` };
+      })
+    })),
+    actif: grille.actif !== false,
+    version: grille.version || '1.0'
+  });
+
+  // Configuration des capteurs pour drag & drop
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  // Types de champs disponibles
+  const typesChamp = [
+    { value: 'radio', label: '🔘 Boutons radio (choix unique)', category: 'basic' },
+    { value: 'checkbox', label: '☑️ Cases à cocher (choix multiples)', category: 'basic' },
+    { value: 'texte', label: '📝 Texte libre', category: 'basic' },
+    { value: 'nombre', label: '🔢 Nombre', category: 'basic' },
+    { value: 'date', label: '📅 Date', category: 'basic' },
+    { value: 'liste', label: '📋 Liste déroulante', category: 'basic' },
+    { value: 'photo', label: '📷 Photo/Image', category: 'media' },
+    { value: 'signature', label: '✍️ Signature', category: 'media' },
+    { value: 'oui_non', label: '✓✗ Oui/Non', category: 'basic' },
+    { value: 'conforme_non_conforme', label: '✅ Conforme/Non conforme/N/A', category: 'prevention' },
+    { value: 'etat', label: '🔴🟡🟢 État (Bon/Moyen/Mauvais)', category: 'prevention' },
+    { value: 'note_audio', label: '🎤 Note vocale', category: 'media' },
+  ];
+
+  // ====== DRAG & DROP HANDLERS ======
+  
+  const handleSectionDragEnd = (event) => {
+    const { active, over } = event;
+    if (active.id !== over?.id) {
+      setFormData(prev => {
+        const oldIndex = prev.sections.findIndex(s => s.id === active.id);
+        const newIndex = prev.sections.findIndex(s => s.id === over.id);
+        return { ...prev, sections: arrayMove(prev.sections, oldIndex, newIndex) };
+      });
+    }
+  };
+
+  const handleItemDragEnd = (sectionIndex) => (event) => {
+    const { active, over } = event;
+    if (active.id !== over?.id) {
+      setFormData(prev => {
+        const sections = [...prev.sections];
+        const items = sections[sectionIndex].items || [];
+        const oldIndex = items.findIndex(item => item.id === active.id);
+        const newIndex = items.findIndex(item => item.id === over.id);
+        sections[sectionIndex] = {
+          ...sections[sectionIndex],
+          items: arrayMove(items, oldIndex, newIndex)
+        };
+        return { ...prev, sections };
+      });
+    }
+  };
+
+  // ====== GESTION DES SECTIONS ======
+
+  const addSection = () => {
+    const newSection = {
+      id: `section-${Date.now()}`,
+      titre: 'Nouvelle section',
+      description: '',
+      photos: [],
+      items: []
+    };
+    setFormData(prev => ({ ...prev, sections: [...prev.sections, newSection] }));
+  };
+
+  const removeSection = (index) => {
+    if (confirm('Supprimer cette section et tous ses éléments ?')) {
+      setFormData(prev => ({
+        ...prev,
+        sections: prev.sections.filter((_, i) => i !== index)
+      }));
+    }
+  };
+
+  const duplicateSection = (index) => {
+    const sectionToCopy = formData.sections[index];
+    const newSection = {
+      ...JSON.parse(JSON.stringify(sectionToCopy)),
+      id: `section-${Date.now()}`,
+      titre: `${sectionToCopy.titre} (copie)`,
+      items: sectionToCopy.items.map((item, i) => ({
+        ...item,
+        id: `item-${Date.now()}-${i}`
+      }))
+    };
+    setFormData(prev => ({
+      ...prev,
+      sections: [...prev.sections.slice(0, index + 1), newSection, ...prev.sections.slice(index + 1)]
+    }));
+  };
+
+  const updateSection = (index, field, value) => {
+    setFormData(prev => {
+      const sections = [...prev.sections];
+      sections[index] = { ...sections[index], [field]: value };
+      return { ...prev, sections };
+    });
+  };
+
+  // Upload photo pour une section
+  const handleSectionPhotoUpload = async (sectionIndex, files) => {
+    const newPhotos = [];
+    for (const file of files) {
+      const reader = new FileReader();
+      await new Promise((resolve) => {
+        reader.onloadend = () => {
+          newPhotos.push({
+            id: `photo-${Date.now()}-${Math.random()}`,
+            data: reader.result,
+            name: file.name
+          });
+          resolve();
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+    
+    setFormData(prev => {
+      const sections = [...prev.sections];
+      sections[sectionIndex] = {
+        ...sections[sectionIndex],
+        photos: [...(sections[sectionIndex].photos || []), ...newPhotos]
+      };
+      return { ...prev, sections };
+    });
+  };
+
+  const removeSectionPhoto = (sectionIndex, photoId) => {
+    setFormData(prev => {
+      const sections = [...prev.sections];
+      sections[sectionIndex] = {
+        ...sections[sectionIndex],
+        photos: (sections[sectionIndex].photos || []).filter(p => p.id !== photoId)
+      };
+      return { ...prev, sections };
+    });
+  };
+
+  // ====== GESTION DES ITEMS/QUESTIONS ======
+
+  const addItem = (sectionIndex, type = 'conforme_non_conforme') => {
+    const defaultOptions = {
+      'radio': ['Option 1', 'Option 2', 'Option 3'],
+      'checkbox': ['Option 1', 'Option 2', 'Option 3'],
+      'liste': ['Option 1', 'Option 2', 'Option 3'],
+      'oui_non': ['Oui', 'Non'],
+      'conforme_non_conforme': ['Conforme', 'Non conforme', 'N/A'],
+      'etat': ['Bon', 'Moyen', 'Mauvais']
+    };
+
+    const newItem = {
+      id: `item-${Date.now()}`,
+      label: '',
+      type: type,
+      options: defaultOptions[type] || [],
+      obligatoire: false,
+      description: ''
+    };
+
+    setFormData(prev => {
+      const sections = [...prev.sections];
+      sections[sectionIndex] = {
+        ...sections[sectionIndex],
+        items: [...(sections[sectionIndex].items || []), newItem]
+      };
+      return { ...prev, sections };
+    });
+  };
+
+  const removeItem = (sectionIndex, itemIndex) => {
+    setFormData(prev => {
+      const sections = [...prev.sections];
+      sections[sectionIndex] = {
+        ...sections[sectionIndex],
+        items: sections[sectionIndex].items.filter((_, i) => i !== itemIndex)
+      };
+      return { ...prev, sections };
+    });
+  };
+
+  const updateItem = (sectionIndex, itemIndex, field, value) => {
+    setFormData(prev => {
+      const sections = [...prev.sections];
+      const items = [...sections[sectionIndex].items];
+      items[itemIndex] = { ...items[itemIndex], [field]: value };
+      
+      // Si on change le type, mettre à jour les options par défaut
+      if (field === 'type') {
+        const defaultOptions = {
+          'radio': ['Option 1', 'Option 2', 'Option 3'],
+          'checkbox': ['Option 1', 'Option 2', 'Option 3'],
+          'liste': ['Option 1', 'Option 2', 'Option 3'],
+          'oui_non': ['Oui', 'Non'],
+          'conforme_non_conforme': ['Conforme', 'Non conforme', 'N/A'],
+          'etat': ['Bon', 'Moyen', 'Mauvais']
+        };
+        items[itemIndex].options = defaultOptions[value] || [];
+      }
+      
+      sections[sectionIndex] = { ...sections[sectionIndex], items };
+      return { ...prev, sections };
+    });
+  };
+
+  const updateItemOption = (sectionIndex, itemIndex, optionIndex, value) => {
+    setFormData(prev => {
+      const sections = [...prev.sections];
+      const items = [...sections[sectionIndex].items];
+      const options = [...(items[itemIndex].options || [])];
+      options[optionIndex] = value;
+      items[itemIndex] = { ...items[itemIndex], options };
+      sections[sectionIndex] = { ...sections[sectionIndex], items };
+      return { ...prev, sections };
+    });
+  };
+
+  const addItemOption = (sectionIndex, itemIndex) => {
+    setFormData(prev => {
+      const sections = [...prev.sections];
+      const items = [...sections[sectionIndex].items];
+      items[itemIndex] = {
+        ...items[itemIndex],
+        options: [...(items[itemIndex].options || []), 'Nouvelle option']
+      };
+      sections[sectionIndex] = { ...sections[sectionIndex], items };
+      return { ...prev, sections };
+    });
+  };
+
+  const removeItemOption = (sectionIndex, itemIndex, optionIndex) => {
+    setFormData(prev => {
+      const sections = [...prev.sections];
+      const items = [...sections[sectionIndex].items];
+      items[itemIndex] = {
+        ...items[itemIndex],
+        options: items[itemIndex].options.filter((_, i) => i !== optionIndex)
+      };
+      sections[sectionIndex] = { ...sections[sectionIndex], items };
+      return { ...prev, sections };
+    });
+  };
+
+  // ====== SAUVEGARDE ======
+
+  const handleSave = async () => {
+    if (!formData.nom) {
+      toast({ title: "Validation", description: "Le nom de la grille est requis", variant: "destructive" });
+      return;
+    }
+    if (formData.sections.length === 0) {
+      toast({ title: "Validation", description: "La grille doit contenir au moins une section", variant: "destructive" });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      
+      // Convertir les sections au format attendu par le backend
+      const dataToSave = {
+        ...formData,
+        sections: formData.sections.map(section => ({
+          ...section,
+          // Garder le nouveau format avec items
+          items: section.items,
+          // Aussi générer les questions en string pour compatibilité
+          questions: section.items.map(item => item.label)
+        }))
+      };
+
+      await apiPut(tenantSlug, `/prevention/grilles-inspection/${grille.id}`, dataToSave);
+      toast({ title: "Succès", description: "Grille mise à jour avec succès" });
+      onSave();
+    } catch (error) {
+      console.error('Erreur sauvegarde:', error);
+      toast({ title: "Erreur", description: "Impossible de sauvegarder la grille", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ====== RENDU D'UN ITEM ======
+
+  const renderItemEditor = (item, sectionIndex, itemIndex) => {
+    const needsOptions = ['radio', 'checkbox', 'liste'].includes(item.type);
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
+        {/* Ligne principale: Label + Type + Obligatoire + Supprimer */}
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <Input
+            value={item.label}
+            onChange={(e) => updateItem(sectionIndex, itemIndex, 'label', e.target.value)}
+            placeholder="Libellé de la question..."
+            style={{ flex: 2, minWidth: '200px' }}
+          />
+          <select
+            value={item.type}
+            onChange={(e) => updateItem(sectionIndex, itemIndex, 'type', e.target.value)}
+            style={{
+              padding: '0.5rem',
+              borderRadius: '6px',
+              border: '1px solid #d1d5db',
+              fontSize: '0.875rem',
+              minWidth: '180px'
+            }}
+          >
+            <optgroup label="Prévention">
+              {typesChamp.filter(t => t.category === 'prevention').map(t => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </optgroup>
+            <optgroup label="Basique">
+              {typesChamp.filter(t => t.category === 'basic').map(t => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </optgroup>
+            <optgroup label="Média">
+              {typesChamp.filter(t => t.category === 'media').map(t => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </optgroup>
+          </select>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.875rem', whiteSpace: 'nowrap' }}>
+            <input
+              type="checkbox"
+              checked={item.obligatoire}
+              onChange={(e) => updateItem(sectionIndex, itemIndex, 'obligatoire', e.target.checked)}
+            />
+            Obligatoire
+          </label>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => removeItem(sectionIndex, itemIndex)}
+            style={{ color: '#ef4444' }}
+          >
+            🗑️
+          </Button>
+        </div>
+
+        {/* Options pour radio/checkbox/liste */}
+        {needsOptions && (
+          <div style={{ 
+            marginLeft: '1rem', 
+            padding: '0.5rem', 
+            backgroundColor: '#f9fafb', 
+            borderRadius: '6px',
+            border: '1px dashed #d1d5db'
+          }}>
+            <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.5rem' }}>
+              Options de réponse:
+            </div>
+            {(item.options || []).map((option, optionIndex) => (
+              <div key={optionIndex} style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.25rem', alignItems: 'center' }}>
+                <span style={{ color: '#9ca3af', width: '20px' }}>
+                  {item.type === 'radio' ? '○' : item.type === 'checkbox' ? '☐' : '•'}
+                </span>
+                <Input
+                  value={option}
+                  onChange={(e) => updateItemOption(sectionIndex, itemIndex, optionIndex, e.target.value)}
+                  style={{ flex: 1, height: '32px' }}
+                />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => removeItemOption(sectionIndex, itemIndex, optionIndex)}
+                  style={{ padding: '0.25rem', height: '28px' }}
+                >
+                  ✕
+                </Button>
+              </div>
+            ))}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => addItemOption(sectionIndex, itemIndex)}
+              style={{ marginTop: '0.25rem' }}
+            >
+              + Ajouter option
+            </Button>
+          </div>
+        )}
+
+        {/* Description/aide pour la question */}
+        <Input
+          value={item.description || ''}
+          onChange={(e) => updateItem(sectionIndex, itemIndex, 'description', e.target.value)}
+          placeholder="Description ou aide (optionnel)"
+          style={{ fontSize: '0.875rem', color: '#6b7280' }}
+        />
+      </div>
+    );
+  };
+
+  // ====== RENDU PRINCIPAL ======
+
+  return (
+    <div style={{ padding: '1rem', maxWidth: '1200px', margin: '0 auto' }}>
+      {/* Header */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: '1.5rem',
+        padding: '1rem',
+        backgroundColor: '#f8fafc',
+        borderRadius: '12px'
+      }}>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: '600', margin: 0 }}>
+          ✏️ Modifier la Grille: {grille.nom}
+        </h2>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <Button variant="outline" onClick={onClose}>✕ Annuler</Button>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? '⏳ Sauvegarde...' : '💾 Enregistrer'}
+          </Button>
+        </div>
+      </div>
+
+      {/* Informations Générales */}
+      <div style={{ 
+        backgroundColor: '#f8fafc', 
+        borderRadius: '12px', 
+        padding: '1.5rem', 
+        marginBottom: '1.5rem',
+        border: '1px solid #e5e7eb'
+      }}>
+        <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>
+          Informations Générales
+        </h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+          <div>
+            <Label>Nom de la grille *</Label>
+            <Input
+              value={formData.nom}
+              onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
+              placeholder="Ex: Grille Résidentielle"
+            />
+          </div>
+          <div>
+            <Label>Groupe d'occupation</Label>
+            <select
+              value={formData.groupe_occupation}
+              onChange={(e) => setFormData({ ...formData, groupe_occupation: e.target.value })}
+              style={{
+                width: '100%',
+                padding: '0.5rem',
+                borderRadius: '6px',
+                border: '1px solid #d1d5db',
+                fontSize: '0.875rem'
+              }}
+            >
+              <option value="">-- Sélectionner --</option>
+              <option value="A">A - Établissements de Réunion</option>
+              <option value="B">B - Soins, Traitement ou Détention</option>
+              <option value="C">C - Habitations</option>
+              <option value="D">D - Affaires et Services</option>
+              <option value="E">E - Établissements Commerciaux</option>
+              <option value="F">F - Établissements Industriels</option>
+              <option value="I">I - Établissements d'Assemblée</option>
+            </select>
+          </div>
+          <div>
+            <Label>Version</Label>
+            <Input
+              value={formData.version}
+              onChange={(e) => setFormData({ ...formData, version: e.target.value })}
+              placeholder="1.0"
+            />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingTop: '1.5rem' }}>
+            <input
+              type="checkbox"
+              id="grille-active"
+              checked={formData.actif}
+              onChange={(e) => setFormData({ ...formData, actif: e.target.checked })}
+            />
+            <Label htmlFor="grille-active" style={{ margin: 0, cursor: 'pointer' }}>
+              Grille active
+            </Label>
+          </div>
+        </div>
+        <div style={{ marginTop: '1rem' }}>
+          <Label>Description</Label>
+          <Textarea
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            placeholder="Description de la grille d'inspection..."
+            rows={2}
+          />
+        </div>
+      </div>
+
+      {/* Sections avec Drag & Drop */}
+      <div style={{ marginBottom: '1rem' }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginBottom: '1rem' 
+        }}>
+          <h3 style={{ fontSize: '1.125rem', fontWeight: '600', margin: 0 }}>
+            📋 Sections ({formData.sections.length})
+          </h3>
+          <Button onClick={addSection}>
+            ➕ Ajouter une section
+          </Button>
+        </div>
+
+        {formData.sections.length === 0 ? (
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '3rem', 
+            backgroundColor: '#f9fafb', 
+            borderRadius: '12px',
+            border: '2px dashed #d1d5db'
+          }}>
+            <p style={{ color: '#6b7280', marginBottom: '1rem' }}>
+              Aucune section. Cliquez sur "Ajouter une section" pour commencer.
+            </p>
+            <Button onClick={addSection}>➕ Ajouter une section</Button>
+          </div>
+        ) : (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleSectionDragEnd}
+          >
+            <SortableContext
+              items={formData.sections.map(s => s.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {formData.sections.map((section, sectionIndex) => (
+                <SortableSection key={section.id} section={section} sectionIndex={sectionIndex}>
+                  {({ dragHandleProps }) => (
+                    <>
+                      {/* Header de section */}
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center',
+                        marginBottom: '1rem',
+                        paddingBottom: '0.75rem',
+                        borderBottom: '1px solid #e5e7eb'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <button
+                            {...dragHandleProps}
+                            type="button"
+                            style={{
+                              cursor: 'grab',
+                              padding: '0.5rem',
+                              background: '#e5e7eb',
+                              border: 'none',
+                              borderRadius: '4px',
+                              fontSize: '1rem',
+                              touchAction: 'none'
+                            }}
+                            title="Glisser pour réorganiser"
+                          >
+                            ⋮⋮
+                          </button>
+                          <span style={{ 
+                            backgroundColor: '#3b82f6', 
+                            color: 'white', 
+                            padding: '0.25rem 0.75rem', 
+                            borderRadius: '9999px',
+                            fontSize: '0.875rem',
+                            fontWeight: '600'
+                          }}>
+                            Section {sectionIndex + 1}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <Button size="sm" variant="outline" onClick={() => duplicateSection(sectionIndex)}>
+                            📋 Dupliquer
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => removeSection(sectionIndex)} style={{ color: '#ef4444' }}>
+                            🗑️ Supprimer
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Contenu de section */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                        <div>
+                          <Label>Titre de la section *</Label>
+                          <Input
+                            value={section.titre}
+                            onChange={(e) => updateSection(sectionIndex, 'titre', e.target.value)}
+                            placeholder="Ex: Moyens d'évacuation"
+                          />
+                        </div>
+                        <div>
+                          <Label>Description (optionnel)</Label>
+                          <Input
+                            value={section.description || ''}
+                            onChange={(e) => updateSection(sectionIndex, 'description', e.target.value)}
+                            placeholder="Instructions pour cette section..."
+                          />
+                        </div>
+                      </div>
+
+                      {/* Photos de référence */}
+                      <div style={{ marginBottom: '1rem' }}>
+                        <Label>Photos de référence</Label>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+                          {(section.photos || []).map((photo) => (
+                            <div key={photo.id} style={{ position: 'relative' }}>
+                              <img
+                                src={photo.data}
+                                alt={photo.name}
+                                style={{ 
+                                  width: '80px', 
+                                  height: '80px', 
+                                  objectFit: 'cover', 
+                                  borderRadius: '8px',
+                                  border: '1px solid #d1d5db'
+                                }}
+                              />
+                              <button
+                                onClick={() => removeSectionPhoto(sectionIndex, photo.id)}
+                                style={{
+                                  position: 'absolute',
+                                  top: '-8px',
+                                  right: '-8px',
+                                  background: '#ef4444',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '50%',
+                                  width: '20px',
+                                  height: '20px',
+                                  cursor: 'pointer',
+                                  fontSize: '12px'
+                                }}
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                          <label style={{
+                            width: '80px',
+                            height: '80px',
+                            border: '2px dashed #d1d5db',
+                            borderRadius: '8px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            backgroundColor: '#f9fafb'
+                          }}>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              onChange={(e) => handleSectionPhotoUpload(sectionIndex, Array.from(e.target.files))}
+                              style={{ display: 'none' }}
+                            />
+                            <span style={{ fontSize: '1.5rem', color: '#9ca3af' }}>+</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Items/Questions avec Drag & Drop */}
+                      <div>
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'center',
+                          marginBottom: '0.5rem'
+                        }}>
+                          <Label style={{ margin: 0 }}>
+                            Éléments à vérifier ({(section.items || []).length})
+                          </Label>
+                          <div style={{ display: 'flex', gap: '0.25rem' }}>
+                            <Button size="sm" variant="outline" onClick={() => addItem(sectionIndex, 'conforme_non_conforme')}>
+                              + Conforme/NC
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => addItem(sectionIndex, 'radio')}>
+                              + Radio
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => addItem(sectionIndex, 'texte')}>
+                              + Texte
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => addItem(sectionIndex, 'photo')}>
+                              + Photo
+                            </Button>
+                          </div>
+                        </div>
+
+                        {(section.items || []).length === 0 ? (
+                          <div style={{ 
+                            textAlign: 'center', 
+                            padding: '1.5rem', 
+                            backgroundColor: '#f9fafb',
+                            borderRadius: '8px',
+                            border: '1px dashed #d1d5db'
+                          }}>
+                            <p style={{ color: '#9ca3af', fontSize: '0.875rem' }}>
+                              Aucun élément. Ajoutez des questions à vérifier.
+                            </p>
+                          </div>
+                        ) : (
+                          <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleItemDragEnd(sectionIndex)}
+                          >
+                            <SortableContext
+                              items={(section.items || []).map(item => item.id)}
+                              strategy={verticalListSortingStrategy}
+                            >
+                              {(section.items || []).map((item, itemIndex) => (
+                                <SortableItem
+                                  key={item.id}
+                                  item={item}
+                                  itemIndex={itemIndex}
+                                  sectionIndex={sectionIndex}
+                                >
+                                  {renderItemEditor(item, sectionIndex, itemIndex)}
+                                </SortableItem>
+                              ))}
+                            </SortableContext>
+                          </DndContext>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </SortableSection>
+              ))}
+            </SortableContext>
+          </DndContext>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ====== LISTE DES GRILLES ======
 
 const GrillesInspection = () => {
   const { tenantSlug } = useTenant();
@@ -258,14 +897,13 @@ const GrillesInspection = () => {
   const [grilles, setGrilles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editingGrille, setEditingGrille] = useState(null);
-  const [viewingTemplate, setViewingTemplate] = useState(null);
-  const [creatingFromTemplate, setCreatingFromTemplate] = useState(null);
+  const [creatingNew, setCreatingNew] = useState(false);
 
   const fetchGrilles = async () => {
     try {
       setLoading(true);
       const data = await apiGet(tenantSlug, '/prevention/grilles-inspection');
-      setGrilles(data);
+      setGrilles(data || []);
     } catch (error) {
       console.error('Erreur chargement grilles:', error);
       toast({
@@ -287,10 +925,7 @@ const GrillesInspection = () => {
     
     try {
       await apiDelete(tenantSlug, `/prevention/grilles-inspection/${grilleId}`);
-      toast({
-        title: "Succès",
-        description: "Grille supprimée avec succès"
-      });
+      toast({ title: "Succès", description: "Grille supprimée avec succès" });
       fetchGrilles();
     } catch (error) {
       toast({
@@ -301,1268 +936,269 @@ const GrillesInspection = () => {
     }
   };
 
-  // Modal de prévisualisation du template
-  if (viewingTemplate) {
-    return (
-      <TemplatePreviewModal 
-        template={viewingTemplate}
-        onClose={() => setViewingTemplate(null)}
-        onUse={(template) => {
-          setViewingTemplate(null);
-          setCreatingFromTemplate(template);
-        }}
-      />
-    );
-  }
-
-  // Édition d'une grille à partir d'un template
-  if (creatingFromTemplate) {
-    return (
-      <EditerGrilleFromTemplate 
-        template={creatingFromTemplate}
-        onClose={() => setCreatingFromTemplate(null)}
-        onSave={() => {
-          setCreatingFromTemplate(null);
-          fetchGrilles();
-        }}
-      />
-    );
-  }
-
-  // Édition d'une grille existante
-  if (editingGrille) {
-    return <EditerGrille grille={editingGrille} onClose={() => setEditingGrille(null)} onSave={() => { setEditingGrille(null); fetchGrilles(); }} />;
-  }
-
-  if (loading) {
-    return <div className="loading">Chargement des grilles...</div>;
-  }
-
-  return (
-    <div className="grilles-inspection-container">
-      {/* Grilles disponibles */}
-      <div className="default-grilles-section">
-        <h3>📋 Grilles d'Inspection Disponibles</h3>
-        <p>Grilles d'inspection configurées pour votre service selon le Code de sécurité du Québec</p>
-        
-        {grilles.length === 0 && (
-          <div style={{ 
-            padding: '2rem', 
-            textAlign: 'center', 
-            backgroundColor: '#fef3c7', 
-            border: '2px solid #fcd34d',
-            borderRadius: '8px',
-            margin: '1rem 0'
-          }}>
-            <p style={{ fontSize: '1.125rem', marginBottom: '1rem' }}>⚠️ Aucune grille d'inspection configurée</p>
-            <p style={{ color: '#92400e', marginBottom: '1rem' }}>
-              Pour utiliser le module de prévention, vous devez d'abord initialiser les grilles d'inspection standards.
-            </p>
-            <Button 
-              onClick={async () => {
-                try {
-                  setLoading(true);
-                  await apiPost(tenantSlug, '/prevention/initialiser', {});
-                  toast({
-                    title: "Succès",
-                    description: "7 grilles d'inspection créées avec succès"
-                  });
-                  fetchGrilles();
-                } catch (error) {
-                  toast({
-                    title: "Erreur",
-                    description: error.response?.data?.detail || "Impossible d'initialiser les grilles",
-                    variant: "destructive"
-                  });
-                } finally {
-                  setLoading(false);
-                }
-              }}
-            >
-              🚀 Initialiser les 7 grilles standards
-            </Button>
-          </div>
-        )}
-        
-        <div className="default-grilles-grid">
-          {grilles.map(grille => (
-            <div key={grille.id} className="template-card">
-              <div className="template-header">
-                <h4>{grille.groupe_occupation ? `Groupe ${grille.groupe_occupation}` : 'Grille personnalisée'}</h4>
-                {grille.groupe_occupation && <span className="groupe-badge">{grille.groupe_occupation}</span>}
-              </div>
-              <div className="template-info">
-                <p><strong>{grille.nom}</strong></p>
-                <p>{grille.description || 'Grille d\'inspection personnalisée'}</p>
-                <div className="template-stats">
-                  <span className="stat">{grille.sections?.length || 0} sections</span>
-                  <span className="stat">{grille.sections?.reduce((acc, s) => acc + (s.questions?.length || 0), 0) || 0} questions</span>
-                </div>
-                {grille.sous_types && grille.sous_types.length > 0 && (
-                  <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#6b7280' }}>
-                    Sous-types: {grille.sous_types.join(', ')}
-                  </div>
-                )}
-              </div>
-              <div className="template-actions">
-                <Button 
-                  size="sm" 
-                  onClick={() => setViewingTemplate(grille)}
-                >
-                  👀 Aperçu
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => setEditingGrille(grille)}
-                >
-                  📝 Modifier
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={async () => {
-                    if (!confirm('Dupliquer cette grille pour créer une variante?')) return;
-                    const nouveauNom = prompt('Nom de la nouvelle grille:', `${grille.nom} (Copie)`);
-                    if (!nouveauNom) return;
-                    
-                    try {
-                      await apiPost(tenantSlug, `/prevention/grilles-inspection/${grille.id}/dupliquer?nouveau_nom=${encodeURIComponent(nouveauNom)}`, {});
-                      toast({
-                        title: "Succès",
-                        description: "Grille dupliquée avec succès"
-                      });
-                      fetchGrilles();
-                    } catch (error) {
-                      toast({
-                        title: "Erreur",
-                        description: "Impossible de dupliquer la grille",
-                        variant: "destructive"
-                      });
-                    }
-                  }}
-                >
-                  📋 Dupliquer
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="destructive"
-                  onClick={() => handleDeleteGrille(grille.id)}
-                >
-                  🗑️ Supprimer
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Note informative */}
-      <div style={{
-        marginTop: '2rem',
-        padding: '1rem',
-        backgroundColor: '#f0f9ff',
-        border: '1px solid #bae6fd',
-        borderRadius: '8px'
-      }}>
-        <p style={{ fontSize: '0.875rem', color: '#0369a1' }}>
-          ℹ️ <strong>Astuce</strong>: Les grilles peuvent être dupliquées pour créer des variantes adaptées à vos besoins spécifiques.
-          Les sous-types permettent d'afficher des questions conditionnelles lors des inspections.
-        </p>
-      </div>
-
-      {/* Anciennes grilles personnalisées supprimées - maintenant toutes les grilles sont dans la même liste */}
-      <div style={{ display: 'none' }}>
-        {/* Section supprimée - grilles personnalisées fusionnées avec grilles principales */}
-        <div className="custom-grilles-section">
-          <h3>🛠️ Grilles Personnalisées</h3>
-          <div className="empty-state">
-            <p>Section fusionnée avec grilles principales ci-dessus</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Reste du code inchangé - ne pas modifier */}
-      <div style={{ display: 'none' }}>
-        {grilles.length > 0 && (
-          <div className="custom-grilles-grid">
-            {grilles.map(grille => (
-              <div key={grille.id} className="grille-card">
-                <div className="grille-header">
-                  <h4>{grille.nom}</h4>
-                  <span className="groupe-badge">{grille.groupe_occupation}</span>
-                </div>
-                <div className="grille-info">
-                  <p>Version: {grille.version}</p>
-                  <p>Sections: {grille.sections?.length || 0}</p>
-                  <p>Statut: {grille.actif ? '✅ Actif' : '❌ Inactif'}</p>
-                </div>
-                <div className="grille-actions">
-                  <Button size="sm" onClick={() => setEditingGrille(grille)}>Modifier</Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => handleDeleteGrille(grille.id)}
-                  >
-                    Supprimer
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* L'aperçu s'ouvre maintenant dans un modal au clic */}
-    </div>
-  );
-
-};
-
-// Modal de prévisualisation du template
-const TemplatePreviewModal = ({ template, onClose, onUse }) => {
-  return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 100000,
-      padding: '2rem'
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: '8px',
-        maxWidth: '900px',
-        maxHeight: '80vh',
-        width: '100%',
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column'
-      }}>
-        {/* Header */}
-        <div style={{
-          padding: '1.5rem',
-          borderBottom: '1px solid #e5e7eb',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <div>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.5rem' }}>
-              📋 Grille Template - Groupe {template.groupe}
-            </h2>
-            <p style={{ color: '#6b7280' }}>{template.nom}</p>
-            <p style={{ fontSize: '0.875rem', color: '#9ca3af' }}>{template.description}</p>
-          </div>
-          <button
-            onClick={onClose}
-            style={{
-              padding: '0.5rem',
-              border: 'none',
-              background: 'none',
-              fontSize: '1.5rem',
-              cursor: 'pointer',
-              color: '#6b7280'
-            }}
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Content */}
-        <div style={{
-          flex: 1,
-          overflow: 'auto',
-          padding: '1.5rem'
-        }}>
-          <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '6px' }}>
-            <strong>📊 Statistiques:</strong>
-            <div style={{ marginTop: '0.5rem', display: 'flex', gap: '1rem' }}>
-              <span>🗂️ {template.sections.length} sections</span>
-              <span>❓ {template.sections.reduce((acc, s) => acc + s.questions.length, 0)} questions</span>
-            </div>
-          </div>
-
-          {template.sections.map((section, idx) => (
-            <div key={idx} style={{
-              marginBottom: '1.5rem',
-              padding: '1rem',
-              border: '1px solid #e5e7eb',
-              borderRadius: '6px'
-            }}>
-              <h4 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '0.5rem' }}>
-                {section.titre}
-              </h4>
-              {section.description && (
-                <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1rem', fontStyle: 'italic' }}>
-                  {section.description}
-                </p>
-              )}
-              
-              <div style={{ paddingLeft: '1rem' }}>
-                {section.questions.map((q, qIdx) => (
-                  <div key={qIdx} style={{
-                    padding: '0.5rem 0',
-                    borderBottom: qIdx < section.questions.length - 1 ? '1px solid #f3f4f6' : 'none'
-                  }}>
-                    <span style={{ fontSize: '0.875rem' }}>
-                      {qIdx + 1}. {q.question}
-                    </span>
-                    <span style={{
-                      marginLeft: '0.5rem',
-                      fontSize: '0.75rem',
-                      color: '#9ca3af',
-                      fontStyle: 'italic'
-                    }}>
-                      ({q.type})
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Footer */}
-        <div style={{
-          padding: '1rem 1.5rem',
-          borderTop: '1px solid #e5e7eb',
-          display: 'flex',
-          justifyContent: 'flex-end',
-          gap: '0.5rem'
-        }}>
-          <Button variant="outline" onClick={onClose}>
-            Fermer
-          </Button>
-          <Button onClick={() => onUse(template)}>
-            📝 Utiliser & Personnaliser
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Éditeur de grille depuis template (avec questions pré-remplies)
-const EditerGrilleFromTemplate = ({ template, onClose, onSave }) => {
-  const { tenantSlug } = useTenant();
-  const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    nom: `${template.nom} (Personnalisée)`,
-    groupe_occupation: template.groupe,
-    sections: JSON.parse(JSON.stringify(template.sections)), // Deep copy
-    actif: true,
-    version: "1.0"
-  });
-  const [saving, setSaving] = useState(false);
-
-  const handleSave = async () => {
-    if (!formData.nom) {
-      toast({
-        title: "Validation",
-        description: "Le nom de la grille est requis",
-        variant: "destructive"
-      });
-      return;
-    }
-
+  const handleCreateGrille = async () => {
     try {
-      setSaving(true);
-      await apiPost(tenantSlug, '/prevention/grilles-inspection', formData);
+      const newGrille = {
+        nom: 'Nouvelle grille',
+        groupe_occupation: '',
+        description: '',
+        sections: [],
+        actif: true,
+        version: '1.0'
+      };
       
-      toast({
-        title: "Succès",
-        description: "Grille créée avec succès"
-      });
+      const result = await apiPost(tenantSlug, '/prevention/grilles-inspection', newGrille);
+      toast({ title: "Succès", description: "Grille créée avec succès" });
       
-      onSave();
-    } catch (error) {
-      console.error('Erreur sauvegarde:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de sauvegarder la grille",
-        variant: "destructive"
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const addSection = () => {
-    setFormData({
-      ...formData,
-      sections: [...formData.sections, { titre: '', description: '', questions: [] }]
-    });
-  };
-
-  const removeSection = (index) => {
-    const newSections = formData.sections.filter((_, i) => i !== index);
-    setFormData({ ...formData, sections: newSections });
-  };
-
-  const updateSection = (index, field, value) => {
-    const newSections = [...formData.sections];
-    newSections[index] = { ...newSections[index], [field]: value };
-    setFormData({ ...formData, sections: newSections });
-  };
-
-  const addQuestion = (sectionIndex) => {
-    const newSections = [...formData.sections];
-    newSections[sectionIndex].questions = [
-      ...(newSections[sectionIndex].questions || []),
-      { question: '', type: 'choix', options: ['Conforme', 'Non-conforme', 'S.O.'] }
-    ];
-    setFormData({ ...formData, sections: newSections });
-  };
-
-  const removeQuestion = (sectionIndex, questionIndex) => {
-    const newSections = [...formData.sections];
-    newSections[sectionIndex].questions = newSections[sectionIndex].questions.filter((_, i) => i !== questionIndex);
-    setFormData({ ...formData, sections: newSections });
-  };
-
-  const updateQuestion = (sectionIndex, questionIndex, field, value) => {
-    const newSections = [...formData.sections];
-    newSections[sectionIndex].questions[questionIndex] = {
-      ...newSections[sectionIndex].questions[questionIndex],
-      [field]: value
-    };
-    setFormData({ ...formData, sections: newSections });
-  };
-
-  return (
-    <div className="editer-grille-container">
-      <div className="page-header">
-        <h2>✏️ Personnaliser: {template.nom}</h2>
-        <div className="header-actions">
-          <Button variant="outline" onClick={onClose}>
-            ✕ Annuler
-          </Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? '⏳ Sauvegarde...' : '💾 Enregistrer'}
-          </Button>
-        </div>
-      </div>
-
-      <div className="grille-form">
-        {/* Informations générales */}
-        <div className="form-section">
-          <h3>Informations Générales</h3>
-          <div className="form-grid">
-            <div className="form-field">
-              <label>Nom de la grille *</label>
-              <input
-                type="text"
-                value={formData.nom}
-                onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-                className="form-input"
-                placeholder="Ex: Grille Résidentielle Personnalisée"
-              />
-            </div>
-            <div className="form-field">
-              <label>Groupe d'occupation</label>
-              <select
-                value={formData.groupe_occupation}
-                onChange={(e) => setFormData({ ...formData, groupe_occupation: e.target.value })}
-                className="form-select"
-              >
-                <option value="">-- Sélectionner --</option>
-                <option value="A">A - Établissements de réunion</option>
-                <option value="B">B - Soins ou détention</option>
-                <option value="C">C - Résidentiel</option>
-                <option value="D">D - Affaires et services personnels</option>
-                <option value="E">E - Commercial</option>
-                <option value="F">F - Industriel</option>
-                <option value="G">G - Agricole</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Info sur les sous-types */}
-          {formData.groupe_occupation && (
-            <div style={{
-              marginTop: '1rem',
-              padding: '1rem',
-              backgroundColor: '#eff6ff',
-              borderLeft: '4px solid #3b82f6',
-              borderRadius: '4px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
-                <span style={{ fontSize: '1.25rem' }}>ℹ️</span>
-                <div>
-                  <strong style={{ fontSize: '0.875rem', display: 'block', marginBottom: '0.5rem' }}>
-                    Grille Universelle avec Questions Conditionnelles
-                  </strong>
-                  <p style={{ fontSize: '0.875rem', color: '#1e40af', marginBottom: '0.5rem' }}>
-                    Cette grille s'adapte automatiquement selon le <strong>sous-type du bâtiment</strong> lors de l'inspection.
-                    Les questions non pertinentes seront masquées.
-                  </p>
-                  
-                  {formData.groupe_occupation === 'C' && (
-                    <div style={{ fontSize: '0.75rem', color: '#1e3a8a', marginTop: '0.5rem' }}>
-                      <strong>Sous-types supportés :</strong> Unifamiliale, Bifamiliale, Multifamiliale (3-8), Multifamiliale (9+), Copropriété, Maison mobile
-                    </div>
-                  )}
-                  {formData.groupe_occupation === 'E' && (
-                    <div style={{ fontSize: '0.75rem', color: '#1e3a8a', marginTop: '0.5rem' }}>
-                      <strong>Sous-types supportés :</strong> Bureau, Magasin, Restaurant, Hôtel, Centre commercial
-                    </div>
-                  )}
-                  {formData.groupe_occupation === 'F' && (
-                    <div style={{ fontSize: '0.75rem', color: '#1e3a8a', marginTop: '0.5rem' }}>
-                      <strong>Sous-types supportés :</strong> Manufacture légère, Manufacture lourde, Entrepôt, Usine, Atelier
-                    </div>
-                  )}
-                  {formData.groupe_occupation === 'B' && (
-                    <div style={{ fontSize: '0.75rem', color: '#1e3a8a', marginTop: '0.5rem' }}>
-                      <strong>Sous-types supportés :</strong> École, Hôpital, CHSLD, Centre communautaire, Église, Bibliothèque
-                    </div>
-                  )}
-                  {formData.groupe_occupation === 'G' && (
-                    <div style={{ fontSize: '0.75rem', color: '#1e3a8a', marginTop: '0.5rem' }}>
-                      <strong>Sous-types supportés :</strong> Ferme, Grange, Serre, Écurie, Silo
-                    </div>
-                  )}
-                  
-                  <div style={{ 
-                    marginTop: '0.75rem', 
-                    padding: '0.5rem',
-                    backgroundColor: 'white',
-                    borderRadius: '4px',
-                    fontSize: '0.75rem',
-                    color: '#059669'
-                  }}>
-                    ✅ <strong>Comment ça marche :</strong><br/>
-                    1. Le sous-type est défini sur le <strong>bâtiment</strong> (dans le modal bâtiment)<br/>
-                    2. Lors de l'inspection, seules les questions pertinentes s'affichent<br/>
-                    3. Vous pouvez ajouter des conditions aux questions (ex: "condition: multi_9 || copropriete")
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Option: Grille spécifique à un sous-type */}
-          <details style={{ marginTop: '1rem' }}>
-            <summary style={{ 
-              cursor: 'pointer', 
-              fontSize: '0.875rem',
-              color: '#3b82f6',
-              padding: '0.5rem',
-              backgroundColor: '#f9fafb',
-              borderRadius: '4px'
-            }}>
-              🔧 Option Avancée : Créer une grille spécifique à un sous-type
-            </summary>
-            <div style={{ 
-              marginTop: '0.5rem', 
-              padding: '1rem',
-              border: '1px solid #e5e7eb',
-              borderRadius: '4px',
-              backgroundColor: '#fefce8'
-            }}>
-              <p style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                ⚠️ Par défaut, une grille s'applique à TOUS les sous-types d'un groupe.
-              </p>
-              <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.75rem' }}>
-                Si vous voulez créer une grille qui ne s'applique qu'à un sous-type spécifique 
-                (ex: uniquement pour Maisons mobiles), ajoutez un suffixe clair au nom.
-              </p>
-              <div className="form-field">
-                <label style={{ fontSize: '0.875rem' }}>Sous-type cible (optionnel)</label>
-                <input
-                  type="text"
-                  value={formData.sous_type_cible || ''}
-                  onChange={(e) => setFormData({ ...formData, sous_type_cible: e.target.value })}
-                  placeholder="Ex: maison_mobile, hotel, manufacture_legere"
-                  style={{
-                    width: '100%',
-                    padding: '0.5rem',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '4px',
-                    fontSize: '0.875rem'
-                  }}
-                />
-                <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
-                  Laissez vide pour une grille universelle (recommandé)
-                </p>
-              </div>
-            </div>
-          </details>
-        </div>
-
-        {/* Sections et questions */}
-        <div className="form-section">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3>Sections et Questions</h3>
-            <Button size="sm" onClick={addSection}>
-              ➕ Ajouter une section
-            </Button>
-          </div>
-
-          {formData.sections.map((section, sectionIndex) => (
-            <div key={sectionIndex} className="section-editor" style={{
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              padding: '1rem',
-              marginBottom: '1rem',
-              backgroundColor: '#f9fafb'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                <h4>Section {sectionIndex + 1}</h4>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => removeSection(sectionIndex)}
-                >
-                  🗑️ Supprimer section
-                </Button>
-              </div>
-
-              <div className="form-field">
-                <label>Titre de la section *</label>
-                <input
-                  type="text"
-                  value={section.titre}
-                  onChange={(e) => updateSection(sectionIndex, 'titre', e.target.value)}
-                  className="form-input"
-                  placeholder="Ex: Voies d'évacuation"
-                />
-              </div>
-
-              <div className="form-field">
-                <label>Description</label>
-                <textarea
-                  value={section.description || ''}
-                  onChange={(e) => updateSection(sectionIndex, 'description', e.target.value)}
-                  className="form-textarea"
-                  placeholder="Description optionnelle de la section"
-                  rows={2}
-                />
-              </div>
-
-              {/* Questions */}
-              <div style={{ marginTop: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                  <strong>Questions:</strong>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => addQuestion(sectionIndex)}
-                  >
-                    ➕ Ajouter question
-                  </Button>
-                </div>
-
-                {section.questions && section.questions.map((question, qIndex) => (
-                  <div key={qIndex} style={{
-                    backgroundColor: 'white',
-                    padding: '1rem',
-                    borderRadius: '6px',
-                    marginBottom: '0.5rem',
-                    border: '1px solid #e5e7eb'
-                  }}>
-                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                      <input
-                        type="text"
-                        value={question.question}
-                        onChange={(e) => updateQuestion(sectionIndex, qIndex, 'question', e.target.value)}
-                        placeholder="Texte de la question"
-                        style={{
-                          flex: 1,
-                          padding: '0.5rem',
-                          border: '1px solid #e5e7eb',
-                          borderRadius: '4px'
-                        }}
-                      />
-                      <select
-                        value={question.type}
-                        onChange={(e) => updateQuestion(sectionIndex, qIndex, 'type', e.target.value)}
-                        style={{
-                          padding: '0.5rem',
-                          border: '1px solid #e5e7eb',
-                          borderRadius: '4px'
-                        }}
-                      >
-                        <option value="choix">Choix multiple</option>
-                        <option value="texte">Texte libre</option>
-                        <option value="photos">Photos</option>
-                      </select>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => removeQuestion(sectionIndex, qIndex)}
-                      >
-                        🗑️
-                      </Button>
-                    </div>
-
-                    {/* Photos de référence - optionnel pour guider l'inspecteur */}
-                    <div style={{ marginTop: '0.5rem' }}>
-                      <details style={{ fontSize: '0.875rem' }}>
-                        <summary style={{ cursor: 'pointer', color: '#3b82f6' }}>
-                          📷 Photos de référence (optionnel)
-                        </summary>
-                        <div style={{ 
-                          marginTop: '0.5rem', 
-                          padding: '0.75rem', 
-                          backgroundColor: '#f9fafb',
-                          borderRadius: '4px'
-                        }}>
-                          <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.5rem' }}>
-                            Ajoutez des photos/schémas pour aider l'inspecteur (ex: localisation extincteur, schéma technique)
-                          </p>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            
-                            multiple
-                            onChange={(e) => {
-                              const files = Array.from(e.target.files);
-                              // Pour l'instant, on stocke juste les noms
-                              // TODO: Upload vers serveur et stocker URLs
-                              const photoNames = files.map(f => f.name);
-                              updateQuestion(sectionIndex, qIndex, 'photos_reference', [
-                                ...(question.photos_reference || []),
-                                ...photoNames
-                              ]);
-                            }}
-                            style={{ fontSize: '0.75rem', marginBottom: '0.5rem' }}
-                          />
-                          
-                          {question.photos_reference && question.photos_reference.length > 0 && (
-                            <div style={{ marginTop: '0.5rem' }}>
-                              <strong style={{ fontSize: '0.75rem' }}>Photos ajoutées:</strong>
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.25rem' }}>
-                                {question.photos_reference.map((photo, pIdx) => (
-                                  <div key={pIdx} style={{
-                                    padding: '0.25rem 0.5rem',
-                                    backgroundColor: 'white',
-                                    border: '1px solid #e5e7eb',
-                                    borderRadius: '4px',
-                                    fontSize: '0.75rem',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.25rem'
-                                  }}>
-                                    📎 {photo}
-                                    <button
-                                      onClick={() => {
-                                        const newPhotos = question.photos_reference.filter((_, i) => i !== pIdx);
-                                        updateQuestion(sectionIndex, qIndex, 'photos_reference', newPhotos);
-                                      }}
-                                      style={{
-                                        border: 'none',
-                                        background: 'none',
-                                        cursor: 'pointer',
-                                        color: '#ef4444',
-                                        fontSize: '0.875rem'
-                                      }}
-                                    >
-                                      ✕
-                                    </button>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </details>
-                    </div>
-
-                    {/* Champ observations si non-conforme */}
-                    <div style={{ marginTop: '0.5rem' }}>
-                      <label style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '0.5rem',
-                        fontSize: '0.875rem',
-                        color: '#6b7280'
-                      }}>
-                        <input
-                          type="checkbox"
-                          checked={question.photo_requise_si_non_conforme || false}
-                          onChange={(e) => updateQuestion(sectionIndex, qIndex, 'photo_requise_si_non_conforme', e.target.checked)}
-                        />
-                        📸 Photo obligatoire si non-conforme
-                      </label>
-                    </div>
-
-                    {/* Condition d'affichage */}
-                    <details style={{ marginTop: '0.5rem' }}>
-                      <summary style={{ 
-                        cursor: 'pointer',
-                        fontSize: '0.75rem',
-                        color: '#9ca3af'
-                      }}>
-                        🔀 Question conditionnelle (avancé)
-                      </summary>
-                      <div style={{ 
-                        marginTop: '0.5rem',
-                        padding: '0.5rem',
-                        backgroundColor: '#fef3c7',
-                        borderRadius: '4px'
-                      }}>
-                        <label style={{ fontSize: '0.75rem', display: 'block', marginBottom: '0.25rem' }}>
-                          Condition d'affichage
-                        </label>
-                        <input
-                          type="text"
-                          value={question.condition || ''}
-                          onChange={(e) => updateQuestion(sectionIndex, qIndex, 'condition', e.target.value)}
-                          placeholder="Ex: multi_9 || copropriete"
-                          style={{
-                            width: '100%',
-                            padding: '0.25rem',
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '4px',
-                            fontSize: '0.75rem'
-                          }}
-                        />
-                        <p style={{ fontSize: '0.65rem', color: '#92400e', marginTop: '0.25rem' }}>
-                          Utilisez les sous-types: unifamiliale, bifamiliale, multi_3_8, multi_9, copropriete, maison_mobile, bureau, magasin, restaurant, hotel, etc.
-                          <br/>Opérateurs: || (OU), && (ET)
-                          <br/>Laissez vide pour afficher toujours
-                        </p>
-                        {question.condition && (
-                          <div style={{ 
-                            marginTop: '0.5rem',
-                            padding: '0.25rem 0.5rem',
-                            backgroundColor: '#dcfce7',
-                            borderRadius: '4px',
-                            fontSize: '0.65rem',
-                            color: '#166534'
-                          }}>
-                            ✓ Cette question s'affichera seulement pour: <strong>{question.condition}</strong>
-                          </div>
-                        )}
-                      </div>
-                    </details>
-
-                    {question.type === 'photos' && (
-                      <p style={{ fontSize: '0.75rem', color: '#6b7280', fontStyle: 'italic', marginTop: '0.5rem' }}>
-                        💡 Type "Photos": L'inspecteur pourra prendre plusieurs photos librement
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const CreateGrilleInspection = ({ onSave, onViewTemplates }) => {
-  const { tenantSlug } = useTenant();
-  const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    nom: '',
-    groupe_occupation: '',
-    sections: [],
-    actif: true,
-    version: '1.0'
-  });
-  const [saving, setSaving] = useState(false);
-
-  const handleSave = async () => {
-    if (!formData.nom || !formData.groupe_occupation) {
-      toast({
-        title: "Validation",
-        description: "Veuillez remplir tous les champs requis",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      setSaving(true);
-      await apiPost(tenantSlug, '/prevention/grilles-inspection', formData);
-      
-      toast({
-        title: "Succès",
-        description: "Grille créée avec succès"
-      });
-      
-      onSave();
+      // Ouvrir directement l'éditeur
+      setEditingGrille(result);
+      fetchGrilles();
     } catch (error) {
       toast({
         title: "Erreur",
         description: "Impossible de créer la grille",
         variant: "destructive"
       });
+    }
+  };
+
+  const handleDuplicateGrille = async (grille) => {
+    try {
+      const newGrille = {
+        ...grille,
+        id: undefined,
+        nom: `${grille.nom} (copie)`,
+        tenant_id: undefined
+      };
+      
+      await apiPost(tenantSlug, '/prevention/grilles-inspection', newGrille);
+      toast({ title: "Succès", description: "Grille dupliquée avec succès" });
+      fetchGrilles();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de dupliquer la grille",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Si on édite une grille, afficher l'éditeur
+  if (editingGrille) {
+    return (
+      <EditerGrille
+        grille={editingGrille}
+        onClose={() => setEditingGrille(null)}
+        onSave={() => {
+          setEditingGrille(null);
+          fetchGrilles();
+        }}
+      />
+    );
+  }
+
+  // Liste des grilles
+  return (
+    <div style={{ padding: '1rem' }}>
+      {/* Header */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        marginBottom: '1.5rem'
+      }}>
+        <div>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', margin: 0 }}>
+            📋 Grilles d'Inspection
+          </h2>
+          <p style={{ color: '#6b7280', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+            Gérez les grilles d'inspection pour la prévention incendie
+          </p>
+        </div>
+        <Button onClick={handleCreateGrille}>
+          ➕ Nouvelle grille
+        </Button>
+      </div>
+
+      {/* Liste */}
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '3rem' }}>
+          <p>Chargement...</p>
+        </div>
+      ) : grilles.length === 0 ? (
+        <div style={{ 
+          textAlign: 'center', 
+          padding: '3rem', 
+          backgroundColor: '#f9fafb',
+          borderRadius: '12px',
+          border: '2px dashed #d1d5db'
+        }}>
+          <p style={{ color: '#6b7280', marginBottom: '1rem' }}>
+            Aucune grille d'inspection disponible.
+          </p>
+          <Button onClick={handleCreateGrille}>➕ Créer une grille</Button>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gap: '1rem' }}>
+          {grilles.map((grille) => (
+            <div
+              key={grille.id}
+              style={{
+                backgroundColor: 'white',
+                borderRadius: '12px',
+                padding: '1rem',
+                border: '1px solid #e5e7eb',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <h3 style={{ fontSize: '1.125rem', fontWeight: '600', margin: 0 }}>
+                    {grille.nom}
+                  </h3>
+                  {grille.groupe_occupation && (
+                    <span style={{
+                      backgroundColor: '#dbeafe',
+                      color: '#1d4ed8',
+                      padding: '0.125rem 0.5rem',
+                      borderRadius: '9999px',
+                      fontSize: '0.75rem',
+                      fontWeight: '500'
+                    }}>
+                      Groupe {grille.groupe_occupation}
+                    </span>
+                  )}
+                  {grille.actif === false && (
+                    <span style={{
+                      backgroundColor: '#fef2f2',
+                      color: '#dc2626',
+                      padding: '0.125rem 0.5rem',
+                      borderRadius: '9999px',
+                      fontSize: '0.75rem'
+                    }}>
+                      Inactive
+                    </span>
+                  )}
+                </div>
+                <p style={{ color: '#6b7280', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                  {grille.sections?.length || 0} section(s) • 
+                  {grille.sections?.reduce((acc, s) => acc + (s.items?.length || s.questions?.length || 0), 0) || 0} élément(s)
+                  {grille.version && ` • v${grille.version}`}
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <Button size="sm" variant="outline" onClick={() => handleDuplicateGrille(grille)}>
+                  📋 Dupliquer
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setEditingGrille(grille)}>
+                  ✏️ Modifier
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => handleDeleteGrille(grille.id)}
+                  style={{ color: '#ef4444' }}
+                >
+                  🗑️
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ====== CRÉER GRILLE (simplifié) ======
+
+const CreateGrilleInspection = ({ onClose, onSave }) => {
+  const { tenantSlug } = useTenant();
+  const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    nom: '',
+    groupe_occupation: '',
+    description: '',
+    sections: [],
+    actif: true,
+    version: '1.0'
+  });
+
+  const handleSave = async () => {
+    if (!formData.nom) {
+      toast({ title: "Validation", description: "Le nom est requis", variant: "destructive" });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await apiPost(tenantSlug, '/prevention/grilles-inspection', formData);
+      toast({ title: "Succès", description: "Grille créée avec succès" });
+      onSave();
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible de créer la grille", variant: "destructive" });
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="create-grille-container">
-      <div className="grille-form">
-        <div className="form-section">
-          <h3>ℹ️ Informations de base</h3>
-          <div className="form-fields">
-            <div className="form-field">
-              <label>Nom de la grille *</label>
-              <input
-                type="text"
-                value={formData.nom}
-                onChange={(e) => setFormData({...formData, nom: e.target.value})}
-                placeholder="Ex: Inspection Commerciale Détaillée"
-              />
-            </div>
-            <div className="form-field">
-              <label>Groupe d'occupation *</label>
-              <select
-                value={formData.groupe_occupation}
-                onChange={(e) => setFormData({...formData, groupe_occupation: e.target.value})}
-              >
-                <option value="">Sélectionner un groupe</option>
-                <option value="A">Groupe A - Résidentiel unifamilial</option>
-                <option value="B">Groupe B - Soins et détention</option>
-                <option value="C">Groupe C - Résidentiel</option>
-                <option value="D">Groupe D - Affaires et services personnels</option>
-                <option value="E">Groupe E - Commerce</option>
-                <option value="F">Groupe F - Industriel</option>
-                <option value="G">Groupe G - Garages et stations-service</option>
-                <option value="H">Groupe H - Risques élevés</option>
-                <option value="I">Groupe I - Assemblée</option>
-              </select>
-            </div>
-          </div>
+    <div style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto' }}>
+      <h2 style={{ marginBottom: '1.5rem' }}>➕ Nouvelle Grille d'Inspection</h2>
+      
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div>
+          <Label>Nom de la grille *</Label>
+          <Input
+            value={formData.nom}
+            onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
+            placeholder="Ex: Grille Industrielle"
+          />
         </div>
-
-        <div className="form-section">
-          <h3>📝 Recommandation</h3>
-          <div className="recommendation-note">
-            <p>💡 <strong>Pour commencer rapidement :</strong></p>
-            <p>Nous recommandons d'utiliser les <strong>grilles templates</strong> pré-configurées selon le Code de sécurité du Québec. Vous pourrez ensuite les personnaliser selon vos besoins.</p>
-            <Button 
-              variant="outline"
-              onClick={onViewTemplates}
-            >
-              📋 Voir les templates disponibles
-            </Button>
-          </div>
-        </div>
-
-        <div className="form-actions">
-          <Button variant="outline" onClick={onSave}>
-            Annuler
-          </Button>
-          <Button 
-            onClick={handleSave}
-            disabled={saving}
+        <div>
+          <Label>Groupe d'occupation</Label>
+          <select
+            value={formData.groupe_occupation}
+            onChange={(e) => setFormData({ ...formData, groupe_occupation: e.target.value })}
+            style={{
+              width: '100%',
+              padding: '0.5rem',
+              borderRadius: '6px',
+              border: '1px solid #d1d5db'
+            }}
           >
-            {saving ? 'Création...' : 'Créer la grille'}
-          </Button>
+            <option value="">-- Sélectionner --</option>
+            <option value="A">A - Établissements de Réunion</option>
+            <option value="B">B - Soins, Traitement ou Détention</option>
+            <option value="C">C - Habitations</option>
+            <option value="D">D - Affaires et Services</option>
+            <option value="E">E - Établissements Commerciaux</option>
+            <option value="F">F - Établissements Industriels</option>
+            <option value="I">I - Établissements d'Assemblée</option>
+          </select>
         </div>
+        <div>
+          <Label>Description</Label>
+          <Textarea
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            placeholder="Description de la grille..."
+            rows={3}
+          />
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem', justifyContent: 'flex-end' }}>
+        <Button variant="outline" onClick={onClose}>Annuler</Button>
+        <Button onClick={handleSave} disabled={saving}>
+          {saving ? 'Création...' : 'Créer'}
+        </Button>
       </div>
     </div>
   );
 };
 
-// Templates de grilles d'inspection par défaut
-const DEFAULT_GRILLES_TEMPLATES = [
-  {
-    groupe: "C",
-    nom: "Résidentiel - Habitation",
-    description: "Maisons unifamiliales, duplex, immeubles résidentiels",
-    sections: [
-      {
-        titre: "1. Informations Générales & Contacts",
-        description: "Identification complète de l'établissement et des responsables",
-        questions: [
-          { question: "Plan de mesures d'urgence en cas d'incendie affiché?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Plan à jour et exercé dans la dernière année?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Permis d'occupation valide affiché?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Notes générales", type: "texte" },
-          { question: "Photos", type: "photos" }
-        ]
-      },
-      {
-        titre: "2. Documentation & Plans",
-        description: "Vérification de la documentation obligatoire",
-        questions: [
-          { question: "Plans d'évacuation affichés et visibles?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Registres d'entretien tenus à jour?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Notes sur la documentation", type: "texte" }
-        ]
-      },
-      {
-        titre: "3. Voies d'Évacuation & Sorties",
-        description: "Vérification des moyens d'évacuation et de leur accessibilité",
-        questions: [
-          { question: "Nombre de sorties suffisant et bien réparties?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Panneaux 'SORTIE' clairs et éclairés?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Portes de sortie faciles à ouvrir de l'intérieur?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Dégagements libres de tout encombrement?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Éclairage de sécurité fonctionnel?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Photos des voies d'évacuation", type: "photos" }
-        ]
-      },
-      {
-        titre: "4. Moyens de Protection Incendie",
-        description: "Vérification des équipements de protection contre l'incendie",
-        questions: [
-          { question: "Détecteurs de fumée présents et fonctionnels?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Date de fabrication des détecteurs < 10 ans?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Détecteurs CO présents si applicable?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Extincteurs présents et accessibles?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Inspection mensuelle extincteurs à jour?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Photos des équipements", type: "photos" }
-        ]
-      },
-      {
-        titre: "5. Risques Spécifiques",
-        description: "Évaluation des risques particuliers selon l'occupation",
-        questions: [
-          { question: "Dégagement libre devant panneau électrique (1m)?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Aucun fil électrique dénudé visible?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Appareils à combustible: dégagements respectés?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Conduits d'évacuation en bon état?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Photos des risques identifiés", type: "photos" }
-        ]
-      },
-      {
-        titre: "6. Accessibilité Services d'Incendie",
-        description: "Vérification de l'accessibilité pour les véhicules d'urgence",
-        questions: [
-          { question: "Adresse civique visible de la rue?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Voie d'accès dégagée pour véhicules d'urgence?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Poteau d'incendie dégagé et accessible?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
-        ]
-      }
-    ]
-  },
-  {
-    groupe: "E",
-    nom: "Commerce - Établissements commerciaux",
-    description: "Magasins, centres commerciaux, bureaux commerciaux",
-    sections: [
-      {
-        titre: "1. Informations Générales & Contacts",
-        description: "Identification complète de l'établissement commercial",
-        questions: [
-          { question: "Plan de mesures d'urgence affiché et accessible?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Responsable sécurité incendie identifié?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Permis d'occupation commercial valide?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Formation du personnel sur évacuation?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
-        ]
-      },
-      {
-        titre: "2. Documentation & Plans",
-        description: "Documentation spécifique aux établissements commerciaux",
-        questions: [
-          { question: "Plans d'évacuation affichés à chaque étage?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Registre des exercices d'évacuation?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Certificats des systèmes de protection à jour?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
-        ]
-      },
-      {
-        titre: "3. Voies d'Évacuation & Sorties",
-        description: "Moyens d'évacuation pour occupation commerciale",
-        questions: [
-          { question: "Sorties de secours dégagées et signalisées?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Largeur des dégagements conforme au nombre d'occupants?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Portes équipées de dispositifs anti-panique?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Éclairage d'urgence testé mensuellement?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Aucun stockage dans les dégagements?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
-        ]
-      },
-      {
-        titre: "4. Moyens de Protection Incendie",
-        description: "Systèmes de protection spécifiques aux commerces",
-        questions: [
-          { question: "Système d'alarme incendie fonctionnel?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Détecteurs de fumée dans toutes les zones?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Extincteurs appropriés au type de risque?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Système de gicleurs (si requis) opérationnel?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Robinets d'incendie armés accessibles?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
-        ]
-      },
-      {
-        titre: "5. Risques Spécifiques",
-        description: "Risques particuliers aux activités commerciales",
-        questions: [
-          { question: "Stockage respecte les distances de sécurité?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Piles de marchandises stables et limitées en hauteur?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Séparation des produits incompatibles?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Zones de livraison dégagées?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Système électrique conforme et entretenu?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
-        ]
-      },
-      {
-        titre: "6. Accessibilité Services d'Incendie",
-        description: "Accès pour intervention en milieu commercial",
-        questions: [
-          { question: "Signalisation claire pour identification du bâtiment?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Accès véhicules lourds possible et dégagé?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Boîte à clés (Knox Box) installée si requise?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Plan d'intervention disponible sur site?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
-        ]
-      }
-    ]
-  },
-  {
-    groupe: "F",
-    nom: "Industriel - Établissements industriels",
-    description: "Usines, ateliers, entrepôts industriels",
-    sections: [
-      {
-        titre: "1. Informations Générales & Contacts",
-        description: "Information sur l'établissement industriel et ses activités",
-        questions: [
-          { question: "Plan d'intervention d'urgence détaillé disponible?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Équipe de sécurité incendie formée et désignée?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Permis pour matières dangereuses à jour?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Formation du personnel sur les risques spécifiques?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
-        ]
-      },
-      {
-        titre: "2. Documentation & Plans",
-        description: "Documentation technique et réglementaire",
-        questions: [
-          { question: "Fiches de données de sécurité (FDS) disponibles?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Plans des installations avec localisation des risques?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Registres de maintenance des équipements?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Permis de travaux à chaud à jour?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
-        ]
-      },
-      {
-        titre: "3. Voies d'Évacuation & Sorties",
-        description: "Moyens d'évacuation pour milieu industriel",
-        questions: [
-          { question: "Sorties d'urgence adaptées aux effectifs?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Chemins d'évacuation clairement marqués?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Portes coupe-feu maintenues fermées automatiquement?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Éclairage de sécurité conforme aux zones à risques?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Points de rassemblement extérieurs identifiés?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
-        ]
-      },
-      {
-        titre: "4. Moyens de Protection Incendie",
-        description: "Systèmes de protection industrielle",
-        questions: [
-          { question: "Système d'alarme automatique fonctionnel?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Système de détection adapté aux risques?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Extincteurs spécialisés selon les risques présents?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Système fixe d'extinction (mousse, CO2) opérationnel?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Réseau de gicleurs industriel fonctionnel?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Colonne sèche et raccords normalisés?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
-        ]
-      },
-      {
-        titre: "5. Risques Spécifiques",
-        description: "Risques industriels particuliers",
-        questions: [
-          { question: "Matières dangereuses stockées selon les normes?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Aires de stockage avec rétention appropriée?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Équipements électriques adaptés aux zones?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Système de ventilation et évacuation des fumées?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Travaux à chaud avec surveillance appropriée?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Nettoyage régulier des zones d'accumulation?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
-        ]
-      },
-      {
-        titre: "6. Accessibilité Services d'Incendie",
-        description: "Accès spécialisé pour intervention industrielle",
-        questions: [
-          { question: "Accès pompiers avec véhicules spécialisés?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Plan d'intervention détaillé remis aux pompiers?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Système de communication d'urgence opérationnel?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Moyens d'approvisionnement en eau suffisants?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
-        ]
-      }
-    ]
-  },
-  {
-    groupe: "I",
-    nom: "Assemblée - Lieux de rassemblement",
-    description: "Écoles, théâtres, centres communautaires, églises",
-    sections: [
-      {
-        titre: "1. Informations Générales & Contacts",
-        description: "Gestion sécurité pour lieux d'assemblée",
-        questions: [
-          { question: "Plan d'évacuation affiché dans toutes les zones?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Responsable évacuation désigné pour chaque événement?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Capacité maximale d'occupation respectée?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Personnel formé aux procédures d'urgence?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
-        ]
-      },
-      {
-        titre: "2. Documentation & Plans",
-        description: "Documentation pour gestion des foules",
-        questions: [
-          { question: "Plans d'évacuation adaptés au type d'assemblée?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Procédures d'urgence communiquées au public?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Registre des exercices d'évacuation?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
-        ]
-      },
-      {
-        titre: "3. Voies d'Évacuation & Sorties",
-        description: "Évacuation sécuritaire des grandes assemblées",
-        questions: [
-          { question: "Nombre de sorties conforme à l'occupation?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Largeur des sorties proportionnelle aux occupants?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Portes s'ouvrent dans le sens de l'évacuation?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Éclairage d'urgence sur tous les parcours?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Aisles et dégagements libres pendant les événements?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
-        ]
-      },
-      {
-        titre: "4. Moyens de Protection Incendie",
-        description: "Protection adaptée aux assemblées",
-        questions: [
-          { question: "Système d'alarme audible dans tout le bâtiment?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Système de sonorisation pour annonces d'urgence?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Détection automatique dans toutes les zones?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Extincteurs accessibles et visibles?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Système de gicleurs dans les zones de rassemblement?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
-        ]
-      },
-      {
-        titre: "5. Risques Spécifiques",
-        description: "Risques liés aux activités d'assemblée",
-        questions: [
-          { question: "Sièges et rangées fixées selon les normes?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Scène et décors avec matériaux ignifuges?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Éclairage de scène avec protection thermique?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Cuisine (si présente) avec système d'extinction?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Contrôle du tabagisme respecté?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
-        ]
-      },
-      {
-        titre: "6. Accessibilité Services d'Incendie",
-        description: "Accès pour intervention lors d'assemblées",
-        questions: [
-          { question: "Accès prioritaire maintenu libre en tout temps?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Communication directe avec services d'urgence?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Plan du site remis aux services d'incendie?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] },
-          { question: "Stationnement d'urgence réservé et signalisé?", type: "choix", options: ["Conforme", "Non-conforme", "S.O."] }
-        ]
-      }
-    ]
-  }
-];
-
-// MapComponent avec Leaflet + OpenStreetMap (GRATUIT, sans clé API)
-
-export { 
-  EditerGrille, 
-  GrillesInspection, 
-  TemplatePreviewModal, 
-  EditerGrilleFromTemplate, 
-  CreateGrilleInspection,
-  DEFAULT_GRILLES_TEMPLATES 
-};
-export default GrillesInspection;
+export { GrillesInspection, EditerGrille, CreateGrilleInspection };
