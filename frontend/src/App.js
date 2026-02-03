@@ -34,6 +34,7 @@ const MonProfil = lazy(() => import("./components/MonProfil"));
 const Dashboard = lazy(() => import("./components/Dashboard"));
 const Sidebar = lazy(() => import("./components/Sidebar"));
 const Rapports = lazy(() => import("./components/Rapports"));
+const Prevention = lazy(() => import("./components/Prevention"));
 const ApprovisionnementEau = lazy(() => import("./components/ApprovisionnementEau"));
 const GestionPreventionnistes = lazy(() => import("./components/GestionPreventionnistes"));
 const ImportBatiments = lazy(() => import("./components/ImportBatiments"));
