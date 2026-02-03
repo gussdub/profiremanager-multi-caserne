@@ -2245,18 +2245,23 @@ const BatimentForm = ({
               </div>
             </Card>
 
-            {/* Section 7 - NOTES ET COMPLÉMENTS */}
-            <Card style={{ padding: '1.5rem', border: '2px solid #e5e7eb' }}>
+            {/* Section 7 - NOTES ET COMPLÉMENTS - Accessible à tous */}
+            <Card style={{ padding: '1.5rem', border: '2px solid #10b981' }}>
               <h3 style={{ 
                 fontSize: '1.25rem', 
                 fontWeight: '600', 
                 marginBottom: '1rem',
-                color: '#6b7280',
+                color: '#059669',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem'
               }}>
                 📝 Notes et compléments
+                {isEditing && !canEditAll && (
+                  <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: '#10b981', marginLeft: '0.5rem' }}>
+                    ✓ Vous pouvez modifier cette section
+                  </span>
+                )}
               </h3>
               <div style={{ display: 'grid', gap: '1rem' }}>
                 <div>
