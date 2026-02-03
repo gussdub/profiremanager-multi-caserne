@@ -2076,7 +2076,7 @@ const BatimentForm = ({
             </Card>
 
             {/* Section 5 - INFORMATIONS CADASTRALES */}
-            <Card style={{ padding: '1.5rem', border: '2px solid #e5e7eb' }}>
+            <Card style={{ padding: '1.5rem', border: '2px solid #e5e7eb', opacity: (!canEditAll && isEditing) ? 0.7 : 1 }}>
               <h3 style={{ 
                 fontSize: '1.25rem', 
                 fontWeight: '600', 
@@ -2087,6 +2087,11 @@ const BatimentForm = ({
                 gap: '0.5rem'
               }}>
                 📋 Informations cadastrales
+                {!canEditAll && isEditing && (
+                  <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: '#9ca3af', marginLeft: '0.5rem' }}>
+                    🔒 Réservé aux préventionnistes
+                  </span>
+                )}
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
@@ -2097,13 +2102,14 @@ const BatimentForm = ({
                     type="text"
                     value={editData.cadastre_matricule || ''}
                     onChange={(e) => handleChange('cadastre_matricule', e.target.value)}
-                    disabled={!isEditing}
+                    disabled={!isEditing || !canEditAll}
                     style={{
                       width: '100%',
                       padding: '0.625rem',
                       border: '1px solid #d1d5db',
                       borderRadius: '6px',
-                      fontSize: '0.875rem'
+                      fontSize: '0.875rem',
+                      backgroundColor: (!canEditAll && isEditing) ? '#f3f4f6' : 'white'
                     }}
                   />
                 </div>
@@ -2115,14 +2121,15 @@ const BatimentForm = ({
                     type="text"
                     value={editData.valeur_fonciere || ''}
                     onChange={(e) => handleChange('valeur_fonciere', e.target.value)}
-                    disabled={!isEditing}
+                    disabled={!isEditing || !canEditAll}
                     placeholder="$"
                     style={{
                       width: '100%',
                       padding: '0.625rem',
                       border: '1px solid #d1d5db',
                       borderRadius: '6px',
-                      fontSize: '0.875rem'
+                      fontSize: '0.875rem',
+                      backgroundColor: (!canEditAll && isEditing) ? '#f3f4f6' : 'white'
                     }}
                   />
                 </div>
@@ -2134,14 +2141,15 @@ const BatimentForm = ({
                     type="number"
                     value={editData.annee_construction || ''}
                     onChange={(e) => handleChange('annee_construction', e.target.value)}
-                    disabled={!isEditing}
+                    disabled={!isEditing || !canEditAll}
                     placeholder="2020"
                     style={{
                       width: '100%',
                       padding: '0.625rem',
                       border: '1px solid #d1d5db',
                       borderRadius: '6px',
-                      fontSize: '0.875rem'
+                      fontSize: '0.875rem',
+                      backgroundColor: (!canEditAll && isEditing) ? '#f3f4f6' : 'white'
                     }}
                   />
                 </div>
@@ -2153,13 +2161,14 @@ const BatimentForm = ({
                     type="number"
                     value={editData.nombre_etages || ''}
                     onChange={(e) => handleChange('nombre_etages', e.target.value)}
-                    disabled={!isEditing}
+                    disabled={!isEditing || !canEditAll}
                     style={{
                       width: '100%',
                       padding: '0.625rem',
                       border: '1px solid #d1d5db',
                       borderRadius: '6px',
-                      fontSize: '0.875rem'
+                      fontSize: '0.875rem',
+                      backgroundColor: (!canEditAll && isEditing) ? '#f3f4f6' : 'white'
                     }}
                   />
                 </div>
@@ -2171,13 +2180,14 @@ const BatimentForm = ({
                     type="number"
                     value={editData.superficie_totale_m2 || ''}
                     onChange={(e) => handleChange('superficie_totale_m2', e.target.value)}
-                    disabled={!isEditing}
+                    disabled={!isEditing || !canEditAll}
                     style={{
                       width: '100%',
                       padding: '0.625rem',
                       border: '1px solid #d1d5db',
                       borderRadius: '6px',
-                      fontSize: '0.875rem'
+                      fontSize: '0.875rem',
+                      backgroundColor: (!canEditAll && isEditing) ? '#f3f4f6' : 'white'
                     }}
                   />
                 </div>
