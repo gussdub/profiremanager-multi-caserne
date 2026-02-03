@@ -907,12 +907,16 @@ const ModulePaie = ({ tenant }) => {
         </div>
       </div>
 
-      {/* Rappel */}
+      {/* Rappel / Interventions */}
       <div style={{ background: 'white', borderRadius: '12px', padding: '24px', border: '1px solid #e5e7eb' }}>
         <h3 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', color: '#1e293b' }}>
-          🚨 Rappel (hors garde planifiée)
+          🚨 Rappel & Interventions (hors garde interne)
         </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+        <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '16px' }}>
+          Lorsqu'un pompier intervient en garde externe ou est rappelé, il est payé un minimum d'heures selon la source de l'appel.
+        </p>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px' }}>
           <div>
             <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
               Taux multiplicateur
@@ -926,8 +930,105 @@ const ModulePaie = ({ tenant }) => {
             />
           </div>
           <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
+              <input
+                type="checkbox"
+                checked={parametres?.utiliser_minimum_par_source ?? true}
+                onChange={(e) => setParametres({...parametres, utiliser_minimum_par_source: e.target.checked})}
+                style={{ width: '16px', height: '16px' }}
+              />
+              Minimum d'heures selon la source
+            </label>
+            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+              Si décoché, utilise le minimum global pour tous les appels
+            </span>
+          </div>
+        </div>
+
+        {/* Minimums par source */}
+        {parametres?.utiliser_minimum_par_source !== false && (
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
+            gap: '16px',
+            background: '#f8fafc',
+            padding: '16px',
+            borderRadius: '8px',
+            border: '1px solid #e2e8f0'
+          }}>
+            {/* CAUCA */}
+            <div style={{ 
+              background: 'white', 
+              padding: '16px', 
+              borderRadius: '8px',
+              border: '2px solid #ef4444'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                <span style={{ fontSize: '1.25rem' }}>🚒</span>
+                <div>
+                  <div style={{ fontWeight: '600', color: '#dc2626' }}>Appels CAUCA</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                    Incendie, alarme, désincarcération, etc.
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
+                  Heures minimum payées
+                </label>
+                <Input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  value={parametres?.minimum_heures_cauca || 3}
+                  onChange={(e) => setParametres({...parametres, minimum_heures_cauca: parseFloat(e.target.value)})}
+                />
+                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                  Dossier SFTP: intervention_cauca
+                </span>
+              </div>
+            </div>
+
+            {/* Urgence Santé */}
+            <div style={{ 
+              background: 'white', 
+              padding: '16px', 
+              borderRadius: '8px',
+              border: '2px solid #3b82f6'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                <span style={{ fontSize: '1.25rem' }}>🏥</span>
+                <div>
+                  <div style={{ fontWeight: '600', color: '#2563eb' }}>Appels Urgence Santé</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                    Premiers répondants (PR)
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
+                  Heures minimum payées
+                </label>
+                <Input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  value={parametres?.minimum_heures_urgence_sante || 2}
+                  onChange={(e) => setParametres({...parametres, minimum_heures_urgence_sante: parseFloat(e.target.value)})}
+                />
+                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                  Dossier SFTP: intervention_urgence_sante
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Minimum global (mode legacy) */}
+        {parametres?.utiliser_minimum_par_source === false && (
+          <div>
             <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
-              Heures minimum payées
+              Heures minimum payées (tous appels)
             </label>
             <Input
               type="number"
@@ -935,9 +1036,10 @@ const ModulePaie = ({ tenant }) => {
               min="0"
               value={parametres?.rappel_minimum_heures || 3}
               onChange={(e) => setParametres({...parametres, rappel_minimum_heures: parseFloat(e.target.value)})}
+              style={{ maxWidth: '200px' }}
             />
           </div>
-        </div>
+        )}
       </div>
 
       {/* Formations */}
