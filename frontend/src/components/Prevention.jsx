@@ -190,7 +190,7 @@ const Prevention = () => {
     // Filtre par plan d'intervention
     if (filters.planIntervention) {
       filtered = filtered.filter(b => {
-        const hasPlan = b.plan_intervention_id || b.has_plan_intervention;
+        const hasPlan = batimentsAvecPlan.has(b.id) || b.plan_intervention_id || b.has_plan_intervention;
         return filters.planIntervention === 'avec' ? hasPlan : !hasPlan;
       });
     }
