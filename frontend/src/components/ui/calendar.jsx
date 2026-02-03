@@ -52,6 +52,13 @@ function Calendar({
   }, [indisponibilites]);
 
   // Créer un modifier pour les jours avec disponibilités existantes
+  // On exclut les dates qui sont actuellement sélectionnées pour que la sélection ait priorité
+  const selectedDatesSet = React.useMemo(() => {
+    if (!props.selected) return new Set();
+    const selected = Array.isArray(props.selected) ? props.selected : [props.selected];
+    return new Set(selected.map(d => d?.toDateString()).filter(Boolean));
+  }, [props.selected]);
+
   const disponibiliteDates = React.useMemo(() => {
     if (!disponibilites || disponibilites.length === 0) {
       return [];
@@ -61,6 +68,10 @@ function Calendar({
       try {
         const [year, month, day] = dispo.date.split('-').map(Number);
         const date = new Date(year, month - 1, day);
+        // Exclure les dates sélectionnées pour que la sélection ait priorité visuelle
+        if (selectedDatesSet.has(date.toDateString())) {
+          return null;
+        }
         return date;
       } catch (e) {
         console.error('Erreur parsing date dispo:', dispo.date, e);
@@ -69,7 +80,7 @@ function Calendar({
     }).filter(Boolean);
     
     return dates;
-  }, [disponibilites]);
+  }, [disponibilites, selectedDatesSet]);
 
   // Ajouter les modifiers pour les indisponibilités et disponibilités
   const modifiers = {
