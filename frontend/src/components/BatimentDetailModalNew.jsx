@@ -114,6 +114,7 @@ const BatimentForm = ({
   onGenerateReport,
   onDelete,
   canEdit,
+  currentUser,
   tenantSlug 
 }) => {
   const isCreating = !batiment;
@@ -121,6 +122,15 @@ const BatimentForm = ({
   const [viewMode, setViewMode] = useState('form'); // 'form', 'history', 'inspection-detail', 'plan-intervention', 'rapport'
   const [selectedInspection, setSelectedInspection] = useState(null);
   const [selectedPlanId, setSelectedPlanId] = useState(null);
+  
+  // Permissions granulaires
+  // Les préventionnistes et admins peuvent tout modifier
+  // Les autres utilisateurs ne peuvent modifier que les contacts et les notes
+  const isPreventionnisteOrAdmin = currentUser?.est_preventionniste || 
+                                    ['admin', 'superadmin', 'superviseur'].includes(currentUser?.role);
+  const canEditAll = isPreventionnisteOrAdmin;
+  const canEditContactsAndNotes = canEdit || true; // Tous peuvent modifier contacts et notes
+  
   const [editData, setEditData] = useState(isCreating ? {
     adresse_civique: '',
     ville: '',
