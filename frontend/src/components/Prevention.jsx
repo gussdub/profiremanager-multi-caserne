@@ -401,6 +401,7 @@ const Prevention = () => {
         );
       
       case 'batiments':
+        const filteredBatimentsList = getFilteredBatiments();
         return (
           <div className="prevention-batiments">
             <div className="page-header">
