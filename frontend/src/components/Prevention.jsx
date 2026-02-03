@@ -1008,195 +1008,289 @@ const Prevention = () => {
         <h1 style={{ margin: 0, fontSize: 'clamp(1.1rem, 4vw, 1.5rem)' }}>🔥 Module Prévention</h1>
       </div>
       
-      {/* Onglets en style carte comme Gestion des Actifs */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
-        gap: '8px',
-        marginBottom: '16px'
-      }}>
-        {/* Tableau de bord */}
-        <button
-          onClick={() => setCurrentView('dashboard')}
-          style={{
-            padding: '12px 8px',
-            backgroundColor: currentView === 'dashboard' ? '#fef2f2' : 'white',
-            border: currentView === 'dashboard' ? '2px solid #e74c3c' : '1px solid #e5e7eb',
-            borderRadius: '12px',
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '4px',
-            transition: 'all 0.2s'
-          }}
-        >
-          <span style={{ fontSize: '1.5rem' }}>📊</span>
-          <span style={{ fontSize: '0.75rem', fontWeight: '600', color: currentView === 'dashboard' ? '#dc2626' : '#374151', textAlign: 'center' }}>Tableau de bord</span>
-        </button>
-
-        {/* Bâtiments */}
-        <button
-          onClick={() => setCurrentView('batiments')}
-          style={{
-            padding: '12px 8px',
-            backgroundColor: currentView === 'batiments' ? '#eff6ff' : 'white',
-            border: currentView === 'batiments' ? '2px solid #3b82f6' : '1px solid #e5e7eb',
-            borderRadius: '12px',
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '4px',
-            transition: 'all 0.2s'
-          }}
-        >
-          <span style={{ fontSize: '1.5rem' }}>🏢</span>
-          <span style={{ fontSize: '0.75rem', fontWeight: '600', color: currentView === 'batiments' ? '#2563eb' : '#374151', textAlign: 'center' }}>Bâtiments</span>
-        </button>
-
-        {/* À Valider - visible pour préventionnistes et admins */}
-        {(user?.est_preventionniste || user?.role === 'admin' || user?.role === 'superadmin') && (
+      {/* Mobile Menu - Grid Cards */}
+      <div className="prevention-mobile-menu" style={{ display: 'none' }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          gap: '10px',
+          marginBottom: '16px'
+        }}>
           <button
-            onClick={() => setCurrentView('a-valider')}
+            onClick={() => setCurrentView('dashboard')}
             style={{
-              padding: '12px 8px',
-              backgroundColor: currentView === 'a-valider' ? '#fff7ed' : 'white',
-              border: currentView === 'a-valider' ? '2px solid #f97316' : '1px solid #e5e7eb',
+              padding: '16px 12px',
+              backgroundColor: currentView === 'dashboard' ? '#fef2f2' : 'white',
+              border: currentView === 'dashboard' ? '2px solid #e74c3c' : '1px solid #e5e7eb',
               borderRadius: '12px',
               cursor: 'pointer',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              gap: '4px',
+              gap: '6px',
               transition: 'all 0.2s'
             }}
           >
-            <span style={{ fontSize: '1.5rem' }}>⏳</span>
-            <span style={{ fontSize: '0.75rem', fontWeight: '600', color: currentView === 'a-valider' ? '#ea580c' : '#374151', textAlign: 'center' }}>À valider</span>
+            <span style={{ fontSize: '1.75rem' }}>📊</span>
+            <span style={{ fontSize: '0.8rem', fontWeight: '600', color: currentView === 'dashboard' ? '#dc2626' : '#374151' }}>Tableau de bord</span>
+          </button>
+          <button
+            onClick={() => setCurrentView('batiments')}
+            style={{
+              padding: '16px 12px',
+              backgroundColor: currentView === 'batiments' ? '#fef2f2' : 'white',
+              border: currentView === 'batiments' ? '2px solid #e74c3c' : '1px solid #e5e7eb',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s'
+            }}
+          >
+            <span style={{ fontSize: '1.75rem' }}>🏢</span>
+            <span style={{ fontSize: '0.8rem', fontWeight: '600', color: currentView === 'batiments' ? '#dc2626' : '#374151' }}>Bâtiments</span>
+          </button>
+          {(user?.est_preventionniste || user?.role === 'admin' || user?.role === 'superadmin') && (
+            <button
+              onClick={() => setCurrentView('a-valider')}
+              style={{
+                padding: '16px 12px',
+                backgroundColor: currentView === 'a-valider' ? '#fef2f2' : 'white',
+                border: currentView === 'a-valider' ? '2px solid #e74c3c' : '1px solid #e5e7eb',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s'
+              }}
+            >
+              <span style={{ fontSize: '1.75rem' }}>⏳</span>
+              <span style={{ fontSize: '0.8rem', fontWeight: '600', color: currentView === 'a-valider' ? '#dc2626' : '#374151' }}>À valider</span>
+            </button>
+          )}
+          <button
+            onClick={() => setCurrentView('preventionnistes')}
+            style={{
+              padding: '16px 12px',
+              backgroundColor: currentView === 'preventionnistes' ? '#fef2f2' : 'white',
+              border: currentView === 'preventionnistes' ? '2px solid #e74c3c' : '1px solid #e5e7eb',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s'
+            }}
+          >
+            <span style={{ fontSize: '1.75rem' }}>👨‍🚒</span>
+            <span style={{ fontSize: '0.8rem', fontWeight: '600', color: currentView === 'preventionnistes' ? '#dc2626' : '#374151' }}>Préventionnistes</span>
+          </button>
+          <button
+            onClick={() => setCurrentView('calendrier')}
+            style={{
+              padding: '16px 12px',
+              backgroundColor: currentView === 'calendrier' ? '#fef2f2' : 'white',
+              border: currentView === 'calendrier' ? '2px solid #e74c3c' : '1px solid #e5e7eb',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s'
+            }}
+          >
+            <span style={{ fontSize: '1.75rem' }}>📅</span>
+            <span style={{ fontSize: '0.8rem', fontWeight: '600', color: currentView === 'calendrier' ? '#dc2626' : '#374151' }}>Planification</span>
+          </button>
+          <button
+            onClick={() => setCurrentView('non-conformites')}
+            style={{
+              padding: '16px 12px',
+              backgroundColor: currentView === 'non-conformites' ? '#fef2f2' : 'white',
+              border: currentView === 'non-conformites' ? '2px solid #e74c3c' : '1px solid #e5e7eb',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s'
+            }}
+          >
+            <span style={{ fontSize: '1.75rem' }}>⚠️</span>
+            <span style={{ fontSize: '0.8rem', fontWeight: '600', color: currentView === 'non-conformites' ? '#dc2626' : '#374151' }}>Non-conformités</span>
+          </button>
+          <button
+            onClick={() => setCurrentView('rapports')}
+            style={{
+              padding: '16px 12px',
+              backgroundColor: currentView === 'rapports' ? '#fef2f2' : 'white',
+              border: currentView === 'rapports' ? '2px solid #e74c3c' : '1px solid #e5e7eb',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s'
+            }}
+          >
+            <span style={{ fontSize: '1.75rem' }}>📈</span>
+            <span style={{ fontSize: '0.8rem', fontWeight: '600', color: currentView === 'rapports' ? '#dc2626' : '#374151' }}>Rapports</span>
+          </button>
+          <button
+            onClick={() => setCurrentView('plans-intervention')}
+            style={{
+              padding: '16px 12px',
+              backgroundColor: currentView === 'plans-intervention' ? '#fef2f2' : 'white',
+              border: currentView === 'plans-intervention' ? '2px solid #e74c3c' : '1px solid #e5e7eb',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s'
+            }}
+          >
+            <span style={{ fontSize: '1.75rem' }}>🗺️</span>
+            <span style={{ fontSize: '0.8rem', fontWeight: '600', color: currentView === 'plans-intervention' ? '#dc2626' : '#374151' }}>Plans</span>
+          </button>
+          <button
+            onClick={() => setCurrentView('parametres')}
+            style={{
+              padding: '16px 12px',
+              backgroundColor: currentView === 'parametres' ? '#fef2f2' : 'white',
+              border: currentView === 'parametres' ? '2px solid #e74c3c' : '1px solid #e5e7eb',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s'
+            }}
+          >
+            <span style={{ fontSize: '1.75rem' }}>⚙️</span>
+            <span style={{ fontSize: '0.8rem', fontWeight: '600', color: currentView === 'parametres' ? '#dc2626' : '#374151' }}>Paramètres</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Desktop Tabs - Style unifié rouge comme Gestion des Actifs */}
+      <div className="prevention-desktop-tabs" style={{ 
+        display: 'flex',
+        gap: '8px',
+        marginBottom: '24px',
+        borderBottom: '1px solid #e5e7eb',
+        paddingBottom: '8px',
+        flexWrap: 'wrap',
+        overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch',
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none'
+      }}>
+        <button
+          onClick={() => setCurrentView('dashboard')}
+          className={`px-4 py-2 rounded-t-lg font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+            currentView === 'dashboard' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          📊 Tableau de bord
+        </button>
+        <button
+          onClick={() => setCurrentView('batiments')}
+          className={`px-4 py-2 rounded-t-lg font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+            currentView === 'batiments' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          🏢 Bâtiments
+        </button>
+        {(user?.est_preventionniste || user?.role === 'admin' || user?.role === 'superadmin') && (
+          <button
+            onClick={() => setCurrentView('a-valider')}
+            className={`px-4 py-2 rounded-t-lg font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+              currentView === 'a-valider' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            ⏳ À valider
           </button>
         )}
-
-        {/* Préventionnistes */}
         <button
           onClick={() => setCurrentView('preventionnistes')}
-          style={{
-            padding: '12px 8px',
-            backgroundColor: currentView === 'preventionnistes' ? '#fefce8' : 'white',
-            border: currentView === 'preventionnistes' ? '2px solid #eab308' : '1px solid #e5e7eb',
-            borderRadius: '12px',
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '4px',
-            transition: 'all 0.2s'
-          }}
+          className={`px-4 py-2 rounded-t-lg font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+            currentView === 'preventionnistes' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
         >
-          <span style={{ fontSize: '1.5rem' }}>👨‍🚒</span>
-          <span style={{ fontSize: '0.75rem', fontWeight: '600', color: currentView === 'preventionnistes' ? '#ca8a04' : '#374151', textAlign: 'center' }}>Préventionnistes</span>
+          👨‍🚒 Préventionnistes
         </button>
-
-        {/* Planification */}
         <button
           onClick={() => setCurrentView('calendrier')}
-          style={{
-            padding: '12px 8px',
-            backgroundColor: currentView === 'calendrier' ? '#f0fdf4' : 'white',
-            border: currentView === 'calendrier' ? '2px solid #22c55e' : '1px solid #e5e7eb',
-            borderRadius: '12px',
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '4px',
-            transition: 'all 0.2s'
-          }}
+          className={`px-4 py-2 rounded-t-lg font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+            currentView === 'calendrier' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
         >
-          <span style={{ fontSize: '1.5rem' }}>📅</span>
-          <span style={{ fontSize: '0.75rem', fontWeight: '600', color: currentView === 'calendrier' ? '#16a34a' : '#374151', textAlign: 'center' }}>Planification</span>
+          📅 Planification
         </button>
-
-        {/* Non-conformités */}
         <button
           onClick={() => setCurrentView('non-conformites')}
-          style={{
-            padding: '12px 8px',
-            backgroundColor: currentView === 'non-conformites' ? '#fef2f2' : 'white',
-            border: currentView === 'non-conformites' ? '2px solid #ef4444' : '1px solid #e5e7eb',
-            borderRadius: '12px',
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '4px',
-            transition: 'all 0.2s'
-          }}
+          className={`px-4 py-2 rounded-t-lg font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+            currentView === 'non-conformites' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
         >
-          <span style={{ fontSize: '1.5rem' }}>⚠️</span>
-          <span style={{ fontSize: '0.75rem', fontWeight: '600', color: currentView === 'non-conformites' ? '#dc2626' : '#374151', textAlign: 'center' }}>Non-conformités</span>
+          ⚠️ Non-conformités
         </button>
-
-        {/* Rapports */}
         <button
           onClick={() => setCurrentView('rapports')}
-          style={{
-            padding: '12px 8px',
-            backgroundColor: currentView === 'rapports' ? '#faf5ff' : 'white',
-            border: currentView === 'rapports' ? '2px solid #a855f7' : '1px solid #e5e7eb',
-            borderRadius: '12px',
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '4px',
-            transition: 'all 0.2s'
-          }}
+          className={`px-4 py-2 rounded-t-lg font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+            currentView === 'rapports' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
         >
-          <span style={{ fontSize: '1.5rem' }}>📈</span>
-          <span style={{ fontSize: '0.75rem', fontWeight: '600', color: currentView === 'rapports' ? '#9333ea' : '#374151', textAlign: 'center' }}>Rapports</span>
+          📈 Rapports
         </button>
-
-        {/* Plans d'Intervention */}
         <button
           onClick={() => setCurrentView('plans-intervention')}
-          style={{
-            padding: '12px 8px',
-            backgroundColor: currentView === 'plans-intervention' ? '#ecfeff' : 'white',
-            border: currentView === 'plans-intervention' ? '2px solid #06b6d4' : '1px solid #e5e7eb',
-            borderRadius: '12px',
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '4px',
-            transition: 'all 0.2s'
-          }}
+          className={`px-4 py-2 rounded-t-lg font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+            currentView === 'plans-intervention' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
         >
-          <span style={{ fontSize: '1.5rem' }}>🗺️</span>
-          <span style={{ fontSize: '0.75rem', fontWeight: '600', color: currentView === 'plans-intervention' ? '#0891b2' : '#374151', textAlign: 'center' }}>Plans</span>
+          🗺️ Plans
         </button>
-
-        {/* Paramètres */}
         <button
           onClick={() => setCurrentView('parametres')}
-          style={{
-            padding: '12px 8px',
-            backgroundColor: currentView === 'parametres' ? '#f1f5f9' : 'white',
-            border: currentView === 'parametres' ? '2px solid #64748b' : '1px solid #e5e7eb',
-            borderRadius: '12px',
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '4px',
-            transition: 'all 0.2s'
-          }}
+          className={`px-4 py-2 rounded-t-lg font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+            currentView === 'parametres' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
         >
-          <span style={{ fontSize: '1.5rem' }}>⚙️</span>
-          <span style={{ fontSize: '0.75rem', fontWeight: '600', color: currentView === 'parametres' ? '#475569' : '#374151', textAlign: 'center' }}>Paramètres</span>
+          ⚙️ Paramètres
         </button>
       </div>
+
+      {/* Responsive CSS */}
+      <style>{`
+        @media (max-width: 768px) {
+          .prevention-mobile-menu {
+            display: block !important;
+          }
+          .prevention-desktop-tabs {
+            display: none !important;
+          }
+        }
+        @media (min-width: 769px) {
+          .prevention-mobile-menu {
+            display: none !important;
+          }
+        }
+        .prevention-desktop-tabs::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
       
       <div className="prevention-content">
         {renderContent()}
