@@ -35,6 +35,7 @@ const NouvelleInspection = lazy(() => import('./InspectionComponents').then(m =>
 const RealiserInspection = lazy(() => import('./InspectionComponents').then(m => ({ default: m.RealiserInspection })));
 const DetailInspection = lazy(() => import('./InspectionComponents').then(m => ({ default: m.DetailInspection })));
 const AssignerPreventionniste = lazy(() => import('./MapComponents').then(m => ({ default: m.AssignerPreventionniste })));
+const CarteBatiments = lazy(() => import('./CarteBatiments'));
 
 // Loading component
 const LoadingComponent = () => (
