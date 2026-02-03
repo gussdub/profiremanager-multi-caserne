@@ -435,7 +435,19 @@ async def calculer_feuille_temps(
             elif statut_presence in ["rappele", "present"]:
                 # Rappel ou garde externe - payé
                 taux = params_paie.get("rappel_taux", 1.0)
-                minimum = params_paie.get("rappel_minimum_heures", 3.0)
+                
+                # Déterminer le minimum selon la source de l'appel
+                if params_paie.get("utiliser_minimum_par_source", True):
+                    source_appel = intervention.get("source_appel", "cauca")
+                    if source_appel == "urgence_sante":
+                        minimum = params_paie.get("minimum_heures_urgence_sante", 2.0)
+                    else:
+                        # Par défaut: CAUCA (pompiers)
+                        minimum = params_paie.get("minimum_heures_cauca", 3.0)
+                else:
+                    # Mode legacy: utiliser le minimum global
+                    minimum = params_paie.get("rappel_minimum_heures", 3.0)
+                
                 heures_payees = max(duree_heures, minimum)
                 montant = heures_payees * taux_horaire_intervention * taux
                 
@@ -443,9 +455,13 @@ async def calculer_feuille_temps(
                 totaux["heures_payees"] += heures_payees
                 totaux["montant_brut"] += montant
                 
-                description = f"Intervention #{intervention.get('external_call_id')} - {intervention.get('type_intervention', 'N/A')}"
+                # Description avec info sur la source
+                source_label = "PR" if intervention.get("source_appel") == "urgence_sante" else "CAUCA"
+                description = f"Intervention #{intervention.get('external_call_id')} [{source_label}] - {intervention.get('type_intervention', 'N/A')}"
                 if utilise_fonction_superieure:
                     description += f" (Fonction supérieure +{int(prime_fonction_superieure_pct*100)}%)"
+                if heures_payees > duree_heures:
+                    description += f" (min {minimum}h)"
                 
                 lignes.append({
                     "date": date_intervention,
@@ -457,6 +473,8 @@ async def calculer_feuille_temps(
                     "montant": round(montant, 2),
                     "source_id": intervention.get("id"),
                     "source_type": "intervention",
+                    "source_appel": intervention.get("source_appel", "cauca"),
+                    "minimum_applique": minimum if heures_payees > duree_heures else None,
                     "fonction_superieure": utilise_fonction_superieure
                 })
             
