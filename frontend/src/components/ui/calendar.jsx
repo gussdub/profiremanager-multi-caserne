@@ -92,10 +92,11 @@ function Calendar({
       fontWeight: 'bold'
     },
     disponible: {
-      backgroundColor: '#1e3a5f',
-      color: '#ffffff',
-      fontWeight: 'bold',
-      borderRadius: '4px'
+      backgroundColor: '#dbeafe',
+      color: '#1e40af',
+      fontWeight: '500',
+      borderRadius: '4px',
+      border: '2px solid #93c5fd'
     },
     ...props.modifiersStyles
   };
