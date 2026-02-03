@@ -2023,7 +2023,7 @@ const BatimentForm = ({
             </Card>
 
             {/* Section 4 - ÉVALUATION DES RISQUES */}
-            <Card style={{ padding: '1.5rem', border: `2px solid ${riskColor.border}`, backgroundColor: riskColor.bg }}>
+            <Card style={{ padding: '1.5rem', border: `2px solid ${riskColor.border}`, backgroundColor: riskColor.bg, opacity: (!canEditAll && isEditing) ? 0.7 : 1 }}>
               <h3 style={{ 
                 fontSize: '1.25rem', 
                 fontWeight: '600', 
@@ -2034,6 +2034,11 @@ const BatimentForm = ({
                 gap: '0.5rem'
               }}>
                 ⚠️ Évaluation des risques
+                {!canEditAll && isEditing && (
+                  <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: '#9ca3af', marginLeft: '0.5rem' }}>
+                    🔒 Réservé aux préventionnistes
+                  </span>
+                )}
               </h3>
               <div>
                 <label style={{ fontWeight: '500', fontSize: '0.875rem', color: '#374151', display: 'block', marginBottom: '0.5rem' }}>
