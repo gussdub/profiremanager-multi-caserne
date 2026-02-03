@@ -64,6 +64,18 @@ const Prevention = () => {
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [showImportCSV, setShowImportCSV] = useState(false);
   const [exporting, setExporting] = useState(false);
+  
+  // États pour la recherche et les filtres des bâtiments
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState({
+    statut: '', // '', 'a_inspecter', 'en_attente', 'valide'
+    planIntervention: '', // '', 'avec', 'sans'
+    categorie: '', // '', 'A', 'B', 'C', 'D', 'E', 'F', 'I'
+    preventionniste: '', // '', 'id_du_preventionniste'
+    niveauRisque: '', // '', 'Faible', 'Moyen', 'Élevé', 'Très élevé'
+    derniereInspection: '' // '', 'jamais', '3mois', '6mois', '12mois'
+  });
+  const [preventionnistes, setPreventionnistes] = useState([]);
 
   // Fonction pour ouvrir le modal d'un bâtiment
   const openBatimentModal = (batiment) => {
