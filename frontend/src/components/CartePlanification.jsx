@@ -61,15 +61,33 @@ const MapBounds = ({ batiments }) => {
   return null;
 };
 
-const CartePlanification = ({ tenantSlug, onBatimentClick, parametres }) => {
+const CartePlanification = ({ tenantSlug, onBatimentClick, parametres, batiments: propBatiments, user }) => {
   const [batiments, setBatiments] = useState([]);
   const [inspections, setInspections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ rouge: 0, orange: 0, vert: 0 });
 
   useEffect(() => {
-    fetchData();
-  }, [tenantSlug]);
+    // Si des bâtiments sont passés en prop, les utiliser directement
+    if (propBatiments && propBatiments.length > 0) {
+      setBatiments(propBatiments);
+      fetchInspectionsOnly();
+    } else {
+      fetchData();
+    }
+  }, [tenantSlug, propBatiments]);
+
+  const fetchInspectionsOnly = async () => {
+    try {
+      setLoading(true);
+      const inspectionsData = await apiGet(tenantSlug, '/prevention/inspections-visuelles');
+      setInspections(inspectionsData || []);
+    } catch (error) {
+      console.error('Erreur chargement inspections:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchData = async () => {
     try {
