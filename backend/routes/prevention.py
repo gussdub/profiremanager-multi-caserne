@@ -2672,6 +2672,231 @@ async def delete_inspection_visuelle(
     return {"message": "Inspection supprimée avec succès"}
 
 
+# ==================== WORKFLOW VALIDATION INSPECTION ====================
+
+@router.post("/{tenant_slug}/prevention/inspections-visuelles/{inspection_id}/soumettre")
+async def soumettre_inspection_validation(
+    tenant_slug: str,
+    inspection_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Soumettre une inspection pour validation par le préventionniste.
+    Appelé par les pompiers après avoir terminé l'inspection terrain.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Récupérer l'inspection
+    inspection = await db.inspections_visuelles.find_one({
+        "id": inspection_id,
+        "tenant_id": tenant.id
+    })
+    
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection non trouvée")
+    
+    # Vérifier que l'inspection peut être soumise
+    if inspection.get("statut") not in ["en_cours", "brouillon"]:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"L'inspection ne peut pas être soumise (statut actuel: {inspection.get('statut')})"
+        )
+    
+    # Mettre à jour le statut
+    await db.inspections_visuelles.update_one(
+        {"id": inspection_id, "tenant_id": tenant.id},
+        {"$set": {
+            "statut": "en_attente_validation",
+            "date_soumission": datetime.now(timezone.utc).isoformat(),
+            "soumis_par_id": current_user.id,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    logger.info(f"[INSPECTION] {inspection_id} soumise pour validation par {current_user.email}")
+    
+    # Récupérer l'inspection mise à jour
+    updated = await db.inspections_visuelles.find_one({"id": inspection_id})
+    return clean_mongo_doc(updated)
+
+
+@router.get("/{tenant_slug}/prevention/inspections-visuelles/a-valider")
+async def get_inspections_a_valider(
+    tenant_slug: str,
+    secteur_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Liste des inspections en attente de validation.
+    Filtrable par secteur pour le préventionniste assigné.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    query = {
+        "tenant_id": tenant.id,
+        "statut": "en_attente_validation"
+    }
+    
+    # Si secteur spécifié, filtrer par bâtiments de ce secteur
+    if secteur_id:
+        batiments_secteur = await db.batiments.find(
+            {"tenant_id": tenant.id, "secteur_id": secteur_id}
+        ).to_list(1000)
+        batiment_ids = [b.get("id") for b in batiments_secteur]
+        query["batiment_id"] = {"$in": batiment_ids}
+    
+    inspections = await db.inspections_visuelles.find(query).sort("date_inspection", -1).to_list(100)
+    
+    # Enrichir avec les infos du bâtiment
+    result = []
+    for insp in inspections:
+        insp_clean = clean_mongo_doc(insp)
+        
+        # Récupérer le bâtiment
+        batiment = await db.batiments.find_one({"id": insp.get("batiment_id"), "tenant_id": tenant.id})
+        if batiment:
+            insp_clean["batiment"] = {
+                "id": batiment.get("id"),
+                "nom_etablissement": batiment.get("nom_etablissement"),
+                "adresse_civique": batiment.get("adresse_civique"),
+                "ville": batiment.get("ville"),
+                "secteur_id": batiment.get("secteur_id")
+            }
+        
+        # Compter les non-conformités
+        nb_nc = await db.non_conformites_visuelles.count_documents({
+            "inspection_id": insp.get("id"),
+            "tenant_id": tenant.id
+        })
+        insp_clean["nb_non_conformites"] = nb_nc
+        
+        result.append(insp_clean)
+    
+    return result
+
+
+@router.post("/{tenant_slug}/prevention/inspections-visuelles/{inspection_id}/valider")
+async def valider_inspection(
+    tenant_slug: str,
+    inspection_id: str,
+    commentaires: str = Body("", embed=True),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Valider une inspection.
+    Si des non-conformités existent, génère automatiquement un brouillon d'avis.
+    Réservé aux préventionnistes et admins.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Vérifier les droits
+    if current_user.role not in ["admin", "superadmin"] and not current_user.est_preventionniste:
+        raise HTTPException(status_code=403, detail="Réservé aux préventionnistes")
+    
+    # Récupérer l'inspection
+    inspection = await db.inspections_visuelles.find_one({
+        "id": inspection_id,
+        "tenant_id": tenant.id
+    })
+    
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection non trouvée")
+    
+    # Récupérer les non-conformités
+    non_conformites = await db.non_conformites_visuelles.find({
+        "inspection_id": inspection_id,
+        "tenant_id": tenant.id
+    }).to_list(100)
+    
+    # Déterminer le statut de conformité
+    statut_conformite = "conforme" if len(non_conformites) == 0 else "non_conforme"
+    
+    # Mettre à jour l'inspection
+    await db.inspections_visuelles.update_one(
+        {"id": inspection_id, "tenant_id": tenant.id},
+        {"$set": {
+            "statut": "validee",
+            "statut_conformite": statut_conformite,
+            "validee_par_id": current_user.id,
+            "date_validation": datetime.now(timezone.utc).isoformat(),
+            "commentaires_validation": commentaires,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    logger.info(f"[INSPECTION] {inspection_id} validée par {current_user.email} - {len(non_conformites)} NC")
+    
+    # Si non-conformités, retourner les infos pour générer l'avis
+    result = {
+        "inspection_id": inspection_id,
+        "statut": "validee",
+        "statut_conformite": statut_conformite,
+        "nb_non_conformites": len(non_conformites),
+        "non_conformites": [clean_mongo_doc(nc) for nc in non_conformites],
+        "avis_requis": len(non_conformites) > 0,
+        "message": f"Inspection validée - {len(non_conformites)} non-conformité(s) détectée(s)"
+    }
+    
+    return result
+
+
+@router.post("/{tenant_slug}/prevention/inspections-visuelles/{inspection_id}/rejeter")
+async def rejeter_inspection(
+    tenant_slug: str,
+    inspection_id: str,
+    motif: str = Body(..., embed=True),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Rejeter une inspection et la renvoyer au pompier pour corrections.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Vérifier les droits
+    if current_user.role not in ["admin", "superadmin"] and not current_user.est_preventionniste:
+        raise HTTPException(status_code=403, detail="Réservé aux préventionnistes")
+    
+    # Récupérer l'inspection
+    inspection = await db.inspections_visuelles.find_one({
+        "id": inspection_id,
+        "tenant_id": tenant.id
+    })
+    
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection non trouvée")
+    
+    # Mettre à jour le statut
+    await db.inspections_visuelles.update_one(
+        {"id": inspection_id, "tenant_id": tenant.id},
+        {"$set": {
+            "statut": "en_cours",  # Retour à "en_cours" pour permettre les modifications
+            "rejete_par_id": current_user.id,
+            "date_rejet": datetime.now(timezone.utc).isoformat(),
+            "motif_rejet": motif,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    logger.info(f"[INSPECTION] {inspection_id} rejetée par {current_user.email} - Motif: {motif}")
+    
+    return {
+        "message": "Inspection rejetée",
+        "motif": motif
+    }
+
+
 # ==================== NON-CONFORMITÉS VISUELLES ====================
 
 @router.post("/{tenant_slug}/prevention/non-conformites-visuelles")
