@@ -148,7 +148,10 @@ const AvailabilityCalendarModal = ({
                 <h4>📆 Sélection des dates</h4>
                 <div className="calendar-instructions">
                   <p>Cliquez sur les dates où vous êtes disponible :</p>
-                  <small style={{color: '#ef4444', marginTop: '0.5rem', display: 'block'}}>
+                  <small style={{color: '#1e3a5f', marginTop: '0.5rem', display: 'block'}}>
+                    🔵 Les dates en bleu foncé indiquent des disponibilités déjà saisies
+                  </small>
+                  <small style={{color: '#ef4444', marginTop: '0.25rem', display: 'block'}}>
                     ❌ Les dates barrées en rouge indiquent des indisponibilités existantes
                   </small>
                 </div>
@@ -160,6 +163,7 @@ const AvailabilityCalendarModal = ({
                   className="interactive-calendar"
                   disabled={(date) => date < new Date().setHours(0,0,0,0)}
                   indisponibilites={userDisponibilites?.filter(d => d.statut === 'indisponible')}
+                  disponibilites={userDisponibilites?.filter(d => d.statut === 'disponible')}
                 />
                 
                 <div className="selection-summary-advanced">
