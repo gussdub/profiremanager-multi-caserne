@@ -19,6 +19,15 @@ const PlanificationView = ({
   const [vue, setVue] = useState('calendrier'); // 'calendrier' ou 'carte'
   const [exporting, setExporting] = useState(false);
 
+  // Filtrer les bâtiments selon le rôle de l'utilisateur
+  // Les non-préventionnistes/admins ne voient que les risques faibles
+  const isPreventionnisteOrAdmin = user?.est_preventionniste || 
+                                    ['admin', 'superadmin', 'superviseur', 'responsable'].includes(user?.role);
+  
+  const filteredBatiments = isPreventionnisteOrAdmin 
+    ? batiments 
+    : batiments.filter(b => b.niveau_risque === 'Faible');
+
   const handleBatimentClick = (batiment) => {
     // Ouvrir le modal du bâtiment
     if (openBatimentModal) {
