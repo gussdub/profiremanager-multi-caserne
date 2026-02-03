@@ -556,7 +556,7 @@ const InspectionTerrain = ({ tenantSlug, grille, batiment, onComplete, onCancel 
 
         {currentSectionIndex === grille.sections.length - 1 ? (
           <Button onClick={handleSubmit}>
-            ✅ Terminer l'inspection
+            📤 Soumettre pour validation
           </Button>
         ) : (
           <Button onClick={handleNext}>
