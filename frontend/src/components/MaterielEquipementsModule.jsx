@@ -1785,24 +1785,14 @@ const EquipementModal = ({ mode, equipement, categories, tenantSlug, onClose, on
             </div>
           )}
           
-          {/* Maintenance */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div>
-              <Label>Norme de référence</Label>
-              <Input
-                value={formData.norme_reference}
-                onChange={(e) => setFormData({ ...formData, norme_reference: e.target.value })}
-                placeholder="Ex: NFPA 1962"
-              />
-            </div>
-            <div>
-              <Label>Fréquence de maintenance</Label>
-              <Input
-                value={formData.frequence_maintenance}
-                onChange={(e) => setFormData({ ...formData, frequence_maintenance: e.target.value })}
-                placeholder="Ex: 1 an"
-              />
-            </div>
+          {/* Norme de référence */}
+          <div>
+            <Label>Norme de référence</Label>
+            <Input
+              value={formData.norme_reference}
+              onChange={(e) => setFormData({ ...formData, norme_reference: e.target.value })}
+              placeholder="Ex: NFPA 1962"
+            />
           </div>
           
           <div>
