@@ -999,11 +999,17 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
           </div>
         )}
 
-      {/* Mobile hamburger button */}
+      {/* Mobile hamburger button - Positioned absolutely outside normal flow */}
       <button 
         className="mobile-menu-toggle"
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         data-testid="mobile-menu-toggle"
+        style={{
+          position: 'fixed',
+          top: 'calc(1rem + env(safe-area-inset-top, 0px) + 35px)',
+          left: '1rem',
+          zIndex: 9999
+        }}
       >
         <span className="hamburger-line"></span>
         <span className="hamburger-line"></span>
