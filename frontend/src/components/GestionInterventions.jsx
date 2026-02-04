@@ -950,7 +950,6 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
               getToken={getToken}
               toast={toast}
               canEdit={canEdit && !isLocked && !readOnly}
-              personnel={personnel}
             />
           )}
           
