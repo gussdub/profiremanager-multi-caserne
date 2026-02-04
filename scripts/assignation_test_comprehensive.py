@@ -10,7 +10,7 @@ import sys
 from datetime import datetime, timedelta
 
 # Configuration
-BACKEND_URL = "https://compliance-tool-4.preview.emergentagent.com/api"
+BACKEND_URL = "https://emergency-ops-8.preview.emergentagent.com/api"
 
 # Credentials pour les tests
 DEMO_ADMIN = {

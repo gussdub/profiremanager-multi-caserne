@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://compliance-tool-4.preview.emergentagent.com
+- **URL** : https://emergency-ops-8.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://compliance-tool-4.preview.emergentagent.com"
+  "apiUrl": "https://emergency-ops-8.preview.emergentagent.com"
 }
 ```
 
