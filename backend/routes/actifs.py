@@ -97,6 +97,23 @@ class Vehicule(BaseModel):
     qr_code: Optional[str] = None
     qr_code_url: Optional[str] = None
     logs: List[Dict[str, Any]] = []
+    
+    # Nouveaux champs SAAQ/PEP
+    poids_pnbv: Optional[float] = None  # Poids Nominal Brut du Véhicule (kg)
+    classification_saaq: Optional[str] = None  # "urgence" ou "soutien"
+    
+    # Vignette / Inspection mécanique (PEP)
+    vignette_numero: Optional[str] = None
+    vignette_date_inspection: Optional[str] = None  # Date d'apposition
+    vignette_date_expiration: Optional[str] = None  # YYYY-MM (fin du mois)
+    vignette_statut: Optional[str] = "conforme"  # conforme, remise, rancart
+    
+    # Périodicité d'entretien (configurable par véhicule)
+    entretien_intervalle_mois: Optional[int] = None  # Ex: 6 mois
+    entretien_intervalle_km: Optional[int] = None  # Ex: 10000 km
+    derniere_vidange_date: Optional[str] = None
+    derniere_vidange_km: Optional[float] = None
+    
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
