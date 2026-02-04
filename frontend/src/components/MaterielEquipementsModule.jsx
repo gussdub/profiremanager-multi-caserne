@@ -1823,6 +1823,68 @@ const EquipementModal = ({ mode, equipement, categories, tenantSlug, onClose, on
               onChange={(e) => setFormData({ ...formData, date_achat: e.target.value })}
             />
           </div>
+
+          {/* Section Inspections */}
+          <div style={{ 
+            background: '#FEF3C7', 
+            padding: '1rem', 
+            borderRadius: '0.5rem', 
+            border: '1px solid #F59E0B' 
+          }}>
+            <h3 style={{ 
+              fontWeight: '600', 
+              marginBottom: '0.75rem', 
+              fontSize: '0.875rem',
+              color: '#92400E',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              🔍 Suivi des inspections
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div>
+                <Label style={{ fontSize: '0.8rem', color: '#78350F' }}>Fréquence d'inspection</Label>
+                <select
+                  value={formData.frequence_inspection}
+                  onChange={(e) => setFormData({ ...formData, frequence_inspection: e.target.value })}
+                  style={{ 
+                    width: '100%', 
+                    padding: '0.5rem', 
+                    borderRadius: '0.375rem', 
+                    border: '1px solid #FCD34D', 
+                    fontSize: '0.875rem',
+                    backgroundColor: 'white'
+                  }}
+                  data-testid="frequence-inspection-select"
+                >
+                  {frequencesInspection.map(freq => (
+                    <option key={freq.value} value={freq.value}>{freq.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <Label style={{ fontSize: '0.8rem', color: '#78350F' }}>Date dernière inspection</Label>
+                <Input
+                  type="date"
+                  value={formData.date_derniere_inspection}
+                  onChange={(e) => setFormData({ ...formData, date_derniere_inspection: e.target.value })}
+                  style={{ 
+                    borderColor: '#FCD34D',
+                    fontSize: '0.875rem'
+                  }}
+                  data-testid="date-derniere-inspection-input"
+                />
+              </div>
+            </div>
+            <p style={{ 
+              fontSize: '0.7rem', 
+              color: '#B45309', 
+              marginTop: '0.5rem' 
+            }}>
+              💡 Ces informations permettent de générer des alertes automatiques sur le tableau de bord lorsqu'une inspection est due.
+            </p>
+          </div>
           
           {/* Champs personnalisés de la catégorie */}
           {selectedCategorie?.champs_supplementaires?.length > 0 && (
