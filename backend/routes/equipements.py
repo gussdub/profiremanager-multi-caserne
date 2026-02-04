@@ -195,6 +195,10 @@ class EquipementCreate(BaseModel):
     date_derniere_maintenance: str = ""
     date_prochaine_maintenance: str = ""
     date_fin_vie: str = ""
+    # Champs pour les inspections
+    frequence_inspection: str = ""
+    date_derniere_inspection: str = ""
+    date_prochaine_inspection: str = ""
     photos: List[str] = []
     documents: List[str] = []
     champs_personnalises: Dict[str, Any] = {}
