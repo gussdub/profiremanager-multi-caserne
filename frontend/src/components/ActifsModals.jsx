@@ -212,6 +212,168 @@ const VehiculeForm = ({ formData, handleChange, setFormData }) => {
         placeholder="17 caractères"
       />
 
+      {/* Section SAAQ / Classification */}
+      <div style={{ marginBottom: '15px', padding: '15px', backgroundColor: '#fef3c7', borderRadius: '8px', border: '1px solid #fcd34d' }}>
+        <Label style={{ display: 'block', marginBottom: '12px', fontWeight: '600', color: '#92400e' }}>
+          🚒 Classification SAAQ
+        </Label>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+          <div>
+            <Label style={{ display: 'block', marginBottom: '4px', fontSize: '0.875rem' }}>
+              Poids PNBV (kg)
+            </Label>
+            <Input
+              type="number"
+              name="poids_pnbv"
+              value={formData.poids_pnbv || ''}
+              onChange={handleChange}
+              placeholder="Ex: 4500"
+            />
+            {formData.poids_pnbv && (
+              <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: formData.poids_pnbv > 4500 ? '#dc2626' : '#16a34a' }}>
+                {formData.poids_pnbv > 4500 ? '⚠️ > 4500 kg : Inspection annuelle obligatoire' : '✓ ≤ 4500 kg'}
+              </p>
+            )}
+          </div>
+          <div>
+            <Label style={{ display: 'block', marginBottom: '4px', fontSize: '0.875rem' }}>
+              Classification
+            </Label>
+            <select
+              name="classification_saaq"
+              value={formData.classification_saaq || ''}
+              onChange={handleChange}
+              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db' }}
+            >
+              <option value="">-- Sélectionner --</option>
+              <option value="urgence">🚨 Véhicule d'urgence</option>
+              <option value="soutien">🚗 Véhicule de soutien/admin</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Section Vignette / PEP */}
+      <div style={{ marginBottom: '15px', padding: '15px', backgroundColor: '#fee2e2', borderRadius: '8px', border: '1px solid #fca5a5' }}>
+        <Label style={{ display: 'block', marginBottom: '12px', fontWeight: '600', color: '#991b1b' }}>
+          📋 Vignette / Inspection Mécanique (PEP)
+        </Label>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '12px' }}>
+          <div>
+            <Label style={{ display: 'block', marginBottom: '4px', fontSize: '0.875rem' }}>
+              Numéro de vignette
+            </Label>
+            <Input
+              type="text"
+              name="vignette_numero"
+              value={formData.vignette_numero || ''}
+              onChange={handleChange}
+              placeholder="Séquence numérique"
+            />
+          </div>
+          <div>
+            <Label style={{ display: 'block', marginBottom: '4px', fontSize: '0.875rem' }}>
+              Statut
+            </Label>
+            <select
+              name="vignette_statut"
+              value={formData.vignette_statut || 'conforme'}
+              onChange={handleChange}
+              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db' }}
+            >
+              <option value="conforme">✅ Conforme</option>
+              <option value="remise">🔄 Remisé</option>
+              <option value="rancart">❌ Au rancart</option>
+            </select>
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+          <div>
+            <Label style={{ display: 'block', marginBottom: '4px', fontSize: '0.875rem' }}>
+              Date d'inspection
+            </Label>
+            <Input
+              type="date"
+              name="vignette_date_inspection"
+              value={formData.vignette_date_inspection || ''}
+              onChange={handleChange}
+            />
+          </div>
+          <div>
+            <Label style={{ display: 'block', marginBottom: '4px', fontSize: '0.875rem' }}>
+              Date d'expiration (mois/année)
+            </Label>
+            <Input
+              type="month"
+              name="vignette_date_expiration"
+              value={formData.vignette_date_expiration || ''}
+              onChange={handleChange}
+            />
+            <p style={{ margin: '4px 0 0', fontSize: '0.7rem', color: '#6b7280' }}>
+              Valide jusqu'à la fin du mois indiqué
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Section Entretien périodique */}
+      <div style={{ marginBottom: '15px', padding: '15px', backgroundColor: '#dbeafe', borderRadius: '8px', border: '1px solid #93c5fd' }}>
+        <Label style={{ display: 'block', marginBottom: '12px', fontWeight: '600', color: '#1e40af' }}>
+          🔧 Entretien périodique (Vidange/Lubrification)
+        </Label>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '12px' }}>
+          <div>
+            <Label style={{ display: 'block', marginBottom: '4px', fontSize: '0.875rem' }}>
+              Intervalle (mois)
+            </Label>
+            <Input
+              type="number"
+              name="entretien_intervalle_mois"
+              value={formData.entretien_intervalle_mois || ''}
+              onChange={handleChange}
+              placeholder="Ex: 6"
+            />
+          </div>
+          <div>
+            <Label style={{ display: 'block', marginBottom: '4px', fontSize: '0.875rem' }}>
+              Intervalle (km)
+            </Label>
+            <Input
+              type="number"
+              name="entretien_intervalle_km"
+              value={formData.entretien_intervalle_km || ''}
+              onChange={handleChange}
+              placeholder="Ex: 10000"
+            />
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+          <div>
+            <Label style={{ display: 'block', marginBottom: '4px', fontSize: '0.875rem' }}>
+              Dernière vidange (date)
+            </Label>
+            <Input
+              type="date"
+              name="derniere_vidange_date"
+              value={formData.derniere_vidange_date || ''}
+              onChange={handleChange}
+            />
+          </div>
+          <div>
+            <Label style={{ display: 'block', marginBottom: '4px', fontSize: '0.875rem' }}>
+              Dernière vidange (km)
+            </Label>
+            <Input
+              type="number"
+              name="derniere_vidange_km"
+              value={formData.derniere_vidange_km || ''}
+              onChange={handleChange}
+              placeholder="Kilométrage"
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Sélection du formulaire d'inspection */}
       <div style={{ marginBottom: '15px', padding: '15px', backgroundColor: '#f0fdf4', borderRadius: '8px', border: '1px solid #86efac' }}>
         <Label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#166534' }}>
