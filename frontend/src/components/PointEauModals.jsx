@@ -48,14 +48,27 @@ const PointEauModal = ({ point, onClose, onSave }) => {
     setLoading(true);
 
     try {
+      // Nettoyer les données avant envoi
+      const cleanedData = { ...formData };
+      
+      // Convertir les strings vides en null pour les champs numériques
+      ['latitude', 'longitude', 'debit_gpm', 'capacite_litres', 'profondeur_metres', 'frequence_inspection_mois'].forEach(field => {
+        if (cleanedData[field] === '' || cleanedData[field] === undefined) {
+          cleanedData[field] = null;
+        } else if (typeof cleanedData[field] === 'string') {
+          const parsed = parseFloat(cleanedData[field]);
+          cleanedData[field] = isNaN(parsed) ? null : parsed;
+        }
+      });
+      
       if (point?.id) {
-        await apiPut(tenantSlug, `/points-eau/${point.id}`, formData);
+        await apiPut(tenantSlug, `/points-eau/${point.id}`, cleanedData);
         toast({
           title: "Succès",
           description: "Point d'eau modifié avec succès"
         });
       } else {
-        await apiPost(tenantSlug, '/points-eau', formData);
+        await apiPost(tenantSlug, '/points-eau', cleanedData);
         toast({
           title: "Succès",
           description: "Point d'eau créé avec succès"
@@ -66,7 +79,7 @@ const PointEauModal = ({ point, onClose, onSave }) => {
       console.error('Erreur:', error);
       toast({
         title: "Erreur",
-        description: error.response?.data?.detail || "Une erreur est survenue",
+        description: error.message || error.response?.data?.detail || "Une erreur est survenue",
         variant: "destructive"
       });
     } finally {
