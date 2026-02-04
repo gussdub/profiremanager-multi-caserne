@@ -1797,10 +1797,17 @@ const EquipementModal = ({ mode, equipement, categories, tenantSlug, onClose, on
           
           <div>
             <Label>Date d'achat</Label>
-            <Input
+            <input
               type="date"
-              value={formData.date_achat}
+              value={formData.date_achat || ''}
               onChange={(e) => setFormData({ ...formData, date_achat: e.target.value })}
+              style={{ 
+                width: '100%',
+                padding: '0.5rem',
+                borderRadius: '0.375rem',
+                border: '1px solid #d1d5db',
+                fontSize: '0.875rem'
+              }}
             />
           </div>
 
