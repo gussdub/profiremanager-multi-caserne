@@ -84,6 +84,10 @@ const GestionActifs = ({ user, ModuleEPI }) => {
   const [showInventaireModal, setShowInventaireModal] = useState(false);
   const [selectedVehiculeForInventaire, setSelectedVehiculeForInventaire] = useState(null);
   const [showHistoriqueInventairesModal, setShowHistoriqueInventairesModal] = useState(false);
+  
+  // État pour réparations véhicules
+  const [showReparationsModal, setShowReparationsModal] = useState(false);
+  const [selectedVehiculeForReparations, setSelectedVehiculeForReparations] = useState(null);
 
   const { tenantSlug } = useTenant();
 
