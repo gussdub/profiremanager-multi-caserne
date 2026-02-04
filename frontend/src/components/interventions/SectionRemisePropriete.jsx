@@ -53,12 +53,23 @@ const SectionRemisePropriete = ({ intervention, tenantSlug, user, getToken, toas
   useEffect(() => {
     const fetchRemises = async () => {
       try {
-        const response = await fetch(`${API}/interventions/${intervention.id}/remises-propriete`, {
-          headers: { 'Authorization': `Bearer ${getToken()}` }
-        });
-        if (response.ok) {
-          const data = await response.json();
+        const [remisesRes, photosRes] = await Promise.all([
+          fetch(`${API}/interventions/${intervention.id}/remises-propriete`, {
+            headers: { 'Authorization': `Bearer ${getToken()}` }
+          }),
+          fetch(`${API}/interventions/${intervention.id}/photos-dommages`, {
+            headers: { 'Authorization': `Bearer ${getToken()}` }
+          })
+        ]);
+        
+        if (remisesRes.ok) {
+          const data = await remisesRes.json();
           setRemises(data.remises || []);
+        }
+        
+        if (photosRes.ok) {
+          const data = await photosRes.json();
+          setPhotosDommages(data.photos || []);
         }
       } catch (error) {
         console.error('Erreur chargement remises:', error);
@@ -68,6 +79,69 @@ const SectionRemisePropriete = ({ intervention, tenantSlug, user, getToken, toas
     };
     fetchRemises();
   }, [intervention.id, tenantSlug]);
+  
+  // Upload photo dommage
+  const handlePhotoDommage = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setUploadingPhoto(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const base64 = event.target.result;
+        
+        const response = await fetch(`${API}/interventions/${intervention.id}/photos-dommages`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${getToken()}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            photo_base64: base64,
+            description: '',
+            zone: '',
+            latitude: gpsCoords.latitude,
+            longitude: gpsCoords.longitude
+          })
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          setPhotosDommages([...photosDommages, {
+            id: result.photo_id,
+            photo_base64: base64,
+            timestamp: new Date().toISOString(),
+            uploaded_by_name: `${user?.prenom || ''} ${user?.nom || ''}`.trim()
+          }]);
+          toast?.({ title: '📷 Photo des dommages ajoutée', variant: 'success' });
+        }
+        setUploadingPhoto(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      toast?.({ title: 'Erreur upload photo', variant: 'destructive' });
+      setUploadingPhoto(false);
+    }
+    
+    if (photoInputRef.current) photoInputRef.current.value = '';
+  };
+  
+  const handleDeletePhotoDommage = async (photoId) => {
+    try {
+      const response = await fetch(`${API}/interventions/${intervention.id}/photos-dommages/${photoId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      
+      if (response.ok) {
+        setPhotosDommages(photosDommages.filter(p => p.id !== photoId));
+        toast?.({ title: 'Photo supprimée', variant: 'success' });
+      }
+    } catch (error) {
+      toast?.({ title: 'Erreur suppression', variant: 'destructive' });
+    }
+  };
   
   const handleDownloadPdf = async (remise) => {
     try {
