@@ -993,14 +993,22 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
         {/* Footer Actions */}
         <div className="border-t border-gray-200 p-4 bg-gray-50 flex justify-between flex-wrap gap-2">
           <div className="flex gap-2">
-            {canEdit && !isLocked && !readOnly && (
+            {/* Bouton Enregistrer - visible seulement si modifications */}
+            {canEdit && !isLocked && !readOnly && hasChanges && (
               <Button
-                variant={editMode ? "default" : "outline"}
-                onClick={() => editMode ? handleSave() : setEditMode(true)}
+                variant="default"
+                onClick={handleSave}
                 disabled={loading}
+                className="bg-green-600 hover:bg-green-700"
               >
-                {editMode ? '💾 Enregistrer' : '✏️ Modifier'}
+                💾 Enregistrer
               </Button>
+            )}
+            {/* Indicateur modifications non sauvegardées */}
+            {hasChanges && (
+              <span className="text-amber-600 text-sm flex items-center gap-1">
+                ⚠️ Modifications non sauvegardées
+              </span>
             )}
             {/* Bouton d'impression */}
             <Button
