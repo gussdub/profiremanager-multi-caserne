@@ -951,7 +951,7 @@ const MobileTabButton = ({ label, active, onClick }) => (
   </button>
 );
 
-const VehiculesTab = ({ vehicules, onEdit, onDelete, onGenerateQR, onViewFicheVie, onViewInspections, onCreateInspection, onCreateInventaire, onViewHistoriqueInventaires, canManageActifs }) => {
+const VehiculesTab = ({ vehicules, onEdit, onDelete, onGenerateQR, onViewFicheVie, onViewInspections, onCreateInspection, onCreateInventaire, onViewHistoriqueInventaires, onViewReparations, canManageActifs }) => {
   if (vehicules.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '40px 20px', color: '#666', backgroundColor: '#f8f9fa', borderRadius: '12px' }}>
