@@ -17,6 +17,7 @@ import ParametresInspectionsBornesSeches from './ParametresInspectionsBornesSech
 import ParametresInspectionsAPRIA from './ParametresInspectionsAPRIA';
 import MaterielEquipementsModule from './MaterielEquipementsModule';
 import ImportCSVEquipements from './ImportCSVEquipements';
+import ReparationsVehicule from './ReparationsVehicule';
 import { useTenant } from '../contexts/TenantContext';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import { Label } from './ui/label';
