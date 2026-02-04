@@ -484,8 +484,9 @@ const InterventionCard = ({ intervention, formatDate, getStatusBadge, onSelect, 
 
 const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUpdate, toast, readOnly = false }) => {
   const [activeSection, setActiveSection] = useState('identification');
-  const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({ ...intervention });
+  const [originalData, setOriginalData] = useState(null); // Pour détecter les changements
+  const [hasChanges, setHasChanges] = useState(false);
   const [referenceData, setReferenceData] = useState({ 
     natures: [], causes: [], sources_chaleur: [], materiaux: [], facteurs_allumage: [], usages_batiment: [], categories_batiment: [] 
   });
@@ -498,6 +499,9 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
   const [submitReason, setSubmitReason] = useState('');
   const [submitAction, setSubmitAction] = useState(null);
 
+  // Mode édition toujours actif si l'utilisateur a les droits
+  const editMode = true;
+
   // Bloquer le scroll du body
   useModalScrollLock(true);
 
@@ -506,6 +510,14 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
   const getToken = () => {
     return localStorage.getItem(`${tenantSlug}_token`) || localStorage.getItem('token');
   };
+
+  // Détecter les changements
+  useEffect(() => {
+    if (originalData) {
+      const changed = JSON.stringify(formData) !== JSON.stringify(originalData);
+      setHasChanges(changed);
+    }
+  }, [formData, originalData]);
 
   // Charger les settings du module interventions (pour le template narratif)
   const fetchInterventionSettings = async () => {
