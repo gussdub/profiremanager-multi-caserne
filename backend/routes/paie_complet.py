@@ -1006,6 +1006,263 @@ async def supprimer_feuille_temps(
     return {"success": True}
 
 
+@router.post("/{tenant_slug}/paie/feuilles-temps/valider-tout")
+async def valider_toutes_feuilles(
+    tenant_slug: str,
+    params: dict = Body(default={}),
+    current_user: User = Depends(get_current_user)
+):
+    """Valide toutes les feuilles de temps en brouillon pour une période"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent valider les feuilles de temps")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # Filtres optionnels
+    query = {
+        "tenant_id": tenant.id,
+        "statut": "brouillon"
+    }
+    
+    if params.get("periode_debut"):
+        query["periode_debut"] = params["periode_debut"]
+    if params.get("periode_fin"):
+        query["periode_fin"] = params["periode_fin"]
+    
+    # Valider toutes les feuilles brouillon
+    result = await db.feuilles_temps.update_many(
+        query,
+        {"$set": {
+            "statut": "valide",
+            "valide_par": current_user.id,
+            "valide_le": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    return {
+        "success": True,
+        "message": f"{result.modified_count} feuille(s) validée(s)",
+        "count": result.modified_count
+    }
+
+
+@router.post("/{tenant_slug}/paie/feuilles-temps/export-pdf")
+async def export_feuilles_pdf(
+    tenant_slug: str,
+    params: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Génère un PDF des feuilles de temps.
+    - Si feuille_id est fourni: génère le PDF d'une seule feuille
+    - Sinon: génère un PDF groupé de toutes les feuilles validées de la période
+    """
+    from fastapi.responses import StreamingResponse
+    from reportlab.lib.pagesizes import letter, A4
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch, cm
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+    from io import BytesIO
+    
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # Récupérer les feuilles à exporter
+    feuille_id = params.get("feuille_id")
+    
+    if feuille_id:
+        # Une seule feuille
+        feuilles = await db.feuilles_temps.find(
+            {"id": feuille_id, "tenant_id": tenant.id},
+            {"_id": 0}
+        ).to_list(1)
+    else:
+        # Toutes les feuilles validées de la période
+        query = {
+            "tenant_id": tenant.id,
+            "statut": {"$in": ["valide", "exporte"]}
+        }
+        if params.get("periode_debut"):
+            query["periode_debut"] = params["periode_debut"]
+        if params.get("periode_fin"):
+            query["periode_fin"] = params["periode_fin"]
+        
+        feuilles = await db.feuilles_temps.find(
+            query, {"_id": 0}
+        ).sort([("employe_nom", 1), ("employe_prenom", 1)]).to_list(500)
+    
+    if not feuilles:
+        raise HTTPException(status_code=404, detail="Aucune feuille de temps trouvée")
+    
+    # Récupérer les infos du tenant pour l'en-tête
+    tenant_info = await db.tenants.find_one({"id": tenant.id}, {"_id": 0})
+    tenant_nom = tenant_info.get("nom", tenant_slug) if tenant_info else tenant_slug
+    
+    # Générer le PDF
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=letter,
+        rightMargin=0.5*inch,
+        leftMargin=0.5*inch,
+        topMargin=0.5*inch,
+        bottomMargin=0.5*inch
+    )
+    
+    # Styles
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=16,
+        spaceAfter=12,
+        alignment=TA_CENTER,
+        textColor=colors.HexColor('#dc2626')
+    )
+    subtitle_style = ParagraphStyle(
+        'CustomSubtitle',
+        parent=styles['Heading2'],
+        fontSize=12,
+        spaceAfter=6,
+        alignment=TA_CENTER
+    )
+    header_style = ParagraphStyle(
+        'Header',
+        parent=styles['Normal'],
+        fontSize=10,
+        spaceAfter=4
+    )
+    
+    elements = []
+    
+    for idx, feuille in enumerate(feuilles):
+        if idx > 0:
+            elements.append(PageBreak())
+        
+        # En-tête
+        elements.append(Paragraph(f"🔥 {tenant_nom}", title_style))
+        elements.append(Paragraph("FEUILLE DE TEMPS", subtitle_style))
+        elements.append(Spacer(1, 12))
+        
+        # Infos employé
+        periode = f"{feuille.get('periode_debut', '')} au {feuille.get('periode_fin', '')}"
+        employe_info = f"""
+        <b>Employé:</b> {feuille.get('employe_prenom', '')} {feuille.get('employe_nom', '')}<br/>
+        <b>Numéro:</b> {feuille.get('employe_numero', 'N/A')}<br/>
+        <b>Grade:</b> {feuille.get('employe_grade', 'N/A')}<br/>
+        <b>Période:</b> {periode}<br/>
+        <b>Période #:</b> {feuille.get('numero_periode', 'N/A')}
+        """
+        elements.append(Paragraph(employe_info, header_style))
+        elements.append(Spacer(1, 12))
+        
+        # Tableau des lignes
+        lignes = feuille.get("lignes", [])
+        if lignes:
+            table_data = [["Date", "Type", "Description", "Heures", "Taux", "Montant"]]
+            
+            for ligne in lignes:
+                table_data.append([
+                    ligne.get("date", ""),
+                    ligne.get("type", "").replace("_", " ").title(),
+                    ligne.get("description", "")[:40],  # Tronquer la description
+                    f"{ligne.get('heures_payees', 0):.2f}",
+                    f"{ligne.get('taux', 1):.2f}",
+                    f"{ligne.get('montant', 0):.2f} $"
+                ])
+            
+            table = Table(table_data, colWidths=[1*inch, 1*inch, 2.5*inch, 0.8*inch, 0.6*inch, 0.9*inch])
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#dc2626')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('ALIGN', (2, 1), (2, -1), 'LEFT'),  # Description alignée à gauche
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 9),
+                ('FONTSIZE', (0, 1), (-1, -1), 8),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f8f8')]),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ]))
+            elements.append(table)
+        else:
+            elements.append(Paragraph("<i>Aucune entrée pour cette période</i>", header_style))
+        
+        elements.append(Spacer(1, 20))
+        
+        # Totaux
+        totaux_data = [
+            ["RÉSUMÉ", "Heures", "Montant"],
+            ["Gardes internes", f"{feuille.get('total_heures_gardes_internes', 0):.2f}", "-"],
+            ["Gardes externes", f"{feuille.get('total_heures_gardes_externes', 0):.2f}", "-"],
+            ["Rappels/Interventions", f"{feuille.get('total_heures_rappels', 0):.2f}", "-"],
+            ["Formations", f"{feuille.get('total_heures_formations', 0):.2f}", "-"],
+            ["Heures supplémentaires", f"{feuille.get('total_heures_supplementaires', 0):.2f}", "-"],
+            ["Primes de repas", "-", f"{feuille.get('total_primes_repas', 0):.2f} $"],
+            ["", "", ""],
+            ["TOTAL HEURES PAYÉES", f"{feuille.get('total_heures_payees', 0):.2f}", ""],
+            ["TOTAL À PAYER", "", f"{feuille.get('total_montant_final', 0):.2f} $"],
+        ]
+        
+        totaux_table = Table(totaux_data, colWidths=[3*inch, 1.5*inch, 1.5*inch])
+        totaux_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e293b')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTNAME', (0, -2), (-1, -1), 'Helvetica-Bold'),
+            ('BACKGROUND', (0, -2), (-1, -1), colors.HexColor('#fef2f2')),
+            ('TEXTCOLOR', (0, -1), (-1, -1), colors.HexColor('#dc2626')),
+            ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ]))
+        elements.append(totaux_table)
+        
+        elements.append(Spacer(1, 20))
+        
+        # Signature
+        signature_data = [
+            ["Validé par:", feuille.get("valide_par", "_______________"), "Date:", feuille.get("valide_le", "_______________")[:10] if feuille.get("valide_le") else "_______________"],
+            ["Signature employé:", "_______________", "Date:", "_______________"]
+        ]
+        sig_table = Table(signature_data, colWidths=[1.5*inch, 2*inch, 0.8*inch, 2*inch])
+        sig_table.setStyle(TableStyle([
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 15),
+        ]))
+        elements.append(sig_table)
+    
+    # Construire le PDF
+    doc.build(elements)
+    buffer.seek(0)
+    
+    # Nom du fichier
+    if feuille_id and len(feuilles) == 1:
+        f = feuilles[0]
+        filename = f"feuille_temps_{f.get('employe_nom', '')}_{f.get('employe_prenom', '')}_{f.get('periode_debut', '')}.pdf"
+    else:
+        periode = feuilles[0].get('periode_debut', 'periode') if feuilles else 'export'
+        filename = f"feuilles_temps_{tenant_slug}_{periode}.pdf"
+    
+    filename = filename.replace(" ", "_").lower()
+    
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
 # ==================== EXPORT FICHIER PAIE (FORMAT NETHRIS/EXCEL) ====================
 
 @router.post("/{tenant_slug}/paie/export")
