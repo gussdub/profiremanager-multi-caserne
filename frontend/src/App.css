@@ -14980,6 +14980,7 @@ body.mobile-menu-open .sidebar {
   overflow-y: auto;
   flex: 1;
   min-height: 0;
+  width: 100%; /* S'assure que le conteneur prend toute la largeur */
 }
 
 .garde-mois-item {
