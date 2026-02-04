@@ -14935,10 +14935,10 @@ body.mobile-menu-open .sidebar {
 
 .calendrier-mois {
   display: grid;
-  grid-template-columns: repeat(7, minmax(100px, 1fr)); /* Largeur minimum fixe + flexibilité */
+  grid-template-columns: repeat(7, 1fr); /* Colonnes égales qui s'adaptent */
   gap: 0.5rem;
   width: 100%;
-  overflow-x: auto; /* Permet le scroll horizontal si nécessaire */
+  overflow: hidden; /* Empêche le débordement */
 }
 
 .jour-mois {
@@ -14947,10 +14947,9 @@ body.mobile-menu-open .sidebar {
   border-radius: 6px;
   padding: 0.5rem;
   min-height: 80px;
-  min-width: 100px; /* Largeur minimum fixe */
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: hidden; /* Important: empêche le contenu de déborder */
 }
 
 .jour-mois-header {
@@ -14977,10 +14976,10 @@ body.mobile-menu-open .sidebar {
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
-  overflow-y: auto;
+  overflow: hidden; /* Empêche le débordement horizontal */
   flex: 1;
   min-height: 0;
-  width: 100%; /* S'assure que le conteneur prend toute la largeur */
+  width: 100%;
 }
 
 .garde-mois-item {
