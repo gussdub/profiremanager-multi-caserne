@@ -6,7 +6,7 @@ import { Label } from '../ui/label';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
-const SectionRCCI = ({ intervention, tenantSlug, user, getToken, toast, canEdit, personnel = [] }) => {
+const SectionRCCI = ({ intervention, tenantSlug, user, getToken, toast, canEdit }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [rcci, setRcci] = useState(null);
@@ -14,6 +14,7 @@ const SectionRCCI = ({ intervention, tenantSlug, user, getToken, toast, canEdit,
   const [showPhotoForm, setShowPhotoForm] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [gpsCoords, setGpsCoords] = useState({ latitude: null, longitude: null });
+  const [personnel, setPersonnel] = useState([]);
   
   const fileInputRef = useRef(null);
   
@@ -42,6 +43,24 @@ const SectionRCCI = ({ intervention, tenantSlug, user, getToken, toast, canEdit,
       );
     }
   }, []);
+  
+  // Charger personnel (officiers)
+  useEffect(() => {
+    const fetchPersonnel = async () => {
+      try {
+        const response = await fetch(`${API}/users`, {
+          headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        if (response.ok) {
+          const users = await response.json();
+          setPersonnel(users.filter(u => u.role === 'admin' || u.role === 'superviseur'));
+        }
+      } catch (error) {
+        console.error('Erreur chargement personnel:', error);
+      }
+    };
+    fetchPersonnel();
+  }, [tenantSlug]);
   
   // Charger données RCCI
   useEffect(() => {
