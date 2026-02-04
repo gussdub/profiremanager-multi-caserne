@@ -15030,18 +15030,17 @@ body.mobile-menu-open .sidebar {
   
   .planning-mois {
     padding: 0.75rem;
-    overflow-x: auto; /* Permet le scroll horizontal sur tablette */
+    overflow: hidden;
   }
   
   .calendrier-mois {
     gap: 0.4rem;
-    grid-template-columns: repeat(7, minmax(90px, 1fr));
+    grid-template-columns: repeat(7, 1fr);
   }
   
   .jour-mois {
     padding: 0.4rem;
     min-height: 70px;
-    min-width: 90px;
   }
   
   .planning-controls {
@@ -15053,49 +15052,42 @@ body.mobile-menu-open .sidebar {
 /* Mobile - Noms de garde plus petits */
 @media (max-width: 768px) {
   .garde-mois-item {
-    padding: 0.25rem 0.4rem;
-    min-height: 24px;
-    gap: 0.3rem;
+    padding: 0.2rem 0.3rem;
+    min-height: 22px;
+    gap: 0.2rem;
     width: 100%;
+    max-width: 100%;
   }
   
   .garde-nom-complet {
-    font-size: 0.65rem;
+    font-size: 0.6rem;
   }
   
   .coverage-icon {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
   }
   
   .planning-mois {
     padding: 0.5rem;
-    overflow-x: auto;
+    overflow: hidden;
   }
   
   .calendrier-mois {
-    gap: 0.3rem;
-    grid-template-columns: repeat(7, minmax(80px, 1fr));
-    min-width: 600px; /* Force une largeur minimum pour éviter l'écrasement */
+    gap: 0.25rem;
+    grid-template-columns: repeat(7, 1fr);
   }
   
   .jour-mois {
-    min-height: 60px;
-    min-width: 80px;
-    padding: 0.3rem;
+    min-height: 55px;
+    padding: 0.25rem;
   }
   
   .jour-mois-name {
-    font-size: 0.55rem;
+    font-size: 0.5rem;
   }
   
   .jour-mois-date {
-    font-size: 0.8rem;
-  }
-  
-  .garde-mois-item {
-    font-size: 0.6rem;
-    padding: 0.2rem 0.3rem;
-    min-height: 20px;
+    font-size: 0.75rem;
   }
 }
 
