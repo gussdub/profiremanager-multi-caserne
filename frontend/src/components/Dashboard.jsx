@@ -567,6 +567,126 @@ const Dashboard = () => {
         </div>
       )}
 
+      {/* ===================== ALERTES MAINTENANCE VÉHICULES ===================== */}
+      {(isAdmin || user?.role === 'superviseur') && alertesVehicules.count > 0 && (
+        <div style={{ marginBottom: '2.5rem' }}>
+          <h2 style={{ 
+            fontSize: '1.25rem', 
+            fontWeight: '600', 
+            color: '#374151', 
+            marginBottom: '1rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            🚗 Alertes Maintenance Véhicules
+            {alertesVehicules.critiques > 0 && (
+              <span style={{
+                background: '#dc2626',
+                color: 'white',
+                fontSize: '0.75rem',
+                padding: '2px 8px',
+                borderRadius: '12px',
+                fontWeight: '600'
+              }}>
+                {alertesVehicules.critiques} critique(s)
+              </span>
+            )}
+            {alertesVehicules.urgentes > 0 && (
+              <span style={{
+                background: '#f97316',
+                color: 'white',
+                fontSize: '0.75rem',
+                padding: '2px 8px',
+                borderRadius: '12px',
+                fontWeight: '600'
+              }}>
+                {alertesVehicules.urgentes} urgente(s)
+              </span>
+            )}
+          </h2>
+
+          <Card>
+            <CardContent style={{ padding: '1rem' }}>
+              <div style={{ 
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.75rem',
+                maxHeight: '300px',
+                overflowY: 'auto'
+              }}>
+                {alertesVehicules.alertes.slice(0, 10).map((alerte, index) => (
+                  <div 
+                    key={index}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '10px 12px',
+                      background: alerte.niveau === 'critique' ? '#fef2f2' : alerte.niveau === 'urgent' ? '#fff7ed' : '#f8fafc',
+                      border: `1px solid ${alerte.niveau === 'critique' ? '#fecaca' : alerte.niveau === 'urgent' ? '#fed7aa' : '#e2e8f0'}`,
+                      borderRadius: '8px',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => window.location.href = '/actifs'}
+                  >
+                    <span style={{ fontSize: '1.5rem' }}>
+                      {alerte.type?.includes('vignette') ? '📋' : alerte.type?.includes('entretien') ? '🔧' : alerte.type?.includes('defectuosite') ? '⚠️' : '🚗'}
+                    </span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ 
+                        fontWeight: '600', 
+                        fontSize: '0.9rem',
+                        color: alerte.niveau === 'critique' ? '#dc2626' : alerte.niveau === 'urgent' ? '#ea580c' : '#1e293b'
+                      }}>
+                        {alerte.vehicule_nom}
+                        {alerte.niveau === 'critique' && (
+                          <span style={{
+                            marginLeft: '8px',
+                            fontSize: '0.7rem',
+                            background: '#dc2626',
+                            color: 'white',
+                            padding: '2px 6px',
+                            borderRadius: '4px'
+                          }}>
+                            CRITIQUE
+                          </span>
+                        )}
+                        {alerte.niveau === 'urgent' && (
+                          <span style={{
+                            marginLeft: '8px',
+                            fontSize: '0.7rem',
+                            background: '#f97316',
+                            color: 'white',
+                            padding: '2px 6px',
+                            borderRadius: '4px'
+                          }}>
+                            URGENT
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                        {alerte.message}
+                      </div>
+                    </div>
+                    {alerte.jours_restants !== undefined && (
+                      <div style={{
+                        fontSize: '0.8rem',
+                        color: alerte.jours_restants < 0 ? '#dc2626' : alerte.jours_restants <= 7 ? '#ea580c' : '#64748b',
+                        fontWeight: '500',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {alerte.jours_restants < 0 ? `${Math.abs(alerte.jours_restants)}j retard` : `${alerte.jours_restants}j`}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* ===================== SECTION PERSONNELLE ===================== */}
       <div style={{ marginBottom: '2.5rem' }}>
         <h2 style={{ 
