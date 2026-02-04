@@ -1975,3 +1975,372 @@ async def get_remise_propriete_pdf(
     )
 
 
+
+
+# ==================== SECTION RCCI (ENQUÊTE) ====================
+
+class RCCICreate(BaseModel):
+    """Modèle pour créer/mettre à jour un rapport RCCI"""
+    # Données de l'enquête
+    origin_area: str = ""  # Point d'origine précis
+    probable_cause: str = "indeterminee"  # accidentelle, intentionnelle, naturelle, indeterminee
+    ignition_source: str = ""  # Source de chaleur
+    material_first_ignited: str = ""  # Premier matériau enflammé
+    smoke_detector_status: str = "indetermine"  # absent, present_fonctionnel, present_non_fonctionnel, indetermine
+    investigator_id: Optional[str] = None  # Matricule officier responsable
+    narrative: str = ""  # Description des circonstances
+    
+    # Transfert dossier
+    transfert_police: bool = False
+    motif_transfert: Optional[str] = None
+    date_transfert: Optional[datetime] = None
+    numero_dossier_police: Optional[str] = None
+
+
+class RCCIPhotoCreate(BaseModel):
+    """Modèle pour ajouter une photo à l'enquête"""
+    photo_base64: str
+    description: str = ""
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+
+@router.get("/{tenant_slug}/interventions/{intervention_id}/rcci")
+async def get_rcci(
+    tenant_slug: str,
+    intervention_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère les données RCCI d'une intervention"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    rcci = await db.rcci.find_one({
+        "tenant_id": tenant.id,
+        "intervention_id": intervention_id
+    }, {"_id": 0})
+    
+    return {"rcci": rcci}
+
+
+@router.post("/{tenant_slug}/interventions/{intervention_id}/rcci")
+async def create_or_update_rcci(
+    tenant_slug: str,
+    intervention_id: str,
+    data: RCCICreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Crée ou met à jour le rapport RCCI d'une intervention"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # Vérifier que l'intervention existe
+    intervention = await db.interventions.find_one({
+        "id": intervention_id,
+        "tenant_id": tenant.id
+    })
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    now = datetime.now(timezone.utc)
+    
+    # Vérifier si un RCCI existe déjà
+    existing = await db.rcci.find_one({
+        "tenant_id": tenant.id,
+        "intervention_id": intervention_id
+    })
+    
+    # Vérifier si transfert à la police est nécessaire
+    requires_transfer = data.probable_cause in ["indeterminee", "intentionnelle"]
+    
+    rcci_data = {
+        "tenant_id": tenant.id,
+        "intervention_id": intervention_id,
+        "origin_area": data.origin_area,
+        "probable_cause": data.probable_cause,
+        "ignition_source": data.ignition_source,
+        "material_first_ignited": data.material_first_ignited,
+        "smoke_detector_status": data.smoke_detector_status,
+        "investigator_id": data.investigator_id,
+        "narrative": data.narrative,
+        "transfert_police": data.transfert_police,
+        "motif_transfert": data.motif_transfert,
+        "date_transfert": data.date_transfert,
+        "numero_dossier_police": data.numero_dossier_police,
+        "requires_transfer_alert": requires_transfer and not data.transfert_police,
+        "updated_at": now,
+        "updated_by": current_user.id
+    }
+    
+    if existing:
+        # Mise à jour
+        await db.rcci.update_one(
+            {"tenant_id": tenant.id, "intervention_id": intervention_id},
+            {"$set": rcci_data}
+        )
+        rcci_id = existing.get("id")
+    else:
+        # Création
+        rcci_id = str(uuid.uuid4())
+        rcci_data["id"] = rcci_id
+        rcci_data["created_at"] = now
+        rcci_data["created_by"] = current_user.id
+        rcci_data["photos"] = []
+        await db.rcci.insert_one(rcci_data)
+        
+        # Ajouter référence à l'intervention
+        await db.interventions.update_one(
+            {"id": intervention_id, "tenant_id": tenant.id},
+            {"$set": {"rcci_id": rcci_id, "updated_at": now}}
+        )
+    
+    return {
+        "success": True,
+        "rcci_id": rcci_id,
+        "requires_transfer_alert": requires_transfer and not data.transfert_police
+    }
+
+
+@router.post("/{tenant_slug}/interventions/{intervention_id}/rcci/photos")
+async def add_rcci_photo(
+    tenant_slug: str,
+    intervention_id: str,
+    data: RCCIPhotoCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Ajoute une photo à l'enquête RCCI"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # Vérifier que le RCCI existe
+    rcci = await db.rcci.find_one({
+        "tenant_id": tenant.id,
+        "intervention_id": intervention_id
+    })
+    if not rcci:
+        raise HTTPException(status_code=404, detail="RCCI non trouvé. Créez d'abord le rapport d'enquête.")
+    
+    now = datetime.now(timezone.utc)
+    photo = {
+        "id": str(uuid.uuid4()),
+        "photo_base64": data.photo_base64,
+        "description": data.description,
+        "latitude": data.latitude,
+        "longitude": data.longitude,
+        "timestamp": now,
+        "uploaded_by": current_user.id,
+        "uploaded_by_name": f"{current_user.prenom} {current_user.nom}"
+    }
+    
+    await db.rcci.update_one(
+        {"tenant_id": tenant.id, "intervention_id": intervention_id},
+        {"$push": {"photos": photo}}
+    )
+    
+    return {"success": True, "photo_id": photo["id"]}
+
+
+@router.delete("/{tenant_slug}/interventions/{intervention_id}/rcci/photos/{photo_id}")
+async def delete_rcci_photo(
+    tenant_slug: str,
+    intervention_id: str,
+    photo_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprime une photo de l'enquête RCCI"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    await db.rcci.update_one(
+        {"tenant_id": tenant.id, "intervention_id": intervention_id},
+        {"$pull": {"photos": {"id": photo_id}}}
+    )
+    
+    return {"success": True}
+
+
+# ==================== DONNÉES SINISTRÉ (PROPRIÉTAIRE + ASSURANCE) ====================
+
+class DonneesSinistreCreate(BaseModel):
+    """Modèle pour les données du sinistré"""
+    # Propriétaire
+    owner_name: str = ""
+    owner_phone: str = ""
+    owner_email: str = ""
+    owner_address: str = ""
+    
+    # Assurance
+    insurance_company: str = ""
+    policy_number: str = ""
+    insurance_broker: str = ""
+    insurance_phone: str = ""
+    
+    # Estimations des pertes
+    estimated_loss_building: float = 0
+    estimated_loss_content: float = 0
+    loss_notes: str = ""
+
+
+@router.get("/{tenant_slug}/interventions/{intervention_id}/sinistre")
+async def get_donnees_sinistre(
+    tenant_slug: str,
+    intervention_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère les données du sinistré d'une intervention"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    sinistre = await db.donnees_sinistres.find_one({
+        "tenant_id": tenant.id,
+        "intervention_id": intervention_id
+    }, {"_id": 0})
+    
+    return {"sinistre": sinistre}
+
+
+@router.post("/{tenant_slug}/interventions/{intervention_id}/sinistre")
+async def create_or_update_sinistre(
+    tenant_slug: str,
+    intervention_id: str,
+    data: DonneesSinistreCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Crée ou met à jour les données du sinistré"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    now = datetime.now(timezone.utc)
+    
+    existing = await db.donnees_sinistres.find_one({
+        "tenant_id": tenant.id,
+        "intervention_id": intervention_id
+    })
+    
+    sinistre_data = {
+        "tenant_id": tenant.id,
+        "intervention_id": intervention_id,
+        **data.dict(),
+        "updated_at": now,
+        "updated_by": current_user.id
+    }
+    
+    if existing:
+        await db.donnees_sinistres.update_one(
+            {"tenant_id": tenant.id, "intervention_id": intervention_id},
+            {"$set": sinistre_data}
+        )
+        sinistre_id = existing.get("id")
+    else:
+        sinistre_id = str(uuid.uuid4())
+        sinistre_data["id"] = sinistre_id
+        sinistre_data["created_at"] = now
+        sinistre_data["created_by"] = current_user.id
+        await db.donnees_sinistres.insert_one(sinistre_data)
+    
+    return {"success": True, "sinistre_id": sinistre_id}
+
+
+# ==================== PHOTOS DOMMAGES AVANT DÉPART ====================
+
+class PhotoDommageCreate(BaseModel):
+    """Modèle pour une photo de dommage avant départ"""
+    photo_base64: str
+    description: str = ""
+    zone: str = ""  # ex: "entrée principale", "cuisine", etc.
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+
+@router.get("/{tenant_slug}/interventions/{intervention_id}/photos-dommages")
+async def get_photos_dommages(
+    tenant_slug: str,
+    intervention_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère les photos de dommages d'une intervention"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    photos = await db.photos_dommages.find({
+        "tenant_id": tenant.id,
+        "intervention_id": intervention_id
+    }, {"_id": 0}).sort("timestamp", 1).to_list(100)
+    
+    return {"photos": photos}
+
+
+@router.post("/{tenant_slug}/interventions/{intervention_id}/photos-dommages")
+async def add_photo_dommage(
+    tenant_slug: str,
+    intervention_id: str,
+    data: PhotoDommageCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Ajoute une photo de dommage avant départ"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    now = datetime.now(timezone.utc)
+    photo = {
+        "id": str(uuid.uuid4()),
+        "tenant_id": tenant.id,
+        "intervention_id": intervention_id,
+        "photo_base64": data.photo_base64,
+        "description": data.description,
+        "zone": data.zone,
+        "latitude": data.latitude,
+        "longitude": data.longitude,
+        "timestamp": now,
+        "uploaded_by": current_user.id,
+        "uploaded_by_name": f"{current_user.prenom} {current_user.nom}"
+    }
+    
+    await db.photos_dommages.insert_one(photo)
+    
+    # Incrémenter le compteur sur l'intervention
+    await db.interventions.update_one(
+        {"id": intervention_id, "tenant_id": tenant.id},
+        {
+            "$inc": {"photos_dommages_count": 1},
+            "$set": {"updated_at": now}
+        }
+    )
+    
+    return {"success": True, "photo_id": photo["id"]}
+
+
+@router.delete("/{tenant_slug}/interventions/{intervention_id}/photos-dommages/{photo_id}")
+async def delete_photo_dommage(
+    tenant_slug: str,
+    intervention_id: str,
+    photo_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprime une photo de dommage"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    result = await db.photos_dommages.delete_one({
+        "id": photo_id,
+        "tenant_id": tenant.id,
+        "intervention_id": intervention_id
+    })
+    
+    if result.deleted_count > 0:
+        await db.interventions.update_one(
+            {"id": intervention_id, "tenant_id": tenant.id},
+            {"$inc": {"photos_dommages_count": -1}}
+        )
+    
+    return {"success": True}
+
