@@ -38,6 +38,14 @@ const Dashboard = () => {
     alertes: []
   });
   
+  // État pour les alertes maintenance véhicules (visible admins/superviseurs)
+  const [alertesVehicules, setAlertesVehicules] = useState({
+    alertes: [],
+    count: 0,
+    critiques: 0,
+    urgentes: 0
+  });
+  
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(Date.now());
 
