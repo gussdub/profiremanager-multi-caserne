@@ -309,7 +309,7 @@ async def export_equipements_pdf(
 # ==================== ROUTES IMPORTS ====================
 
 @router.post("/{tenant_slug}/equipements/categories/initialiser")
-async def initialiser_categories_equipements(
+async def initialiser_categories_equipement(
     tenant_slug: str,
     current_user: User = Depends(get_current_user)
 ):
@@ -547,7 +547,7 @@ async def initialiser_categories_equipements(
     
     for cat_data in categories_defaut:
         # Vérifier si la catégorie existe déjà (par nom)
-        existing = await db.categories_equipements.find_one({
+        existing = await db.categories_equipement.find_one({
             "tenant_id": tenant.id,
             "nom": cat_data["nom"]
         })
@@ -573,7 +573,7 @@ async def initialiser_categories_equipements(
             "updated_at": datetime.now(timezone.utc).isoformat()
         }
         
-        await db.categories_equipements.insert_one(categorie_obj)
+        await db.categories_equipement.insert_one(categorie_obj)
         created_count += 1
     
     return {
