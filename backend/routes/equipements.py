@@ -794,6 +794,16 @@ async def get_stats_equipements(
         "alerte_stock_bas": True
     })
     
+    alertes_inspection = await db.equipements.count_documents({
+        "tenant_id": tenant.id,
+        "alerte_inspection": True
+    })
+    
+    alertes_fin_vie = await db.equipements.count_documents({
+        "tenant_id": tenant.id,
+        "alerte_fin_vie": True
+    })
+    
     categories = await db.categories_equipements.find(
         {"tenant_id": tenant.id},
         {"_id": 0, "id": 1, "nom": 1}
@@ -807,12 +817,17 @@ async def get_stats_equipements(
         })
         par_categorie[cat["nom"]] = count
     
+    total_alertes = alertes_maintenance + alertes_stock + alertes_inspection + alertes_fin_vie
+    
     return {
         "total": total,
         "par_etat": par_etat,
         "par_categorie": par_categorie,
         "alertes": {
+            "total": total_alertes,
             "maintenance": alertes_maintenance,
-            "stock_bas": alertes_stock
+            "stock_bas": alertes_stock,
+            "inspection": alertes_inspection,
+            "fin_vie": alertes_fin_vie
         }
     }
