@@ -976,6 +976,7 @@ const VehiculesTab = ({ vehicules, onEdit, onDelete, onGenerateQR, onViewFicheVi
           onCreateInspection={onCreateInspection}
           onCreateInventaire={onCreateInventaire}
           onViewHistoriqueInventaires={onViewHistoriqueInventaires}
+          onViewReparations={onViewReparations}
           canManageActifs={canManageActifs}
         />
       ))}
