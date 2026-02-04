@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { PointEauModal, InspectionModal } from './PointEauModals';
 
 const ApprovisionnementEau = () => {
   const { user, tenant } = useAuth();
