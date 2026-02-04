@@ -1528,6 +1528,9 @@ const EquipementModal = ({ mode, equipement, categories, tenantSlug, onClose, on
     employe_id: equipement?.employe_id || '',
     norme_reference: equipement?.norme_reference || '',
     frequence_maintenance: equipement?.frequence_maintenance || '',
+    // Nouveaux champs pour les inspections
+    frequence_inspection: equipement?.frequence_inspection || '',
+    date_derniere_inspection: equipement?.date_derniere_inspection || '',
     date_achat: equipement?.date_achat || '',
     prix_achat: equipement?.prix_achat || 0,
     notes: equipement?.notes || '',
@@ -1539,6 +1542,18 @@ const EquipementModal = ({ mode, equipement, categories, tenantSlug, onClose, on
   const [employes, setEmployes] = useState([]);
   const [formulaires, setFormulaires] = useState([]);
   const [selectedCategorie, setSelectedCategorie] = useState(null);
+
+  // Options de fréquence d'inspection
+  const frequencesInspection = [
+    { value: '', label: 'Aucune' },
+    { value: 'journaliere', label: 'Journalière' },
+    { value: 'hebdomadaire', label: 'Hebdomadaire' },
+    { value: 'mensuelle', label: 'Mensuelle' },
+    { value: 'bi_annuelle', label: 'Bi-annuelle (6 mois)' },
+    { value: 'annuelle', label: 'Annuelle' },
+    { value: '2ans', label: '2 ans' },
+    { value: 'apres_usage', label: 'Après usage' }
+  ];
 
   // Charger véhicules, employés et formulaires
   useEffect(() => {
