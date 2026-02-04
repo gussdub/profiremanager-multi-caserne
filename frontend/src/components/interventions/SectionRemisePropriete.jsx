@@ -13,6 +13,11 @@ const SectionRemisePropriete = ({ intervention, tenantSlug, user, getToken, toas
   const [gpsCoords, setGpsCoords] = useState({ latitude: null, longitude: null });
   const [submitting, setSubmitting] = useState(false);
   
+  // Photos des dommages
+  const [photosDommages, setPhotosDommages] = useState([]);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const photoInputRef = useRef(null);
+  
   const [formData, setFormData] = useState({
     electricite: 'en_fonction',
     gaz: 'en_fonction',
