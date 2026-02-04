@@ -363,8 +363,8 @@ async def get_alertes_equipements_dashboard(
                     "lien": f"/actifs/equipements/{eq.get('id')}"
                 })
         
-        # 3. Alerte inspection due (basée sur fréquence)
-        frequence_inspection = eq.get("frequence_inspection") or categorie.get("frequence_inspection")
+        # 3. Alerte inspection due (basée sur fréquence de l'équipement uniquement)
+        frequence_inspection = eq.get("frequence_inspection")  # Utiliser uniquement la fréquence de l'équipement
         derniere_inspection = eq.get("date_derniere_inspection") or eq.get("derniere_inspection")
         if frequence_inspection and frequence_inspection not in ["aucune", "", "apres_usage"]:
             prochaine_inspection = eq.get("date_prochaine_inspection") or calculer_prochaine_date(derniere_inspection, frequence_inspection)

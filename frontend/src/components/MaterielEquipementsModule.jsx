@@ -1276,23 +1276,13 @@ const CategorieModal = ({ mode, categorie, tenantSlug, onClose, onSuccess }) => 
             />
           </div>
           
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div>
-              <Label>Norme de référence</Label>
-              <Input
-                value={formData.norme_reference}
-                onChange={(e) => setFormData({ ...formData, norme_reference: e.target.value })}
-                placeholder="Ex: NFPA 1962"
-              />
-            </div>
-            <div>
-              <Label>Fréquence d'inspection</Label>
-              <Input
-                value={formData.frequence_inspection}
-                onChange={(e) => setFormData({ ...formData, frequence_inspection: e.target.value })}
-                placeholder="Ex: 1 an"
-              />
-            </div>
+          <div>
+            <Label>Norme de référence</Label>
+            <Input
+              value={formData.norme_reference}
+              onChange={(e) => setFormData({ ...formData, norme_reference: e.target.value })}
+              placeholder="Ex: NFPA 1962"
+            />
           </div>
           
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
