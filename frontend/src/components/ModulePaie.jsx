@@ -444,6 +444,93 @@ const ModulePaie = ({ tenant }) => {
     }
   };
 
+  // Valider toutes les feuilles brouillon
+  const handleValiderTout = async () => {
+    const feuillesBrouillon = feuilles.filter(f => f.statut === 'brouillon');
+    if (feuillesBrouillon.length === 0) {
+      toast.error('Aucune feuille en brouillon à valider');
+      return;
+    }
+    
+    if (!window.confirm(`Valider ${feuillesBrouillon.length} feuille(s) en brouillon ?`)) {
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/${tenant}/paie/feuilles-temps/valider-tout`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${getToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          periode_debut: genPeriodeDebut || undefined,
+          periode_fin: genPeriodeFin || undefined
+        })
+      });
+      
+      const data = await response.json();
+      if (response.ok) {
+        toast.success(data.message || `${data.count} feuille(s) validée(s)`);
+        fetchFeuilles();
+      } else {
+        toast.error(data.detail || 'Erreur lors de la validation');
+      }
+    } catch (error) {
+      toast.error('Erreur de connexion');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Export PDF (une feuille ou toutes les validées)
+  const handleExportPDF = async (feuilleId = null) => {
+    const feuillesExportables = feuilles.filter(f => f.statut === 'valide' || f.statut === 'exporte');
+    
+    if (!feuilleId && feuillesExportables.length === 0) {
+      toast.error('Aucune feuille validée à exporter en PDF');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/${tenant}/paie/feuilles-temps/export-pdf`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${getToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          feuille_id: feuilleId || undefined,
+          periode_debut: genPeriodeDebut || undefined,
+          periode_fin: genPeriodeFin || undefined
+        })
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const filename = response.headers.get('Content-Disposition')?.split('filename=')[1] || 'feuilles_temps.pdf';
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        toast.success(feuilleId ? 'PDF généré' : `PDF généré avec ${feuillesExportables.length} feuille(s)`);
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Erreur lors de la génération du PDF');
+      }
+    } catch (error) {
+      toast.error('Erreur de connexion');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Entrer en mode édition d'une feuille
   const handleStartEdit = () => {
     // Assigner un ID unique à chaque ligne pour permettre l'édition indépendante
