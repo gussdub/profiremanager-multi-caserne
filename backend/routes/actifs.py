@@ -1670,3 +1670,489 @@ async def update_configuration_emails_rondes(
     )
     
     return {"message": "Configuration mise à jour", "user_ids_rondes_securite": user_ids}
+
+
+
+# ==================== RÉPARATIONS / ENTRETIENS VÉHICULES ====================
+
+@router.get("/{tenant_slug}/actifs/vehicules/{vehicule_id}/reparations")
+async def lister_reparations_vehicule(
+    tenant_slug: str,
+    vehicule_id: str,
+    date_debut: Optional[str] = None,
+    date_fin: Optional[str] = None,
+    type_intervention: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Liste les réparations/entretiens d'un véhicule avec filtres optionnels"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    query = {"tenant_id": tenant.id, "vehicule_id": vehicule_id}
+    
+    if date_debut:
+        query["date_reparation"] = {"$gte": date_debut}
+    if date_fin:
+        if "date_reparation" in query:
+            query["date_reparation"]["$lte"] = date_fin
+        else:
+            query["date_reparation"] = {"$lte": date_fin}
+    if type_intervention:
+        query["type_intervention"] = type_intervention
+    
+    reparations = await db.reparations_vehicules.find(
+        query, {"_id": 0}
+    ).sort("date_reparation", -1).to_list(500)
+    
+    # Calculer le coût total
+    cout_total = sum(r.get("cout", 0) or 0 for r in reparations)
+    
+    return {
+        "reparations": reparations,
+        "count": len(reparations),
+        "cout_total": round(cout_total, 2)
+    }
+
+
+@router.post("/{tenant_slug}/actifs/vehicules/{vehicule_id}/reparations")
+async def creer_reparation_vehicule(
+    tenant_slug: str,
+    vehicule_id: str,
+    reparation: ReparationCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer une nouvelle entrée de réparation/entretien"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès réservé aux admins et superviseurs")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    # Vérifier que le véhicule existe
+    vehicule = await db.vehicules.find_one({"id": vehicule_id, "tenant_id": tenant.id})
+    if not vehicule:
+        raise HTTPException(status_code=404, detail="Véhicule non trouvé")
+    
+    nouvelle_reparation = {
+        "id": str(uuid.uuid4()),
+        "tenant_id": tenant.id,
+        "vehicule_id": vehicule_id,
+        "date_reparation": reparation.date_reparation,
+        "type_intervention": reparation.type_intervention,
+        "description": reparation.description,
+        "cout": reparation.cout,
+        "fournisseur": reparation.fournisseur,
+        "kilometrage_actuel": reparation.kilometrage_actuel,
+        "pieces_remplacees": reparation.pieces_remplacees,
+        "numero_facture": reparation.numero_facture,
+        "statut": reparation.statut,
+        "date_signalement": reparation.date_signalement,
+        "priorite": reparation.priorite,
+        "notes": reparation.notes,
+        "cree_par": current_user.id,
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc)
+    }
+    
+    await db.reparations_vehicules.insert_one(nouvelle_reparation)
+    
+    # Si c'est un entretien préventif (vidange), mettre à jour le véhicule
+    if reparation.type_intervention == "entretien_preventif":
+        update_data = {"updated_at": datetime.now(timezone.utc)}
+        if reparation.date_reparation:
+            update_data["derniere_vidange_date"] = reparation.date_reparation
+        if reparation.kilometrage_actuel:
+            update_data["derniere_vidange_km"] = reparation.kilometrage_actuel
+            update_data["kilometrage"] = reparation.kilometrage_actuel
+        await db.vehicules.update_one({"id": vehicule_id}, {"$set": update_data})
+    
+    # Mettre à jour le kilométrage si fourni
+    elif reparation.kilometrage_actuel:
+        await db.vehicules.update_one(
+            {"id": vehicule_id},
+            {"$set": {"kilometrage": reparation.kilometrage_actuel, "updated_at": datetime.now(timezone.utc)}}
+        )
+    
+    # Ajouter au log du véhicule
+    log_entry = {
+        "date": datetime.now(timezone.utc).isoformat(),
+        "action": f"Réparation ajoutée: {reparation.type_intervention}",
+        "user_id": current_user.id,
+        "user_nom": f"{current_user.prenom} {current_user.nom}",
+        "details": reparation.description[:100]
+    }
+    await db.vehicules.update_one(
+        {"id": vehicule_id},
+        {"$push": {"logs": {"$each": [log_entry], "$slice": -100}}}
+    )
+    
+    nouvelle_reparation.pop("_id", None)
+    return {"success": True, "reparation": nouvelle_reparation}
+
+
+@router.put("/{tenant_slug}/actifs/reparations/{reparation_id}")
+async def modifier_reparation_vehicule(
+    tenant_slug: str,
+    reparation_id: str,
+    data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Modifier une réparation/entretien existant"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès réservé aux admins et superviseurs")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    reparation = await db.reparations_vehicules.find_one({"id": reparation_id, "tenant_id": tenant.id})
+    if not reparation:
+        raise HTTPException(status_code=404, detail="Réparation non trouvée")
+    
+    # Champs modifiables
+    allowed_fields = [
+        "date_reparation", "type_intervention", "description", "cout", "fournisseur",
+        "kilometrage_actuel", "pieces_remplacees", "numero_facture", "statut",
+        "date_signalement", "priorite", "notes"
+    ]
+    
+    update_data = {k: v for k, v in data.items() if k in allowed_fields}
+    update_data["updated_at"] = datetime.now(timezone.utc)
+    
+    await db.reparations_vehicules.update_one({"id": reparation_id}, {"$set": update_data})
+    
+    updated = await db.reparations_vehicules.find_one({"id": reparation_id}, {"_id": 0})
+    return {"success": True, "reparation": updated}
+
+
+@router.delete("/{tenant_slug}/actifs/reparations/{reparation_id}")
+async def supprimer_reparation_vehicule(
+    tenant_slug: str,
+    reparation_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer une réparation/entretien"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès réservé aux admins")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    result = await db.reparations_vehicules.delete_one({"id": reparation_id, "tenant_id": tenant.id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Réparation non trouvée")
+    
+    return {"success": True}
+
+
+# ==================== ALERTES MAINTENANCE VÉHICULES ====================
+
+@router.get("/{tenant_slug}/actifs/vehicules/alertes-maintenance")
+async def get_alertes_maintenance_vehicules(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Retourne les alertes de maintenance pour les véhicules :
+    - Vignettes expirant dans 30 jours
+    - Entretiens dus selon la périodicité configurée
+    - Défectuosités signalées non réparées (délai 48h)
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    alertes = []
+    today = datetime.now(timezone.utc).date()
+    today_str = today.strftime("%Y-%m-%d")
+    
+    # Récupérer tous les véhicules actifs
+    vehicules = await db.vehicules.find({
+        "tenant_id": tenant.id,
+        "statut": {"$in": ["actif", "maintenance"]}
+    }, {"_id": 0}).to_list(500)
+    
+    for v in vehicules:
+        vehicule_nom = v.get("nom", "Véhicule inconnu")
+        vehicule_id = v.get("id")
+        
+        # 1. Vérifier la vignette (expiration dans 30 jours)
+        vignette_exp = v.get("vignette_date_expiration")
+        if vignette_exp:
+            try:
+                # Format YYYY-MM, on prend la fin du mois
+                exp_year, exp_month = map(int, vignette_exp.split("-")[:2])
+                # Dernier jour du mois
+                if exp_month == 12:
+                    exp_date = datetime(exp_year + 1, 1, 1).date() - timedelta(days=1)
+                else:
+                    exp_date = datetime(exp_year, exp_month + 1, 1).date() - timedelta(days=1)
+                
+                jours_restants = (exp_date - today).days
+                
+                if jours_restants < 0:
+                    alertes.append({
+                        "type": "vignette_expiree",
+                        "niveau": "critique",
+                        "vehicule_id": vehicule_id,
+                        "vehicule_nom": vehicule_nom,
+                        "message": f"Vignette EXPIRÉE depuis {abs(jours_restants)} jour(s)",
+                        "date_echeance": vignette_exp,
+                        "jours_restants": jours_restants
+                    })
+                elif jours_restants <= 30:
+                    alertes.append({
+                        "type": "vignette_a_renouveler",
+                        "niveau": "urgent" if jours_restants <= 7 else "attention",
+                        "vehicule_id": vehicule_id,
+                        "vehicule_nom": vehicule_nom,
+                        "message": f"Vignette expire dans {jours_restants} jour(s)",
+                        "date_echeance": vignette_exp,
+                        "jours_restants": jours_restants
+                    })
+            except Exception as e:
+                logger.warning(f"Erreur parsing date vignette {vignette_exp}: {e}")
+        
+        # 2. Vérifier l'entretien périodique (vidange)
+        intervalle_mois = v.get("entretien_intervalle_mois")
+        derniere_vidange = v.get("derniere_vidange_date")
+        
+        if intervalle_mois and derniere_vidange:
+            try:
+                derniere_date = datetime.strptime(derniere_vidange, "%Y-%m-%d").date()
+                prochaine_date = derniere_date + timedelta(days=intervalle_mois * 30)
+                jours_restants = (prochaine_date - today).days
+                
+                if jours_restants < 0:
+                    alertes.append({
+                        "type": "entretien_du",
+                        "niveau": "urgent",
+                        "vehicule_id": vehicule_id,
+                        "vehicule_nom": vehicule_nom,
+                        "message": f"Entretien en retard de {abs(jours_restants)} jour(s)",
+                        "date_echeance": prochaine_date.strftime("%Y-%m-%d"),
+                        "jours_restants": jours_restants
+                    })
+                elif jours_restants <= 30:
+                    alertes.append({
+                        "type": "entretien_a_planifier",
+                        "niveau": "attention",
+                        "vehicule_id": vehicule_id,
+                        "vehicule_nom": vehicule_nom,
+                        "message": f"Entretien à planifier dans {jours_restants} jour(s)",
+                        "date_echeance": prochaine_date.strftime("%Y-%m-%d"),
+                        "jours_restants": jours_restants
+                    })
+            except Exception as e:
+                logger.warning(f"Erreur calcul entretien: {e}")
+        
+        # 3. Vérifier l'entretien par kilométrage
+        intervalle_km = v.get("entretien_intervalle_km")
+        derniere_vidange_km = v.get("derniere_vidange_km")
+        km_actuel = v.get("kilometrage")
+        
+        if intervalle_km and derniere_vidange_km and km_actuel:
+            km_depuis_vidange = km_actuel - derniere_vidange_km
+            km_restants = intervalle_km - km_depuis_vidange
+            
+            if km_restants <= 0:
+                alertes.append({
+                    "type": "entretien_km_depasse",
+                    "niveau": "urgent",
+                    "vehicule_id": vehicule_id,
+                    "vehicule_nom": vehicule_nom,
+                    "message": f"Entretien dépassé de {abs(int(km_restants))} km",
+                    "km_restants": int(km_restants)
+                })
+            elif km_restants <= 1000:
+                alertes.append({
+                    "type": "entretien_km_proche",
+                    "niveau": "attention",
+                    "vehicule_id": vehicule_id,
+                    "vehicule_nom": vehicule_nom,
+                    "message": f"Entretien dans {int(km_restants)} km",
+                    "km_restants": int(km_restants)
+                })
+    
+    # 4. Vérifier les défectuosités signalées non réparées (délai 48h)
+    cutoff_48h = datetime.now(timezone.utc) - timedelta(hours=48)
+    reparations_en_cours = await db.reparations_vehicules.find({
+        "tenant_id": tenant.id,
+        "statut": {"$in": ["en_cours", "planifie"]},
+        "priorite": {"$in": ["urgente", "critique"]}
+    }, {"_id": 0}).to_list(100)
+    
+    for rep in reparations_en_cours:
+        date_signalement = rep.get("date_signalement")
+        if date_signalement:
+            try:
+                signale_date = datetime.strptime(date_signalement, "%Y-%m-%d")
+                heures_depuis = (datetime.now(timezone.utc) - signale_date.replace(tzinfo=timezone.utc)).total_seconds() / 3600
+                
+                if rep.get("priorite") == "critique":
+                    alertes.append({
+                        "type": "defectuosite_majeure",
+                        "niveau": "critique",
+                        "vehicule_id": rep.get("vehicule_id"),
+                        "vehicule_nom": rep.get("vehicule_nom", ""),
+                        "message": f"Défectuosité MAJEURE non réparée: {rep.get('description', '')[:50]}",
+                        "reparation_id": rep.get("id")
+                    })
+                elif heures_depuis > 48:
+                    alertes.append({
+                        "type": "defectuosite_48h_depassee",
+                        "niveau": "urgent",
+                        "vehicule_id": rep.get("vehicule_id"),
+                        "vehicule_nom": rep.get("vehicule_nom", ""),
+                        "message": f"Délai 48h dépassé pour: {rep.get('description', '')[:50]}",
+                        "reparation_id": rep.get("id"),
+                        "heures_depuis_signalement": int(heures_depuis)
+                    })
+            except Exception as e:
+                logger.warning(f"Erreur calcul délai réparation: {e}")
+    
+    # Trier par niveau de criticité
+    niveau_ordre = {"critique": 0, "urgent": 1, "attention": 2}
+    alertes.sort(key=lambda x: niveau_ordre.get(x.get("niveau"), 3))
+    
+    return {
+        "alertes": alertes,
+        "count": len(alertes),
+        "critiques": len([a for a in alertes if a.get("niveau") == "critique"]),
+        "urgentes": len([a for a in alertes if a.get("niveau") == "urgent"]),
+        "attention": len([a for a in alertes if a.get("niveau") == "attention"])
+    }
+
+
+@router.post("/{tenant_slug}/actifs/vehicules/envoyer-alertes-email")
+async def envoyer_alertes_maintenance_email(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Envoie un email récapitulatif des alertes de maintenance aux superviseurs et admins.
+    À appeler manuellement ou via un cron job.
+    """
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès réservé aux admins et superviseurs")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    # Récupérer les alertes
+    alertes_response = await get_alertes_maintenance_vehicules(tenant_slug, current_user)
+    alertes = alertes_response.get("alertes", [])
+    
+    if not alertes:
+        return {"success": True, "message": "Aucune alerte à envoyer"}
+    
+    # Récupérer les admins et superviseurs pour les notifications
+    destinataires = await db.users.find({
+        "tenant_id": tenant.id,
+        "role": {"$in": ["admin", "superviseur"]},
+        "statut": "Actif"
+    }, {"email": 1, "prenom": 1, "nom": 1, "_id": 0}).to_list(50)
+    
+    if not destinataires:
+        return {"success": False, "message": "Aucun destinataire trouvé"}
+    
+    # Construire le contenu de l'email
+    tenant_info = await db.tenants.find_one({"id": tenant.id}, {"nom": 1, "_id": 0})
+    tenant_nom = tenant_info.get("nom", tenant_slug) if tenant_info else tenant_slug
+    
+    critiques = [a for a in alertes if a.get("niveau") == "critique"]
+    urgentes = [a for a in alertes if a.get("niveau") == "urgent"]
+    attention = [a for a in alertes if a.get("niveau") == "attention"]
+    
+    html_content = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2 style="color: #dc2626;">🚗 Alertes Maintenance Véhicules - {tenant_nom}</h2>
+        <p>Date: {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M')}</p>
+        
+        <p><strong>Résumé:</strong> {len(critiques)} critique(s), {len(urgentes)} urgente(s), {len(attention)} attention</p>
+    """
+    
+    if critiques:
+        html_content += """
+        <h3 style="color: #dc2626;">🔴 CRITIQUES (Action immédiate requise)</h3>
+        <ul>
+        """
+        for a in critiques:
+            html_content += f"<li><strong>{a.get('vehicule_nom')}</strong>: {a.get('message')}</li>"
+        html_content += "</ul>"
+    
+    if urgentes:
+        html_content += """
+        <h3 style="color: #f97316;">🟠 URGENTES (Délai 48h)</h3>
+        <ul>
+        """
+        for a in urgentes:
+            html_content += f"<li><strong>{a.get('vehicule_nom')}</strong>: {a.get('message')}</li>"
+        html_content += "</ul>"
+    
+    if attention:
+        html_content += """
+        <h3 style="color: #eab308;">🟡 ATTENTION (À planifier)</h3>
+        <ul>
+        """
+        for a in attention:
+            html_content += f"<li><strong>{a.get('vehicule_nom')}</strong>: {a.get('message')}</li>"
+        html_content += "</ul>"
+    
+    html_content += """
+        <hr>
+        <p style="color: #6b7280; font-size: 12px;">
+            Cet email a été généré automatiquement par ProFireManager.<br>
+            Connectez-vous à l'application pour plus de détails.
+        </p>
+    </body>
+    </html>
+    """
+    
+    # Envoyer l'email via Resend
+    try:
+        import httpx
+        resend_api_key = os.environ.get("RESEND_API_KEY")
+        
+        if not resend_api_key:
+            logger.warning("RESEND_API_KEY non configurée")
+            return {"success": False, "message": "Service email non configuré"}
+        
+        emails_envoyes = 0
+        for dest in destinataires:
+            email = dest.get("email")
+            if not email:
+                continue
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    "https://api.resend.com/emails",
+                    headers={"Authorization": f"Bearer {resend_api_key}"},
+                    json={
+                        "from": "ProFireManager <noreply@profiremanager.com>",
+                        "to": [email],
+                        "subject": f"⚠️ [{len(critiques)} critique(s)] Alertes Maintenance Véhicules - {tenant_nom}",
+                        "html": html_content
+                    }
+                )
+                
+                if response.status_code in [200, 201]:
+                    emails_envoyes += 1
+                else:
+                    logger.error(f"Erreur envoi email à {email}: {response.text}")
+        
+        return {
+            "success": True,
+            "message": f"{emails_envoyes} email(s) envoyé(s)",
+            "destinataires": emails_envoyes,
+            "alertes_count": len(alertes)
+        }
+        
+    except Exception as e:
+        logger.error(f"Erreur envoi emails alertes: {e}")
+        return {"success": False, "message": str(e)}
