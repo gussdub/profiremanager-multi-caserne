@@ -642,8 +642,9 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
 
       if (response.ok) {
         toast({ title: "Succès", description: "Intervention mise à jour" });
-        setEditMode(false);
         setFormData(dataToSave); // Mettre à jour le formData local avec le nouveau statut
+        setOriginalData(JSON.parse(JSON.stringify(dataToSave))); // Réinitialiser les données originales
+        setHasChanges(false);
         fetchDetails();
       } else {
         const error = await response.json();
