@@ -562,18 +562,30 @@ def calculer_prochaine_date(derniere_date: str, frequence: str) -> str:
         date_base = datetime.strptime(derniere_date[:10], "%Y-%m-%d")
         
         deltas = {
+            # Fréquences standard
+            "journaliere": timedelta(days=1),
             "quotidienne": timedelta(days=1),
             "hebdomadaire": timedelta(weeks=1),
             "mensuelle": timedelta(days=30),
             "trimestrielle": timedelta(days=90),
             "semestrielle": timedelta(days=180),
+            "bi-annuelle": timedelta(days=180),  # Tous les 6 mois
+            "bi_annuelle": timedelta(days=180),
             "annuelle": timedelta(days=365),
+            "2ans": timedelta(days=730),
+            "2_ans": timedelta(days=730),
+            "apres_usage": None,  # Pas de calcul automatique
         }
         
-        delta = deltas.get(frequence.lower())
+        frequence_lower = frequence.lower().replace("-", "_").replace(" ", "_")
+        delta = deltas.get(frequence_lower)
+        
         if delta:
             prochaine = date_base + delta
             return prochaine.strftime("%Y-%m-%d")
+        elif frequence_lower == "apres_usage":
+            # Pour "après usage", on retourne None - pas d'alerte automatique
+            return None
     except Exception:
         pass
     
