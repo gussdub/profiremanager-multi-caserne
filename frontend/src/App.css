@@ -14935,9 +14935,10 @@ body.mobile-menu-open .sidebar {
 
 .calendrier-mois {
   display: grid;
-  grid-template-columns: repeat(7, 1fr); /* Vraiment fluide - chaque colonne prend 1/7 de la largeur */
+  grid-template-columns: repeat(7, minmax(100px, 1fr)); /* Largeur minimum fixe + flexibilité */
   gap: 0.5rem;
   width: 100%;
+  overflow-x: auto; /* Permet le scroll horizontal si nécessaire */
 }
 
 .jour-mois {
@@ -14946,6 +14947,7 @@ body.mobile-menu-open .sidebar {
   border-radius: 6px;
   padding: 0.5rem;
   min-height: 80px;
+  min-width: 100px; /* Largeur minimum fixe */
   display: flex;
   flex-direction: column;
   overflow: hidden;
