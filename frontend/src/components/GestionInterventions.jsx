@@ -550,6 +550,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
         setVehicles(data.vehicles || []);
         setResources(data.resources || []);
         setFormData(data.intervention);
+        setOriginalData(JSON.parse(JSON.stringify(data.intervention))); // Copie profonde pour comparaison
       }
     } catch (error) {
       console.error('Erreur:', error);
