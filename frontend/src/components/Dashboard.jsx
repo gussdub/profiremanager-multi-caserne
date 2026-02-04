@@ -98,6 +98,8 @@ const Dashboard = () => {
         axios.get(`${API}/${tenantSlug}/formations?annee=${now.getFullYear() + 1}`, { headers, timeout: 10000 }).catch(() => null),
         // 8. Alertes équipements (visible selon rôle: admin voit tout, personne ressource voit ses catégories)
         axios.get(`${API}/${tenantSlug}/dashboard/alertes-equipements`, { headers, timeout: 10000 }).catch(() => null),
+        // 9. Alertes maintenance véhicules (visible admins/superviseurs)
+        axios.get(`${API}/${tenantSlug}/actifs/vehicules/alertes-maintenance`, { headers, timeout: 10000 }).catch(() => null),
       ];
       
       // Ajouter les appels admin uniquement
