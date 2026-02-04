@@ -1845,13 +1845,17 @@ const EquipementModal = ({ mode, equipement, categories, tenantSlug, onClose, on
               </div>
               <div>
                 <Label style={{ fontSize: '0.8rem', color: '#78350F' }}>Date dernière inspection</Label>
-                <Input
+                <input
                   type="date"
-                  value={formData.date_derniere_inspection}
+                  value={formData.date_derniere_inspection || ''}
                   onChange={(e) => setFormData({ ...formData, date_derniere_inspection: e.target.value })}
                   style={{ 
-                    borderColor: '#FCD34D',
-                    fontSize: '0.875rem'
+                    width: '100%',
+                    padding: '0.5rem',
+                    borderRadius: '0.375rem',
+                    border: '1px solid #FCD34D',
+                    fontSize: '0.875rem',
+                    backgroundColor: 'white'
                   }}
                   data-testid="date-derniere-inspection-input"
                 />
