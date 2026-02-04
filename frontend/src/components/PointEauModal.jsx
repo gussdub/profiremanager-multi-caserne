@@ -325,10 +325,21 @@ const PointEauModal = ({
 
     setLoading(true);
     try {
+      // Nettoyer les données - convertir les strings vides en null pour les champs numériques
+      const cleanNumeric = (val) => {
+        if (val === '' || val === undefined || val === null) return null;
+        const parsed = parseFloat(val);
+        return isNaN(parsed) ? null : parsed;
+      };
+      
       const payload = {
         ...formData,
         latitude: parseFloat(formData.latitude),
         longitude: parseFloat(formData.longitude),
+        debit_gpm: cleanNumeric(formData.debit_gpm),
+        capacite_litres: cleanNumeric(formData.capacite_litres),
+        profondeur_metres: cleanNumeric(formData.profondeur_metres),
+        frequence_inspection_mois: cleanNumeric(formData.frequence_inspection_mois) || 12,
         // Mapper l'état à la couleur correcte
         statut_couleur: formData.etat === 'fonctionnelle' ? 'vert' : 
                         formData.etat === 'attention' ? 'orange' : 'rouge'
