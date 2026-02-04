@@ -53,8 +53,8 @@ class PointEauBase(BaseModel):
 class PointEauCreate(BaseModel):
     type: str
     numero_identification: str
-    latitude: float
-    longitude: float
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
     adresse: Optional[str] = None
     ville: Optional[str] = None
     secteur_id: Optional[str] = None
