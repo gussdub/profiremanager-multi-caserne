@@ -196,7 +196,6 @@ class ReparationVehicule(BaseModel):
 
 
 class ReparationCreate(BaseModel):
-    vehicule_id: str
     date_reparation: str
     type_intervention: str
     description: str
