@@ -147,11 +147,16 @@ class Equipement(BaseModel):
     date_derniere_maintenance: str = ""
     date_prochaine_maintenance: str = ""
     date_fin_vie: str = ""
+    # Champs pour les inspections
+    frequence_inspection: str = ""  # journaliere, hebdomadaire, mensuelle, bi-annuelle, annuelle, 2ans, apres_usage
+    date_derniere_inspection: str = ""
+    date_prochaine_inspection: str = ""
     alerte_maintenance: bool = False
     alerte_stock_bas: bool = False
     alerte_reparation: bool = False
     alerte_fin_vie: bool = False
     alerte_expiration: bool = False
+    alerte_inspection: bool = False  # Nouvelle alerte pour inspections
     photos: List[str] = []
     documents: List[str] = []
     champs_personnalises: Dict[str, Any] = {}
