@@ -15054,6 +15054,7 @@ body.mobile-menu-open .sidebar {
     padding: 0.25rem 0.4rem;
     min-height: 24px;
     gap: 0.3rem;
+    width: 100%;
   }
   
   .garde-nom-complet {
@@ -15066,14 +15067,18 @@ body.mobile-menu-open .sidebar {
   
   .planning-mois {
     padding: 0.5rem;
+    overflow-x: auto;
   }
   
   .calendrier-mois {
     gap: 0.3rem;
+    grid-template-columns: repeat(7, minmax(80px, 1fr));
+    min-width: 600px; /* Force une largeur minimum pour éviter l'écrasement */
   }
   
   .jour-mois {
     min-height: 60px;
+    min-width: 80px;
     padding: 0.3rem;
   }
   
