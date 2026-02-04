@@ -1,107 +1,110 @@
-# ProFireManager - Product Requirements Document
+# ProFireManager - Document de Référence Produit (PRD)
 
-## Description
-Application de gestion complète pour les services de pompiers. Gère le personnel, les interventions, les formations, les EPI, les équipements, les remplacements, la paie et la prévention incendie.
+## Problème Original
+Application de gestion complète pour les services d'incendie, incluant :
+- Gestion des interventions et de la paie des pompiers
+- Module de génération d'avis de non-conformité
+- Éditeur de grilles d'interventions
+- Gestion des bâtiments et de la prévention
 
-## Architecture
-- **Frontend**: React avec Shadcn/UI
-- **Backend**: FastAPI (Python)
-- **Base de données**: MongoDB
-- **Intégrations**: Resend (emails), Stripe (paiements), Twilio (SMS), ReportLab (PDF)
+## Fonctionnalités Principales Implémentées
 
----
+### 1. Gestion de la Paie (Avancée)
+- Minimum d'heures payées configurable par source d'appel (CAUCA vs Urgence Santé)
+- Détection automatique de la source via chemin SFTP
+- Workflow de validation : Brouillon → Validé → Exporté
+- Export PDF groupé des feuilles de temps
 
-## Fonctionnalités Implémentées
+### 2. Gestion des Actifs - Véhicules
+- Champs enrichis : PNBV, type (urgence/soutien), statut
+- Suivi des vignettes d'inspection mécanique
+- Carnet de réparations avec historique complet
+- Alertes de maintenance sur le tableau de bord
+- Fiche de vie du véhicule
 
-### Module Prévention - Avis de Non-Conformité (Février 2026)
-- ✅ Référentiel des infractions (`ref_violations`) avec codes, descriptions, délais
-- ✅ Workflow de validation des inspections (en_attente_validation → validé/rejeté)
-- ✅ Génération de PDF d'avis de non-conformité avec ReportLab
-- ✅ Envoi de courriels aux contacts/propriétaires
-- ✅ Vue "À valider" pour les préventionnistes
-- ✅ Adressage intelligent (adresses postales différentes du bâtiment)
-- ✅ Permissions d'édition granulaires sur la fiche bâtiment :
-  - Préventionnistes/admins : modification complète
-  - Autres utilisateurs : modification contacts et notes uniquement
-- ✅ Bouton "Inspecter" retiré de la liste des bâtiments (disponible dans fiche détail)
-- ✅ Grilles d'inspection dans les paramètres du module
+### 3. Gestion des Actifs - Équipements ✅ NOUVEAU
+- Liste déroulante pour la fréquence d'inspection (journalière, hebdomadaire, mensuelle, bi-annuelle, annuelle, 2 ans, après usage)
+- Champ date de dernière inspection
+- Alertes automatiques sur le tableau de bord quand inspection due
+- Statistiques enrichies avec compteurs d'alertes
 
-### Module de Gestion des Secteurs (Février 2026)
-- ✅ Définition de secteurs par municipalités, codes postaux ou polygones
-- ✅ Carte interactive avec Leaflet pour dessiner les secteurs
-- ✅ Intégration dans les paramètres généraux
+### 4. Module Prévention
+- Interface harmonisée avec onglets horizontaux rouges
+- Gestion des bâtiments et inspections
 
-### Module Horaires Personnalisés (Février 2026)
-- ✅ Création d'horaires de rotation personnalisés (cycles 7-56 jours)
-- ✅ Support des quarts 24h et Jour/Nuit (12h)
-- ✅ Configuration des heures de travail (ex: 7h-18h jour, 18h-7h nuit)
-- ✅ Calendrier visuel interactif pour "peindre" les jours de chaque équipe
-- ✅ Aperçu du calendrier avec dates réelles
-- ✅ Duplication d'horaires (prédéfinis ou personnalisés)
-- ✅ Intégration dans le module "Mes disponibilités"
-- ✅ Génération automatique des indisponibilités selon les heures configurées
+### 5. Rapports d'Interventions
+- Route de seeding pour données de test (390 interventions)
+- Filtres et exports
 
-### Module EPI (Janvier-Février 2026)
-- ✅ Importation CSV/XLS/XLSX/TXT des EPI
-- ✅ Correspondance intelligente des employés (fuzzy matching)
-- ✅ Création automatique des types d'EPI manquants
+## Architecture Technique
 
-### Autres Modules
-- ✅ Gestion du personnel (temps plein/partiel)
-- ✅ Gestion des interventions
-- ✅ Gestion des formations (NFPA 1500)
-- ✅ Gestion des remplacements
-- ✅ Module de disponibilités/indisponibilités
-- ✅ Alertes équipements sur le tableau de bord
+```
+/app
+├── backend/
+│   ├── models/
+│   │   └── paie.py
+│   ├── routes/
+│   │   ├── actifs.py          # Véhicules, réparations
+│   │   ├── auth.py
+│   │   ├── dashboard.py       # Alertes véhicules et équipements
+│   │   ├── equipements.py     # CRUD équipements + inspections
+│   │   ├── paie_complet.py    # Logique paie + export PDF
+│   │   └── ...
+│   └── services/
+│       └── sftp_service.py    # Détection source d'appel
+└── frontend/
+    └── src/
+        ├── components/
+        │   ├── ActifsModals.jsx
+        │   ├── Dashboard.jsx
+        │   ├── GestionActifs.jsx
+        │   ├── MaterielEquipementsModule.jsx  # Suivi inspections
+        │   ├── ModulePaie.jsx
+        │   └── ...
+        └── contexts/
+```
 
----
+## Base de Données (MongoDB Atlas)
 
-## En Cours (P1)
-- [ ] Module de rapport d'interventions (squelettes existants)
+### Collections Principales
+- `interventions` : source_appel (cauca/urgence_sante)
+- `parametres_paie` : minimum_heures_cauca, minimum_heures_urgence_sante
+- `actifs` : pnbv, type_vehicule, vignette d'inspection
+- `reparations_vehicules` : historique réparations
+- `equipements` : frequence_inspection, date_derniere_inspection
+- `categories_equipements` : avec personnes ressources
+- `feuilles_temps` : statut (brouillon/validé/exporté)
 
----
+## Intégrations Tierces
+- **Resend** : E-mails
+- **Stripe** : Paiements
+- **Twilio** : SMS
+- **ReportLab** : Génération PDF
+- **react-leaflet** : Cartes
+- **@dnd-kit** : Drag & drop
 
-## Backlog (P2-P3)
+## Points Critiques
+- **Base de données distante** : MongoDB Atlas (profiremanager-dev), pas local
+- **Utilisateur test** : gussdub@gmail.com pour tenant `demo`
+- **Transmission DSI** : Actuellement MOCKED
 
-### P2 - Priorité Moyenne
-- Refactorisation des composants volumineux (ModuleEPI.jsx, GestionInterventions.jsx)
-- Finaliser la transmission DSI réelle (actuellement **MOCK**)
-- Module de gestion des jours fériés
-- Module de facturation pour l'entraide
-- Module "Schéma de couverture de risque"
+## Tâches Restantes
 
-### P3 - Priorité Basse
-- Gestion véhiculaire (codes radio 10-07, 10-17, 10-90)
+### P2 - Refactoring
+- [ ] Décomposer ModulePaie.jsx en sous-composants
+- [ ] Décomposer GestionActifs.jsx en sous-composants
+- [ ] Décomposer Dashboard.jsx en sous-composants
+- [ ] Centraliser logique d'envoi d'e-mails backend
 
----
+### P2 - Fonctionnalités
+- [ ] Finaliser transmission DSI réelle
+- [ ] Module de gestion des jours fériés
+- [ ] Module de facturation pour l'entraide
+- [ ] Module "Schéma de couverture de risque"
 
-## Informations Techniques
-
-### Collections MongoDB Prévention
-- `ref_violations`: Référentiel des infractions (code_article, description, délai, sévérité)
-- `inspections_visuelles`: Inspections avec statuts (brouillon, en_attente_validation, validé, rejeté)
-- `avis_non_conformite`: Avis générés avec PDF et historique d'envoi
-- `batiments`: Bâtiments avec adresses postales propriétaire/gestionnaire
-
-### APIs Clés Prévention
-- `GET/POST /api/{tenant}/ref-violations` - CRUD référentiel infractions
-- `POST /api/{tenant}/inspections-visuelles/{id}/soumettre` - Soumettre pour validation
-- `POST /api/{tenant}/inspections-visuelles/{id}/valider` - Valider inspection
-- `POST /api/{tenant}/inspections/{id}/generer-avis` - Générer PDF avis
-- `POST /api/{tenant}/avis-non-conformite/{id}/envoyer-courriel` - Envoyer par email
-
----
+### P3 - Améliorations
+- [ ] Gestion véhiculaire (codes radio 10-07, 10-17, 10-90)
 
 ## Dernière mise à jour
-3 février 2026
-
-### Changements récents (3 février 2026)
-- Nettoyage du code dupliqué : composant Prevention retiré de App.js, maintenant importé depuis Prevention.jsx
-- App.js réduit de 1423 à 568 lignes
-- Module Prévention accessible à tous les rôles (permissions différenciées à l'intérieur)
-- Bouton "Inspecter" ouvre la grille correspondant au groupe d'occupation du bâtiment
-- API grilles-inspection retourne les grilles globales + spécifiques au tenant
-- Permissions granulaires sur la fiche bâtiment (préventionnistes = tout modifier, autres = contacts/notes)
-- **Nouvel éditeur de grilles d'inspection** avec drag & drop, types de champs variés (Conforme/NC, Radio, Checkbox, Texte, Photo), photos de référence par section
-- Réorganisation du menu sidebar : Mes disponibilités au-dessus de Mes EPI, Rapports et Paramètres en dessous de Mon profil
-- Calendriers de disponibilités : affichage des disponibilités existantes en bleu clair avec bords arrondis, sélection prioritaire
+Date : 2025-02-04
+Session : Amélioration suivi inspections équipements
