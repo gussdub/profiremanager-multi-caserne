@@ -14923,6 +14923,7 @@ body.mobile-menu-open .sidebar {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+  overflow: hidden; /* Empêche tout débordement */
 }
 
 .mois-header h3 {
