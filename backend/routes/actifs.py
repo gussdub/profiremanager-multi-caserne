@@ -786,7 +786,7 @@ async def get_vehicle_lifecycle(
     vehicle_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Récupère la fiche de vie complète d'un véhicule (audit trail)"""
+    """Récupère la fiche de vie complète d'un véhicule (audit trail + réparations)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     if current_user.tenant_id != tenant.id:
@@ -794,17 +794,76 @@ async def get_vehicle_lifecycle(
     
     vehicle = await db.vehicules.find_one(
         {"id": vehicle_id, "tenant_id": tenant.id},
-        {"_id": 0, "logs": 1, "nom": 1, "type_vehicule": 1, "created_at": 1}
+        {"_id": 0}
     )
     if not vehicle:
         raise HTTPException(status_code=404, detail="Véhicule non trouvé")
+    
+    # Récupérer les réparations/entretiens (2 dernières années par défaut)
+    two_years_ago = (datetime.now(timezone.utc) - timedelta(days=730)).strftime("%Y-%m-%d")
+    reparations = await db.reparations_vehicules.find({
+        "tenant_id": tenant.id,
+        "vehicule_id": vehicle_id,
+        "date_reparation": {"$gte": two_years_ago}
+    }, {"_id": 0}).sort("date_reparation", -1).to_list(500)
+    
+    # Calculer les statistiques de coûts
+    cout_total = sum(r.get("cout", 0) or 0 for r in reparations)
+    cout_par_type = {}
+    for r in reparations:
+        t = r.get("type_intervention", "autre")
+        cout_par_type[t] = cout_par_type.get(t, 0) + (r.get("cout", 0) or 0)
+    
+    # Récupérer les rondes de sécurité récentes
+    rondes = await db.rondes_securite.find({
+        "tenant_id": tenant.id,
+        "vehicule_id": vehicle_id
+    }, {"_id": 0}).sort("date_ronde", -1).limit(20).to_list(20)
+    
+    # Récupérer les inventaires récents
+    inventaires = await db.inventaires_vehicules.find({
+        "tenant_id": tenant.id,
+        "vehicule_id": vehicle_id
+    }, {"_id": 0}).sort("date_inventaire", -1).limit(20).to_list(20)
     
     return {
         "vehicle_id": vehicle_id,
         "vehicle_name": vehicle.get("nom", ""),
         "vehicle_type": vehicle.get("type_vehicule", ""),
+        "marque": vehicle.get("marque", ""),
+        "modele": vehicle.get("modele", ""),
+        "annee": vehicle.get("annee"),
+        "vin": vehicle.get("vin", ""),
+        "kilometrage": vehicle.get("kilometrage"),
+        "statut": vehicle.get("statut", ""),
         "created_at": vehicle.get("created_at"),
-        "logs": vehicle.get("logs", [])
+        
+        # Infos SAAQ/PEP
+        "poids_pnbv": vehicle.get("poids_pnbv"),
+        "classification_saaq": vehicle.get("classification_saaq"),
+        "vignette_numero": vehicle.get("vignette_numero"),
+        "vignette_date_inspection": vehicle.get("vignette_date_inspection"),
+        "vignette_date_expiration": vehicle.get("vignette_date_expiration"),
+        "vignette_statut": vehicle.get("vignette_statut"),
+        
+        # Entretien périodique
+        "entretien_intervalle_mois": vehicle.get("entretien_intervalle_mois"),
+        "entretien_intervalle_km": vehicle.get("entretien_intervalle_km"),
+        "derniere_vidange_date": vehicle.get("derniere_vidange_date"),
+        "derniere_vidange_km": vehicle.get("derniere_vidange_km"),
+        
+        # Historique
+        "logs": vehicle.get("logs", []),
+        "reparations": reparations,
+        "rondes_securite": rondes,
+        "inventaires": inventaires,
+        
+        # Statistiques budget
+        "stats_budget": {
+            "cout_total_2ans": round(cout_total, 2),
+            "cout_par_type": {k: round(v, 2) for k, v in cout_par_type.items()},
+            "nb_reparations": len(reparations)
+        }
     }
 
 
