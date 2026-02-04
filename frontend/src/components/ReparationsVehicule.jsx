@@ -390,7 +390,7 @@ const ReparationsVehicule = ({ vehicule, tenant, onClose, onUpdate }) => {
                 
                 <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
                   <Button type="submit">
-                    <Save size={16} /> {editingId ? 'Modifier' : 'Enregistrer'}
+                    <Save size={16} /> Enregistrer
                   </Button>
                   <Button type="button" variant="outline" onClick={resetForm}>
                     Annuler
