@@ -138,6 +138,11 @@ const Dashboard = () => {
         setAlertesEquipements(results[7].data);
       }
       
+      // 9. Alertes maintenance véhicules (index 8)
+      if (results[8]?.data) {
+        setAlertesVehicules(results[8].data);
+      }
+      
       // Combiner les formations des deux années pour trouver les prochaines
       const formationsAnneeCourante = results[0]?.data || [];
       const formationsAnneeSuivante = results[6]?.data || [];
