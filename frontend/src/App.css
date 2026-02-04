@@ -15028,15 +15028,18 @@ body.mobile-menu-open .sidebar {
   
   .planning-mois {
     padding: 0.75rem;
+    overflow-x: auto; /* Permet le scroll horizontal sur tablette */
   }
   
   .calendrier-mois {
     gap: 0.4rem;
+    grid-template-columns: repeat(7, minmax(90px, 1fr));
   }
   
   .jour-mois {
     padding: 0.4rem;
     min-height: 70px;
+    min-width: 90px;
   }
   
   .planning-controls {
