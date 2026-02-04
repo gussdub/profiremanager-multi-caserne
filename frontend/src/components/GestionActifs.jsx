@@ -912,6 +912,19 @@ const GestionActifs = ({ user, ModuleEPI }) => {
           }}
         />
       )}
+
+      {/* Modal Réparations/Entretiens véhicule */}
+      {showReparationsModal && selectedVehiculeForReparations && (
+        <ReparationsVehicule
+          vehicule={selectedVehiculeForReparations}
+          tenant={tenantSlug}
+          onClose={() => {
+            setShowReparationsModal(false);
+            setSelectedVehiculeForReparations(null);
+          }}
+          onUpdate={() => fetchVehicules()}
+        />
+      )}
     </div>
   );
 };
