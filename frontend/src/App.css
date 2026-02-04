@@ -14993,6 +14993,8 @@ body.mobile-menu-open .sidebar {
   min-height: 24px;
   gap: 0.3rem;
   flex-shrink: 0;
+  width: 100%;  /* Prend toute la largeur disponible dans le conteneur parent */
+  box-sizing: border-box;
 }
 
 .garde-mois-item:hover {
