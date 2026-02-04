@@ -34,6 +34,8 @@ import SectionPertes from './interventions/SectionPertes';
 import SectionNarratif from './interventions/SectionNarratif';
 import SectionRemisePropriete from './interventions/SectionRemisePropriete';
 import SectionFacturation from './interventions/SectionFacturation';
+import SectionRCCI from './interventions/SectionRCCI';
+import SectionSinistre from './interventions/SectionSinistre';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
