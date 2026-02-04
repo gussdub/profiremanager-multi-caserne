@@ -14992,23 +14992,26 @@ body.mobile-menu-open .sidebar {
   background: white;
   cursor: pointer;
   font-size: 0.65rem;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
   min-height: 24px;
   gap: 0.3rem;
-  flex-shrink: 0;
-  width: 100%;  /* Prend toute la largeur disponible dans le conteneur parent */
+  flex-shrink: 1;
+  width: 100%;
+  max-width: 100%;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .garde-mois-item:hover {
-  transform: scale(1.05);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  /* Supprimé transform: scale pour éviter les problèmes de layout */
 }
 
 .garde-nom-complet {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
   flex: 1;
+  min-width: 0; /* Permet au texte de se tronquer correctement */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
