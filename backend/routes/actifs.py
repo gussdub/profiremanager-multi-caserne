@@ -131,6 +131,17 @@ class VehiculeCreate(BaseModel):
     photos: List[str] = []
     documents: List[Dict[str, str]] = []
     notes: Optional[str] = None
+    # Nouveaux champs SAAQ/PEP
+    poids_pnbv: Optional[float] = None
+    classification_saaq: Optional[str] = None
+    vignette_numero: Optional[str] = None
+    vignette_date_inspection: Optional[str] = None
+    vignette_date_expiration: Optional[str] = None
+    vignette_statut: Optional[str] = "conforme"
+    entretien_intervalle_mois: Optional[int] = None
+    entretien_intervalle_km: Optional[int] = None
+    derniere_vidange_date: Optional[str] = None
+    derniere_vidange_km: Optional[float] = None
 
 
 class VehiculeUpdate(BaseModel):
@@ -146,6 +157,57 @@ class VehiculeUpdate(BaseModel):
     modele_inventaire_id: Optional[str] = None
     photos: Optional[List[str]] = None
     documents: Optional[List[Dict[str, str]]] = None
+    notes: Optional[str] = None
+    # Nouveaux champs SAAQ/PEP
+    poids_pnbv: Optional[float] = None
+    classification_saaq: Optional[str] = None
+    vignette_numero: Optional[str] = None
+    vignette_date_inspection: Optional[str] = None
+    vignette_date_expiration: Optional[str] = None
+    vignette_statut: Optional[str] = None
+    entretien_intervalle_mois: Optional[int] = None
+    entretien_intervalle_km: Optional[int] = None
+    derniere_vidange_date: Optional[str] = None
+    derniere_vidange_km: Optional[float] = None
+
+
+# ==================== MODÈLES - RÉPARATIONS/ENTRETIENS VÉHICULES ====================
+
+class ReparationVehicule(BaseModel):
+    """Suivi des réparations et entretiens pour traçabilité et budget"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    vehicule_id: str
+    date_reparation: str  # YYYY-MM-DD
+    type_intervention: str  # entretien_preventif, reparation_mineure, reparation_majeure, inspection_mecanique, autre
+    description: str
+    cout: Optional[float] = None
+    fournisseur: Optional[str] = None  # Garage, mécanicien
+    kilometrage_actuel: Optional[float] = None
+    pieces_remplacees: Optional[str] = None
+    numero_facture: Optional[str] = None
+    statut: str = "complete"  # complete, en_cours, planifie
+    date_signalement: Optional[str] = None  # Pour les défectuosités (délai 48h)
+    priorite: str = "normale"  # normale, urgente (48h), critique (immédiat)
+    notes: Optional[str] = None
+    cree_par: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class ReparationCreate(BaseModel):
+    vehicule_id: str
+    date_reparation: str
+    type_intervention: str
+    description: str
+    cout: Optional[float] = None
+    fournisseur: Optional[str] = None
+    kilometrage_actuel: Optional[float] = None
+    pieces_remplacees: Optional[str] = None
+    numero_facture: Optional[str] = None
+    statut: str = "complete"
+    date_signalement: Optional[str] = None
+    priorite: str = "normale"
     notes: Optional[str] = None
 
 
