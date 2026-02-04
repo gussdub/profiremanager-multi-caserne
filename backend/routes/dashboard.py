@@ -383,6 +383,9 @@ async def get_alertes_equipements_dashboard(
                 }
                 freq_label = frequences_labels.get(frequence_inspection.lower().replace("-", "_"), frequence_inspection)
                 
+                # Récupérer les personnes ressources de la catégorie pour les notifications
+                personnes_ressources = categorie.get("personnes_ressources", [])
+                
                 alertes.append({
                     "type": "inspection",
                     "priorite": "haute" if est_en_retard else "moyenne",
@@ -393,7 +396,8 @@ async def get_alertes_equipements_dashboard(
                     "date_echeance": prochaine_inspection,
                     "en_retard": est_en_retard,
                     "equipement_id": eq.get("id"),
-                    "lien": f"/actifs/equipements/{eq.get('id')}"
+                    "lien": f"/actifs/equipements/{eq.get('id')}",
+                    "personnes_ressources": personnes_ressources  # Pour les notifications
                 })
         
         # 4. Champs spécifiques avec dates (péremptions)
