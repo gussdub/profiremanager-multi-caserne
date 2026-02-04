@@ -1133,6 +1133,18 @@ const VehiculeCard = ({ vehicule, onEdit, onDelete, onGenerateQR, onViewFicheVie
         )}
       </div>
 
+      {/* Actions réparations - Admin/Superviseur seulement */}
+      {canManageActifs && (
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+          <ActionButton
+            label="🔧 Réparations & Entretiens"
+            color="#dc2626"
+            onClick={() => onViewReparations(vehicule)}
+            small
+          />
+        </div>
+      )}
+
       {/* Actions tertiaires - Admin/Superviseur seulement */}
       {canManageActifs && (
         <div style={{ display: 'flex', gap: '8px' }}>
