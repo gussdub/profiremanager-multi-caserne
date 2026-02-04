@@ -1896,15 +1896,20 @@ const ModulePaie = ({ tenant }) => {
                   </td>
                   <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                      <Button variant="ghost" size="sm" onClick={() => handleVoirDetail(f.id)}>
+                      <Button variant="ghost" size="sm" onClick={() => handleVoirDetail(f.id)} title="Voir détail">
                         <Eye size={16} />
                       </Button>
+                      {(f.statut === 'valide' || f.statut === 'exporte') && (
+                        <Button variant="ghost" size="sm" onClick={() => handleExportPDF(f.id)} title="Télécharger PDF">
+                          <FileText size={16} style={{ color: '#3b82f6' }} />
+                        </Button>
+                      )}
                       {f.statut === 'brouillon' && (
                         <>
-                          <Button variant="ghost" size="sm" onClick={() => handleValiderFeuille(f.id)}>
-                            <Check size={16} style={{ color: '#dc2626' }} />
+                          <Button variant="ghost" size="sm" onClick={() => handleValiderFeuille(f.id)} title="Valider">
+                            <Check size={16} style={{ color: '#22c55e' }} />
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleSupprimerFeuille(f.id)}>
+                          <Button variant="ghost" size="sm" onClick={() => handleSupprimerFeuille(f.id)} title="Supprimer">
                             <Trash2 size={16} style={{ color: '#ef4444' }} />
                           </Button>
                         </>
