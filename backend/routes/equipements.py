@@ -236,14 +236,14 @@ class EquipementUpdate(BaseModel):
 # ==================== ROUTES CATÉGORIES ====================
 
 @router.get("/{tenant_slug}/equipements/categories")
-async def get_categories_equipement(
+async def get_categories_equipements(
     tenant_slug: str,
     current_user: User = Depends(get_current_user)
 ):
     """Récupérer toutes les catégories d'équipements"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    categories = await db.categories_equipement.find(
+    categories = await db.categories_equipements.find(
         {"tenant_id": tenant.id},
         {"_id": 0}
     ).sort("nom", 1).to_list(1000)
@@ -263,7 +263,7 @@ async def create_categorie_equipement(
     if current_user.role != 'admin':
         raise HTTPException(status_code=403, detail="Permission refusée - Admin requis")
     
-    existing = await db.categories_equipement.find_one({
+    existing = await db.categories_equipements.find_one({
         "tenant_id": tenant.id,
         "nom": categorie.nom
     })
@@ -276,7 +276,7 @@ async def create_categorie_equipement(
         **categorie.dict()
     )
     
-    await db.categories_equipement.insert_one(categorie_obj.dict())
+    await db.categories_equipements.insert_one(categorie_obj.dict())
     
     return {"message": "Catégorie créée avec succès", "id": categorie_obj.id, "categorie": categorie_obj.dict()}
 
@@ -294,7 +294,7 @@ async def update_categorie_equipement(
     if current_user.role != 'admin':
         raise HTTPException(status_code=403, detail="Permission refusée - Admin requis")
     
-    existing = await db.categories_equipement.find_one({
+    existing = await db.categories_equipements.find_one({
         "id": categorie_id,
         "tenant_id": tenant.id
     })
@@ -305,7 +305,7 @@ async def update_categorie_equipement(
     update_data = {k: v for k, v in categorie.dict().items() if v is not None}
     update_data["updated_at"] = datetime.now(timezone.utc)
     
-    await db.categories_equipement.update_one(
+    await db.categories_equipements.update_one(
         {"id": categorie_id, "tenant_id": tenant.id},
         {"$set": update_data}
     )
@@ -316,7 +316,7 @@ async def update_categorie_equipement(
             {"$set": {"categorie_nom": categorie.nom}}
         )
     
-    updated = await db.categories_equipement.find_one(
+    updated = await db.categories_equipements.find_one(
         {"id": categorie_id, "tenant_id": tenant.id},
         {"_id": 0}
     )
@@ -336,7 +336,7 @@ async def delete_categorie_equipement(
     if current_user.role != 'admin':
         raise HTTPException(status_code=403, detail="Permission refusée - Admin requis")
     
-    existing = await db.categories_equipement.find_one({
+    existing = await db.categories_equipements.find_one({
         "id": categorie_id,
         "tenant_id": tenant.id
     })
@@ -358,7 +358,7 @@ async def delete_categorie_equipement(
             detail=f"Impossible de supprimer: {equipements_count} équipement(s) utilisent cette catégorie"
         )
     
-    await db.categories_equipement.delete_one({"id": categorie_id, "tenant_id": tenant.id})
+    await db.categories_equipements.delete_one({"id": categorie_id, "tenant_id": tenant.id})
     
     return {"message": "Catégorie supprimée avec succès"}
 
@@ -785,7 +785,7 @@ async def get_stats_equipements(
         "alerte_stock_bas": True
     })
     
-    categories = await db.categories_equipement.find(
+    categories = await db.categories_equipements.find(
         {"tenant_id": tenant.id},
         {"_id": 0, "id": 1, "nom": 1}
     ).to_list(100)

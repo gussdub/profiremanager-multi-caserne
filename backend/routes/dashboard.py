@@ -296,7 +296,7 @@ async def get_alertes_equipements_dashboard(
     
     if not is_admin:
         # Vérifier si l'utilisateur est personne ressource d'une catégorie
-        categories = await db.categories_equipement.find({"tenant_id": tenant.id}).to_list(1000)
+        categories = await db.categories_equipements.find({"tenant_id": tenant.id}).to_list(1000)
         for cat in categories:
             personnes_ressources = cat.get("personnes_ressources", [])
             for pr in personnes_ressources:
@@ -318,7 +318,7 @@ async def get_alertes_equipements_dashboard(
     equipements = await db.equipements.find(equipements_filter).to_list(10000)
     categories_map = {}
     if is_admin or is_personne_ressource:
-        cats = await db.categories_equipement.find({"tenant_id": tenant.id}).to_list(1000)
+        cats = await db.categories_equipements.find({"tenant_id": tenant.id}).to_list(1000)
         categories_map = {c["id"]: c for c in cats}
     
     for eq in equipements:

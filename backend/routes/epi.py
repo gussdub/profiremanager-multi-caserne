@@ -2233,7 +2233,7 @@ async def get_masque_apria_assigne(tenant_slug: str, current_user: User = Depend
     tenant = await get_tenant_from_slug(tenant_slug)
     
     # Chercher la catégorie APRIA ou Masques APRIA
-    categorie_masques = await db.categories_equipement.find_one(
+    categorie_masques = await db.categories_equipements.find_one(
         {"tenant_id": tenant.id, "nom": {"$regex": "(masque|facial|APRIA)", "$options": "i"}},
         {"_id": 0}
     )
