@@ -311,7 +311,7 @@ async def get_equipements_apria(
     tenant = await get_tenant_from_slug(tenant_slug)
     
     # Chercher la catégorie APRIA
-    categorie_apria = await db.categories_equipements.find_one(
+    categorie_apria = await db.categories_equipement.find_one(
         {"tenant_id": tenant.id, "nom": {"$regex": "APRIA", "$options": "i"}},
         {"_id": 0}
     )
@@ -1338,7 +1338,7 @@ async def migrer_formulaires_existants(
             })
         
         # Trouver les catégories APRIA
-        cat_apria = await db.categories_equipements.find_one(
+        cat_apria = await db.categories_equipement.find_one(
             {"tenant_id": tenant.id, "nom": {"$regex": "APRIA", "$options": "i"}}
         )
         
@@ -1443,7 +1443,7 @@ async def migrer_formulaires_existants(
             })
         
         # Trouver les catégories Parties Faciales
-        cat_pf = await db.categories_equipements.find_one(
+        cat_pf = await db.categories_equipement.find_one(
             {"tenant_id": tenant.id, "nom": {"$regex": "faciale", "$options": "i"}}
         )
         

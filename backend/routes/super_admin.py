@@ -58,7 +58,7 @@ security = HTTPBearer()
 
 # ==================== HELPER FUNCTIONS ====================
 
-async def initialiser_categories_equipements_defaut(tenant_id: str) -> int:
+async def initialiser_categories_equipement_defaut(tenant_id: str) -> int:
     """
     Initialise les catégories d'équipements par défaut pour un nouveau tenant.
     Retourne le nombre de catégories créées.
@@ -301,7 +301,7 @@ async def initialiser_categories_equipements_defaut(tenant_id: str) -> int:
             "updated_at": datetime.now(timezone.utc).isoformat()
         }
         
-        await db.categories_equipements.insert_one(categorie_obj)
+        await db.categories_equipement.insert_one(categorie_obj)
         created_count += 1
     
     logger.info(f"✅ {created_count} catégories d'équipements créées pour le tenant {tenant_id}")
@@ -507,13 +507,13 @@ async def create_tenant(tenant_create: TenantCreate, admin: SuperAdmin = Depends
     await db.tenants.insert_one(tenant.dict())
     
     # Initialiser les catégories d'équipements par défaut
-    categories_creees = await initialiser_categories_equipements_defaut(tenant.id)
+    categories_creees = await initialiser_categories_equipement_defaut(tenant.id)
     
     # Enregistrer l'action dans le journal d'audit
     await log_super_admin_action(
         admin=admin,
         action="tenant_create",
-        details={"tenant_slug": tenant.slug, "tenant_nom": tenant.nom, "categories_equipements_creees": categories_creees},
+        details={"tenant_slug": tenant.slug, "tenant_nom": tenant.nom, "categories_equipement_creees": categories_creees},
         tenant_id=tenant.id,
         tenant_slug=tenant.slug,
         tenant_nom=tenant.nom
