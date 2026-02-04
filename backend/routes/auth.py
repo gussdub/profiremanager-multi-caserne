@@ -86,6 +86,10 @@ async def tenant_login(tenant_slug: str, login: LoginRequest):
     Connexion d'un utilisateur à un tenant spécifique.
     Supporte aussi les super-admins qui peuvent se connecter à n'importe quel tenant.
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"[LOGIN] Tentative de connexion: {login.email} pour tenant: {tenant_slug}")
+    
     tenant = await get_tenant_from_slug(tenant_slug)
     
     # D'abord chercher l'utilisateur dans le tenant
@@ -93,6 +97,8 @@ async def tenant_login(tenant_slug: str, login: LoginRequest):
         "tenant_id": tenant.id,
         "email": login.email.lower().strip()
     })
+    
+    logger.info(f"[LOGIN] User trouvé: {user is not None}, tenant_id: {tenant.id}")
     
     # Si pas trouvé, vérifier si c'est un super-admin
     if not user:
