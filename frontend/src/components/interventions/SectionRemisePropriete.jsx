@@ -490,6 +490,75 @@ const SectionRemisePropriete = ({ intervention, tenantSlug, user, getToken, toas
             </label>
           )}
           
+          {/* ========== PHOTOS DES DOMMAGES AVANT DÉPART ========== */}
+          <div className="bg-purple-50 rounded-lg border-2 border-purple-300 p-4 space-y-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h4 className="font-semibold text-purple-800 flex items-center gap-2">
+                  📸 Photos des dommages avant départ
+                </h4>
+                <p className="text-xs text-purple-600 mt-1">
+                  Protection contre les réclamations abusives - Documentez l'état des lieux (portes forcées, dégâts d'eau, etc.)
+                </p>
+              </div>
+              <div>
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handlePhotoDommage}
+                  className="hidden"
+                />
+                <button 
+                  type="button"
+                  onClick={() => photoInputRef.current?.click()}
+                  disabled={uploadingPhoto}
+                  className="bg-purple-500 hover:bg-purple-600 text-white px-3 py-2 rounded text-sm"
+                >
+                  {uploadingPhoto ? '⏳ Upload...' : '📷 Prendre photo'}
+                </button>
+              </div>
+            </div>
+            
+            {photosDommages.length === 0 ? (
+              <div className="text-center py-4 text-purple-600">
+                <span className="text-3xl">📷</span>
+                <p className="text-sm mt-2">Aucune photo. Prenez des photos des dommages avant de faire signer.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {photosDommages.map(photo => (
+                  <div key={photo.id} className="relative group">
+                    <img 
+                      src={photo.photo_base64} 
+                      alt="Photo dommage" 
+                      className="w-full h-20 object-cover rounded-lg border-2 border-purple-200"
+                    />
+                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-1 rounded-b-lg truncate">
+                      {new Date(photo.timestamp).toLocaleString('fr-CA', { 
+                        hour: '2-digit', 
+                        minute: '2-digit'
+                      })} - {photo.uploaded_by_name || 'N/A'}
+                    </div>
+                    <button 
+                      type="button"
+                      onClick={() => handleDeletePhotoDommage(photo.id)}
+                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            <p className="text-xs text-purple-700 bg-purple-100 p-2 rounded">
+              💡 <strong>Conseil:</strong> Photographiez toute porte ou fenêtre forcée, les dégâts d'eau visibles, 
+              et tout équipement qui était déjà endommagé avant votre intervention.
+            </p>
+          </div>
+          
           {/* Signatures */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
