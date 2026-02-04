@@ -1818,8 +1818,31 @@ const ModulePaie = ({ tenant }) => {
           <Search size={16} />
         </Button>
         <div style={{ flex: 1 }} />
+        
+        {/* Bouton Valider tout */}
+        {feuilles.filter(f => f.statut === 'brouillon').length > 0 && (
+          <Button 
+            onClick={handleValiderTout} 
+            disabled={loading}
+            variant="outline"
+            style={{ borderColor: '#22c55e', color: '#22c55e' }}
+          >
+            <Check size={16} /> Valider tout ({feuilles.filter(f => f.statut === 'brouillon').length})
+          </Button>
+        )}
+        
+        {/* Export PDF */}
+        <Button 
+          onClick={() => handleExportPDF()} 
+          disabled={loading || feuilles.filter(f => f.statut === 'valide' || f.statut === 'exporte').length === 0}
+          variant="outline"
+        >
+          <FileText size={16} /> PDF
+        </Button>
+        
+        {/* Export Excel */}
         <Button onClick={handleExportPaie} disabled={loading}>
-          <Download size={16} /> Exporter fichier
+          <Download size={16} /> Exporter Excel
         </Button>
         {selectedProvider?.api_available && payrollConfig?.api_connection_tested && (
           <Button 
