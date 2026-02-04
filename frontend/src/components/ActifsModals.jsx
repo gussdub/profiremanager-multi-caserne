@@ -622,87 +622,281 @@ const QRCodeModal = ({ qrCodeData, onClose }) => (
   </div>
 );
 
-const FicheVieModal = ({ ficheVieData, onClose }) => (
-  <div style={{
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 100000
-  }}>
-    <div style={{
-      backgroundColor: 'white',
-      borderRadius: '12px',
-      padding: '30px',
-      maxWidth: '700px',
-      width: '90%',
-      maxHeight: '80vh',
-      overflow: 'auto'
-    }}>
-      <h2 style={{ marginTop: 0 }}>📋 Fiche de vie - {ficheVieData.vehicle_name}</h2>
-      <p style={{ color: '#666', marginBottom: '20px' }}>
-        {ficheVieData.vehicle_type} • Créé le {new Date(ficheVieData.created_at).toLocaleString('fr-CA')}
-      </p>
+const FicheVieModal = ({ ficheVieData, onClose }) => {
+  const [activeTab, setActiveTab] = useState('general');
+  
+  const formatMontant = (val) => {
+    if (!val) return '0,00 $';
+    return new Intl.NumberFormat('fr-CA', { style: 'currency', currency: 'CAD' }).format(val);
+  };
 
-      {ficheVieData.logs && ficheVieData.logs.length > 0 ? (
-        <div style={{ marginTop: '20px' }}>
-          {ficheVieData.logs.map((log, index) => (
-            <div key={index} style={{
-              padding: '15px',
-              backgroundColor: '#f8f9fa',
-              borderLeft: '4px solid #3498db',
-              marginBottom: '10px',
-              borderRadius: '4px'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <strong style={{ color: '#2c3e50' }}>{log.action}</strong>
-                <span style={{ fontSize: '13px', color: '#7f8c8d' }}>
-                  {new Date(log.date).toLocaleString('fr-CA')}
-                </span>
-              </div>
-              <p style={{ margin: '5px 0', color: '#555' }}>{log.details}</p>
-              <p style={{ margin: '5px 0', fontSize: '13px', color: '#7f8c8d' }}>
-                Par: {log.user_name}
-              </p>
-              {log.gps && (
-                <p style={{ margin: '5px 0', fontSize: '12px', color: '#95a5a6' }}>
-                  📍 GPS: {log.gps[1]}, {log.gps[0]}
-                </p>
-              )}
-            </div>
+  const getTypeLabel = (type) => {
+    const labels = {
+      'entretien_preventif': '🔧 Entretien préventif',
+      'reparation_mineure': '⚠️ Réparation mineure',
+      'reparation_majeure': '🔴 Réparation majeure',
+      'inspection_mecanique': '📋 Inspection mécanique',
+      'autre': '📝 Autre'
+    };
+    return labels[type] || type;
+  };
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 100000
+    }}>
+      <div style={{
+        backgroundColor: 'white',
+        borderRadius: '12px',
+        padding: '24px',
+        maxWidth: '900px',
+        width: '95%',
+        maxHeight: '90vh',
+        overflow: 'auto'
+      }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+          <div>
+            <h2 style={{ margin: 0, color: '#1e293b' }}>📋 Fiche de vie - {ficheVieData.vehicle_name}</h2>
+            <p style={{ color: '#64748b', margin: '4px 0 0' }}>
+              {ficheVieData.vehicle_type} • {ficheVieData.marque} {ficheVieData.modele} • {ficheVieData.annee}
+            </p>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            {ficheVieData.vignette_statut && (
+              <span style={{
+                padding: '4px 12px',
+                borderRadius: '20px',
+                fontSize: '0.75rem',
+                fontWeight: '600',
+                backgroundColor: ficheVieData.vignette_statut === 'conforme' ? '#dcfce7' : '#fee2e2',
+                color: ficheVieData.vignette_statut === 'conforme' ? '#166534' : '#991b1b'
+              }}>
+                {ficheVieData.vignette_statut === 'conforme' ? '✅ Conforme' : '❌ ' + ficheVieData.vignette_statut}
+              </span>
+            )}
+            <p style={{ color: '#64748b', fontSize: '0.75rem', margin: '8px 0 0' }}>
+              VIN: {ficheVieData.vin || 'N/A'} • {ficheVieData.kilometrage ? `${ficheVieData.kilometrage.toLocaleString()} km` : ''}
+            </p>
+          </div>
+        </div>
+
+        {/* Onglets */}
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '1px solid #e5e7eb', paddingBottom: '8px' }}>
+          {['general', 'reparations', 'rondes', 'historique'].map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: '500',
+                backgroundColor: activeTab === tab ? '#dc2626' : '#f1f5f9',
+                color: activeTab === tab ? 'white' : '#475569'
+              }}
+            >
+              {tab === 'general' && '📊 Général'}
+              {tab === 'reparations' && `🔧 Réparations (${ficheVieData.reparations?.length || 0})`}
+              {tab === 'rondes' && `🚗 Rondes (${ficheVieData.rondes_securite?.length || 0})`}
+              {tab === 'historique' && `📜 Historique`}
+            </button>
           ))}
         </div>
-      ) : (
-        <p style={{ textAlign: 'center', color: '#999', padding: '40px' }}>
-          Aucune entrée dans la fiche de vie
-        </p>
-      )}
 
-      <button
-        onClick={onClose}
-        style={{
-          marginTop: '20px',
-          padding: '12px',
-          width: '100%',
-          backgroundColor: '#3498db',
-          color: 'white',
-          border: 'none',
-          borderRadius: '8px',
-          cursor: 'pointer',
-          fontSize: '15px',
-          fontWeight: 'bold'
-        }}
-      >
-        Fermer
-      </button>
+        {/* Contenu des onglets */}
+        {activeTab === 'general' && (
+          <div>
+            {/* Infos SAAQ/PEP */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+              <div style={{ padding: '16px', backgroundColor: '#fef3c7', borderRadius: '8px' }}>
+                <div style={{ fontSize: '0.75rem', color: '#92400e', fontWeight: '600' }}>Classification SAAQ</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#78350f' }}>
+                  {ficheVieData.classification_saaq === 'urgence' ? '🚨 Urgence' : ficheVieData.classification_saaq === 'soutien' ? '🚗 Soutien' : 'N/A'}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#92400e' }}>
+                  PNBV: {ficheVieData.poids_pnbv ? `${ficheVieData.poids_pnbv.toLocaleString()} kg` : 'N/A'}
+                </div>
+              </div>
+              
+              <div style={{ padding: '16px', backgroundColor: '#fee2e2', borderRadius: '8px' }}>
+                <div style={{ fontSize: '0.75rem', color: '#991b1b', fontWeight: '600' }}>Vignette PEP</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#7f1d1d' }}>
+                  #{ficheVieData.vignette_numero || 'N/A'}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#991b1b' }}>
+                  Expire: {ficheVieData.vignette_date_expiration || 'N/A'}
+                </div>
+              </div>
+              
+              <div style={{ padding: '16px', backgroundColor: '#dbeafe', borderRadius: '8px' }}>
+                <div style={{ fontSize: '0.75rem', color: '#1e40af', fontWeight: '600' }}>Dernier entretien</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#1e3a8a' }}>
+                  {ficheVieData.derniere_vidange_date || 'N/A'}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#1e40af' }}>
+                  {ficheVieData.derniere_vidange_km ? `${ficheVieData.derniere_vidange_km.toLocaleString()} km` : ''}
+                </div>
+              </div>
+              
+              <div style={{ padding: '16px', backgroundColor: '#dcfce7', borderRadius: '8px' }}>
+                <div style={{ fontSize: '0.75rem', color: '#166534', fontWeight: '600' }}>Budget réparations (2 ans)</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#14532d' }}>
+                  {formatMontant(ficheVieData.stats_budget?.cout_total_2ans)}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#166534' }}>
+                  {ficheVieData.stats_budget?.nb_reparations || 0} intervention(s)
+                </div>
+              </div>
+            </div>
+
+            {/* Répartition des coûts par type */}
+            {ficheVieData.stats_budget?.cout_par_type && Object.keys(ficheVieData.stats_budget.cout_par_type).length > 0 && (
+              <div style={{ padding: '16px', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
+                <h4 style={{ margin: '0 0 12px', color: '#475569' }}>Répartition des coûts par type</h4>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+                  {Object.entries(ficheVieData.stats_budget.cout_par_type).map(([type, cout]) => (
+                    <div key={type} style={{ padding: '8px 12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{getTypeLabel(type)}</div>
+                      <div style={{ fontWeight: '600' }}>{formatMontant(cout)}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'reparations' && (
+          <div>
+            {ficheVieData.reparations && ficheVieData.reparations.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {ficheVieData.reparations.map((rep, idx) => (
+                  <div key={idx} style={{
+                    padding: '16px',
+                    backgroundColor: rep.type_intervention === 'reparation_majeure' ? '#fee2e2' : '#f8fafc',
+                    borderLeft: `4px solid ${rep.type_intervention === 'reparation_majeure' ? '#dc2626' : rep.type_intervention === 'reparation_mineure' ? '#f97316' : '#3b82f6'}`,
+                    borderRadius: '8px'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <strong>{getTypeLabel(rep.type_intervention)}</strong>
+                      <span style={{ color: '#64748b', fontSize: '0.875rem' }}>{rep.date_reparation}</span>
+                    </div>
+                    <p style={{ margin: '0 0 8px', color: '#374151' }}>{rep.description}</p>
+                    <div style={{ display: 'flex', gap: '16px', fontSize: '0.875rem', color: '#64748b' }}>
+                      {rep.cout && <span>💰 {formatMontant(rep.cout)}</span>}
+                      {rep.fournisseur && <span>🏪 {rep.fournisseur}</span>}
+                      {rep.kilometrage_actuel && <span>📍 {rep.kilometrage_actuel.toLocaleString()} km</span>}
+                      {rep.numero_facture && <span>📄 #{rep.numero_facture}</span>}
+                    </div>
+                    {rep.pieces_remplacees && (
+                      <p style={{ margin: '8px 0 0', fontSize: '0.75rem', color: '#64748b' }}>
+                        Pièces: {rep.pieces_remplacees}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ textAlign: 'center', color: '#64748b', padding: '40px' }}>
+                Aucune réparation enregistrée
+              </p>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'rondes' && (
+          <div>
+            {ficheVieData.rondes_securite && ficheVieData.rondes_securite.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {ficheVieData.rondes_securite.map((ronde, idx) => (
+                  <div key={idx} style={{
+                    padding: '16px',
+                    backgroundColor: ronde.resultat === 'conforme' ? '#f0fdf4' : '#fee2e2',
+                    borderLeft: `4px solid ${ronde.resultat === 'conforme' ? '#22c55e' : '#ef4444'}`,
+                    borderRadius: '8px'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <strong>{ronde.resultat === 'conforme' ? '✅ Conforme' : '❌ Défectuosité'}</strong>
+                      <span style={{ color: '#64748b', fontSize: '0.875rem' }}>{ronde.date_ronde}</span>
+                    </div>
+                    <p style={{ margin: '0', fontSize: '0.875rem', color: '#64748b' }}>
+                      Par: {ronde.inspecteur_nom || 'N/A'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ textAlign: 'center', color: '#64748b', padding: '40px' }}>
+                Aucune ronde de sécurité enregistrée
+              </p>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'historique' && (
+          <div>
+            {ficheVieData.logs && ficheVieData.logs.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {ficheVieData.logs.slice().reverse().map((log, index) => (
+                  <div key={index} style={{
+                    padding: '12px 16px',
+                    backgroundColor: '#f8fafc',
+                    borderLeft: '3px solid #3b82f6',
+                    borderRadius: '6px'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <strong style={{ color: '#1e293b', fontSize: '0.875rem' }}>{log.action}</strong>
+                      <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                        {new Date(log.date).toLocaleString('fr-CA')}
+                      </span>
+                    </div>
+                    {log.details && <p style={{ margin: '0', color: '#475569', fontSize: '0.875rem' }}>{log.details}</p>}
+                    <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#94a3b8' }}>
+                      Par: {log.user_nom || log.user_name || 'Système'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ textAlign: 'center', color: '#64748b', padding: '40px' }}>
+                Aucune entrée dans l'historique
+              </p>
+            )}
+          </div>
+        )}
+
+        <button
+          onClick={onClose}
+          style={{
+            marginTop: '24px',
+            padding: '12px',
+            width: '100%',
+            backgroundColor: '#dc2626',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '15px',
+            fontWeight: 'bold'
+          }}
+        >
+          Fermer
+        </button>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const InspectionHistoryModal = ({ vehicle, inspections, onClose }) => (
   <div style={{
