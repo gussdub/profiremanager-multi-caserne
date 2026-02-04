@@ -931,6 +931,29 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
             />
           )}
           
+          {activeSection === 'sinistre' && (
+            <SectionSinistre
+              intervention={formData}
+              tenantSlug={tenantSlug}
+              user={user}
+              getToken={getToken}
+              toast={toast}
+              canEdit={canEdit && !isLocked && !readOnly}
+            />
+          )}
+          
+          {activeSection === 'rcci' && (
+            <SectionRCCI
+              intervention={formData}
+              tenantSlug={tenantSlug}
+              user={user}
+              getToken={getToken}
+              toast={toast}
+              canEdit={canEdit && !isLocked && !readOnly}
+              personnel={personnel}
+            />
+          )}
+          
           {activeSection === 'remise' && (
             <SectionRemisePropriete
               intervention={formData}
