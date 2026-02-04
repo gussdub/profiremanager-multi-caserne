@@ -365,17 +365,30 @@ async def get_alertes_equipements_dashboard(
         
         # 3. Alerte inspection due (basée sur fréquence)
         frequence_inspection = eq.get("frequence_inspection") or categorie.get("frequence_inspection")
-        derniere_inspection = eq.get("derniere_inspection")
-        if frequence_inspection and frequence_inspection != "aucune":
-            prochaine_inspection = calculer_prochaine_date(derniere_inspection, frequence_inspection)
+        derniere_inspection = eq.get("date_derniere_inspection") or eq.get("derniere_inspection")
+        if frequence_inspection and frequence_inspection not in ["aucune", "", "apres_usage"]:
+            prochaine_inspection = eq.get("date_prochaine_inspection") or calculer_prochaine_date(derniere_inspection, frequence_inspection)
             if prochaine_inspection and prochaine_inspection <= date_limite_maintenance:
                 est_en_retard = prochaine_inspection < aujourdhui.isoformat()[:10]
+                
+                # Libellé de la fréquence pour l'affichage
+                frequences_labels = {
+                    "journaliere": "Journalière",
+                    "hebdomadaire": "Hebdomadaire",
+                    "mensuelle": "Mensuelle",
+                    "bi_annuelle": "Bi-annuelle",
+                    "annuelle": "Annuelle",
+                    "2ans": "2 ans",
+                    "2_ans": "2 ans"
+                }
+                freq_label = frequences_labels.get(frequence_inspection.lower().replace("-", "_"), frequence_inspection)
+                
                 alertes.append({
                     "type": "inspection",
                     "priorite": "haute" if est_en_retard else "moyenne",
                     "icone": "🔍",
                     "titre": "Inspection due",
-                    "description": f"{eq_nom} ({frequence_inspection})",
+                    "description": f"{eq_nom} ({freq_label})",
                     "categorie": cat_nom,
                     "date_echeance": prochaine_inspection,
                     "en_retard": est_en_retard,
