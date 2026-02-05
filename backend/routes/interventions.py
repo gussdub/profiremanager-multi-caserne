@@ -210,8 +210,7 @@ async def get_interventions_dashboard(
 
 @router.get("/{tenant_slug}/interventions/reference-data")
 async def get_intervention_reference_data(
-    tenant_slug: str,
-    current_user: User = Depends(get_current_user)
+    tenant_slug: str
 ):
     """Récupère les données de référence (natures, causes, etc.) depuis les tables DSI"""
     # Utiliser les nouvelles collections DSI
