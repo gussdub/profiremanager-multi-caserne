@@ -476,7 +476,15 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
   const filteredMenuItems = menuItems.filter(item => {
     if (!item.roles.includes(user?.role)) return false;
     if (item.id === 'disponibilites' && !['temps_partiel', 'temporaire'].includes(user?.type_emploi) && !['admin', 'superviseur'].includes(user?.role)) return false;
-    if (item.id === 'prevention' && !authTenant?.parametres?.module_prevention_active) return false;
+    
+    // Module Prévention : vérifier si actif
+    // Si authTenant n'est pas encore chargé, on attend (ne pas filtrer)
+    if (item.id === 'prevention') {
+      // Si le tenant n'est pas encore chargé, ne pas afficher par défaut
+      if (!authTenant) return false;
+      // Sinon, vérifier le paramètre
+      if (!authTenant?.parametres?.module_prevention_active) return false;
+    }
     
     // Module Interventions : 
     // - Admin/Superviseur : accès complet
