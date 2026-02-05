@@ -250,8 +250,7 @@ async def get_intervention_reference_data(
 
 @router.post("/{tenant_slug}/interventions/seed-dsi-references")
 async def seed_dsi_reference_data(
-    tenant_slug: str,
-    current_user: User = Depends(get_current_user)
+    tenant_slug: str
 ):
     """Initialise les données de référence DSI (codes MSP du Québec)"""
     
