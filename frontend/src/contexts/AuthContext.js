@@ -40,6 +40,23 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem(getStorageKey(key));
   };
 
+  // Restaurer le tenant depuis le localStorage au démarrage
+  useEffect(() => {
+    if (tenantSlug) {
+      const storedTenant = getItem('tenant');
+      if (storedTenant) {
+        try {
+          const parsedTenant = JSON.parse(storedTenant);
+          if (parsedTenant && !tenant) {
+            setTenant(parsedTenant);
+          }
+        } catch (e) {
+          console.error('Erreur parsing tenant stocké:', e);
+        }
+      }
+    }
+  }, [tenantSlug]);
+
   useEffect(() => {
     // Ne pas vérifier le token si pas de tenantSlug (en attente du slug)
     if (!tenantSlug) {
