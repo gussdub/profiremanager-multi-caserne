@@ -248,6 +248,214 @@ async def get_intervention_reference_data(
     }
 
 
+@router.post("/{tenant_slug}/interventions/seed-dsi-references")
+async def seed_dsi_reference_data(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Initialise les données de référence DSI (codes MSP du Québec)"""
+    
+    # Causes probables (MSP)
+    causes = [
+        {"code": "1", "libelle": "Incendiaire (intentionnel)"},
+        {"code": "2", "libelle": "Suspect"},
+        {"code": "3", "libelle": "Imprudence de fumeur"},
+        {"code": "4", "libelle": "Jeux d'enfants"},
+        {"code": "5", "libelle": "Utilisation imprudente d'un appareil de chauffage"},
+        {"code": "6", "libelle": "Défaillance mécanique ou électrique"},
+        {"code": "7", "libelle": "Causes naturelles"},
+        {"code": "8", "libelle": "Exposition à d'autres feux"},
+        {"code": "9", "libelle": "Autre cause accidentelle"},
+        {"code": "0", "libelle": "Cause indéterminée"},
+    ]
+    
+    # Sources de chaleur (MSP)
+    sources_chaleur = [
+        {"code": "11", "libelle": "Équipement électrique en fonctionnement"},
+        {"code": "12", "libelle": "Équipement électrique en panne/défectueux"},
+        {"code": "13", "libelle": "Câblage électrique"},
+        {"code": "21", "libelle": "Appareil de chauffage central"},
+        {"code": "22", "libelle": "Appareil de chauffage d'appoint fixe"},
+        {"code": "23", "libelle": "Appareil de chauffage d'appoint portatif"},
+        {"code": "24", "libelle": "Cheminée, foyer"},
+        {"code": "31", "libelle": "Équipement de cuisson - cuisinière"},
+        {"code": "32", "libelle": "Équipement de cuisson - four"},
+        {"code": "33", "libelle": "Équipement de cuisson - BBQ"},
+        {"code": "34", "libelle": "Équipement de cuisson - friteuse"},
+        {"code": "41", "libelle": "Flamme/étincelle d'outils/équipement de travail"},
+        {"code": "42", "libelle": "Torche, chalumeau"},
+        {"code": "43", "libelle": "Équipement de soudure"},
+        {"code": "51", "libelle": "Allumette"},
+        {"code": "52", "libelle": "Briquet"},
+        {"code": "53", "libelle": "Bougie, lampion"},
+        {"code": "54", "libelle": "Cigarette, cigare"},
+        {"code": "61", "libelle": "Foudre"},
+        {"code": "62", "libelle": "Soleil (concentration de rayons)"},
+        {"code": "71", "libelle": "Véhicule à moteur"},
+        {"code": "72", "libelle": "Petit équipement motorisé"},
+        {"code": "81", "libelle": "Feux d'artifice"},
+        {"code": "82", "libelle": "Fusées éclairantes"},
+        {"code": "90", "libelle": "Autre source de chaleur"},
+        {"code": "00", "libelle": "Source de chaleur indéterminée"},
+    ]
+    
+    # Matériaux premiers enflammés (MSP)
+    materiaux = [
+        {"code": "11", "libelle": "Gaz naturel"},
+        {"code": "12", "libelle": "Propane, butane"},
+        {"code": "13", "libelle": "Essence"},
+        {"code": "14", "libelle": "Kérosène, diesel"},
+        {"code": "15", "libelle": "Huile de cuisson"},
+        {"code": "16", "libelle": "Autre liquide inflammable"},
+        {"code": "21", "libelle": "Bois de construction"},
+        {"code": "22", "libelle": "Bois de finition"},
+        {"code": "23", "libelle": "Bois de chauffage"},
+        {"code": "31", "libelle": "Tissu, textile"},
+        {"code": "32", "libelle": "Vêtements"},
+        {"code": "33", "libelle": "Literie, matelas"},
+        {"code": "34", "libelle": "Meubles rembourrés"},
+        {"code": "41", "libelle": "Papier, carton"},
+        {"code": "42", "libelle": "Plastique"},
+        {"code": "43", "libelle": "Caoutchouc"},
+        {"code": "51", "libelle": "Isolant électrique"},
+        {"code": "52", "libelle": "Câblage/fil électrique"},
+        {"code": "61", "libelle": "Herbe, feuilles, végétation"},
+        {"code": "62", "libelle": "Ordures, déchets"},
+        {"code": "71", "libelle": "Graisse de cuisson"},
+        {"code": "72", "libelle": "Nourriture"},
+        {"code": "90", "libelle": "Autre matériau"},
+        {"code": "00", "libelle": "Matériau indéterminé"},
+    ]
+    
+    # Facteurs ayant contribué à l'allumage (MSP)
+    facteurs_allumage = [
+        {"code": "11", "libelle": "Court-circuit, arc électrique"},
+        {"code": "12", "libelle": "Surcharge électrique"},
+        {"code": "13", "libelle": "Défaut d'isolation électrique"},
+        {"code": "21", "libelle": "Accumulation de créosote"},
+        {"code": "22", "libelle": "Installation non conforme"},
+        {"code": "23", "libelle": "Défaut d'entretien"},
+        {"code": "31", "libelle": "Équipement laissé sans surveillance"},
+        {"code": "32", "libelle": "Équipement trop près de combustibles"},
+        {"code": "33", "libelle": "Mauvaise manipulation"},
+        {"code": "41", "libelle": "Matériel de fumeur mal éteint"},
+        {"code": "42", "libelle": "Cendres chaudes mal disposées"},
+        {"code": "51", "libelle": "Incapacité physique"},
+        {"code": "52", "libelle": "Incapacité mentale"},
+        {"code": "53", "libelle": "Personne sous l'effet de l'alcool/drogue"},
+        {"code": "54", "libelle": "Personne endormie"},
+        {"code": "61", "libelle": "Acte intentionnel"},
+        {"code": "62", "libelle": "Jeux d'enfants"},
+        {"code": "90", "libelle": "Autre facteur"},
+        {"code": "00", "libelle": "Facteur indéterminé"},
+    ]
+    
+    # Usages du bâtiment (MSP)
+    usages_batiment = [
+        {"code": "100", "libelle": "Résidentiel - Maison unifamiliale"},
+        {"code": "110", "libelle": "Résidentiel - Maison jumelée/en rangée"},
+        {"code": "120", "libelle": "Résidentiel - Appartement (2-4 logements)"},
+        {"code": "130", "libelle": "Résidentiel - Appartement (5+ logements)"},
+        {"code": "140", "libelle": "Résidentiel - Maison mobile"},
+        {"code": "150", "libelle": "Résidentiel - Hôtel, motel"},
+        {"code": "160", "libelle": "Résidentiel - Résidence pour aînés"},
+        {"code": "200", "libelle": "Commercial - Commerce de détail"},
+        {"code": "210", "libelle": "Commercial - Restaurant, bar"},
+        {"code": "220", "libelle": "Commercial - Bureau"},
+        {"code": "230", "libelle": "Commercial - Centre commercial"},
+        {"code": "300", "libelle": "Industriel - Usine, manufacture"},
+        {"code": "310", "libelle": "Industriel - Entrepôt"},
+        {"code": "320", "libelle": "Industriel - Atelier"},
+        {"code": "400", "libelle": "Institutionnel - École"},
+        {"code": "410", "libelle": "Institutionnel - Hôpital, CLSC"},
+        {"code": "420", "libelle": "Institutionnel - Église, lieu de culte"},
+        {"code": "430", "libelle": "Institutionnel - Centre communautaire"},
+        {"code": "440", "libelle": "Institutionnel - Garderie"},
+        {"code": "500", "libelle": "Agricole - Ferme, grange"},
+        {"code": "510", "libelle": "Agricole - Silo, entrepôt agricole"},
+        {"code": "600", "libelle": "Véhicule"},
+        {"code": "610", "libelle": "Garage, stationnement"},
+        {"code": "700", "libelle": "Extérieur - Terrain vacant"},
+        {"code": "710", "libelle": "Extérieur - Forêt, boisé"},
+        {"code": "720", "libelle": "Extérieur - Conteneur à déchets"},
+        {"code": "900", "libelle": "Autre usage"},
+        {"code": "000", "libelle": "Usage indéterminé"},
+    ]
+    
+    # Natures de sinistre (MSP)
+    natures_sinistre = [
+        {"code": "111", "libelle": "Incendie de bâtiment - Résidentiel", "categorie": "incendie", "requiert_dsi": True},
+        {"code": "112", "libelle": "Incendie de bâtiment - Commercial", "categorie": "incendie", "requiert_dsi": True},
+        {"code": "113", "libelle": "Incendie de bâtiment - Industriel", "categorie": "incendie", "requiert_dsi": True},
+        {"code": "114", "libelle": "Incendie de bâtiment - Institutionnel", "categorie": "incendie", "requiert_dsi": True},
+        {"code": "115", "libelle": "Incendie de bâtiment - Agricole", "categorie": "incendie", "requiert_dsi": True},
+        {"code": "121", "libelle": "Incendie de véhicule", "categorie": "incendie", "requiert_dsi": True},
+        {"code": "131", "libelle": "Feu extérieur - Végétation", "categorie": "incendie", "requiert_dsi": True},
+        {"code": "132", "libelle": "Feu extérieur - Déchets, conteneur", "categorie": "incendie", "requiert_dsi": True},
+        {"code": "140", "libelle": "Explosion", "categorie": "incendie", "requiert_dsi": True},
+        {"code": "211", "libelle": "Alarme incendie - Non fondée", "categorie": "alarme", "requiert_dsi": False},
+        {"code": "212", "libelle": "Alarme incendie - Accidentelle", "categorie": "alarme", "requiert_dsi": False},
+        {"code": "213", "libelle": "Alarme incendie - Intentionnelle", "categorie": "alarme", "requiert_dsi": False},
+        {"code": "214", "libelle": "Alarme incendie - Défectueuse", "categorie": "alarme", "requiert_dsi": False},
+        {"code": "221", "libelle": "Alarme CO - Non fondée", "categorie": "alarme", "requiert_dsi": False},
+        {"code": "222", "libelle": "Alarme CO - Confirmée", "categorie": "alarme", "requiert_dsi": False},
+        {"code": "311", "libelle": "Premiers répondants - Médical", "categorie": "medical", "requiert_dsi": False},
+        {"code": "312", "libelle": "Premiers répondants - Trauma", "categorie": "medical", "requiert_dsi": False},
+        {"code": "321", "libelle": "Assistance - Désincarcération", "categorie": "sauvetage", "requiert_dsi": False},
+        {"code": "322", "libelle": "Assistance - Sauvetage nautique", "categorie": "sauvetage", "requiert_dsi": False},
+        {"code": "323", "libelle": "Assistance - Sauvetage en hauteur", "categorie": "sauvetage", "requiert_dsi": False},
+        {"code": "324", "libelle": "Assistance - Espace clos", "categorie": "sauvetage", "requiert_dsi": False},
+        {"code": "411", "libelle": "Matières dangereuses - Fuite de gaz", "categorie": "hazmat", "requiert_dsi": False},
+        {"code": "412", "libelle": "Matières dangereuses - Déversement", "categorie": "hazmat", "requiert_dsi": False},
+        {"code": "511", "libelle": "Assistance au public - Inondation", "categorie": "assistance", "requiert_dsi": False},
+        {"code": "512", "libelle": "Assistance au public - Arbre/fil tombé", "categorie": "assistance", "requiert_dsi": False},
+        {"code": "513", "libelle": "Assistance au public - Animal", "categorie": "assistance", "requiert_dsi": False},
+        {"code": "514", "libelle": "Assistance au public - Ouverture de porte", "categorie": "assistance", "requiert_dsi": False},
+        {"code": "611", "libelle": "Entraide", "categorie": "entraide", "requiert_dsi": False},
+        {"code": "711", "libelle": "Exercice, formation", "categorie": "formation", "requiert_dsi": False},
+        {"code": "811", "libelle": "Prévention, inspection", "categorie": "prevention", "requiert_dsi": False},
+        {"code": "911", "libelle": "Autre intervention", "categorie": "autre", "requiert_dsi": False},
+    ]
+    
+    # Insérer les données (remplacer si existantes)
+    await db.dsi_causes.delete_many({})
+    if causes:
+        await db.dsi_causes.insert_many(causes)
+    
+    await db.dsi_sources_chaleur.delete_many({})
+    if sources_chaleur:
+        await db.dsi_sources_chaleur.insert_many(sources_chaleur)
+    
+    await db.dsi_materiaux.delete_many({})
+    if materiaux:
+        await db.dsi_materiaux.insert_many(materiaux)
+    
+    await db.dsi_facteurs_allumage.delete_many({})
+    if facteurs_allumage:
+        await db.dsi_facteurs_allumage.insert_many(facteurs_allumage)
+    
+    await db.dsi_usages_batiment.delete_many({})
+    if usages_batiment:
+        await db.dsi_usages_batiment.insert_many(usages_batiment)
+    
+    await db.dsi_natures_sinistre.delete_many({})
+    if natures_sinistre:
+        await db.dsi_natures_sinistre.insert_many(natures_sinistre)
+    
+    return {
+        "success": True,
+        "message": "Données de référence DSI initialisées",
+        "counts": {
+            "causes": len(causes),
+            "sources_chaleur": len(sources_chaleur),
+            "materiaux": len(materiaux),
+            "facteurs_allumage": len(facteurs_allumage),
+            "usages_batiment": len(usages_batiment),
+            "natures_sinistre": len(natures_sinistre)
+        }
+    }
+
+
 @router.get("/{tenant_slug}/interventions/settings")
 async def get_intervention_settings(
     tenant_slug: str,
