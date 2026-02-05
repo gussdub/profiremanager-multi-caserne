@@ -85,6 +85,8 @@ export const AuthProvider = ({ children }) => {
             try {
               const tenantResponse = await axios.get(`${API}/admin/tenants/by-slug/${tenantSlug}`);
               setTenant(tenantResponse.data);
+              // Stocker dans localStorage pour les prochains chargements
+              setItem('tenant', JSON.stringify(tenantResponse.data));
             } catch (error) {
               console.error('Erreur récupération tenant:', error);
             }
