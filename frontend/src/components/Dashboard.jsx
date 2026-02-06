@@ -14,7 +14,7 @@ import { AdminSection } from './dashboard/AdminSection';
 import { FormationsAVenirCard } from './dashboard/FormationsCard';
 import { EPIAlertesInline } from './dashboard/EPIAlertesInline';
 
-const Dashboard = () => {
+const Dashboard = ({ setCurrentPage }) => {
   const { user, tenant } = useAuth();
   const { tenantSlug } = useTenant();
   const { toast } = useToast();
