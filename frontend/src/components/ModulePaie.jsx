@@ -2162,12 +2162,18 @@ const ModulePaie = ({ tenant }) => {
                         </td>
                         <td style={{ padding: '8px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Input
-                              type="number"
-                              step="0.5"
-                              value={ligne.heures_payees || 0}
-                              onChange={(e) => handleUpdateLigne(ligne.id, 'heures_payees', parseFloat(e.target.value) || 0)}
-                              style={{ width: '60px', padding: '4px', fontSize: '0.75rem', textAlign: 'right' }}
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              value={ligne.heures_payees_text !== undefined ? ligne.heures_payees_text : (ligne.heures_payees || '0')}
+                              onChange={(e) => {
+                                const textValue = e.target.value;
+                                const numValue = parseFloat(textValue.replace(',', '.'));
+                                // Mettre à jour avec la valeur texte et numérique
+                                handleUpdateLigne(ligne.id, 'heures_payees', isNaN(numValue) ? 0 : numValue);
+                                handleUpdateLigne(ligne.id, 'heures_payees_text', textValue);
+                              }}
+                              style={{ width: '60px', padding: '4px', fontSize: '0.75rem', textAlign: 'right', borderRadius: '4px', border: '1px solid #d1d5db' }}
                             />
                             <span style={{ fontSize: '0.7rem', color: '#64748b', minWidth: '20px' }}>
                               {(() => {
@@ -2179,12 +2185,17 @@ const ModulePaie = ({ tenant }) => {
                           </div>
                         </td>
                         <td style={{ padding: '8px' }}>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={ligne.montant || 0}
-                            onChange={(e) => handleUpdateLigne(ligne.id, 'montant', parseFloat(e.target.value) || 0)}
-                            style={{ width: '80px', padding: '4px', fontSize: '0.75rem', textAlign: 'right' }}
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={ligne.montant_text !== undefined ? ligne.montant_text : (ligne.montant || '0')}
+                            onChange={(e) => {
+                              const textValue = e.target.value;
+                              const numValue = parseFloat(textValue.replace(',', '.'));
+                              handleUpdateLigne(ligne.id, 'montant', isNaN(numValue) ? 0 : numValue);
+                              handleUpdateLigne(ligne.id, 'montant_text', textValue);
+                            }}
+                            style={{ width: '80px', padding: '4px', fontSize: '0.75rem', textAlign: 'right', borderRadius: '4px', border: '1px solid #d1d5db' }}
                           />
                         </td>
                         <td style={{ padding: '8px', textAlign: 'center' }}>
