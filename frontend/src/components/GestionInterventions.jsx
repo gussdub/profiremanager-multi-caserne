@@ -37,6 +37,9 @@ import SectionFacturation from './interventions/SectionFacturation';
 import SectionRCCI from './interventions/SectionRCCI';
 import SectionSinistre from './interventions/SectionSinistre';
 
+// Hooks personnalisés (pour utilisation future progressive)
+// import { useInterventions, useInterventionSettings } from './interventions/hooks';
+
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 // Composant draggable pour les sections du template narratif
