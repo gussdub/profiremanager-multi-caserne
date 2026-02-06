@@ -1,24 +1,63 @@
 import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/card';
-import { Upload, Download, AlertCircle } from 'lucide-react';
-import Papa from 'papaparse';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Upload, Download, CheckCircle, XCircle, AlertCircle, ArrowRight } from 'lucide-react';
+import { apiGet, apiPost } from '../utils/api';
 import * as XLSX from 'xlsx';
-import { apiPost } from '../utils/api';
+import Papa from 'papaparse';
 
 const ImportCSVEquipements = ({ tenantSlug, onImportComplete }) => {
-  const [file, setFile] = useState(null);
+  const [step, setStep] = useState(1); // 1: Upload, 2: Mapping, 3: Preview, 4: Results
+  const [csvFile, setCsvFile] = useState(null);
   const [csvData, setCsvData] = useState([]);
+  const [csvHeaders, setCsvHeaders] = useState([]);
+  const [columnMapping, setColumnMapping] = useState({});
+  const [defaultValues, setDefaultValues] = useState({});
+  const [previewData, setPreviewData] = useState([]);
   const [importing, setImporting] = useState(false);
   const [importResults, setImportResults] = useState(null);
-  const [step, setStep] = useState(1); // 1: Upload, 2: Preview, 3: Results
   const [fileType, setFileType] = useState(null);
+  const [categories, setCategories] = useState([]);
+
+  // Champs disponibles pour le mapping
+  const availableFields = [
+    { key: 'nom', label: 'Nom de l\'équipement', required: true },
+    { key: 'code_unique', label: 'Code unique (auto-généré si vide)', required: false },
+    { key: 'categorie_nom', label: 'Catégorie', required: true },
+    { key: 'etat', label: 'État (bon, a_reparer, en_reparation, hors_service)', required: false },
+    { key: 'emplacement', label: 'Emplacement / Localisation', required: false },
+    { key: 'quantite', label: 'Quantité', required: false },
+    { key: 'quantite_minimum', label: 'Quantité minimum (alerte stock bas)', required: false },
+    { key: 'vehicule', label: 'Véhicule assigné (nom)', required: false },
+    { key: 'employe', label: 'Employé assigné (nom)', required: false },
+    { key: 'date_acquisition', label: 'Date d\'acquisition (YYYY-MM-DD)', required: false },
+    { key: 'date_fin_vie', label: 'Date fin de vie (YYYY-MM-DD)', required: false },
+    { key: 'date_prochaine_maintenance', label: 'Date prochaine maintenance (YYYY-MM-DD)', required: false },
+    { key: 'valeur_achat', label: 'Valeur d\'achat ($)', required: false },
+    { key: 'notes', label: 'Notes / Remarques', required: false }
+  ];
+
+  // Charger les catégories au montage
+  React.useEffect(() => {
+    loadCategories();
+  }, [tenantSlug]);
+
+  const loadCategories = async () => {
+    try {
+      const data = await apiGet(tenantSlug, '/equipements/categories');
+      setCategories(data || []);
+    } catch (error) {
+      console.error('Erreur chargement catégories:', error);
+    }
+  };
 
   const handleFileUpload = (event) => {
-    const uploadedFile = event.target.files[0];
-    if (!uploadedFile) return;
+    const file = event.target.files[0];
+    if (!file) return;
 
-    const fileName = uploadedFile.name.toLowerCase();
+    const fileName = file.name.toLowerCase();
     const extension = fileName.split('.').pop();
     
     const supportedExtensions = ['csv', 'xls', 'xlsx', 'txt'];
@@ -27,44 +66,68 @@ const ImportCSVEquipements = ({ tenantSlug, onImportComplete }) => {
       return;
     }
 
-    setFile(uploadedFile);
+    setCsvFile(file);
     setFileType(extension);
 
     if (extension === 'csv' || extension === 'txt') {
-      Papa.parse(uploadedFile, {
-        complete: (results) => {
-          const rows = results.data.filter(row => Object.values(row).some(val => val));
-          setCsvData(rows);
-          if (rows.length > 0) {
-            setStep(2);
-          }
-        },
-        header: true,
-        skipEmptyLines: true
-      });
+      parseCSV(file);
     } else if (extension === 'xls' || extension === 'xlsx') {
-      parseExcel(uploadedFile);
+      parseExcel(file);
     }
   };
 
-  const parseExcel = async (excelFile) => {
+  const parseCSV = (file) => {
+    Papa.parse(file, {
+      complete: (results) => {
+        if (results.data.length < 1) {
+          alert("Le fichier doit contenir au moins un en-tête et une ligne de données");
+          return;
+        }
+
+        const rows = results.data.filter(row => Object.values(row).some(val => val && val.toString().trim() !== ''));
+        
+        if (rows.length === 0) {
+          alert("Le fichier ne contient pas de données valides");
+          return;
+        }
+
+        const headers = results.meta.fields || Object.keys(rows[0]);
+        setCsvHeaders(headers);
+
+        const data = rows.map((row, index) => ({ ...row, _index: index }));
+        setCsvData(data);
+        
+        autoMapColumns(headers);
+        setStep(2);
+      },
+      header: true,
+      skipEmptyLines: true,
+      encoding: 'UTF-8'
+    });
+  };
+
+  const parseExcel = async (file) => {
     try {
-      const arrayBuffer = await excelFile.arrayBuffer();
+      const arrayBuffer = await file.arrayBuffer();
       const workbook = XLSX.read(arrayBuffer, { type: 'array' });
       
-      // Prendre la première feuille
       const sheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[sheetName];
       
-      // Convertir en JSON avec headers
       const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: '' });
       
-      // Convertir les dates Excel si nécessaire
-      const processedData = jsonData.map(row => {
-        const newRow = { ...row };
+      if (jsonData.length === 0) {
+        alert("Le fichier ne contient pas de données");
+        return;
+      }
+
+      const headers = Object.keys(jsonData[0]);
+      setCsvHeaders(headers);
+      
+      const data = jsonData.map((row, index) => {
+        const newRow = { ...row, _index: index };
         Object.keys(newRow).forEach(key => {
           let value = newRow[key];
-          // Convertir les dates Excel (nombres entre 25569 et 50000) en format lisible
           if (typeof value === 'number' && value > 25569 && value < 50000) {
             const date = new Date((value - 25569) * 86400 * 1000);
             newRow[key] = date.toISOString().split('T')[0];
@@ -73,68 +136,138 @@ const ImportCSVEquipements = ({ tenantSlug, onImportComplete }) => {
         return newRow;
       });
       
-      const rows = processedData.filter(row => Object.values(row).some(val => val));
-      setCsvData(rows);
-      if (rows.length > 0) {
-        setStep(2);
-      }
+      setCsvData(data);
+      autoMapColumns(headers);
+      setStep(2);
+      
     } catch (error) {
       console.error('Erreur parsing Excel:', error);
       alert(`Erreur de lecture du fichier Excel: ${error.message}`);
     }
   };
 
+  // Mapping automatique intelligent
+  const autoMapColumns = (headers) => {
+    const mapping = {};
+    const normalizedHeaders = headers.map(h => h.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
+    
+    const mappingRules = {
+      'nom': ['nom', 'name', 'designation', 'libelle', 'intitule', 'equipement'],
+      'code_unique': ['code_unique', 'code', 'reference', 'ref', 'numero', 'id', 'identifiant'],
+      'categorie_nom': ['categorie', 'category', 'type', 'famille', 'groupe', 'categorie_nom'],
+      'etat': ['etat', 'statut', 'status', 'condition', 'state'],
+      'emplacement': ['emplacement', 'location', 'localisation', 'lieu', 'position', 'stockage'],
+      'quantite': ['quantite', 'qty', 'quantity', 'nombre', 'stock', 'qte'],
+      'quantite_minimum': ['quantite_minimum', 'stock_min', 'seuil', 'min', 'alerte'],
+      'vehicule': ['vehicule', 'vehicle', 'camion', 'auto', 'engin'],
+      'employe': ['employe', 'employee', 'pompier', 'utilisateur', 'user', 'assigne', 'assigned'],
+      'date_acquisition': ['date_acquisition', 'acquisition', 'achat', 'purchase', 'date_achat'],
+      'date_fin_vie': ['date_fin_vie', 'fin_vie', 'expiration', 'peremption'],
+      'date_prochaine_maintenance': ['date_maintenance', 'maintenance', 'entretien', 'prochain_entretien'],
+      'valeur_achat': ['valeur_achat', 'prix', 'cout', 'cost', 'price', 'valeur', 'montant'],
+      'notes': ['notes', 'note', 'remarque', 'commentaire', 'comment', 'description', 'obs']
+    };
+    
+    availableFields.forEach(field => {
+      const rules = mappingRules[field.key] || [field.key];
+      
+      for (let i = 0; i < normalizedHeaders.length; i++) {
+        const header = normalizedHeaders[i];
+        if (rules.some(rule => header.includes(rule) || rule.includes(header))) {
+          mapping[field.key] = headers[i];
+          break;
+        }
+      }
+    });
+    
+    setColumnMapping(mapping);
+  };
+
+  const handleColumnMapping = (fieldKey, csvColumn) => {
+    setColumnMapping(prev => ({
+      ...prev,
+      [fieldKey]: csvColumn
+    }));
+  };
+
+  const handleDefaultValue = (fieldKey, value) => {
+    setDefaultValues(prev => ({
+      ...prev,
+      [fieldKey]: value
+    }));
+  };
+
+  const generatePreview = () => {
+    const preview = csvData.slice(0, 5).map(row => {
+      const mapped = {};
+      availableFields.forEach(field => {
+        if (defaultValues[field.key]) {
+          mapped[field.key] = defaultValues[field.key];
+        } else {
+          const csvColumn = columnMapping[field.key];
+          mapped[field.key] = csvColumn ? row[csvColumn] : '';
+        }
+      });
+      return mapped;
+    });
+    setPreviewData(preview);
+    setStep(3);
+  };
+
   const handleImport = async () => {
     setImporting(true);
+    setStep(4);
+
+    const mappedData = csvData.map(row => {
+      const mapped = {};
+      availableFields.forEach(field => {
+        if (defaultValues[field.key]) {
+          mapped[field.key] = defaultValues[field.key];
+        } else {
+          const csvColumn = columnMapping[field.key];
+          mapped[field.key] = csvColumn ? row[csvColumn] : '';
+        }
+      });
+      return mapped;
+    });
 
     try {
-      const equipements = csvData.map(row => ({
-        nom: row.nom || row.Nom,
-        code_unique: row.code_unique || row['Code unique'] || row['code unique'],
-        categorie_nom: row.categorie_nom || row.categorie || row.Catégorie || row['Categorie'],
-        etat: row.etat || row.État || 'bon',
-        emplacement: row.emplacement || row.Emplacement || '',
-        quantite: row.quantite || row.Quantité || row['Quantite'] || 1,
-        quantite_minimum: row.quantite_minimum || row['Quantité minimum'] || row['Quantite minimum'] || 0,
-        vehicule: row.vehicule || row.Véhicule || row['Vehicule'] || '',
-        employe: row.employe || row.employé || row.Employé || row['Employe'] || '',
-        date_acquisition: row.date_acquisition || row['Date acquisition'] || row['date acquisition'] || '',
-        date_fin_vie: row.date_fin_vie || row['Date fin vie'] || row['date fin vie'] || '',
-        date_prochaine_maintenance: row.date_prochaine_maintenance || row['Date maintenance'] || row['date maintenance'] || '',
-        valeur_achat: row.valeur_achat || row['Valeur achat'] || row['valeur achat'] || 0,
-        notes: row.notes || row.Notes || '',
-        champs_personnalises: row.champs_personnalises || row['Champs personnalisés'] || row['champs personnalises'] || '{}'
-      }));
-
-      const response = await apiPost(tenantSlug, '/equipements/import-csv', { equipements });
+      const response = await apiPost(tenantSlug, '/equipements/import-csv', { equipements: mappedData });
 
       setImportResults(response);
-      setStep(3);
 
       if (onImportComplete) {
         onImportComplete(response);
       }
     } catch (error) {
       console.error('Erreur import:', error);
-      alert('Erreur lors de l\'import: ' + (error.data?.detail || error.message));
+      setImportResults({
+        created: 0,
+        updated: 0,
+        errors: [{ ligne: 0, erreur: error.data?.detail || error.message || 'Erreur inconnue' }]
+      });
     } finally {
       setImporting(false);
     }
   };
 
   const resetImport = () => {
-    setFile(null);
+    setCsvFile(null);
     setCsvData([]);
+    setCsvHeaders([]);
+    setColumnMapping({});
+    setDefaultValues({});
+    setPreviewData([]);
     setImportResults(null);
     setStep(1);
     setFileType(null);
   };
 
   const downloadTemplate = () => {
-    const headers = 'nom,code_unique,categorie_nom,etat,emplacement,quantite,quantite_minimum,vehicule,employe,date_acquisition,date_fin_vie,date_prochaine_maintenance,valeur_achat,notes,champs_personnalises\n';
-    const example1 = 'Tuyau 2.5" - 50ft,TUY-001,Tuyaux,bon,Caserne A,5,2,Camion Pompe 1,,2024-01-15,,,1200,En bon état,"{""Diamètre"":""2.5\\"",""Longueur (pieds)"":50}"\n';
-    const example2 = 'Radio portable Motorola,RAD-101,Radios portatives,bon,Bureau,1,0,,Jean Tremblay,2023-06-20,,,850,,"{}"\n';
-    const csv = headers + example1 + example2;
+    const headers = availableFields.map(f => f.key).join(',');
+    const example1 = 'Tuyau 2.5" - 50ft,TUY-001,Tuyaux,bon,Caserne A,5,2,Camion Pompe 1,,2024-01-15,,,1200,En bon état';
+    const example2 = 'Radio portable Motorola,RAD-101,Radios portatives,bon,Bureau,1,0,,Jean Tremblay,2023-06-20,,,850,';
+    const csv = headers + '\n' + example1 + '\n' + example2;
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -146,7 +279,7 @@ const ImportCSVEquipements = ({ tenantSlug, onImportComplete }) => {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>📥 Import - Équipements</CardTitle>
+        <CardTitle>📥 Import - Équipements (Matériel)</CardTitle>
         <CardDescription>
           Importez en masse vos équipements depuis un fichier CSV, Excel ou TXT
         </CardDescription>
@@ -156,21 +289,18 @@ const ImportCSVEquipements = ({ tenantSlug, onImportComplete }) => {
         {step === 1 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <label 
-                htmlFor="file-upload"
-                className="cursor-pointer flex-1"
-              >
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-red-500 transition-colors">
+              <label htmlFor="file-upload-equip" className="cursor-pointer flex-1">
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors">
                   <Upload className="mx-auto h-12 w-12 text-gray-400" />
                   <p className="mt-2 text-sm font-medium text-gray-900">
-                    {file ? file.name : 'Cliquez pour sélectionner un fichier'}
+                    {csvFile ? csvFile.name : 'Cliquez pour sélectionner un fichier'}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
                     <strong>CSV, XLS, XLSX, TXT</strong> acceptés
                   </p>
                 </div>
                 <input 
-                  id="file-upload"
+                  id="file-upload-equip"
                   type="file"
                   accept=".csv,.CSV,.xls,.XLS,.xlsx,.XLSX,.txt,.TXT"
                   onChange={handleFileUpload}
@@ -179,43 +309,120 @@ const ImportCSVEquipements = ({ tenantSlug, onImportComplete }) => {
               </label>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h4 className="font-semibold text-blue-900 mb-2">📋 Colonnes attendues :</h4>
-              <ul className="text-sm text-blue-800 space-y-1">
-                <li>• <strong>nom</strong> : Nom de l'équipement (obligatoire)</li>
-                <li>• <strong>code_unique</strong> : Code unique (auto-généré si vide)</li>
-                <li>• <strong>categorie_nom</strong> : Nom de la catégorie (obligatoire)</li>
-                <li>• <strong>etat</strong> : bon, a_reparer, en_reparation, hors_service</li>
-                <li>• <strong>emplacement</strong> : Localisation</li>
-                <li>• <strong>quantite</strong> : Quantité disponible</li>
-                <li>• <strong>vehicule</strong> : Nom du véhicule assigné (optionnel)</li>
-                <li>• <strong>employe</strong> : Nom de l'employé assigné (optionnel)</li>
-                <li>• <strong>champs_personnalises</strong> : JSON des champs (ex: {"{\"Diamètre\":\"2.5\\\"\"}"})</li>
-              </ul>
-            </div>
-
-            <Button 
-              onClick={downloadTemplate}
-              variant="outline"
-              className="w-full"
-            >
+            <Button onClick={downloadTemplate} variant="outline" className="w-full">
               <Download className="mr-2 h-4 w-4" />
               Télécharger le template CSV
             </Button>
           </div>
         )}
 
-        {/* Étape 2: Aperçu */}
+        {/* Étape 2: Mapping des colonnes */}
         {step === 2 && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-semibold text-lg">Mapping des colonnes</h3>
+                <p className="text-sm text-gray-600">
+                  {csvData.length} lignes détectées - Associez vos colonnes aux champs
+                </p>
+              </div>
+              {fileType && (
+                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                  {fileType.toUpperCase()}
+                </span>
+              )}
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
+              <div className="grid gap-4">
+                {availableFields.map(field => (
+                  <div key={field.key} className="grid grid-cols-12 gap-3 items-center">
+                    {/* Champ cible */}
+                    <div className="col-span-4">
+                      <Label className="text-sm font-medium">
+                        {field.label}
+                        {field.required && <span className="text-red-500 ml-1">*</span>}
+                      </Label>
+                    </div>
+                    
+                    {/* Flèche */}
+                    <div className="col-span-1 flex justify-center">
+                      <ArrowRight className="h-4 w-4 text-gray-400" />
+                    </div>
+                    
+                    {/* Sélecteur de colonne CSV */}
+                    <div className="col-span-3">
+                      <select
+                        className="w-full p-2 border rounded-md text-sm"
+                        value={columnMapping[field.key] || ''}
+                        onChange={(e) => handleColumnMapping(field.key, e.target.value)}
+                      >
+                        <option value="">-- Non mappé --</option>
+                        {csvHeaders.map(header => (
+                          <option key={header} value={header}>{header}</option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    {/* OU */}
+                    <div className="col-span-1 text-center text-xs text-gray-500">ou</div>
+                    
+                    {/* Valeur par défaut */}
+                    <div className="col-span-3">
+                      {field.key === 'categorie_nom' && categories.length > 0 ? (
+                        <select
+                          className="w-full p-2 border rounded-md text-sm"
+                          value={defaultValues[field.key] || ''}
+                          onChange={(e) => handleDefaultValue(field.key, e.target.value)}
+                        >
+                          <option value="">-- Valeur par défaut --</option>
+                          {categories.map(cat => (
+                            <option key={cat.id} value={cat.nom}>{cat.nom}</option>
+                          ))}
+                        </select>
+                      ) : field.key === 'etat' ? (
+                        <select
+                          className="w-full p-2 border rounded-md text-sm"
+                          value={defaultValues[field.key] || ''}
+                          onChange={(e) => handleDefaultValue(field.key, e.target.value)}
+                        >
+                          <option value="">-- Valeur par défaut --</option>
+                          <option value="neuf">Neuf</option>
+                          <option value="bon">Bon</option>
+                          <option value="a_reparer">À réparer</option>
+                          <option value="en_reparation">En réparation</option>
+                          <option value="hors_service">Hors service</option>
+                        </select>
+                      ) : (
+                        <Input
+                          type="text"
+                          placeholder="Valeur par défaut"
+                          value={defaultValues[field.key] || ''}
+                          onChange={(e) => handleDefaultValue(field.key, e.target.value)}
+                          className="text-sm"
+                        />
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-4">
+              <Button variant="outline" onClick={resetImport}>Annuler</Button>
+              <Button onClick={generatePreview} className="flex-1 bg-blue-600 hover:bg-blue-700">
+                Aperçu avant import
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Étape 3: Aperçu */}
+        {step === 3 && (
           <div className="space-y-4">
             <div>
               <h3 className="font-semibold mb-2">
-                Aperçu des données ({csvData.length} équipements)
-                {fileType && (
-                  <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>
-                    {fileType.toUpperCase()}
-                  </span>
-                )}
+                Aperçu des données mappées ({csvData.length} équipements)
               </h3>
               <p className="text-sm text-gray-600 mb-4">
                 Vérifiez les 5 premières lignes avant d'importer
@@ -223,24 +430,40 @@ const ImportCSVEquipements = ({ tenantSlug, onImportComplete }) => {
             </div>
 
             <div style={{ overflowX: 'auto', maxHeight: '400px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
-              <table style={{ width: 'max-content', borderCollapse: 'collapse' }}>
+              <table style={{ width: 'max-content', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
                 <thead>
                   <tr style={{ position: 'sticky', top: 0, backgroundColor: '#f9fafb', zIndex: 10 }}>
-                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', borderBottom: '1px solid #e5e7eb' }}>Nom</th>
-                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', borderBottom: '1px solid #e5e7eb' }}>Code</th>
-                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', borderBottom: '1px solid #e5e7eb' }}>Catégorie</th>
-                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', borderBottom: '1px solid #e5e7eb' }}>État</th>
-                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', borderBottom: '1px solid #e5e7eb' }}>Quantité</th>
+                    {availableFields.slice(0, 8).map(field => (
+                      <th key={field.key} style={{ 
+                        padding: '10px', 
+                        textAlign: 'left', 
+                        fontSize: '10px', 
+                        fontWeight: '600', 
+                        color: '#6b7280', 
+                        textTransform: 'uppercase', 
+                        borderBottom: '1px solid #e5e7eb',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {field.label.split('(')[0].trim()}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {csvData.slice(0, 5).map((row, idx) => (
+                  {previewData.map((row, idx) => (
                     <tr key={idx} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                      <td style={{ padding: '12px', fontSize: '14px' }}>{row.nom || row.Nom || '-'}</td>
-                      <td style={{ padding: '12px', fontSize: '14px' }}>{row.code_unique || row['Code unique'] || 'Auto'}</td>
-                      <td style={{ padding: '12px', fontSize: '14px' }}>{row.categorie_nom || row.categorie || row.Catégorie || '-'}</td>
-                      <td style={{ padding: '12px', fontSize: '14px' }}>{row.etat || row.État || 'bon'}</td>
-                      <td style={{ padding: '12px', fontSize: '14px' }}>{row.quantite || row.Quantité || 1}</td>
+                      {availableFields.slice(0, 8).map(field => (
+                        <td key={field.key} style={{ 
+                          padding: '10px', 
+                          fontSize: '13px',
+                          maxWidth: '150px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {row[field.key] || <span style={{ color: '#9ca3af' }}>-</span>}
+                        </td>
+                      ))}
                     </tr>
                   ))}
                 </tbody>
@@ -248,36 +471,49 @@ const ImportCSVEquipements = ({ tenantSlug, onImportComplete }) => {
             </div>
 
             <div className="flex gap-2">
-              <Button variant="outline" onClick={resetImport}>Annuler</Button>
+              <Button variant="outline" onClick={() => setStep(2)}>
+                ← Retour au mapping
+              </Button>
               <Button 
                 onClick={handleImport}
-                disabled={importing || csvData.length === 0}
-                className="flex-1 bg-red-600 hover:bg-red-700"
+                disabled={importing}
+                className="flex-1 bg-green-600 hover:bg-green-700"
               >
-                {importing ? 'Import en cours...' : `Importer ${csvData.length} équipement(s)`}
+                {importing ? 'Import en cours...' : `✓ Importer ${csvData.length} équipement(s)`}
               </Button>
             </div>
           </div>
         )}
 
-        {/* Étape 3: Résultats */}
-        {step === 3 && importResults && (
+        {/* Étape 4: Résultats */}
+        {step === 4 && importResults && (
           <div className="space-y-4">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <h3 className="font-semibold text-green-900 mb-2">✅ Import terminé</h3>
-              <ul className="text-sm text-green-800 space-y-1">
-                <li>• {importResults.created} équipement(s) créé(s)</li>
-                <li>• {importResults.updated} équipement(s) mis à jour</li>
-                {importResults.errors.length > 0 && (
-                  <li className="text-red-600">• {importResults.errors.length} erreur(s)</li>
+            <div className={`border rounded-lg p-4 ${
+              importResults.errors?.length > 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-green-50 border-green-200'
+            }`}>
+              <h3 className={`font-semibold mb-2 flex items-center gap-2 ${
+                importResults.errors?.length > 0 ? 'text-yellow-900' : 'text-green-900'
+              }`}>
+                {importResults.errors?.length > 0 ? (
+                  <AlertCircle className="h-5 w-5" />
+                ) : (
+                  <CheckCircle className="h-5 w-5" />
+                )}
+                Import terminé
+              </h3>
+              <ul className="text-sm space-y-1">
+                <li className="text-green-800">✓ {importResults.created || 0} équipement(s) créé(s)</li>
+                <li className="text-blue-800">↻ {importResults.updated || 0} équipement(s) mis à jour</li>
+                {importResults.errors?.length > 0 && (
+                  <li className="text-red-600">✗ {importResults.errors.length} erreur(s)</li>
                 )}
               </ul>
             </div>
 
-            {importResults.errors.length > 0 && (
+            {importResults.errors?.length > 0 && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 max-h-60 overflow-y-auto">
                 <h4 className="font-semibold text-red-900 mb-2 flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4" />
+                  <XCircle className="h-4 w-4" />
                   Erreurs détaillées
                 </h4>
                 <ul className="text-sm text-red-800 space-y-1">
