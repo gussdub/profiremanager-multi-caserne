@@ -269,8 +269,8 @@ const Dashboard = ({ setCurrentPage }) => {
         alertesVehicules={alertesVehicules} 
         isVisible={isAdmin || user?.role === 'superviseur'}
         onNavigate={() => {
+          localStorage.setItem('actifs_target_tab', 'vehicules');
           setCurrentPage('actifs');
-          setTimeout(() => window.dispatchEvent(new CustomEvent('navigateToTab', { detail: { tab: 'vehicules' } })), 100);
         }}
       />
 
