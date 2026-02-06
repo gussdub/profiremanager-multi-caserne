@@ -245,7 +245,7 @@ const TabExport = ({ context }) => {
         </p>
         {selectedProvider?.name?.toLowerCase().includes('nethris') && (
           <p style={{ color: '#f59e0b', fontSize: '0.8rem', marginBottom: '16px', background: '#fffbeb', padding: '8px 12px', borderRadius: '6px' }}>
-            ⚠️ Les codes de gains doivent avoir la mention <strong>&quot;Hrs&quot;</strong> (heures) dans Nethris. Les codes avec "$" ne sont pas compatibles.
+            ⚠️ Les codes de gains doivent avoir la mention <strong>&quot;Hrs&quot;</strong> (heures) dans Nethris. Les codes avec &quot;$&quot; ne sont pas compatibles.
           </p>
         )}
         
