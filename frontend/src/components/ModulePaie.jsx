@@ -1298,7 +1298,7 @@ const ModulePaie = ({ tenant }) => {
                   <tr key={et.id || et.code} style={{ borderBottom: '1px solid #e5e7eb' }}>
                     <td style={{ padding: '10px', fontFamily: 'monospace', fontWeight: '600', color: '#2563eb' }}>{et.code}</td>
                     <td style={{ padding: '10px' }}>
-                      {editingEventType && editingEventType.id === et.id ? (
+                      {editingEventType && (editingEventType.id === et.id || editingEventType.code === et.code) ? (
                         <Input
                           value={editingEventType.label || ''}
                           onChange={(e) => setEditingEventType({...editingEventType, label: e.target.value})}
@@ -1307,7 +1307,7 @@ const ModulePaie = ({ tenant }) => {
                       ) : et.label}
                     </td>
                     <td style={{ padding: '10px' }}>
-                      {editingEventType && editingEventType.id === et.id ? (
+                      {editingEventType && (editingEventType.id === et.id || editingEventType.code === et.code) ? (
                         <select
                           value={editingEventType.category || 'heures'}
                           onChange={(e) => setEditingEventType({...editingEventType, category: e.target.value})}
@@ -1337,7 +1337,7 @@ const ModulePaie = ({ tenant }) => {
                       )}
                     </td>
                     <td style={{ padding: '10px', color: '#64748b', fontSize: '0.8rem' }}>
-                      {editingEventType && editingEventType.id === et.id ? (
+                      {editingEventType && (editingEventType.id === et.id || editingEventType.code === et.code) ? (
                         <select
                           value={editingEventType.unit || 'heures'}
                           onChange={(e) => setEditingEventType({...editingEventType, unit: e.target.value})}
