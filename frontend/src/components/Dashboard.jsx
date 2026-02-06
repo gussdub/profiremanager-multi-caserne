@@ -5,6 +5,13 @@ import { Button } from "./ui/button";
 import { useToast } from "../hooks/use-toast";
 import { useTenant } from "../contexts/TenantContext";
 import { useAuth } from "../contexts/AuthContext";
+import { 
+  StatCard,
+  HeuresTravailleesCard,
+  ProchaineGardeCard,
+  EPIAlertesCard 
+} from './dashboard/StatCards';
+import { ActivitesRecentesCard } from './dashboard/ActivitesRecentes';
 
 const Dashboard = () => {
   const { user, tenant } = useAuth();
