@@ -42,7 +42,7 @@ const TabMatricules = ({ context }) => {
                 <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e5e7eb', width: '200px' }}>
                   Matricule {selectedProvider?.name || ''}
                   <span style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'normal', color: '#64748b' }}>
-                    (Numéro d'employé)
+                    (Numéro d&apos;employé)
                   </span>
                 </th>
               </tr>
