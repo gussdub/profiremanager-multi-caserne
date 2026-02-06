@@ -1159,12 +1159,21 @@ const ModulePaie = ({ tenant }) => {
             <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
               Taux multiplicateur
             </label>
-            <Input
-              type="number"
-              step="0.1"
-              min="1"
-              value={parametres?.heures_sup_taux || 1.5}
-              onChange={(e) => setParametres({...parametres, heures_sup_taux: parseFloat(e.target.value)})}
+            <input
+              type="text"
+              inputMode="decimal"
+              value={parametres?.heures_sup_taux_text !== undefined ? parametres.heures_sup_taux_text : (parametres?.heures_sup_taux || '1.5')}
+              onChange={(e) => {
+                const textValue = e.target.value;
+                const numValue = parseFloat(textValue.replace(',', '.'));
+                setParametres({
+                  ...parametres, 
+                  heures_sup_taux_text: textValue,
+                  heures_sup_taux: isNaN(numValue) ? 1.5 : numValue
+                });
+              }}
+              placeholder="1,5"
+              style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db' }}
             />
           </div>
         </div>
