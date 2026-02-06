@@ -395,7 +395,7 @@ const AppLayout = () => {
   const renderCurrentPage = () => {
     switch (currentPage) {
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard setCurrentPage={setCurrentPage} />;
       case 'personnel':
         return <Personnel 
           setCurrentPage={setCurrentPage}
