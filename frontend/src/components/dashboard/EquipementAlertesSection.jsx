@@ -63,7 +63,7 @@ const AlerteItem = ({ alerte, formatDate, onNavigate }) => (
   </div>
 );
 
-export const EquipementAlertesSection = ({ alertesEquipements, formatDate }) => {
+export const EquipementAlertesSection = ({ alertesEquipements, formatDate, onNavigate }) => {
   if (!alertesEquipements.actif || alertesEquipements.total <= 0) return null;
 
   const compteurs = alertesEquipements.compteurs || {};
