@@ -227,7 +227,7 @@ const TabParametres = ({ context }) => {
           ⬆️ Prime fonction supérieure
         </h3>
         <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '16px' }}>
-          Lorsqu&apos;un employé avec "fonction supérieure&quot; cochée dans sa fiche occupe un poste de grade supérieur 
+          Lorsqu&apos;un employé avec &quot;fonction supérieure&quot; cochée dans sa fiche occupe un poste de grade supérieur 
           (ex: Pompier → Lieutenant, Lieutenant → Capitaine), son taux horaire est majoré de ce pourcentage.
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
