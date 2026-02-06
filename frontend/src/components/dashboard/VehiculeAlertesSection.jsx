@@ -26,7 +26,7 @@ const VehiculeAlerteItem = ({ alerte }) => {
         padding: '10px 12px', background: style.bg,
         border: `1px solid ${style.border}`, borderRadius: '8px', cursor: 'pointer'
       }}
-      onClick={() => window.location.href = '/actifs'}
+      onClick={() => { if (onNavigate) onNavigate('/actifs'); }}
     >
       <span style={{ fontSize: '1.5rem' }}>{getTypeIcon(alerte.type)}</span>
       <div style={{ flex: 1 }}>
