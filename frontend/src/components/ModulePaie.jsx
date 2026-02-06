@@ -1190,11 +1190,21 @@ const ModulePaie = ({ tenant }) => {
             <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
               Seuil hebdomadaire (heures)
             </label>
-            <Input
-              type="number"
-              min="0"
-              value={parametres?.heures_sup_seuil_hebdo || 40}
-              onChange={(e) => setParametres({...parametres, heures_sup_seuil_hebdo: parseInt(e.target.value)})}
+            <input
+              type="text"
+              inputMode="decimal"
+              value={parametres?.heures_sup_seuil_hebdo_text !== undefined ? parametres.heures_sup_seuil_hebdo_text : (parametres?.heures_sup_seuil_hebdo || '40')}
+              onChange={(e) => {
+                const textValue = e.target.value;
+                const numValue = parseInt(textValue.replace(',', '.'));
+                setParametres({
+                  ...parametres, 
+                  heures_sup_seuil_hebdo_text: textValue,
+                  heures_sup_seuil_hebdo: isNaN(numValue) ? 40 : numValue
+                });
+              }}
+              placeholder="40"
+              style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db' }}
             />
           </div>
           <div>
