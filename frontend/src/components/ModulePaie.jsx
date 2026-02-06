@@ -1355,13 +1355,19 @@ const ModulePaie = ({ tenant }) => {
                       )}
                     </td>
                     <td style={{ padding: '10px', fontFamily: 'monospace', fontSize: '0.8rem', color: et.default_rate ? '#059669' : '#9ca3af' }}>
-                      {editingEventType && editingEventType.id === et.id ? (
-                        <Input
-                          type="number"
-                          step="0.01"
+                      {editingEventType && (editingEventType.id === et.id || editingEventType.code === et.code) ? (
+                        <input
+                          type="text"
+                          inputMode="decimal"
                           value={editingEventType.default_rate ?? (et.unit === 'heures' ? 1 : 0)}
-                          onChange={(e) => setEditingEventType({...editingEventType, default_rate: parseFloat(e.target.value) || 0})}
-                          style={{ width: '80px', padding: '4px', fontSize: '0.75rem' }}
+                          onChange={(e) => {
+                            // Accepter virgule ou point comme séparateur décimal
+                            const value = e.target.value.replace(',', '.');
+                            const numValue = parseFloat(value);
+                            setEditingEventType({...editingEventType, default_rate: isNaN(numValue) ? e.target.value : numValue});
+                          }}
+                          placeholder="0.65"
+                          style={{ width: '80px', padding: '4px', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid #d1d5db' }}
                         />
                       ) : (
                         et.default_rate ? 
