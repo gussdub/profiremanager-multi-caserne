@@ -38,7 +38,7 @@ const TabMatricules = ({ context }) => {
               <tr style={{ background: '#f8fafc' }}>
                 <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Employé</th>
                 <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Grade</th>
-                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Type d'emploi</th>
+                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Type d&apos;emploi</th>
                 <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e5e7eb', width: '200px' }}>
                   Matricule {selectedProvider?.name || ''}
                   <span style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'normal', color: '#64748b' }}>
