@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button } from '../ui/button';
+import { Input } from '../ui/input';
 import { 
   Calendar, Check, RefreshCw, Plus, Edit, Trash2, CheckCircle, XCircle
 } from 'lucide-react';
