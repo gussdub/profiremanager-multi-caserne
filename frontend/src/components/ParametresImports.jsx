@@ -1,5 +1,6 @@
 import React from "react";
 import ImportCSVEPI from "./ImportCSVEPI.jsx";
+import ImportCSVEquipements from "./ImportCSVEquipements.jsx";
 import ImportCSVPersonnel from "./ImportCSVPersonnel.jsx";
 import ImportCSVRapports from "./ImportCSVRapports.jsx";
 import ImportCSVDisponibilites from "./ImportCSVDisponibilites.jsx";
@@ -22,7 +23,7 @@ const ParametresImports = ({
       </div>
       
       <div className="imports-content" style={{ display: 'grid', gap: '2rem', marginTop: '2rem' }}>
-        {/* Import EPI */}
+        {/* Import EPI - NFPA 1851 */}
         <div className="import-section">
           <h3 style={{ 
             fontSize: '1.25rem', 
@@ -32,14 +33,44 @@ const ParametresImports = ({
             alignItems: 'center',
             gap: '0.5rem'
           }}>
-            🛡️ Import EPI (Équipements)
+            🛡️ Import EPI (Équipements de Protection Individuelle - NFPA 1851)
           </h3>
+          <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '1rem' }}>
+            Bunker gear, casques, gants, bottes... Gérés dans <strong>Gestion EPI</strong>
+          </p>
           <ImportCSVEPI 
             tenantSlug={tenantSlug}
             onImportComplete={(results) => {
               toast({
                 title: "Import terminé",
                 description: `${results.success_count} EPI importés avec succès`,
+                variant: "success"
+              });
+            }}
+          />
+        </div>
+
+        {/* Import Équipements - Matériel */}
+        <div className="import-section">
+          <h3 style={{ 
+            fontSize: '1.25rem', 
+            fontWeight: '600', 
+            marginBottom: '1rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            🔧 Import Matériel & Équipements
+          </h3>
+          <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '1rem' }}>
+            APRIA, masques, outils, accessoires... Gérés dans <strong>Gestion des Actifs → Matériel</strong>
+          </p>
+          <ImportCSVEquipements 
+            tenantSlug={tenantSlug}
+            onImportComplete={(results) => {
+              toast({
+                title: "Import terminé",
+                description: `${results.success_count || results.created} équipements importés avec succès`,
                 variant: "success"
               });
             }}
