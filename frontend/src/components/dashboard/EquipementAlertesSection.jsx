@@ -99,7 +99,7 @@ export const EquipementAlertesSection = ({ alertesEquipements, formatDate, onNav
             {alertesEquipements.total > 15 && (
               <div style={{ textAlign: 'center', padding: '10px', color: '#64748b', fontSize: '0.85rem' }}>
                 Et {alertesEquipements.total - 15} autres alertes...
-                <Button variant="link" size="sm" onClick={() => window.location.href = '/actifs'} style={{ marginLeft: '8px' }}>
+                <Button variant="link" size="sm" onClick={() => { if (onNavigate) onNavigate('/actifs'); }} style={{ marginLeft: '8px' }}>
                   Voir tout →
                 </Button>
               </div>
