@@ -22,7 +22,7 @@ const TabExport = ({ context }) => {
           <Link size={20} /> Fournisseur de paie
         </h3>
         <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '16px' }}>
-          Sélectionnez votre logiciel de paie. Le format d'export sera automatiquement configuré.
+          Sélectionnez votre logiciel de paie. Le format d&apos;export sera automatiquement configuré.
         </p>
         <div style={{ maxWidth: '400px' }}>
           <select
@@ -51,7 +51,7 @@ const TabExport = ({ context }) => {
             🏢 Numéro(s) de compagnie
           </h3>
           <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '16px' }}>
-            Votre numéro de compagnie Nethris (affiché sur l'accueil de Nethris). 
+            Votre numéro de compagnie Nethris (affiché sur l&apos;accueil de Nethris). 
             <strong style={{ color: '#dc2626' }}> Important: sans lettres</strong> (ex: PM123456 → 123456)
           </p>
           
@@ -63,7 +63,7 @@ const TabExport = ({ context }) => {
                 checked={payrollConfig?.company_number_mode !== 'per_branch'}
                 onChange={() => setPayrollConfig({...payrollConfig, company_number_mode: 'single'})}
               />
-              Un numéro pour l'ensemble de l'organisation
+              Un numéro pour l&apos;ensemble de l&apos;organisation
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
               <input
@@ -114,7 +114,7 @@ const TabExport = ({ context }) => {
                 placeholder="Ex: 1"
                 style={{ fontFamily: 'monospace' }}
               />
-              <small style={{ color: '#64748b' }}>Généralement le code "1"</small>
+              <small style={{ color: '#64748b' }}>Généralement le code &quot;1&quot;</small>
             </div>
             <div>
               <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
@@ -127,7 +127,7 @@ const TabExport = ({ context }) => {
                 placeholder="Ex: 43"
                 style={{ fontFamily: 'monospace' }}
               />
-              <small style={{ color: '#64748b' }}>Généralement le code "43"</small>
+              <small style={{ color: '#64748b' }}>Généralement le code &quot;43&quot;</small>
             </div>
             <div>
               <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
@@ -188,7 +188,7 @@ const TabExport = ({ context }) => {
           </div>
 
           <p style={{ color: '#166534', fontSize: '0.875rem', marginBottom: '16px' }}>
-            Entrez vos credentials API pour activer l'envoi direct des données de paie.
+            Entrez vos credentials API pour activer l&apos;envoi direct des données de paie.
             {selectedProvider.api_documentation_url && (
               <a 
                 href={selectedProvider.api_documentation_url} 
