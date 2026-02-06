@@ -105,6 +105,21 @@ const MaterielEquipementsModule = ({ user }) => {
     fetchData();
   }, [fetchData]);
 
+  // Navigation depuis le Dashboard : ouvrir la fiche d'un équipement spécifique
+  useEffect(() => {
+    const targetId = localStorage.getItem('actifs_target_equipement_id');
+    if (targetId && equipements.length > 0) {
+      localStorage.removeItem('actifs_target_equipement_id');
+      const equip = equipements.find(e => e.id === targetId);
+      if (equip) {
+        setSelectedEquipement(equip);
+        setModalMode('edit');
+        setShowEquipementModal(true);
+      }
+    }
+  }, [equipements]);
+
+
   // Initialiser les catégories par défaut
   const handleInitialiserCategories = async () => {
     if (!window.confirm('Voulez-vous initialiser les catégories d\'équipements par défaut ?\n\nCeci ajoutera toutes les catégories standards pour un service d\'incendie (APRIA, extincteurs, tuyaux, etc.)')) return;
