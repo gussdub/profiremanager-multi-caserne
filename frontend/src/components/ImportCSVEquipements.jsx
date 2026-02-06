@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Upload, Download, CheckCircle, XCircle, AlertCircle, ArrowRight } from 'lucide-react';
+import { Upload, Download, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { apiGet, apiPost } from '../utils/api';
 import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
