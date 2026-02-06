@@ -439,7 +439,7 @@ const TabParametres = ({ context }) => {
               {eventTypes.length === 0 ? (
                 <tr>
                   <td colSpan="6" style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>
-                    Aucun type configuré. Cliquez sur "Ajouter" pour en créer.
+                    Aucun type configuré. Cliquez sur &quot;Ajouter&quot; pour en créer.
                   </td>
                 </tr>
               ) : (
