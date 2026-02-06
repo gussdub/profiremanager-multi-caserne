@@ -162,7 +162,7 @@ export const TauxPresenceCard = ({ taux, absents = [] }) => (
     <CardHeader className="pb-2">
       <CardTitle className="text-sm font-medium flex items-center gap-2">
         <Users className="h-4 w-4 text-purple-500" />
-        Présence aujourd'hui
+        Présence aujourd&apos;hui
       </CardTitle>
     </CardHeader>
     <CardContent>
