@@ -1156,14 +1156,21 @@ const ModulePaie = ({ tenant }) => {
             <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
               Pourcentage de majoration (%)
             </label>
-            <Input
-              type="number"
-              step="1"
-              min="0"
-              max="100"
-              value={parametres?.prime_fonction_superieure_pct || 10}
-              onChange={(e) => setParametres({...parametres, prime_fonction_superieure_pct: parseFloat(e.target.value)})}
+            <input
+              type="text"
+              inputMode="decimal"
+              value={parametres?.prime_fonction_superieure_pct_text !== undefined ? parametres.prime_fonction_superieure_pct_text : (parametres?.prime_fonction_superieure_pct || '10')}
+              onChange={(e) => {
+                const textValue = e.target.value;
+                const numValue = parseFloat(textValue.replace(',', '.'));
+                setParametres({
+                  ...parametres, 
+                  prime_fonction_superieure_pct_text: textValue,
+                  prime_fonction_superieure_pct: isNaN(numValue) ? 10 : numValue
+                });
+              }}
               placeholder="10"
+              style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db' }}
             />
             <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Ex: 10 = +10% sur le taux horaire</span>
           </div>
