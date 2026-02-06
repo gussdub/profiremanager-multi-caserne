@@ -25,7 +25,14 @@ const LoadingSpinner = () => (
 );
 
 const GestionActifs = ({ user, ModuleEPI }) => {
-  const [activeTab, setActiveTab] = useState('vehicules');
+  const [activeTab, setActiveTab] = useState(() => {
+    const targetTab = localStorage.getItem('actifs_target_tab');
+    if (targetTab) {
+      localStorage.removeItem('actifs_target_tab');
+      return targetTab;
+    }
+    return 'vehicules';
+  });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [vehicules, setVehicules] = useState([]);
   const [bornes, setBornes] = useState([]);
