@@ -259,8 +259,12 @@ const Dashboard = ({ setCurrentPage }) => {
       </div>
 
       {/* Alertes Équipements */}
-      <EquipementAlertesSection alertesEquipements={alertesEquipements} formatDate={formatDate} onNavigate={() => {
+      <EquipementAlertesSection alertesEquipements={alertesEquipements} formatDate={formatDate} onNavigate={(lien) => {
         localStorage.setItem('actifs_target_tab', 'materiel');
+        if (lien) {
+          const match = lien.match(/equipements\/(.+)/);
+          if (match) localStorage.setItem('actifs_target_equipement_id', match[1]);
+        }
         setCurrentPage('actifs');
       }} />
 
