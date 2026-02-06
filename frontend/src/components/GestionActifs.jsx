@@ -23,6 +23,20 @@ import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
+import { 
+  vehiculeEtats, 
+  vehiculeTypes, 
+  equipementEtats, 
+  pointEauTypes,
+  pointEauEtats,
+  formatVehiculeStatut,
+  formatEquipementStatut,
+  formatPointEauStatut,
+  formatDate,
+  formatMontant,
+  isDateProche,
+  isDateDepassee
+} from './actifs/utils';
 
 // Lazy load extracted components
 const BornesSechesTab = lazy(() => import('./BornesSeches').then(m => ({ default: m.BornesSechesTab })));
