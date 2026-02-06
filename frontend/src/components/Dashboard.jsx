@@ -713,76 +713,19 @@ const Dashboard = () => {
           gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
           gap: '1rem'
         }}>
-          {/* Heures travaillées ce mois */}
-          <Card>
-            <CardHeader style={{ paddingBottom: '0.5rem' }}>
-              <CardTitle style={{ fontSize: '0.9rem', color: '#6b7280' }}>
-                ⏱️ Heures ce mois
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1e293b' }}>
-                {heuresTravaillees.total}h
-              </div>
-              {(heuresTravaillees.internes > 0 || heuresTravaillees.externes > 0) && (
-                <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.25rem' }}>
-                  {heuresTravaillees.internes > 0 && <span>Internes: {heuresTravaillees.internes}h</span>}
-                  {heuresTravaillees.internes > 0 && heuresTravaillees.externes > 0 && ' • '}
-                  {heuresTravaillees.externes > 0 && <span>Externes: {heuresTravaillees.externes}h</span>}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* Heures travaillées ce mois - Nouveau composant */}
+          <HeuresTravailleesCard heures={heuresTravaillees} />
 
           {/* Taux de présence formations */}
-          <Card>
-            <CardHeader style={{ paddingBottom: '0.5rem' }}>
-              <CardTitle style={{ fontSize: '0.9rem', color: '#6b7280' }}>
-                📊 Taux de présence formations
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div style={{ 
-                fontSize: '2rem', 
-                fontWeight: '700', 
-                color: tauxPresence >= 80 ? '#10b981' : tauxPresence >= 60 ? '#f59e0b' : '#ef4444'
-              }}>
-                {tauxPresence}%
-              </div>
-              <div style={{ 
-                fontSize: '0.8rem', 
-                color: tauxPresence >= 80 ? '#10b981' : '#6b7280',
-                marginTop: '0.25rem'
-              }}>
-                {tauxPresence >= 80 ? '✅ Conforme' : tauxPresence >= 60 ? '⚠️ À améliorer' : '❌ Non conforme'}
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard 
+            title="Taux de présence formations"
+            value={`${tauxPresence}%`}
+            subtitle={tauxPresence >= 80 ? '✅ Conforme' : tauxPresence >= 60 ? '⚠️ À améliorer' : '❌ Non conforme'}
+            color={tauxPresence >= 80 ? '#10b981' : tauxPresence >= 60 ? '#f59e0b' : '#ef4444'}
+          />
 
-          {/* Prochain garde */}
-          <Card>
-            <CardHeader style={{ paddingBottom: '0.5rem' }}>
-              <CardTitle style={{ fontSize: '0.9rem', color: '#6b7280' }}>
-                📅 Prochaine garde
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {prochainGarde ? (
-                <>
-                  <div style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1e293b' }}>
-                    {formatDate(prochainGarde.date)}
-                  </div>
-                  <div style={{ fontSize: '0.85rem', color: '#6b7280', marginTop: '0.25rem' }}>
-                    {prochainGarde.type_garde || prochainGarde.poste || 'Garde'}
-                  </div>
-                </>
-              ) : (
-                <div style={{ color: '#9ca3af', fontStyle: 'italic' }}>
-                  Aucune garde planifiée
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* Prochaine garde - Nouveau composant */}
+          <ProchaineGardeCard garde={prochainGarde} />
 
           {/* Formations à venir */}
           <Card>
