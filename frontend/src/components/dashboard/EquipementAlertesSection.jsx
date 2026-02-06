@@ -94,7 +94,7 @@ export const EquipementAlertesSection = ({ alertesEquipements, formatDate, onNav
         <CardContent style={{ padding: '1rem' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '400px', overflowY: 'auto' }}>
             {alertesEquipements.alertes.slice(0, 15).map((alerte, index) => (
-              <AlerteItem key={index} alerte={alerte} formatDate={formatDate} />
+              <AlerteItem key={index} alerte={alerte} formatDate={formatDate} onNavigate={onNavigate} />
             ))}
             {alertesEquipements.total > 15 && (
               <div style={{ textAlign: 'center', padding: '10px', color: '#64748b', fontSize: '0.85rem' }}>
