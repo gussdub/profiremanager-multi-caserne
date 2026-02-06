@@ -2279,16 +2279,17 @@ const ModulePaie = ({ tenant }) => {
                         </td>
                         <td style={{ padding: '8px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Input
-                              type="number"
-                              step="0.5"
+                            <input
+                              type="text"
+                              inputMode="decimal"
                               value={newLigne.heures_payees}
                               onChange={(e) => {
-                                const quantite = parseFloat(e.target.value) || 0;
+                                const textValue = e.target.value;
+                                const quantite = parseFloat(textValue.replace(',', '.')) || 0;
                                 const montant = calculerMontantAutomatique(newLigne.type, quantite, newLigne.fonction_superieure);
-                                setNewLigne({...newLigne, heures_payees: e.target.value, montant: montant});
+                                setNewLigne({...newLigne, heures_payees: textValue, montant: montant});
                               }}
-                              style={{ width: '60px', padding: '4px', fontSize: '0.75rem', textAlign: 'right' }}
+                              style={{ width: '60px', padding: '4px', fontSize: '0.75rem', textAlign: 'right', borderRadius: '4px', border: '1px solid #d1d5db' }}
                             />
                             <span style={{ fontSize: '0.7rem', color: '#64748b', minWidth: '20px' }}>
                               {(() => {
@@ -2300,12 +2301,16 @@ const ModulePaie = ({ tenant }) => {
                           </div>
                         </td>
                         <td style={{ padding: '8px' }}>
-                          <Input
-                            type="number"
-                            step="0.01"
+                          <input
+                            type="text"
+                            inputMode="decimal"
                             value={newLigne.montant}
-                            onChange={(e) => setNewLigne({...newLigne, montant: e.target.value})}
-                            style={{ width: '80px', padding: '4px', fontSize: '0.75rem', textAlign: 'right' }}
+                            onChange={(e) => {
+                              const textValue = e.target.value;
+                              const numValue = parseFloat(textValue.replace(',', '.'));
+                              setNewLigne({...newLigne, montant: isNaN(numValue) ? textValue : numValue});
+                            }}
+                            style={{ width: '80px', padding: '4px', fontSize: '0.75rem', textAlign: 'right', borderRadius: '4px', border: '1px solid #d1d5db' }}
                           />
                         </td>
                         <td style={{ padding: '8px', textAlign: 'center' }}>
