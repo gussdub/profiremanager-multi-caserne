@@ -22,6 +22,13 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react';
+import { 
+  formatMontant, 
+  formatHeures, 
+  statutStyles, 
+  categoriesHeures,
+  moisOptions 
+} from './paie/utils';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
