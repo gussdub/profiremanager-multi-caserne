@@ -269,7 +269,11 @@ const Dashboard = ({ setCurrentPage }) => {
       {/* Alertes Maintenance Véhicules */}
       <VehiculeAlertesSection 
         alertesVehicules={alertesVehicules} 
-        isVisible={isAdmin || user?.role === 'superviseur'} 
+        isVisible={isAdmin || user?.role === 'superviseur'}
+        onNavigate={() => {
+          setCurrentPage('actifs');
+          setTimeout(() => window.dispatchEvent(new CustomEvent('navigateToTab', { detail: { tab: 'vehicules' } })), 100);
+        }}
       />
 
       {/* Section Personnelle */}
