@@ -959,47 +959,8 @@ const Dashboard = () => {
               </CardContent>
             </Card>
 
-            {/* Fil d'activité */}
-            <Card>
-              <CardHeader>
-                <CardTitle style={{ fontSize: '1rem' }}>
-                  📋 Activité récente
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {activitesRecentes.length > 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {activitesRecentes.map((activite, idx) => (
-                      <div key={idx} style={{
-                        padding: '0.5rem',
-                        borderBottom: idx < activitesRecentes.length - 1 ? '1px solid #e5e7eb' : 'none',
-                        fontSize: '0.85rem'
-                      }}>
-                        <div style={{ color: '#374151' }}>
-                          {activite.type === 'planning_assigne' && '📅 '}
-                          {activite.type === 'conge_demande' && '📝 '}
-                          {activite.type === 'formation_inscrit' && '📚 '}
-                          {activite.type === 'remplacement_demande' && '🔄 '}
-                          {activite.message}
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
-                          {formatDateTime(activite.date)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div style={{ 
-                    textAlign: 'center', 
-                    padding: '2rem',
-                    color: '#9ca3af'
-                  }}>
-                    <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📭</div>
-                    Aucune activité récente
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {/* Fil d'activité - Utilisation du nouveau composant */}
+            <ActivitesRecentesCard activites={activitesRecentes} maxItems={5} />
           </div>
         </div>
       )}
