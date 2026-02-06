@@ -115,10 +115,11 @@ Application de gestion complète pour les services d'incendie au Québec, inclua
 ## Tâches Restantes
 
 ### P2 - Refactoring
-- [ ] Décomposer ModulePaie.jsx en sous-composants
+- [x] Centraliser logique d'envoi d'e-mails backend (service créé)
+- [x] Créer structure de base pour extraction composants paie
+- [ ] Décomposer ModulePaie.jsx en sous-composants (en cours)
 - [ ] Décomposer GestionActifs.jsx en sous-composants
 - [ ] Décomposer Dashboard.jsx en sous-composants
-- [ ] Centraliser logique d'envoi d'e-mails backend
 
 ### P2 - Fonctionnalités
 - [ ] Finaliser transmission DSI réelle
@@ -131,6 +132,15 @@ Application de gestion complète pour les services d'incendie au Québec, inclua
 - [ ] Export automatique rapport RCCI vers MSP
 - [ ] Notifications par courriel aux propriétaires après remise
 
+## Sécurité - Configuration Infrastructure ✅
+- **MongoDB Atlas** : Accès restreint (plus de 0.0.0.0/0)
+  - IPs Render (Oregon) : 74.220.48.0/24, 74.220.56.0/24
+  - IP Emergent Preview : 34.16.56.64/32
+- **Resend API** : Nouvelle clé configurée après compromission
+- **Backend Production** : Hébergé sur Render (pas Vercel)
+- **Frontend Production** : Hébergé sur Vercel
+
 ## Dernière mise à jour
-Date : 2025-02-05
-Session : Corrections UI/UX multiples + Conformité MSP + Module Prévention stable
+Date : 2026-02-06
+Session : Sécurisation infrastructure MongoDB + Correction Module Paie (boutons actions, saisie décimale)
+
