@@ -1248,14 +1248,19 @@ const ModulePaie = ({ tenant }) => {
                 <input
                   type="text"
                   inputMode="decimal"
-                  value={newEventType.default_rate || (newEventType.unit === 'heures' ? 1 : 0)}
+                  value={newEventType.default_rate_text !== undefined ? newEventType.default_rate_text : (newEventType.default_rate || (newEventType.unit === 'heures' ? '1' : '0'))}
                   onChange={(e) => {
-                    // Accepter virgule ou point comme séparateur décimal
-                    const value = e.target.value.replace(',', '.');
-                    const numValue = parseFloat(value);
-                    setNewEventType({...newEventType, default_rate: isNaN(numValue) ? 0 : numValue});
+                    // Garder la valeur texte pour permettre la saisie de virgule/point
+                    const textValue = e.target.value;
+                    // Convertir pour stockage (virgule -> point)
+                    const numValue = parseFloat(textValue.replace(',', '.'));
+                    setNewEventType({
+                      ...newEventType, 
+                      default_rate_text: textValue,
+                      default_rate: isNaN(numValue) ? 0 : numValue
+                    });
                   }}
-                  placeholder={newEventType.unit === 'km' ? '0,65' : newEventType.unit === 'montant' ? '25,00' : newEventType.unit === 'heures' ? '1,0' : '10,00'}
+                  placeholder={newEventType.unit === 'km' ? '0,65' : newEventType.unit === 'montant' ? '25,00' : newEventType.unit === 'heures' ? '1,5' : '10,00'}
                   style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db' }}
                 />
                 <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
