@@ -23,7 +23,7 @@ const CompteurBadge = ({ count, label, icon, bgColor, borderColor }) => {
   );
 };
 
-const AlerteItem = ({ alerte, formatDate }) => (
+const AlerteItem = ({ alerte, formatDate, onNavigate }) => (
   <div
     style={{
       display: 'flex',
@@ -36,7 +36,7 @@ const AlerteItem = ({ alerte, formatDate }) => (
       cursor: 'pointer',
       transition: 'all 0.15s ease'
     }}
-    onClick={() => { if (alerte.lien) window.location.href = alerte.lien; }}
+    onClick={() => { if (onNavigate) onNavigate(alerte.lien); }}
     onMouseOver={(e) => { e.currentTarget.style.background = alerte.en_retard ? '#fee2e2' : '#f1f5f9'; }}
     onMouseOut={(e) => { e.currentTarget.style.background = alerte.en_retard ? '#fef2f2' : '#f8fafc'; }}
   >
