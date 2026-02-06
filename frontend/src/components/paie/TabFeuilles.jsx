@@ -19,7 +19,8 @@ const TabFeuilles = ({ context }) => {
     handleVoirDetail, handleExportPaie, handleValiderTout, handleExportPDF,
     handleStartEdit, handleSaveFeuille, handleAddLigne, handleDeleteLigne,
     handleUpdateLigne, calculerMontantAutomatique, getStatutBadge,
-    formatMontant, totauxTempsReel, loading, fetchFeuilles
+    formatMontant, totauxTempsReel, loading, fetchFeuilles,
+    selectedProvider, payrollConfig, handleSendToApi
   } = context;
 
   return (
