@@ -1031,12 +1031,21 @@ const ModulePaie = ({ tenant }) => {
                 <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
                   Heures minimum payées
                 </label>
-                <Input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  value={parametres?.minimum_heures_cauca || 3}
-                  onChange={(e) => setParametres({...parametres, minimum_heures_cauca: parseFloat(e.target.value)})}
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={parametres?.minimum_heures_cauca_text !== undefined ? parametres.minimum_heures_cauca_text : (parametres?.minimum_heures_cauca || '3')}
+                  onChange={(e) => {
+                    const textValue = e.target.value;
+                    const numValue = parseFloat(textValue.replace(',', '.'));
+                    setParametres({
+                      ...parametres, 
+                      minimum_heures_cauca_text: textValue,
+                      minimum_heures_cauca: isNaN(numValue) ? 3 : numValue
+                    });
+                  }}
+                  placeholder="3"
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db' }}
                 />
                 <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
                   Dossier SFTP: intervention_cauca
