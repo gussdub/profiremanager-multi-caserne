@@ -117,8 +117,10 @@ Application de gestion complète pour les services d'incendie au Québec, inclua
 ### P2 - Refactoring
 - [x] Centraliser logique d'envoi d'e-mails backend (service créé)
 - [x] Créer structure de base pour extraction composants paie
-- [ ] Décomposer ModulePaie.jsx en sous-composants (en cours)
-- [ ] Décomposer GestionActifs.jsx en sous-composants
+- [x] Créer hooks personnalisés pour Module Paie (usePaieParametres, usePaieConfig, useFeuillésTemps, useCodeMappings)
+- [x] Créer hooks personnalisés pour Interventions (useInterventions, useInterventionDetail, useDSIReferences)
+- [x] Créer hooks personnalisés pour Actifs (useVehicules, useEquipements, useEPI, usePointsEau)
+- [ ] Intégrer les hooks dans les composants existants (migration progressive)
 - [ ] Décomposer Dashboard.jsx en sous-composants
 
 ### P2 - Fonctionnalités
@@ -132,6 +134,26 @@ Application de gestion complète pour les services d'incendie au Québec, inclua
 - [ ] Export automatique rapport RCCI vers MSP
 - [ ] Notifications par courriel aux propriétaires après remise
 
+## Architecture Refactorisée
+
+```
+/app/frontend/src/components/
+├── paie/
+│   ├── index.js          # Exports centralisés
+│   ├── hooks.js          # usePaieParametres, usePaieConfig, etc.
+│   └── utils.js          # Formatage, constantes
+├── interventions/
+│   ├── index.js          # Exports centralisés  
+│   ├── hooks.js          # useInterventions, useInterventionDetail, etc.
+│   ├── SectionRCCI.jsx
+│   ├── SectionSinistre.jsx
+│   └── ... (12 sections)
+├── actifs/
+│   ├── index.js          # Exports centralisés
+│   └── hooks.js          # useVehicules, useEquipements, etc.
+└── ...
+```
+
 ## Sécurité - Configuration Infrastructure ✅
 - **MongoDB Atlas** : Accès restreint (plus de 0.0.0.0/0)
   - IPs Render (Oregon) : 74.220.48.0/24, 74.220.56.0/24
@@ -142,5 +164,5 @@ Application de gestion complète pour les services d'incendie au Québec, inclua
 
 ## Dernière mise à jour
 Date : 2026-02-06
-Session : Sécurisation infrastructure MongoDB + Correction Module Paie (boutons actions, saisie décimale)
+Session : Refactorisation - Création de hooks personnalisés pour Paie, Interventions et Actifs
 
