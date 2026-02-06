@@ -1122,12 +1122,21 @@ const ModulePaie = ({ tenant }) => {
             <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
               Taux multiplicateur
             </label>
-            <Input
-              type="number"
-              step="0.1"
-              min="0"
-              value={parametres?.formation_taux || 1}
-              onChange={(e) => setParametres({...parametres, formation_taux: parseFloat(e.target.value)})}
+            <input
+              type="text"
+              inputMode="decimal"
+              value={parametres?.formation_taux_text !== undefined ? parametres.formation_taux_text : (parametres?.formation_taux || '1')}
+              onChange={(e) => {
+                const textValue = e.target.value;
+                const numValue = parseFloat(textValue.replace(',', '.'));
+                setParametres({
+                  ...parametres, 
+                  formation_taux_text: textValue,
+                  formation_taux: isNaN(numValue) ? 1 : numValue
+                });
+              }}
+              placeholder="1,0"
+              style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db' }}
             />
           </div>
         </div>
