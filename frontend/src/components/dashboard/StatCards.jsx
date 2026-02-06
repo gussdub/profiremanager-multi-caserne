@@ -112,37 +112,49 @@ export const HeuresTravailleesCard = ({ heures }) => (
 );
 
 // Carte de prochaine garde
-export const ProchaineGardeCard = ({ garde }) => (
-  <Card>
-    <CardHeader className="pb-2">
-      <CardTitle className="text-sm font-medium flex items-center gap-2">
-        <Calendar className="h-4 w-4 text-green-500" />
-        Prochaine garde
-      </CardTitle>
-    </CardHeader>
-    <CardContent>
-      {garde ? (
-        <div>
-          <div className="text-lg font-bold text-green-600">
-            {new Date(garde.date_debut).toLocaleDateString('fr-CA', {
-              weekday: 'long',
-              day: 'numeric',
-              month: 'long'
-            })}
+export const ProchaineGardeCard = ({ garde }) => {
+  // Supporter les deux formats: .date (assignations planning) et .date_debut
+  const dateStr = garde?.date || garde?.date_debut;
+  const formatGardeDate = (d) => {
+    if (!d) return '';
+    const [year, month, day] = d.split('T')[0].split('-').map(Number);
+    return new Date(year, month - 1, day).toLocaleDateString('fr-CA', {
+      weekday: 'long', day: 'numeric', month: 'long'
+    });
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-green-500" />
+          Prochaine garde
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {garde ? (
+          <div>
+            <div className="text-lg font-bold text-green-600">
+              {formatGardeDate(dateStr)}
+            </div>
+            {(garde.heure_debut || garde.type_garde) && (
+              <div className="text-sm text-gray-600 mt-1">
+                {garde.heure_debut && garde.heure_fin
+                  ? `${garde.heure_debut} - ${garde.heure_fin}`
+                  : garde.type_garde || ''}
+              </div>
+            )}
+            {garde.caserne && (
+              <div className="text-xs text-gray-500 mt-1">{garde.caserne}</div>
+            )}
           </div>
-          <div className="text-sm text-gray-600 mt-1">
-            {garde.heure_debut} - {garde.heure_fin}
-          </div>
-          {garde.caserne && (
-            <div className="text-xs text-gray-500 mt-1">{garde.caserne}</div>
-          )}
-        </div>
-      ) : (
-        <p className="text-sm text-gray-500">Aucune garde planifiée</p>
-      )}
-    </CardContent>
-  </Card>
-);
+        ) : (
+          <p className="text-sm text-gray-500">Aucune garde planifiée</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
 
 // Carte de taux de présence
 export const TauxPresenceCard = ({ taux, absents = [] }) => (
