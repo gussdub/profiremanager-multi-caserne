@@ -708,8 +708,10 @@ const ModulePaie = ({ tenant }) => {
   const handleSaveEditEventType = async () => {
     if (!editingEventType) return;
     
+    const identifier = editingEventType.id || editingEventType.code;
+    
     try {
-      const response = await fetch(`${API_URL}/api/${tenant}/paie/event-types/${editingEventType.id}`, {
+      const response = await fetch(`${API_URL}/api/${tenant}/paie/event-types/${identifier}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${getToken()}`,
