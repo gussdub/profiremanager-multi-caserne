@@ -15,7 +15,7 @@ export {
   EPIAlertesCard
 } from './StatCards';
 
-// Cartes d'alertes
+// Cartes d'alertes (anciens composants)
 export {
   AlertesEquipementsCard,
   AlertesVehiculesCard,
@@ -27,3 +27,10 @@ export {
   default as ActivitesRecentesCard,
   ActivitesCompactes
 } from './ActivitesRecentes';
+
+// Sections extraites du Dashboard
+export { EquipementAlertesSection } from './EquipementAlertesSection';
+export { VehiculeAlertesSection } from './VehiculeAlertesSection';
+export { AdminSection, AdminKPIGrid, PersonnesAbsentesCard } from './AdminSection';
+export { FormationsAVenirCard } from './FormationsCard';
+export { EPIAlertesInline } from './EPIAlertesInline';
