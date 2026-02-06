@@ -1368,14 +1368,18 @@ const ModulePaie = ({ tenant }) => {
                         <input
                           type="text"
                           inputMode="decimal"
-                          value={editingEventType.default_rate ?? (et.unit === 'heures' ? 1 : 0)}
+                          value={editingEventType.default_rate_text !== undefined ? editingEventType.default_rate_text : (editingEventType.default_rate ?? (et.unit === 'heures' ? '1' : '0'))}
                           onChange={(e) => {
-                            // Accepter virgule ou point comme séparateur décimal
-                            const value = e.target.value.replace(',', '.');
-                            const numValue = parseFloat(value);
-                            setEditingEventType({...editingEventType, default_rate: isNaN(numValue) ? e.target.value : numValue});
+                            // Garder la valeur texte pour permettre la saisie
+                            const textValue = e.target.value;
+                            const numValue = parseFloat(textValue.replace(',', '.'));
+                            setEditingEventType({
+                              ...editingEventType, 
+                              default_rate_text: textValue,
+                              default_rate: isNaN(numValue) ? 0 : numValue
+                            });
                           }}
-                          placeholder="0.65"
+                          placeholder="0,65"
                           style={{ width: '80px', padding: '4px', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid #d1d5db' }}
                         />
                       ) : (
