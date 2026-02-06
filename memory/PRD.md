@@ -116,12 +116,13 @@ Application de gestion complète pour les services d'incendie au Québec, inclua
 
 ### P2 - Refactoring
 - [x] Centraliser logique d'envoi d'e-mails backend (service créé)
-- [x] Créer hooks personnalisés pour Module Paie (usePaieParametres, usePaieConfig, useFeuillésTemps, useCodeMappings)
-- [x] Créer hooks personnalisés pour Interventions (useInterventions, useInterventionDetail, useDSIReferences)
-- [x] Créer hooks personnalisés pour Actifs (useVehicules, useEquipements, useEPI, usePointsEau)
-- [x] Créer sous-composants Dashboard (StatCards, AlertCards, ActivitesRecentes, useDashboardData)
-- [x] Créer utilitaires Actifs (utils.js - états, formatage, validation dates)
-- [ ] Intégrer les hooks/composants dans les fichiers existants (migration progressive)
+- [x] Créer hooks personnalisés pour Module Paie
+- [x] Créer hooks personnalisés pour Interventions
+- [x] Créer hooks personnalisés pour Actifs
+- [x] Créer sous-composants Dashboard (StatCards, AlertCards, ActivitesRecentes)
+- [x] Créer utilitaires Actifs et Paie
+- [x] Intégrer imports des utilitaires dans composants existants
+- [ ] Migration progressive du JSX vers nouveaux composants (en cours)
 
 ### P2 - Fonctionnalités
 - [ ] Finaliser transmission DSI réelle
