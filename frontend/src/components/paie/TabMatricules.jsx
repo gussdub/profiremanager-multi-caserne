@@ -9,10 +9,9 @@ const TabMatricules = ({ context }) => {
     selectedProvider, handleSaveMatricule, handleSaveAllMatricules, loading
   } = context;
 
+  const providerName = selectedProvider?.name || 'votre système de paie';
+
   return (
-    const providerName = selectedProvider?.name || 'votre système de paie';
-    
-    return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div style={{ background: 'white', borderRadius: '12px', padding: '24px', border: '1px solid #e5e7eb' }}>
         <h3 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', color: '#1e293b' }}>
