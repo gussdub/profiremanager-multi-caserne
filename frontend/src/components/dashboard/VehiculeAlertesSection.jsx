@@ -75,7 +75,7 @@ export const VehiculeAlertesSection = ({ alertesVehicules, isVisible, onNavigate
         <CardContent style={{ padding: '1rem' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '300px', overflowY: 'auto' }}>
             {alertesVehicules.alertes.slice(0, 10).map((alerte, index) => (
-              <VehiculeAlerteItem key={index} alerte={alerte} />
+              <VehiculeAlerteItem key={index} alerte={alerte} onNavigate={onNavigate} />
             ))}
           </div>
         </CardContent>
