@@ -116,12 +116,12 @@ Application de gestion complète pour les services d'incendie au Québec, inclua
 
 ### P2 - Refactoring
 - [x] Centraliser logique d'envoi d'e-mails backend (service créé)
-- [x] Créer structure de base pour extraction composants paie
 - [x] Créer hooks personnalisés pour Module Paie (usePaieParametres, usePaieConfig, useFeuillésTemps, useCodeMappings)
 - [x] Créer hooks personnalisés pour Interventions (useInterventions, useInterventionDetail, useDSIReferences)
 - [x] Créer hooks personnalisés pour Actifs (useVehicules, useEquipements, useEPI, usePointsEau)
-- [ ] Intégrer les hooks dans les composants existants (migration progressive)
-- [ ] Décomposer Dashboard.jsx en sous-composants
+- [x] Créer sous-composants Dashboard (StatCards, AlertCards, ActivitesRecentes, useDashboardData)
+- [x] Créer utilitaires Actifs (utils.js - états, formatage, validation dates)
+- [ ] Intégrer les hooks/composants dans les fichiers existants (migration progressive)
 
 ### P2 - Fonctionnalités
 - [ ] Finaliser transmission DSI réelle
@@ -138,31 +138,35 @@ Application de gestion complète pour les services d'incendie au Québec, inclua
 
 ```
 /app/frontend/src/components/
+├── dashboard/
+│   ├── index.js              # Exports centralisés
+│   ├── useDashboardData.js   # Hook de chargement données
+│   ├── StatCards.jsx         # Cartes statistiques (Admin/Employé)
+│   ├── AlertCards.jsx        # Alertes équipements/véhicules
+│   └── ActivitesRecentes.jsx # Liste activités récentes
 ├── paie/
-│   ├── index.js          # Exports centralisés
-│   ├── hooks.js          # usePaieParametres, usePaieConfig, etc.
-│   └── utils.js          # Formatage, constantes
+│   ├── index.js              # Exports centralisés
+│   ├── hooks.js              # usePaieParametres, usePaieConfig, etc.
+│   └── utils.js              # Formatage, constantes
 ├── interventions/
-│   ├── index.js          # Exports centralisés  
-│   ├── hooks.js          # useInterventions, useInterventionDetail, etc.
-│   ├── SectionRCCI.jsx
-│   ├── SectionSinistre.jsx
-│   └── ... (12 sections)
+│   ├── index.js              # Exports centralisés  
+│   ├── hooks.js              # useInterventions, useInterventionDetail, etc.
+│   └── ... (12+ sections)
 ├── actifs/
-│   ├── index.js          # Exports centralisés
-│   └── hooks.js          # useVehicules, useEquipements, etc.
+│   ├── index.js              # Exports centralisés
+│   ├── hooks.js              # useVehicules, useEquipements, etc.
+│   └── utils.js              # États, formatage, validation
 └── ...
 ```
 
 ## Sécurité - Configuration Infrastructure ✅
-- **MongoDB Atlas** : Accès restreint (plus de 0.0.0.0/0)
+- **MongoDB Atlas** : 0.0.0.0/0 rétabli pour dev (production Render sécurisée)
   - IPs Render (Oregon) : 74.220.48.0/24, 74.220.56.0/24
-  - IP Emergent Preview : 34.16.56.64/32
-- **Resend API** : Nouvelle clé configurée après compromission
-- **Backend Production** : Hébergé sur Render (pas Vercel)
+- **Resend API** : Nouvelle clé configurée
+- **Backend Production** : Hébergé sur Render
 - **Frontend Production** : Hébergé sur Vercel
 
 ## Dernière mise à jour
 Date : 2026-02-06
-Session : Refactorisation - Création de hooks personnalisés pour Paie, Interventions et Actifs
+Session : Refactorisation avancée - Dashboard, Actifs, Import équipements avec mapping
 
