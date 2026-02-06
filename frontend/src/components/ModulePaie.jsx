@@ -1371,29 +1371,27 @@ const ModulePaie = ({ tenant }) => {
                       )}
                     </td>
                     <td style={{ padding: '10px', textAlign: 'center' }}>
-                      {et.id && (
-                        <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
-                          {editingEventType && editingEventType.id === et.id ? (
-                            <>
-                              <Button variant="ghost" size="sm" onClick={handleSaveEditEventType}>
-                                <Check size={14} style={{ color: '#16a34a' }} />
-                              </Button>
-                              <Button variant="ghost" size="sm" onClick={() => setEditingEventType(null)}>
-                                <XCircle size={14} style={{ color: '#64748b' }} />
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <Button variant="ghost" size="sm" onClick={() => handleEditEventType(et)}>
-                                <Edit size={14} style={{ color: '#2563eb' }} />
-                              </Button>
-                              <Button variant="ghost" size="sm" onClick={() => handleDeleteEventType(et.id)}>
-                                <Trash2 size={14} style={{ color: '#ef4444' }} />
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      )}
+                      <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
+                        {editingEventType && (editingEventType.id === et.id || editingEventType.code === et.code) ? (
+                          <>
+                            <Button variant="ghost" size="sm" onClick={handleSaveEditEventType} title="Enregistrer">
+                              <Check size={14} style={{ color: '#16a34a' }} />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => setEditingEventType(null)} title="Annuler">
+                              <XCircle size={14} style={{ color: '#64748b' }} />
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button variant="ghost" size="sm" onClick={() => handleEditEventType(et)} title="Modifier">
+                              <Edit size={14} style={{ color: '#2563eb' }} />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => handleDeleteEventType(et.id || et.code)} title="Supprimer">
+                              <Trash2 size={14} style={{ color: '#ef4444' }} />
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
