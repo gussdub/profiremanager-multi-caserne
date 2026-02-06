@@ -259,7 +259,12 @@ const Dashboard = ({ setCurrentPage }) => {
       </div>
 
       {/* Alertes Équipements */}
-      <EquipementAlertesSection alertesEquipements={alertesEquipements} formatDate={formatDate} />
+      <EquipementAlertesSection alertesEquipements={alertesEquipements} formatDate={formatDate} onNavigate={(lien) => {
+        if (lien) {
+          setCurrentPage('actifs');
+          setTimeout(() => window.dispatchEvent(new CustomEvent('navigateToTab', { detail: { tab: 'materiel' } })), 100);
+        }
+      }} />
 
       {/* Alertes Maintenance Véhicules */}
       <VehiculeAlertesSection 
