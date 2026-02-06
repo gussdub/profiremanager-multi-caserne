@@ -1246,19 +1246,23 @@ const ModulePaie = ({ tenant }) => {
                   {newEventType.unit === 'heures' ? 'Multiplicateur du taux horaire' : 'Taux unitaire'}
                 </label>
                 <input
-                  type="number"
-                  step="0.01"
-                  min="0"
+                  type="text"
+                  inputMode="decimal"
                   value={newEventType.default_rate || (newEventType.unit === 'heures' ? 1 : 0)}
-                  onChange={(e) => setNewEventType({...newEventType, default_rate: parseFloat(e.target.value) || 0})}
-                  placeholder={newEventType.unit === 'km' ? '$/km' : newEventType.unit === 'montant' ? '$' : newEventType.unit === 'heures' ? '1.0' : '$/unité'}
+                  onChange={(e) => {
+                    // Accepter virgule ou point comme séparateur décimal
+                    const value = e.target.value.replace(',', '.');
+                    const numValue = parseFloat(value);
+                    setNewEventType({...newEventType, default_rate: isNaN(numValue) ? 0 : numValue});
+                  }}
+                  placeholder={newEventType.unit === 'km' ? '0,65' : newEventType.unit === 'montant' ? '25,00' : newEventType.unit === 'heures' ? '1,0' : '10,00'}
                   style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db' }}
                 />
                 <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                  {newEventType.unit === 'km' ? '$/km (ex: 0.65)' : 
+                  {newEventType.unit === 'km' ? '$/km (ex: 0,65)' : 
                    newEventType.unit === 'montant' ? 'Montant fixe $' : 
                    newEventType.unit === 'quantite' ? '$/unité' : 
-                   'Ex: 1.0 = 100% du taux horaire employé, 1.5 = 150%'}
+                   'Ex: 1,0 = 100% du taux horaire employé, 1,5 = 150%'}
                 </span>
               </div>
             </div>
