@@ -99,7 +99,7 @@ const TabExport = ({ context }) => {
             📋 Correspondance de champs
           </h3>
           <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '16px' }}>
-            Inscrivez les codes de gains utilisés dans Nethris. Ces codes doivent avoir la mention <strong>"Hrs"</strong> (heures).
+            Inscrivez les codes de gains utilisés dans Nethris. Ces codes doivent avoir la mention <strong>&quot;Hrs&quot;</strong> (heures).
           </p>
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
@@ -245,7 +245,7 @@ const TabExport = ({ context }) => {
         </p>
         {selectedProvider?.name?.toLowerCase().includes('nethris') && (
           <p style={{ color: '#f59e0b', fontSize: '0.8rem', marginBottom: '16px', background: '#fffbeb', padding: '8px 12px', borderRadius: '6px' }}>
-            ⚠️ Les codes de gains doivent avoir la mention <strong>"Hrs"</strong> (heures) dans Nethris. Les codes avec "$" ne sont pas compatibles.
+            ⚠️ Les codes de gains doivent avoir la mention <strong>&quot;Hrs&quot;</strong> (heures) dans Nethris. Les codes avec "$" ne sont pas compatibles.
           </p>
         )}
         
