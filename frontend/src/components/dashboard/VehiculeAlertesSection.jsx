@@ -17,7 +17,7 @@ const getTypeIcon = (type) => {
   return '🚗';
 };
 
-const VehiculeAlerteItem = ({ alerte }) => {
+const VehiculeAlerteItem = ({ alerte, onNavigate }) => {
   const style = getNiveauStyle(alerte.niveau);
   return (
     <div
