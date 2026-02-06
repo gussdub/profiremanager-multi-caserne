@@ -457,7 +457,7 @@ const AppLayout = () => {
           </Suspense>
         );
       default:
-        return <Dashboard />;
+        return <Dashboard setCurrentPage={setCurrentPage} />;
     }
   };
 
