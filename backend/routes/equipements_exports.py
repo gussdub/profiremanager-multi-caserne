@@ -766,14 +766,18 @@ async def import_equipements_csv(
                 if vehicule:
                     vehicule_id = vehicule.get("id")
             
-            # 5. Mapper l'employé si fourni
+            # 5. Mapper l'employé si fourni (avec matching intelligent)
             employe_id = None
             employe_nom_input = eq_data.get("employe", "").strip()
             if employe_nom_input:
-                employe_normalized = employe_nom_input.lower().strip()
-                employe = users_by_name.get(employe_normalized)
-                if employe:
-                    employe_id = employe.get("id")
+                matched_user, match_type, confidence = find_user_intelligent(
+                    employe_nom_input, 
+                    users_by_name
+                )
+                if matched_user:
+                    employe_id = matched_user.get("id")
+                    if match_type == 'fuzzy':
+                        logger.info(f"Ligne {index + 2}: '{employe_nom_input}' matché avec '{matched_user.get('prenom')} {matched_user.get('nom')}' (fuzzy: {confidence:.0%})")
             
             # 6. Vérifier si l'équipement existe déjà (par code_unique)
             existing = await db.equipements.find_one({
