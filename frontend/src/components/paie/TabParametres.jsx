@@ -45,7 +45,7 @@ const TabParametres = ({ context }) => {
           🚨 Rappel & Interventions (hors garde interne)
         </h3>
         <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '16px' }}>
-          Lorsqu'un pompier intervient en garde externe ou est rappelé, il est payé un minimum d'heures selon la source de l'appel.
+          Lorsqu&apos;un pompier intervient en garde externe ou est rappelé, il est payé un minimum d&apos;heures selon la source de l&apos;appel.
           Activez uniquement les sources d'appel applicables à votre caserne.
         </p>
         
@@ -227,7 +227,7 @@ const TabParametres = ({ context }) => {
           ⬆️ Prime fonction supérieure
         </h3>
         <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '16px' }}>
-          Lorsqu'un employé avec "fonction supérieure" cochée dans sa fiche occupe un poste de grade supérieur 
+          Lorsqu&apos;un employé avec "fonction supérieure&quot; cochée dans sa fiche occupe un poste de grade supérieur 
           (ex: Pompier → Lieutenant, Lieutenant → Capitaine), son taux horaire est majoré de ce pourcentage.
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
@@ -310,18 +310,18 @@ const TabParametres = ({ context }) => {
         </div>
       </div>
 
-      {/* Types d'heures personnalisés */}
+      {/* Types d&apos;heures personnalisés */}
       <div style={{ background: 'white', borderRadius: '12px', padding: '24px', border: '1px solid #e5e7eb' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', color: '#1e293b' }}>
-            📋 Types d'heures personnalisés
+            📋 Types d&apos;heures personnalisés
           </h3>
           <Button size="sm" onClick={() => setShowEventTypeForm(!showEventTypeForm)} data-testid="add-event-type-btn">
             <Plus size={16} /> Ajouter
           </Button>
         </div>
         <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '16px' }}>
-          Créez vos propres types d'heures, primes ou frais pour les associer aux codes de gains de votre logiciel de paie.
+          Créez vos propres types d&apos;heures, primes ou frais pour les associer aux codes de gains de votre logiciel de paie.
         </p>
 
         {/* Formulaire d'ajout */}
@@ -422,7 +422,7 @@ const TabParametres = ({ context }) => {
           </div>
         )}
 
-        {/* Liste des types d'heures */}
+        {/* Liste des types d&apos;heures */}
         <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
             <thead>

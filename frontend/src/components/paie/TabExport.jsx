@@ -241,7 +241,7 @@ const TabExport = ({ context }) => {
           🔗 Associations des codes de gains
         </h3>
         <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '8px' }}>
-          Associez vos types d'heures aux codes de gains {selectedProvider?.name || 'de votre système de paie'} correspondants.
+          Associez vos types d&apos;heures aux codes de gains {selectedProvider?.name || 'de votre système de paie'} correspondants.
         </p>
         {selectedProvider?.name?.toLowerCase().includes('nethris') && (
           <p style={{ color: '#f59e0b', fontSize: '0.8rem', marginBottom: '16px', background: '#fffbeb', padding: '8px 12px', borderRadius: '6px' }}>
@@ -252,7 +252,7 @@ const TabExport = ({ context }) => {
         {/* Formulaire d'ajout */}
         <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <div style={{ flex: '1', minWidth: '200px' }}>
-            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>Type d'heures</label>
+            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>Type d&apos;heures</label>
             <select
               value={newMapping.internal_event_type}
               onChange={(e) => setNewMapping({...newMapping, internal_event_type: e.target.value})}
@@ -292,7 +292,7 @@ const TabExport = ({ context }) => {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
             <thead>
               <tr style={{ background: '#f8fafc' }}>
-                <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Type d'heures</th>
+                <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Type d&apos;heures</th>
                 <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Code de gain</th>
                 <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Description</th>
                 <th style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid #e5e7eb', width: '80px' }}>Actions</th>
@@ -302,7 +302,7 @@ const TabExport = ({ context }) => {
               {codeMappings.length === 0 ? (
                 <tr>
                   <td colSpan="4" style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>
-                    Aucune association configurée. Ajoutez vos codes de gains pour activer l'export.
+                    Aucune association configurée. Ajoutez vos codes de gains pour activer l&apos;export.
                   </td>
                 </tr>
               ) : (
