@@ -588,8 +588,6 @@ const TabFeuilles = ({ context }) => {
       )}
     </div>
   );
-
-  );
 };
 
 export default TabFeuilles;
