@@ -1087,12 +1087,21 @@ const ModulePaie = ({ tenant }) => {
                 <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
                   Heures minimum payées
                 </label>
-                <Input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  value={parametres?.minimum_heures_urgence_sante || 2}
-                  onChange={(e) => setParametres({...parametres, minimum_heures_urgence_sante: parseFloat(e.target.value)})}
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={parametres?.minimum_heures_urgence_sante_text !== undefined ? parametres.minimum_heures_urgence_sante_text : (parametres?.minimum_heures_urgence_sante || '2')}
+                  onChange={(e) => {
+                    const textValue = e.target.value;
+                    const numValue = parseFloat(textValue.replace(',', '.'));
+                    setParametres({
+                      ...parametres, 
+                      minimum_heures_urgence_sante_text: textValue,
+                      minimum_heures_urgence_sante: isNaN(numValue) ? 2 : numValue
+                    });
+                  }}
+                  placeholder="2"
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db' }}
                 />
                 <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
                   Dossier SFTP: intervention_urgence_sante
