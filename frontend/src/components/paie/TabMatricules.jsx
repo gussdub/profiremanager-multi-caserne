@@ -103,7 +103,6 @@ const TabMatricules = ({ context }) => {
       </div>
     </div>
   );
-  );
 };
 
 export default TabMatricules;
