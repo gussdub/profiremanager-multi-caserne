@@ -9,3 +9,13 @@ export { default as SectionPertes } from './SectionPertes';
 export { default as SectionNarratif } from './SectionNarratif';
 export { default as SectionRemisePropriete } from './SectionRemisePropriete';
 export { default as SectionFacturation } from './SectionFacturation';
+export { default as SectionRCCI } from './SectionRCCI';
+export { default as SectionSinistre } from './SectionSinistre';
+
+// Hooks personnalisés
+export {
+  useInterventions,
+  useInterventionDetail,
+  useInterventionSettings,
+  useDSIReferences
+} from './hooks';
