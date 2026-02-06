@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { 
-  Link, Download, Check, RefreshCw, Zap, Plus, Trash2
+  Link, Download, Check, RefreshCw, Zap, Plus, Trash2, CheckCircle, XCircle
 } from 'lucide-react';
 
 const TabExport = ({ context }) => {
