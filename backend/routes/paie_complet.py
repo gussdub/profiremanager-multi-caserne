@@ -2001,7 +2001,7 @@ async def update_tenant_event_type(
     data: dict = Body(...),
     current_user: User = Depends(get_current_user)
 ):
-    """Met à jour un type d'heures du tenant"""
+    """Met à jour un type d'heures du tenant (ou crée à partir d'un type par défaut)"""
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès admin requis")
     
@@ -2009,21 +2009,44 @@ async def update_tenant_event_type(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
-    update_data = {}
-    if "label" in data:
-        update_data["label"] = data["label"]
-    if "category" in data:
-        update_data["category"] = data["category"]
-    if "unit" in data:
-        update_data["unit"] = data["unit"]
-    if "default_rate" in data:
-        update_data["default_rate"] = float(data["default_rate"])
-    
-    if update_data:
-        await db.tenant_payroll_event_types.update_one(
+    # Chercher d'abord par id, puis par code
+    existing = await db.tenant_payroll_event_types.find_one({
+        "$or": [
             {"id": event_type_id, "tenant_id": tenant.id},
-            {"$set": update_data}
-        )
+            {"code": event_type_id, "tenant_id": tenant.id}
+        ]
+    })
+    
+    if existing:
+        # Mise à jour d'un type existant
+        update_data = {}
+        if "label" in data:
+            update_data["label"] = data["label"]
+        if "category" in data:
+            update_data["category"] = data["category"]
+        if "unit" in data:
+            update_data["unit"] = data["unit"]
+        if "default_rate" in data:
+            update_data["default_rate"] = float(data["default_rate"]) if data["default_rate"] else None
+        
+        if update_data:
+            await db.tenant_payroll_event_types.update_one(
+                {"_id": existing["_id"]},
+                {"$set": update_data}
+            )
+    else:
+        # Créer un nouveau type à partir d'un type par défaut
+        import uuid
+        new_type = {
+            "id": str(uuid.uuid4()),
+            "tenant_id": tenant.id,
+            "code": data.get("code", event_type_id),
+            "label": data.get("label", event_type_id),
+            "category": data.get("category", "heures"),
+            "unit": data.get("unit", "heures"),
+            "default_rate": float(data["default_rate"]) if data.get("default_rate") else None
+        }
+        await db.tenant_payroll_event_types.insert_one(new_type)
     
     return {"success": True}
 
