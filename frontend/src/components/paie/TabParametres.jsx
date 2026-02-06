@@ -46,7 +46,7 @@ const TabParametres = ({ context }) => {
         </h3>
         <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '16px' }}>
           Lorsqu&apos;un pompier intervient en garde externe ou est rappelé, il est payé un minimum d&apos;heures selon la source de l&apos;appel.
-          Activez uniquement les sources d'appel applicables à votre caserne.
+          Activez uniquement les sources d&apos;appel applicables à votre caserne.
         </p>
         
         <div style={{ marginBottom: '20px' }}>
