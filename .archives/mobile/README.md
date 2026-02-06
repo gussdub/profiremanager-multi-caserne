@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://component-split-14.preview.emergentagent.com
+- **URL** : https://react-refactor-16.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://component-split-14.preview.emergentagent.com"
+  "apiUrl": "https://react-refactor-16.preview.emergentagent.com"
 }
 ```
 
