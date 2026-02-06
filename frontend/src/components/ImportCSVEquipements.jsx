@@ -319,7 +319,7 @@ const ImportCSVEquipements = ({ tenantSlug, onImportComplete }) => {
         {/* Étape 2: Mapping des colonnes */}
         {step === 2 && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 rounded-lg">
               <div>
                 <h3 className="font-semibold text-lg">Mapping des colonnes</h3>
                 <p className="text-sm text-gray-600">
@@ -333,85 +333,142 @@ const ImportCSVEquipements = ({ tenantSlug, onImportComplete }) => {
               )}
             </div>
 
-            <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
-              <div className="grid gap-4">
-                {availableFields.map(field => (
-                  <div key={field.key} className="grid grid-cols-12 gap-3 items-center">
-                    {/* Champ cible */}
-                    <div className="col-span-4">
-                      <Label className="text-sm font-medium">
-                        {field.label}
-                        {field.required && <span className="text-red-500 ml-1">*</span>}
-                      </Label>
-                    </div>
-                    
-                    {/* Flèche */}
-                    <div className="col-span-1 flex justify-center">
-                      <ArrowRight className="h-4 w-4 text-gray-400" />
-                    </div>
-                    
-                    {/* Sélecteur de colonne CSV */}
-                    <div className="col-span-3">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-sm">
+              <p className="mb-1">
+                💡 <strong>Astuce:</strong> Utilisez la colonne "Valeur par défaut" pour appliquer une même valeur à toutes les lignes.
+              </p>
+              <p className="text-xs text-gray-600">
+                ⚠️ La valeur par défaut écrase les données du CSV si les deux sont renseignés.
+              </p>
+            </div>
+
+            {/* En-tête du tableau de mapping */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '2fr 40px 2fr 2fr 2.5fr',
+              gap: '0.5rem',
+              padding: '0.75rem',
+              backgroundColor: '#f8fafc',
+              fontWeight: '600',
+              borderBottom: '2px solid #e2e8f0',
+              fontSize: '0.8rem',
+              borderRadius: '8px 8px 0 0'
+            }}>
+              <div>Champ système</div>
+              <div style={{ textAlign: 'center' }}>➡️</div>
+              <div>Colonne CSV</div>
+              <div>💾 Valeur par défaut</div>
+              <div>📋 Aperçu données</div>
+            </div>
+
+            <div className="bg-white rounded-b-lg border border-t-0 max-h-96 overflow-y-auto">
+              {availableFields.map(field => (
+                <div key={field.key} style={{
+                  display: 'grid',
+                  gridTemplateColumns: '2fr 40px 2fr 2fr 2.5fr',
+                  gap: '0.5rem',
+                  padding: '0.75rem',
+                  borderBottom: '1px solid #e5e7eb',
+                  alignItems: 'center'
+                }}>
+                  {/* Champ cible */}
+                  <div>
+                    <span style={{ fontWeight: '500', color: '#475569', fontSize: '0.875rem' }}>
+                      {field.label}
+                      {field.required && <span className="text-red-500 ml-1">*</span>}
+                    </span>
+                  </div>
+                  
+                  {/* Flèche */}
+                  <div style={{ textAlign: 'center', color: '#9ca3af' }}>➡️</div>
+                  
+                  {/* Sélecteur de colonne CSV */}
+                  <div>
+                    <select
+                      className="w-full p-2 border rounded-md text-sm"
+                      value={columnMapping[field.key] || ''}
+                      onChange={(e) => handleColumnMapping(field.key, e.target.value)}
+                      disabled={!!defaultValues[field.key]}
+                      style={{
+                        backgroundColor: defaultValues[field.key] ? '#f1f5f9' : 'white'
+                      }}
+                    >
+                      <option value="">-- Non mappé --</option>
+                      {csvHeaders.map(header => (
+                        <option key={header} value={header}>{header}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {/* Valeur par défaut */}
+                  <div>
+                    {field.key === 'categorie_nom' && categories.length > 0 ? (
                       <select
                         className="w-full p-2 border rounded-md text-sm"
-                        value={columnMapping[field.key] || ''}
-                        onChange={(e) => handleColumnMapping(field.key, e.target.value)}
+                        value={defaultValues[field.key] || ''}
+                        onChange={(e) => handleDefaultValue(field.key, e.target.value)}
                       >
-                        <option value="">-- Non mappé --</option>
-                        {csvHeaders.map(header => (
-                          <option key={header} value={header}>{header}</option>
+                        <option value="">-- Défaut --</option>
+                        {categories.map(cat => (
+                          <option key={cat.id} value={cat.nom}>{cat.nom}</option>
                         ))}
                       </select>
-                    </div>
-                    
-                    {/* OU */}
-                    <div className="col-span-1 text-center text-xs text-gray-500">ou</div>
-                    
-                    {/* Valeur par défaut */}
-                    <div className="col-span-3">
-                      {field.key === 'categorie_nom' && categories.length > 0 ? (
-                        <select
-                          className="w-full p-2 border rounded-md text-sm"
-                          value={defaultValues[field.key] || ''}
-                          onChange={(e) => handleDefaultValue(field.key, e.target.value)}
-                        >
-                          <option value="">-- Valeur par défaut --</option>
-                          {categories.map(cat => (
-                            <option key={cat.id} value={cat.nom}>{cat.nom}</option>
-                          ))}
-                        </select>
-                      ) : field.key === 'etat' ? (
-                        <select
-                          className="w-full p-2 border rounded-md text-sm"
-                          value={defaultValues[field.key] || ''}
-                          onChange={(e) => handleDefaultValue(field.key, e.target.value)}
-                        >
-                          <option value="">-- Valeur par défaut --</option>
-                          <option value="neuf">Neuf</option>
-                          <option value="bon">Bon</option>
-                          <option value="a_reparer">À réparer</option>
-                          <option value="en_reparation">En réparation</option>
-                          <option value="hors_service">Hors service</option>
-                        </select>
-                      ) : (
-                        <Input
-                          type="text"
-                          placeholder="Valeur par défaut"
-                          value={defaultValues[field.key] || ''}
-                          onChange={(e) => handleDefaultValue(field.key, e.target.value)}
-                          className="text-sm"
-                        />
-                      )}
-                    </div>
+                    ) : field.key === 'etat' ? (
+                      <select
+                        className="w-full p-2 border rounded-md text-sm"
+                        value={defaultValues[field.key] || ''}
+                        onChange={(e) => handleDefaultValue(field.key, e.target.value)}
+                      >
+                        <option value="">-- Défaut --</option>
+                        <option value="neuf">Neuf</option>
+                        <option value="bon">Bon</option>
+                        <option value="a_reparer">À réparer</option>
+                        <option value="en_reparation">En réparation</option>
+                        <option value="hors_service">Hors service</option>
+                      </select>
+                    ) : (
+                      <Input
+                        type="text"
+                        placeholder="Valeur par défaut"
+                        value={defaultValues[field.key] || ''}
+                        onChange={(e) => handleDefaultValue(field.key, e.target.value)}
+                        className="text-sm"
+                      />
+                    )}
                   </div>
-                ))}
-              </div>
+
+                  {/* Aperçu des données */}
+                  <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                    {defaultValues[field.key] ? (
+                      <span style={{ fontWeight: '600', color: '#059669' }}>
+                        ✓ {defaultValues[field.key]} <small style={{ opacity: 0.7 }}>(toutes les lignes)</small>
+                      </span>
+                    ) : columnMapping[field.key] && csvData[0] ? (
+                      <span style={{ 
+                        display: 'inline-block',
+                        maxWidth: '200px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        backgroundColor: '#f0fdf4',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        color: '#166534'
+                      }}>
+                        {csvData[0][columnMapping[field.key]] || <em style={{ color: '#9ca3af' }}>(vide)</em>}
+                      </span>
+                    ) : (
+                      <span style={{ color: '#d1d5db' }}>—</span>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
 
             <div className="flex gap-2 pt-4">
               <Button variant="outline" onClick={resetImport}>Annuler</Button>
               <Button onClick={generatePreview} className="flex-1 bg-blue-600 hover:bg-blue-700">
-                Aperçu avant import
+                Aperçu avant import →
               </Button>
             </div>
           </div>
