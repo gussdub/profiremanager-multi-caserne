@@ -3,7 +3,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { 
   Users, Download, Check, RefreshCw, Filter, Search, Trash2, Eye, 
-  Edit, CheckCircle, XCircle, Plus, FileText
+  Edit, CheckCircle, XCircle, Plus, FileText, Zap
 } from 'lucide-react';
 import { moisOptions } from './utils';
 
