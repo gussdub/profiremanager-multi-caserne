@@ -53,7 +53,7 @@ const VehiculeAlerteItem = ({ alerte, onNavigate }) => {
   );
 };
 
-export const VehiculeAlertesSection = ({ alertesVehicules, isVisible }) => {
+export const VehiculeAlertesSection = ({ alertesVehicules, isVisible, onNavigate }) => {
   if (!isVisible || alertesVehicules.count <= 0) return null;
 
   return (
