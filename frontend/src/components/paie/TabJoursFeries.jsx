@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { 
-  Calendar, Plus, Edit, Trash2, RefreshCw, Check, X, AlertTriangle
+  Calendar, Plus, Edit, Trash2, Check, X, AlertTriangle, RotateCcw, Eye, EyeOff
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -10,17 +10,17 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const TabJoursFeries = ({ tenant }) => {
   const [joursFeries, setJoursFeries] = useState([]);
+  const [joursDesactives, setJoursDesactives] = useState([]);
   const [loading, setLoading] = useState(false);
   const [anneeSelectionnee, setAnneeSelectionnee] = useState(new Date().getFullYear());
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showDesactives, setShowDesactives] = useState(false);
   const [editingJour, setEditingJour] = useState(null);
   const [formData, setFormData] = useState({
     nom: '',
     date: '',
-    type_ferie: 'personnalise',
     majoration_temps_partiel: 1.5,
-    majoration_temps_plein: 1.0,
-    actif: true
+    majoration_temps_plein: 1.0
   });
 
   const getToken = () => localStorage.getItem(`${tenant}_token`);
@@ -34,8 +34,6 @@ const TabJoursFeries = ({ tenant }) => {
       );
       if (response.ok) {
         const data = await response.json();
-        // Trier par date
-        data.sort((a, b) => a.date.localeCompare(b.date));
         setJoursFeries(data);
       }
     } catch (error) {
@@ -46,8 +44,24 @@ const TabJoursFeries = ({ tenant }) => {
     }
   }, [tenant, anneeSelectionnee]);
 
+  const fetchJoursDesactives = async () => {
+    try {
+      const response = await fetch(
+        `${API_URL}/api/${tenant}/paie/jours-feries/desactives`,
+        { headers: { 'Authorization': `Bearer ${getToken()}` } }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setJoursDesactives(data);
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+    }
+  };
+
   useEffect(() => {
     fetchJoursFeries();
+    fetchJoursDesactives();
   }, [fetchJoursFeries]);
 
   const handleAddJourFerie = async () => {
@@ -67,15 +81,13 @@ const TabJoursFeries = ({ tenant }) => {
       });
 
       if (response.ok) {
-        toast.success('Jour férié ajouté avec succès');
+        toast.success('Jour férié personnalisé ajouté');
         setShowAddForm(false);
         setFormData({
           nom: '',
           date: '',
-          type_ferie: 'personnalise',
           majoration_temps_partiel: 1.5,
-          majoration_temps_plein: 1.0,
-          actif: true
+          majoration_temps_plein: 1.0
         });
         fetchJoursFeries();
       } else {
@@ -104,7 +116,7 @@ const TabJoursFeries = ({ tenant }) => {
       );
 
       if (response.ok) {
-        toast.success('Jour férié modifié avec succès');
+        toast.success('Jour férié modifié');
         setEditingJour(null);
         fetchJoursFeries();
       } else {
@@ -116,12 +128,16 @@ const TabJoursFeries = ({ tenant }) => {
     }
   };
 
-  const handleDeleteJourFerie = async (id, nom) => {
-    if (!window.confirm(`Supprimer le jour férié "${nom}" ?`)) return;
+  const handleDeleteJourFerie = async (jour) => {
+    const message = jour.est_personnalise 
+      ? `Supprimer le jour férié "${jour.nom}" ?`
+      : `Désactiver le jour férié "${jour.nom}" ? (Il pourra être réactivé plus tard)`;
+    
+    if (!window.confirm(message)) return;
 
     try {
       const response = await fetch(
-        `${API_URL}/api/${tenant}/paie/jours-feries/${id}`,
+        `${API_URL}/api/${tenant}/paie/jours-feries/${jour.id}`,
         {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${getToken()}` }
@@ -129,44 +145,38 @@ const TabJoursFeries = ({ tenant }) => {
       );
 
       if (response.ok) {
-        toast.success('Jour férié supprimé');
+        toast.success(jour.est_personnalise ? 'Jour férié supprimé' : 'Jour férié désactivé');
         fetchJoursFeries();
+        fetchJoursDesactives();
       } else {
         toast.error('Erreur lors de la suppression');
       }
     } catch (error) {
       console.error('Erreur:', error);
-      toast.error('Erreur lors de la suppression');
+      toast.error('Erreur');
     }
   };
 
-  const handleGenererAnnee = async (annee) => {
-    if (!window.confirm(`Générer les jours fériés pour ${annee} ?`)) return;
-
+  const handleReactiverJourFerie = async (jour) => {
     try {
       const response = await fetch(
-        `${API_URL}/api/${tenant}/paie/jours-feries/generer-annee`,
+        `${API_URL}/api/${tenant}/paie/jours-feries/${jour.id}/reactiver`,
         {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${getToken()}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ annee })
+          headers: { 'Authorization': `Bearer ${getToken()}` }
         }
       );
 
-      const data = await response.json();
-      if (data.success) {
-        toast.success(data.message);
-        setAnneeSelectionnee(annee);
+      if (response.ok) {
+        toast.success(`${jour.nom} réactivé`);
         fetchJoursFeries();
+        fetchJoursDesactives();
       } else {
-        toast.error(data.message);
+        toast.error('Erreur');
       }
     } catch (error) {
       console.error('Erreur:', error);
-      toast.error('Erreur lors de la génération');
+      toast.error('Erreur');
     }
   };
 
@@ -175,10 +185,8 @@ const TabJoursFeries = ({ tenant }) => {
     setFormData({
       nom: jour.nom,
       date: jour.date,
-      type_ferie: jour.type_ferie,
       majoration_temps_partiel: jour.majoration_temps_partiel || 1.5,
-      majoration_temps_plein: jour.majoration_temps_plein || 1.0,
-      actif: jour.actif !== false
+      majoration_temps_plein: jour.majoration_temps_plein || 1.0
     });
     setShowAddForm(false);
   };
@@ -189,10 +197,8 @@ const TabJoursFeries = ({ tenant }) => {
     setFormData({
       nom: '',
       date: '',
-      type_ferie: 'personnalise',
       majoration_temps_partiel: 1.5,
-      majoration_temps_plein: 1.0,
-      actif: true
+      majoration_temps_plein: 1.0
     });
   };
 
@@ -207,13 +213,27 @@ const TabJoursFeries = ({ tenant }) => {
     });
   };
 
-  const getTypeBadge = (type) => {
+  const getTypeBadge = (jour) => {
+    if (jour.est_personnalise) {
+      return (
+        <span style={{
+          padding: '2px 8px',
+          borderRadius: '12px',
+          fontSize: '0.7rem',
+          fontWeight: '600',
+          background: '#f3e8ff',
+          color: '#7c3aed'
+        }}>
+          Personnalisé
+        </span>
+      );
+    }
+    
     const types = {
       provincial: { bg: '#dbeafe', color: '#1e40af', text: 'Provincial' },
-      federal: { bg: '#fef3c7', color: '#92400e', text: 'Fédéral' },
-      personnalise: { bg: '#f3e8ff', color: '#7c3aed', text: 'Personnalisé' }
+      federal: { bg: '#fef3c7', color: '#92400e', text: 'Fédéral' }
     };
-    const t = types[type] || types.personnalise;
+    const t = types[jour.type_ferie] || types.provincial;
     return (
       <span style={{
         padding: '2px 8px',
@@ -228,11 +248,10 @@ const TabJoursFeries = ({ tenant }) => {
     );
   };
 
-  const anneesDisponibles = [
-    new Date().getFullYear() - 1,
-    new Date().getFullYear(),
-    new Date().getFullYear() + 1
-  ];
+  const anneesDisponibles = [];
+  for (let i = -2; i <= 5; i++) {
+    anneesDisponibles.push(new Date().getFullYear() + i);
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -253,7 +272,7 @@ const TabJoursFeries = ({ tenant }) => {
             <Calendar size={20} /> Jours Fériés
           </h3>
           <p style={{ margin: 0, color: '#64748b', fontSize: '0.875rem' }}>
-            Gérez les jours fériés pour le calcul de la paie
+            Les dates sont calculées automatiquement pour chaque année
           </p>
         </div>
         
@@ -276,11 +295,10 @@ const TabJoursFeries = ({ tenant }) => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => handleGenererAnnee(anneeSelectionnee + 1)}
-            disabled={loading}
+            onClick={() => setShowDesactives(!showDesactives)}
           >
-            <RefreshCw size={16} className="mr-2" />
-            Générer {anneeSelectionnee + 1}
+            {showDesactives ? <EyeOff size={16} className="mr-2" /> : <Eye size={16} className="mr-2" />}
+            {showDesactives ? 'Masquer désactivés' : `Désactivés (${joursDesactives.length})`}
           </Button>
 
           <Button
@@ -290,16 +308,14 @@ const TabJoursFeries = ({ tenant }) => {
               setFormData({
                 nom: '',
                 date: `${anneeSelectionnee}-01-01`,
-                type_ferie: 'personnalise',
                 majoration_temps_partiel: 1.5,
-                majoration_temps_plein: 1.0,
-                actif: true
+                majoration_temps_plein: 1.0
               });
             }}
             style={{ background: '#dc2626' }}
           >
             <Plus size={16} className="mr-2" />
-            Ajouter
+            Jour personnalisé
           </Button>
         </div>
       </div>
@@ -313,7 +329,9 @@ const TabJoursFeries = ({ tenant }) => {
           border: '2px solid #fecaca'
         }}>
           <h4 style={{ margin: '0 0 16px 0', color: '#dc2626' }}>
-            {editingJour ? '✏️ Modifier le jour férié' : '➕ Ajouter un jour férié'}
+            {editingJour 
+              ? (editingJour.est_personnalise ? '✏️ Modifier le jour personnalisé' : '⚙️ Modifier les majorations')
+              : '➕ Ajouter un jour férié personnalisé'}
           </h4>
           
           <div style={{ 
@@ -321,42 +339,32 @@ const TabJoursFeries = ({ tenant }) => {
             gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
             gap: '16px' 
           }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
-                Nom du jour férié *
-              </label>
-              <Input
-                value={formData.nom}
-                onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-                placeholder="Ex: Journée de la caserne"
-              />
-            </div>
+            {/* Nom et date seulement pour les nouveaux ou les personnalisés */}
+            {(showAddForm || (editingJour && editingJour.est_personnalise)) && (
+              <>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
+                    Nom du jour férié *
+                  </label>
+                  <Input
+                    value={formData.nom}
+                    onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
+                    placeholder="Ex: Journée de la caserne"
+                  />
+                </div>
 
-            <div>
-              <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
-                Date *
-              </label>
-              <Input
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
-                Type
-              </label>
-              <select
-                value={formData.type_ferie}
-                onChange={(e) => setFormData({ ...formData, type_ferie: e.target.value })}
-                style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db' }}
-              >
-                <option value="provincial">Provincial</option>
-                <option value="federal">Fédéral</option>
-                <option value="personnalise">Personnalisé</option>
-              </select>
-            </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
+                    Date *
+                  </label>
+                  <Input
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  />
+                </div>
+              </>
+            )}
 
             <div>
               <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
@@ -391,18 +399,6 @@ const TabJoursFeries = ({ tenant }) => {
                 Généralement 1.0 (payé en fin d'année)
               </span>
             </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <input
-                type="checkbox"
-                id="actif"
-                checked={formData.actif}
-                onChange={(e) => setFormData({ ...formData, actif: e.target.checked })}
-              />
-              <label htmlFor="actif" style={{ fontWeight: '500', fontSize: '0.875rem' }}>
-                Actif
-              </label>
-            </div>
           </div>
 
           <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
@@ -421,6 +417,64 @@ const TabJoursFeries = ({ tenant }) => {
         </div>
       )}
 
+      {/* Jours fériés désactivés */}
+      {showDesactives && joursDesactives.length > 0 && (
+        <div style={{ 
+          background: '#fef3c7', 
+          borderRadius: '12px', 
+          padding: '16px', 
+          border: '1px solid #fcd34d'
+        }}>
+          <h4 style={{ margin: '0 0 12px 0', color: '#92400e', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <EyeOff size={18} /> Jours fériés désactivés
+          </h4>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {joursDesactives.map(jour => (
+              <div
+                key={jour.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 12px',
+                  background: 'white',
+                  borderRadius: '8px',
+                  border: '1px solid #fcd34d'
+                }}
+              >
+                <span style={{ fontWeight: '500' }}>{jour.nom}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleReactiverJourFerie(jour)}
+                  style={{ color: '#059669' }}
+                >
+                  <RotateCcw size={14} className="mr-1" />
+                  Réactiver
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Info sur le calcul automatique */}
+      <div style={{ 
+        background: '#ecfdf5', 
+        borderRadius: '8px', 
+        padding: '12px 16px', 
+        border: '1px solid #6ee7b7',
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '12px'
+      }}>
+        <Check size={20} style={{ color: '#059669', flexShrink: 0, marginTop: '2px' }} />
+        <div style={{ fontSize: '0.875rem', color: '#065f46' }}>
+          <strong>Calcul automatique :</strong> Les dates des jours fériés récurrents (comme Pâques, Fête du Travail, Action de grâce) 
+          sont calculées automatiquement pour chaque année. Vous n'avez rien à faire !
+        </div>
+      </div>
+
       {/* Info sur les majorations */}
       <div style={{ 
         background: '#fffbeb', 
@@ -434,8 +488,7 @@ const TabJoursFeries = ({ tenant }) => {
         <AlertTriangle size={20} style={{ color: '#f59e0b', flexShrink: 0, marginTop: '2px' }} />
         <div style={{ fontSize: '0.875rem', color: '#92400e' }}>
           <strong>Règle de majoration :</strong> Les temps partiels et temporaires travaillant un jour férié 
-          reçoivent une majoration (temps et demi par défaut). Les temps pleins ne reçoivent généralement 
-          pas de majoration car les fériés sont payés en bloc en fin d'année.
+          reçoivent une majoration (×1.5 par défaut). Les temps pleins ne reçoivent pas de majoration car les fériés sont payés en fin d'année.
         </div>
       </div>
 
@@ -452,43 +505,34 @@ const TabJoursFeries = ({ tenant }) => {
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
-            <RefreshCw size={24} className="animate-spin" style={{ margin: '0 auto 8px' }} />
             Chargement...
           </div>
         ) : joursFeries.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
             <Calendar size={48} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
-            <p>Aucun jour férié pour {anneeSelectionnee}</p>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => handleGenererAnnee(anneeSelectionnee)}
-              style={{ marginTop: '8px' }}
-            >
-              Générer les jours fériés du Québec
-            </Button>
+            <p>Aucun jour férié actif pour {anneeSelectionnee}</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {joursFeries.map((jour) => (
               <div
                 key={jour.id}
+                data-testid={`jour-ferie-${jour.id}`}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '12px 16px',
-                  background: jour.actif ? '#f8fafc' : '#f1f5f9',
+                  background: '#f8fafc',
                   border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  opacity: jour.actif ? 1 : 0.6
+                  borderRadius: '8px'
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
                   <div style={{ 
                     width: '50px', 
                     height: '50px', 
-                    background: jour.actif ? '#fee2e2' : '#e5e7eb',
+                    background: '#fee2e2',
                     borderRadius: '8px',
                     display: 'flex',
                     flexDirection: 'column',
@@ -498,7 +542,7 @@ const TabJoursFeries = ({ tenant }) => {
                     <span style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase' }}>
                       {new Date(jour.date + 'T00:00:00').toLocaleDateString('fr-CA', { month: 'short' })}
                     </span>
-                    <span style={{ fontSize: '1.25rem', fontWeight: '700', color: jour.actif ? '#dc2626' : '#64748b' }}>
+                    <span style={{ fontSize: '1.25rem', fontWeight: '700', color: '#dc2626' }}>
                       {jour.date.split('-')[2]}
                     </span>
                   </div>
@@ -506,18 +550,7 @@ const TabJoursFeries = ({ tenant }) => {
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: '600', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       {jour.nom}
-                      {getTypeBadge(jour.type_ferie)}
-                      {!jour.actif && (
-                        <span style={{ 
-                          padding: '2px 6px', 
-                          borderRadius: '4px', 
-                          fontSize: '0.65rem', 
-                          background: '#ef4444', 
-                          color: 'white' 
-                        }}>
-                          INACTIF
-                        </span>
-                      )}
+                      {getTypeBadge(jour)}
                     </div>
                     <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
                       {formatDate(jour.date)}
@@ -543,16 +576,18 @@ const TabJoursFeries = ({ tenant }) => {
                     variant="ghost"
                     size="sm"
                     onClick={() => startEdit(jour)}
-                    title="Modifier"
+                    title="Modifier les majorations"
+                    data-testid={`edit-jour-${jour.id}`}
                   >
                     <Edit size={16} />
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleDeleteJourFerie(jour.id, jour.nom)}
-                    title="Supprimer"
+                    onClick={() => handleDeleteJourFerie(jour)}
+                    title={jour.est_personnalise ? "Supprimer" : "Désactiver"}
                     style={{ color: '#ef4444' }}
+                    data-testid={`delete-jour-${jour.id}`}
                   >
                     <Trash2 size={16} />
                   </Button>
