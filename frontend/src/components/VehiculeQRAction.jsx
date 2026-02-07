@@ -103,34 +103,39 @@ const VehiculeQRAction = () => {
   };
 
   const handleRondeSecurite = () => {
+    // Sauvegarder les infos de l'action AVANT de vérifier l'authentification
+    // Ainsi, après connexion, l'action sera disponible
+    const qrActionData = {
+      action: 'ronde_securite',
+      vehicule_id: vehiculeId,
+      vehicule: vehicule
+    };
+    localStorage.setItem('qr_action', JSON.stringify(qrActionData));
+    console.log('💾 QR Action sauvegardée (ronde):', qrActionData);
+    
     if (!isAuthenticated) {
       setShowLogin(true);
       return;
     }
-    
-    // Sauvegarder les infos de l'action dans le localStorage pour les récupérer après connexion
-    localStorage.setItem('qr_action', JSON.stringify({
-      action: 'ronde_securite',
-      vehiculeId: vehiculeId,
-      vehicule: vehicule
-    }));
     
     // Rediriger vers la page principale de l'application
     window.location.href = `/${tenantSlug}`;
   };
 
   const handleInventaire = () => {
+    // Sauvegarder les infos de l'action AVANT de vérifier l'authentification
+    const qrActionData = {
+      action: 'inventaire',
+      vehicule_id: vehiculeId,
+      vehicule: vehicule
+    };
+    localStorage.setItem('qr_action', JSON.stringify(qrActionData));
+    console.log('💾 QR Action sauvegardée (inventaire):', qrActionData);
+    
     if (!isAuthenticated) {
       setShowLogin(true);
       return;
     }
-    
-    // Sauvegarder les infos de l'action dans le localStorage pour les récupérer après connexion
-    localStorage.setItem('qr_action', JSON.stringify({
-      action: 'inventaire_vehicule',
-      vehiculeId: vehiculeId,
-      vehicule: vehicule
-    }));
     
     // Rediriger vers la page principale de l'application
     window.location.href = `/${tenantSlug}`;
