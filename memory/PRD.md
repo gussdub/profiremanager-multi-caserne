@@ -169,9 +169,10 @@ Application de gestion complète pour les services d'incendie au Québec, inclua
 
 ## Dernière mise à jour
 Date : 2026-02-06
-Session : Résolution problème déploiement Vercel/Render - Diagnostic et correction des permissions GitHub Apps pour dépôt privé
+Session : Correction navigation QR code véhicule → modal Inventaire/Ronde après connexion
 
 ### Historique des sessions récentes
+- **2026-02-06** : Correction flux QR code véhicule (localStorage qr_action conservé après login, redirection vers bon modal)
 - **2026-02-06** : Résolution problème déploiement automatique (webhook GitHub → Vercel/Render)
 - **2026-02-06** : Refactorisation avancée - Dashboard, Actifs, Import équipements avec mapping
 
