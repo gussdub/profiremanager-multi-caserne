@@ -71,26 +71,14 @@ const VehiculeQRAction = () => {
       localStorage.setItem(`${tenantSlug}_token`, response.data.access_token);
       localStorage.setItem(`${tenantSlug}_user`, JSON.stringify(response.data.user));
       
-      // Récupérer l'action en attente (soit ronde_securite soit inventaire_vehicule)
-      // Note: l'action est déjà sauvegardée dans localStorage par handleRondeSecurite ou handleInventaire
-      // On vérifie juste qu'elle existe
-      let qrAction = localStorage.getItem('qr_action');
-      if (!qrAction) {
-        // Fallback: sauvegarder l'action ronde_securite par défaut
-        const qrActionData = {
-          action: 'ronde_securite',
-          vehiculeId: vehiculeId,
-          vehicule: vehicule
-        };
-        console.log('💾 Sauvegarde qr_action (fallback):', qrActionData);
-        localStorage.setItem('qr_action', JSON.stringify(qrActionData));
-      } else {
-        console.log('✅ qr_action déjà en localStorage:', qrAction);
-      }
+      // L'action qr_action est déjà sauvegardée par handleRondeSecurite ou handleInventaire
+      // avant l'affichage du formulaire de connexion - on ne touche pas!
+      const existingAction = localStorage.getItem('qr_action');
+      console.log('✅ Login réussi, qr_action en attente:', existingAction);
       
       setIsAuthenticated(true);
       
-      // Rediriger vers l'application principale (page d'accueil)
+      // Rediriger vers l'application principale
       // AppLayout détectera qr_action et changera vers 'actifs'
       console.log('🔄 Redirection vers:', `/${tenantSlug}`);
       window.location.href = `/${tenantSlug}`;
