@@ -494,17 +494,36 @@ async def verifier_jour_ferie(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
-    jour_ferie = await db.jours_feries.find_one({
-        "tenant_id": tenant.id,
-        "date": date,
-        "actif": True
-    })
+    # Extraire l'année de la date
+    try:
+        annee = int(date.split("-")[0])
+    except:
+        annee = datetime.now().year
     
-    if jour_ferie:
-        return {
-            "est_ferie": True,
-            "jour_ferie": clean_mongo_doc(jour_ferie)
-        }
+    # Récupérer les jours fériés de base du tenant
+    jours_base = await db.jours_feries_base.find({"tenant_id": tenant.id, "actif": True}).to_list(100)
+    
+    # Vérifier si la date correspond à un jour férié
+    for jf in jours_base:
+        if jf.get("est_personnalise") and jf.get("date_specifique"):
+            if jf["date_specifique"] == date:
+                return {
+                    "est_ferie": True,
+                    "jour_ferie": {
+                        **clean_mongo_doc(jf),
+                        "date": date
+                    }
+                }
+        else:
+            date_calculee = calculer_date_ferie(jf, annee)
+            if date_calculee == date:
+                return {
+                    "est_ferie": True,
+                    "jour_ferie": {
+                        **clean_mongo_doc(jf),
+                        "date": date
+                    }
+                }
     
     return {"est_ferie": False, "jour_ferie": None}
 
