@@ -652,6 +652,7 @@ const ModulePaie = ({ tenant }) => {
 
       {activeTab === 'feuilles' && <TabFeuilles context={tabContext} />}
       {activeTab === 'parametres' && <TabParametres context={tabContext} />}
+      {activeTab === 'jours-feries' && <TabJoursFeries tenant={tenant} />}
       {activeTab === 'export' && <TabExport context={tabContext} />}
       {activeTab === 'matricules' && <TabMatricules context={tabContext} />}
     </div>
