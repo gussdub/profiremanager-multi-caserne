@@ -10,6 +10,7 @@ import TabParametres from './paie/TabParametres';
 import TabExport from './paie/TabExport';
 import TabFeuilles from './paie/TabFeuilles';
 import TabMatricules from './paie/TabMatricules';
+import TabJoursFeries from './paie/TabJoursFeries';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
