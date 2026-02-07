@@ -273,6 +273,14 @@ async def get_jours_feries(
     if not annee:
         annee = datetime.now().year
     
+    # === Migration: Supprimer l'ancienne collection si elle existe ===
+    # Cela évite les doublons avec l'ancienne implémentation
+    old_count = await db.jours_feries.count_documents({"tenant_id": tenant.id})
+    if old_count > 0:
+        await db.jours_feries.delete_many({"tenant_id": tenant.id})
+        logging.info(f"Migration: supprimé {old_count} anciens jours fériés pour tenant {tenant.id}")
+    # === Fin Migration ===
+    
     # Récupérer les jours fériés de base du tenant
     jours_base = await db.jours_feries_base.find({"tenant_id": tenant.id, "actif": True}).to_list(100)
     
