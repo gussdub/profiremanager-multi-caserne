@@ -138,21 +138,20 @@ class FeuilleTemps(BaseModel):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
-class JourFerie(BaseModel):
-    """Jour férié pour le calcul de la paie"""
+class JourFerieBase(BaseModel):
+    """Jour férié de base (récurrent, sans année spécifique)"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     tenant_id: str
     
     # Informations du jour férié
     nom: str  # Ex: "Jour de l'An", "Fête nationale du Québec"
-    date: str  # Format YYYY-MM-DD
-    annee: int  # Année pour faciliter les requêtes
     
     # Type de jour férié
     type_ferie: str = "provincial"  # provincial, federal, personnalise
-    recurrent: bool = True  # Si True, se répète chaque année (calcul automatique de la date)
-    jour_mois: Optional[int] = None  # Pour les récurrents fixes (ex: 1er janvier = jour 1)
-    mois: Optional[int] = None  # Pour les récurrents fixes (ex: janvier = mois 1)
+    
+    # Règles de calcul pour les jours récurrents
+    jour_mois: Optional[int] = None  # Pour les dates fixes (ex: 1er janvier = jour 1)
+    mois: Optional[int] = None  # Pour les dates fixes (ex: janvier = mois 1)
     regle_calcul: Optional[str] = None  # Pour les dates variables (ex: "premier_lundi_septembre")
     
     # Impact sur la paie
@@ -161,21 +160,24 @@ class JourFerie(BaseModel):
     
     # Métadonnées
     actif: bool = True
+    est_personnalise: bool = False  # True = jour ponctuel avec date fixe
+    date_specifique: Optional[str] = None  # Pour les jours personnalisés ponctuels (YYYY-MM-DD)
+    
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # Liste des jours fériés du Québec par défaut
 JOURS_FERIES_QUEBEC_DEFAULT = [
-    {"nom": "Jour de l'An", "jour_mois": 1, "mois": 1, "type_ferie": "provincial", "recurrent": True},
-    {"nom": "Vendredi saint", "regle_calcul": "vendredi_saint", "type_ferie": "provincial", "recurrent": True},
-    {"nom": "Lundi de Pâques", "regle_calcul": "lundi_paques", "type_ferie": "provincial", "recurrent": True},
-    {"nom": "Journée nationale des patriotes", "regle_calcul": "lundi_avant_25_mai", "type_ferie": "provincial", "recurrent": True},
-    {"nom": "Fête nationale du Québec", "jour_mois": 24, "mois": 6, "type_ferie": "provincial", "recurrent": True},
-    {"nom": "Fête du Canada", "jour_mois": 1, "mois": 7, "type_ferie": "federal", "recurrent": True},
-    {"nom": "Fête du Travail", "regle_calcul": "premier_lundi_septembre", "type_ferie": "provincial", "recurrent": True},
-    {"nom": "Action de grâce", "regle_calcul": "deuxieme_lundi_octobre", "type_ferie": "provincial", "recurrent": True},
-    {"nom": "Noël", "jour_mois": 25, "mois": 12, "type_ferie": "provincial", "recurrent": True},
+    {"nom": "Jour de l'An", "jour_mois": 1, "mois": 1, "type_ferie": "provincial"},
+    {"nom": "Vendredi saint", "regle_calcul": "vendredi_saint", "type_ferie": "provincial"},
+    {"nom": "Lundi de Pâques", "regle_calcul": "lundi_paques", "type_ferie": "provincial"},
+    {"nom": "Journée nationale des patriotes", "regle_calcul": "lundi_avant_25_mai", "type_ferie": "provincial"},
+    {"nom": "Fête nationale du Québec", "jour_mois": 24, "mois": 6, "type_ferie": "provincial"},
+    {"nom": "Fête du Canada", "jour_mois": 1, "mois": 7, "type_ferie": "federal"},
+    {"nom": "Fête du Travail", "regle_calcul": "premier_lundi_septembre", "type_ferie": "provincial"},
+    {"nom": "Action de grâce", "regle_calcul": "deuxieme_lundi_octobre", "type_ferie": "provincial"},
+    {"nom": "Noël", "jour_mois": 25, "mois": 12, "type_ferie": "provincial"},
 ]
 
 
@@ -200,8 +202,12 @@ def calculer_paques(annee: int) -> datetime:
 
 def calculer_date_ferie(jour_ferie: dict, annee: int) -> str:
     """Calcule la date exacte d'un jour férié pour une année donnée"""
+    # Si c'est un jour personnalisé avec date spécifique
+    if jour_ferie.get("est_personnalise") and jour_ferie.get("date_specifique"):
+        return jour_ferie["date_specifique"]
+    
+    # Date fixe (jour et mois définis)
     if jour_ferie.get("jour_mois") and jour_ferie.get("mois"):
-        # Date fixe
         return f"{annee}-{jour_ferie['mois']:02d}-{jour_ferie['jour_mois']:02d}"
     
     regle = jour_ferie.get("regle_calcul", "")
@@ -255,7 +261,10 @@ async def get_jours_feries(
     annee: Optional[int] = None,
     current_user: User = Depends(get_current_user)
 ):
-    """Récupère les jours fériés du tenant pour une année donnée"""
+    """
+    Récupère les jours fériés du tenant pour une année donnée.
+    Les jours récurrents sont calculés dynamiquement.
+    """
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
@@ -264,37 +273,56 @@ async def get_jours_feries(
     if not annee:
         annee = datetime.now().year
     
-    # Récupérer les jours fériés existants pour cette année
-    query = {"tenant_id": tenant.id, "annee": annee}
-    jours_feries = await db.jours_feries.find(query).to_list(100)
+    # Récupérer les jours fériés de base du tenant
+    jours_base = await db.jours_feries_base.find({"tenant_id": tenant.id, "actif": True}).to_list(100)
     
-    # Si aucun jour férié trouvé, initialiser avec les jours fériés du Québec
-    if not jours_feries:
-        jours_feries = []
+    # Si aucun jour de base, initialiser avec les jours fériés du Québec
+    if not jours_base:
         for jf_default in JOURS_FERIES_QUEBEC_DEFAULT:
-            date_calculee = calculer_date_ferie(jf_default, annee)
-            if date_calculee:
-                nouveau_jf = {
-                    "id": str(uuid.uuid4()),
-                    "tenant_id": tenant.id,
-                    "nom": jf_default["nom"],
-                    "date": date_calculee,
-                    "annee": annee,
-                    "type_ferie": jf_default.get("type_ferie", "provincial"),
-                    "recurrent": jf_default.get("recurrent", True),
-                    "jour_mois": jf_default.get("jour_mois"),
-                    "mois": jf_default.get("mois"),
-                    "regle_calcul": jf_default.get("regle_calcul"),
-                    "majoration_temps_partiel": 1.5,
-                    "majoration_temps_plein": 1.0,
-                    "actif": True,
-                    "created_at": datetime.now(timezone.utc),
-                    "updated_at": datetime.now(timezone.utc)
-                }
-                await db.jours_feries.insert_one(nouveau_jf)
-                jours_feries.append(nouveau_jf)
+            nouveau_jf = {
+                "id": str(uuid.uuid4()),
+                "tenant_id": tenant.id,
+                "nom": jf_default["nom"],
+                "type_ferie": jf_default.get("type_ferie", "provincial"),
+                "jour_mois": jf_default.get("jour_mois"),
+                "mois": jf_default.get("mois"),
+                "regle_calcul": jf_default.get("regle_calcul"),
+                "majoration_temps_partiel": 1.5,
+                "majoration_temps_plein": 1.0,
+                "actif": True,
+                "est_personnalise": False,
+                "date_specifique": None,
+                "created_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc)
+            }
+            await db.jours_feries_base.insert_one(nouveau_jf)
+            jours_base.append(nouveau_jf)
     
-    return [clean_mongo_doc(jf) for jf in jours_feries]
+    # Construire la liste des jours fériés avec les dates calculées
+    resultat = []
+    for jf in jours_base:
+        # Pour les jours personnalisés, vérifier si l'année correspond
+        if jf.get("est_personnalise") and jf.get("date_specifique"):
+            annee_specifique = int(jf["date_specifique"].split("-")[0])
+            if annee_specifique != annee:
+                continue  # Ignorer les jours personnalisés d'autres années
+            date_calculee = jf["date_specifique"]
+        else:
+            # Calculer la date pour l'année demandée
+            date_calculee = calculer_date_ferie(jf, annee)
+        
+        if date_calculee:
+            jf_avec_date = {
+                **clean_mongo_doc(jf),
+                "date": date_calculee,
+                "annee": annee
+            }
+            resultat.append(jf_avec_date)
+    
+    # Trier par date
+    resultat.sort(key=lambda x: x.get("date", ""))
+    
+    return resultat
 
 
 @router.post("/{tenant_slug}/paie/jours-feries")
@@ -303,7 +331,7 @@ async def create_jour_ferie(
     jour_ferie: dict = Body(...),
     current_user: User = Depends(get_current_user)
 ):
-    """Crée un nouveau jour férié personnalisé"""
+    """Crée un nouveau jour férié (personnalisé ponctuel)"""
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
     
@@ -311,33 +339,31 @@ async def create_jour_ferie(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
-    # Extraire l'année de la date
-    date_str = jour_ferie.get("date", "")
-    try:
-        annee = int(date_str.split("-")[0])
-    except:
-        annee = datetime.now().year
-    
     nouveau_jf = {
         "id": str(uuid.uuid4()),
         "tenant_id": tenant.id,
         "nom": jour_ferie.get("nom", "Jour férié personnalisé"),
-        "date": date_str,
-        "annee": annee,
-        "type_ferie": jour_ferie.get("type_ferie", "personnalise"),
-        "recurrent": jour_ferie.get("recurrent", False),
-        "jour_mois": jour_ferie.get("jour_mois"),
-        "mois": jour_ferie.get("mois"),
-        "regle_calcul": jour_ferie.get("regle_calcul"),
+        "type_ferie": "personnalise",
+        "jour_mois": None,
+        "mois": None,
+        "regle_calcul": None,
         "majoration_temps_partiel": jour_ferie.get("majoration_temps_partiel", 1.5),
         "majoration_temps_plein": jour_ferie.get("majoration_temps_plein", 1.0),
-        "actif": jour_ferie.get("actif", True),
+        "actif": True,
+        "est_personnalise": True,
+        "date_specifique": jour_ferie.get("date"),
         "created_at": datetime.now(timezone.utc),
         "updated_at": datetime.now(timezone.utc)
     }
     
-    await db.jours_feries.insert_one(nouveau_jf)
-    return clean_mongo_doc(nouveau_jf)
+    await db.jours_feries_base.insert_one(nouveau_jf)
+    
+    # Retourner avec la date
+    return {
+        **clean_mongo_doc(nouveau_jf),
+        "date": nouveau_jf["date_specifique"],
+        "annee": int(nouveau_jf["date_specifique"].split("-")[0]) if nouveau_jf["date_specifique"] else None
+    }
 
 
 @router.put("/{tenant_slug}/paie/jours-feries/{jour_ferie_id}")
@@ -347,7 +373,7 @@ async def update_jour_ferie(
     jour_ferie: dict = Body(...),
     current_user: User = Depends(get_current_user)
 ):
-    """Met à jour un jour férié"""
+    """Met à jour un jour férié (principalement les majorations)"""
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
     
@@ -355,33 +381,30 @@ async def update_jour_ferie(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
-    existing = await db.jours_feries.find_one({"id": jour_ferie_id, "tenant_id": tenant.id})
+    existing = await db.jours_feries_base.find_one({"id": jour_ferie_id, "tenant_id": tenant.id})
     if not existing:
         raise HTTPException(status_code=404, detail="Jour férié non trouvé")
     
     update_data = {
-        "nom": jour_ferie.get("nom", existing.get("nom")),
-        "date": jour_ferie.get("date", existing.get("date")),
-        "type_ferie": jour_ferie.get("type_ferie", existing.get("type_ferie")),
         "majoration_temps_partiel": jour_ferie.get("majoration_temps_partiel", existing.get("majoration_temps_partiel", 1.5)),
         "majoration_temps_plein": jour_ferie.get("majoration_temps_plein", existing.get("majoration_temps_plein", 1.0)),
         "actif": jour_ferie.get("actif", existing.get("actif", True)),
         "updated_at": datetime.now(timezone.utc)
     }
     
-    # Mettre à jour l'année si la date a changé
-    if jour_ferie.get("date"):
-        try:
-            update_data["annee"] = int(jour_ferie["date"].split("-")[0])
-        except:
-            pass
+    # Pour les jours personnalisés, permettre de modifier le nom et la date
+    if existing.get("est_personnalise"):
+        if jour_ferie.get("nom"):
+            update_data["nom"] = jour_ferie["nom"]
+        if jour_ferie.get("date"):
+            update_data["date_specifique"] = jour_ferie["date"]
     
-    await db.jours_feries.update_one(
+    await db.jours_feries_base.update_one(
         {"id": jour_ferie_id, "tenant_id": tenant.id},
         {"$set": update_data}
     )
     
-    updated = await db.jours_feries.find_one({"id": jour_ferie_id})
+    updated = await db.jours_feries_base.find_one({"id": jour_ferie_id})
     return clean_mongo_doc(updated)
 
 
@@ -391,7 +414,7 @@ async def delete_jour_ferie(
     jour_ferie_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Supprime un jour férié"""
+    """Supprime un jour férié (seulement les personnalisés peuvent être supprimés)"""
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
     
