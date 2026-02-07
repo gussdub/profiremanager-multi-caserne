@@ -78,31 +78,53 @@ const GestionActifs = ({ user, ModuleEPI }) => {
   }, [activeTab]);
 
   useEffect(() => {
+    // Délai pour laisser le temps à la page de se charger
     const timer = setTimeout(() => {
       const qrActionData = localStorage.getItem('qr_action');
+      console.log('🔍 GestionActifs - Vérification qr_action:', qrActionData);
+      
       if (qrActionData) {
         try {
           const qrAction = JSON.parse(qrActionData);
+          console.log('✅ GestionActifs - QR Action trouvée:', qrAction);
           localStorage.removeItem('qr_action');
           
           if (qrAction.action === 'ronde_securite' && qrAction.vehicule_id) {
-            const vehicule = vehicules.find(v => v.id === qrAction.vehicule_id);
+            // Essayer de trouver le véhicule dans la liste, sinon utiliser celui du localStorage
+            let vehicule = vehicules.find(v => v.id === qrAction.vehicule_id);
+            if (!vehicule && qrAction.vehicule) {
+              // Utiliser l'objet vehicule stocké (avec id ajouté)
+              vehicule = { ...qrAction.vehicule, id: qrAction.vehicule_id };
+            }
+            
             if (vehicule) {
+              console.log('🚀 GestionActifs - Ouverture modal Ronde pour:', vehicule.nom);
               setSelectedVehiculeForRonde(vehicule);
               setShowRondeSecuriteModal(true);
+            } else {
+              console.warn('⚠️ Véhicule non trouvé pour ronde:', qrAction.vehicule_id);
             }
           } else if (qrAction.action === 'inventaire' && qrAction.vehicule_id) {
-            const vehicule = vehicules.find(v => v.id === qrAction.vehicule_id);
+            // Essayer de trouver le véhicule dans la liste, sinon utiliser celui du localStorage
+            let vehicule = vehicules.find(v => v.id === qrAction.vehicule_id);
+            if (!vehicule && qrAction.vehicule) {
+              vehicule = { ...qrAction.vehicule, id: qrAction.vehicule_id };
+            }
+            
             if (vehicule) {
+              console.log('🚀 GestionActifs - Ouverture modal Inventaire pour:', vehicule.nom);
               setSelectedVehiculeForInventaire(vehicule);
               setShowInventaireModal(true);
+            } else {
+              console.warn('⚠️ Véhicule non trouvé pour inventaire:', qrAction.vehicule_id);
             }
           }
         } catch (e) {
-          console.error('Erreur parsing QR action:', e);
+          console.error('❌ Erreur parsing QR action:', e);
+          localStorage.removeItem('qr_action');
         }
       }
-    }, 500);
+    }, 800); // Délai augmenté pour s'assurer que les véhicules sont chargés
     return () => clearTimeout(timer);
   }, [vehicules]);
 
