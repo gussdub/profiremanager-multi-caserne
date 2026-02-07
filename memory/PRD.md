@@ -169,5 +169,9 @@ Application de gestion complète pour les services d'incendie au Québec, inclua
 
 ## Dernière mise à jour
 Date : 2026-02-06
-Session : Refactorisation avancée - Dashboard, Actifs, Import équipements avec mapping
+Session : Résolution problème déploiement Vercel/Render - Diagnostic et correction des permissions GitHub Apps pour dépôt privé
+
+### Historique des sessions récentes
+- **2026-02-06** : Résolution problème déploiement automatique (webhook GitHub → Vercel/Render)
+- **2026-02-06** : Refactorisation avancée - Dashboard, Actifs, Import équipements avec mapping
 
