@@ -414,7 +414,7 @@ async def delete_jour_ferie(
     jour_ferie_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Supprime un jour férié (seulement les personnalisés peuvent être supprimés)"""
+    """Supprime un jour férié (les récurrents sont désactivés, les personnalisés sont supprimés)"""
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
     
@@ -422,21 +422,30 @@ async def delete_jour_ferie(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
-    result = await db.jours_feries.delete_one({"id": jour_ferie_id, "tenant_id": tenant.id})
-    
-    if result.deleted_count == 0:
+    existing = await db.jours_feries_base.find_one({"id": jour_ferie_id, "tenant_id": tenant.id})
+    if not existing:
         raise HTTPException(status_code=404, detail="Jour férié non trouvé")
     
-    return {"success": True, "message": "Jour férié supprimé"}
+    if existing.get("est_personnalise"):
+        # Supprimer complètement les jours personnalisés
+        await db.jours_feries_base.delete_one({"id": jour_ferie_id, "tenant_id": tenant.id})
+        return {"success": True, "message": "Jour férié personnalisé supprimé"}
+    else:
+        # Désactiver les jours récurrents (au lieu de supprimer)
+        await db.jours_feries_base.update_one(
+            {"id": jour_ferie_id, "tenant_id": tenant.id},
+            {"$set": {"actif": False, "updated_at": datetime.now(timezone.utc)}}
+        )
+        return {"success": True, "message": "Jour férié désactivé"}
 
 
-@router.post("/{tenant_slug}/paie/jours-feries/generer-annee")
-async def generer_jours_feries_annee(
+@router.post("/{tenant_slug}/paie/jours-feries/{jour_ferie_id}/reactiver")
+async def reactiver_jour_ferie(
     tenant_slug: str,
-    annee: int = Body(..., embed=True),
+    jour_ferie_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Génère les jours fériés pour une nouvelle année à partir des jours récurrents"""
+    """Réactive un jour férié désactivé"""
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
     
@@ -444,51 +453,34 @@ async def generer_jours_feries_annee(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
-    # Vérifier si des jours fériés existent déjà pour cette année
-    existing = await db.jours_feries.count_documents({"tenant_id": tenant.id, "annee": annee})
-    if existing > 0:
-        return {"success": False, "message": f"Des jours fériés existent déjà pour {annee}. Supprimez-les d'abord."}
+    result = await db.jours_feries_base.update_one(
+        {"id": jour_ferie_id, "tenant_id": tenant.id},
+        {"$set": {"actif": True, "updated_at": datetime.now(timezone.utc)}}
+    )
     
-    # Récupérer les jours fériés récurrents de l'année précédente (ou utiliser les défauts)
-    jours_recurrents = await db.jours_feries.find({
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Jour férié non trouvé")
+    
+    return {"success": True, "message": "Jour férié réactivé"}
+
+
+@router.get("/{tenant_slug}/paie/jours-feries/desactives")
+async def get_jours_feries_desactives(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère les jours fériés désactivés"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    jours_desactives = await db.jours_feries_base.find({
         "tenant_id": tenant.id,
-        "recurrent": True,
-        "annee": annee - 1
+        "actif": False,
+        "est_personnalise": {"$ne": True}
     }).to_list(100)
     
-    # Si pas de jours récurrents, utiliser les défauts
-    if not jours_recurrents:
-        jours_recurrents = JOURS_FERIES_QUEBEC_DEFAULT
-    
-    nouveaux_jours = []
-    for jf in jours_recurrents:
-        date_calculee = calculer_date_ferie(jf, annee)
-        if date_calculee:
-            nouveau_jf = {
-                "id": str(uuid.uuid4()),
-                "tenant_id": tenant.id,
-                "nom": jf.get("nom"),
-                "date": date_calculee,
-                "annee": annee,
-                "type_ferie": jf.get("type_ferie", "provincial"),
-                "recurrent": True,
-                "jour_mois": jf.get("jour_mois"),
-                "mois": jf.get("mois"),
-                "regle_calcul": jf.get("regle_calcul"),
-                "majoration_temps_partiel": jf.get("majoration_temps_partiel", 1.5),
-                "majoration_temps_plein": jf.get("majoration_temps_plein", 1.0),
-                "actif": jf.get("actif", True),
-                "created_at": datetime.now(timezone.utc),
-                "updated_at": datetime.now(timezone.utc)
-            }
-            await db.jours_feries.insert_one(nouveau_jf)
-            nouveaux_jours.append(nouveau_jf)
-    
-    return {
-        "success": True,
-        "message": f"{len(nouveaux_jours)} jours fériés générés pour {annee}",
-        "jours_feries": [clean_mongo_doc(jf) for jf in nouveaux_jours]
-    }
+    return [clean_mongo_doc(jf) for jf in jours_desactives]
 
 
 @router.get("/{tenant_slug}/paie/jours-feries/verifier-date")
