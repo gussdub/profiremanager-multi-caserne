@@ -617,6 +617,7 @@ const ModulePaie = ({ tenant }) => {
   const tabs = [
     { id: 'feuilles', label: 'Feuilles de temps', icon: '📄' },
     { id: 'parametres', label: 'Paramètres', icon: '⚙️' },
+    { id: 'jours-feries', label: 'Jours Fériés', icon: '📅' },
     { id: 'export', label: 'Export', icon: '🔗' },
     { id: 'matricules', label: 'Matricules', icon: '👥' },
   ];
