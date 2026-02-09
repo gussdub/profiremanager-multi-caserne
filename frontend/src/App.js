@@ -434,7 +434,11 @@ const AppLayout = () => {
       case 'formations':
         return <Formations />;
       case 'prevention':
-        return <Prevention />;
+        return (
+          <Suspense fallback={<LoadingComponent />}>
+            <Prevention />
+          </Suspense>
+        );
       case 'rapports':
         return <Rapports />;
       case 'parametres':
