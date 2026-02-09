@@ -303,16 +303,15 @@ const PlanInterventionViewerNew = ({ planId, tenantSlug, onBack, batiment }) => 
                       let iconHtml;
                       
                       if (override?.type === 'image' && override?.value) {
-                        // Image personnalisée depuis override
-                        iconHtml = `<div style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;"><img src="${override.value}" style="max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5));" /></div>`;
+                        // Image personnalisée depuis override - TAILLE FIXE
+                        iconHtml = `<div style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: white; border-radius: 4px; border: 2px solid #374151; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"><img src="${override.value}" style="width: 28px; height: 28px; object-fit: contain;" /></div>`;
                       } else if (layer.properties?.image) {
-                        // Image stockée dans le layer
-                        iconHtml = `<div style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;"><img src="${layer.properties.image}" style="max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5));" /></div>`;
+                        // Image stockée dans le layer - TAILLE FIXE
+                        iconHtml = `<div style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: white; border-radius: 4px; border: 2px solid #374151; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"><img src="${layer.properties.image}" style="width: 28px; height: 28px; object-fit: contain;" /></div>`;
                       } else {
                         // Emoji - chercher dans plusieurs champs possibles
                         const emoji = layer.properties?.symbol || layer.properties?.emoji || override?.value || symbolData.emoji || '📍';
-                        const color = layer.properties?.color || symbolData.color || '#6B7280';
-                        iconHtml = `<div style="font-size: 32px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">${emoji}</div>`;
+                        iconHtml = `<div style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 24px; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">${emoji}</div>`;
                       }
                       
                       return (
@@ -322,8 +321,8 @@ const PlanInterventionViewerNew = ({ planId, tenantSlug, onBack, batiment }) => 
                           icon={L.divIcon({
                             className: 'custom-symbol-marker',
                             html: iconHtml,
-                            iconSize: [40, 40],
-                            iconAnchor: [20, 20]
+                            iconSize: [36, 36],
+                            iconAnchor: [18, 18]
                           })}
                         >
                           <Popup>
