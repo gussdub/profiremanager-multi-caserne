@@ -213,6 +213,12 @@ async def get_intervention_reference_data(
     tenant_slug: str
 ):
     """Récupère les données de référence (natures, causes, etc.) depuis les tables DSI"""
+    # Vérifier si les données de référence existent, sinon les initialiser
+    causes_count = await db.dsi_causes.count_documents({})
+    if causes_count == 0:
+        # Initialiser les données de référence DSI automatiquement
+        await initialize_dsi_reference_data()
+    
     # Utiliser les nouvelles collections DSI
     natures = await db.dsi_natures_sinistre.find({}, {"_id": 0}).to_list(200)
     causes = await db.dsi_causes.find({}, {"_id": 0}).to_list(200)
@@ -247,12 +253,10 @@ async def get_intervention_reference_data(
     }
 
 
-@router.post("/{tenant_slug}/interventions/seed-dsi-references")
-async def seed_dsi_reference_data(
-    tenant_slug: str,
-    current_user: User = Depends(get_current_user)
-):
-    """Initialise les données de référence DSI (codes MSP du Québec)"""
+async def initialize_dsi_reference_data():
+    """Initialise les données de référence DSI si elles n'existent pas"""
+    import logging
+    logging.info("Initialisation automatique des données de référence DSI...")
     
     # Causes probables (MSP)
     causes = [
@@ -348,6 +352,52 @@ async def seed_dsi_reference_data(
         {"code": "90", "libelle": "Autre facteur"},
         {"code": "00", "libelle": "Facteur indéterminé"},
     ]
+    
+    # Usages du bâtiment (MSP)
+    usages_batiment = [
+        {"code": "1", "libelle": "Résidentiel - logement unifamilial"},
+        {"code": "2", "libelle": "Résidentiel - logement multifamilial (2-5)"},
+        {"code": "3", "libelle": "Résidentiel - immeuble d'appartements (6+)"},
+        {"code": "4", "libelle": "Résidentiel - maison mobile"},
+        {"code": "5", "libelle": "Commercial - magasin de détail"},
+        {"code": "6", "libelle": "Commercial - bureau"},
+        {"code": "7", "libelle": "Commercial - restaurant"},
+        {"code": "8", "libelle": "Commercial - hôtel/motel"},
+        {"code": "9", "libelle": "Industriel - fabrication"},
+        {"code": "10", "libelle": "Industriel - entreposage"},
+        {"code": "11", "libelle": "Institutionnel - école"},
+        {"code": "12", "libelle": "Institutionnel - hôpital/CHSLD"},
+        {"code": "13", "libelle": "Institutionnel - église"},
+        {"code": "14", "libelle": "Agricole - grange/étable"},
+        {"code": "15", "libelle": "Agricole - silo"},
+        {"code": "16", "libelle": "Véhicule"},
+        {"code": "17", "libelle": "Extérieur - terrain vacant"},
+        {"code": "18", "libelle": "Extérieur - forêt"},
+        {"code": "99", "libelle": "Autre usage"},
+    ]
+    
+    # Insérer les données
+    if causes:
+        await db.dsi_causes.delete_many({})
+        await db.dsi_causes.insert_many(causes)
+    
+    if sources_chaleur:
+        await db.dsi_sources_chaleur.delete_many({})
+        await db.dsi_sources_chaleur.insert_many(sources_chaleur)
+    
+    if materiaux:
+        await db.dsi_materiaux.delete_many({})
+        await db.dsi_materiaux.insert_many(materiaux)
+    
+    if facteurs_allumage:
+        await db.dsi_facteurs_allumage.delete_many({})
+        await db.dsi_facteurs_allumage.insert_many(facteurs_allumage)
+    
+    if usages_batiment:
+        await db.dsi_usages_batiment.delete_many({})
+        await db.dsi_usages_batiment.insert_many(usages_batiment)
+    
+    logging.info("Données de référence DSI initialisées avec succès")
     
     # Usages du bâtiment (MSP)
     usages_batiment = [
