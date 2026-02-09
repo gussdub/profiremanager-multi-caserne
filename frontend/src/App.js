@@ -440,7 +440,11 @@ const AppLayout = () => {
           </Suspense>
         );
       case 'rapports':
-        return <Rapports />;
+        return (
+          <Suspense fallback={<LoadingComponent />}>
+            <Rapports />
+          </Suspense>
+        );
       case 'parametres':
         return (
           <Suspense fallback={<LoadingComponent />}>
