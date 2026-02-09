@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { 
-  Calendar, Plus, Edit, Trash2, Check, X, AlertTriangle, RotateCcw, Eye, EyeOff
+  Calendar, Plus, Edit, Trash2, Check, X, AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
 
