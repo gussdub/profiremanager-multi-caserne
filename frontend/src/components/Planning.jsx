@@ -2274,8 +2274,8 @@ const Planning = () => {
                         );
                         const searchLower = quickAssignSearchQuery.toLowerCase();
                         const matchesSearch = 
-                          `${userOption.prenom} ${userOption.nom}`.toLowerCase().includes(searchLower) ||
-                          userOption.grade.toLowerCase().includes(searchLower);
+                          `${userOption.prenom || ''} ${userOption.nom || ''}`.toLowerCase().includes(searchLower) ||
+                          (userOption.grade || '').toLowerCase().includes(searchLower);
                         return !alreadyAssigned && matchesSearch;
                       }).length === 0 && (
                         <div style={{ padding: '1rem', textAlign: 'center', color: '#64748b' }}>
