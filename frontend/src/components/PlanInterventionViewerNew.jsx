@@ -445,10 +445,123 @@ const PlanInterventionViewerNew = ({ planId, tenantSlug, onBack, batiment }) => 
                   ))}
                 </MapContainer>
               </div>
+              
+              {/* Légende des symboles utilisés */}
+              {plan.layers && plan.layers.filter(l => l.type === 'marker').length > 0 && (
+                <div style={{ 
+                  marginTop: '1rem', 
+                  padding: '1rem', 
+                  backgroundColor: '#f9fafb', 
+                  borderRadius: '8px',
+                  border: '1px solid #e5e7eb'
+                }}>
+                  <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.9rem', fontWeight: '600', color: '#374151' }}>
+                    🏷️ Légende des symboles ({plan.layers.filter(l => l.type === 'marker').length})
+                  </h4>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    {/* Extraire les symboles uniques */}
+                    {[...new Set(plan.layers.filter(l => l.type === 'marker').map(l => l.properties?.symbolId))].map(symbolId => {
+                      const symbolData = DEFAULT_SYMBOLS.find(s => s.id === symbolId) || {};
+                      const override = plan.predefined_symbol_overrides?.[symbolId];
+                      const count = plan.layers.filter(l => l.type === 'marker' && l.properties?.symbolId === symbolId).length;
+                      
+                      return (
+                        <div key={symbolId} style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '0.5rem',
+                          padding: '0.375rem 0.75rem',
+                          backgroundColor: 'white',
+                          borderRadius: '6px',
+                          border: '1px solid #e5e7eb',
+                          fontSize: '0.85rem'
+                        }}>
+                          {override?.type === 'image' && override?.value ? (
+                            <img src={override.value} alt="" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+                          ) : (
+                            <span style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'center',
+                              width: '24px', 
+                              height: '24px', 
+                              borderRadius: '50%', 
+                              backgroundColor: symbolData.color || '#6B7280',
+                              fontSize: '12px'
+                            }}>
+                              {override?.value || symbolData.emoji || '📍'}
+                            </span>
+                          )}
+                          <span style={{ color: '#374151' }}>{symbolData.name || symbolId}</span>
+                          <span style={{ 
+                            backgroundColor: '#E5E7EB', 
+                            padding: '0.125rem 0.375rem', 
+                            borderRadius: '9999px',
+                            fontSize: '0.75rem',
+                            color: '#6B7280'
+                          }}>
+                            {count}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </section>
           )}
 
-          {/* Notes */}
+          {/* Description */}
+          {plan.description && (
+            <section style={{ marginBottom: '2rem' }}>
+              <h3 style={{
+                fontSize: '1.125rem',
+                fontWeight: '600',
+                marginBottom: '1rem',
+                paddingBottom: '0.5rem',
+                borderBottom: '2px solid #e5e7eb'
+              }}>
+                📋 Description
+              </h3>
+              <div style={{
+                padding: '1rem',
+                backgroundColor: '#f9fafb',
+                borderRadius: '8px',
+                border: '1px solid #e5e7eb',
+                whiteSpace: 'pre-wrap'
+              }}>
+                {plan.description}
+              </div>
+            </section>
+          )}
+
+          {/* Notes tactiques */}
+          {plan.notes_tactiques && (
+            <section style={{ marginBottom: '2rem' }}>
+              <h3 style={{
+                fontSize: '1.125rem',
+                fontWeight: '600',
+                marginBottom: '1rem',
+                paddingBottom: '0.5rem',
+                borderBottom: '2px solid #e5e7eb',
+                color: '#dc2626'
+              }}>
+                🎯 Notes Tactiques
+              </h3>
+              <div style={{
+                padding: '1rem',
+                backgroundColor: '#fef2f2',
+                borderRadius: '8px',
+                border: '1px solid #fecaca',
+                whiteSpace: 'pre-wrap',
+                color: '#991b1b'
+              }}>
+                {plan.notes_tactiques}
+              </div>
+            </section>
+          )}
+
+          {/* Notes générales */}
           {plan.notes && (
             <section style={{ marginBottom: '2rem' }}>
               <h3 style={{
