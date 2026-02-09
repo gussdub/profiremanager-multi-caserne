@@ -2219,8 +2219,8 @@ const Planning = () => {
                           // Filtrer par recherche
                           const searchLower = quickAssignSearchQuery.toLowerCase();
                           const matchesSearch = 
-                            `${userOption.prenom} ${userOption.nom}`.toLowerCase().includes(searchLower) ||
-                            userOption.grade.toLowerCase().includes(searchLower);
+                            `${userOption.prenom || ''} ${userOption.nom || ''}`.toLowerCase().includes(searchLower) ||
+                            (userOption.grade || '').toLowerCase().includes(searchLower);
                           
                           return !alreadyAssigned && matchesSearch;
                         })
