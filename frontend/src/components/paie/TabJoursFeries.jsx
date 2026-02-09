@@ -490,16 +490,18 @@ const TabJoursFeries = ({ tenant }) => {
                   >
                     <Edit size={16} />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDeleteJourFerie(jour)}
-                    title={jour.est_personnalise ? "Supprimer" : "Désactiver"}
-                    style={{ color: '#ef4444' }}
-                    data-testid={`delete-jour-${jour.id}`}
-                  >
-                    <Trash2 size={16} />
-                  </Button>
+                  {jour.est_personnalise && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteJourFerie(jour)}
+                      title="Supprimer"
+                      style={{ color: '#ef4444' }}
+                      data-testid={`delete-jour-${jour.id}`}
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
