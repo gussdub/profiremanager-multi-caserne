@@ -1025,6 +1025,10 @@ async def import_epis_csv(
             
             # Créer l'EPI s'il n'existe pas (ou si action_doublon = create)
             if not existing_epi or epi_data.get("action_doublon") == "create":
+                # Normaliser le statut pour correspondre aux valeurs attendues
+                statut_raw = epi_data.get("statut", "En service")
+                statut_normalized = normalize_statut_epi(statut_raw)
+                
                 new_epi = {
                     "id": str(uuid.uuid4()),
                     "tenant_id": tenant.id,
@@ -1035,7 +1039,7 @@ async def import_epis_csv(
                     "modele": epi_data.get("modele", ""),
                     "taille": epi_data.get("taille", ""),
                     "couleur": epi_data.get("couleur", ""),
-                    "statut": epi_data.get("statut", "En service"),
+                    "statut": statut_normalized,
                     "norme_certification": epi_data.get("norme_certification", ""),
                     "notes": epi_data.get("notes", ""),
                     "created_at": datetime.now(timezone.utc).isoformat(),
