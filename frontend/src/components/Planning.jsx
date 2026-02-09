@@ -2030,8 +2030,8 @@ const Planning = () => {
                         ? assignedUsers.filter(u => u.id === selectedUserId)
                         : searchFilter.trim() 
                           ? assignedUsers.filter(u => 
-                              u.nom.toLowerCase().includes(searchFilter.toLowerCase()) ||
-                              u.prenom.toLowerCase().includes(searchFilter.toLowerCase()) ||
+                              (u.nom || '').toLowerCase().includes(searchFilter.toLowerCase()) ||
+                              (u.prenom || '').toLowerCase().includes(searchFilter.toLowerCase()) ||
                               (u.email && u.email.toLowerCase().includes(searchFilter.toLowerCase()))
                             )
                           : [];
