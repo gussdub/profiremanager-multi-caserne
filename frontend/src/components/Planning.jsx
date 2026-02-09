@@ -2497,8 +2497,8 @@ const Planning = () => {
                             </div>
                           ))}
                         {users.filter(user => 
-                          `${user.prenom} ${user.nom}`.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
-                          user.grade.toLowerCase().includes(userSearchQuery.toLowerCase())
+                          `${user.prenom || ''} ${user.nom || ''}`.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+                          (user.grade || '').toLowerCase().includes(userSearchQuery.toLowerCase())
                         ).length === 0 && (
                           <div style={{ padding: '1rem', textAlign: 'center', color: '#64748b' }}>
                             Aucun pompier trouvé
