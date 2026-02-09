@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap, LayersControl } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, LayersControl, Polyline, Polygon } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Button } from './ui/button';
@@ -15,6 +15,29 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
+
+// Palette de symboles par défaut (même que dans le Builder)
+const DEFAULT_SYMBOLS = [
+  { id: 'borne_fontaine', name: 'Borne-fontaine', emoji: '🚒', color: '#3B82F6' },
+  { id: 'station_manuelle', name: 'Station manuelle', emoji: '🔴', color: '#EF4444' },
+  { id: 'echelle_fixe', name: 'Échelle fixe', emoji: '🪜', color: '#F97316' },
+  { id: 'robinet_incendie', name: 'Robinet d\'incendie', emoji: '🔧', color: '#06B6D4' },
+  { id: 'telephone_secours', name: 'Téléphone de secours', emoji: '📞', color: '#8B5CF6' },
+  { id: 'electricite', name: 'Électricité/Hydro-Québec', emoji: '⚡', color: '#EAB308' },
+  { id: 'essence', name: 'Essence', emoji: '⛽', color: '#DC2626' },
+  { id: 'diesel', name: 'Diesel', emoji: '🛢️', color: '#78716C' },
+  { id: 'gaz_naturel', name: 'Gaz naturel', emoji: '🔥', color: '#F59E0B' },
+  { id: 'propane', name: 'Propane', emoji: '💨', color: '#22C55E' },
+  { id: 'entree_principale', name: 'Entrée principale', emoji: '🚪', color: '#10B981' },
+  { id: 'sortie_secours', name: 'Sortie de secours', emoji: '🚨', color: '#EF4444' },
+  { id: 'panneau_electrique', name: 'Panneau électrique', emoji: '🔌', color: '#6366F1' },
+  { id: 'extincteur', name: 'Extincteur', emoji: '🧯', color: '#DC2626' },
+  { id: 'alarme_incendie', name: 'Alarme incendie', emoji: '🔔', color: '#F59E0B' },
+  { id: 'gicleurs', name: 'Gicleurs', emoji: '💦', color: '#0EA5E9' },
+  { id: 'risque_chimique', name: 'Risque chimique', emoji: '☣️', color: '#A855F7' },
+  { id: 'zone_dangereuse', name: 'Zone dangereuse', emoji: '⚠️', color: '#EF4444' },
+  { id: 'point_rassemblement', name: 'Point de rassemblement', emoji: '🏁', color: '#22C55E' },
+];
 
 const PlanInterventionViewerNew = ({ planId, tenantSlug, onBack, batiment }) => {
   const [plan, setPlan] = useState(null);
