@@ -10,11 +10,9 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const TabJoursFeries = ({ tenant }) => {
   const [joursFeries, setJoursFeries] = useState([]);
-  const [joursDesactives, setJoursDesactives] = useState([]);
   const [loading, setLoading] = useState(false);
   const [anneeSelectionnee, setAnneeSelectionnee] = useState(new Date().getFullYear());
   const [showAddForm, setShowAddForm] = useState(false);
-  const [showDesactives, setShowDesactives] = useState(false);
   const [editingJour, setEditingJour] = useState(null);
   const [formData, setFormData] = useState({
     nom: '',
