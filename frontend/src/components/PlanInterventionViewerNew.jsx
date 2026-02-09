@@ -253,13 +253,13 @@ const PlanInterventionViewerNew = ({ planId, tenantSlug, onBack, batiment }) => 
                 paddingBottom: '0.5rem',
                 borderBottom: '2px solid #e5e7eb'
               }}>
-                🗺️ Localisation et points d'intérêt
+                🗺️ Plan d'intervention
               </h3>
-              <div style={{ height: '400px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
+              <div style={{ height: '500px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
                 <MapContainer
                   center={[batiment.latitude, batiment.longitude]}
                   zoom={18}
-                  maxZoom={19}
+                  maxZoom={22}
                   style={{ height: '100%', width: '100%' }}
                 >
                   <LayersControl position="topright">
@@ -267,7 +267,7 @@ const PlanInterventionViewerNew = ({ planId, tenantSlug, onBack, batiment }) => 
                       <TileLayer
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                        maxZoom={19}
+                        maxZoom={22}
                         maxNativeZoom={19}
                       />
                     </BaseLayer>
@@ -275,12 +275,13 @@ const PlanInterventionViewerNew = ({ planId, tenantSlug, onBack, batiment }) => 
                       <TileLayer
                         url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
                         attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
-                        maxZoom={19}
+                        maxZoom={22}
                         maxNativeZoom={19}
                       />
                     </BaseLayer>
                   </LayersControl>
                   
+                  {/* Marqueur du bâtiment */}
                   <Marker position={[batiment.latitude, batiment.longitude]}>
                     <Popup>
                       <strong>{batiment.nom_etablissement || 'Bâtiment'}</strong>
@@ -289,7 +290,123 @@ const PlanInterventionViewerNew = ({ planId, tenantSlug, onBack, batiment }) => 
                     </Popup>
                   </Marker>
                   
-                  {/* Points d'eau */}
+                  {/* LAYERS - Symboles, lignes, polygones du plan */}
+                  {plan.layers && plan.layers.map((layer, idx) => {
+                    // Symboles (markers)
+                    if (layer.type === 'marker' && layer.geometry?.coordinates) {
+                      const [lng, lat] = layer.geometry.coordinates;
+                      const symbolId = layer.properties?.symbolId;
+                      const symbolData = DEFAULT_SYMBOLS.find(s => s.id === symbolId) || {};
+                      
+                      // Vérifier si le symbole a une image personnalisée (override)
+                      const override = plan.predefined_symbol_overrides?.[symbolId];
+                      let iconHtml;
+                      
+                      if (override?.type === 'image' && override?.value) {
+                        // Image personnalisée
+                        iconHtml = `<div style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;"><img src="${override.value}" style="max-width: 100%; max-height: 100%; object-fit: contain;" /></div>`;
+                      } else if (layer.properties?.image) {
+                        // Image stockée dans le layer
+                        iconHtml = `<div style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;"><img src="${layer.properties.image}" style="max-width: 100%; max-height: 100%; object-fit: contain;" /></div>`;
+                      } else {
+                        // Emoji par défaut
+                        const emoji = override?.value || layer.properties?.emoji || symbolData.emoji || '📍';
+                        const color = layer.properties?.color || symbolData.color || '#6B7280';
+                        iconHtml = `<div style="background: ${color}; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); font-size: 16px;">${emoji}</div>`;
+                      }
+                      
+                      return (
+                        <Marker 
+                          key={`layer-${layer.id || idx}`}
+                          position={[lat, lng]}
+                          icon={L.divIcon({
+                            className: 'custom-symbol-marker',
+                            html: iconHtml,
+                            iconSize: [32, 32],
+                            iconAnchor: [16, 16]
+                          })}
+                        >
+                          <Popup>
+                            <strong>{layer.properties?.name || symbolData.name || 'Symbole'}</strong>
+                            {layer.properties?.description && (
+                              <>
+                                <br />
+                                {layer.properties.description}
+                              </>
+                            )}
+                          </Popup>
+                        </Marker>
+                      );
+                    }
+                    
+                    // Lignes (polylines)
+                    if (layer.type === 'polyline' && layer.geometry?.coordinates) {
+                      const positions = layer.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                      const color = layer.properties?.color || '#3B82F6';
+                      const weight = layer.properties?.weight || 3;
+                      const dashArray = layer.properties?.dashArray;
+                      
+                      return (
+                        <Polyline
+                          key={`layer-${layer.id || idx}`}
+                          positions={positions}
+                          pathOptions={{
+                            color: color,
+                            weight: weight,
+                            dashArray: dashArray
+                          }}
+                        >
+                          {layer.properties?.name && (
+                            <Popup>
+                              <strong>{layer.properties.name}</strong>
+                              {layer.properties?.description && (
+                                <>
+                                  <br />
+                                  {layer.properties.description}
+                                </>
+                              )}
+                            </Popup>
+                          )}
+                        </Polyline>
+                      );
+                    }
+                    
+                    // Polygones
+                    if (layer.type === 'polygon' && layer.geometry?.coordinates) {
+                      const positions = layer.geometry.coordinates[0].map(coord => [coord[1], coord[0]]);
+                      const color = layer.properties?.color || '#EF4444';
+                      const fillColor = layer.properties?.fillColor || color;
+                      const fillOpacity = layer.properties?.fillOpacity || 0.3;
+                      
+                      return (
+                        <Polygon
+                          key={`layer-${layer.id || idx}`}
+                          positions={positions}
+                          pathOptions={{
+                            color: color,
+                            fillColor: fillColor,
+                            fillOpacity: fillOpacity
+                          }}
+                        >
+                          {layer.properties?.name && (
+                            <Popup>
+                              <strong>{layer.properties.name}</strong>
+                              {layer.properties?.description && (
+                                <>
+                                  <br />
+                                  {layer.properties.description}
+                                </>
+                              )}
+                            </Popup>
+                          )}
+                        </Polygon>
+                      );
+                    }
+                    
+                    return null;
+                  })}
+                  
+                  {/* Points d'eau (ancien format - rétrocompatibilité) */}
                   {plan.points_eau && plan.points_eau.map((point, idx) => (
                     <Marker 
                       key={`eau-${idx}`}
@@ -308,7 +425,7 @@ const PlanInterventionViewerNew = ({ planId, tenantSlug, onBack, batiment }) => 
                     </Marker>
                   ))}
                   
-                  {/* Zones à risque */}
+                  {/* Zones à risque (ancien format - rétrocompatibilité) */}
                   {plan.zones_risque && plan.zones_risque.map((zone, idx) => (
                     <Marker 
                       key={`risque-${idx}`}
