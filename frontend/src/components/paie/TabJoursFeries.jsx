@@ -111,11 +111,12 @@ const TabJoursFeries = ({ tenant }) => {
   };
 
   const handleDeleteJourFerie = async (jour) => {
-    const message = jour.est_personnalise 
-      ? `Supprimer le jour férié "${jour.nom}" ?`
-      : `Désactiver le jour férié "${jour.nom}" ? (Il pourra être réactivé plus tard)`;
+    if (!jour.est_personnalise) {
+      toast.error('Les jours fériés standards ne peuvent pas être supprimés');
+      return;
+    }
     
-    if (!window.confirm(message)) return;
+    if (!window.confirm(`Supprimer le jour férié "${jour.nom}" ?`)) return;
 
     try {
       const response = await fetch(
@@ -127,34 +128,10 @@ const TabJoursFeries = ({ tenant }) => {
       );
 
       if (response.ok) {
-        toast.success(jour.est_personnalise ? 'Jour férié supprimé' : 'Jour férié désactivé');
+        toast.success('Jour férié supprimé');
         fetchJoursFeries();
-        fetchJoursDesactives();
       } else {
         toast.error('Erreur lors de la suppression');
-      }
-    } catch (error) {
-      console.error('Erreur:', error);
-      toast.error('Erreur');
-    }
-  };
-
-  const handleReactiverJourFerie = async (jour) => {
-    try {
-      const response = await fetch(
-        `${API_URL}/api/${tenant}/paie/jours-feries/${jour.id}/reactiver`,
-        {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${getToken()}` }
-        }
-      );
-
-      if (response.ok) {
-        toast.success(`${jour.nom} réactivé`);
-        fetchJoursFeries();
-        fetchJoursDesactives();
-      } else {
-        toast.error('Erreur');
       }
     } catch (error) {
       console.error('Erreur:', error);
