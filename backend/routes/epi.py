@@ -23,7 +23,8 @@ from routes.dependencies import (
     get_current_user,
     get_tenant_from_slug,
     clean_mongo_doc,
-    User
+    User,
+    creer_notification
 )
 
 router = APIRouter(tags=["EPI - Équipements de Protection"])
