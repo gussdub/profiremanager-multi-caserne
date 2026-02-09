@@ -1499,8 +1499,8 @@ const Planning = () => {
                   const searchLower = searchFilter.toLowerCase();
                   const filteredUsers = users.filter(u => 
                     u.statut === 'Actif' && (
-                      u.nom.toLowerCase().includes(searchLower) ||
-                      u.prenom.toLowerCase().includes(searchLower) ||
+                      (u.nom || '').toLowerCase().includes(searchLower) ||
+                      (u.prenom || '').toLowerCase().includes(searchLower) ||
                       (u.email && u.email.toLowerCase().includes(searchLower))
                     )
                   ).slice(0, 10); // Limiter à 10 résultats
