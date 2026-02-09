@@ -252,15 +252,6 @@ const TabJoursFeries = ({ tenant }) => {
           </select>
 
           <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowDesactives(!showDesactives)}
-          >
-            {showDesactives ? <EyeOff size={16} className="mr-2" /> : <Eye size={16} className="mr-2" />}
-            {showDesactives ? 'Masquer désactivés' : `Désactivés (${joursDesactives.length})`}
-          </Button>
-
-          <Button
             onClick={() => {
               setShowAddForm(true);
               setEditingJour(null);
