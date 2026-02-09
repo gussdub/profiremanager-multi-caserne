@@ -143,6 +143,86 @@ def determine_epi_icon_color(type_name: str) -> tuple:
     return "🛡️", "#6b7280"
 
 
+def normalize_statut_epi(statut_raw: str) -> str:
+    """
+    Normalise le statut d'un EPI pour correspondre aux valeurs attendues par le frontend.
+    Les valeurs attendues sont exactement:
+    - 'En service'
+    - 'En inspection'
+    - 'En réparation'
+    - 'Hors service'
+    - 'Retiré'
+    """
+    if not statut_raw:
+        return "En service"
+    
+    # Nettoyer et normaliser
+    statut_clean = statut_raw.strip().lower()
+    
+    # Mapping des variations possibles vers les valeurs canoniques
+    mappings = {
+        # En service
+        'en service': 'En service',
+        'en_service': 'En service',
+        'enservice': 'En service',
+        'actif': 'En service',
+        'active': 'En service',
+        'bon': 'En service',
+        'ok': 'En service',
+        'disponible': 'En service',
+        'opérationnel': 'En service',
+        'operationnel': 'En service',
+        
+        # En inspection
+        'en inspection': 'En inspection',
+        'en_inspection': 'En inspection',
+        'inspection': 'En inspection',
+        'à inspecter': 'En inspection',
+        'a inspecter': 'En inspection',
+        
+        # En réparation
+        'en réparation': 'En réparation',
+        'en reparation': 'En réparation',
+        'en_réparation': 'En réparation',
+        'en_reparation': 'En réparation',
+        'réparation': 'En réparation',
+        'reparation': 'En réparation',
+        'à réparer': 'En réparation',
+        'a reparer': 'En réparation',
+        
+        # Hors service
+        'hors service': 'Hors service',
+        'hors_service': 'Hors service',
+        'horsservice': 'Hors service',
+        'inactif': 'Hors service',
+        'inactive': 'Hors service',
+        'défectueux': 'Hors service',
+        'defectueux': 'Hors service',
+        
+        # Retiré
+        'retiré': 'Retiré',
+        'retire': 'Retiré',
+        'retiré du service': 'Retiré',
+        'retire du service': 'Retiré',
+        'rebut': 'Retiré',
+        'remplacé': 'Retiré',
+        'remplace': 'Retiré',
+    }
+    
+    # Chercher une correspondance exacte
+    if statut_clean in mappings:
+        return mappings[statut_clean]
+    
+    # Chercher une correspondance partielle
+    for key, value in mappings.items():
+        if key in statut_clean or statut_clean in key:
+            return value
+    
+    # Si aucune correspondance, retourner "En service" par défaut
+    logger.warning(f"Statut EPI non reconnu: '{statut_raw}', utilisation de 'En service' par défaut")
+    return "En service"
+
+
 def find_user_intelligent(
     search_string: str, 
     users_by_name: dict, 
