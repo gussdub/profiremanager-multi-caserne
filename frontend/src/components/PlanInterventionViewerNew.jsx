@@ -292,8 +292,8 @@ const PlanInterventionViewerNew = ({ planId, tenantSlug, onBack, batiment }) => 
                   
                   {/* LAYERS - Symboles, lignes, polygones du plan */}
                   {plan.layers && plan.layers.map((layer, idx) => {
-                    // Symboles (markers)
-                    if (layer.type === 'marker' && layer.geometry?.coordinates) {
+                    // Symboles (markers) - accepte 'marker' OU 'symbol'
+                    if ((layer.type === 'marker' || layer.type === 'symbol') && layer.geometry?.coordinates) {
                       const [lng, lat] = layer.geometry.coordinates;
                       const symbolId = layer.properties?.symbolId;
                       const symbolData = DEFAULT_SYMBOLS.find(s => s.id === symbolId) || {};
@@ -303,16 +303,16 @@ const PlanInterventionViewerNew = ({ planId, tenantSlug, onBack, batiment }) => 
                       let iconHtml;
                       
                       if (override?.type === 'image' && override?.value) {
-                        // Image personnalisée
-                        iconHtml = `<div style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;"><img src="${override.value}" style="max-width: 100%; max-height: 100%; object-fit: contain;" /></div>`;
+                        // Image personnalisée depuis override
+                        iconHtml = `<div style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;"><img src="${override.value}" style="max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5));" /></div>`;
                       } else if (layer.properties?.image) {
                         // Image stockée dans le layer
-                        iconHtml = `<div style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;"><img src="${layer.properties.image}" style="max-width: 100%; max-height: 100%; object-fit: contain;" /></div>`;
+                        iconHtml = `<div style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;"><img src="${layer.properties.image}" style="max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5));" /></div>`;
                       } else {
-                        // Emoji par défaut
-                        const emoji = override?.value || layer.properties?.emoji || symbolData.emoji || '📍';
+                        // Emoji - chercher dans plusieurs champs possibles
+                        const emoji = layer.properties?.symbol || layer.properties?.emoji || override?.value || symbolData.emoji || '📍';
                         const color = layer.properties?.color || symbolData.color || '#6B7280';
-                        iconHtml = `<div style="background: ${color}; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); font-size: 16px;">${emoji}</div>`;
+                        iconHtml = `<div style="font-size: 32px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">${emoji}</div>`;
                       }
                       
                       return (
@@ -322,16 +322,16 @@ const PlanInterventionViewerNew = ({ planId, tenantSlug, onBack, batiment }) => 
                           icon={L.divIcon({
                             className: 'custom-symbol-marker',
                             html: iconHtml,
-                            iconSize: [32, 32],
-                            iconAnchor: [16, 16]
+                            iconSize: [40, 40],
+                            iconAnchor: [20, 20]
                           })}
                         >
                           <Popup>
-                            <strong>{layer.properties?.name || symbolData.name || 'Symbole'}</strong>
-                            {layer.properties?.description && (
+                            <strong>{layer.properties?.label || layer.properties?.name || symbolData.name || 'Symbole'}</strong>
+                            {(layer.properties?.note || layer.properties?.description) && (
                               <>
                                 <br />
-                                {layer.properties.description}
+                                {layer.properties.note || layer.properties.description}
                               </>
                             )}
                           </Popup>
