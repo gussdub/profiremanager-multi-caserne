@@ -1608,8 +1608,8 @@ const Planning = () => {
                   const u = getUserById(a.user_id);
                   if (!u) return false;
                   const searchLower = searchFilter.toLowerCase();
-                  return u.nom.toLowerCase().includes(searchLower) ||
-                         u.prenom.toLowerCase().includes(searchLower) ||
+                  return (u.nom || '').toLowerCase().includes(searchLower) ||
+                         (u.prenom || '').toLowerCase().includes(searchLower) ||
                          (u.email && u.email.toLowerCase().includes(searchLower));
                 });
                 const uniqueUserIds = [...new Set(matchingAssignations.map(a => a.user_id))];
