@@ -367,47 +367,6 @@ const TabJoursFeries = ({ tenant }) => {
         </div>
       )}
 
-      {/* Jours fériés désactivés */}
-      {showDesactives && joursDesactives.length > 0 && (
-        <div style={{ 
-          background: '#fef3c7', 
-          borderRadius: '12px', 
-          padding: '16px', 
-          border: '1px solid #fcd34d'
-        }}>
-          <h4 style={{ margin: '0 0 12px 0', color: '#92400e', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <EyeOff size={18} /> Jours fériés désactivés
-          </h4>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            {joursDesactives.map(jour => (
-              <div
-                key={jour.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '8px 12px',
-                  background: 'white',
-                  borderRadius: '8px',
-                  border: '1px solid #fcd34d'
-                }}
-              >
-                <span style={{ fontWeight: '500' }}>{jour.nom}</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleReactiverJourFerie(jour)}
-                  style={{ color: '#059669' }}
-                >
-                  <RotateCcw size={14} className="mr-1" />
-                  Réactiver
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Info sur le calcul automatique */}
       <div style={{ 
         background: '#ecfdf5', 
