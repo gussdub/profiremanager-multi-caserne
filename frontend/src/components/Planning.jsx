@@ -2470,8 +2470,8 @@ const Planning = () => {
                       }}>
                         {users
                           .filter(user => 
-                            `${user.prenom} ${user.nom}`.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
-                            user.grade.toLowerCase().includes(userSearchQuery.toLowerCase())
+                            `${user.prenom || ''} ${user.nom || ''}`.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+                            (user.grade || '').toLowerCase().includes(userSearchQuery.toLowerCase())
                           )
                           .map(user => (
                             <div
