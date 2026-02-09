@@ -447,7 +447,7 @@ const PlanInterventionViewerNew = ({ planId, tenantSlug, onBack, batiment }) => 
               </div>
               
               {/* Légende des symboles utilisés */}
-              {plan.layers && plan.layers.filter(l => l.type === 'marker').length > 0 && (
+              {plan.layers && plan.layers.filter(l => l.type === 'marker' || l.type === 'symbol').length > 0 && (
                 <div style={{ 
                   marginTop: '1rem', 
                   padding: '1rem', 
@@ -456,17 +456,28 @@ const PlanInterventionViewerNew = ({ planId, tenantSlug, onBack, batiment }) => 
                   border: '1px solid #e5e7eb'
                 }}>
                   <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.9rem', fontWeight: '600', color: '#374151' }}>
-                    🏷️ Légende des symboles ({plan.layers.filter(l => l.type === 'marker').length})
+                    🏷️ Légende des symboles ({plan.layers.filter(l => l.type === 'marker' || l.type === 'symbol').length})
                   </h4>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-                    {/* Extraire les symboles uniques */}
-                    {[...new Set(plan.layers.filter(l => l.type === 'marker').map(l => l.properties?.symbolId))].map(symbolId => {
+                    {/* Extraire les symboles uniques par label */}
+                    {[...new Map(plan.layers
+                      .filter(l => l.type === 'marker' || l.type === 'symbol')
+                      .map(l => [l.properties?.label || l.properties?.symbolId || 'unknown', l])
+                    ).values()].map((layer, idx) => {
+                      const symbolId = layer.properties?.symbolId;
                       const symbolData = DEFAULT_SYMBOLS.find(s => s.id === symbolId) || {};
                       const override = plan.predefined_symbol_overrides?.[symbolId];
-                      const count = plan.layers.filter(l => l.type === 'marker' && l.properties?.symbolId === symbolId).length;
+                      const count = plan.layers.filter(l => 
+                        (l.type === 'marker' || l.type === 'symbol') && 
+                        (l.properties?.label === layer.properties?.label || l.properties?.symbolId === symbolId)
+                      ).length;
+                      
+                      const label = layer.properties?.label || symbolData.name || symbolId || 'Symbole';
+                      const emoji = layer.properties?.symbol || layer.properties?.emoji || override?.value || symbolData.emoji || '📍';
+                      const hasImage = (override?.type === 'image' && override?.value) || layer.properties?.image;
                       
                       return (
-                        <div key={symbolId} style={{ 
+                        <div key={`legend-${idx}`} style={{ 
                           display: 'flex', 
                           alignItems: 'center', 
                           gap: '0.5rem',
@@ -476,23 +487,16 @@ const PlanInterventionViewerNew = ({ planId, tenantSlug, onBack, batiment }) => 
                           border: '1px solid #e5e7eb',
                           fontSize: '0.85rem'
                         }}>
-                          {override?.type === 'image' && override?.value ? (
-                            <img src={override.value} alt="" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+                          {hasImage ? (
+                            <img 
+                              src={override?.value || layer.properties?.image} 
+                              alt="" 
+                              style={{ width: '24px', height: '24px', objectFit: 'contain' }} 
+                            />
                           ) : (
-                            <span style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              justifyContent: 'center',
-                              width: '24px', 
-                              height: '24px', 
-                              borderRadius: '50%', 
-                              backgroundColor: symbolData.color || '#6B7280',
-                              fontSize: '12px'
-                            }}>
-                              {override?.value || symbolData.emoji || '📍'}
-                            </span>
+                            <span style={{ fontSize: '20px' }}>{emoji}</span>
                           )}
-                          <span style={{ color: '#374151' }}>{symbolData.name || symbolId}</span>
+                          <span style={{ color: '#374151' }}>{label}</span>
                           <span style={{ 
                             backgroundColor: '#E5E7EB', 
                             padding: '0.125rem 0.375rem', 
