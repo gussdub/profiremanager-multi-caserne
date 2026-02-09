@@ -423,6 +423,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       contact_urgence: user.contact_urgence || '',
       grade: user.grade,
       fonction_superieur: user.fonction_superieur || false,
+      est_preventionniste: user.est_preventionniste || false,
       type_emploi: user.type_emploi,
       equipe_garde: user.equipe_garde || null,
       numero_employe: user.numero_employe,
