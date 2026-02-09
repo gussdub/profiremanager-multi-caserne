@@ -42,24 +42,8 @@ const TabJoursFeries = ({ tenant }) => {
     }
   }, [tenant, anneeSelectionnee]);
 
-  const fetchJoursDesactives = async () => {
-    try {
-      const response = await fetch(
-        `${API_URL}/api/${tenant}/paie/jours-feries/desactives`,
-        { headers: { 'Authorization': `Bearer ${getToken()}` } }
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setJoursDesactives(data);
-      }
-    } catch (error) {
-      console.error('Erreur:', error);
-    }
-  };
-
   useEffect(() => {
     fetchJoursFeries();
-    fetchJoursDesactives();
   }, [fetchJoursFeries]);
 
   const handleAddJourFerie = async () => {
