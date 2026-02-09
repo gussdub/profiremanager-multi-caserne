@@ -1067,12 +1067,16 @@ async def import_epis_csv(
                 
                 # Si action_doublon = update, mettre à jour
                 if epi_data.get("action_doublon") == "update":
+                    # Normaliser le statut
+                    statut_raw = epi_data.get("statut", "En service")
+                    statut_normalized = normalize_statut_epi(statut_raw)
+                    
                     update_data = {
                         "type_epi_id": type_epi_id,  # Utiliser l'ID du type
                         "marque": epi_data.get("marque", ""),
                         "modele": epi_data.get("modele", ""),
                         "taille": epi_data.get("taille", ""),
-                        "statut": epi_data.get("statut", "bon"),
+                        "statut": statut_normalized,
                         "norme_certification": epi_data.get("norme_certification", ""),
                         "notes": epi_data.get("notes", ""),
                         "updated_at": datetime.now(timezone.utc).isoformat()
