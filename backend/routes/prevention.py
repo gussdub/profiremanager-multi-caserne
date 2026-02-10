@@ -1095,6 +1095,7 @@ class NonConformite(BaseModel):
     categorie: str = ""  # Catégorie pour création manuelle
     priorite: str = "moyenne"  # haute, moyenne, faible - alias de gravite
     article_code: str = ""  # Article du code de sécurité
+    violation_id: Optional[str] = None  # Référence au référentiel de violations
     
     # Suivi
     statut: str = "ouverte"  # ouverte, en_cours, corrigee, fermee
@@ -1110,9 +1111,14 @@ class NonConformite(BaseModel):
     # Responsabilité
     responsable_correction: str = ""  # Propriétaire/Gestionnaire
     preventionniste_suivi_id: Optional[str] = None
+    createur_id: Optional[str] = None  # ID de l'utilisateur qui a créé la NC
     
     # Source
     est_manuel: bool = False  # True si créée manuellement
+    
+    # Relances
+    derniere_relance: Optional[str] = None  # Date de la dernière relance YYYY-MM-DD
+    nb_relances: int = 0
     
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -1127,6 +1133,7 @@ class NonConformiteCreate(BaseModel):
     categorie: str = ""  # Pour création manuelle
     priorite: str = "moyenne"  # Pour création manuelle
     article_code: str = ""
+    violation_id: Optional[str] = None
     delai_correction: Optional[str] = None
     date_identification: Optional[str] = None  # Pour création manuelle
     statut: str = "ouverte"
