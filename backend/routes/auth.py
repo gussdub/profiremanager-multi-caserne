@@ -161,6 +161,30 @@ async def tenant_login(tenant_slug: str, login: LoginRequest):
     }
 
 
+@router.get("/{tenant_slug}/auth/debug-user/{email}")
+async def debug_user(tenant_slug: str, email: str):
+    """Endpoint temporaire de diagnostic - À SUPPRIMER"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    user = await db.users.find_one({
+        "tenant_id": tenant.id,
+        "email": email.lower().strip()
+    })
+    
+    if user:
+        hash_val = user.get("mot_de_passe_hash", "")
+        return {
+            "found": True,
+            "email": user.get("email"),
+            "tenant_id": user.get("tenant_id"),
+            "hash_prefix": hash_val[:25] if hash_val else "EMPTY",
+            "hash_length": len(hash_val) if hash_val else 0,
+            "created_at": str(user.get("created_at")),
+            "id": user.get("id")
+        }
+    return {"found": False, "email": email, "tenant_id": tenant.id}
+
+
 @router.get("/{tenant_slug}/auth/me")
 async def get_current_user_info(
     tenant_slug: str,
