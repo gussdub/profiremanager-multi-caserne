@@ -321,12 +321,16 @@ const TabJoursFeries = ({ tenant }) => {
                 Majoration temps partiel/temporaire
               </label>
               <Input
-                type="number"
-                step="0.1"
-                min="1"
-                max="3"
+                type="text"
+                inputMode="decimal"
                 value={formData.majoration_temps_partiel}
-                onChange={(e) => setFormData({ ...formData, majoration_temps_partiel: parseFloat(e.target.value) || 1.5 })}
+                onChange={(e) => {
+                  const val = e.target.value.replace(',', '.');
+                  if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                    const num = parseFloat(val);
+                    setFormData({ ...formData, majoration_temps_partiel: isNaN(num) ? val : num });
+                  }
+                }}
               />
               <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
                 Ex: 1.5 = temps et demi
@@ -338,12 +342,16 @@ const TabJoursFeries = ({ tenant }) => {
                 Majoration temps plein
               </label>
               <Input
-                type="number"
-                step="0.1"
-                min="1"
-                max="3"
+                type="text"
+                inputMode="decimal"
                 value={formData.majoration_temps_plein}
-                onChange={(e) => setFormData({ ...formData, majoration_temps_plein: parseFloat(e.target.value) || 1.0 })}
+                onChange={(e) => {
+                  const val = e.target.value.replace(',', '.');
+                  if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                    const num = parseFloat(val);
+                    setFormData({ ...formData, majoration_temps_plein: isNaN(num) ? val : num });
+                  }
+                }}
               />
               <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
                 Généralement 1.0 (payé en fin d'année)
