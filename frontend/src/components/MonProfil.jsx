@@ -1567,12 +1567,29 @@ const MonProfil = () => {
                 </div>
               )}
             </div>
-          </div>
+          </Card>
 
           {/* Mes Tailles EPI */}
-          <div className="formation-card">
-            <div className="formation-header">
-              <h3>🛡️ Mes Tailles EPI</h3>
+          <Card style={{ overflow: 'hidden', marginTop: '1.5rem' }}>
+            <div style={{
+              background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+              padding: '1rem 1.5rem',
+              borderRadius: '11px 11px 0 0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <h3 style={{ 
+                color: 'white', 
+                fontSize: '1.1rem', 
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                margin: 0
+              }}>
+                🛡️ Mes Tailles EPI
+              </h3>
               <Button
                 onClick={() => {
                   console.log('🔘 [Mon Profil EPI] Bouton Modifier cliqué, isEditingEPI avant:', isEditingEPI);
@@ -1581,12 +1598,13 @@ const MonProfil = () => {
                 }}
                 variant={isEditingEPI ? "outline" : "default"}
                 data-testid="edit-epi-tailles-btn"
+                style={{ background: isEditingEPI ? 'white' : 'rgba(255,255,255,0.2)', color: isEditingEPI ? '#dc2626' : 'white' }}
               >
                 {isEditingEPI ? 'Annuler' : '✏️ Modifier'}
               </Button>
             </div>
 
-            <div className="epi-content-wrapper">
+            <div className="epi-content-wrapper" style={{ padding: '1.5rem' }}>
               <p style={{ marginBottom: '15px', fontSize: '14px', color: '#6B7280' }}>
                 {isEditingEPI 
                   ? '✏️ Mode édition activé - Vous pouvez maintenant modifier les tailles' 
