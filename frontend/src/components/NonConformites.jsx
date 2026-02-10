@@ -745,7 +745,9 @@ const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
                       categorie: '',
                       priorite: 'moyenne',
                       batiment_id: '',
-                      date_identification: new Date().toISOString().split('T')[0]
+                      date_identification: new Date().toISOString().split('T')[0],
+                      violation_id: '',
+                      delai_correction: ''
                     });
                   }}
                   style={{ flex: 1 }}
