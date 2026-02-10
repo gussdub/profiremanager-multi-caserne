@@ -1077,10 +1077,10 @@ class InspectionCreate(BaseModel):
     nom_representant: str = ""
 
 class NonConformite(BaseModel):
-    """Non-conformité identifiée lors d'une inspection"""
+    """Non-conformité identifiée lors d'une inspection ou créée manuellement"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     tenant_id: str
-    inspection_id: str
+    inspection_id: Optional[str] = None  # Optionnel pour création manuelle
     batiment_id: str
     
     # Description de la non-conformité
@@ -1088,12 +1088,15 @@ class NonConformite(BaseModel):
     description: str = ""
     section_grille: str = ""  # Section de la grille où elle a été identifiée
     gravite: str = "moyen"  # faible, moyen, eleve, critique
+    categorie: str = ""  # Catégorie pour création manuelle
+    priorite: str = "moyenne"  # haute, moyenne, faible - alias de gravite
     article_code: str = ""  # Article du code de sécurité
     
     # Suivi
     statut: str = "ouverte"  # ouverte, en_cours, corrigee, fermee
     delai_correction: Optional[str] = None  # Date limite YYYY-MM-DD
     date_correction: Optional[str] = None
+    date_identification: Optional[str] = None  # Date d'identification manuelle
     notes_correction: str = ""
     
     # Documentation
@@ -1104,18 +1107,25 @@ class NonConformite(BaseModel):
     responsable_correction: str = ""  # Propriétaire/Gestionnaire
     preventionniste_suivi_id: Optional[str] = None
     
+    # Source
+    est_manuel: bool = False  # True si créée manuellement
+    
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class NonConformiteCreate(BaseModel):
-    inspection_id: str
+    inspection_id: Optional[str] = None  # Optionnel pour création manuelle
     batiment_id: str
     titre: str
     description: str = ""
     section_grille: str = ""
     gravite: str = "moyen"
+    categorie: str = ""  # Pour création manuelle
+    priorite: str = "moyenne"  # Pour création manuelle
     article_code: str = ""
     delai_correction: Optional[str] = None
+    date_identification: Optional[str] = None  # Pour création manuelle
+    statut: str = "ouverte"
     photos_avant: List[str] = []
     responsable_correction: str = ""
     preventionniste_suivi_id: Optional[str] = None
