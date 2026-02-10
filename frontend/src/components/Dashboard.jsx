@@ -54,6 +54,13 @@ const Dashboard = ({ setCurrentPage }) => {
     urgentes: 0
   });
   
+  // État pour les NC en retard (module prévention)
+  const [ncEnRetard, setNcEnRetard] = useState({
+    count: 0,
+    items: [],
+    loading: false
+  });
+  
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(Date.now());
 
