@@ -1682,35 +1682,6 @@ const MonProfil = () => {
               </span>
             </div>
             <div style={{padding: '1rem 1.5rem'}}>
-              <div style={{display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', borderBottom: '1px solid #F3F4F6', gap: '1rem'}}>
-                <span style={{fontSize: '0.813rem', fontWeight: '500', color: '#6B7280'}}>N° Employé</span>
-                <span style={{fontSize: '0.875rem', fontWeight: '600', color: '#1F2937', textAlign: 'right'}} data-testid="profile-employee-id">{userProfile?.numero_employe}</span>
-              </div>
-              <div style={{display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', borderBottom: '1px solid #F3F4F6', gap: '1rem'}}>
-                <span style={{fontSize: '0.813rem', fontWeight: '500', color: '#6B7280'}}>Grade</span>
-                <span style={{fontSize: '0.875rem', fontWeight: '600', color: '#1F2937', textAlign: 'right'}} data-testid="profile-grade">
-                  {userProfile?.grade}
-                  {userProfile?.fonction_superieur && <span style={{fontSize: '0.75rem', color: '#EF4444', marginLeft: '0.5rem'}}> + Fonction sup.</span>}
-                </span>
-              </div>
-              <div style={{display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', borderBottom: '1px solid #F3F4F6', gap: '1rem'}}>
-                <span style={{fontSize: '0.813rem', fontWeight: '500', color: '#6B7280'}}>Type</span>
-                <span style={{fontSize: '0.875rem', fontWeight: '600', color: '#1F2937', textAlign: 'right'}} data-testid="profile-employment-type">
-                  {userProfile?.type_emploi === 'temps_plein' ? 'Temps plein' : 'Temps partiel'}
-                </span>
-              </div>
-              <div style={{display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', borderBottom: '1px solid #F3F4F6', gap: '1rem'}}>
-                <span style={{fontSize: '0.813rem', fontWeight: '500', color: '#6B7280'}}>Embauche</span>
-                <span style={{fontSize: '0.875rem', fontWeight: '600', color: '#1F2937', textAlign: 'right'}} data-testid="profile-hire-date">{userProfile?.date_embauche}</span>
-              </div>
-              <div style={{display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', gap: '1rem'}}>
-                <span style={{fontSize: '0.813rem', fontWeight: '500', color: '#6B7280'}}>Taux horaire</span>
-                <span style={{fontSize: '0.875rem', fontWeight: '600', color: '#1F2937', textAlign: 'right'}} data-testid="profile-taux-horaire">
-                  {userProfile?.taux_horaire ? `${userProfile.taux_horaire.toFixed(2)} $/h` : 'Non défini'}
-                </span>
-              </div>
-            </div>
-          </div>
 
           {/* Formations et compétences */}
           <div className="formation-card">
