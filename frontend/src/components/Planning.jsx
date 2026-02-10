@@ -2351,7 +2351,11 @@ const Planning = () => {
                         </div>
                         <div className="personnel-actions">
                           <span className="assignment-method">
-                            {selectedGardeDetails.assignations[index]?.assignation_type === 'auto' ? '🤖 Auto' : '👤 Manuel'}
+                            {selectedGardeDetails.assignations[index]?.assignation_type === 'auto' 
+                              ? '🤖 Auto' 
+                              : selectedGardeDetails.assignations[index]?.est_remplacement 
+                                ? '🔄 Remplacement' 
+                                : '👤 Manuel'}
                           </span>
                           {user.role === 'admin' && selectedGardeDetails.assignations[index]?.assignation_type === 'auto' && (
                             <Button 
