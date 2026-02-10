@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://dsi-dropdown-fix.preview.emergentagent.com
+- **URL** : https://profil-signature-fix.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://dsi-dropdown-fix.preview.emergentagent.com"
+  "apiUrl": "https://profil-signature-fix.preview.emergentagent.com"
 }
 ```
 

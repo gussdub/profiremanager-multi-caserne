@@ -10,7 +10,7 @@ import sys
 from datetime import datetime, timedelta
 
 # Configuration
-BACKEND_URL = "https://dsi-dropdown-fix.preview.emergentagent.com/api"
+BACKEND_URL = "https://profil-signature-fix.preview.emergentagent.com/api"
 
 # Credentials pour les tests
 DEMO_ADMIN = {
