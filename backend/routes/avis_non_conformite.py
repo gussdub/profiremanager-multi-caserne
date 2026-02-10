@@ -153,79 +153,531 @@ class GenerateAvisRequest(BaseModel):
     notes: str = ""
 
 
-# ==================== DONNÉES PAR DÉFAUT ====================
+# ==================== DONNÉES PAR DÉFAUT - RÉFÉRENTIEL CNPI ====================
+# Basé sur le Code National de Prévention des Incendies - Canada (CNPI 2020/2025)
+# et le Chapitre VIII - Bâtiment du Code de sécurité du Québec
 
 VIOLATIONS_DEFAUT = [
+    # ========== EXTINCTEURS (NFPA 10 / CNPI Division B Section 6) ==========
     {
-        "code_article": "CNPI 2.1.5.1",
-        "description_standard": "Extincteurs portatifs manquants, hors service ou inspection annuelle échue.",
+        "code_article": "CNPI 6.2.1.1",
+        "description_standard": "Extincteurs portatifs manquants ou en nombre insuffisant selon la classification des risques.",
         "delai_jours": 15,
         "severite": "majeure",
         "categorie": "Extincteurs"
     },
     {
-        "code_article": "CNPI 2.7.3.1",
-        "description_standard": "Le système d'éclairage d'urgence est défectueux ou les batteries sont à remplacer.",
-        "delai_jours": 30,
-        "severite": "majeure",
-        "categorie": "Éclairage Urgence"
-    },
-    {
-        "code_article": "CNPI 2.4.1.1",
-        "description_standard": "Accumulation de matières combustibles représentant un risque d'incendie dans le local technique.",
+        "code_article": "CNPI 6.2.1.2",
+        "description_standard": "Extincteurs portatifs non accessibles, obstrués ou non visibles (distance maximale de parcours non respectée).",
         "delai_jours": 7,
-        "severite": "urgente",
-        "categorie": "Entreposage"
+        "severite": "majeure",
+        "categorie": "Extincteurs"
     },
     {
-        "code_article": "RM-2024 Art. 12",
-        "description_standard": "Le numéro civique n'est pas visible depuis la voie publique.",
+        "code_article": "CNPI 6.2.1.3",
+        "description_standard": "Inspection mensuelle des extincteurs non effectuée ou non documentée.",
         "delai_jours": 30,
         "severite": "mineure",
-        "categorie": "Municipal"
+        "categorie": "Extincteurs"
     },
     {
-        "code_article": "CSQ Chap. VIII",
-        "description_standard": "Porte coupe-feu endommagée ou ne se refermant pas hermétiquement (ferme-porte brisé).",
-        "delai_jours": 45,
+        "code_article": "CNPI 6.2.1.4",
+        "description_standard": "Entretien annuel des extincteurs non effectué selon NFPA 10 (étiquette d'inspection expirée).",
+        "delai_jours": 15,
         "severite": "majeure",
-        "categorie": "Structure"
+        "categorie": "Extincteurs"
     },
     {
-        "code_article": "CNPI 2.2.1.1",
-        "description_standard": "Avertisseur de fumée manquant ou hors service.",
+        "code_article": "CNPI 6.2.1.5",
+        "description_standard": "Extincteur portatif endommagé, corrodé ou présentant des signes de détérioration.",
+        "delai_jours": 7,
+        "severite": "majeure",
+        "categorie": "Extincteurs"
+    },
+    {
+        "code_article": "CNPI 6.2.1.6",
+        "description_standard": "Extincteur portatif dont la pression est insuffisante ou excessive (aiguille hors zone verte).",
+        "delai_jours": 7,
+        "severite": "majeure",
+        "categorie": "Extincteurs"
+    },
+    {
+        "code_article": "CNPI 6.2.1.7",
+        "description_standard": "Classe d'extincteur inappropriée pour les risques présents (ex: classe A dans cuisine commerciale).",
+        "delai_jours": 15,
+        "severite": "majeure",
+        "categorie": "Extincteurs"
+    },
+    
+    # ========== DÉTECTION INCENDIE (CNPI Division B Section 2.1) ==========
+    {
+        "code_article": "CNPI 2.1.3.1",
+        "description_standard": "Avertisseur de fumée manquant ou absent dans un logement ou chambre à coucher.",
+        "delai_jours": 1,
+        "severite": "urgente",
+        "categorie": "Détection"
+    },
+    {
+        "code_article": "CNPI 2.1.3.2",
+        "description_standard": "Avertisseur de fumée hors service, déconnecté ou dont la pile est retirée.",
+        "delai_jours": 1,
+        "severite": "urgente",
+        "categorie": "Détection"
+    },
+    {
+        "code_article": "CNPI 2.1.3.3",
+        "description_standard": "Avertisseur de fumée âgé de plus de 10 ans et devant être remplacé.",
+        "delai_jours": 30,
+        "severite": "majeure",
+        "categorie": "Détection"
+    },
+    {
+        "code_article": "CNPI 2.1.3.4",
+        "description_standard": "Avertisseur de fumée installé à un emplacement non conforme (trop près d'un mur, cuisine, salle de bain).",
+        "delai_jours": 30,
+        "severite": "mineure",
+        "categorie": "Détection"
+    },
+    {
+        "code_article": "CNPI 2.1.3.5",
+        "description_standard": "Avertisseur de monoxyde de carbone (CO) manquant dans un logement avec appareil à combustion ou garage attenant.",
         "delai_jours": 7,
         "severite": "urgente",
         "categorie": "Détection"
     },
     {
+        "code_article": "CNPI 2.1.4.1",
+        "description_standard": "Système de détection incendie non fonctionnel ou présentant des défectuosités.",
+        "delai_jours": 1,
+        "severite": "urgente",
+        "categorie": "Détection"
+    },
+    {
+        "code_article": "CNPI 2.1.4.2",
+        "description_standard": "Détecteurs de fumée du système central hors service, obstrués ou non entretenus.",
+        "delai_jours": 7,
+        "severite": "urgente",
+        "categorie": "Détection"
+    },
+    {
+        "code_article": "CNPI 2.1.4.3",
+        "description_standard": "Essai et vérification annuelle du système de détection non effectués ou non documentés.",
+        "delai_jours": 30,
+        "severite": "majeure",
+        "categorie": "Détection"
+    },
+    
+    # ========== ALARME INCENDIE (CNPI Division B Section 2.6) ==========
+    {
+        "code_article": "CNPI 2.6.1.1",
+        "description_standard": "Système d'alarme incendie non fonctionnel ou défectueux.",
+        "delai_jours": 1,
+        "severite": "urgente",
+        "categorie": "Alarme"
+    },
+    {
+        "code_article": "CNPI 2.6.1.2",
+        "description_standard": "Avertisseurs sonores (cloches, sirènes) du système d'alarme défectueux ou inaudibles.",
+        "delai_jours": 7,
+        "severite": "urgente",
+        "categorie": "Alarme"
+    },
+    {
+        "code_article": "CNPI 2.6.1.3",
+        "description_standard": "Déclencheurs manuels (postes d'alarme) obstrués, non accessibles ou non identifiés.",
+        "delai_jours": 7,
+        "severite": "majeure",
+        "categorie": "Alarme"
+    },
+    {
+        "code_article": "CNPI 2.6.1.4",
+        "description_standard": "Panneau de contrôle d'alarme incendie présentant des défauts non corrigés ou des signaux de trouble.",
+        "delai_jours": 7,
+        "severite": "urgente",
+        "categorie": "Alarme"
+    },
+    {
+        "code_article": "CNPI 2.6.1.5",
+        "description_standard": "Essai et vérification annuelle du système d'alarme non effectués selon CAN/ULC-S536.",
+        "delai_jours": 30,
+        "severite": "majeure",
+        "categorie": "Alarme"
+    },
+    {
+        "code_article": "CNPI 2.6.1.6",
+        "description_standard": "Liaison au service d'incendie (centrale de surveillance) non fonctionnelle ou déconnectée.",
+        "delai_jours": 1,
+        "severite": "urgente",
+        "categorie": "Alarme"
+    },
+    {
+        "code_article": "CNPI 2.6.2.1",
+        "description_standard": "Signaux visuels (stroboscopes) pour malentendants manquants ou non fonctionnels.",
+        "delai_jours": 30,
+        "severite": "majeure",
+        "categorie": "Alarme"
+    },
+    
+    # ========== ÉCLAIRAGE D'URGENCE (CNPI Division B Section 2.7.3) ==========
+    {
+        "code_article": "CNPI 2.7.3.1",
+        "description_standard": "Système d'éclairage d'urgence non fonctionnel ou batteries défectueuses.",
+        "delai_jours": 7,
+        "severite": "majeure",
+        "categorie": "Éclairage Urgence"
+    },
+    {
+        "code_article": "CNPI 2.7.3.2",
+        "description_standard": "Niveau d'éclairement insuffisant dans les voies d'évacuation (minimum 10 lux au sol).",
+        "delai_jours": 30,
+        "severite": "majeure",
+        "categorie": "Éclairage Urgence"
+    },
+    {
+        "code_article": "CNPI 2.7.3.3",
+        "description_standard": "Durée d'autonomie de l'éclairage d'urgence insuffisante (minimum 30 min, 1h ou 2h selon usage).",
+        "delai_jours": 30,
+        "severite": "majeure",
+        "categorie": "Éclairage Urgence"
+    },
+    {
+        "code_article": "CNPI 2.7.3.4",
+        "description_standard": "Essai mensuel de l'éclairage d'urgence non effectué ou non documenté.",
+        "delai_jours": 30,
+        "severite": "mineure",
+        "categorie": "Éclairage Urgence"
+    },
+    {
+        "code_article": "CNPI 2.7.3.5",
+        "description_standard": "Enseignes de sortie (EXIT) non éclairées, endommagées ou non visibles.",
+        "delai_jours": 7,
+        "severite": "majeure",
+        "categorie": "Éclairage Urgence"
+    },
+    
+    # ========== MOYENS D'ÉVACUATION / ISSUES (CNPI Division B Section 2.7) ==========
+    {
         "code_article": "CNPI 2.7.1.1",
-        "description_standard": "Issues de secours obstruées ou verrouillées empêchant l'évacuation.",
+        "description_standard": "Issue de secours verrouillée, bloquée ou obstruée empêchant l'évacuation.",
         "delai_jours": 1,
         "severite": "urgente",
         "categorie": "Moyens d'évacuation"
     },
     {
-        "code_article": "CNPI 2.6.1.1",
-        "description_standard": "Système d'alarme incendie défectueux ou non fonctionnel.",
-        "delai_jours": 14,
+        "code_article": "CNPI 2.7.1.2",
+        "description_standard": "Corridor ou voie d'évacuation obstrué par du mobilier, des équipements ou des marchandises.",
+        "delai_jours": 1,
         "severite": "urgente",
-        "categorie": "Alarme"
+        "categorie": "Moyens d'évacuation"
     },
     {
+        "code_article": "CNPI 2.7.1.3",
+        "description_standard": "Largeur minimale de la voie d'évacuation non respectée (obstruction partielle).",
+        "delai_jours": 7,
+        "severite": "majeure",
+        "categorie": "Moyens d'évacuation"
+    },
+    {
+        "code_article": "CNPI 2.7.1.4",
+        "description_standard": "Quincaillerie de porte d'issue non conforme (barre panique absente ou défectueuse).",
+        "delai_jours": 14,
+        "severite": "majeure",
+        "categorie": "Moyens d'évacuation"
+    },
+    {
+        "code_article": "CNPI 2.7.1.5",
+        "description_standard": "Escalier d'issue encombré ou utilisé comme espace d'entreposage.",
+        "delai_jours": 1,
+        "severite": "urgente",
+        "categorie": "Moyens d'évacuation"
+    },
+    {
+        "code_article": "CNPI 2.7.1.6",
+        "description_standard": "Main courante d'escalier manquante, non continue ou non conforme.",
+        "delai_jours": 30,
+        "severite": "majeure",
+        "categorie": "Moyens d'évacuation"
+    },
+    {
+        "code_article": "CNPI 2.7.2.1",
+        "description_standard": "Signalisation des issues de secours manquante, non visible ou non conforme.",
+        "delai_jours": 14,
+        "severite": "majeure",
+        "categorie": "Moyens d'évacuation"
+    },
+    
+    # ========== SÉPARATIONS COUPE-FEU / PORTES (CNPI Division B Section 2.3) ==========
+    {
+        "code_article": "CNPI 2.3.2.1",
+        "description_standard": "Porte coupe-feu maintenue ouverte sans dispositif de fermeture automatique conforme.",
+        "delai_jours": 7,
+        "severite": "majeure",
+        "categorie": "Séparations coupe-feu"
+    },
+    {
+        "code_article": "CNPI 2.3.2.2",
+        "description_standard": "Ferme-porte automatique absent, défectueux ou désactivé sur porte coupe-feu.",
+        "delai_jours": 14,
+        "severite": "majeure",
+        "categorie": "Séparations coupe-feu"
+    },
+    {
+        "code_article": "CNPI 2.3.2.3",
+        "description_standard": "Porte coupe-feu endommagée, déformée ou ne se fermant pas hermétiquement.",
+        "delai_jours": 30,
+        "severite": "majeure",
+        "categorie": "Séparations coupe-feu"
+    },
+    {
+        "code_article": "CNPI 2.3.2.4",
+        "description_standard": "Joint intumescent de porte coupe-feu endommagé ou manquant.",
+        "delai_jours": 30,
+        "severite": "majeure",
+        "categorie": "Séparations coupe-feu"
+    },
+    {
+        "code_article": "CNPI 2.3.3.1",
+        "description_standard": "Ouverture non protégée dans une séparation coupe-feu (trous, passages de câbles non scellés).",
+        "delai_jours": 14,
+        "severite": "majeure",
+        "categorie": "Séparations coupe-feu"
+    },
+    {
+        "code_article": "CNPI 2.3.3.2",
+        "description_standard": "Coupe-feu perforé ou altéré par des travaux (plafond, mur) sans scellement approprié.",
+        "delai_jours": 14,
+        "severite": "majeure",
+        "categorie": "Séparations coupe-feu"
+    },
+    
+    # ========== ENTREPOSAGE / MATIÈRES DANGEREUSES (CNPI Division B Section 2.4) ==========
+    {
+        "code_article": "CNPI 2.4.1.1",
+        "description_standard": "Accumulation de matières combustibles représentant un risque d'incendie.",
+        "delai_jours": 7,
+        "severite": "urgente",
+        "categorie": "Entreposage"
+    },
+    {
+        "code_article": "CNPI 2.4.1.2",
+        "description_standard": "Entreposage de matières combustibles à moins de 1 mètre des appareils de chauffage.",
+        "delai_jours": 1,
+        "severite": "urgente",
+        "categorie": "Entreposage"
+    },
+    {
+        "code_article": "CNPI 2.4.1.3",
+        "description_standard": "Entreposage de matières dangereuses (inflammables, explosifs) non conforme.",
+        "delai_jours": 1,
+        "severite": "urgente",
+        "categorie": "Entreposage"
+    },
+    {
+        "code_article": "CNPI 2.4.1.4",
+        "description_standard": "Contenants de liquides inflammables non conformes ou mal entreposés.",
+        "delai_jours": 7,
+        "severite": "majeure",
+        "categorie": "Entreposage"
+    },
+    {
+        "code_article": "CNPI 2.4.1.5",
+        "description_standard": "Local de rangement ou vide technique encombré de matières combustibles.",
+        "delai_jours": 7,
+        "severite": "majeure",
+        "categorie": "Entreposage"
+    },
+    {
+        "code_article": "CNPI 2.4.2.1",
+        "description_standard": "Bonbonnes de propane ou gaz comprimé entreposées à l'intérieur contrairement aux normes.",
+        "delai_jours": 1,
+        "severite": "urgente",
+        "categorie": "Entreposage"
+    },
+    
+    # ========== SYSTÈMES DE GICLEURS (CNPI Division B Section 2.5) ==========
+    {
+        "code_article": "CNPI 2.5.1.1",
+        "description_standard": "Système de gicleurs hors service ou vannes de contrôle fermées.",
+        "delai_jours": 1,
+        "severite": "urgente",
+        "categorie": "Gicleurs"
+    },
+    {
+        "code_article": "CNPI 2.5.1.2",
+        "description_standard": "Têtes de gicleurs obstruées, peintes, endommagées ou recouvertes.",
+        "delai_jours": 7,
+        "severite": "urgente",
+        "categorie": "Gicleurs"
+    },
+    {
+        "code_article": "CNPI 2.5.1.3",
+        "description_standard": "Dégagement insuffisant sous les têtes de gicleurs (min. 450 mm d'entreposage).",
+        "delai_jours": 7,
+        "severite": "majeure",
+        "categorie": "Gicleurs"
+    },
+    {
+        "code_article": "CNPI 2.5.1.4",
+        "description_standard": "Inspection et essai annuels du système de gicleurs non effectués selon NFPA 25.",
+        "delai_jours": 30,
+        "severite": "majeure",
+        "categorie": "Gicleurs"
+    },
+    {
+        "code_article": "CNPI 2.5.1.5",
+        "description_standard": "Raccord-pompier (connexion siamoise) obstrué, endommagé ou non accessible.",
+        "delai_jours": 14,
+        "severite": "majeure",
+        "categorie": "Gicleurs"
+    },
+    
+    # ========== PLANS ET PROCÉDURES (CNPI Division B Section 2.8) ==========
+    {
         "code_article": "CNPI 2.8.1.1",
-        "description_standard": "Plan d'évacuation non affiché ou non conforme.",
+        "description_standard": "Plan de sécurité incendie absent ou non conforme aux exigences.",
         "delai_jours": 30,
         "severite": "mineure",
         "categorie": "Plans"
     },
     {
-        "code_article": "CNPI 6.2.1.1",
-        "description_standard": "Installation électrique non conforme présentant un risque d'incendie.",
+        "code_article": "CNPI 2.8.1.2",
+        "description_standard": "Plan d'évacuation non affiché ou non visible dans les aires communes.",
+        "delai_jours": 30,
+        "severite": "mineure",
+        "categorie": "Plans"
+    },
+    {
+        "code_article": "CNPI 2.8.1.3",
+        "description_standard": "Plan d'évacuation obsolète (ne reflète pas l'aménagement actuel du bâtiment).",
+        "delai_jours": 30,
+        "severite": "mineure",
+        "categorie": "Plans"
+    },
+    {
+        "code_article": "CNPI 2.8.2.1",
+        "description_standard": "Exercice d'évacuation annuel non effectué ou non documenté.",
+        "delai_jours": 60,
+        "severite": "mineure",
+        "categorie": "Plans"
+    },
+    {
+        "code_article": "CNPI 2.8.2.2",
+        "description_standard": "Formation du personnel sur les procédures d'urgence non effectuée.",
+        "delai_jours": 60,
+        "severite": "mineure",
+        "categorie": "Plans"
+    },
+    
+    # ========== ÉLECTRICITÉ (CNPI Division B Section 6) ==========
+    {
+        "code_article": "CNPI 6.1.1.1",
+        "description_standard": "Installation électrique présentant des risques apparents (fils dénudés, surcharge).",
+        "delai_jours": 7,
+        "severite": "urgente",
+        "categorie": "Électricité"
+    },
+    {
+        "code_article": "CNPI 6.1.1.2",
+        "description_standard": "Panneau électrique obstrué ou inaccessible (dégagement min. 1 mètre).",
         "delai_jours": 14,
         "severite": "majeure",
         "categorie": "Électricité"
-    }
+    },
+    {
+        "code_article": "CNPI 6.1.1.3",
+        "description_standard": "Utilisation abusive de rallonges électriques comme installation permanente.",
+        "delai_jours": 14,
+        "severite": "majeure",
+        "categorie": "Électricité"
+    },
+    {
+        "code_article": "CNPI 6.1.1.4",
+        "description_standard": "Prises électriques ou interrupteurs endommagés présentant un risque.",
+        "delai_jours": 14,
+        "severite": "majeure",
+        "categorie": "Électricité"
+    },
+    {
+        "code_article": "CNPI 6.1.1.5",
+        "description_standard": "Barres multiprises en cascade (daisy chain) créant un risque de surcharge.",
+        "delai_jours": 7,
+        "severite": "majeure",
+        "categorie": "Électricité"
+    },
+    
+    # ========== CHAUFFAGE ET VENTILATION (CNPI Division B Section 6) ==========
+    {
+        "code_article": "CNPI 6.3.1.1",
+        "description_standard": "Appareil de chauffage non entretenu ou inspection annuelle non effectuée.",
+        "delai_jours": 30,
+        "severite": "majeure",
+        "categorie": "Chauffage"
+    },
+    {
+        "code_article": "CNPI 6.3.1.2",
+        "description_standard": "Cheminée non ramonée ou conduit d'évacuation obstrué ou détérioré.",
+        "delai_jours": 30,
+        "severite": "majeure",
+        "categorie": "Chauffage"
+    },
+    {
+        "code_article": "CNPI 6.3.1.3",
+        "description_standard": "Dégagement insuffisant entre l'appareil de chauffage et les matériaux combustibles.",
+        "delai_jours": 7,
+        "severite": "urgente",
+        "categorie": "Chauffage"
+    },
+    {
+        "code_article": "CNPI 6.3.1.4",
+        "description_standard": "Appareil de chauffage d'appoint non homologué ou utilisé de façon non sécuritaire.",
+        "delai_jours": 7,
+        "severite": "majeure",
+        "categorie": "Chauffage"
+    },
+    {
+        "code_article": "CNPI 6.3.2.1",
+        "description_standard": "Système de ventilation de cuisine commerciale non entretenu (hottes, conduits gras).",
+        "delai_jours": 14,
+        "severite": "majeure",
+        "categorie": "Chauffage"
+    },
+    
+    # ========== EXIGENCES MUNICIPALES ==========
+    {
+        "code_article": "RM Art. 1",
+        "description_standard": "Numéro civique non visible ou non conforme depuis la voie publique.",
+        "delai_jours": 30,
+        "severite": "mineure",
+        "categorie": "Municipal"
+    },
+    {
+        "code_article": "RM Art. 2",
+        "description_standard": "Accès au bâtiment pour les services d'urgence obstrué ou inadéquat.",
+        "delai_jours": 7,
+        "severite": "majeure",
+        "categorie": "Municipal"
+    },
+    {
+        "code_article": "RM Art. 3",
+        "description_standard": "Borne d'incendie obstruée ou inaccessible (dégagement min. 1,5 m).",
+        "delai_jours": 1,
+        "severite": "urgente",
+        "categorie": "Municipal"
+    },
+    {
+        "code_article": "RM Art. 4",
+        "description_standard": "Voie d'accès pour véhicules d'urgence non dégagée ou non carrossable.",
+        "delai_jours": 7,
+        "severite": "majeure",
+        "categorie": "Municipal"
+    },
+    {
+        "code_article": "RM Art. 5",
+        "description_standard": "Absence de clé ou d'accès au bâtiment pour le service d'incendie (boîte à clé).",
+        "delai_jours": 30,
+        "severite": "mineure",
+        "categorie": "Municipal"
+    },
 ]
 
 
