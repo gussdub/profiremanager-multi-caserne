@@ -9,20 +9,11 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime, timedelta, timezone
-import os
 
-from pymongo import MongoClient
-from dotenv import load_dotenv
-
-load_dotenv()
+# Utiliser la connexion DB centralisée de dependencies.py
+from routes.dependencies import db
 
 router = APIRouter(prefix="/dsi/transmissions", tags=["DSI Transmissions"])
-
-# Connexion MongoDB
-MONGO_URL = os.environ.get('MONGO_URL')
-DB_NAME = os.environ.get('DB_NAME', 'profiremanager-dev')
-client = MongoClient(MONGO_URL)
-db = client[DB_NAME]
 
 
 # ============== MODÈLES ==============
