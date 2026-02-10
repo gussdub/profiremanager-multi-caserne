@@ -117,7 +117,7 @@ async def tenant_login(tenant_slug: str, login: LoginRequest):
         
         raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
     
-    if user.get("actif") == False:
+    if not user.get("actif", True):
         raise HTTPException(status_code=401, detail="Compte désactivé")
     
     stored_hash = user.get("mot_de_passe_hash", "")
