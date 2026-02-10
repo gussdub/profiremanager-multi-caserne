@@ -816,7 +816,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
 
   return createPortal(
     <div className="modal-overlay" style={{ zIndex: 100000 }}>
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[95vh] flex flex-col">
         {/* Header */}
         <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-4">
           <div className="flex justify-between items-center">
