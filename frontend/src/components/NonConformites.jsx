@@ -572,6 +572,63 @@ const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
                 </select>
               </div>
 
+              {/* Sélection article de violation (référentiel) */}
+              {refViolations.length > 0 && (
+                <div>
+                  <label style={{ fontWeight: '500', fontSize: '0.875rem', marginBottom: '0.5rem', display: 'block' }}>
+                    Article de violation (optionnel - calcule le délai automatiquement)
+                  </label>
+                  <select
+                    value={newNC.violation_id || ''}
+                    onChange={(e) => {
+                      const violationId = e.target.value;
+                      const violation = refViolations.find(v => v.id === violationId);
+                      if (violation) {
+                        // Calculer la date limite basée sur le délai
+                        const dateIdent = new Date(newNC.date_identification || new Date());
+                        const dateLimite = new Date(dateIdent);
+                        dateLimite.setDate(dateLimite.getDate() + (violation.delai_jours || 30));
+                        
+                        // Mapper la sévérité vers priorité
+                        let priorite = 'moyenne';
+                        if (violation.severite === 'urgente') priorite = 'haute';
+                        else if (violation.severite === 'mineure') priorite = 'faible';
+                        
+                        setNewNC({
+                          ...newNC,
+                          violation_id: violationId,
+                          categorie: violation.categorie || newNC.categorie,
+                          priorite: priorite,
+                          delai_correction: dateLimite.toISOString().split('T')[0],
+                          article_code: violation.code_article
+                        });
+                      } else {
+                        setNewNC({...newNC, violation_id: '', delai_correction: ''});
+                      }
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '8px',
+                      fontSize: '1rem'
+                    }}
+                  >
+                    <option value="">-- Aucun article spécifique --</option>
+                    {refViolations.map(v => (
+                      <option key={v.id} value={v.id}>
+                        {v.code_article} - {v.description_standard} ({v.delai_jours}j)
+                      </option>
+                    ))}
+                  </select>
+                  {newNC.delai_correction && (
+                    <div style={{ marginTop: '0.5rem', padding: '0.5rem', backgroundColor: '#fef3c7', borderRadius: '6px', fontSize: '0.875rem' }}>
+                      ⏰ Date limite de correction : <strong>{new Date(newNC.delai_correction + 'T00:00:00').toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })}</strong>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Priorité */}
               <div>
                 <label style={{ fontWeight: '500', fontSize: '0.875rem', marginBottom: '0.5rem', display: 'block' }}>
