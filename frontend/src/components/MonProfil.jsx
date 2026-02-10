@@ -1216,9 +1216,14 @@ const MonProfil = () => {
                             });
                           } catch (error) {
                             console.error('Erreur upload signature:', error);
+                            let errorMsg = "Impossible de sauvegarder la signature";
+                            if (error.response?.data?.detail) {
+                              const detail = error.response.data.detail;
+                              errorMsg = typeof detail === 'string' ? detail : JSON.stringify(detail);
+                            }
                             toast({
                               title: "Erreur",
-                              description: error.response?.data?.detail || "Impossible de sauvegarder la signature",
+                              description: errorMsg,
                               variant: "destructive"
                             });
                           } finally {
@@ -1882,11 +1887,28 @@ const MonProfil = () => {
           </Card>
 
           {/* Sécurité du compte */}
-          <div className="formation-card">
-            <div className="formation-header">
-              <h3>🔒 Sécurité</h3>
+          <Card style={{ overflow: 'hidden', marginBottom: '1.5rem' }}>
+            <div style={{
+              background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+              padding: '1rem 1.5rem',
+              borderRadius: '11px 11px 0 0'
+            }}>
+              <h3 style={{ 
+                color: 'white', 
+                fontSize: '1.1rem', 
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                margin: 0
+              }}>
+                🔒 Sécurité du compte
+              </h3>
             </div>
-            <div style={{padding: '1rem'}}>
+            <div style={{padding: '1rem 1.5rem'}}>
+              <p style={{marginBottom: '15px', fontSize: '14px', color: '#6B7280'}}>
+                Modifiez votre mot de passe pour sécuriser votre compte.
+              </p>
               <Button 
                 variant="outline" 
                 onClick={() => setShowPasswordModal(true)}
@@ -1896,7 +1918,7 @@ const MonProfil = () => {
                 🔑 Changer le mot de passe
               </Button>
             </div>
-          </div>
+          </Card>
         </div>
       </div>
 
