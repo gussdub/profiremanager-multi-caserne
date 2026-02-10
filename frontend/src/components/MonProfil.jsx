@@ -1879,7 +1879,7 @@ const MonProfil = () => {
                 💾 Sauvegarder les préférences
               </Button>
             </div>
-          </div>
+          </Card>
 
           {/* Sécurité du compte */}
           <div className="formation-card">
