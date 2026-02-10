@@ -155,6 +155,16 @@ const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
   };
 
   const formatDate = (dateStr) => {
+    if (!dateStr) return 'Date inconnue';
+    // Si c'est une date simple YYYY-MM-DD, l'interpréter en local (pas UTC)
+    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      return new Date(year, month - 1, day).toLocaleDateString('fr-FR', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    }
     return new Date(dateStr).toLocaleDateString('fr-FR', {
       year: 'numeric',
       month: 'short',
