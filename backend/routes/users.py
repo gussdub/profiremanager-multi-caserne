@@ -993,6 +993,78 @@ async def update_user_access(tenant_slug: str, user_id: str, role: str, statut: 
     return User(**updated_user)
 
 
+# POST users/{user_id}/signature - Upload signature numérique
+@router.post("/{tenant_slug}/users/{user_id}/signature")
+async def upload_signature(
+    tenant_slug: str,
+    user_id: str,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Upload une signature numérique (JPEG ou PNG) pour un utilisateur.
+    Utilisée dans les avis de non-conformité et autres documents officiels.
+    """
+    # Vérifier les permissions (soi-même ou admin)
+    if current_user.id != user_id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier que l'utilisateur existe
+    existing_user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
+    if not existing_user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    # Vérifier le type de fichier
+    if not file.content_type in ["image/jpeg", "image/png", "image/jpg"]:
+        raise HTTPException(status_code=400, detail="Seuls les fichiers JPEG et PNG sont acceptés")
+    
+    # Lire le contenu du fichier
+    content = await file.read()
+    
+    # Vérifier la taille (max 500KB)
+    if len(content) > 500 * 1024:
+        raise HTTPException(status_code=400, detail="Le fichier ne doit pas dépasser 500KB")
+    
+    # Convertir en base64 pour stockage
+    import base64
+    content_type = file.content_type
+    base64_content = base64.b64encode(content).decode('utf-8')
+    signature_url = f"data:{content_type};base64,{base64_content}"
+    
+    # Mettre à jour l'utilisateur
+    await db.users.update_one(
+        {"id": user_id, "tenant_id": tenant.id},
+        {"$set": {"signature_url": signature_url, "updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    logger.info(f"✅ Signature uploadée pour {user_id} par {current_user.email}")
+    
+    return {"message": "Signature enregistrée avec succès", "signature_url": signature_url}
+
+
+# DELETE users/{user_id}/signature - Supprimer signature
+@router.delete("/{tenant_slug}/users/{user_id}/signature")
+async def delete_signature(
+    tenant_slug: str,
+    user_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer la signature numérique d'un utilisateur"""
+    if current_user.id != user_id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    await db.users.update_one(
+        {"id": user_id, "tenant_id": tenant.id},
+        {"$set": {"signature_url": None, "updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    return {"message": "Signature supprimée"}
+
+
 # DELETE users/{user_id}/revoke
 @router.delete("/{tenant_slug}/users/{user_id}/revoke")
 async def revoke_user_completely(tenant_slug: str, user_id: str, current_user: User = Depends(get_current_user)):
