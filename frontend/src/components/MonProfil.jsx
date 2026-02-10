@@ -577,9 +577,14 @@ const MonProfil = () => {
         description: "Votre signature numérique a été sauvegardée",
       });
     } catch (error) {
+      let errorMsg = "Impossible de sauvegarder la signature";
+      if (error.response?.data?.detail) {
+        const detail = error.response.data.detail;
+        errorMsg = typeof detail === 'string' ? detail : JSON.stringify(detail);
+      }
       toast({
         title: "Erreur",
-        description: error.response?.data?.detail || "Impossible de sauvegarder la signature",
+        description: errorMsg,
         variant: "destructive"
       });
     } finally {
