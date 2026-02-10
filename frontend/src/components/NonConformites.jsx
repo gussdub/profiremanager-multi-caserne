@@ -19,8 +19,11 @@ const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
     categorie: '',
     priorite: 'moyenne',
     batiment_id: '',
-    date_identification: new Date().toISOString().split('T')[0]
+    date_identification: new Date().toISOString().split('T')[0],
+    violation_id: '',
+    delai_correction: ''
   });
+  const [refViolations, setRefViolations] = useState([]);
 
   useEffect(() => {
     loadData();
@@ -30,13 +33,15 @@ const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
     try {
       setLoading(true);
       
-      // Charger les non-conformités et bâtiments depuis le backend
-      const [nonConformitesData, batimentsData] = await Promise.all([
+      // Charger les non-conformités, bâtiments et référentiel violations
+      const [nonConformitesData, batimentsData, violationsData] = await Promise.all([
         apiGet(tenantSlug, '/prevention/non-conformites'),
-        apiGet(tenantSlug, '/prevention/batiments')
+        apiGet(tenantSlug, '/prevention/batiments'),
+        apiGet(tenantSlug, '/prevention/ref-violations?actif=true').catch(() => [])
       ]);
 
       setBatiments(batimentsData);
+      setRefViolations(violationsData || []);
 
       // Enrichir les non-conformités avec les données du bâtiment et calculer la priorité
       const enrichedNonConf = nonConformitesData.map(nc => {
