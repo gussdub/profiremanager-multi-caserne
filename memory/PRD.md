@@ -108,6 +108,22 @@ ProFireManager est une application de gestion complète pour les services d'ince
 - Système de remplacements automatisé
 - Module prévention complet avec NC manuelles et relances
 - Changement de mot de passe via profil
+- **Signature numérique dessinée** - Upload fonctionnel (corrigé 2026-02-10)
+- **Page Mon Profil** - Design uniformisé avec cartes à en-tête rouge
+
+### Corrections Session 2026-02-10 (Suite)
+11. **Sauvegarde signature dessinée** ✅
+    - Problème: Variable `API` non définie, axios ne gérait pas correctement FormData
+    - Solution: Utilisation de `fetch` natif + `process.env.REACT_APP_BACKEND_URL` + préfixe `/api/`
+    - Fichier: `MonProfil.jsx`
+
+12. **Balise JSX manquante** ✅
+    - Problème: `</Card>` manquant après section "Préférences de notification"
+    - Fichier: `MonProfil.jsx`
+
+13. **Design section Sécurité** ✅
+    - Uniformisé avec le style Card + en-tête rouge dégradé
+    - Fichier: `MonProfil.jsx`
 
 ### Problèmes Connus
 - Erreur "Save to GitHub" (problème de plateforme Emergent)
