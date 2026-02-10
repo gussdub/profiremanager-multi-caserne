@@ -356,12 +356,10 @@ const ParametresRefViolations = ({ tenantSlug, toast }) => {
           </p>
         </div>
         <div className="flex gap-2">
-          {violations.length === 0 && (
-            <Button variant="outline" onClick={handleInitDefault} disabled={saving}>
-              <RefreshCw className={`w-4 h-4 mr-2 ${saving ? 'animate-spin' : ''}`} />
-              Initialiser par défaut
-            </Button>
-          )}
+          <Button variant="outline" onClick={handleInitDefault} disabled={saving}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${saving ? 'animate-spin' : ''}`} />
+            {violations.length === 0 ? 'Initialiser par défaut' : 'Réinitialiser CNPI'}
+          </Button>
           <Button onClick={openCreateModal} data-testid="create-violation-btn">
             <Plus className="w-4 h-4 mr-2" />
             Nouvel article
