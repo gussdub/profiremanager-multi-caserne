@@ -223,7 +223,7 @@ const SectionDSI = ({ formData, setFormData, editMode, referenceData, tenantSlug
                 Cause probable {isRealFire() && <span className="text-red-500">*</span>}
               </label>
               <Select
-                value={formData.cause_id || ''}
+                value={formData.cause_id || undefined}
                 onValueChange={(value) => setFormData({ ...formData, cause_id: value })}
                 disabled={!editMode}
               >
@@ -246,7 +246,7 @@ const SectionDSI = ({ formData, setFormData, editMode, referenceData, tenantSlug
                 Source de chaleur (Ignition) {isRealFire() && <span className="text-red-500">*</span>}
               </label>
               <Select
-                value={formData.source_heat_id || ''}
+                value={formData.source_heat_id || undefined}
                 onValueChange={(value) => setFormData({ ...formData, source_heat_id: value })}
                 disabled={!editMode}
               >
@@ -269,7 +269,7 @@ const SectionDSI = ({ formData, setFormData, editMode, referenceData, tenantSlug
                 Facteur d&apos;allumage {isRealFire() && <span className="text-red-500">*</span>}
               </label>
               <Select
-                value={formData.facteur_allumage_id || ''}
+                value={formData.facteur_allumage_id || undefined}
                 onValueChange={(value) => setFormData({ ...formData, facteur_allumage_id: value })}
                 disabled={!editMode}
               >
@@ -292,7 +292,7 @@ const SectionDSI = ({ formData, setFormData, editMode, referenceData, tenantSlug
                 Matériau premier enflammé {isRealFire() && <span className="text-red-500">*</span>}
               </label>
               <Select
-                value={formData.material_first_ignited_id || ''}
+                value={formData.material_first_ignited_id || undefined}
                 onValueChange={(value) => setFormData({ ...formData, material_first_ignited_id: value })}
                 disabled={!editMode}
               >
@@ -315,7 +315,7 @@ const SectionDSI = ({ formData, setFormData, editMode, referenceData, tenantSlug
                 Usage du bâtiment (CNB) {isRealFire() && <span className="text-red-500">*</span>}
               </label>
               <Select
-                value={formData.usage_batiment_code || ''}
+                value={formData.usage_batiment_code || undefined}
                 onValueChange={(value) => setFormData({ ...formData, usage_batiment_code: value })}
                 disabled={!editMode}
               >
@@ -353,7 +353,7 @@ const SectionDSI = ({ formData, setFormData, editMode, referenceData, tenantSlug
                 Propagation du feu
               </label>
               <Select
-                value={formData.fire_spread || ''}
+                value={formData.fire_spread || undefined}
                 onValueChange={(value) => setFormData({ ...formData, fire_spread: value })}
                 disabled={!editMode}
               >
