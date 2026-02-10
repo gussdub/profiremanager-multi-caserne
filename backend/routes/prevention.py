@@ -2610,6 +2610,63 @@ async def get_inspections_visuelles(
     
     return [clean_mongo_doc(insp) for insp in inspections]
 
+@router.get("/{tenant_slug}/prevention/inspections-visuelles/a-valider")
+async def get_inspections_a_valider(
+    tenant_slug: str,
+    secteur_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Liste des inspections en attente de validation.
+    Filtrable par secteur pour le préventionniste assigné.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    query = {
+        "tenant_id": tenant.id,
+        "statut": "en_attente_validation"
+    }
+    
+    # Si secteur spécifié, filtrer par bâtiments de ce secteur
+    if secteur_id:
+        batiments_secteur = await db.batiments.find(
+            {"tenant_id": tenant.id, "secteur_id": secteur_id}
+        ).to_list(1000)
+        batiment_ids = [b.get("id") for b in batiments_secteur]
+        query["batiment_id"] = {"$in": batiment_ids}
+    
+    inspections = await db.inspections_visuelles.find(query).sort("date_inspection", -1).to_list(100)
+    
+    # Enrichir avec les infos du bâtiment
+    result = []
+    for insp in inspections:
+        insp_clean = clean_mongo_doc(insp)
+        
+        # Récupérer le bâtiment
+        batiment = await db.batiments.find_one({"id": insp.get("batiment_id"), "tenant_id": tenant.id})
+        if batiment:
+            insp_clean["batiment"] = {
+                "id": batiment.get("id"),
+                "nom_etablissement": batiment.get("nom_etablissement"),
+                "adresse_civique": batiment.get("adresse_civique"),
+                "ville": batiment.get("ville"),
+                "secteur_id": batiment.get("secteur_id")
+            }
+        
+        # Compter les non-conformités
+        nb_nc = await db.non_conformites_visuelles.count_documents({
+            "inspection_id": insp.get("id"),
+            "tenant_id": tenant.id
+        })
+        insp_clean["nb_non_conformites"] = nb_nc
+        
+        result.append(insp_clean)
+    
+    return result
+
 @router.get("/{tenant_slug}/prevention/inspections-visuelles/{inspection_id}")
 async def get_inspection_visuelle(
     tenant_slug: str,
