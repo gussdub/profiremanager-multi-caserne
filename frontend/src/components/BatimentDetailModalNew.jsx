@@ -178,6 +178,7 @@ const BatimentForm = ({
   const [validatingAddress, setValidatingAddress] = useState(false);
   const [saving, setSaving] = useState(false);
   const [inspections, setInspections] = useState([]);
+  const [nonConformites, setNonConformites] = useState([]);
   const autocompleteInputRef = useRef(null);
   const autocompleteRef = useRef(null);
   const [preventionnistes, setPreventionnistes] = useState([]);
