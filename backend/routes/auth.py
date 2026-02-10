@@ -54,37 +54,7 @@ class ResetPasswordRequest(BaseModel):
 
 # ==================== HELPERS ====================
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Vérifie un mot de passe contre son hash bcrypt UNIQUEMENT"""
-    import logging
-    logger = logging.getLogger(__name__)
-    
-    try:
-        import bcrypt
-        
-        if not hashed_password:
-            logger.error("[VERIFY] Hash vide")
-            return False
-            
-        if not hashed_password.startswith("$2"):
-            logger.error(f"[VERIFY] Hash non-bcrypt détecté: {hashed_password[:10]}...")
-            return False
-        
-        password_bytes = plain_password.encode('utf-8')
-        hash_bytes = hashed_password.encode('utf-8')
-        
-        result = bcrypt.checkpw(password_bytes, hash_bytes)
-        logger.info(f"[VERIFY] Vérification bcrypt: {result}")
-        return result
-        
-    except Exception as e:
-        logger.error(f"[VERIFY] Erreur vérification: {e}")
-        return False
-
-def hash_password(password: str) -> str:
-    """Hash un mot de passe avec bcrypt"""
-    import bcrypt
-    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+# verify_password et get_password_hash sont importés de dependencies.py pour éviter la duplication
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
     """Crée un token JWT"""
