@@ -337,7 +337,10 @@ const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)'}
                 onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
-                onClick={() => nc.batiment && openBatimentModal(nc.batiment)}
+                onClick={() => {
+                  setSelectedNC(nc);
+                  setShowDetailModal(true);
+                }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                   <div style={{ flex: 1 }}>
