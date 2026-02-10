@@ -526,6 +526,80 @@ const MonProfil = () => {
     }
   };
 
+  // === GESTION SIGNATURE NUMÉRIQUE ===
+  const handleSignatureUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Vérifier le type
+    if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
+      toast({
+        title: "Format invalide",
+        description: "Seuls les fichiers JPEG et PNG sont acceptés",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Vérifier la taille (max 500KB)
+    if (file.size > 500 * 1024) {
+      toast({
+        title: "Fichier trop volumineux",
+        description: "La signature ne doit pas dépasser 500KB",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSignatureUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await apiPost(tenantSlug, `/users/${user.id}/signature`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      setUserProfile(prev => ({...prev, signature_url: response.signature_url}));
+      
+      toast({
+        title: "Signature enregistrée",
+        description: "Votre signature numérique a été sauvegardée",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de sauvegarder la signature",
+        variant: "destructive"
+      });
+    } finally {
+      setSignatureUploading(false);
+      event.target.value = '';
+    }
+  };
+
+  const handleDeleteSignature = async () => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer votre signature numérique ?')) {
+      return;
+    }
+
+    try {
+      await apiDelete(tenantSlug, `/users/${user.id}/signature`);
+      setUserProfile(prev => ({...prev, signature_url: null}));
+      toast({
+        title: "Signature supprimée",
+        description: "Votre signature numérique a été supprimée",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer la signature",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleSaveProfile = async () => {
     try {
       // Valider heures_max_semaine avant sauvegarde
