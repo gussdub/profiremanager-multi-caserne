@@ -841,15 +841,29 @@ const MonProfil = () => {
         <div className="profil-main-column">
           
           {/* Section Photo de Profil */}
-          <div className="formation-card" style={{ marginBottom: '1.5rem', overflow: 'visible', position: 'relative', zIndex: 100 }}>
-            <div className="formation-header">
-              <h3>📷 Photo de profil</h3>
+          <Card style={{ marginBottom: '1.5rem', overflow: 'hidden', position: 'relative', zIndex: 100 }}>
+            <div style={{
+              background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+              padding: '1rem 1.5rem',
+              borderRadius: '11px 11px 0 0'
+            }}>
+              <h3 style={{ 
+                color: 'white', 
+                fontSize: '1.1rem', 
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                margin: 0
+              }}>
+                📷 Photo de profil
+              </h3>
             </div>
             <div style={{ 
               display: 'flex', 
               alignItems: 'center', 
               gap: '1.5rem',
-              padding: '1rem',
+              padding: '1.5rem',
               flexWrap: 'wrap',
               overflow: 'visible',
               position: 'relative',
