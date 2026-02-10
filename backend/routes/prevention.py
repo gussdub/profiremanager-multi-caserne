@@ -2157,7 +2157,7 @@ async def create_non_conformite(
     non_conformite: NonConformiteCreate,
     current_user: User = Depends(get_current_user)
 ):
-    """Créer une nouvelle non-conformité"""
+    """Créer une nouvelle non-conformité (manuelle ou liée à une inspection)"""
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
@@ -2168,6 +2168,17 @@ async def create_non_conformite(
     
     nc_dict = non_conformite.dict()
     nc_dict["tenant_id"] = tenant.id
+    
+    # Marquer comme manuel si pas d'inspection_id
+    if not nc_dict.get("inspection_id"):
+        nc_dict["est_manuel"] = True
+        nc_dict["inspection_id"] = None
+    
+    # Mapper priorite vers gravite si fourni
+    if nc_dict.get("priorite"):
+        priorite_map = {"haute": "eleve", "moyenne": "moyen", "faible": "faible"}
+        nc_dict["gravite"] = priorite_map.get(nc_dict["priorite"], nc_dict["priorite"])
+    
     nc_obj = NonConformite(**nc_dict)
     
     await db.non_conformites.insert_one(nc_obj.dict())
