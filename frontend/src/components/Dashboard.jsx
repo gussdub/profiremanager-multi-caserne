@@ -203,6 +203,26 @@ const Dashboard = ({ setCurrentPage }) => {
         }
       }
 
+      // Charger les NC en retard si module prévention actif (admin/superviseur/préventionniste)
+      if (tenant?.parametres?.module_prevention_active && 
+          (user?.role === 'admin' || user?.role === 'superviseur' || user?.est_preventionniste)) {
+        try {
+          const ncResponse = await axios.get(
+            `${API}/${tenantSlug}/prevention/non-conformites-en-retard`,
+            { headers, timeout: 10000 }
+          );
+          if (ncResponse?.data) {
+            setNcEnRetard({
+              count: ncResponse.data.length,
+              items: ncResponse.data.slice(0, 5),
+              loading: false
+            });
+          }
+        } catch (err) {
+          console.log('NC en retard non disponible:', err.message);
+        }
+      }
+
     } catch (error) {
       console.error('Erreur chargement dashboard:', error);
     } finally {
