@@ -1078,6 +1078,88 @@ const MonProfil = () => {
             </div>
           </div>
 
+          {/* Section Signature Numérique */}
+          {(user?.est_preventionniste || user?.role === 'admin' || user?.role === 'superviseur') && (
+            <div style={{ 
+              background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+              borderRadius: '12px',
+              padding: '1.5rem',
+              marginBottom: '1.5rem'
+            }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                ✍️ Signature numérique
+              </h3>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                {userProfile?.signature_url ? (
+                  <div style={{ 
+                    background: 'white', 
+                    padding: '0.75rem', 
+                    borderRadius: '8px',
+                    border: '1px solid #e5e7eb'
+                  }}>
+                    <img 
+                      src={userProfile.signature_url} 
+                      alt="Ma signature" 
+                      style={{ 
+                        maxWidth: '200px', 
+                        maxHeight: '80px',
+                        objectFit: 'contain'
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div style={{ 
+                    width: '200px', 
+                    height: '80px', 
+                    background: '#f3f4f6',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '2px dashed #d1d5db'
+                  }}>
+                    <span style={{ color: '#9ca3af', fontSize: '0.875rem' }}>Aucune signature</span>
+                  </div>
+                )}
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <input
+                    type="file"
+                    ref={signatureInputRef}
+                    onChange={handleSignatureUpload}
+                    accept="image/jpeg,image/png,image/jpg"
+                    style={{ display: 'none' }}
+                  />
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => signatureInputRef.current?.click()}
+                    disabled={signatureUploading}
+                  >
+                    {signatureUploading ? '⏳ Envoi...' : userProfile?.signature_url ? '🔄 Modifier' : '📤 Uploader'}
+                  </Button>
+                  
+                  {userProfile?.signature_url && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleDeleteSignature}
+                      style={{ color: '#dc2626' }}
+                    >
+                      🗑️ Supprimer
+                    </Button>
+                  )}
+                </div>
+              </div>
+              
+              <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.75rem' }}>
+                Utilisée pour signer les avis de non-conformité et documents officiels • JPEG ou PNG (max 500KB)
+              </p>
+            </div>
+          )}
+
 
           {/* Modal de recadrage d'image avec drag-and-drop */}
           {showCropModal && imageToCrop && (
