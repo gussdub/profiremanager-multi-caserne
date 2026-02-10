@@ -23,7 +23,9 @@ from routes.dependencies import (
     get_current_user,
     get_tenant_from_slug,
     clean_mongo_doc,
-    User
+    User,
+    get_password_hash,
+    verify_password
 )
 from routes.emails_history import log_email_sent
 
