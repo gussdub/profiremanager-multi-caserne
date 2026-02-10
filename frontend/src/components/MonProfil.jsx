@@ -559,13 +559,13 @@ const MonProfil = () => {
       formData.append('file', file);
 
       const token = getTenantToken();
+      const API_URL = process.env.REACT_APP_BACKEND_URL;
       const response = await axios.post(
-        `${API}/${tenantSlug}/users/${user.id}/signature`,
+        `${API_URL}/api/${tenantSlug}/users/${user.id}/signature`,
         formData,
         {
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
+            'Authorization': `Bearer ${token}`
           }
         }
       );
@@ -1198,8 +1198,9 @@ const MonProfil = () => {
                             formData.append('file', file);
 
                             const token = getTenantToken();
+                            const API_URL = process.env.REACT_APP_BACKEND_URL;
                             const res = await axios.post(
-                              `${API}/${tenantSlug}/users/${user.id}/signature`,
+                              `${API_URL}/api/${tenantSlug}/users/${user.id}/signature`,
                               formData,
                               {
                                 headers: {
