@@ -62,7 +62,8 @@ def get_db():
             minPoolSize=5,
             maxIdleTimeMS=60000,  # Fermer les connexions inactives après 60s
             retryWrites=True,
-            retryReads=True
+            retryReads=True,
+            readPreference='primary'  # Forcer lecture depuis le primaire
         )
         _db = _client[DB_NAME]
     return _db
