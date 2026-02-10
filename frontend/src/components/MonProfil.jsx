@@ -1189,8 +1189,7 @@ const MonProfil = () => {
                               formData,
                               {
                                 headers: {
-                                  'Authorization': `Bearer ${token}`,
-                                  'Content-Type': 'multipart/form-data'
+                                  'Authorization': `Bearer ${token}`
                                 }
                               }
                             );
@@ -1201,9 +1200,10 @@ const MonProfil = () => {
                               description: "Votre signature a été sauvegardée",
                             });
                           } catch (error) {
+                            console.error('Erreur upload signature:', error);
                             toast({
                               title: "Erreur",
-                              description: "Impossible de sauvegarder la signature",
+                              description: error.response?.data?.detail || "Impossible de sauvegarder la signature",
                               variant: "destructive"
                             });
                           } finally {
