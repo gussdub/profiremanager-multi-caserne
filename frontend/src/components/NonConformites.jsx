@@ -59,7 +59,7 @@ const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
           batiment: batiment,
           element: nc.titre || nc.section_grille,
           observations: nc.description,
-          date_inspection: nc.created_at,
+          date_inspection: nc.date_identification || nc.created_at,
           priorite: priorite,
           statut: statut
         };
