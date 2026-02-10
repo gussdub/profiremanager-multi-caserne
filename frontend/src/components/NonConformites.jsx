@@ -10,6 +10,8 @@ const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
   const [filtrePriorite, setFiltrePriorite] = useState('tous'); // tous, haute, moyenne, faible
   const [exporting, setExporting] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedNC, setSelectedNC] = useState(null);
   const [creatingNC, setCreatingNC] = useState(false);
   const [newNC, setNewNC] = useState({
     titre: '',
