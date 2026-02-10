@@ -687,7 +687,7 @@ const MonProfil = () => {
 
     try {
       // Appeler l'API backend pour changer le mot de passe
-      await axios.put(`${API}/${tenantSlug}/users/${user.id}/password`, {
+      await apiPut(tenantSlug, `/users/${user.id}/password`, {
         current_password: passwordData.current_password,
         new_password: passwordData.new_password
       });
