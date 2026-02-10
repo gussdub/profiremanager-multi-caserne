@@ -2179,6 +2179,7 @@ async def create_non_conformite(
     
     nc_dict = non_conformite.dict()
     nc_dict["tenant_id"] = tenant.id
+    nc_dict["createur_id"] = current_user.id  # Sauvegarder le créateur
     
     # Marquer comme manuel si pas d'inspection_id
     if not nc_dict.get("inspection_id"):
