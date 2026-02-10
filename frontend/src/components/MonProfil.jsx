@@ -1089,16 +1089,30 @@ const MonProfil = () => {
 
           {/* Section Signature Numérique */}
           {(user?.est_preventionniste || user?.role === 'admin' || user?.role === 'superviseur') && (
-            <Card style={{ marginBottom: '1.5rem' }}>
-              <CardHeader>
-                <CardTitle style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.1rem' }}>
+            <Card style={{ marginBottom: '1.5rem', overflow: 'hidden' }}>
+              <div style={{
+                background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+                padding: '1rem 1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <h3 style={{ 
+                  color: 'white', 
+                  fontSize: '1.1rem', 
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  margin: 0
+                }}>
                   ✍️ Signature numérique
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+                </h3>
+              </div>
+              <CardContent style={{ padding: '1.5rem' }}>
                 {/* Affichage signature existante */}
                 {userProfile?.signature_url && (
-                  <div style={{ marginBottom: '1rem' }}>
+                  <div style={{ marginBottom: '1.5rem' }}>
                     <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>
                       Signature actuelle :
                     </p>
@@ -1137,7 +1151,7 @@ const MonProfil = () => {
                   display: 'grid', 
                   gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
                   gap: '1.5rem',
-                  marginTop: userProfile?.signature_url ? '1rem' : '0'
+                  marginTop: userProfile?.signature_url ? '0' : '0'
                 }}>
                   {/* Option 1: Dessiner */}
                   <div>
@@ -1146,7 +1160,6 @@ const MonProfil = () => {
                     </p>
                     <SignaturePad
                       label="Dessinez votre signature"
-                      width={300}
                       height={120}
                       initialValue={null}
                       onSignatureChange={(dataUrl) => {
@@ -1215,7 +1228,12 @@ const MonProfil = () => {
                       borderRadius: '8px',
                       padding: '1.5rem',
                       textAlign: 'center',
-                      backgroundColor: '#f9fafb'
+                      backgroundColor: '#f9fafb',
+                      height: '120px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center'
                     }}>
                       <input
                         type="file"
