@@ -2381,6 +2381,101 @@ const BatimentForm = ({
               </Card>
             )}
 
+            {/* Non-conformités du bâtiment */}
+            {nonConformites.length > 0 && !isEditing && (
+              <Card style={{ padding: '1.5rem' }}>
+                <h3 style={{ 
+                  fontSize: '1.25rem', 
+                  fontWeight: '600', 
+                  marginBottom: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  ⚠️ Non-conformités ({nonConformites.length})
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {nonConformites.map(nc => {
+                    const prioriteColors = {
+                      'haute': { bg: '#fee2e2', color: '#991b1b', label: '🔴 Haute' },
+                      'moyenne': { bg: '#fef3c7', color: '#92400e', label: '🟡 Moyenne' },
+                      'faible': { bg: '#d1fae5', color: '#065f46', label: '🟢 Faible' }
+                    };
+                    const statutColors = {
+                      'a_corriger': { bg: '#fee2e2', color: '#991b1b', label: 'À corriger' },
+                      'ouverte': { bg: '#fee2e2', color: '#991b1b', label: 'Ouverte' },
+                      'en_cours': { bg: '#fef3c7', color: '#92400e', label: 'En cours' },
+                      'corrige': { bg: '#d1fae5', color: '#065f46', label: 'Corrigé' },
+                      'fermee': { bg: '#d1fae5', color: '#065f46', label: 'Fermée' }
+                    };
+                    const pInfo = prioriteColors[nc.priorite] || prioriteColors['moyenne'];
+                    const sInfo = statutColors[nc.statut] || statutColors['a_corriger'];
+                    
+                    // Formater la date en local
+                    const formatDateLocal = (dateStr) => {
+                      if (!dateStr) return 'Date inconnue';
+                      if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                        const [year, month, day] = dateStr.split('-').map(Number);
+                        return new Date(year, month - 1, day).toLocaleDateString('fr-FR', { year: 'numeric', month: 'short', day: 'numeric' });
+                      }
+                      return new Date(dateStr).toLocaleDateString('fr-FR', { year: 'numeric', month: 'short', day: 'numeric' });
+                    };
+                    
+                    return (
+                      <div 
+                        key={nc.id}
+                        style={{
+                          padding: '1rem',
+                          backgroundColor: '#f9fafb',
+                          borderRadius: '0.5rem',
+                          border: '1px solid #e5e7eb'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                          <div style={{ flex: 1 }}>
+                            <p style={{ fontWeight: '600', marginBottom: '0.25rem' }}>
+                              {nc.titre || nc.section_grille || 'Non-conformité'}
+                            </p>
+                            <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                              📅 {formatDateLocal(nc.date_identification || nc.created_at)}
+                              {nc.est_manuel && ' • 👤 Manuelle'}
+                            </p>
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <span style={{
+                              padding: '0.25rem 0.5rem',
+                              borderRadius: '4px',
+                              fontSize: '0.75rem',
+                              fontWeight: '600',
+                              backgroundColor: pInfo.bg,
+                              color: pInfo.color
+                            }}>
+                              {pInfo.label}
+                            </span>
+                            <span style={{
+                              padding: '0.25rem 0.5rem',
+                              borderRadius: '4px',
+                              fontSize: '0.75rem',
+                              fontWeight: '600',
+                              backgroundColor: sInfo.bg,
+                              color: sInfo.color
+                            }}>
+                              {sInfo.label}
+                            </span>
+                          </div>
+                        </div>
+                        {nc.description && (
+                          <p style={{ fontSize: '0.875rem', color: '#374151', marginTop: '0.5rem' }}>
+                            {nc.description}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
+            )}
+
           </div>
         </div>
       </div>
