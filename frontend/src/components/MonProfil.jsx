@@ -1651,16 +1651,33 @@ const MonProfil = () => {
                 </div>
               )}
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Colonne droite - Infos complémentaires */}
         <div className="profil-side-column">
           {/* Informations d'emploi */}
-          <div className="formation-card">
-            <div className="formation-header">
-              <h3>💼 Emploi</h3>
-              <span className="statut-badge planifiee" style={{fontSize: '12px', background: '#FEE2E2', color: '#991B1B'}}>
+          <Card style={{ overflow: 'hidden', marginBottom: '1.5rem' }}>
+            <div style={{
+              background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+              padding: '1rem 1.5rem',
+              borderRadius: '11px 11px 0 0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <h3 style={{ 
+                color: 'white', 
+                fontSize: '1.1rem', 
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                margin: 0
+              }}>
+                💼 Emploi
+              </h3>
+              <span style={{fontSize: '11px', background: 'rgba(255,255,255,0.2)', color: 'white', padding: '0.25rem 0.5rem', borderRadius: '4px'}}>
                 🔒 Verrouillé
               </span>
             </div>
