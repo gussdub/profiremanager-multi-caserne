@@ -122,14 +122,8 @@ async def tenant_login(tenant_slug: str, login: LoginRequest):
     
     stored_hash = user.get("mot_de_passe_hash", "")
     
-    # Debug logging
-    logger.info(f"[AUTH] User found: {user.get('email')}, hash exists: {bool(stored_hash)}, hash prefix: {stored_hash[:15] if stored_hash else 'NONE'}")
-    
     if not verify_password(login.mot_de_passe, stored_hash):
-        logger.warning(f"[AUTH] Password verification FAILED for {login.email}")
         raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
-    
-    logger.info(f"[AUTH] Login SUCCESS for {login.email}")
     
     # Créer le token
     access_token = create_access_token(
