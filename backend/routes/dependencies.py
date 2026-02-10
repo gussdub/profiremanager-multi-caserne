@@ -37,7 +37,9 @@ logger = logging.getLogger(__name__)
 # ==================== CONFIGURATION ====================
 
 MONGO_URL = os.environ.get('MONGO_URL')
-DB_NAME = os.environ.get('DB_NAME', 'profiremanager')  # Même défaut que server.py
+DB_NAME = os.environ.get('DB_NAME')  # DOIT être défini dans .env - pas de défaut
+if not DB_NAME:
+    raise RuntimeError("DB_NAME environment variable is required")
 JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key-here')  # Même valeur que server.py
 JWT_ALGORITHM = "HS256"
 SECRET_KEY = JWT_SECRET  # Alias pour compatibilité
