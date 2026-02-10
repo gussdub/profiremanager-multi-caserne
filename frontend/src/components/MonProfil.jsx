@@ -1421,19 +1421,37 @@ const MonProfil = () => {
           )}
 
           {/* Informations personnelles */}
-          <div className="formation-card">
-            <div className="formation-header">
-              <h3>📋 Informations personnelles</h3>
+          <Card style={{ overflow: 'hidden' }}>
+            <div style={{
+              background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+              padding: '1rem 1.5rem',
+              borderRadius: '11px 11px 0 0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <h3 style={{ 
+                color: 'white', 
+                fontSize: '1.1rem', 
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                margin: 0
+              }}>
+                📋 Informations personnelles
+              </h3>
               <Button
                 onClick={() => setIsEditing(!isEditing)}
                 variant={isEditing ? "outline" : "default"}
                 data-testid="edit-profile-btn"
+                style={{ background: isEditing ? 'white' : 'rgba(255,255,255,0.2)', color: isEditing ? '#dc2626' : 'white' }}
               >
                 {isEditing ? 'Annuler' : '✏️ Modifier'}
               </Button>
             </div>
 
-            <div className="profile-form">
+            <div className="profile-form" style={{ padding: '1.5rem' }}>
               <div className="form-row">
                 <div className="form-field">
                   <Label>Prénom</Label>
