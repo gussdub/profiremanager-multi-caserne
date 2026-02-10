@@ -71,9 +71,7 @@ async def tenant_login(tenant_slug: str, login: LoginRequest):
     Connexion d'un utilisateur à un tenant spécifique.
     Supporte aussi les super-admins qui peuvent se connecter à n'importe quel tenant.
     """
-    import logging
     logger = logging.getLogger(__name__)
-    logger.info(f"[LOGIN] Tentative de connexion: {login.email} pour tenant: {tenant_slug}")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -83,8 +81,6 @@ async def tenant_login(tenant_slug: str, login: LoginRequest):
         "email": login.email.lower().strip()
     })
     
-    logger.info(f"[LOGIN] User trouvé: {user is not None}, tenant_id: {tenant.id}")
-    
     # Si pas trouvé, vérifier si c'est un super-admin
     if not user:
         super_admin = await db.super_admins.find_one({
@@ -92,18 +88,15 @@ async def tenant_login(tenant_slug: str, login: LoginRequest):
         })
         
         if super_admin:
-            # Vérifier le mot de passe du super-admin
             stored_hash = super_admin.get("mot_de_passe_hash", "")
-            logger.info(f"[LOGIN] Super-admin hash exists: {bool(stored_hash)}, starts with $2: {stored_hash[:3] if stored_hash else 'N/A'}")
             
             if verify_password(login.mot_de_passe, stored_hash):
-                # Créer un token spécial pour super-admin accédant à un tenant
                 access_token = create_access_token(
                     data={
                         "sub": super_admin["id"],
                         "tenant_id": tenant.id,
-                        "role": "admin",  # Accès admin sur le tenant
-                        "is_super_admin": True  # Flag pour identifier
+                        "role": "admin",
+                        "is_super_admin": True
                     }
                 )
                 
@@ -121,22 +114,15 @@ async def tenant_login(tenant_slug: str, login: LoginRequest):
                         "is_super_admin": True
                     }
                 }
-            else:
-                logger.warning(f"[LOGIN] Super-admin mot de passe incorrect pour {login.email}")
         
-        # Ni utilisateur ni super-admin trouvé
-        logger.warning(f"[LOGIN] Utilisateur non trouvé: {login.email}")
         raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
     
     if user.get("actif") == False:
-        logger.warning(f"[LOGIN] Compte désactivé: {login.email}")
         raise HTTPException(status_code=401, detail="Compte désactivé")
     
     stored_hash = user.get("mot_de_passe_hash", "")
-    logger.info(f"[LOGIN] User hash exists: {bool(stored_hash)}, hash prefix: {stored_hash[:10] if stored_hash else 'EMPTY'}")
     
     if not verify_password(login.mot_de_passe, stored_hash):
-        logger.warning(f"[LOGIN] Mot de passe incorrect pour {login.email}")
         raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
     
     # Créer le token
