@@ -2550,23 +2550,32 @@ async def demander_remplacement_epi(
     
     await db.demandes_remplacement_epi.insert_one(demande_obj.dict())
     
-    # Envoyer notification aux admins/superviseurs
-    admins = await db.users.find({
-        "tenant_id": tenant.id,
-        "role": {"$in": ["admin", "superviseur"]}
-    }).to_list(1000)
-    
-    photo_indicator = " 📷" if demande.photo_defaut else ""
-    for admin in admins:
-        await creer_notification(
-            tenant_id=tenant.id,
-            destinataire_id=admin["id"],
-            type="demande_remplacement_epi",
-            titre="🔄 Demande de remplacement EPI",
-            message=f"{current_user.prenom} {current_user.nom} demande le remplacement de {epi['type_epi']} - Raison: {demande.raison}{photo_indicator}",
-            lien=f"/gestion-epi",
-            data={"epi_id": epi_id, "demande_id": demande_obj.id, "raison": demande.raison, "has_photo": bool(demande.photo_defaut)}
-        )
+    # Envoyer notification aux admins/superviseurs (avec gestion d'erreur pour ne pas bloquer la demande)
+    try:
+        admins = await db.users.find({
+            "tenant_id": tenant.id,
+            "role": {"$in": ["admin", "superviseur"]}
+        }).to_list(1000)
+        
+        photo_indicator = " 📷" if demande.photo_defaut else ""
+        epi_type = epi.get('type_epi') or epi.get('modele') or 'EPI'
+        user_name = f"{current_user.prenom or ''} {current_user.nom or ''}".strip() or current_user.email
+        
+        for admin in admins:
+            try:
+                await creer_notification(
+                    tenant_id=tenant.id,
+                    destinataire_id=admin["id"],
+                    type="demande_remplacement_epi",
+                    titre="🔄 Demande de remplacement EPI",
+                    message=f"{user_name} demande le remplacement de {epi_type} - Raison: {demande.raison}{photo_indicator}",
+                    lien=f"/gestion-epi",
+                    data={"epi_id": epi_id, "demande_id": demande_obj.id, "raison": demande.raison, "has_photo": bool(demande.photo_defaut)}
+                )
+            except Exception as e:
+                logger.error(f"Erreur envoi notification admin {admin.get('id')}: {e}")
+    except Exception as e:
+        logger.error(f"Erreur récupération admins pour notification: {e}")
     
     return {"message": "Demande de remplacement créée avec succès", "demande_id": demande_obj.id}
 
