@@ -687,6 +687,23 @@ const BatimentForm = ({
     }
   };
 
+  const fetchNonConformites = async () => {
+    if (!batiment || !batiment.id) {
+      return;
+    }
+    
+    try {
+      const token = getTenantToken();
+      const response = await axios.get(
+        buildApiUrl(tenantSlug, `/prevention/non-conformites?batiment_id=${batiment.id}`),
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setNonConformites(response.data || []);
+    } catch (error) {
+      console.error('Erreur chargement non-conformités:', error);
+    }
+  };
+
   const handleChange = (field, value) => {
     setEditData(prev => ({ ...prev, [field]: value }));
     if (['adresse_civique', 'ville', 'code_postal'].includes(field)) {
