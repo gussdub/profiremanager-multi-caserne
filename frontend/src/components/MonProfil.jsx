@@ -1212,31 +1212,36 @@ const MonProfil = () => {
 
                             const token = getTenantToken();
                             const API_URL = process.env.REACT_APP_BACKEND_URL;
-                            const res = await axios.post(
+                            
+                            // Utiliser fetch natif au lieu d'axios pour FormData
+                            const res = await fetch(
                               `${API_URL}/api/${tenantSlug}/users/${user.id}/signature`,
-                              formData,
                               {
+                                method: 'POST',
                                 headers: {
                                   'Authorization': `Bearer ${token}`
-                                }
+                                },
+                                body: formData
                               }
                             );
+                            
+                            if (!res.ok) {
+                              const errorData = await res.json();
+                              throw new Error(typeof errorData.detail === 'string' ? errorData.detail : JSON.stringify(errorData.detail));
+                            }
+                            
+                            const data = await res.json();
 
-                            setUserProfile(prev => ({...prev, signature_url: res.data.signature_url, tempSignature: null}));
+                            setUserProfile(prev => ({...prev, signature_url: data.signature_url, tempSignature: null}));
                             toast({
                               title: "Signature enregistrée",
                               description: "Votre signature a été sauvegardée",
                             });
                           } catch (error) {
                             console.error('Erreur upload signature:', error);
-                            let errorMsg = "Impossible de sauvegarder la signature";
-                            if (error.response?.data?.detail) {
-                              const detail = error.response.data.detail;
-                              errorMsg = typeof detail === 'string' ? detail : JSON.stringify(detail);
-                            }
                             toast({
                               title: "Erreur",
-                              description: errorMsg,
+                              description: error.message || "Impossible de sauvegarder la signature",
                               variant: "destructive"
                             });
                           } finally {
