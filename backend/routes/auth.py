@@ -9,12 +9,11 @@ Note: Les routes super-admin restent dans server.py car elles ont des dépendanc
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
+from typing import Optional
 from datetime import datetime, timezone, timedelta
 import uuid
 import logging
 import secrets
-import hashlib
 import jwt
 import os
 
