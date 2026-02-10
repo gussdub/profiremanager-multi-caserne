@@ -1099,7 +1099,7 @@ const MonProfil = () => {
                 </p>
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Section Signature Numérique */}
           {(user?.est_preventionniste || user?.role === 'admin' || user?.role === 'superviseur') && (
