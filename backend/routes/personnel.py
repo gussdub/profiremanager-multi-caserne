@@ -97,9 +97,8 @@ def validate_complex_password(password: str) -> bool:
     return True
 
 
-def get_password_hash(password: str) -> str:
-    """Hash un mot de passe avec bcrypt"""
-    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+# Utiliser get_password_hash de dependencies.py
+from routes.dependencies import get_password_hash
 
 
 # ==================== ROUTES ====================
