@@ -16,7 +16,7 @@ load_dotenv('/app/backend/.env')
 load_dotenv('/app/frontend/.env')
 
 # Configuration
-BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'https://react-refactor-16.preview.emergentagent.com')
+BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'https://dsi-dropdown-fix.preview.emergentagent.com')
 API_BASE = f"{BACKEND_URL}/api"
 
 # Credentials from review request

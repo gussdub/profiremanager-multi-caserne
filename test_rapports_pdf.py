@@ -28,7 +28,7 @@ from datetime import datetime
 
 class RapportsPDFTester:
     def __init__(self):
-        self.base_url = "https://react-refactor-16.preview.emergentagent.com/api"
+        self.base_url = "https://dsi-dropdown-fix.preview.emergentagent.com/api"
         self.headers = {}
         self.token = None
         
