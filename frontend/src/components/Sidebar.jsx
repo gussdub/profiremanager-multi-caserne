@@ -478,10 +478,12 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
     if (item.id === 'disponibilites' && !['temps_partiel', 'temporaire'].includes(user?.type_emploi) && !['admin', 'superviseur'].includes(user?.role)) return false;
     
     // Module Prévention : vérifier si actif
-    // Si authTenant n'est pas encore chargé, on attend (ne pas filtrer)
     if (item.id === 'prevention') {
-      // Si le tenant n'est pas encore chargé, ne pas afficher par défaut
-      if (!authTenant) return false;
+      // Si le tenant n'est pas encore chargé, on affiche par défaut pour admin/superviseur
+      // (sera masqué après chargement si module non activé)
+      if (!authTenant) {
+        return ['admin', 'superviseur'].includes(user?.role);
+      }
       // Sinon, vérifier le paramètre
       if (!authTenant?.parametres?.module_prevention_active) return false;
     }
