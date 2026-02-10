@@ -6,7 +6,7 @@ ProFireManager est une application de gestion complète pour les services d'ince
 ## Architecture
 - **Frontend**: React avec Shadcn/UI (Radix UI), déployé sur Vercel
 - **Backend**: FastAPI avec MongoDB, déployé sur Render
-- **Base de données**: MongoDB
+- **Base de données**: MongoDB Atlas
 
 ## Modules Principaux
 1. **Planning** - Gestion des gardes et assignations
@@ -20,32 +20,83 @@ ProFireManager est une application de gestion complète pour les services d'ince
 
 ## Changelog - Session 2026-02-10
 
-### Corrections effectuées
+### Corrections de bugs
 
-1. **Bug dropdowns DSI** (P0)
-   - Problème: Les listes déroulantes ne permettaient pas de remonter après défilement, puis ne s'ouvraient plus
-   - Solution: Remplacement des `<select>` natifs par composants Radix UI Select, correction des valeurs vides (`|| undefined`), augmentation du z-index à 100001
+1. **Bug dropdowns DSI** (P0) ✅
+   - Problème: Listes déroulantes ne s'ouvraient plus dans le modal DSI
+   - Solution: z-index augmenté à 100001, valeurs vides changées de `''` à `undefined`
    - Fichiers: `SectionDSI.jsx`, `select.jsx`
 
-2. **Bug saisie majorations jours fériés**
-   - Problème: Impossible de saisir un point ou une virgule dans les champs de majoration
-   - Solution: Changement de `type="number"` vers `type="text"` avec `inputMode="decimal"`, conversion virgule→point automatique
+2. **Bug saisie majorations jours fériés** ✅
+   - Problème: Impossible de saisir point ou virgule
+   - Solution: `type="text"` avec `inputMode="decimal"`, conversion automatique virgule→point
    - Fichier: `TabJoursFeries.jsx`
 
-3. **Affichage type d'assignation dans Planning**
-   - Amélioration: Affichage "🔄 Remplacement" au lieu de "👤 Manuel" quand l'assignation provient d'un remplacement
+3. **Affichage remplacement dans Planning** ✅
+   - Badge "🔄 Remplacement" au lieu de "👤 Manuel"
    - Fichier: `Planning.jsx`
 
-4. **Création manuelle de non-conformités** (Prévention)
-   - Problème: Erreur 422 lors de la création manuelle (champ `inspection_id` obligatoire)
-   - Solution: Rendu `inspection_id` optionnel, ajout des champs `categorie`, `priorite`, `date_identification`, `est_manuel`
+4. **Création manuelle NC (Prévention)** ✅
+   - `inspection_id` rendu optionnel pour créations manuelles
    - Fichier: `prevention.py`
 
-5. **Demande remplacement EPI** (P1 - Vérifié)
-   - Statut: Fonctionnel
+5. **Bug route /prevention/inspections-visuelles/a-valider** ✅
+   - Route déplacée avant la route avec paramètre `{inspection_id}`
+   - Fichier: `prevention.py`
 
-6. **Script migration statuts EPI** (Backlog - Vérifié)
-   - Statut: Fonctionnel
+6. **Import SecteurForm manquant** ✅
+   - Import ajouté dans `GestionPreventionnistes.jsx`
+
+7. **Liste préventionnistes incorrecte dans secteurs** ✅
+   - Utilise maintenant la liste `preventionnistes` au lieu de `users` filtrés
+   - Fichier: `GestionPreventionnistes.jsx`
+
+8. **Demande remplacement EPI - message d'erreur** ✅
+   - Gestion d'erreur robuste ajoutée autour des notifications
+   - Fichier: `epi.py`
+
+9. **Secteurs géographiques - format geometry** ✅
+   - Ajout support format GeoJSON en plus de `coordonnees`
+   - Fichier: `prevention.py`
+
+10. **Changement mot de passe profil** ✅
+    - Import `verify_password` manquant ajouté
+    - Utilisation de `apiPut` au lieu de `axios.put`
+    - Fichiers: `users.py`, `MonProfil.jsx`
+
+### Améliorations Non-Conformités
+
+1. **Dates UTC corrigées** ✅
+   - Dates affichées en fuseau local, pas UTC
+   - `date_identification` utilisé au lieu de `created_at`
+
+2. **Modal détails NC** ✅
+   - Clic sur NC affiche les détails complets au lieu du bâtiment
+
+3. **Historique NC dans bâtiment** ✅
+   - Section NC ajoutée dans le modal bâtiment
+
+4. **Sélection article de violation** ✅
+   - Formulaire création NC permet de sélectionner un article du référentiel
+   - Calcul automatique du délai de correction
+
+5. **Système de relance NC** ✅
+   - Endpoint `/prevention/non-conformites-en-retard`
+   - Endpoint `/prevention/relancer-non-conformites`
+   - Notifications aux créateurs, préventionnistes et responsables
+
+### Nettoyage Architecture
+
+1. **Connexion DB centralisée** ✅
+   - `DB_NAME` obligatoire (pas de défaut)
+   - `dsi.py` et `dsi_transmissions.py` utilisent `dependencies.py`
+
+2. **Fonctions hash centralisées** ✅
+   - `verify_password` et `get_password_hash` uniquement dans `dependencies.py`
+   - Suppression des duplications dans `personnel.py` et `auth.py`
+
+3. **Logs de debug supprimés** ✅
+   - Code de production nettoyé
 
 ---
 
@@ -53,17 +104,17 @@ ProFireManager est une application de gestion complète pour les services d'ince
 
 ### Fonctionnel ✅
 - Tous les modules principaux
+- Authentification unifiée avec bcrypt
 - Système de remplacements automatisé
-- Création manuelle de non-conformités
-- Import/Export EPI
-- Visualiseur de plans d'intervention
-- Calcul dynamique des jours fériés
+- Module prévention complet avec NC manuelles et relances
+- Changement de mot de passe via profil
 
 ### Problèmes Connus
-- Erreur persistante "Save to GitHub" (problème de plateforme Emergent)
+- Erreur "Save to GitHub" (problème de plateforme Emergent)
 
 ---
 
 ## Prochaines Étapes Potentielles
+- Intégration email pour relances NC automatiques
+- Dashboard récapitulatif NC en retard
 - Améliorations UX selon retours utilisateur
-- Optimisations de performance si nécessaire
