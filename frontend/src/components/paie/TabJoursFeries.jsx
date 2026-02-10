@@ -325,11 +325,12 @@ const TabJoursFeries = ({ tenant }) => {
                 inputMode="decimal"
                 value={formData.majoration_temps_partiel}
                 onChange={(e) => {
-                  const val = e.target.value.replace(',', '.');
-                  if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                    const num = parseFloat(val);
-                    setFormData({ ...formData, majoration_temps_partiel: isNaN(num) ? val : num });
-                  }
+                  let val = e.target.value.replace(',', '.');
+                  setFormData({ ...formData, majoration_temps_partiel: val });
+                }}
+                onBlur={(e) => {
+                  const num = parseFloat(e.target.value.replace(',', '.'));
+                  setFormData({ ...formData, majoration_temps_partiel: isNaN(num) ? 1.5 : num });
                 }}
               />
               <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
@@ -346,11 +347,12 @@ const TabJoursFeries = ({ tenant }) => {
                 inputMode="decimal"
                 value={formData.majoration_temps_plein}
                 onChange={(e) => {
-                  const val = e.target.value.replace(',', '.');
-                  if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                    const num = parseFloat(val);
-                    setFormData({ ...formData, majoration_temps_plein: isNaN(num) ? val : num });
-                  }
+                  let val = e.target.value.replace(',', '.');
+                  setFormData({ ...formData, majoration_temps_plein: val });
+                }}
+                onBlur={(e) => {
+                  const num = parseFloat(e.target.value.replace(',', '.'));
+                  setFormData({ ...formData, majoration_temps_plein: isNaN(num) ? 1.0 : num });
                 }}
               />
               <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
