@@ -53,22 +53,36 @@ class ResetPasswordRequest(BaseModel):
 # ==================== HELPERS ====================
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Vérifie un mot de passe contre son hash"""
-    if hashed_password.startswith("$2"):
-        try:
-            import bcrypt
-            return bcrypt.checkpw(plain_password.encode(), hashed_password.encode())
-        except:
-            pass
-    return hashlib.sha256(plain_password.encode()).hexdigest() == hashed_password
-
-def hash_password(password: str) -> str:
-    """Hash un mot de passe avec bcrypt si disponible, sinon SHA256"""
+    """Vérifie un mot de passe contre son hash bcrypt UNIQUEMENT"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
     try:
         import bcrypt
-        return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-    except:
-        return hashlib.sha256(password.encode()).hexdigest()
+        
+        if not hashed_password:
+            logger.error("[VERIFY] Hash vide")
+            return False
+            
+        if not hashed_password.startswith("$2"):
+            logger.error(f"[VERIFY] Hash non-bcrypt détecté: {hashed_password[:10]}...")
+            return False
+        
+        password_bytes = plain_password.encode('utf-8')
+        hash_bytes = hashed_password.encode('utf-8')
+        
+        result = bcrypt.checkpw(password_bytes, hash_bytes)
+        logger.info(f"[VERIFY] Vérification bcrypt: {result}")
+        return result
+        
+    except Exception as e:
+        logger.error(f"[VERIFY] Erreur vérification: {e}")
+        return False
+
+def hash_password(password: str) -> str:
+    """Hash un mot de passe avec bcrypt"""
+    import bcrypt
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
     """Crée un token JWT"""
