@@ -457,8 +457,8 @@ async def reset_password(tenant_slug: str, request: ResetPasswordRequest):
     if expires_at < now:
         raise HTTPException(status_code=400, detail="Token expiré")
     
-    # Hasher le nouveau mot de passe
-    new_hash = hash_password(request.new_password)
+    # Hasher le nouveau mot de passe avec bcrypt
+    new_hash = get_password_hash(request.new_password)
     
     # Mettre à jour le mot de passe
     await db.users.update_one(
