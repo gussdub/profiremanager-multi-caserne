@@ -305,6 +305,92 @@ const Dashboard = ({ setCurrentPage }) => {
         }}
       />
 
+      {/* Alertes NC en retard (Prévention) */}
+      {ncEnRetard.count > 0 && (
+        <div style={{ 
+          marginBottom: '2rem',
+          background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+          borderRadius: '12px',
+          padding: '1.5rem',
+          border: '1px solid #f59e0b'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: '600', color: '#92400e', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              ⚠️ Non-conformités en retard
+              <span style={{
+                background: '#dc2626',
+                color: 'white',
+                padding: '0.25rem 0.75rem',
+                borderRadius: '999px',
+                fontSize: '0.875rem',
+                fontWeight: '700'
+              }}>
+                {ncEnRetard.count}
+              </span>
+            </h3>
+            <button
+              onClick={() => setCurrentPage('prevention')}
+              style={{
+                background: '#f59e0b',
+                color: 'white',
+                padding: '0.5rem 1rem',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: '500',
+                fontSize: '0.875rem'
+              }}
+            >
+              Voir tout →
+            </button>
+          </div>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {ncEnRetard.items.map(nc => (
+              <div 
+                key={nc.id}
+                style={{
+                  background: 'white',
+                  padding: '1rem',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                }}
+              >
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontWeight: '600', color: '#1f2937', marginBottom: '0.25rem' }}>
+                    {nc.titre || nc.section_grille || 'Non-conformité'}
+                  </p>
+                  <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                    🏢 {nc.batiment?.nom_etablissement || nc.batiment?.adresse_civique || 'Bâtiment'}
+                  </p>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <span style={{
+                    background: nc.jours_retard > 30 ? '#dc2626' : nc.jours_retard > 7 ? '#f59e0b' : '#eab308',
+                    color: 'white',
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: '4px',
+                    fontSize: '0.75rem',
+                    fontWeight: '600'
+                  }}>
+                    {nc.jours_retard} jour{nc.jours_retard > 1 ? 's' : ''} de retard
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {ncEnRetard.count > 5 && (
+            <p style={{ textAlign: 'center', marginTop: '1rem', color: '#92400e', fontSize: '0.875rem' }}>
+              + {ncEnRetard.count - 5} autres non-conformités en retard
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Section Personnelle */}
       <div style={{ marginBottom: '2.5rem' }}>
         <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#374151', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
