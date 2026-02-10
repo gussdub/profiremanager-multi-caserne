@@ -11,6 +11,7 @@ import { useTenant } from "../contexts/TenantContext";
 import { apiGet, apiPost, apiPut, apiDelete, getTenantToken } from '../utils/api';
 import { useAuth } from "../contexts/AuthContext";
 import CameraCapture, { isIOS } from "./CameraCapture";
+import SignaturePad from "./ui/SignaturePad";
 
 const MonProfil = () => {
   const { user, setUser, tenant } = useAuth();
