@@ -281,8 +281,9 @@ const SectionDSI = ({ formData, setFormData, editMode, referenceData, tenantSlug
                     <SelectItem key={facteur.id} value={facteur.id}>
                       {facteur.code} - {facteur.libelle}
                     </SelectItem>
-                ))}
-              </select>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Matériau premier enflammé */}
@@ -290,19 +291,22 @@ const SectionDSI = ({ formData, setFormData, editMode, referenceData, tenantSlug
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Matériau premier enflammé {isRealFire() && <span className="text-red-500">*</span>}
               </label>
-              <select
+              <Select
                 value={formData.material_first_ignited_id || ''}
-                onChange={(e) => setFormData({ ...formData, material_first_ignited_id: e.target.value })}
+                onValueChange={(value) => setFormData({ ...formData, material_first_ignited_id: value })}
                 disabled={!editMode}
-                className={`w-full border rounded-lg p-2 ${!formData.material_first_ignited_id && isRealFire() ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
               >
-                <option value="">-- Sélectionner --</option>
-                {(referenceData.materiaux || []).map(mat => (
-                  <option key={mat.id} value={mat.id}>
-                    {mat.code} - {mat.libelle}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className={`w-full ${!formData.material_first_ignited_id && isRealFire() ? 'border-red-300 bg-red-50' : ''}`}>
+                  <SelectValue placeholder="-- Sélectionner --" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(referenceData.materiaux || []).map(mat => (
+                    <SelectItem key={mat.id} value={mat.id}>
+                      {mat.code} - {mat.libelle}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Usage du bâtiment CNB */}
@@ -310,19 +314,22 @@ const SectionDSI = ({ formData, setFormData, editMode, referenceData, tenantSlug
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Usage du bâtiment (CNB) {isRealFire() && <span className="text-red-500">*</span>}
               </label>
-              <select
+              <Select
                 value={formData.usage_batiment_code || ''}
-                onChange={(e) => setFormData({ ...formData, usage_batiment_code: e.target.value })}
+                onValueChange={(value) => setFormData({ ...formData, usage_batiment_code: value })}
                 disabled={!editMode}
-                className={`w-full border rounded-lg p-2 ${!formData.usage_batiment_code && isRealFire() ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
               >
-                <option value="">-- Sélectionner --</option>
-                {(referenceData.usages_batiment || []).map(usage => (
-                  <option key={usage.id} value={usage.id}>
-                    {usage.code} - {usage.libelle}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className={`w-full ${!formData.usage_batiment_code && isRealFire() ? 'border-red-300 bg-red-50' : ''}`}>
+                  <SelectValue placeholder="-- Sélectionner --" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(referenceData.usages_batiment || []).map(usage => (
+                    <SelectItem key={usage.id} value={usage.id}>
+                      {usage.code} - {usage.libelle}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Lieu d'origine */}
@@ -345,19 +352,22 @@ const SectionDSI = ({ formData, setFormData, editMode, referenceData, tenantSlug
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Propagation du feu
               </label>
-              <select
+              <Select
                 value={formData.fire_spread || ''}
-                onChange={(e) => setFormData({ ...formData, fire_spread: e.target.value })}
+                onValueChange={(value) => setFormData({ ...formData, fire_spread: value })}
                 disabled={!editMode}
-                className="w-full border border-gray-300 rounded-lg p-2"
               >
-                <option value="">-- Sélectionner --</option>
-                <option value="object">Confiné à l&apos;objet d&apos;origine</option>
-                <option value="room">Confiné à la pièce d&apos;origine</option>
-                <option value="floor">Propagé à l&apos;étage</option>
-                <option value="building">Propagé au bâtiment entier</option>
-                <option value="neighbor">Propagé aux bâtiments voisins</option>
-              </select>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="-- Sélectionner --" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="object">Confiné à l'objet d'origine</SelectItem>
+                  <SelectItem value="room">Confiné à la pièce d'origine</SelectItem>
+                  <SelectItem value="floor">Propagé à l'étage</SelectItem>
+                  <SelectItem value="building">Propagé au bâtiment entier</SelectItem>
+                  <SelectItem value="neighbor">Propagé aux bâtiments voisins</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
