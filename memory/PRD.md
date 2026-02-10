@@ -1,178 +1,69 @@
-# ProFireManager - Document de Référence Produit (PRD)
+# ProFireManager - Product Requirements Document
 
-## Problème Original
-Application de gestion complète pour les services d'incendie au Québec, incluant :
-- Gestion des interventions et de la paie des pompiers
-- Module de génération d'avis de non-conformité
-- Éditeur de grilles d'interventions
-- Gestion des bâtiments et de la prévention
-- Conformité légale avec le MSP du Québec
+## Application Overview
+ProFireManager est une application de gestion complète pour les services d'incendie, comprenant la gestion du personnel, des interventions, des EPI, de la prévention, et de la paie.
 
-## Fonctionnalités Implémentées
+## Architecture
+- **Frontend**: React avec Shadcn/UI (Radix UI), déployé sur Vercel
+- **Backend**: FastAPI avec MongoDB, déployé sur Render
+- **Base de données**: MongoDB
 
-### 1. Gestion de la Paie (Avancée)
-- Minimum d'heures payées configurable par source d'appel (CAUCA vs Urgence Santé)
-- Détection automatique de la source via chemin SFTP
-- Workflow de validation : Brouillon → Validé → Exporté
-- Export PDF groupé des feuilles de temps
+## Modules Principaux
+1. **Planning** - Gestion des gardes et assignations
+2. **Interventions** - Rapports DSI complets
+3. **EPI** - Gestion des équipements de protection
+4. **Prévention** - Inspections et non-conformités
+5. **Paie** - Gestion des jours fériés et majorations
+6. **Remplacements** - Système automatisé de demandes
 
-### 2. Gestion des Actifs - Véhicules
-- Champs enrichis : PNBV, type (urgence/soutien), statut
-- Suivi des vignettes d'inspection mécanique
-- Carnet de réparations avec historique complet
-- Alertes de maintenance sur le tableau de bord
-- Fiche de vie du véhicule
+---
 
-### 3. Gestion des Actifs - Équipements
-- Liste déroulante pour la fréquence d'inspection
-- Champ date de dernière inspection
-- Alertes automatiques sur le tableau de bord quand inspection due
-- Statistiques enrichies avec compteurs d'alertes
-- Affichage "Stock bas" uniquement pour consommables
+## Changelog - Session 2026-02-10
 
-### 4. Module Prévention
-- Interface harmonisée avec onglets horizontaux rouges
-- Gestion des bâtiments et inspections
-- Affichage stable corrigé (problème de condition de course résolu)
+### Corrections effectuées
 
-### 5. Module Interventions - Conformité MSP ✅ NOUVEAU
-- **Section RCCI (Enquête)** : Point d'origine, cause probable, source de chaleur, détecteur de fumée, officier enquêteur, narratif, photos d'enquête
-- **Alerte transfert police** : Si cause indéterminée ou intentionnelle
-- **Section Sinistré & Assurance** : Données propriétaire, compagnie d'assurance, estimation des pertes
-- **Photos des dommages avant départ** : Protection contre réclamations abusives
-- **Données DSI initialisées** : 10 causes, 26 sources de chaleur, 24 matériaux, 19 facteurs d'allumage, 28 usages de bâtiment, 31 natures de sinistre
-- **UX améliorée** : Bouton "Enregistrer" apparaît seulement si modifications
+1. **Bug dropdowns DSI** (P0)
+   - Problème: Les listes déroulantes ne permettaient pas de remonter après défilement, puis ne s'ouvraient plus
+   - Solution: Remplacement des `<select>` natifs par composants Radix UI Select, correction des valeurs vides (`|| undefined`), augmentation du z-index à 100001
+   - Fichiers: `SectionDSI.jsx`, `select.jsx`
 
-### 6. Approvisionnement en Eau
-- Création de bornes fontaines corrigée (conversion champs numériques)
+2. **Bug saisie majorations jours fériés**
+   - Problème: Impossible de saisir un point ou une virgule dans les champs de majoration
+   - Solution: Changement de `type="number"` vers `type="text"` avec `inputMode="decimal"`, conversion virgule→point automatique
+   - Fichier: `TabJoursFeries.jsx`
 
-### 7. UI/UX Améliorations
-- Toasts repositionnés en bas à droite avec z-index élevé (999999)
-- Modal SFTP z-index corrigé (100001)
-- Vue Planning mensuelle : grille CSS corrigée (plus de débordement)
-- Bouton "Enregistrer" au lieu de "Modifier" dans les formulaires
+3. **Affichage type d'assignation dans Planning**
+   - Amélioration: Affichage "🔄 Remplacement" au lieu de "👤 Manuel" quand l'assignation provient d'un remplacement
+   - Fichier: `Planning.jsx`
 
-## Architecture Technique
+4. **Création manuelle de non-conformités** (Prévention)
+   - Problème: Erreur 422 lors de la création manuelle (champ `inspection_id` obligatoire)
+   - Solution: Rendu `inspection_id` optionnel, ajout des champs `categorie`, `priorite`, `date_identification`, `est_manuel`
+   - Fichier: `prevention.py`
 
-```
-/app
-├── backend/
-│   ├── models/
-│   │   └── paie.py
-│   ├── routes/
-│   │   ├── actifs.py          # Véhicules, réparations
-│   │   ├── auth.py
-│   │   ├── dashboard.py       # Alertes véhicules et équipements
-│   │   ├── equipements.py     # CRUD équipements + inspections
-│   │   ├── interventions.py   # RCCI, sinistré, photos dommages, seed DSI
-│   │   ├── paie_complet.py    # Logique paie + export PDF
-│   │   ├── points_eau.py      # Bornes fontaines
-│   │   └── ...
-│   └── services/
-│       └── sftp_service.py    # Détection source d'appel
-└── frontend/
-    └── src/
-        ├── components/
-        │   ├── interventions/
-        │   │   ├── SectionRCCI.jsx        # Enquête incendie
-        │   │   ├── SectionSinistre.jsx    # Données propriétaire/assurance
-        │   │   └── SectionRemisePropriete.jsx  # + Photos dommages
-        │   ├── GestionInterventions.jsx
-        │   ├── Sidebar.jsx         # Affichage modules corrigé
-        │   └── ...
-        ├── contexts/
-        │   └── AuthContext.js      # Restauration tenant localStorage
-        └── components/ui/
-            └── toast.jsx           # Position bottom-right, z-index 999999
-```
+5. **Demande remplacement EPI** (P1 - Vérifié)
+   - Statut: Fonctionnel
 
-## Base de Données (MongoDB Atlas)
+6. **Script migration statuts EPI** (Backlog - Vérifié)
+   - Statut: Fonctionnel
 
-### Collections Principales
-- `interventions` : source_appel (cauca/urgence_sante)
-- `rcci` : Rapports d'enquête incendie
-- `donnees_sinistres` : Infos propriétaire et assurance
-- `photos_dommages` : Photos avant départ
-- `dsi_causes`, `dsi_sources_chaleur`, `dsi_materiaux`, etc. : Données de référence MSP
-- `parametres_paie` : minimum_heures_cauca, minimum_heures_urgence_sante
-- `actifs` : pnbv, type_vehicule, vignette d'inspection
-- `reparations_vehicules` : historique réparations
-- `equipements` : frequence_inspection, date_derniere_inspection
+---
 
-## Intégrations Tierces
-- **Resend** : E-mails
-- **Stripe** : Paiements
-- **Twilio** : SMS
-- **ReportLab** : Génération PDF
-- **react-leaflet** : Cartes
-- **@dnd-kit** : Drag & drop
+## État Actuel
 
-## Points Critiques
-- **Base de données distante** : MongoDB Atlas (profiremanager-dev), pas local
-- **Utilisateur test** : gussdub@gmail.com pour tenant `demo`
-- **Transmission DSI** : Actuellement MOCKED
+### Fonctionnel ✅
+- Tous les modules principaux
+- Système de remplacements automatisé
+- Création manuelle de non-conformités
+- Import/Export EPI
+- Visualiseur de plans d'intervention
+- Calcul dynamique des jours fériés
 
-## Tâches Restantes
+### Problèmes Connus
+- Erreur persistante "Save to GitHub" (problème de plateforme Emergent)
 
-### P2 - Refactoring
-- [x] Centraliser logique d'envoi d'e-mails backend (service créé)
-- [x] Créer hooks personnalisés pour Module Paie
-- [x] Créer hooks personnalisés pour Interventions
-- [x] Créer hooks personnalisés pour Actifs
-- [x] Créer sous-composants Dashboard (StatCards, AlertCards, ActivitesRecentes)
-- [x] Créer utilitaires Actifs et Paie
-- [x] Intégrer imports des utilitaires dans composants existants
-- [ ] Migration progressive du JSX vers nouveaux composants (en cours)
+---
 
-### P2 - Fonctionnalités
-- [ ] Finaliser transmission DSI réelle
-- [ ] Module de gestion des jours fériés
-- [ ] Module de facturation pour l'entraide
-- [ ] Module "Schéma de couverture de risque"
-
-### P3 - Améliorations
-- [ ] Gestion véhiculaire (codes radio 10-07, 10-17, 10-90)
-- [ ] Export automatique rapport RCCI vers MSP
-- [ ] Notifications par courriel aux propriétaires après remise
-
-## Architecture Refactorisée
-
-```
-/app/frontend/src/components/
-├── dashboard/
-│   ├── index.js              # Exports centralisés
-│   ├── useDashboardData.js   # Hook de chargement données
-│   ├── StatCards.jsx         # Cartes statistiques (Admin/Employé)
-│   ├── AlertCards.jsx        # Alertes équipements/véhicules
-│   └── ActivitesRecentes.jsx # Liste activités récentes
-├── paie/
-│   ├── index.js              # Exports centralisés
-│   ├── hooks.js              # usePaieParametres, usePaieConfig, etc.
-│   └── utils.js              # Formatage, constantes
-├── interventions/
-│   ├── index.js              # Exports centralisés  
-│   ├── hooks.js              # useInterventions, useInterventionDetail, etc.
-│   └── ... (12+ sections)
-├── actifs/
-│   ├── index.js              # Exports centralisés
-│   ├── hooks.js              # useVehicules, useEquipements, etc.
-│   └── utils.js              # États, formatage, validation
-└── ...
-```
-
-## Sécurité - Configuration Infrastructure ✅
-- **MongoDB Atlas** : 0.0.0.0/0 rétabli pour dev (production Render sécurisée)
-  - IPs Render (Oregon) : 74.220.48.0/24, 74.220.56.0/24
-- **Resend API** : Nouvelle clé configurée
-- **Backend Production** : Hébergé sur Render
-- **Frontend Production** : Hébergé sur Vercel
-
-## Dernière mise à jour
-Date : 2026-02-06
-Session : Correction navigation QR code véhicule → modal Inventaire/Ronde après connexion
-
-### Historique des sessions récentes
-- **2026-02-06** : Correction flux QR code véhicule (localStorage qr_action conservé après login, redirection vers bon modal)
-- **2026-02-06** : Résolution problème déploiement automatique (webhook GitHub → Vercel/Render)
-- **2026-02-06** : Refactorisation avancée - Dashboard, Actifs, Import équipements avec mapping
-
+## Prochaines Étapes Potentielles
+- Améliorations UX selon retours utilisateur
+- Optimisations de performance si nécessaire
