@@ -557,11 +557,19 @@ const MonProfil = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await apiPost(tenantSlug, `/users/${user.id}/signature`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const token = getTenantToken();
+      const response = await axios.post(
+        `${API}/${tenantSlug}/users/${user.id}/signature`,
+        formData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
 
-      setUserProfile(prev => ({...prev, signature_url: response.signature_url}));
+      setUserProfile(prev => ({...prev, signature_url: response.data.signature_url}));
       
       toast({
         title: "Signature enregistrée",
@@ -570,7 +578,7 @@ const MonProfil = () => {
     } catch (error) {
       toast({
         title: "Erreur",
-        description: error.message || "Impossible de sauvegarder la signature",
+        description: error.response?.data?.detail || "Impossible de sauvegarder la signature",
         variant: "destructive"
       });
     } finally {
