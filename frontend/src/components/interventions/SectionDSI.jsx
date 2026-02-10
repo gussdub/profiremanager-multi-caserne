@@ -222,19 +222,22 @@ const SectionDSI = ({ formData, setFormData, editMode, referenceData, tenantSlug
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Cause probable {isRealFire() && <span className="text-red-500">*</span>}
               </label>
-              <select
+              <Select
                 value={formData.cause_id || ''}
-                onChange={(e) => setFormData({ ...formData, cause_id: e.target.value })}
+                onValueChange={(value) => setFormData({ ...formData, cause_id: value })}
                 disabled={!editMode}
-                className={`w-full border rounded-lg p-2 ${!formData.cause_id && isRealFire() ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
               >
-                <option value="">-- Sélectionner --</option>
-                {(referenceData.causes || []).map(cause => (
-                  <option key={cause.id} value={cause.id}>
-                    {cause.code} - {cause.libelle}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className={`w-full ${!formData.cause_id && isRealFire() ? 'border-red-300 bg-red-50' : ''}`}>
+                  <SelectValue placeholder="-- Sélectionner --" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(referenceData.causes || []).map(cause => (
+                    <SelectItem key={cause.id} value={cause.id}>
+                      {cause.code} - {cause.libelle}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Source de chaleur */}
@@ -242,19 +245,22 @@ const SectionDSI = ({ formData, setFormData, editMode, referenceData, tenantSlug
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Source de chaleur (Ignition) {isRealFire() && <span className="text-red-500">*</span>}
               </label>
-              <select
+              <Select
                 value={formData.source_heat_id || ''}
-                onChange={(e) => setFormData({ ...formData, source_heat_id: e.target.value })}
+                onValueChange={(value) => setFormData({ ...formData, source_heat_id: value })}
                 disabled={!editMode}
-                className={`w-full border rounded-lg p-2 ${!formData.source_heat_id && isRealFire() ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
               >
-                <option value="">-- Sélectionner --</option>
-                {(referenceData.sources_chaleur || []).map(source => (
-                  <option key={source.id} value={source.id}>
-                    {source.code} - {source.libelle} {source.groupe && `(${source.groupe})`}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className={`w-full ${!formData.source_heat_id && isRealFire() ? 'border-red-300 bg-red-50' : ''}`}>
+                  <SelectValue placeholder="-- Sélectionner --" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(referenceData.sources_chaleur || []).map(source => (
+                    <SelectItem key={source.id} value={source.id}>
+                      {source.code} - {source.libelle} {source.groupe && `(${source.groupe})`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Facteur d'allumage */}
@@ -262,17 +268,19 @@ const SectionDSI = ({ formData, setFormData, editMode, referenceData, tenantSlug
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Facteur d&apos;allumage {isRealFire() && <span className="text-red-500">*</span>}
               </label>
-              <select
+              <Select
                 value={formData.facteur_allumage_id || ''}
-                onChange={(e) => setFormData({ ...formData, facteur_allumage_id: e.target.value })}
+                onValueChange={(value) => setFormData({ ...formData, facteur_allumage_id: value })}
                 disabled={!editMode}
-                className={`w-full border rounded-lg p-2 ${!formData.facteur_allumage_id && isRealFire() ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
               >
-                <option value="">-- Sélectionner --</option>
-                {(referenceData.facteurs_allumage || []).map(facteur => (
-                  <option key={facteur.id} value={facteur.id}>
-                    {facteur.code} - {facteur.libelle}
-                  </option>
+                <SelectTrigger className={`w-full ${!formData.facteur_allumage_id && isRealFire() ? 'border-red-300 bg-red-50' : ''}`}>
+                  <SelectValue placeholder="-- Sélectionner --" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(referenceData.facteurs_allumage || []).map(facteur => (
+                    <SelectItem key={facteur.id} value={facteur.id}>
+                      {facteur.code} - {facteur.libelle}
+                    </SelectItem>
                 ))}
               </select>
             </div>
