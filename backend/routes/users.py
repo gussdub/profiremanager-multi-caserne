@@ -26,6 +26,7 @@ from routes.dependencies import (
     ALGORITHM,
     validate_complex_password,
     get_password_hash,
+    verify_password,
     creer_activite
 )
 
