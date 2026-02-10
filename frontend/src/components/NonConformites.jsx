@@ -695,6 +695,161 @@ const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
           </div>
         </div>
       )}
+
+      {/* Modal Détails NC */}
+      {showDetailModal && selectedNC && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100000,
+          padding: '1rem'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '2rem',
+            maxWidth: '700px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflow: 'auto'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: '600' }}>
+                📋 Détails de la Non-Conformité
+              </h3>
+              <button
+                onClick={() => {
+                  setShowDetailModal(false);
+                  setSelectedNC(null);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  color: '#6b7280'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {/* Titre et statut */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
+                <h4 style={{ fontSize: '1.25rem', fontWeight: '600', margin: 0 }}>
+                  {selectedNC.titre || selectedNC.element}
+                </h4>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <span style={{
+                    padding: '0.375rem 0.75rem',
+                    borderRadius: '6px',
+                    backgroundColor: getPrioriteColor(selectedNC.priorite).bg,
+                    color: getPrioriteColor(selectedNC.priorite).color,
+                    fontSize: '0.875rem',
+                    fontWeight: '600'
+                  }}>
+                    {getPrioriteColor(selectedNC.priorite).label}
+                  </span>
+                  <span style={{
+                    padding: '0.375rem 0.75rem',
+                    borderRadius: '6px',
+                    backgroundColor: getStatutColor(selectedNC.statut).bg,
+                    color: getStatutColor(selectedNC.statut).color,
+                    fontSize: '0.875rem',
+                    fontWeight: '600'
+                  }}>
+                    {getStatutColor(selectedNC.statut).label}
+                  </span>
+                </div>
+              </div>
+
+              {/* Informations */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div style={{ padding: '1rem', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>🏢 Bâtiment</div>
+                  <div style={{ fontWeight: '500' }}>
+                    {selectedNC.batiment?.nom_etablissement || selectedNC.batiment?.adresse_civique || 'Non spécifié'}
+                  </div>
+                  {selectedNC.batiment?.ville && (
+                    <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>{selectedNC.batiment.ville}</div>
+                  )}
+                </div>
+                <div style={{ padding: '1rem', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>📅 Date d'identification</div>
+                  <div style={{ fontWeight: '500' }}>{formatDate(selectedNC.date_inspection)}</div>
+                </div>
+              </div>
+
+              {/* Catégorie si disponible */}
+              {selectedNC.categorie && (
+                <div style={{ padding: '1rem', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>📁 Catégorie</div>
+                  <div style={{ fontWeight: '500' }}>{selectedNC.categorie}</div>
+                </div>
+              )}
+
+              {/* Description */}
+              {selectedNC.observations && (
+                <div style={{ padding: '1rem', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.5rem' }}>📝 Description</div>
+                  <div style={{ whiteSpace: 'pre-wrap' }}>{selectedNC.observations}</div>
+                </div>
+              )}
+
+              {/* Source */}
+              <div style={{ padding: '0.75rem', backgroundColor: selectedNC.est_manuel ? '#dbeafe' : '#f0fdf4', borderRadius: '8px', fontSize: '0.875rem' }}>
+                {selectedNC.est_manuel ? '👤 Créée manuellement' : '📋 Issue d\'une inspection'}
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+                {selectedNC.statut === 'a_corriger' && (
+                  <Button
+                    onClick={() => {
+                      marquerCorrige(selectedNC);
+                      setShowDetailModal(false);
+                      setSelectedNC(null);
+                    }}
+                    style={{ flex: 1 }}
+                  >
+                    ✅ Marquer comme corrigé
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (selectedNC.batiment) {
+                      openBatimentModal(selectedNC.batiment);
+                    }
+                  }}
+                  style={{ flex: 1 }}
+                  disabled={!selectedNC.batiment}
+                >
+                  🏢 Voir le bâtiment
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowDetailModal(false);
+                    setSelectedNC(null);
+                  }}
+                  style={{ flex: 1 }}
+                >
+                  Fermer
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
