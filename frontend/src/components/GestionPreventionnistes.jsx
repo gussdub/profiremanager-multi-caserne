@@ -5,6 +5,7 @@ import { Label } from './ui/label';
 import { useToast } from '../hooks/use-toast';
 import { useTenant } from '../contexts/TenantContext';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
+import { SecteurForm } from './MapComponents';
 
 // Lazy load map component
 const SecteursMap = lazy(() => import('./SecteursMap'));
