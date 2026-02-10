@@ -194,7 +194,9 @@ class SecteurGeographique(BaseModel):
     description: str = ""
     couleur: str = "#3B82F6"
     coordonnees: List[Dict[str, float]] = []
+    geometry: Optional[Dict[str, Any]] = None  # Format GeoJSON alternatif
     preventionniste_assigne_id: Optional[str] = None
+    actif: bool = True
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -204,7 +206,9 @@ class SecteurGeographiqueCreate(BaseModel):
     description: str = ""
     couleur: str = "#3B82F6"
     coordonnees: List[Dict[str, float]] = []
+    geometry: Optional[Dict[str, Any]] = None  # Format GeoJSON alternatif
     preventionniste_assigne_id: Optional[str] = None
+    actif: bool = True
 
 
 class GrilleInspection(BaseModel):
