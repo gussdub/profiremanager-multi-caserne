@@ -1089,84 +1089,160 @@ const MonProfil = () => {
 
           {/* Section Signature Numérique */}
           {(user?.est_preventionniste || user?.role === 'admin' || user?.role === 'superviseur') && (
-            <div style={{ 
-              background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-              borderRadius: '12px',
-              padding: '1.5rem',
-              marginBottom: '1.5rem'
-            }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                ✍️ Signature numérique
-              </h3>
-              
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                {userProfile?.signature_url ? (
-                  <div style={{ 
-                    background: 'white', 
-                    padding: '0.75rem', 
-                    borderRadius: '8px',
-                    border: '1px solid #e5e7eb'
-                  }}>
-                    <img 
-                      src={userProfile.signature_url} 
-                      alt="Ma signature" 
-                      style={{ 
-                        maxWidth: '200px', 
-                        maxHeight: '80px',
-                        objectFit: 'contain'
-                      }}
-                    />
-                  </div>
-                ) : (
-                  <div style={{ 
-                    width: '200px', 
-                    height: '80px', 
-                    background: '#f3f4f6',
-                    borderRadius: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    border: '2px dashed #d1d5db'
-                  }}>
-                    <span style={{ color: '#9ca3af', fontSize: '0.875rem' }}>Aucune signature</span>
+            <Card style={{ marginBottom: '1.5rem' }}>
+              <CardHeader>
+                <CardTitle style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.1rem' }}>
+                  ✍️ Signature numérique
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {/* Affichage signature existante */}
+                {userProfile?.signature_url && (
+                  <div style={{ marginBottom: '1rem' }}>
+                    <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>
+                      Signature actuelle :
+                    </p>
+                    <div style={{ 
+                      background: '#f9fafb', 
+                      padding: '1rem', 
+                      borderRadius: '8px',
+                      border: '1px solid #e5e7eb',
+                      display: 'inline-block'
+                    }}>
+                      <img 
+                        src={userProfile.signature_url} 
+                        alt="Ma signature" 
+                        style={{ 
+                          maxWidth: '250px', 
+                          maxHeight: '100px',
+                          objectFit: 'contain'
+                        }}
+                      />
+                    </div>
+                    <div style={{ marginTop: '0.5rem' }}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleDeleteSignature}
+                        style={{ color: '#dc2626' }}
+                      >
+                        🗑️ Supprimer la signature
+                      </Button>
+                    </div>
                   </div>
                 )}
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <input
-                    type="file"
-                    ref={signatureInputRef}
-                    onChange={handleSignatureUpload}
-                    accept="image/jpeg,image/png,image/jpg"
-                    style={{ display: 'none' }}
-                  />
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => signatureInputRef.current?.click()}
-                    disabled={signatureUploading}
-                  >
-                    {signatureUploading ? '⏳ Envoi...' : userProfile?.signature_url ? '🔄 Modifier' : '📤 Uploader'}
-                  </Button>
-                  
-                  {userProfile?.signature_url && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleDeleteSignature}
-                      style={{ color: '#dc2626' }}
-                    >
-                      🗑️ Supprimer
-                    </Button>
-                  )}
+
+                {/* Zone de dessin OU upload */}
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
+                  gap: '1.5rem',
+                  marginTop: userProfile?.signature_url ? '1rem' : '0'
+                }}>
+                  {/* Option 1: Dessiner */}
+                  <div>
+                    <p style={{ fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.75rem' }}>
+                      📝 Dessiner la signature
+                    </p>
+                    <SignaturePad
+                      label="Dessinez votre signature"
+                      width={300}
+                      height={120}
+                      initialValue={null}
+                      onSignatureChange={(dataUrl) => {
+                        if (dataUrl) {
+                          setUserProfile(prev => ({...prev, tempSignature: dataUrl}));
+                        } else {
+                          setUserProfile(prev => ({...prev, tempSignature: null}));
+                        }
+                      }}
+                    />
+                    {userProfile?.tempSignature && (
+                      <Button
+                        onClick={async () => {
+                          setSignatureUploading(true);
+                          try {
+                            // Convertir dataURL en blob pour l'upload
+                            const response = await fetch(userProfile.tempSignature);
+                            const blob = await response.blob();
+                            const file = new File([blob], 'signature.png', { type: 'image/png' });
+                            
+                            const formData = new FormData();
+                            formData.append('file', file);
+
+                            const token = getTenantToken();
+                            const res = await axios.post(
+                              `${API}/${tenantSlug}/users/${user.id}/signature`,
+                              formData,
+                              {
+                                headers: {
+                                  'Authorization': `Bearer ${token}`,
+                                  'Content-Type': 'multipart/form-data'
+                                }
+                              }
+                            );
+
+                            setUserProfile(prev => ({...prev, signature_url: res.data.signature_url, tempSignature: null}));
+                            toast({
+                              title: "Signature enregistrée",
+                              description: "Votre signature a été sauvegardée",
+                            });
+                          } catch (error) {
+                            toast({
+                              title: "Erreur",
+                              description: "Impossible de sauvegarder la signature",
+                              variant: "destructive"
+                            });
+                          } finally {
+                            setSignatureUploading(false);
+                          }
+                        }}
+                        disabled={signatureUploading}
+                        style={{ marginTop: '0.75rem', width: '100%' }}
+                      >
+                        {signatureUploading ? '⏳ Enregistrement...' : '💾 Enregistrer cette signature'}
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Option 2: Télécharger */}
+                  <div>
+                    <p style={{ fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.75rem' }}>
+                      📤 Ou télécharger une image
+                    </p>
+                    <div style={{ 
+                      border: '2px dashed #d1d5db',
+                      borderRadius: '8px',
+                      padding: '1.5rem',
+                      textAlign: 'center',
+                      backgroundColor: '#f9fafb'
+                    }}>
+                      <input
+                        type="file"
+                        ref={signatureInputRef}
+                        onChange={handleSignatureUpload}
+                        accept="image/jpeg,image/png,image/jpg"
+                        style={{ display: 'none' }}
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={() => signatureInputRef.current?.click()}
+                        disabled={signatureUploading}
+                      >
+                        {signatureUploading ? '⏳ Envoi...' : '📂 Choisir un fichier'}
+                      </Button>
+                      <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.5rem' }}>
+                        JPEG ou PNG (max 500KB)
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              
-              <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.75rem' }}>
-                Utilisée pour signer les avis de non-conformité et documents officiels • JPEG ou PNG (max 500KB)
-              </p>
-            </div>
+
+                <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '1rem', fontStyle: 'italic' }}>
+                  Cette signature sera utilisée pour les avis de non-conformité et autres documents officiels.
+                </p>
+              </CardContent>
+            </Card>
           )}
 
 
