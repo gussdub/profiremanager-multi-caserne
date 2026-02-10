@@ -1,19 +1,44 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
 import { Button } from './button';
 
 /**
- * Composant de signature tactile
+ * Composant de signature tactile avec redimensionnement automatique
  */
 const SignaturePad = ({ 
   onSignatureChange, 
   initialValue = null,
-  width = 400,
   height = 150,
   label = "Signature"
 }) => {
   const sigRef = useRef(null);
+  const containerRef = useRef(null);
   const [isEmpty, setIsEmpty] = useState(true);
+  const [canvasWidth, setCanvasWidth] = useState(400);
+
+  // Calculer la largeur du canvas basée sur le conteneur
+  const updateCanvasSize = useCallback(() => {
+    if (containerRef.current) {
+      const containerWidth = containerRef.current.offsetWidth;
+      setCanvasWidth(containerWidth > 0 ? containerWidth - 4 : 400); // -4 pour la bordure
+    }
+  }, []);
+
+  useEffect(() => {
+    updateCanvasSize();
+    window.addEventListener('resize', updateCanvasSize);
+    
+    // Observer pour détecter les changements de taille du conteneur
+    const resizeObserver = new ResizeObserver(updateCanvasSize);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    return () => {
+      window.removeEventListener('resize', updateCanvasSize);
+      resizeObserver.disconnect();
+    };
+  }, [updateCanvasSize]);
 
   useEffect(() => {
     if (initialValue && sigRef.current) {
@@ -39,7 +64,7 @@ const SignaturePad = ({
   };
 
   return (
-    <div style={{ width: '100%' }}>
+    <div style={{ width: '100%' }} ref={containerRef}>
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
@@ -71,11 +96,10 @@ const SignaturePad = ({
           ref={sigRef}
           penColor="#1e40af"
           canvasProps={{
-            width: Math.min(width, window.innerWidth - 80),
+            width: canvasWidth,
             height: height,
             style: { 
-              width: '100%', 
-              height: `${height}px`,
+              display: 'block',
               cursor: 'crosshair'
             }
           }}
