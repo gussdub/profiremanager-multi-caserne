@@ -36,8 +36,10 @@ const MonProfil = () => {
   const [profileData, setProfileData] = useState({});
   const [epiTailles, setEpiTailles] = useState({});
   const [photoUploading, setPhotoUploading] = useState(false);
+  const [signatureUploading, setSignatureUploading] = useState(false);
   const photoInputRef = React.useRef(null);
   const photoLibraryRef = React.useRef(null);
+  const signatureInputRef = React.useRef(null);
   
   // États pour le crop d'image
   const [showCropModal, setShowCropModal] = useState(false);
