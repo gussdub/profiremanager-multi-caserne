@@ -265,6 +265,7 @@ const BatimentForm = ({
     if (batiment) {
       setEditData({ ...batiment });
       fetchInspections();
+      fetchNonConformites();
       
       // Charger la photo si elle existe dans le bâtiment
       if (batiment.photo_url) {
