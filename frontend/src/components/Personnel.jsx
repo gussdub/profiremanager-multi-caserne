@@ -2866,6 +2866,76 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
           </div>
         </div>
       )}
+
+      {/* Modal de prévisualisation PDF */}
+      {showPreviewModal && previewDataUrl && (
+        <div 
+          className="modal-overlay" 
+          onClick={() => {
+            setShowPreviewModal(false);
+            setPreviewDataUrl(null);
+          }}
+          style={{ zIndex: 100001 }}
+        >
+          <div 
+            className="modal-content" 
+            onClick={(e) => e.stopPropagation()} 
+            style={{ 
+              maxWidth: '900px', 
+              width: '95%', 
+              height: '90vh',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+          >
+            <div className="modal-header" style={{ flexShrink: 0 }}>
+              <h3>📄 {previewFilename}</h3>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <a 
+                  href={previewDataUrl} 
+                  download={previewFilename}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.25rem',
+                    padding: '0.5rem 1rem',
+                    background: '#dc2626',
+                    color: 'white',
+                    borderRadius: '6px',
+                    textDecoration: 'none',
+                    fontSize: '0.875rem',
+                    fontWeight: '500'
+                  }}
+                >
+                  📥 Télécharger
+                </a>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => {
+                    setShowPreviewModal(false);
+                    setPreviewDataUrl(null);
+                  }}
+                >
+                  ✕
+                </Button>
+              </div>
+            </div>
+            <div style={{ flex: 1, overflow: 'hidden', padding: '1rem' }}>
+              <iframe
+                src={previewDataUrl}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '8px'
+                }}
+                title="Prévisualisation PDF"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal de validation de compétence */}
       {showValidateCompetenceModal && selectedUser && (
         <div className="modal-overlay" onClick={() => setShowValidateCompetenceModal(false)}>
