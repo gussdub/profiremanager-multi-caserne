@@ -307,7 +307,6 @@ const AppLayout = () => {
         
         // Rediriger vers la page actifs pour ronde_securite OU inventaire
         if (qrAction.action === 'ronde_securite' || qrAction.action === 'inventaire') {
-          console.log('🚀 AppLayout - Changement de page vers actifs pour action:', qrAction.action);
           setCurrentPage('actifs');
         }
         // Ne pas supprimer ici, laisser GestionActifs le faire après avoir ouvert le modal
