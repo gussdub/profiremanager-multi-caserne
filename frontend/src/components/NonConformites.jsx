@@ -754,38 +754,49 @@ const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
                     try {
                       setCreatingNC(true);
                       
+                      // Mapper la priorité frontend vers gravité backend
+                      let gravite = 'moyen';
+                      if (newNC.priorite === 'haute') gravite = 'eleve';
+                      else if (newNC.priorite === 'faible') gravite = 'faible';
+                      
                       const ncData = {
                         batiment_id: newNC.batiment_id,
                         titre: newNC.titre,
                         description: newNC.description,
                         categorie: newNC.categorie,
-                        priorite: newNC.priorite,
+                        gravite: gravite,
                         statut: 'ouverte',
-                        date_identification: newNC.date_identification
+                        date_identification: newNC.date_identification,
+                        // Inclure les articles sélectionnés
+                        articles_ids: selectedArticles.map(a => a.id),
+                        articles_codes: selectedArticles.map(a => a.code_article),
+                        delai_correction: newNC.delai_correction || null
                       };
 
                       await apiPost(tenantSlug, '/prevention/non-conformites', ncData);
                       
                       toast({
                         title: "Succès",
-                        description: "Non-conformité créée avec succès"
+                        description: `Non-conformité créée avec ${selectedArticles.length} article(s) associé(s)`
                       });
 
                       setShowCreateModal(false);
+                      setSelectedArticles([]);
                       setNewNC({
                         titre: '',
                         description: '',
                         categorie: '',
                         priorite: 'moyenne',
                         batiment_id: '',
-                        date_identification: new Date().toISOString().split('T')[0]
+                        date_identification: new Date().toISOString().split('T')[0],
+                        delai_correction: ''
                       });
                       loadData();
                     } catch (error) {
                       console.error('Erreur création NC:', error);
                       toast({
                         title: "Erreur",
-                        description: "Impossible de créer la non-conformité",
+                        description: error.response?.data?.detail || "Impossible de créer la non-conformité",
                         variant: "destructive"
                       });
                     } finally {
@@ -801,6 +812,7 @@ const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
                   variant="outline"
                   onClick={() => {
                     setShowCreateModal(false);
+                    setSelectedArticles([]);
                     setNewNC({
                       titre: '',
                       description: '',
@@ -808,7 +820,6 @@ const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
                       priorite: 'moyenne',
                       batiment_id: '',
                       date_identification: new Date().toISOString().split('T')[0],
-                      violation_id: '',
                       delai_correction: ''
                     });
                   }}
