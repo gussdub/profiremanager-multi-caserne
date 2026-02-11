@@ -1360,3 +1360,200 @@ async def export_personnel_excel(
     except Exception as e:
         logger.error(f"Erreur export personnel Excel: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== ROUTES EXPORT DIRECT (COMPATIBLE IFRAME SANDBOX) ====================
+
+@router.get("/{tenant_slug}/exports/download/{file_id}")
+async def download_temp_export(tenant_slug: str, file_id: str):
+    """Télécharge un fichier d'export temporaire (accès public avec ID unique)"""
+    # Nettoyer les vieux fichiers
+    cleanup_old_exports()
+    
+    # Chercher le fichier
+    for filename in os.listdir(TEMP_EXPORT_DIR):
+        if filename.startswith(file_id):
+            filepath = os.path.join(TEMP_EXPORT_DIR, filename)
+            
+            # Déterminer le type MIME
+            if filename.endswith('.pdf'):
+                media_type = "application/pdf"
+            elif filename.endswith('.xlsx'):
+                media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            else:
+                media_type = "application/octet-stream"
+            
+            # Lire et retourner le fichier
+            with open(filepath, 'rb') as f:
+                content = f.read()
+            
+            # Extraire le nom original du fichier
+            original_name = filename.split('_', 1)[1] if '_' in filename else filename
+            
+            return StreamingResponse(
+                BytesIO(content),
+                media_type=media_type,
+                headers={
+                    "Content-Disposition": f"attachment; filename={original_name}",
+                    "Access-Control-Allow-Origin": "*"
+                }
+            )
+    
+    raise HTTPException(status_code=404, detail="Fichier non trouvé ou expiré")
+
+
+@router.post("/{tenant_slug}/personnel/generate-export")
+async def generate_personnel_export(
+    tenant_slug: str,
+    export_type: str = "pdf",
+    user_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Génère un export et retourne une URL de téléchargement direct"""
+    if current_user.role == "employe":
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    try:
+        # Nettoyer les vieux fichiers
+        cleanup_old_exports()
+        
+        # Récupérer les utilisateurs
+        if user_id:
+            users_data = await db.users.find({"id": user_id, "tenant_id": tenant.id}).to_list(1)
+        else:
+            users_data = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+        
+        # Générer un ID unique pour le fichier
+        file_id = str(uuid.uuid4())[:8]
+        
+        if export_type == "pdf":
+            # Créer le PDF
+            buffer = BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=A4)
+            styles = getSampleStyleSheet()
+            elements = []
+            
+            title = "Fiche Employé" if user_id else "Liste du Personnel"
+            title_style = ParagraphStyle(
+                'CustomTitle',
+                parent=styles['Heading1'],
+                fontSize=18,
+                textColor=colors.HexColor("#DC2626"),
+                spaceAfter=30
+            )
+            elements.append(Paragraph(title, title_style))
+            elements.append(Spacer(1, 20))
+            
+            if user_id and users_data:
+                user = users_data[0]
+                info = [
+                    ["Champ", "Valeur"],
+                    ["Nom", f"{user.get('prenom', '')} {user.get('nom', '')}"],
+                    ["Email", user.get("email", "")],
+                    ["Grade", user.get("grade", "")],
+                    ["Matricule", user.get("matricule", "")],
+                    ["Statut", user.get("statut", "")],
+                    ["Type d'emploi", user.get("type_emploi", "")],
+                ]
+                table = Table(info, colWidths=[150, 250])
+                table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#DC2626")),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                    ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ]))
+                elements.append(table)
+            else:
+                data = [["Nom", "Grade", "Statut", "Type"]]
+                for u in users_data:
+                    data.append([
+                        f"{u.get('prenom', '')} {u.get('nom', '')}",
+                        u.get("grade", ""),
+                        u.get("statut", ""),
+                        u.get("type_emploi", "")
+                    ])
+                
+                table = Table(data, colWidths=[150, 100, 80, 100])
+                table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#DC2626")),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                    ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                    ('FONTSIZE', (0, 0), (-1, -1), 9),
+                ]))
+                elements.append(table)
+            
+            doc.build(elements)
+            buffer.seek(0)
+            
+            original_name = f"fiche_{user_id}.pdf" if user_id else "liste_personnel.pdf"
+            filepath = os.path.join(TEMP_EXPORT_DIR, f"{file_id}_{original_name}")
+            
+            with open(filepath, 'wb') as f:
+                f.write(buffer.read())
+        
+        else:  # Excel
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "Personnel"
+            
+            titre = "Fiche Employé" if user_id else "Liste du Personnel"
+            ws['A1'] = titre
+            ws['A1'].font = Font(size=14, bold=True, color="DC2626")
+            ws.merge_cells('A1:F1')
+            
+            if not user_id:
+                total = len(users_data)
+                actifs = len([u for u in users_data if u.get("statut") == "Actif"])
+                
+                ws['A3'] = "Total personnel"
+                ws['B3'] = total
+                ws['A4'] = "Personnel actif"
+                ws['B4'] = actifs
+                
+                headers = ["Nom", "Prénom", "Grade", "Matricule", "Statut", "Type"]
+                for col, header in enumerate(headers, 1):
+                    cell = ws.cell(row=6, column=col, value=header)
+                    cell.font = Font(bold=True, color="FFFFFF")
+                    cell.fill = PatternFill(start_color="DC2626", end_color="DC2626", fill_type="solid")
+                
+                for row, u in enumerate(users_data, 7):
+                    ws.cell(row=row, column=1, value=u.get("nom", ""))
+                    ws.cell(row=row, column=2, value=u.get("prenom", ""))
+                    ws.cell(row=row, column=3, value=u.get("grade", ""))
+                    ws.cell(row=row, column=4, value=u.get("matricule", ""))
+                    ws.cell(row=row, column=5, value=u.get("statut", ""))
+                    ws.cell(row=row, column=6, value=u.get("type_emploi", ""))
+            else:
+                if users_data:
+                    u = users_data[0]
+                    ws['A3'] = "Nom"
+                    ws['B3'] = u.get("nom", "")
+                    ws['A4'] = "Prénom"
+                    ws['B4'] = u.get("prenom", "")
+                    ws['A5'] = "Email"
+                    ws['B5'] = u.get("email", "")
+                    ws['A6'] = "Grade"
+                    ws['B6'] = u.get("grade", "")
+            
+            for col in range(1, 7):
+                ws.column_dimensions[get_column_letter(col)].width = 15
+            
+            original_name = f"fiche_{user_id}.xlsx" if user_id else "liste_personnel.xlsx"
+            filepath = os.path.join(TEMP_EXPORT_DIR, f"{file_id}_{original_name}")
+            wb.save(filepath)
+        
+        # Construire l'URL de téléchargement
+        backend_url = os.environ.get("REACT_APP_BACKEND_URL", "")
+        download_url = f"{backend_url}/api/{tenant_slug}/exports/download/{file_id}"
+        
+        return {
+            "success": True,
+            "download_url": download_url,
+            "filename": original_name,
+            "expires_in": 300  # 5 minutes
+        }
+        
+    except Exception as e:
+        logger.error(f"Erreur génération export: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
