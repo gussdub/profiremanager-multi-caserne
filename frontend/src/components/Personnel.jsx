@@ -2845,7 +2845,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
         </div>
       )}
 
-      {/* Modal de prévisualisation PDF/Excel */}
+      {/* Modal de téléchargement PDF/Excel */}
       {showPreviewModal && previewDataUrl && (
         <div 
           className="modal-overlay" 
@@ -2859,15 +2859,14 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
             className="modal-content" 
             onClick={(e) => e.stopPropagation()} 
             style={{ 
-              maxWidth: previewType === 'pdf' ? '900px' : '500px', 
-              width: '95%', 
-              height: previewType === 'pdf' ? '90vh' : 'auto',
+              maxWidth: '450px', 
+              width: '95%',
               display: 'flex',
               flexDirection: 'column'
             }}
           >
             <div className="modal-header" style={{ flexShrink: 0 }}>
-              <h3>{previewType === 'pdf' ? '📄' : '📊'} {previewFilename}</h3>
+              <h3>{previewType === 'pdf' ? '📄' : '📊'} Export prêt</h3>
               <Button 
                 variant="ghost" 
                 onClick={() => {
@@ -2879,40 +2878,36 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
               </Button>
             </div>
             <div style={{ 
-              flex: 1, 
-              overflow: 'hidden', 
-              padding: '1.5rem',
+              padding: '2rem',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
               textAlign: 'center'
             }}>
-              {previewType === 'pdf' ? (
-                <>
-                  <iframe
-                    src={previewDataUrl}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      minHeight: '500px'
-                    }}
-                    title="Aperçu PDF"
-                  />
-                  <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#6b7280' }}>
-                    Si le PDF ne s'affiche pas, cliquez sur le bouton ci-dessous.
-                  </p>
-                </>
-              ) : (
-                <>
-                  <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📊</div>
-                  <p style={{ fontSize: '1rem', color: '#374151', marginBottom: '1.5rem' }}>
-                    Votre fichier Excel est prêt !
-                  </p>
-                </>
-              )}
+              <div style={{ 
+                fontSize: '4rem', 
+                marginBottom: '1rem' 
+              }}>
+                {previewType === 'pdf' ? '📄' : '📊'}
+              </div>
+              
+              <h4 style={{ 
+                fontSize: '1.1rem', 
+                color: '#1f2937', 
+                marginBottom: '0.5rem',
+                fontWeight: '600'
+              }}>
+                {previewFilename}
+              </h4>
+              
+              <p style={{ 
+                fontSize: '0.9rem', 
+                color: '#6b7280',
+                marginBottom: '1.5rem'
+              }}>
+                Votre fichier {previewType === 'pdf' ? 'PDF' : 'Excel'} est prêt à être téléchargé
+              </p>
               
               <a 
                 href={previewDataUrl} 
@@ -2922,13 +2917,14 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '0.5rem',
-                  padding: '0.75rem 1.5rem',
+                  padding: '1rem 2rem',
                   background: '#dc2626',
                   color: 'white',
                   borderRadius: '8px',
                   textDecoration: 'none',
                   fontSize: '1rem',
-                  fontWeight: '600'
+                  fontWeight: '600',
+                  boxShadow: '0 2px 8px rgba(220, 38, 38, 0.3)'
                 }}
                 onClick={() => {
                   toast({
@@ -2936,12 +2932,21 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                     description: `Ouverture de ${previewFilename}...`,
                     variant: "success"
                   });
+                  // Fermer la modale après un court délai
+                  setTimeout(() => {
+                    setShowPreviewModal(false);
+                    setPreviewDataUrl(null);
+                  }, 1000);
                 }}
               >
-                📥 Télécharger {previewFilename}
+                📥 Télécharger
               </a>
               
-              <p style={{ marginTop: '1rem', fontSize: '0.75rem', color: '#9ca3af' }}>
+              <p style={{ 
+                marginTop: '1.5rem', 
+                fontSize: '0.75rem', 
+                color: '#9ca3af' 
+              }}>
                 Le fichier s'ouvrira dans un nouvel onglet
               </p>
             </div>
