@@ -460,13 +460,15 @@ const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
               <button
                 onClick={() => {
                   setShowCreateModal(false);
+                  setSelectedArticles([]);
                   setNewNC({
                     titre: '',
                     description: '',
                     categorie: '',
                     priorite: 'moyenne',
                     batiment_id: '',
-                    date_identification: new Date().toISOString().split('T')[0]
+                    date_identification: new Date().toISOString().split('T')[0],
+                    delai_correction: ''
                   });
                 }}
                 style={{
