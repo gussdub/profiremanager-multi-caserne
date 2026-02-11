@@ -472,6 +472,180 @@ async def get_vehicules(tenant_slug: str, current_user: User = Depends(get_curre
     return vehicules
 
 
+# IMPORTANT: Cette route DOIT être avant les routes avec {vehicule_id} pour éviter les conflits
+@router.get("/{tenant_slug}/actifs/vehicules/alertes-maintenance")
+async def get_alertes_maintenance_vehicules(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Retourne les alertes de maintenance pour les véhicules :
+    - Vignettes expirant dans 30 jours
+    - Entretiens dus selon la périodicité configurée
+    - Défectuosités signalées non réparées (délai 48h)
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if current_user.tenant_id != tenant.id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    alertes = []
+    today = datetime.now(timezone.utc).date()
+    
+    # Récupérer tous les véhicules actifs
+    vehicules = await db.vehicules.find({
+        "tenant_id": tenant.id,
+        "statut": {"$in": ["actif", "maintenance"]}
+    }, {"_id": 0}).to_list(500)
+    
+    for v in vehicules:
+        vehicule_nom = v.get("nom", "Véhicule inconnu")
+        vehicule_id = v.get("id")
+        
+        # 1. Vérifier la vignette (expiration dans 30 jours)
+        vignette_exp = v.get("vignette_date_expiration")
+        if vignette_exp:
+            try:
+                exp_year, exp_month = map(int, vignette_exp.split("-")[:2])
+                if exp_month == 12:
+                    exp_date = datetime(exp_year + 1, 1, 1).date() - timedelta(days=1)
+                else:
+                    exp_date = datetime(exp_year, exp_month + 1, 1).date() - timedelta(days=1)
+                
+                jours_restants = (exp_date - today).days
+                
+                if jours_restants < 0:
+                    alertes.append({
+                        "type": "vignette_expiree",
+                        "niveau": "critique",
+                        "vehicule_id": vehicule_id,
+                        "vehicule_nom": vehicule_nom,
+                        "message": f"Vignette EXPIRÉE depuis {abs(jours_restants)} jour(s)",
+                        "date_echeance": vignette_exp,
+                        "jours_restants": jours_restants
+                    })
+                elif jours_restants <= 30:
+                    alertes.append({
+                        "type": "vignette_a_renouveler",
+                        "niveau": "urgent" if jours_restants <= 7 else "attention",
+                        "vehicule_id": vehicule_id,
+                        "vehicule_nom": vehicule_nom,
+                        "message": f"Vignette expire dans {jours_restants} jour(s)",
+                        "date_echeance": vignette_exp,
+                        "jours_restants": jours_restants
+                    })
+            except Exception as e:
+                logger.warning(f"Erreur parsing date vignette {vignette_exp}: {e}")
+        
+        # 2. Vérifier l'entretien périodique
+        intervalle_mois = v.get("entretien_intervalle_mois")
+        derniere_vidange = v.get("derniere_vidange_date")
+        
+        if intervalle_mois and derniere_vidange:
+            try:
+                derniere_date = datetime.strptime(derniere_vidange, "%Y-%m-%d").date()
+                prochaine_date = derniere_date + timedelta(days=intervalle_mois * 30)
+                jours_restants = (prochaine_date - today).days
+                
+                if jours_restants < 0:
+                    alertes.append({
+                        "type": "entretien_du",
+                        "niveau": "urgent",
+                        "vehicule_id": vehicule_id,
+                        "vehicule_nom": vehicule_nom,
+                        "message": f"Entretien en retard de {abs(jours_restants)} jour(s)",
+                        "date_echeance": prochaine_date.strftime("%Y-%m-%d"),
+                        "jours_restants": jours_restants
+                    })
+                elif jours_restants <= 30:
+                    alertes.append({
+                        "type": "entretien_a_planifier",
+                        "niveau": "attention",
+                        "vehicule_id": vehicule_id,
+                        "vehicule_nom": vehicule_nom,
+                        "message": f"Entretien à planifier dans {jours_restants} jour(s)",
+                        "date_echeance": prochaine_date.strftime("%Y-%m-%d"),
+                        "jours_restants": jours_restants
+                    })
+            except Exception as e:
+                logger.warning(f"Erreur calcul entretien: {e}")
+        
+        # 3. Vérifier l'entretien par kilométrage
+        intervalle_km = v.get("entretien_intervalle_km")
+        derniere_vidange_km = v.get("derniere_vidange_km")
+        km_actuel = v.get("kilometrage")
+        
+        if intervalle_km and derniere_vidange_km and km_actuel:
+            km_depuis_vidange = km_actuel - derniere_vidange_km
+            km_restants = intervalle_km - km_depuis_vidange
+            
+            if km_restants <= 0:
+                alertes.append({
+                    "type": "entretien_km_depasse",
+                    "niveau": "urgent",
+                    "vehicule_id": vehicule_id,
+                    "vehicule_nom": vehicule_nom,
+                    "message": f"Entretien dépassé de {abs(int(km_restants))} km",
+                    "km_restants": int(km_restants)
+                })
+            elif km_restants <= 1000:
+                alertes.append({
+                    "type": "entretien_km_proche",
+                    "niveau": "attention",
+                    "vehicule_id": vehicule_id,
+                    "vehicule_nom": vehicule_nom,
+                    "message": f"Entretien dans {int(km_restants)} km",
+                    "km_restants": int(km_restants)
+                })
+    
+    # 4. Vérifier les défectuosités non réparées
+    reparations_en_cours = await db.reparations_vehicules.find({
+        "tenant_id": tenant.id,
+        "statut": {"$in": ["en_cours", "planifie"]},
+        "priorite": {"$in": ["urgente", "critique"]}
+    }, {"_id": 0}).to_list(100)
+    
+    for rep in reparations_en_cours:
+        date_signalement = rep.get("date_signalement")
+        if date_signalement:
+            try:
+                signale_date = datetime.strptime(date_signalement, "%Y-%m-%d")
+                heures_depuis = (datetime.now(timezone.utc) - signale_date.replace(tzinfo=timezone.utc)).total_seconds() / 3600
+                
+                if rep.get("priorite") == "critique":
+                    alertes.append({
+                        "type": "defectuosite_majeure",
+                        "niveau": "critique",
+                        "vehicule_id": rep.get("vehicule_id"),
+                        "vehicule_nom": rep.get("vehicule_nom", ""),
+                        "message": f"Défectuosité MAJEURE: {rep.get('description', '')[:50]}",
+                        "reparation_id": rep.get("id")
+                    })
+                elif heures_depuis > 48:
+                    alertes.append({
+                        "type": "defectuosite_48h_depassee",
+                        "niveau": "urgent",
+                        "vehicule_id": rep.get("vehicule_id"),
+                        "vehicule_nom": rep.get("vehicule_nom", ""),
+                        "message": f"Délai 48h dépassé: {rep.get('description', '')[:50]}",
+                        "reparation_id": rep.get("id"),
+                        "heures_depuis_signalement": int(heures_depuis)
+                    })
+            except Exception as e:
+                logger.warning(f"Erreur calcul délai réparation: {e}")
+    
+    # Trier par niveau de criticité
+    niveau_ordre = {"critique": 0, "urgent": 1, "attention": 2}
+    alertes.sort(key=lambda x: niveau_ordre.get(x.get("niveau"), 3))
+    
+    return {
+        "alertes": alertes,
+        "count": len(alertes),
+        "critiques": len([a for a in alertes if a.get("niveau") == "critique"]),
+        "urgentes": len([a for a in alertes if a.get("niveau") == "urgent"]),
+        "attention": len([a for a in alertes if a.get("niveau") == "attention"])
+    }
+
+
 @router.get("/{tenant_slug}/actifs/vehicules/{vehicule_id}/public")
 async def get_vehicule_public(tenant_slug: str, vehicule_id: str):
     """Récupère les informations publiques d'un véhicule (pour QR code) - Sans authentification"""
