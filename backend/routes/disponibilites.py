@@ -277,6 +277,18 @@ async def update_disponibilites(
     
     logging.info(f"📅 [DISPOS] Insérées {inserted_count} nouvelles dispos")
     
+    # Notifier l'employé si un admin/superviseur a modifié ses disponibilités
+    if current_user.id != user_id:
+        mois_label = disponibilites[0].get("date", "")[:7] if disponibilites else ""
+        await creer_notification(
+            tenant_id=tenant.id,
+            user_id=user_id,
+            type_notification="disponibilites_modifiees",
+            titre="Disponibilités modifiées",
+            message=f"Vos disponibilités pour {mois_label} ont été modifiées par {current_user.prenom} {current_user.nom}",
+            lien="/disponibilites"
+        )
+    
     return {"message": f"{len(disponibilites)} disponibilités mises à jour"}
 
 
