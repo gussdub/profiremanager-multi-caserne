@@ -1095,8 +1095,11 @@ class NonConformite(BaseModel):
     gravite: str = "moyen"  # faible, moyen, eleve, critique
     categorie: str = ""  # Catégorie pour création manuelle
     priorite: str = "moyenne"  # haute, moyenne, faible - alias de gravite
-    article_code: str = ""  # Article du code de sécurité
-    violation_id: Optional[str] = None  # Référence au référentiel de violations
+    article_code: str = ""  # Article du code de sécurité (legacy)
+    violation_id: Optional[str] = None  # Référence au référentiel de violations (legacy)
+    # Support pour articles multiples
+    articles_ids: List[str] = []  # IDs des articles sélectionnés
+    articles_codes: List[str] = []  # Codes des articles (ex: CNPI 2.1.3.1)
     
     # Suivi
     statut: str = "ouverte"  # ouverte, en_cours, corrigee, fermee
