@@ -39,7 +39,7 @@ const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
       const [nonConformitesData, batimentsData, violationsData] = await Promise.all([
         apiGet(tenantSlug, '/prevention/non-conformites'),
         apiGet(tenantSlug, '/prevention/batiments'),
-        apiGet(tenantSlug, '/prevention/ref-violations?actif=true').catch(() => [])
+        apiGet(tenantSlug, '/prevention/ref-violations').catch(() => [])
       ]);
 
       setBatiments(batimentsData);
