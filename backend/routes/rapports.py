@@ -1419,74 +1419,187 @@ async def generate_personnel_export(
         # Nettoyer les vieux fichiers
         cleanup_old_exports()
         
-        # Récupérer les utilisateurs
+        # Récupérer les utilisateurs avec toutes leurs informations
         if user_id:
             users_data = await db.users.find({"id": user_id, "tenant_id": tenant.id}).to_list(1)
         else:
-            users_data = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+            users_data = await db.users.find({"tenant_id": tenant.id}).sort("nom", 1).to_list(1000)
         
         # Générer un ID unique pour le fichier
         file_id = str(uuid.uuid4())[:8]
         
         if export_type == "pdf":
-            # Créer le PDF
-            buffer = BytesIO()
-            doc = SimpleDocTemplate(buffer, pagesize=A4)
+            # Utiliser les helpers de branding
+            buffer, doc, elements = create_branded_pdf(tenant, pagesize=A4)
             styles = getSampleStyleSheet()
-            elements = []
+            modern_styles = get_modern_pdf_styles(styles)
             
-            title = "Fiche Employé" if user_id else "Liste du Personnel"
-            title_style = ParagraphStyle(
-                'CustomTitle',
-                parent=styles['Heading1'],
-                fontSize=18,
-                textColor=colors.HexColor("#DC2626"),
-                spaceAfter=30
-            )
-            elements.append(Paragraph(title, title_style))
-            elements.append(Spacer(1, 20))
+            # Date de génération
+            from datetime import datetime
+            date_generation = datetime.now().strftime("%d/%m/%Y à %H:%M")
             
             if user_id and users_data:
+                # FICHE INDIVIDUELLE
                 user = users_data[0]
-                info = [
+                
+                # Titre
+                elements.append(Paragraph("Fiche Employé", modern_styles['title']))
+                elements.append(Spacer(1, 10))
+                
+                # Sous-titre avec nom
+                nom_complet = f"{user.get('prenom', '')} {user.get('nom', '')}"
+                elements.append(Paragraph(nom_complet, modern_styles['subheading']))
+                elements.append(Spacer(1, 20))
+                
+                # Section: Informations générales
+                elements.append(Paragraph("📋 Informations générales", modern_styles['heading']))
+                
+                info_generales = [
                     ["Champ", "Valeur"],
-                    ["Nom", f"{user.get('prenom', '')} {user.get('nom', '')}"],
-                    ["Email", user.get("email", "")],
-                    ["Grade", user.get("grade", "")],
-                    ["Matricule", user.get("matricule", "")],
-                    ["Statut", user.get("statut", "")],
-                    ["Type d'emploi", user.get("type_emploi", "")],
+                    ["Nom complet", nom_complet],
+                    ["Email", user.get("email", "-")],
+                    ["Téléphone", user.get("telephone", "-")],
+                    ["Adresse", user.get("adresse", "-")],
+                    ["Contact d'urgence", user.get("contact_urgence", "-")],
                 ]
-                table = Table(info, colWidths=[150, 250])
-                table.setStyle(TableStyle([
+                table1 = Table(info_generales, colWidths=[150, 300])
+                table1.setStyle(TableStyle([
                     ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#DC2626")),
                     ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-                    ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#e5e7eb")),
+                    ('BACKGROUND', (0, 1), (0, -1), colors.HexColor("#f9fafb")),
+                    ('FONTNAME', (0, 1), (0, -1), 'Helvetica-Bold'),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('PADDING', (0, 0), (-1, -1), 8),
                 ]))
-                elements.append(table)
+                elements.append(table1)
+                elements.append(Spacer(1, 20))
+                
+                # Section: Informations professionnelles
+                elements.append(Paragraph("👷 Informations professionnelles", modern_styles['heading']))
+                
+                info_pro = [
+                    ["Champ", "Valeur"],
+                    ["Grade", user.get("grade", "-")],
+                    ["Matricule", user.get("matricule", user.get("numero_employe", "-"))],
+                    ["Statut", user.get("statut", "-")],
+                    ["Type d'emploi", user.get("type_emploi", "-")],
+                    ["Date d'embauche", user.get("date_embauche", "-")],
+                    ["Taux horaire", f"{user.get('taux_horaire', 0):.2f} $" if user.get('taux_horaire') else "-"],
+                    ["Heures max/semaine", str(user.get("heures_max_semaine", 40))],
+                ]
+                table2 = Table(info_pro, colWidths=[150, 300])
+                table2.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#DC2626")),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#e5e7eb")),
+                    ('BACKGROUND', (0, 1), (0, -1), colors.HexColor("#f9fafb")),
+                    ('FONTNAME', (0, 1), (0, -1), 'Helvetica-Bold'),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('PADDING', (0, 0), (-1, -1), 8),
+                ]))
+                elements.append(table2)
+                elements.append(Spacer(1, 20))
+                
+                # Section: Tailles EPI (si disponibles)
+                tailles_epi = user.get("tailles_epi", {})
+                if tailles_epi:
+                    elements.append(Paragraph("🛡️ Tailles EPI", modern_styles['heading']))
+                    
+                    epi_noms = {
+                        'casque': 'Casque', 'bottes': 'Bottes', 'veste_bunker': 'Veste Bunker',
+                        'pantalon_bunker': 'Pantalon Bunker', 'gants': 'Gants',
+                        'masque_apria': 'Facial APRIA', 'cagoule': 'Cagoule'
+                    }
+                    
+                    epi_data = [["Équipement", "Taille"]]
+                    for key, nom in epi_noms.items():
+                        if tailles_epi.get(key):
+                            epi_data.append([nom, tailles_epi[key]])
+                    
+                    if len(epi_data) > 1:
+                        table3 = Table(epi_data, colWidths=[200, 100])
+                        table3.setStyle(TableStyle([
+                            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#DC2626")),
+                            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#e5e7eb")),
+                            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                            ('PADDING', (0, 0), (-1, -1), 6),
+                        ]))
+                        elements.append(table3)
+                    elements.append(Spacer(1, 20))
+                
+                # Section: Compétences (si disponibles)
+                competences = user.get("competences_validees", [])
+                if competences:
+                    elements.append(Paragraph("🎓 Compétences validées", modern_styles['heading']))
+                    comp_text = ", ".join(competences) if isinstance(competences, list) else str(competences)
+                    elements.append(Paragraph(comp_text, styles['Normal']))
+                    elements.append(Spacer(1, 20))
+                
             else:
-                data = [["Nom", "Grade", "Statut", "Type"]]
+                # LISTE DU PERSONNEL
+                elements.append(Paragraph("Liste du Personnel", modern_styles['title']))
+                elements.append(Spacer(1, 10))
+                
+                # Statistiques
+                total = len(users_data)
+                actifs = len([u for u in users_data if u.get("statut") == "Actif"])
+                temps_plein = len([u for u in users_data if u.get("type_emploi") == "temps_plein"])
+                temps_partiel = len([u for u in users_data if u.get("type_emploi") == "temps_partiel"])
+                
+                stats_text = f"Total: {total} employés | Actifs: {actifs} | Temps plein: {temps_plein} | Temps partiel: {temps_partiel}"
+                elements.append(Paragraph(stats_text, modern_styles['subheading']))
+                elements.append(Spacer(1, 20))
+                
+                # Tableau avec plus de colonnes
+                data = [["Nom", "Prénom", "Grade", "Email", "Téléphone", "Statut", "Type"]]
                 for u in users_data:
                     data.append([
-                        f"{u.get('prenom', '')} {u.get('nom', '')}",
-                        u.get("grade", ""),
-                        u.get("statut", ""),
-                        u.get("type_emploi", "")
+                        u.get("nom", ""),
+                        u.get("prenom", ""),
+                        u.get("grade", "-"),
+                        u.get("email", "-"),
+                        u.get("telephone", "-"),
+                        u.get("statut", "-"),
+                        "TP" if u.get("type_emploi") == "temps_plein" else "TPa"
                     ])
                 
-                table = Table(data, colWidths=[150, 100, 80, 100])
+                table = Table(data, colWidths=[70, 70, 60, 120, 80, 50, 35])
                 table.setStyle(TableStyle([
                     ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#DC2626")),
                     ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-                    ('GRID', (0, 0), (-1, -1), 1, colors.black),
-                    ('FONTSIZE', (0, 0), (-1, -1), 9),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, 0), 9),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#e5e7eb")),
+                    ('FONTSIZE', (0, 1), (-1, -1), 8),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('PADDING', (0, 0), (-1, -1), 5),
+                    ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor("#f9fafb")]),
                 ]))
                 elements.append(table)
+            
+            # Footer avec date de génération
+            elements.append(Spacer(1, 30))
+            footer_style = ParagraphStyle(
+                'Footer',
+                parent=styles['Normal'],
+                fontSize=8,
+                textColor=colors.HexColor("#9ca3af"),
+                alignment=TA_CENTER
+            )
+            footer_text = create_pdf_footer_text(tenant)
+            elements.append(Paragraph(f"Document généré le {date_generation}", footer_style))
+            if footer_text:
+                elements.append(Paragraph(footer_text, footer_style))
             
             doc.build(elements)
             buffer.seek(0)
             
-            original_name = f"fiche_{user_id}.pdf" if user_id else "liste_personnel.pdf"
+            original_name = f"fiche_{users_data[0].get('nom', 'employe')}_{users_data[0].get('prenom', '')}.pdf" if user_id and users_data else "liste_personnel.pdf"
             filepath = os.path.join(TEMP_EXPORT_DIR, f"{file_id}_{original_name}")
             
             with open(filepath, 'wb') as f:
