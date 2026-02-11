@@ -543,46 +543,43 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       if (!response.ok) throw new Error('Erreur lors de l\'export');
       
       const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
       
-      if (exportType === 'pdf') {
-        // Pour les PDF, ouvrir directement le dialogue d'impression
-        const pdfUrl = window.URL.createObjectURL(blob);
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = pdfUrl;
-        document.body.appendChild(iframe);
+      // Ouvrir dans un nouvel onglet (contourne les restrictions de sandbox iframe)
+      const newWindow = window.open(blobUrl, '_blank');
+      
+      if (!newWindow) {
+        // Si le popup est bloqué, afficher un lien cliquable
+        toast({
+          title: "Popup bloqué",
+          description: "Autorisez les popups ou cliquez sur le lien qui va apparaître",
+          variant: "warning"
+        });
         
-        iframe.onload = function() {
-          iframe.contentWindow.print();
-          setTimeout(() => {
-            document.body.removeChild(iframe);
-            window.URL.revokeObjectURL(pdfUrl);
-          }, 100);
-        };
+        // Créer un lien temporaire visible
+        const tempLink = document.createElement('a');
+        tempLink.href = blobUrl;
+        tempLink.target = '_blank';
+        tempLink.textContent = `📥 Cliquez ici pour télécharger le fichier ${exportType.toUpperCase()}`;
+        tempLink.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:100000;background:white;padding:20px;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.3);text-decoration:none;color:#dc2626;font-weight:bold;';
+        document.body.appendChild(tempLink);
+        
+        setTimeout(() => {
+          tempLink.remove();
+          window.URL.revokeObjectURL(blobUrl);
+        }, 30000);
       } else {
-        // Pour les Excel, télécharger directement
-        const downloadUrl = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = downloadUrl;
+        // Nettoyer après un délai
+        setTimeout(() => {
+          window.URL.revokeObjectURL(blobUrl);
+        }, 5000);
         
-        if (userId) {
-          const selectedUser = users.find(u => u.id === userId);
-          link.download = `fiche_${selectedUser?.prenom}_${selectedUser?.nom}.xlsx`;
-        } else {
-          link.download = `liste_personnel.xlsx`;
-        }
-        
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        window.URL.revokeObjectURL(downloadUrl);
+        toast({ 
+          title: "Succès", 
+          description: `Export ${exportType.toUpperCase()} ouvert dans un nouvel onglet`,
+          variant: "success"
+        });
       }
-      
-      toast({ 
-        title: "Succès", 
-        description: `Export ${exportType.toUpperCase()} téléchargé`,
-        variant: "success"
-      });
       
       setShowExportModal(false);
     } catch (error) {
