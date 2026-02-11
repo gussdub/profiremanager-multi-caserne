@@ -2906,89 +2906,59 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                 color: '#6b7280',
                 marginBottom: '1.5rem'
               }}>
-                Votre fichier {previewType === 'pdf' ? 'PDF' : 'Excel'} est prêt à être téléchargé
+                Votre fichier {previewType === 'pdf' ? 'PDF' : 'Excel'} est prêt !
               </p>
               
-              <Button
+              {/* Bouton principal: Copier le lien */}
+              <button
                 onClick={() => {
-                  // Essayer différentes méthodes pour ouvrir l'URL
-                  try {
-                    // Méthode 1: window.top (contexte parent)
-                    if (window.top && window.top !== window) {
-                      window.top.open(previewDataUrl, '_blank');
-                    } else {
-                      // Méthode 2: window.open standard
-                      window.open(previewDataUrl, '_blank', 'noopener,noreferrer');
-                    }
-                  } catch (e) {
-                    // Méthode 3: Fallback - créer un lien et cliquer
-                    const link = document.createElement('a');
-                    link.href = previewDataUrl;
-                    link.target = '_blank';
-                    link.rel = 'noopener noreferrer';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                  }
-                  
-                  toast({
-                    title: "Téléchargement",
-                    description: `${previewFilename} ouvert dans un nouvel onglet`,
-                    variant: "success"
+                  navigator.clipboard.writeText(previewDataUrl).then(() => {
+                    toast({
+                      title: "✅ Lien copié !",
+                      description: "Collez-le dans un nouvel onglet pour télécharger",
+                      variant: "success"
+                    });
                   });
-                  setTimeout(() => {
-                    setShowPreviewModal(false);
-                    setPreviewDataUrl(null);
-                  }, 1000);
                 }}
                 style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
                   padding: '1rem 2rem',
                   background: '#dc2626',
                   color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
                   fontSize: '1rem',
-                  fontWeight: '600'
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  width: '100%',
+                  maxWidth: '300px'
                 }}
               >
-                📥 Télécharger {previewFilename}
-              </Button>
+                📋 Copier le lien de téléchargement
+              </button>
               
               <p style={{ 
+                marginTop: '1rem', 
+                fontSize: '0.85rem', 
+                color: '#6b7280'
+              }}>
+                Puis ouvrez un <strong>nouvel onglet</strong> et collez le lien
+              </p>
+              
+              <div style={{ 
                 marginTop: '1.5rem', 
-                fontSize: '0.8rem', 
-                color: '#6b7280',
-                background: '#f3f4f6',
+                fontSize: '0.75rem', 
+                color: '#9ca3af',
+                background: '#f9fafb',
                 padding: '0.75rem 1rem',
                 borderRadius: '6px',
                 width: '100%'
               }}>
-                💡 <strong>Si le téléchargement ne fonctionne pas :</strong><br/>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(previewDataUrl).then(() => {
-                      toast({
-                        title: "Lien copié !",
-                        description: "Collez-le dans un nouvel onglet",
-                        variant: "success"
-                      });
-                    });
-                  }}
-                  style={{
-                    marginTop: '0.5rem',
-                    padding: '0.5rem 1rem',
-                    background: '#3b82f6',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '0.8rem'
-                  }}
-                >
-                  📋 Copier le lien
-                </button>
-                <span style={{ display: 'block', marginTop: '0.5rem', fontSize: '0.7rem' }}>
-                  puis ouvrez-le dans un nouvel onglet
-                </span>
-              </p>
+                💡 <em>En mode preview, le téléchargement direct est bloqué par le navigateur. En production, le fichier se téléchargera automatiquement.</em>
+              </div>
             </div>
           </div>
         </div>
