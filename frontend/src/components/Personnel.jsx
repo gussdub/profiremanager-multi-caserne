@@ -2909,45 +2909,50 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                 Votre fichier {previewType === 'pdf' ? 'PDF' : 'Excel'} est prêt à être téléchargé
               </p>
               
-              <a 
-                href={previewDataUrl} 
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '1rem 2rem',
-                  background: '#dc2626',
-                  color: 'white',
-                  borderRadius: '8px',
-                  textDecoration: 'none',
-                  fontSize: '1rem',
-                  fontWeight: '600',
-                  boxShadow: '0 2px 8px rgba(220, 38, 38, 0.3)'
-                }}
+              <Button
                 onClick={() => {
+                  // Ouvrir l'URL directement dans la fenêtre parent (hors iframe)
+                  window.open(previewDataUrl, '_blank', 'noopener,noreferrer');
                   toast({
                     title: "Téléchargement",
-                    description: `Ouverture de ${previewFilename}...`,
+                    description: `${previewFilename} ouvert dans un nouvel onglet`,
                     variant: "success"
                   });
-                  // Fermer la modale après un court délai
                   setTimeout(() => {
                     setShowPreviewModal(false);
                     setPreviewDataUrl(null);
                   }, 1000);
                 }}
+                style={{
+                  padding: '1rem 2rem',
+                  background: '#dc2626',
+                  color: 'white',
+                  fontSize: '1rem',
+                  fontWeight: '600'
+                }}
               >
-                📥 Télécharger
-              </a>
+                📥 Télécharger {previewFilename}
+              </Button>
               
               <p style={{ 
                 marginTop: '1.5rem', 
-                fontSize: '0.75rem', 
-                color: '#9ca3af' 
+                fontSize: '0.8rem', 
+                color: '#6b7280',
+                background: '#f3f4f6',
+                padding: '0.75rem 1rem',
+                borderRadius: '6px',
+                width: '100%'
               }}>
-                Le fichier s'ouvrira dans un nouvel onglet
+                💡 <strong>Astuce :</strong> Vous pouvez aussi copier ce lien et l'ouvrir manuellement :<br/>
+                <code style={{ 
+                  fontSize: '0.7rem', 
+                  wordBreak: 'break-all',
+                  display: 'block',
+                  marginTop: '0.5rem',
+                  color: '#4b5563'
+                }}>
+                  {previewDataUrl}
+                </code>
               </p>
             </div>
           </div>
