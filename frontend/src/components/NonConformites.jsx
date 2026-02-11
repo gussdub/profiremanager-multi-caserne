@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { apiGet, apiPatch, apiPost, getTenantToken } from '../utils/api';
+import ArticlePrediction from './ui/ArticlePrediction';
 
 const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
   const [nonConformites, setNonConformites] = useState([]);
@@ -24,6 +25,7 @@ const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
     delai_correction: ''
   });
   const [refViolations, setRefViolations] = useState([]);
+  const [selectedArticles, setSelectedArticles] = useState([]); // Articles sélectionnés via prédiction
 
   useEffect(() => {
     loadData();
