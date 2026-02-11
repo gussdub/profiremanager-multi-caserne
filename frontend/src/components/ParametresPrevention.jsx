@@ -255,6 +255,7 @@ const ParametresPrevention = ({ tenantSlug, currentUser, onRefreshBatiments, Imp
               </Button>
             </div>
           </div>
+          </>
         );
 
       case 'referentiel':
