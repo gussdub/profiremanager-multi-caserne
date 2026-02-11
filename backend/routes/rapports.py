@@ -1606,53 +1606,148 @@ async def generate_personnel_export(
                 f.write(buffer.read())
         
         else:  # Excel
+            from datetime import datetime
             wb = Workbook()
             ws = wb.active
             ws.title = "Personnel"
             
+            # Style pour le titre
             titre = "Fiche Employé" if user_id else "Liste du Personnel"
             ws['A1'] = titre
-            ws['A1'].font = Font(size=14, bold=True, color="DC2626")
-            ws.merge_cells('A1:F1')
+            ws['A1'].font = Font(size=16, bold=True, color="DC2626")
+            ws.merge_cells('A1:H1')
+            
+            # Nom du service
+            ws['A2'] = tenant.nom if hasattr(tenant, 'nom') else tenant_slug
+            ws['A2'].font = Font(size=12, italic=True, color="666666")
+            ws.merge_cells('A2:H2')
             
             if not user_id:
+                # LISTE DU PERSONNEL
                 total = len(users_data)
                 actifs = len([u for u in users_data if u.get("statut") == "Actif"])
+                temps_plein = len([u for u in users_data if u.get("type_emploi") == "temps_plein"])
+                temps_partiel = len([u for u in users_data if u.get("type_emploi") == "temps_partiel"])
                 
-                ws['A3'] = "Total personnel"
-                ws['B3'] = total
-                ws['A4'] = "Personnel actif"
-                ws['B4'] = actifs
+                # Statistiques
+                ws['A4'] = "Statistiques"
+                ws['A4'].font = Font(bold=True)
+                ws['A5'] = "Total personnel"
+                ws['B5'] = total
+                ws['A6'] = "Personnel actif"
+                ws['B6'] = actifs
+                ws['A7'] = "Temps plein"
+                ws['B7'] = temps_plein
+                ws['A8'] = "Temps partiel"
+                ws['B8'] = temps_partiel
                 
-                headers = ["Nom", "Prénom", "Grade", "Matricule", "Statut", "Type"]
+                # En-têtes du tableau (plus de colonnes)
+                headers = ["Nom", "Prénom", "Grade", "Email", "Téléphone", "Matricule", "Statut", "Type d'emploi"]
                 for col, header in enumerate(headers, 1):
-                    cell = ws.cell(row=6, column=col, value=header)
+                    cell = ws.cell(row=10, column=col, value=header)
                     cell.font = Font(bold=True, color="FFFFFF")
                     cell.fill = PatternFill(start_color="DC2626", end_color="DC2626", fill_type="solid")
+                    cell.alignment = Alignment(horizontal='center')
                 
-                for row, u in enumerate(users_data, 7):
+                # Données
+                for row, u in enumerate(users_data, 11):
                     ws.cell(row=row, column=1, value=u.get("nom", ""))
                     ws.cell(row=row, column=2, value=u.get("prenom", ""))
                     ws.cell(row=row, column=3, value=u.get("grade", ""))
-                    ws.cell(row=row, column=4, value=u.get("matricule", ""))
-                    ws.cell(row=row, column=5, value=u.get("statut", ""))
-                    ws.cell(row=row, column=6, value=u.get("type_emploi", ""))
+                    ws.cell(row=row, column=4, value=u.get("email", ""))
+                    ws.cell(row=row, column=5, value=u.get("telephone", ""))
+                    ws.cell(row=row, column=6, value=u.get("matricule", u.get("numero_employe", "")))
+                    ws.cell(row=row, column=7, value=u.get("statut", ""))
+                    ws.cell(row=row, column=8, value=u.get("type_emploi", ""))
+                
+                # Largeur des colonnes
+                ws.column_dimensions['A'].width = 15
+                ws.column_dimensions['B'].width = 15
+                ws.column_dimensions['C'].width = 12
+                ws.column_dimensions['D'].width = 25
+                ws.column_dimensions['E'].width = 15
+                ws.column_dimensions['F'].width = 12
+                ws.column_dimensions['G'].width = 10
+                ws.column_dimensions['H'].width = 15
+                
             else:
+                # FICHE INDIVIDUELLE
                 if users_data:
                     u = users_data[0]
-                    ws['A3'] = "Nom"
-                    ws['B3'] = u.get("nom", "")
-                    ws['A4'] = "Prénom"
-                    ws['B4'] = u.get("prenom", "")
-                    ws['A5'] = "Email"
-                    ws['B5'] = u.get("email", "")
-                    ws['A6'] = "Grade"
-                    ws['B6'] = u.get("grade", "")
+                    row = 4
+                    
+                    # Informations générales
+                    ws[f'A{row}'] = "INFORMATIONS GÉNÉRALES"
+                    ws[f'A{row}'].font = Font(bold=True, color="DC2626")
+                    ws.merge_cells(f'A{row}:B{row}')
+                    row += 1
+                    
+                    infos = [
+                        ("Nom", u.get("nom", "")),
+                        ("Prénom", u.get("prenom", "")),
+                        ("Email", u.get("email", "")),
+                        ("Téléphone", u.get("telephone", "")),
+                        ("Adresse", u.get("adresse", "")),
+                        ("Contact d'urgence", u.get("contact_urgence", "")),
+                    ]
+                    for label, value in infos:
+                        ws[f'A{row}'] = label
+                        ws[f'A{row}'].font = Font(bold=True)
+                        ws[f'B{row}'] = value
+                        row += 1
+                    
+                    row += 1
+                    ws[f'A{row}'] = "INFORMATIONS PROFESSIONNELLES"
+                    ws[f'A{row}'].font = Font(bold=True, color="DC2626")
+                    ws.merge_cells(f'A{row}:B{row}')
+                    row += 1
+                    
+                    infos_pro = [
+                        ("Grade", u.get("grade", "")),
+                        ("Matricule", u.get("matricule", u.get("numero_employe", ""))),
+                        ("Statut", u.get("statut", "")),
+                        ("Type d'emploi", u.get("type_emploi", "")),
+                        ("Date d'embauche", u.get("date_embauche", "")),
+                        ("Taux horaire", f"{u.get('taux_horaire', 0):.2f} $" if u.get('taux_horaire') else ""),
+                        ("Heures max/semaine", str(u.get("heures_max_semaine", 40))),
+                    ]
+                    for label, value in infos_pro:
+                        ws[f'A{row}'] = label
+                        ws[f'A{row}'].font = Font(bold=True)
+                        ws[f'B{row}'] = value
+                        row += 1
+                    
+                    # Tailles EPI
+                    tailles_epi = u.get("tailles_epi", {})
+                    if tailles_epi:
+                        row += 1
+                        ws[f'A{row}'] = "TAILLES EPI"
+                        ws[f'A{row}'].font = Font(bold=True, color="DC2626")
+                        ws.merge_cells(f'A{row}:B{row}')
+                        row += 1
+                        
+                        epi_noms = {
+                            'casque': 'Casque', 'bottes': 'Bottes', 'veste_bunker': 'Veste Bunker',
+                            'pantalon_bunker': 'Pantalon Bunker', 'gants': 'Gants',
+                            'masque_apria': 'Facial APRIA', 'cagoule': 'Cagoule'
+                        }
+                        for key, nom in epi_noms.items():
+                            if tailles_epi.get(key):
+                                ws[f'A{row}'] = nom
+                                ws[f'A{row}'].font = Font(bold=True)
+                                ws[f'B{row}'] = tailles_epi[key]
+                                row += 1
             
-            for col in range(1, 7):
-                ws.column_dimensions[get_column_letter(col)].width = 15
+            # Footer
+            ws[f'A{ws.max_row + 2}'] = f"Généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')} par ProFireManager"
+            ws[f'A{ws.max_row}'].font = Font(size=8, italic=True, color="999999")
             
-            original_name = f"fiche_{user_id}.xlsx" if user_id else "liste_personnel.xlsx"
+            # Largeur colonnes pour fiche individuelle
+            if user_id:
+                ws.column_dimensions['A'].width = 25
+                ws.column_dimensions['B'].width = 35
+            
+            original_name = f"fiche_{users_data[0].get('nom', 'employe')}_{users_data[0].get('prenom', '')}.xlsx" if user_id and users_data else "liste_personnel.xlsx"
             filepath = os.path.join(TEMP_EXPORT_DIR, f"{file_id}_{original_name}")
             wb.save(filepath)
         
