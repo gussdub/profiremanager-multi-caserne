@@ -393,3 +393,64 @@ class EmailService:
 
 # Instance singleton
 email_service = EmailService()
+
+
+# ==================== FONCTIONS HELPER ====================
+
+async def send_notification_email(
+    to_email: str,
+    subject: str,
+    notification_titre: str,
+    notification_message: str,
+    notification_lien: Optional[str] = None,
+    user_prenom: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Fonction helper pour envoyer un email de notification générique.
+    Utilisée par creer_notification dans dependencies.py
+    """
+    service = EmailService()
+    
+    action_button = ""
+    if notification_lien:
+        # Construire l'URL complète si c'est un chemin relatif
+        full_url = notification_lien
+        if notification_lien.startswith('/'):
+            full_url = f"{service.frontend_url}{notification_lien}"
+        
+        action_button = f"""
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{full_url}" 
+               style="background: #dc2626; color: white; padding: 12px 30px; 
+                      text-decoration: none; border-radius: 6px; font-weight: bold;">
+                Voir dans l'application
+            </a>
+        </div>
+        """
+    
+    salutation = f"Bonjour {user_prenom}," if user_prenom else "Bonjour,"
+    
+    html = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #dc2626; color: white; padding: 20px; text-align: center;">
+            <h1 style="margin: 0;">🔥 ProFireManager</h1>
+        </div>
+        <div style="padding: 30px; background: #f9fafb;">
+            <p style="color: #4b5563;">{salutation}</p>
+            <h2 style="color: #1f2937; margin-top: 10px;">{notification_titre}</h2>
+            <p style="color: #4b5563; line-height: 1.6;">{notification_message}</p>
+            {action_button}
+        </div>
+        <div style="padding: 20px; text-align: center; color: #9ca3af; font-size: 12px;">
+            © {datetime.now().year} ProFireManager - Gestion des services d'incendie<br>
+            <small>Vous recevez cet email car vous avez activé les notifications par email.</small>
+        </div>
+    </div>
+    """
+    
+    return await service.send_email(
+        to=[to_email],
+        subject=subject,
+        html=html,
+        tags=[{"name": "type", "value": "notification"}]
+    )
