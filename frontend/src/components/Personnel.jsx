@@ -534,38 +534,34 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
       const token = localStorage.getItem(`${tenantSlug}_token`);
       
-      const endpoint = exportType === 'pdf' ? 'export-pdf' : 'export-excel';
-      const url = userId 
-        ? `${backendUrl}/api/${tenantSlug}/personnel/${endpoint}?user_id=${userId}`
-        : `${backendUrl}/api/${tenantSlug}/personnel/${endpoint}`;
+      // Utiliser le nouvel endpoint qui génère une URL de téléchargement direct
+      const url = `${backendUrl}/api/${tenantSlug}/personnel/generate-export?export_type=${exportType}${userId ? `&user_id=${userId}` : ''}`;
       
       const response = await fetch(url, {
-        method: 'GET',
+        method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       
       if (!response.ok) throw new Error('Erreur lors de l\'export');
       
-      const blob = await response.blob();
+      const data = await response.json();
       
-      // Créer un blob URL
-      const blobUrl = URL.createObjectURL(blob);
-      
-      // Définir le nom du fichier
-      const filename = userId 
-        ? `fiche_${users.find(u => u.id === userId)?.prenom}_${users.find(u => u.id === userId)?.nom}.${exportType === 'pdf' ? 'pdf' : 'xlsx'}`
-        : `liste_personnel.${exportType === 'pdf' ? 'pdf' : 'xlsx'}`;
-      
-      // Afficher la modale de téléchargement
-      setPreviewDataUrl(blobUrl);
-      setPreviewFilename(filename);
-      setPreviewType(exportType);
-      setShowPreviewModal(true);
+      if (data.success && data.download_url) {
+        // Afficher la modale avec l'URL de téléchargement direct
+        setPreviewDataUrl(data.download_url);
+        setPreviewFilename(data.filename);
+        setPreviewType(exportType);
+        setShowPreviewModal(true);
+      } else {
+        throw new Error('URL de téléchargement non disponible');
+      }
       
       setShowExportModal(false);
     } catch (error) {
+      console.error('Erreur export:', error);
       toast({ 
         title: "Erreur", 
         description: `Impossible d'exporter le ${exportType.toUpperCase()}`, 
