@@ -2911,8 +2911,26 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
               
               <Button
                 onClick={() => {
-                  // Ouvrir l'URL directement dans la fenêtre parent (hors iframe)
-                  window.open(previewDataUrl, '_blank', 'noopener,noreferrer');
+                  // Essayer différentes méthodes pour ouvrir l'URL
+                  try {
+                    // Méthode 1: window.top (contexte parent)
+                    if (window.top && window.top !== window) {
+                      window.top.open(previewDataUrl, '_blank');
+                    } else {
+                      // Méthode 2: window.open standard
+                      window.open(previewDataUrl, '_blank', 'noopener,noreferrer');
+                    }
+                  } catch (e) {
+                    // Méthode 3: Fallback - créer un lien et cliquer
+                    const link = document.createElement('a');
+                    link.href = previewDataUrl;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }
+                  
                   toast({
                     title: "Téléchargement",
                     description: `${previewFilename} ouvert dans un nouvel onglet`,
