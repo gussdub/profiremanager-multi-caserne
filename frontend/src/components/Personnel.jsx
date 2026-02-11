@@ -51,6 +51,11 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   const [exportScope, setExportScope] = useState('all'); // 'all' ou 'individual'
   const [selectedPersonForExport, setSelectedPersonForExport] = useState('');
   
+  // États pour la prévisualisation PDF
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [previewDataUrl, setPreviewDataUrl] = useState(null);
+  const [previewFilename, setPreviewFilename] = useState('');
+  
   // État pour la photo de profil
   const [photoUploading, setPhotoUploading] = useState(false);
   const photoInputRef = React.useRef(null);
