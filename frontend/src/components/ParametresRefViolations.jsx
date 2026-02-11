@@ -75,7 +75,7 @@ const ParametresRefViolations = ({ tenantSlug, toast }) => {
     try {
       setLoading(true);
       const [violationsData, categoriesData] = await Promise.all([
-        apiGet(tenantSlug, "/prevention/ref-violations?actif=null"),
+        apiGet(tenantSlug, "/prevention/ref-violations"),
         apiGet(tenantSlug, "/prevention/ref-violations/categories").catch(() => [])
       ]);
       setViolations(violationsData || []);
@@ -97,20 +97,13 @@ const ParametresRefViolations = ({ tenantSlug, toast }) => {
 
   // Initialiser avec les données par défaut
   const handleInitDefault = async () => {
-    const hasExisting = violations.length > 0;
-    const confirmMessage = hasExisting 
-      ? "Attention: Cette action va SUPPRIMER tous les articles existants et les remplacer par les articles par défaut du CNPI.\n\nContinuer ?"
-      : "Voulez-vous initialiser le référentiel avec les articles par défaut du CNPI ?";
-    
-    if (!window.confirm(confirmMessage)) {
-      return;
-    }
+    setShowInitConfirm(false);
     
     try {
       setSaving(true);
       
       // Si des articles existent, les supprimer d'abord
-      if (hasExisting) {
+      if (violations.length > 0) {
         for (const v of violations) {
           try {
             await apiDelete(tenantSlug, `/prevention/ref-violations/${v.id}`);
