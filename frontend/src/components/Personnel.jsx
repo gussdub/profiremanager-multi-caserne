@@ -2947,18 +2947,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
               }}>
                 Puis ouvrez un <strong>nouvel onglet</strong> et collez le lien
               </p>
-              
-              <div style={{ 
-                marginTop: '1.5rem', 
-                fontSize: '0.75rem', 
-                color: '#9ca3af',
-                background: '#f9fafb',
-                padding: '0.75rem 1rem',
-                borderRadius: '6px',
-                width: '100%'
-              }}>
-                💡 <em>En mode preview, le téléchargement direct est bloqué par le navigateur. En production, le fichier se téléchargera automatiquement.</em>
-              </div>
             </div>
           </div>
         </div>
