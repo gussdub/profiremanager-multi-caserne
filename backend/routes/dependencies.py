@@ -596,25 +596,116 @@ def send_super_admin_welcome_email(user_email: str, user_name: str, temp_passwor
 
 async def creer_notification(
     tenant_id: str,
-    destinataire_id: str,
-    type: str,
+    user_id: str,  # Renommé pour cohérence
+    type_notification: str,
     titre: str,
     message: str,
     lien: Optional[str] = None,
-    data: Optional[Dict[str, Any]] = None
+    data: Optional[Dict[str, Any]] = None,
+    envoyer_email: bool = True,
+    destinataires_multiples: Optional[List[str]] = None  # Pour notifier plusieurs personnes
 ):
-    """Crée une notification dans la base de données"""
-    notification = Notification(
+    """
+    Crée une notification dans la base de données et envoie un email si activé.
+    Respecte les préférences de notification de l'utilisateur.
+    
+    Args:
+        tenant_id: ID du tenant
+        user_id: ID du destinataire principal (ignoré si destinataires_multiples est fourni)
+        type_notification: Type de notification (planning_assignation, epi_reparation, etc.)
+        titre: Titre de la notification
+        message: Message de la notification
+        lien: Lien vers la page concernée
+        data: Données supplémentaires
+        envoyer_email: Si True, envoie aussi un email (selon préférences)
+        destinataires_multiples: Liste d'IDs pour notifier plusieurs personnes
+    """
+    from services.email_service import send_notification_email
+    
+    destinataires = destinataires_multiples if destinataires_multiples else [user_id]
+    notifications_creees = []
+    
+    for dest_id in destinataires:
+        if not dest_id:
+            continue
+            
+        # Récupérer les préférences de l'utilisateur
+        user = await db.users.find_one({"id": dest_id, "tenant_id": tenant_id})
+        if not user:
+            continue
+        
+        preferences = user.get("preferences_notifications", {})
+        email_actif = preferences.get("email_actif", True)
+        
+        # Créer la notification interne (toujours)
+        notification = Notification(
+            tenant_id=tenant_id,
+            destinataire_id=dest_id,
+            type=type_notification,
+            titre=titre,
+            message=message,
+            lien=lien,
+            data=data or {}
+        )
+        await db.notifications.insert_one(notification.dict())
+        notifications_creees.append(notification)
+        
+        # Envoyer email si activé dans les préférences
+        if envoyer_email and email_actif and user.get("email"):
+            try:
+                # Récupérer le tenant pour le branding
+                tenant = await db.tenants.find_one({"id": tenant_id})
+                tenant_nom = tenant.get("nom", "ProFireManager") if tenant else "ProFireManager"
+                
+                await send_notification_email(
+                    to_email=user["email"],
+                    subject=f"[{tenant_nom}] {titre}",
+                    notification_titre=titre,
+                    notification_message=message,
+                    notification_lien=lien,
+                    user_prenom=user.get("prenom", "")
+                )
+            except Exception as e:
+                logger.warning(f"Erreur envoi email notification à {user.get('email')}: {e}")
+    
+    return notifications_creees[0] if len(notifications_creees) == 1 else notifications_creees
+
+
+async def notifier_admins_superviseurs(
+    tenant_id: str,
+    type_notification: str,
+    titre: str,
+    message: str,
+    lien: Optional[str] = None,
+    data: Optional[Dict[str, Any]] = None,
+    roles: List[str] = ["admin", "superviseur"]
+):
+    """
+    Notifie tous les admins et/ou superviseurs d'un tenant.
+    Utilisé pour les demandes qui nécessitent une approbation.
+    """
+    # Récupérer tous les admins/superviseurs
+    admins = await db.users.find({
+        "tenant_id": tenant_id,
+        "role": {"$in": roles},
+        "statut": "Actif"
+    }).to_list(100)
+    
+    if not admins:
+        return []
+    
+    destinataires = [admin["id"] for admin in admins]
+    
+    return await creer_notification(
         tenant_id=tenant_id,
-        destinataire_id=destinataire_id,
-        type=type,
+        user_id=destinataires[0],  # Sera ignoré car on utilise destinataires_multiples
+        type_notification=type_notification,
         titre=titre,
         message=message,
         lien=lien,
-        data=data or {}
+        data=data,
+        destinataires_multiples=destinataires
     )
-    await db.notifications.insert_one(notification.dict())
-    return notification
 
 
 
