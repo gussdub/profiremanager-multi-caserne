@@ -300,12 +300,10 @@ const AppLayout = () => {
   // Détecter si l'utilisateur vient d'un QR code et rediriger vers le bon module
   useEffect(() => {
     const qrActionData = localStorage.getItem('qr_action');
-    console.log('🔍 AppLayout - Vérification qr_action:', qrActionData);
     
     if (qrActionData) {
       try {
         const qrAction = JSON.parse(qrActionData);
-        console.log('✅ AppLayout - QR Action trouvée:', qrAction);
         
         // Rediriger vers la page actifs pour ronde_securite OU inventaire
         if (qrAction.action === 'ronde_securite' || qrAction.action === 'inventaire') {
@@ -324,12 +322,8 @@ const AppLayout = () => {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const pageParam = urlParams.get('page');
-    const vehiculeIdParam = urlParams.get('vehicule_id');
-    
-    console.log('🔍 AppLayout - Vérification paramètres URL:', { page: pageParam, vehicule_id: vehiculeIdParam });
     
     if (pageParam && user) {
-      console.log('✅ AppLayout - Navigation vers:', pageParam);
       setCurrentPage(pageParam);
       
       // Nettoyer l'URL pour éviter les rechargements avec les paramètres
