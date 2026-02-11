@@ -647,9 +647,6 @@ const MonProfil = () => {
 
   const handleSaveEPITailles = async () => {
     try {
-      console.log('💾 [Mon Profil] Début sauvegarde tailles EPI');
-      console.log('📋 [Mon Profil] Tailles actuelles:', epiTailles);
-      
       // Filtrer les tailles vides
       const taillesFiltered = {};
       Object.entries(epiTailles).forEach(([key, value]) => {
@@ -657,8 +654,6 @@ const MonProfil = () => {
           taillesFiltered[key] = value.trim();
         }
       });
-      
-      console.log('📋 [Mon Profil] Tailles filtrées à sauvegarder:', taillesFiltered);
       
       // Sauvegarder les tailles dans le profil utilisateur
       const updatedData = await apiPut(tenantSlug, '/users/mon-profil', {
@@ -671,8 +666,6 @@ const MonProfil = () => {
         heures_max_semaine: profileData.heures_max_semaine || 25,
         tailles_epi: taillesFiltered
       });
-      
-      console.log('✅ [Mon Profil] Profil mis à jour avec tailles EPI:', updatedData);
       
       // Mettre à jour le profil local
       setUserProfile(updatedData);
