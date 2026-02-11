@@ -2961,16 +2961,33 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                 borderRadius: '6px',
                 width: '100%'
               }}>
-                💡 <strong>Astuce :</strong> Vous pouvez aussi copier ce lien et l'ouvrir manuellement :<br/>
-                <code style={{ 
-                  fontSize: '0.7rem', 
-                  wordBreak: 'break-all',
-                  display: 'block',
-                  marginTop: '0.5rem',
-                  color: '#4b5563'
-                }}>
-                  {previewDataUrl}
-                </code>
+                💡 <strong>Si le téléchargement ne fonctionne pas :</strong><br/>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(previewDataUrl).then(() => {
+                      toast({
+                        title: "Lien copié !",
+                        description: "Collez-le dans un nouvel onglet",
+                        variant: "success"
+                      });
+                    });
+                  }}
+                  style={{
+                    marginTop: '0.5rem',
+                    padding: '0.5rem 1rem',
+                    background: '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '0.8rem'
+                  }}
+                >
+                  📋 Copier le lien
+                </button>
+                <span style={{ display: 'block', marginTop: '0.5rem', fontSize: '0.7rem' }}>
+                  puis ouvrez-le dans un nouvel onglet
+                </span>
               </p>
             </div>
           </div>
