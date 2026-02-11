@@ -596,14 +596,17 @@ def send_super_admin_welcome_email(user_email: str, user_name: str, temp_passwor
 
 async def creer_notification(
     tenant_id: str,
-    user_id: str,  # Renommé pour cohérence
-    type_notification: str,
-    titre: str,
-    message: str,
+    user_id: str = None,  # Nouveau paramètre
+    type_notification: str = None,
+    titre: str = "",
+    message: str = "",
     lien: Optional[str] = None,
     data: Optional[Dict[str, Any]] = None,
     envoyer_email: bool = True,
-    destinataires_multiples: Optional[List[str]] = None  # Pour notifier plusieurs personnes
+    destinataires_multiples: Optional[List[str]] = None,
+    # Rétrocompatibilité avec l'ancien format
+    destinataire_id: str = None,
+    type: str = None
 ):
     """
     Crée une notification dans la base de données et envoie un email si activé.
@@ -611,8 +614,8 @@ async def creer_notification(
     
     Args:
         tenant_id: ID du tenant
-        user_id: ID du destinataire principal (ignoré si destinataires_multiples est fourni)
-        type_notification: Type de notification (planning_assignation, epi_reparation, etc.)
+        user_id: ID du destinataire principal (ou destinataire_id pour rétrocompatibilité)
+        type_notification: Type de notification (ou type pour rétrocompatibilité)
         titre: Titre de la notification
         message: Message de la notification
         lien: Lien vers la page concernée
@@ -622,7 +625,15 @@ async def creer_notification(
     """
     from services.email_service import send_notification_email
     
-    destinataires = destinataires_multiples if destinataires_multiples else [user_id]
+    # Rétrocompatibilité
+    actual_user_id = user_id or destinataire_id
+    actual_type = type_notification or type
+    
+    if not actual_user_id and not destinataires_multiples:
+        logger.warning("creer_notification appelé sans destinataire")
+        return None
+    
+    destinataires = destinataires_multiples if destinataires_multiples else [actual_user_id]
     notifications_creees = []
     
     for dest_id in destinataires:
@@ -641,7 +652,7 @@ async def creer_notification(
         notification = Notification(
             tenant_id=tenant_id,
             destinataire_id=dest_id,
-            type=type_notification,
+            type=actual_type,
             titre=titre,
             message=message,
             lien=lien,
