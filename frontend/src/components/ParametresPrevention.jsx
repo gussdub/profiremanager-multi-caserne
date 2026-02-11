@@ -32,14 +32,17 @@ const ParametresPrevention = ({ tenantSlug, currentUser, onRefreshBatiments, Imp
   
   const [users, setUsers] = useState([]);
   const [preventionnistes, setPreventionnistes] = useState([]);
+  const [inlineToast, setInlineToast] = useState(null);
 
-  // Toast helper
+  // Toast helper - fallback sans window.alert pour les environnements sandboxés
   const toast = toastProp || ((opts) => {
-    if (opts.variant === 'destructive') {
-      alert(`❌ ${opts.title}: ${opts.description || ''}`);
-    } else {
-      alert(`✅ ${opts.title}: ${opts.description || ''}`);
-    }
+    console.log(opts.variant === 'destructive' ? '❌' : '✅', opts.title, opts.description);
+    setInlineToast({
+      type: opts.variant === 'destructive' ? 'error' : 'success',
+      title: opts.title,
+      description: opts.description
+    });
+    setTimeout(() => setInlineToast(null), 4000);
   });
 
   // Onglets disponibles
