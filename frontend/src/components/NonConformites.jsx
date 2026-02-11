@@ -535,7 +535,7 @@ const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
                 <textarea
                   value={newNC.description}
                   onChange={(e) => setNewNC({...newNC, description: e.target.value})}
-                  placeholder="Détails de la non-conformité..."
+                  placeholder="Détails de la non-conformité... (les articles seront suggérés automatiquement)"
                   rows={4}
                   style={{
                     width: '100%',
@@ -546,6 +546,114 @@ const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
                     fontFamily: 'inherit'
                   }}
                 />
+              </div>
+
+              {/* Prédiction d'articles basée sur le titre + description */}
+              <div style={{ 
+                padding: '1rem', 
+                backgroundColor: '#f8fafc', 
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0'
+              }}>
+                <label style={{ fontWeight: '600', fontSize: '0.875rem', marginBottom: '0.75rem', display: 'block', color: '#374151' }}>
+                  📋 Articles de référence (sélection automatique)
+                </label>
+                <ArticlePrediction
+                  tenantSlug={tenantSlug}
+                  texte={`${newNC.titre} ${newNC.description}`}
+                  selectedArticles={selectedArticles}
+                  onSelectArticle={(article) => {
+                    // Ajouter l'article
+                    setSelectedArticles(prev => [...prev, article]);
+                    
+                    // Mettre à jour la catégorie et priorité basées sur le premier article
+                    if (selectedArticles.length === 0) {
+                      let priorite = 'moyenne';
+                      if (article.severite === 'urgente') priorite = 'haute';
+                      else if (article.severite === 'mineure') priorite = 'faible';
+                      
+                      // Calculer la date limite
+                      const dateIdent = new Date(newNC.date_identification || new Date());
+                      const dateLimite = new Date(dateIdent);
+                      dateLimite.setDate(dateLimite.getDate() + (article.delai_jours || 30));
+                      
+                      setNewNC(prev => ({
+                        ...prev,
+                        categorie: article.categorie || prev.categorie,
+                        priorite: priorite,
+                        delai_correction: dateLimite.toISOString().split('T')[0]
+                      }));
+                    }
+                  }}
+                  onRemoveArticle={(articleId) => {
+                    setSelectedArticles(prev => prev.filter(a => a.id !== articleId));
+                  }}
+                  placeholder="Saisissez un titre et une description pour voir les articles suggérés..."
+                />
+                
+                {/* Sélection manuelle en complément */}
+                {refViolations.length > 0 && (
+                  <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px dashed #d1d5db' }}>
+                    <label style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.5rem', display: 'block' }}>
+                      Ou sélection manuelle :
+                    </label>
+                    <select
+                      value=""
+                      onChange={(e) => {
+                        const violationId = e.target.value;
+                        const violation = refViolations.find(v => v.id === violationId);
+                        if (violation && !selectedArticles.find(a => a.id === violation.id)) {
+                          setSelectedArticles(prev => [...prev, violation]);
+                          
+                          if (selectedArticles.length === 0) {
+                            let priorite = 'moyenne';
+                            if (violation.severite === 'urgente') priorite = 'haute';
+                            else if (violation.severite === 'mineure') priorite = 'faible';
+                            
+                            const dateIdent = new Date(newNC.date_identification || new Date());
+                            const dateLimite = new Date(dateIdent);
+                            dateLimite.setDate(dateLimite.getDate() + (violation.delai_jours || 30));
+                            
+                            setNewNC(prev => ({
+                              ...prev,
+                              categorie: violation.categorie || prev.categorie,
+                              priorite: priorite,
+                              delai_correction: dateLimite.toISOString().split('T')[0]
+                            }));
+                          }
+                        }
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        fontSize: '0.875rem',
+                        backgroundColor: 'white'
+                      }}
+                    >
+                      <option value="">-- Ajouter un article manuellement --</option>
+                      {refViolations
+                        .filter(v => !selectedArticles.find(a => a.id === v.id))
+                        .map(v => (
+                          <option key={v.id} value={v.id}>
+                            {v.code_article} - {v.description_standard?.substring(0, 60)}... ({v.delai_jours}j)
+                          </option>
+                        ))
+                      }
+                    </select>
+                  </div>
+                )}
+                
+                {/* Afficher le délai de correction si des articles sont sélectionnés */}
+                {selectedArticles.length > 0 && newNC.delai_correction && (
+                  <div style={{ marginTop: '0.75rem', padding: '0.5rem 0.75rem', backgroundColor: '#fef3c7', borderRadius: '6px', fontSize: '0.875rem' }}>
+                    ⏰ Date limite de correction : <strong>{new Date(newNC.delai_correction + 'T00:00:00').toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })}</strong>
+                    <span style={{ marginLeft: '0.5rem', color: '#92400e' }}>
+                      (basé sur l'article le plus urgent)
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Catégorie */}
@@ -565,71 +673,21 @@ const NonConformites = ({ tenantSlug, toast, openBatimentModal }) => {
                   }}
                 >
                   <option value="">Sélectionner...</option>
-                  <option value="Extérieur et Accès">Extérieur et Accès</option>
-                  <option value="Moyens d'Évacuation">Moyens d'Évacuation</option>
-                  <option value="Protection Incendie">Protection Incendie</option>
+                  <option value="Extincteurs">Extincteurs</option>
+                  <option value="Détection">Détection</option>
+                  <option value="Alarme">Alarme</option>
+                  <option value="Éclairage Urgence">Éclairage Urgence</option>
+                  <option value="Moyens d'évacuation">Moyens d'évacuation</option>
+                  <option value="Séparations coupe-feu">Séparations coupe-feu</option>
+                  <option value="Entreposage">Entreposage</option>
+                  <option value="Gicleurs">Gicleurs</option>
+                  <option value="Plans">Plans</option>
                   <option value="Électricité">Électricité</option>
-                  <option value="Chauffage et Ventilation">Chauffage et Ventilation</option>
+                  <option value="Chauffage">Chauffage</option>
+                  <option value="Municipal">Municipal</option>
                   <option value="Autre">Autre</option>
                 </select>
               </div>
-
-              {/* Sélection article de violation (référentiel) */}
-              {refViolations.length > 0 && (
-                <div>
-                  <label style={{ fontWeight: '500', fontSize: '0.875rem', marginBottom: '0.5rem', display: 'block' }}>
-                    Article de violation (optionnel - calcule le délai automatiquement)
-                  </label>
-                  <select
-                    value={newNC.violation_id || ''}
-                    onChange={(e) => {
-                      const violationId = e.target.value;
-                      const violation = refViolations.find(v => v.id === violationId);
-                      if (violation) {
-                        // Calculer la date limite basée sur le délai
-                        const dateIdent = new Date(newNC.date_identification || new Date());
-                        const dateLimite = new Date(dateIdent);
-                        dateLimite.setDate(dateLimite.getDate() + (violation.delai_jours || 30));
-                        
-                        // Mapper la sévérité vers priorité
-                        let priorite = 'moyenne';
-                        if (violation.severite === 'urgente') priorite = 'haute';
-                        else if (violation.severite === 'mineure') priorite = 'faible';
-                        
-                        setNewNC({
-                          ...newNC,
-                          violation_id: violationId,
-                          categorie: violation.categorie || newNC.categorie,
-                          priorite: priorite,
-                          delai_correction: dateLimite.toISOString().split('T')[0],
-                          article_code: violation.code_article
-                        });
-                      } else {
-                        setNewNC({...newNC, violation_id: '', delai_correction: ''});
-                      }
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      border: '2px solid #d1d5db',
-                      borderRadius: '8px',
-                      fontSize: '1rem'
-                    }}
-                  >
-                    <option value="">-- Aucun article spécifique --</option>
-                    {refViolations.map(v => (
-                      <option key={v.id} value={v.id}>
-                        {v.code_article} - {v.description_standard} ({v.delai_jours}j)
-                      </option>
-                    ))}
-                  </select>
-                  {newNC.delai_correction && (
-                    <div style={{ marginTop: '0.5rem', padding: '0.5rem', backgroundColor: '#fef3c7', borderRadius: '6px', fontSize: '0.875rem' }}>
-                      ⏰ Date limite de correction : <strong>{new Date(newNC.delai_correction + 'T00:00:00').toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })}</strong>
-                    </div>
-                  )}
-                </div>
-              )}
 
               {/* Priorité */}
               <div>
