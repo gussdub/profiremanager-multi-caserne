@@ -835,6 +835,7 @@ async def delete_ref_violation(
 @router.post("/{tenant_slug}/prevention/ref-violations/init")
 async def init_ref_violations(
     tenant_slug: str,
+    force: bool = False,
     current_user: User = Depends(get_current_user)
 ):
     """Initialiser le référentiel avec les données par défaut"""
@@ -845,11 +846,17 @@ async def init_ref_violations(
     
     # Vérifier s'il existe déjà des données
     existing = await db.ref_violations.count_documents({"tenant_id": tenant.id})
-    if existing > 0:
+    if existing > 0 and not force:
+        # Supprimer les articles existants si force=true ou si le frontend a déjà supprimé
         raise HTTPException(
             status_code=400,
-            detail=f"Le référentiel contient déjà {existing} articles. Supprimez-les d'abord."
+            detail=f"Le référentiel contient déjà {existing} articles. Utilisez force=true pour réinitialiser."
         )
+    
+    # Supprimer les articles existants si force=true
+    if existing > 0 and force:
+        await db.ref_violations.delete_many({"tenant_id": tenant.id})
+        logger.info(f"[REF-VIOLATION] {existing} articles supprimés pour réinitialisation")
     
     # Créer les articles par défaut
     articles = []
