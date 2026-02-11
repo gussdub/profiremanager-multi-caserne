@@ -246,14 +246,17 @@ async def start_sftp_polling(
     
     sftp_service = get_sftp_service()
     
+    # Récupérer l'intervalle configuré (minimum 60 secondes)
+    interval = max(60, config.get("polling_interval", 300))
+    
     # Démarrer le polling
     await sftp_service.start_polling(
         tenant.id,
         tenant_slug,
-        interval=config.get("polling_interval", 30)
+        interval=interval
     )
     
-    return {"message": "Polling SFTP démarré", "interval": config.get("polling_interval", 30)}
+    return {"message": "Polling SFTP démarré", "interval": interval, "interval_minutes": interval // 60}
 
 
 @router.post("/{tenant_slug}/sftp/stop-polling")
