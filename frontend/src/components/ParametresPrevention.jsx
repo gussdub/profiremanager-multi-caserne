@@ -102,6 +102,30 @@ const ParametresPrevention = ({ tenantSlug, currentUser, onRefreshBatiments, Imp
     switch (activeTab) {
       case 'general':
         return (
+          {/* Inline Toast Fallback */}
+          {inlineToast && (
+            <div 
+              style={{
+                position: 'fixed',
+                bottom: '1rem',
+                right: '1rem',
+                padding: '1rem',
+                borderRadius: '8px',
+                backgroundColor: inlineToast.type === 'error' ? '#fef2f2' : '#f0fdf4',
+                border: `1px solid ${inlineToast.type === 'error' ? '#fecaca' : '#bbf7d0'}`,
+                color: inlineToast.type === 'error' ? '#991b1b' : '#166534',
+                zIndex: 1000,
+                maxWidth: '300px',
+                boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+              }}
+            >
+              <div style={{ fontWeight: 600 }}>{inlineToast.title}</div>
+              {inlineToast.description && (
+                <div style={{ fontSize: '0.875rem', marginTop: '0.25rem' }}>{inlineToast.description}</div>
+              )}
+            </div>
+          )}
+
           <div className="space-y-6">
             <Card>
               <CardContent className="p-6">
