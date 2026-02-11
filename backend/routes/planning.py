@@ -324,7 +324,17 @@ async def create_assignation(
     
     await db.assignations.insert_one(assignation.dict())
     
-    # Créer une notification
+    # Créer une notification pour l'employé assigné
+    await creer_notification(
+        tenant_id=tenant.id,
+        user_id=assignation_data.user_id,
+        type_notification="planning_assignation",
+        titre="Nouvelle assignation",
+        message=f"Vous avez été assigné(e) le {assignation_data.date} - {assignation_data.type_garde}",
+        lien=f"/planning?date={assignation_data.date}"
+    )
+    
+    # Créer un log d'activité
     await creer_activite(
         tenant_id=tenant.id,
         type_activite="planning",
