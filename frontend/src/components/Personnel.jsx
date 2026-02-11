@@ -543,43 +543,39 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       if (!response.ok) throw new Error('Erreur lors de l\'export');
       
       const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
       
-      // Ouvrir dans un nouvel onglet (contourne les restrictions de sandbox iframe)
-      const newWindow = window.open(blobUrl, '_blank');
-      
-      if (!newWindow) {
-        // Si le popup est bloqué, afficher un lien cliquable
-        toast({
-          title: "Popup bloqué",
-          description: "Autorisez les popups ou cliquez sur le lien qui va apparaître",
-          variant: "warning"
-        });
+      // Convertir le blob en data URL (base64)
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result;
         
-        // Créer un lien temporaire visible
-        const tempLink = document.createElement('a');
-        tempLink.href = blobUrl;
-        tempLink.target = '_blank';
-        tempLink.textContent = `📥 Cliquez ici pour télécharger le fichier ${exportType.toUpperCase()}`;
-        tempLink.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:100000;background:white;padding:20px;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.3);text-decoration:none;color:#dc2626;font-weight:bold;';
-        document.body.appendChild(tempLink);
-        
-        setTimeout(() => {
-          tempLink.remove();
-          window.URL.revokeObjectURL(blobUrl);
-        }, 30000);
-      } else {
-        // Nettoyer après un délai
-        setTimeout(() => {
-          window.URL.revokeObjectURL(blobUrl);
-        }, 5000);
-        
-        toast({ 
-          title: "Succès", 
-          description: `Export ${exportType.toUpperCase()} ouvert dans un nouvel onglet`,
-          variant: "success"
-        });
-      }
+        if (exportType === 'pdf') {
+          // Afficher le PDF dans une modale intégrée
+          setPreviewDataUrl(dataUrl);
+          setPreviewFilename(userId 
+            ? `fiche_${users.find(u => u.id === userId)?.prenom}_${users.find(u => u.id === userId)?.nom}.pdf`
+            : 'liste_personnel.pdf'
+          );
+          setShowPreviewModal(true);
+        } else {
+          // Pour Excel, créer un lien de téléchargement data URL
+          const link = document.createElement('a');
+          link.href = dataUrl;
+          link.download = userId 
+            ? `fiche_${users.find(u => u.id === userId)?.prenom}_${users.find(u => u.id === userId)?.nom}.xlsx`
+            : 'liste_personnel.xlsx';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          toast({ 
+            title: "Succès", 
+            description: "Export Excel téléchargé",
+            variant: "success"
+          });
+        }
+      };
+      reader.readAsDataURL(blob);
       
       setShowExportModal(false);
     } catch (error) {
