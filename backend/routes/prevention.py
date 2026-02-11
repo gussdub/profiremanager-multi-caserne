@@ -1135,6 +1135,9 @@ class NonConformiteCreate(BaseModel):
     priorite: str = "moyenne"  # Pour création manuelle
     article_code: str = ""
     violation_id: Optional[str] = None
+    # Support pour articles multiples
+    articles_ids: List[str] = []  # IDs des articles sélectionnés
+    articles_codes: List[str] = []  # Codes des articles (ex: CNPI 2.1.3.1)
     delai_correction: Optional[str] = None
     date_identification: Optional[str] = None  # Pour création manuelle
     statut: str = "ouverte"
