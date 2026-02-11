@@ -2851,7 +2851,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
           className="modal-overlay" 
           onClick={() => {
             setShowPreviewModal(false);
-            URL.revokeObjectURL(previewDataUrl);
             setPreviewDataUrl(null);
           }}
           style={{ zIndex: 100001 }}
@@ -2873,7 +2872,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                 variant="ghost" 
                 onClick={() => {
                   setShowPreviewModal(false);
-                  URL.revokeObjectURL(previewDataUrl);
                   setPreviewDataUrl(null);
                 }}
               >
@@ -2892,9 +2890,8 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
             }}>
               {previewType === 'pdf' ? (
                 <>
-                  <embed
+                  <iframe
                     src={previewDataUrl}
-                    type="application/pdf"
                     style={{
                       width: '100%',
                       height: '100%',
@@ -2902,24 +2899,16 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       borderRadius: '8px',
                       minHeight: '500px'
                     }}
+                    title="Aperçu PDF"
                   />
                   <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#6b7280' }}>
-                    Si le PDF ne s'affiche pas, utilisez le bouton ci-dessous pour le télécharger.
+                    Si le PDF ne s'affiche pas, cliquez sur le bouton ci-dessous.
                   </p>
                 </>
               ) : (
                 <>
-                  <div style={{ 
-                    fontSize: '4rem', 
-                    marginBottom: '1rem' 
-                  }}>
-                    📊
-                  </div>
-                  <p style={{ 
-                    fontSize: '1rem', 
-                    color: '#374151',
-                    marginBottom: '1.5rem'
-                  }}>
+                  <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📊</div>
+                  <p style={{ fontSize: '1rem', color: '#374151', marginBottom: '1.5rem' }}>
                     Votre fichier Excel est prêt !
                   </p>
                 </>
@@ -2927,7 +2916,8 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
               
               <a 
                 href={previewDataUrl} 
-                download={previewFilename}
+                target="_blank"
+                rel="noopener noreferrer"
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -2938,13 +2928,12 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                   borderRadius: '8px',
                   textDecoration: 'none',
                   fontSize: '1rem',
-                  fontWeight: '600',
-                  marginTop: previewType === 'pdf' ? '0' : '0'
+                  fontWeight: '600'
                 }}
                 onClick={() => {
                   toast({
-                    title: "Téléchargement lancé",
-                    description: `${previewFilename} est en cours de téléchargement`,
+                    title: "Téléchargement",
+                    description: `Ouverture de ${previewFilename}...`,
                     variant: "success"
                   });
                 }}
@@ -2952,12 +2941,8 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                 📥 Télécharger {previewFilename}
               </a>
               
-              <p style={{ 
-                marginTop: '1rem', 
-                fontSize: '0.75rem', 
-                color: '#9ca3af' 
-              }}>
-                Cliquez sur le bouton ci-dessus pour sauvegarder le fichier sur votre appareil
+              <p style={{ marginTop: '1rem', fontSize: '0.75rem', color: '#9ca3af' }}>
+                Le fichier s'ouvrira dans un nouvel onglet
               </p>
             </div>
           </div>
