@@ -1367,6 +1367,8 @@ async def export_personnel_excel(
 @router.get("/{tenant_slug}/exports/download/{file_id}")
 async def download_temp_export(tenant_slug: str, file_id: str):
     """Télécharge un fichier d'export temporaire (accès public avec ID unique)"""
+    from fastapi.responses import FileResponse
+    
     # Nettoyer les vieux fichiers
     cleanup_old_exports()
     
@@ -1383,19 +1385,17 @@ async def download_temp_export(tenant_slug: str, file_id: str):
             else:
                 media_type = "application/octet-stream"
             
-            # Lire et retourner le fichier
-            with open(filepath, 'rb') as f:
-                content = f.read()
-            
             # Extraire le nom original du fichier
             original_name = filename.split('_', 1)[1] if '_' in filename else filename
             
-            return StreamingResponse(
-                BytesIO(content),
+            # Utiliser FileResponse pour un téléchargement direct
+            return FileResponse(
+                path=filepath,
                 media_type=media_type,
+                filename=original_name,
                 headers={
-                    "Content-Disposition": f"attachment; filename={original_name}",
-                    "Access-Control-Allow-Origin": "*"
+                    "Access-Control-Allow-Origin": "*",
+                    "Cache-Control": "no-cache"
                 }
             )
     
