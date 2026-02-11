@@ -681,6 +681,249 @@ VIOLATIONS_DEFAUT = [
 ]
 
 
+# ==================== SYSTÈME DE PRÉDICTION D'ARTICLES ====================
+# Mots-clés pondérés pour la prédiction d'articles basée sur le texte
+
+MOTS_CLES_PREDICTION = {
+    # Catégorie Extincteurs
+    "extincteur": {"categorie": "Extincteurs", "poids": 10},
+    "extincteurs": {"categorie": "Extincteurs", "poids": 10},
+    "portatif": {"categorie": "Extincteurs", "poids": 5},
+    "pression": {"categorie": "Extincteurs", "poids": 4, "articles": ["CNPI 6.2.1.6"]},
+    "classe a": {"categorie": "Extincteurs", "poids": 5},
+    "classe b": {"categorie": "Extincteurs", "poids": 5},
+    "classe c": {"categorie": "Extincteurs", "poids": 5},
+    "nfpa 10": {"categorie": "Extincteurs", "poids": 8},
+    
+    # Catégorie Détection
+    "détecteur": {"categorie": "Détection", "poids": 10},
+    "détecteurs": {"categorie": "Détection", "poids": 10},
+    "avertisseur": {"categorie": "Détection", "poids": 10},
+    "avertisseurs": {"categorie": "Détection", "poids": 10},
+    "fumée": {"categorie": "Détection", "poids": 8},
+    "monoxyde": {"categorie": "Détection", "poids": 8, "articles": ["CNPI 2.1.3.5"]},
+    "co": {"categorie": "Détection", "poids": 6, "articles": ["CNPI 2.1.3.5"]},
+    "pile": {"categorie": "Détection", "poids": 5, "articles": ["CNPI 2.1.3.2"]},
+    "batterie": {"categorie": "Détection", "poids": 4},
+    "10 ans": {"categorie": "Détection", "poids": 6, "articles": ["CNPI 2.1.3.3"]},
+    
+    # Catégorie Alarme
+    "alarme": {"categorie": "Alarme", "poids": 10},
+    "sirène": {"categorie": "Alarme", "poids": 8},
+    "cloche": {"categorie": "Alarme", "poids": 8},
+    "déclencheur": {"categorie": "Alarme", "poids": 8, "articles": ["CNPI 2.6.1.3"]},
+    "poste d'alarme": {"categorie": "Alarme", "poids": 9},
+    "panneau": {"categorie": "Alarme", "poids": 6, "articles": ["CNPI 2.6.1.4"]},
+    "centrale": {"categorie": "Alarme", "poids": 7, "articles": ["CNPI 2.6.1.6"]},
+    "surveillance": {"categorie": "Alarme", "poids": 6, "articles": ["CNPI 2.6.1.6"]},
+    "stroboscope": {"categorie": "Alarme", "poids": 8, "articles": ["CNPI 2.6.2.1"]},
+    "malentendant": {"categorie": "Alarme", "poids": 7, "articles": ["CNPI 2.6.2.1"]},
+    
+    # Catégorie Éclairage Urgence
+    "éclairage": {"categorie": "Éclairage Urgence", "poids": 8},
+    "urgence": {"categorie": "Éclairage Urgence", "poids": 5},
+    "exit": {"categorie": "Éclairage Urgence", "poids": 9, "articles": ["CNPI 2.7.3.5"]},
+    "sortie": {"categorie": "Éclairage Urgence", "poids": 6},
+    "enseigne": {"categorie": "Éclairage Urgence", "poids": 7, "articles": ["CNPI 2.7.3.5"]},
+    "autonomie": {"categorie": "Éclairage Urgence", "poids": 6, "articles": ["CNPI 2.7.3.3"]},
+    "lux": {"categorie": "Éclairage Urgence", "poids": 7, "articles": ["CNPI 2.7.3.2"]},
+    
+    # Catégorie Moyens d'évacuation
+    "issue": {"categorie": "Moyens d'évacuation", "poids": 9},
+    "issues": {"categorie": "Moyens d'évacuation", "poids": 9},
+    "évacuation": {"categorie": "Moyens d'évacuation", "poids": 8},
+    "corridor": {"categorie": "Moyens d'évacuation", "poids": 7},
+    "couloir": {"categorie": "Moyens d'évacuation", "poids": 7},
+    "escalier": {"categorie": "Moyens d'évacuation", "poids": 8, "articles": ["CNPI 2.7.1.5", "CNPI 2.7.1.6"]},
+    "main courante": {"categorie": "Moyens d'évacuation", "poids": 8, "articles": ["CNPI 2.7.1.6"]},
+    "barre panique": {"categorie": "Moyens d'évacuation", "poids": 9, "articles": ["CNPI 2.7.1.4"]},
+    "quincaillerie": {"categorie": "Moyens d'évacuation", "poids": 6, "articles": ["CNPI 2.7.1.4"]},
+    "signalisation": {"categorie": "Moyens d'évacuation", "poids": 6, "articles": ["CNPI 2.7.2.1"]},
+    
+    # Catégorie Séparations coupe-feu
+    "coupe-feu": {"categorie": "Séparations coupe-feu", "poids": 10},
+    "coupe feu": {"categorie": "Séparations coupe-feu", "poids": 10},
+    "ferme-porte": {"categorie": "Séparations coupe-feu", "poids": 9, "articles": ["CNPI 2.3.2.2"]},
+    "ferme porte": {"categorie": "Séparations coupe-feu", "poids": 9, "articles": ["CNPI 2.3.2.2"]},
+    "intumescent": {"categorie": "Séparations coupe-feu", "poids": 9, "articles": ["CNPI 2.3.2.4"]},
+    "scellement": {"categorie": "Séparations coupe-feu", "poids": 7, "articles": ["CNPI 2.3.3.1", "CNPI 2.3.3.2"]},
+    "pénétration": {"categorie": "Séparations coupe-feu", "poids": 7, "articles": ["CNPI 2.3.3.1"]},
+    "câbles": {"categorie": "Séparations coupe-feu", "poids": 5, "articles": ["CNPI 2.3.3.1"]},
+    
+    # Catégorie Entreposage
+    "entreposage": {"categorie": "Entreposage", "poids": 9},
+    "combustible": {"categorie": "Entreposage", "poids": 8},
+    "combustibles": {"categorie": "Entreposage", "poids": 8},
+    "inflammable": {"categorie": "Entreposage", "poids": 9},
+    "inflammables": {"categorie": "Entreposage", "poids": 9},
+    "propane": {"categorie": "Entreposage", "poids": 10, "articles": ["CNPI 2.4.2.1"]},
+    "bonbonne": {"categorie": "Entreposage", "poids": 9, "articles": ["CNPI 2.4.2.1"]},
+    "gaz": {"categorie": "Entreposage", "poids": 7, "articles": ["CNPI 2.4.2.1"]},
+    "liquide": {"categorie": "Entreposage", "poids": 5, "articles": ["CNPI 2.4.1.4"]},
+    "accumulation": {"categorie": "Entreposage", "poids": 8, "articles": ["CNPI 2.4.1.1"]},
+    "encombré": {"categorie": "Entreposage", "poids": 7},
+    "encombrement": {"categorie": "Entreposage", "poids": 7},
+    
+    # Catégorie Gicleurs
+    "gicleur": {"categorie": "Gicleurs", "poids": 10},
+    "gicleurs": {"categorie": "Gicleurs", "poids": 10},
+    "sprinkler": {"categorie": "Gicleurs", "poids": 10},
+    "sprinkleur": {"categorie": "Gicleurs", "poids": 10},
+    "tête de gicleur": {"categorie": "Gicleurs", "poids": 10},
+    "vanne": {"categorie": "Gicleurs", "poids": 7, "articles": ["CNPI 2.5.1.1"]},
+    "siamoise": {"categorie": "Gicleurs", "poids": 9, "articles": ["CNPI 2.5.1.5"]},
+    "raccord-pompier": {"categorie": "Gicleurs", "poids": 10, "articles": ["CNPI 2.5.1.5"]},
+    "nfpa 25": {"categorie": "Gicleurs", "poids": 8, "articles": ["CNPI 2.5.1.4"]},
+    
+    # Catégorie Plans
+    "plan": {"categorie": "Plans", "poids": 7},
+    "plans": {"categorie": "Plans", "poids": 7},
+    "affichage": {"categorie": "Plans", "poids": 5, "articles": ["CNPI 2.8.1.2"]},
+    "affiché": {"categorie": "Plans", "poids": 5, "articles": ["CNPI 2.8.1.2"]},
+    "exercice": {"categorie": "Plans", "poids": 7, "articles": ["CNPI 2.8.2.1"]},
+    "formation": {"categorie": "Plans", "poids": 6, "articles": ["CNPI 2.8.2.2"]},
+    "procédure": {"categorie": "Plans", "poids": 5},
+    
+    # Catégorie Électricité
+    "électrique": {"categorie": "Électricité", "poids": 8},
+    "électricité": {"categorie": "Électricité", "poids": 8},
+    "panneau électrique": {"categorie": "Électricité", "poids": 9, "articles": ["CNPI 6.1.1.2"]},
+    "rallonge": {"categorie": "Électricité", "poids": 8, "articles": ["CNPI 6.1.1.3"]},
+    "multiprise": {"categorie": "Électricité", "poids": 8, "articles": ["CNPI 6.1.1.5"]},
+    "barre multiprise": {"categorie": "Électricité", "poids": 9, "articles": ["CNPI 6.1.1.5"]},
+    "surcharge": {"categorie": "Électricité", "poids": 7},
+    "fil dénudé": {"categorie": "Électricité", "poids": 9, "articles": ["CNPI 6.1.1.1"]},
+    "prise": {"categorie": "Électricité", "poids": 5, "articles": ["CNPI 6.1.1.4"]},
+    
+    # Catégorie Chauffage
+    "chauffage": {"categorie": "Chauffage", "poids": 9},
+    "cheminée": {"categorie": "Chauffage", "poids": 9, "articles": ["CNPI 6.3.1.2"]},
+    "ramonage": {"categorie": "Chauffage", "poids": 9, "articles": ["CNPI 6.3.1.2"]},
+    "conduit": {"categorie": "Chauffage", "poids": 6},
+    "hotte": {"categorie": "Chauffage", "poids": 8, "articles": ["CNPI 6.3.2.1"]},
+    "cuisine commerciale": {"categorie": "Chauffage", "poids": 9, "articles": ["CNPI 6.3.2.1"]},
+    "dégagement": {"categorie": "Chauffage", "poids": 6, "articles": ["CNPI 6.3.1.3"]},
+    
+    # Catégorie Municipal
+    "numéro civique": {"categorie": "Municipal", "poids": 10, "articles": ["RM Art. 1"]},
+    "adresse": {"categorie": "Municipal", "poids": 5, "articles": ["RM Art. 1"]},
+    "borne": {"categorie": "Municipal", "poids": 8, "articles": ["RM Art. 3"]},
+    "borne-fontaine": {"categorie": "Municipal", "poids": 10, "articles": ["RM Art. 3"]},
+    "hydrant": {"categorie": "Municipal", "poids": 10, "articles": ["RM Art. 3"]},
+    "accès pompier": {"categorie": "Municipal", "poids": 9, "articles": ["RM Art. 2", "RM Art. 4"]},
+    "voie d'accès": {"categorie": "Municipal", "poids": 8, "articles": ["RM Art. 4"]},
+    "clé": {"categorie": "Municipal", "poids": 5, "articles": ["RM Art. 5"]},
+    "boîte à clé": {"categorie": "Municipal", "poids": 9, "articles": ["RM Art. 5"]},
+    
+    # Mots-clés d'état/action (bonus de score)
+    "manquant": {"bonus": 3},
+    "manquante": {"bonus": 3},
+    "manquants": {"bonus": 3},
+    "manquantes": {"bonus": 3},
+    "absent": {"bonus": 3},
+    "absente": {"bonus": 3},
+    "absents": {"bonus": 3},
+    "défectueux": {"bonus": 4},
+    "défectueuse": {"bonus": 4},
+    "hors service": {"bonus": 5},
+    "non fonctionnel": {"bonus": 5},
+    "obstrué": {"bonus": 4},
+    "obstruée": {"bonus": 4},
+    "bloqué": {"bonus": 4},
+    "bloquée": {"bonus": 4},
+    "verrouillé": {"bonus": 3},
+    "verrouillée": {"bonus": 3},
+    "endommagé": {"bonus": 3},
+    "endommagée": {"bonus": 3},
+    "brisé": {"bonus": 4},
+    "brisée": {"bonus": 4},
+    "expiré": {"bonus": 3},
+    "expirée": {"bonus": 3},
+    "non conforme": {"bonus": 4},
+    "insuffisant": {"bonus": 3},
+    "insuffisante": {"bonus": 3},
+}
+
+def normalize_text(text: str) -> str:
+    """Normalise le texte pour la recherche (minuscules, accents conservés)"""
+    return text.lower().strip()
+
+def calculer_score_article(texte: str, article: dict, tous_articles: list) -> dict:
+    """
+    Calcule le score de pertinence d'un article par rapport au texte donné.
+    Retourne un dict avec l'article et son score.
+    """
+    texte_normalise = normalize_text(texte)
+    score = 0
+    mots_trouves = []
+    
+    # Vérifier chaque mot-clé
+    for mot_cle, config in MOTS_CLES_PREDICTION.items():
+        if mot_cle in texte_normalise:
+            # Bonus si le mot-clé pointe directement vers cet article
+            if "articles" in config and article.get("code_article") in config["articles"]:
+                score += config.get("poids", 5) * 2  # Double le score pour match direct
+                mots_trouves.append(f"{mot_cle} (direct)")
+            # Score de catégorie
+            elif "categorie" in config and config["categorie"] == article.get("categorie"):
+                score += config.get("poids", 5)
+                mots_trouves.append(mot_cle)
+            # Bonus d'état/action
+            elif "bonus" in config:
+                score += config["bonus"]
+    
+    # Bonus si des mots du texte apparaissent dans la description de l'article
+    description_article = normalize_text(article.get("description_standard", ""))
+    mots_texte = texte_normalise.split()
+    for mot in mots_texte:
+        if len(mot) > 3 and mot in description_article:
+            score += 2
+    
+    # Score minimum pour être considéré
+    if score < 5:
+        return None
+    
+    # Calculer le pourcentage de confiance (max théorique ~50 points)
+    confiance = min(100, int((score / 40) * 100))
+    
+    return {
+        "article": article,
+        "score": score,
+        "confiance": confiance,
+        "mots_cles_trouves": mots_trouves
+    }
+
+async def predire_articles(tenant_id: str, texte: str, limite: int = 10) -> list:
+    """
+    Prédit les articles pertinents basés sur le texte fourni.
+    Retourne une liste d'articles avec leur score de confiance.
+    """
+    if not texte or len(texte.strip()) < 3:
+        return []
+    
+    # Récupérer tous les articles actifs du tenant
+    articles = await db.ref_violations.find({
+        "tenant_id": tenant_id,
+        "actif": True
+    }).to_list(1000)
+    
+    if not articles:
+        return []
+    
+    # Calculer le score pour chaque article
+    resultats = []
+    for article in articles:
+        resultat = calculer_score_article(texte, article, articles)
+        if resultat:
+            resultats.append(resultat)
+    
+    # Trier par score décroissant
+    resultats.sort(key=lambda x: x["score"], reverse=True)
+    
+    # Limiter et formater les résultats
+    return resultats[:limite]
+
+
 # ==================== ROUTES RÉFÉRENTIEL VIOLATIONS ====================
 
 @router.get("/{tenant_slug}/prevention/ref-violations")
