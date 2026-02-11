@@ -73,13 +73,6 @@ const MonProfil = () => {
         return;
       }
       
-      console.log('🔍 Mon Profil - Début chargement:', {
-        tenantSlug,
-        userId: user.id,
-        userPhotoFromAuth: user?.photo_profil ? 'PRÉSENTE' : 'ABSENTE',
-        token: localStorage.getItem('token') ? 'Présent' : 'Absent'
-      });
-      
       try {
         // Charger les données principales en parallèle, mais gérer les erreurs individuellement
         const [userResult, competencesResult, statsResult] = await Promise.allSettled([
@@ -96,17 +89,6 @@ const MonProfil = () => {
         if (!userData) {
           throw new Error('Impossible de charger les données utilisateur');
         }
-        
-        console.log('📊 Mon Profil - userData chargé:', userData);
-        console.log('🔍 Champs critiques:', {
-          numero_employe: userData?.numero_employe,
-          taux_horaire: userData?.taux_horaire,
-          grade: userData?.grade,
-          date_embauche: userData?.date_embauche,
-          adresse: userData?.adresse,
-          tailles_epi: userData?.tailles_epi,
-          photo_profil: userData?.photo_profil ? 'PRÉSENTE' : 'ABSENTE'
-        });
         
         // S'assurer que la photo_profil du user global est utilisée si celle de l'API est absente
         const userDataWithPhoto = {
@@ -138,12 +120,6 @@ const MonProfil = () => {
           }
         });
         
-        console.log('📝 Mon Profil - profileData initialisé:', {
-          telephone: userData.telephone,
-          adresse: userData.adresse,
-          contact_urgence: userData.contact_urgence
-        });
-
       } catch (error) {
         console.error('❌ Mon Profil - Erreur chargement:', {
           error: error.message,
