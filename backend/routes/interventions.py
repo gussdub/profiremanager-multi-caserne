@@ -24,7 +24,9 @@ from routes.dependencies import (
     get_current_user,
     get_tenant_from_slug,
     clean_mongo_doc,
-    User
+    User,
+    creer_notification,
+    creer_activite
 )
 
 router = APIRouter(tags=["Interventions"])
