@@ -60,7 +60,7 @@ class SFTPConfig(BaseModel):
     username: str
     password: str  # En production, utiliser un vault
     remote_path: str = "/"
-    polling_interval: int = 30
+    polling_interval: int = 300  # Défaut: 5 minutes
     actif: bool = True
     description: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
