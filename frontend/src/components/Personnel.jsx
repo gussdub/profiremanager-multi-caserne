@@ -549,38 +549,19 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       
       const blob = await response.blob();
       
-      // Convertir le blob en data URL (base64)
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUrl = reader.result;
-        
-        if (exportType === 'pdf') {
-          // Afficher le PDF dans une modale intégrée
-          setPreviewDataUrl(dataUrl);
-          setPreviewFilename(userId 
-            ? `fiche_${users.find(u => u.id === userId)?.prenom}_${users.find(u => u.id === userId)?.nom}.pdf`
-            : 'liste_personnel.pdf'
-          );
-          setShowPreviewModal(true);
-        } else {
-          // Pour Excel, créer un lien de téléchargement data URL
-          const link = document.createElement('a');
-          link.href = dataUrl;
-          link.download = userId 
-            ? `fiche_${users.find(u => u.id === userId)?.prenom}_${users.find(u => u.id === userId)?.nom}.xlsx`
-            : 'liste_personnel.xlsx';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          
-          toast({ 
-            title: "Succès", 
-            description: "Export Excel téléchargé",
-            variant: "success"
-          });
-        }
-      };
-      reader.readAsDataURL(blob);
+      // Créer un blob URL
+      const blobUrl = URL.createObjectURL(blob);
+      
+      // Définir le nom du fichier
+      const filename = userId 
+        ? `fiche_${users.find(u => u.id === userId)?.prenom}_${users.find(u => u.id === userId)?.nom}.${exportType === 'pdf' ? 'pdf' : 'xlsx'}`
+        : `liste_personnel.${exportType === 'pdf' ? 'pdf' : 'xlsx'}`;
+      
+      // Afficher la modale de téléchargement
+      setPreviewDataUrl(blobUrl);
+      setPreviewFilename(filename);
+      setPreviewType(exportType);
+      setShowPreviewModal(true);
       
       setShowExportModal(false);
     } catch (error) {
