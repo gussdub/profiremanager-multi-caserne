@@ -1124,6 +1124,52 @@ async def init_ref_violations(
     }
 
 
+# Modèle pour la requête de prédiction
+class PredictionRequest(BaseModel):
+    texte: str
+    limite: int = 10
+
+
+@router.post("/{tenant_slug}/prevention/ref-violations/predire")
+async def predire_articles_endpoint(
+    tenant_slug: str,
+    data: PredictionRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Prédit les articles de référence pertinents basés sur un texte.
+    Utilisé pour suggérer des articles lors de la création de non-conformités.
+    
+    Le système analyse les mots-clés dans le texte et calcule un score de confiance
+    pour chaque article du référentiel.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    resultats = await predire_articles(tenant.id, data.texte, data.limite)
+    
+    # Formater les résultats pour le frontend
+    suggestions = []
+    for r in resultats:
+        article = r["article"]
+        suggestions.append({
+            "id": article.get("id"),
+            "code_article": article.get("code_article"),
+            "description_standard": article.get("description_standard"),
+            "categorie": article.get("categorie"),
+            "severite": article.get("severite"),
+            "delai_jours": article.get("delai_jours"),
+            "confiance": r["confiance"],
+            "score": r["score"],
+            "mots_cles_trouves": r["mots_cles_trouves"]
+        })
+    
+    return {
+        "texte_analyse": data.texte,
+        "suggestions": suggestions,
+        "total": len(suggestions)
+    }
+
+
 # ==================== ROUTES AVIS DE NON-CONFORMITÉ ====================
 
 async def generer_numero_avis(tenant_id: str) -> str:
