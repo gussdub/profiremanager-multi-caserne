@@ -141,7 +141,7 @@ const Prevention = () => {
 
   const fetchPreventionnistes = async () => {
     try {
-      const data = await apiGet(tenantSlug, '/employes');
+      const data = await apiGet(tenantSlug, '/users');
       const prevs = (data || []).filter(e => e.est_preventionniste || e.role === 'admin' || e.role === 'superviseur');
       setPreventionnistes(prevs);
     } catch (error) {
