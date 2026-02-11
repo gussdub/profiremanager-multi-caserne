@@ -51,10 +51,11 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   const [exportScope, setExportScope] = useState('all'); // 'all' ou 'individual'
   const [selectedPersonForExport, setSelectedPersonForExport] = useState('');
   
-  // États pour la prévisualisation PDF
+  // États pour la prévisualisation PDF/Excel
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [previewDataUrl, setPreviewDataUrl] = useState(null);
   const [previewFilename, setPreviewFilename] = useState('');
+  const [previewType, setPreviewType] = useState('pdf'); // 'pdf' ou 'excel'
   
   // État pour la photo de profil
   const [photoUploading, setPhotoUploading] = useState(false);
