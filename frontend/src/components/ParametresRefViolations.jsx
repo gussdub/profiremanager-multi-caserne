@@ -102,18 +102,8 @@ const ParametresRefViolations = ({ tenantSlug, toast }) => {
     try {
       setSaving(true);
       
-      // Si des articles existent, les supprimer d'abord
-      if (violations.length > 0) {
-        for (const v of violations) {
-          try {
-            await apiDelete(tenantSlug, `/prevention/ref-violations/${v.id}`);
-          } catch (e) {
-            console.warn(`Erreur suppression ${v.id}:`, e);
-          }
-        }
-      }
-      
-      const result = await apiPost(tenantSlug, "/prevention/ref-violations/init", {});
+      // Utiliser force=true pour permettre la réinitialisation même avec des données existantes
+      const result = await apiPost(tenantSlug, "/prevention/ref-violations/init?force=true", {});
       toast({
         title: "✅ Succès",
         description: `${result.articles?.length || 0} articles importés avec succès`
