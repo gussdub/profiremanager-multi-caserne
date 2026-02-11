@@ -320,17 +320,21 @@ class SFTPService:
             logger.error(f"Erreur SFTP pour tenant {tenant_id}: {e}")
             return []
     
-    async def start_polling(self, tenant_id: str, tenant_slug: str, interval: int = 30):
+    async def start_polling(self, tenant_id: str, tenant_slug: str, interval: int = 300):
         """
         Démarre le polling SFTP pour un tenant
         
         Args:
             tenant_id: ID du tenant
             tenant_slug: Slug du tenant (pour les logs)
-            interval: Intervalle en secondes entre chaque vérification
+            interval: Intervalle en secondes entre chaque vérification (défaut: 300 = 5 minutes)
+                      Minimum recommandé: 120 secondes (2 minutes)
         """
+        # Forcer un minimum de 60 secondes pour éviter de surcharger le serveur SFTP
+        interval = max(60, interval)
+        
         async def poll_loop():
-            logger.info(f"Démarrage polling SFTP pour tenant {tenant_slug} (intervalle: {interval}s)")
+            logger.info(f"Démarrage polling SFTP pour tenant {tenant_slug} (intervalle: {interval}s = {interval//60} min)")
             while True:
                 try:
                     new_interventions = await self.check_sftp_for_tenant(tenant_id, tenant_slug)
