@@ -34,7 +34,7 @@ class SFTPConfigCreate(BaseModel):
     username: str
     password: str
     remote_path: str = "/"
-    polling_interval: int = 30  # Intervalle en secondes
+    polling_interval: int = 300  # Intervalle en secondes (défaut: 5 minutes)
     actif: bool = True
     description: Optional[str] = None
 
