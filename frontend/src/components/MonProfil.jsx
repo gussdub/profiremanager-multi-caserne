@@ -1584,11 +1584,7 @@ const MonProfil = () => {
                 🛡️ Mes Tailles EPI
               </h3>
               <Button
-                onClick={() => {
-                  console.log('🔘 [Mon Profil EPI] Bouton Modifier cliqué, isEditingEPI avant:', isEditingEPI);
-                  setIsEditingEPI(!isEditingEPI);
-                  console.log('🔘 [Mon Profil EPI] isEditingEPI après:', !isEditingEPI);
-                }}
+                onClick={() => setIsEditingEPI(!isEditingEPI)}
                 variant={isEditingEPI ? "outline" : "default"}
                 data-testid="edit-epi-tailles-btn"
                 style={{ background: isEditingEPI ? 'white' : 'rgba(255,255,255,0.2)', color: isEditingEPI ? '#dc2626' : 'white' }}
@@ -1607,10 +1603,7 @@ const MonProfil = () => {
               <div className="epi-tailles-grid-profile">
                 {getAllEPITypes().map(epiType => {
                   const isDisabled = !isEditingEPI;
-                  // Utiliser les tailles du profil utilisateur
                   const currentValue = epiTailles[epiType.id] || '';
-                  
-                  console.log(`[${epiType.nom}] disabled=${isDisabled}, value="${currentValue}"`);
                   
                   return (
                     <div key={epiType.id} className="epi-taille-item-profile">
@@ -1620,9 +1613,7 @@ const MonProfil = () => {
                         <Input
                           value={currentValue}
                           onChange={(e) => {
-                            const newValue = e.target.value;
-                            console.log(`✏️ [${epiType.nom}] onChange: "${currentValue}" → "${newValue}"`);
-                            setEpiTailles({...epiTailles, [epiType.id]: newValue});
+                            setEpiTailles({...epiTailles, [epiType.id]: e.target.value});
                           }}
                           disabled={isDisabled}
                           placeholder="Taille"
