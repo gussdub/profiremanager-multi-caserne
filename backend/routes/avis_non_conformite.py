@@ -931,7 +931,7 @@ async def list_ref_violations(
     tenant_slug: str,
     categorie: Optional[str] = None,
     severite: Optional[str] = None,
-    actif: Optional[bool] = True,
+    actif: Optional[bool] = None,
     current_user: User = Depends(get_current_user)
 ):
     """Liste des articles de référence pour les violations"""
@@ -942,8 +942,12 @@ async def list_ref_violations(
         query["categorie"] = categorie
     if severite:
         query["severite"] = severite
+    # Par défaut, retourner uniquement les actifs, sauf si explicitement demandé
     if actif is not None:
         query["actif"] = actif
+    else:
+        # Par défaut, ne pas filtrer (retourner tous)
+        pass
     
     violations = await db.ref_violations.find(query).sort("code_article", 1).to_list(500)
     return [clean_mongo_doc(v) for v in violations]
