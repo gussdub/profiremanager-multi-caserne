@@ -26,7 +26,8 @@ from routes.dependencies import (
     get_tenant_from_slug,
     clean_mongo_doc,
     User,
-    creer_activite
+    creer_activite,
+    creer_notification
 )
 
 router = APIRouter(tags=["Disponibilités"])
