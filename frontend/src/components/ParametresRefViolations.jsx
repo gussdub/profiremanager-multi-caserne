@@ -621,6 +621,47 @@ const ParametresRefViolations = ({ tenantSlug, toast }) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal Confirmation Initialisation */}
+      <Dialog open={showInitConfirm} onOpenChange={setShowInitConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <RefreshCw className="w-5 h-5 text-blue-600" />
+              {violations.length === 0 ? 'Initialiser le référentiel' : 'Réinitialiser le référentiel'}
+            </DialogTitle>
+            <DialogDescription>
+              {violations.length === 0 
+                ? "Voulez-vous initialiser le référentiel avec les articles par défaut du CNPI ?"
+                : "Cette action va SUPPRIMER tous les articles existants et les remplacer par les articles par défaut du CNPI."
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-gray-600">
+              Le référentiel par défaut contient plus de 70 articles couvrant :
+            </p>
+            <ul className="text-sm text-gray-500 mt-2 space-y-1 list-disc list-inside">
+              <li>Extincteurs et équipements de lutte</li>
+              <li>Détection et alarme incendie</li>
+              <li>Moyens d'évacuation et issues</li>
+              <li>Éclairage d'urgence</li>
+              <li>Séparations coupe-feu</li>
+              <li>Systèmes de gicleurs</li>
+              <li>Et plus encore...</li>
+            </ul>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowInitConfirm(false)}>
+              Annuler
+            </Button>
+            <Button onClick={handleInitDefault} disabled={saving}>
+              {saving ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+              {violations.length === 0 ? 'Initialiser' : 'Réinitialiser'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
