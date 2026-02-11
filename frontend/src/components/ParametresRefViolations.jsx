@@ -22,6 +22,9 @@ const ParametresRefViolations = ({ tenantSlug, toast }) => {
   const [violations, setViolations] = useState([]);
   const [categories, setCategories] = useState([]);
   
+  // Modal de confirmation pour l'initialisation
+  const [showInitConfirm, setShowInitConfirm] = useState(false);
+  
   // Filtres
   const [filterCategorie, setFilterCategorie] = useState("");
   const [filterSeverite, setFilterSeverite] = useState("");
