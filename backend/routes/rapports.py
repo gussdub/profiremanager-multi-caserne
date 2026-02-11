@@ -73,6 +73,24 @@ from openpyxl.utils import get_column_letter
 router = APIRouter(tags=["Rapports"])
 logger = logging.getLogger(__name__)
 
+# Stockage temporaire des fichiers pour téléchargement (compatible iframe sandbox)
+# Les fichiers sont stockés pendant 5 minutes max
+import os
+import time
+TEMP_EXPORT_DIR = "/tmp/exports"
+os.makedirs(TEMP_EXPORT_DIR, exist_ok=True)
+
+def cleanup_old_exports():
+    """Nettoie les fichiers d'export de plus de 5 minutes"""
+    try:
+        now = time.time()
+        for filename in os.listdir(TEMP_EXPORT_DIR):
+            filepath = os.path.join(TEMP_EXPORT_DIR, filename)
+            if os.path.isfile(filepath) and now - os.path.getmtime(filepath) > 300:
+                os.remove(filepath)
+    except Exception as e:
+        logger.warning(f"Erreur nettoyage exports: {e}")
+
 
 # ==================== MODÈLES PYDANTIC ====================
 
