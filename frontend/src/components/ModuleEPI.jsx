@@ -39,6 +39,7 @@ const getLocalDateString = () => {
 const ModuleEPI = ({ user }) => {
   const { tenantSlug } = useTenant();
   const { toast } = useToast();
+  const { confirm } = useConfirmDialog();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('inventaire');
   
