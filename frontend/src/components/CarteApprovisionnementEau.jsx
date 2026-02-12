@@ -1547,7 +1547,7 @@ const Prevention = () => {
               try {
                 toast({
                   title: "Génération en cours",
-                  description: "Téléchargement du rapport PDF..."
+                  description: "Préparation du rapport PDF..."
                 });
                 
                 const response = await fetch(
@@ -1563,17 +1563,23 @@ const Prevention = () => {
                 
                 const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `rapport_${selectedBatiment.nom_etablissement || 'batiment'}_${new Date().toISOString().split('T')[0]}.pdf`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
+                
+                // Utiliser iframe pour ouvrir la fenêtre d'impression
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = url;
+                document.body.appendChild(iframe);
+                iframe.onload = () => {
+                  iframe.contentWindow.print();
+                  setTimeout(() => {
+                    document.body.removeChild(iframe);
+                    window.URL.revokeObjectURL(url);
+                  }, 1000);
+                };
                 
                 toast({
                   title: "Rapport généré",
-                  description: "Le PDF a été téléchargé avec succès",
+                  description: "La fenêtre d'impression s'est ouverte",
                   variant: "success"
                 });
               } catch (error) {
