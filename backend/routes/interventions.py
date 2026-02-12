@@ -1147,6 +1147,520 @@ async def get_equipes_garde_for_intervention(
                     if is_in_range:
                         type_garde_cible = "externe" if tg.get("est_garde_externe", False) else "interne"
                         logging.info(f"🕐 Intervention à {heure} → Type garde: {type_garde_cible} ({tg.get('nom')})")
+
+
+
+# ==================== FAUSSES ALARMES ====================
+
+def normaliser_adresse(adresse: str) -> str:
+    """Normalise une adresse pour la comparaison"""
+    if not adresse:
+        return ""
+    # Mettre en minuscules, supprimer les espaces multiples et les accents courants
+    import unicodedata
+    normalized = unicodedata.normalize('NFKD', adresse.lower())
+    normalized = ''.join(c for c in normalized if not unicodedata.combining(c))
+    # Supprimer ponctuation et espaces multiples
+    normalized = re.sub(r'[^\w\s]', ' ', normalized)
+    normalized = re.sub(r'\s+', ' ', normalized).strip()
+    return normalized
+
+
+async def get_fausses_alarmes_count(tenant_id: str, adresse: str, config: dict) -> dict:
+    """
+    Compte les fausses alarmes pour une adresse donnée selon la période configurée.
+    """
+    adresse_norm = normaliser_adresse(adresse)
+    
+    # Déterminer la date de début selon la période
+    now = datetime.now(timezone.utc)
+    if config.get("periode") == "annuelle":
+        date_debut = datetime(now.year, 1, 1, tzinfo=timezone.utc)
+    else:  # roulante_12_mois
+        date_debut = now - timedelta(days=365)
+    
+    # Chercher dans le suivi existant
+    suivi = await db.fausses_alarmes_suivi.find_one({
+        "tenant_id": tenant_id,
+        "adresse_normalisee": adresse_norm
+    })
+    
+    if suivi:
+        # Filtrer les interventions selon la période
+        interventions_periode = [
+            i for i in suivi.get("interventions", [])
+            if datetime.fromisoformat(i["date"].replace("Z", "+00:00")) >= date_debut
+        ]
+        return {
+            "count": len(interventions_periode),
+            "interventions": interventions_periode,
+            "suivi_id": suivi.get("id"),
+            "statut_facturation": suivi.get("statut_facturation", "ok"),
+            "batiment_id": suivi.get("batiment_id")
+        }
+    
+    return {
+        "count": 0,
+        "interventions": [],
+        "suivi_id": None,
+        "statut_facturation": "ok",
+        "batiment_id": None
+    }
+
+
+async def update_fausse_alarme_suivi(
+    tenant_id: str, 
+    intervention: dict, 
+    config: dict,
+    is_fausse_alarme: bool
+):
+    """
+    Met à jour le suivi des fausses alarmes pour une adresse.
+    """
+    adresse = intervention.get("adresse") or intervention.get("location", {}).get("address", "")
+    if not adresse:
+        return None
+    
+    adresse_norm = normaliser_adresse(adresse)
+    intervention_id = intervention.get("id")
+    date_intervention = intervention.get("date_heure_alerte") or intervention.get("created_at")
+    
+    if isinstance(date_intervention, str):
+        date_str = date_intervention
+    else:
+        date_str = date_intervention.isoformat() if date_intervention else datetime.now(timezone.utc).isoformat()
+    
+    # Chercher un suivi existant
+    suivi = await db.fausses_alarmes_suivi.find_one({
+        "tenant_id": tenant_id,
+        "adresse_normalisee": adresse_norm
+    })
+    
+    intervention_entry = {
+        "intervention_id": intervention_id,
+        "date": date_str,
+        "numero_intervention": intervention.get("numero_carte_appel", "")
+    }
+    
+    if is_fausse_alarme:
+        if suivi:
+            # Vérifier si l'intervention est déjà dans la liste
+            existing_ids = [i["intervention_id"] for i in suivi.get("interventions", [])]
+            if intervention_id not in existing_ids:
+                await db.fausses_alarmes_suivi.update_one(
+                    {"_id": suivi["_id"]},
+                    {
+                        "$push": {"interventions": intervention_entry},
+                        "$set": {
+                            "derniere_alarme": datetime.now(timezone.utc),
+                            "updated_at": datetime.now(timezone.utc)
+                        }
+                    }
+                )
+        else:
+            # Créer un nouveau suivi
+            # Chercher si l'adresse correspond à un bâtiment (module prévention)
+            batiment = await db.prevention_batiments.find_one({
+                "tenant_id": tenant_id,
+                "$or": [
+                    {"adresse_normalisee": adresse_norm},
+                    {"adresse": {"$regex": re.escape(adresse[:20]), "$options": "i"}}
+                ]
+            })
+            
+            new_suivi = {
+                "id": str(uuid.uuid4()),
+                "tenant_id": tenant_id,
+                "adresse_normalisee": adresse_norm,
+                "adresse_originale": adresse,
+                "batiment_id": batiment.get("id") if batiment else None,
+                "batiment_nom": batiment.get("nom") if batiment else None,
+                "interventions": [intervention_entry],
+                "derniere_alarme": datetime.now(timezone.utc),
+                "statut_facturation": "ok",
+                "factures": [],
+                "exemption": None,
+                "created_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc)
+            }
+            await db.fausses_alarmes_suivi.insert_one(new_suivi)
+            suivi = new_suivi
+    else:
+        # Retirer l'intervention si elle était marquée comme fausse alarme
+        if suivi:
+            await db.fausses_alarmes_suivi.update_one(
+                {"_id": suivi["_id"]},
+                {
+                    "$pull": {"interventions": {"intervention_id": intervention_id}},
+                    "$set": {"updated_at": datetime.now(timezone.utc)}
+                }
+            )
+    
+    # Recalculer le statut
+    if suivi or is_fausse_alarme:
+        count_data = await get_fausses_alarmes_count(tenant_id, adresse, config)
+        count = count_data["count"]
+        seuil = config.get("seuil_gratuit", 3)
+        
+        if count > seuil:
+            new_statut = "a_facturer"
+        elif count >= seuil:
+            new_statut = "a_surveiller"
+        else:
+            new_statut = "ok"
+        
+        await db.fausses_alarmes_suivi.update_one(
+            {"tenant_id": tenant_id, "adresse_normalisee": adresse_norm},
+            {"$set": {"statut_facturation": new_statut, "compteur_periode": count}}
+        )
+        
+        # Envoyer une alerte si le seuil est dépassé
+        if count == seuil + 1 and config.get("actif"):
+            await creer_notification(
+                tenant_id=tenant_id,
+                type_notification="fausse_alarme_seuil",
+                titre=f"⚠️ Seuil de fausses alarmes atteint",
+                message=f"L'adresse '{adresse}' a atteint {count} fausses alarmes. Facturation suggérée.",
+                lien="/interventions?tab=fausses-alarmes",
+                data={
+                    "adresse": adresse,
+                    "count": count,
+                    "seuil": seuil
+                },
+                destinataires_roles=["admin", "superviseur"]
+            )
+        
+        return count_data
+    
+    return None
+
+
+@router.get("/{tenant_slug}/interventions/fausses-alarmes")
+async def get_fausses_alarmes_list(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Liste toutes les adresses avec des fausses alarmes.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    
+    # Récupérer la config
+    settings = await db.intervention_settings.find_one({"tenant_id": tenant.id})
+    config = settings.get("fausse_alarme_config", {}) if settings else {}
+    seuil = config.get("seuil_gratuit", 3)
+    
+    # Récupérer tous les suivis
+    suivis = await db.fausses_alarmes_suivi.find({
+        "tenant_id": tenant.id
+    }).to_list(1000)
+    
+    # Recalculer les compteurs selon la période
+    now = datetime.now(timezone.utc)
+    if config.get("periode") == "annuelle":
+        date_debut = datetime(now.year, 1, 1, tzinfo=timezone.utc)
+    else:
+        date_debut = now - timedelta(days=365)
+    
+    result = []
+    for suivi in suivis:
+        interventions_periode = [
+            i for i in suivi.get("interventions", [])
+            if datetime.fromisoformat(i["date"].replace("Z", "+00:00")) >= date_debut
+        ]
+        
+        count = len(interventions_periode)
+        if count == 0:
+            continue
+        
+        # Calculer le montant à facturer
+        montant = 0
+        if count > seuil and config.get("actif"):
+            facturables = count - seuil
+            if config.get("type_facturation") == "fixe":
+                montant = facturables * config.get("montant_fixe", 500)
+            else:
+                montants_prog = config.get("montants_progressifs", [200, 400, 600])
+                for i in range(facturables):
+                    idx = min(i, len(montants_prog) - 1)
+                    montant += montants_prog[idx]
+        
+        result.append({
+            "id": suivi.get("id"),
+            "adresse": suivi.get("adresse_originale"),
+            "adresse_normalisee": suivi.get("adresse_normalisee"),
+            "batiment_id": suivi.get("batiment_id"),
+            "batiment_nom": suivi.get("batiment_nom"),
+            "count": count,
+            "seuil": seuil,
+            "statut_facturation": suivi.get("statut_facturation", "ok"),
+            "montant_a_facturer": montant,
+            "derniere_alarme": suivi.get("derniere_alarme"),
+            "interventions": interventions_periode,
+            "factures": suivi.get("factures", []),
+            "exemption": suivi.get("exemption")
+        })
+    
+    # Trier par count décroissant
+    result.sort(key=lambda x: x["count"], reverse=True)
+    
+    return {
+        "fausses_alarmes": result,
+        "config": config,
+        "total_adresses": len(result),
+        "total_a_facturer": len([r for r in result if r["statut_facturation"] == "a_facturer"])
+    }
+
+
+@router.get("/{tenant_slug}/interventions/fausses-alarmes/{adresse_id}")
+async def get_fausse_alarme_detail(
+    tenant_slug: str,
+    adresse_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Détail d'une adresse avec ses fausses alarmes.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    suivi = await db.fausses_alarmes_suivi.find_one({
+        "tenant_id": tenant.id,
+        "id": adresse_id
+    })
+    
+    if not suivi:
+        raise HTTPException(status_code=404, detail="Suivi non trouvé")
+    
+    # Récupérer les détails des interventions
+    intervention_ids = [i["intervention_id"] for i in suivi.get("interventions", [])]
+    interventions = await db.interventions.find({
+        "tenant_id": tenant.id,
+        "id": {"$in": intervention_ids}
+    }).to_list(100)
+    
+    # Récupérer le bâtiment si lié
+    batiment = None
+    if suivi.get("batiment_id"):
+        batiment = await db.prevention_batiments.find_one({
+            "tenant_id": tenant.id,
+            "id": suivi["batiment_id"]
+        })
+        if batiment:
+            batiment = clean_mongo_doc(batiment)
+    
+    return {
+        "suivi": clean_mongo_doc(suivi),
+        "interventions": [clean_mongo_doc(i) for i in interventions],
+        "batiment": batiment
+    }
+
+
+@router.post("/{tenant_slug}/interventions/fausses-alarmes/{adresse_id}/exempter")
+async def exempter_fausse_alarme(
+    tenant_slug: str,
+    adresse_id: str,
+    data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Exempte une adresse de la facturation des fausses alarmes.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    
+    await db.fausses_alarmes_suivi.update_one(
+        {"tenant_id": tenant.id, "id": adresse_id},
+        {
+            "$set": {
+                "statut_facturation": "exempte",
+                "exemption": {
+                    "raison": data.get("raison", ""),
+                    "date": datetime.now(timezone.utc),
+                    "par": current_user.id,
+                    "par_nom": f"{current_user.prenom} {current_user.nom}"
+                },
+                "updated_at": datetime.now(timezone.utc)
+            }
+        }
+    )
+    
+    return {"success": True, "message": "Adresse exemptée de facturation"}
+
+
+@router.post("/{tenant_slug}/interventions/fausses-alarmes/{adresse_id}/facturer")
+async def creer_suggestion_facture(
+    tenant_slug: str,
+    adresse_id: str,
+    data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Crée une suggestion de facture pour les fausses alarmes d'une adresse.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    
+    suivi = await db.fausses_alarmes_suivi.find_one({
+        "tenant_id": tenant.id,
+        "id": adresse_id
+    })
+    
+    if not suivi:
+        raise HTTPException(status_code=404, detail="Suivi non trouvé")
+    
+    # Créer la facture
+    facture = {
+        "id": str(uuid.uuid4()),
+        "date_creation": datetime.now(timezone.utc),
+        "montant": data.get("montant", 0),
+        "responsable": {
+            "nom": data.get("responsable_nom", ""),
+            "adresse": data.get("responsable_adresse", ""),
+            "telephone": data.get("responsable_telephone", ""),
+            "courriel": data.get("responsable_courriel", "")
+        },
+        "interventions_facturees": [i["intervention_id"] for i in suivi.get("interventions", [])],
+        "statut": "suggestion",
+        "notes": data.get("notes", ""),
+        "cree_par": current_user.id,
+        "cree_par_nom": f"{current_user.prenom} {current_user.nom}"
+    }
+    
+    await db.fausses_alarmes_suivi.update_one(
+        {"tenant_id": tenant.id, "id": adresse_id},
+        {
+            "$push": {"factures": facture},
+            "$set": {
+                "statut_facturation": "facture",
+                "updated_at": datetime.now(timezone.utc)
+            }
+        }
+    )
+    
+    # Créer une activité
+    await creer_activite(
+        tenant_id=tenant.id,
+        type_activite="facture_fausse_alarme",
+        description=f"Suggestion de facture créée pour {suivi.get('adresse_originale')} - {data.get('montant', 0)}$",
+        user_id=current_user.id,
+        user_nom=f"{current_user.prenom} {current_user.nom}"
+    )
+    
+    return {"success": True, "facture": facture}
+
+
+@router.get("/{tenant_slug}/interventions/{intervention_id}/fausse-alarme-info")
+async def get_intervention_fausse_alarme_info(
+    tenant_slug: str,
+    intervention_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Récupère les infos de fausse alarme pour une intervention.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    intervention = await db.interventions.find_one({
+        "tenant_id": tenant.id,
+        "id": intervention_id
+    })
+    
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    # Récupérer la config
+    settings = await db.intervention_settings.find_one({"tenant_id": tenant.id})
+    config = settings.get("fausse_alarme_config", {}) if settings else {}
+    
+    adresse = intervention.get("adresse") or intervention.get("location", {}).get("address", "")
+    count_data = await get_fausses_alarmes_count(tenant.id, adresse, config)
+    
+    return {
+        "is_fausse_alarme": intervention.get("alarme_non_fondee", False),
+        "adresse": adresse,
+        "count": count_data["count"],
+        "seuil": config.get("seuil_gratuit", 3),
+        "config_active": config.get("actif", False),
+        "statut_facturation": count_data["statut_facturation"],
+        "batiment_id": count_data["batiment_id"]
+    }
+
+
+@router.put("/{tenant_slug}/interventions/{intervention_id}/alarme-non-fondee")
+async def toggle_alarme_non_fondee(
+    tenant_slug: str,
+    intervention_id: str,
+    data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Marque ou démarque une intervention comme alarme non fondée.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    
+    intervention = await db.interventions.find_one({
+        "tenant_id": tenant.id,
+        "id": intervention_id
+    })
+    
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    is_fausse_alarme = data.get("alarme_non_fondee", False)
+    
+    # Mettre à jour l'intervention
+    await db.interventions.update_one(
+        {"tenant_id": tenant.id, "id": intervention_id},
+        {
+            "$set": {
+                "alarme_non_fondee": is_fausse_alarme,
+                "alarme_non_fondee_date": datetime.now(timezone.utc) if is_fausse_alarme else None,
+                "alarme_non_fondee_par": current_user.id if is_fausse_alarme else None,
+                "updated_at": datetime.now(timezone.utc)
+            }
+        }
+    )
+    
+    # Récupérer la config
+    settings = await db.intervention_settings.find_one({"tenant_id": tenant.id})
+    config = settings.get("fausse_alarme_config", {}) if settings else {}
+    
+    # Mettre à jour le suivi
+    intervention["alarme_non_fondee"] = is_fausse_alarme
+    count_data = await update_fausse_alarme_suivi(tenant.id, intervention, config, is_fausse_alarme)
+    
+    action = "marquée comme" if is_fausse_alarme else "retirée des"
+    logger.info(f"🚨 Intervention {intervention_id} {action} fausse alarme par {current_user.email}")
+    
+    return {
+        "success": True,
+        "alarme_non_fondee": is_fausse_alarme,
+        "count": count_data["count"] if count_data else 0,
+        "statut_facturation": count_data["statut_facturation"] if count_data else "ok"
+    }
+
                         break
                 except Exception as e:
                     logging.warning(f"Erreur parsing horaire type garde: {e}")
