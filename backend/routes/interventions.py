@@ -649,6 +649,23 @@ async def validate_intervention(
                 {"id": intervention_id},
                 {"$push": {"audit_log": audit_entry}}
             )
+        
+        # Notifier les rédacteurs assignés que le rapport est renvoyé pour révision
+        assigned_reporters = intervention.get("assigned_reporters", [])
+        external_call_id = intervention.get("external_call_id", intervention_id)
+        
+        for reporter in assigned_reporters:
+            reporter_id = reporter.get("user_id") if isinstance(reporter, dict) else reporter
+            if reporter_id and reporter_id != current_user.id:
+                await creer_notification(
+                    tenant_id=tenant.id,
+                    user_id=reporter_id,
+                    type_notification="intervention_revision",
+                    titre="📝 Rapport à réviser",
+                    message=f"Le rapport d'intervention #{external_call_id} a été retourné pour révision. {comment or ''}".strip(),
+                    lien=f"/interventions/{intervention_id}",
+                    data={"intervention_id": intervention_id, "comment": comment}
+                )
             
     elif action == "sign":
         # Vérifier les champs obligatoires pour incendie
