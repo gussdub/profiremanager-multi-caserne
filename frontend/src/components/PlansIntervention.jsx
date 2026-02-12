@@ -78,7 +78,13 @@ const PlansIntervention = ({ tenantSlug, filteredBatimentId, setFilteredBatiment
   };
 
   const handleApprovePlan = async (planId) => {
-    if (!window.confirm('Approuver ce plan d\'intervention?')) return;
+    const confirmed = await confirm({
+      title: 'Approuver le plan',
+      message: 'Approuver ce plan d\'intervention?',
+      variant: 'success',
+      confirmText: 'Approuver'
+    });
+    if (!confirmed) return;
 
     try {
       const token = getTenantToken();
@@ -87,11 +93,9 @@ const PlansIntervention = ({ tenantSlug, filteredBatimentId, setFilteredBatiment
         { commentaires: '' },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      alert('Plan approuvé avec succès!');
       fetchPlans();
     } catch (error) {
       console.error('Erreur approbation:', error);
-      alert('Erreur lors de l\'approbation');
     }
   };
 
