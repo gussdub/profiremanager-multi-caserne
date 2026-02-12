@@ -126,36 +126,13 @@ async def publier_message(
         user_email = user.get("email")
         if user_email:
             try:
-                # Contenu HTML de l'email
-                html_content = f"""
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <div style="background: {color}; padding: 20px; text-align: center;">
-                        <img src="https://fire-service-mgmt.preview.emergentagent.com/logo-white.png" alt="ProFireManager" style="height: 50px; margin-bottom: 10px;">
-                        <h1 style="color: white; margin: 0; font-size: 24px;">{priorite_labels.get(message.priorite, 'Nouveau message')}</h1>
-                    </div>
-                    <div style="padding: 30px; background: #f9fafb; border: 1px solid #e5e7eb;">
-                        <p style="color: #6b7280; margin-bottom: 20px;">
-                            Message de <strong>{broadcast_doc['auteur_nom']}</strong>
-                        </p>
-                        <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid {color};">
-                            <p style="color: #1f2937; font-size: 16px; line-height: 1.6; margin: 0; white-space: pre-wrap;">{message.contenu}</p>
-                        </div>
-                        <p style="color: #9ca3af; font-size: 12px; margin-top: 20px;">
-                            Publié le {now.strftime('%d/%m/%Y à %H:%M')}
-                        </p>
-                    </div>
-                    <div style="padding: 20px; text-align: center; background: #1f2937;">
-                        <p style="color: #9ca3af; font-size: 12px; margin: 0;">
-                            © {now.year} ProFireManager - {tenant.nom}
-                        </p>
-                    </div>
-                </div>
-                """
-                
-                await send_email_notification(
+                await send_notification_email(
                     to_email=user_email,
                     subject=sujet,
-                    html_content=html_content
+                    notification_titre=priorite_labels.get(message.priorite, "Nouveau message"),
+                    notification_message=message.contenu,
+                    user_prenom=user.get("prenom"),
+                    tenant_slug=tenant_slug
                 )
                 emails_envoyes += 1
             except Exception as e:
