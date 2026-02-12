@@ -39,6 +39,20 @@ Application de gestion pour les services d'incendie incluant :
   - Fichier modifié: `backend/routes/rapports.py` ligne ~1367-1405
   - Les exports PDF et Excel fonctionnent maintenant correctement
 
+- **Amélioration: Algorithme de prédiction CNPI ML-powered**
+  - Nouveau service: `backend/services/prediction_cnpi_service.py`
+  - Utilise TF-IDF + similarité cosinus pour une prédiction plus précise
+  - Mode hybride combinant ML (60%) et mots-clés (40%) pour les meilleurs résultats
+  - L'endpoint `/prevention/ref-violations/predire` supporte maintenant le paramètre `methode` ("hybride", "ml", "keywords")
+  - Installation de scikit-learn ajoutée aux dépendances
+
+- **Refactoring: Remplacement de window.confirm par modales**
+  - Nouveau composant: `frontend/src/components/ui/ConfirmDialog.jsx`
+  - Provider `ConfirmDialogProvider` ajouté dans App.js
+  - Hook `useConfirmDialog()` pour une utilisation facile
+  - Migration effectuée pour: Personnel.jsx, Planning.jsx
+  - Les confirmations fonctionnent maintenant dans les environnements iframe/sandbox
+
 ### 2026-02-12
 - **Notifications - Rapports d'intervention renvoyés pour révision**
   - Ajout de la notification automatique aux rédacteurs assignés quand un rapport est retourné pour révision
