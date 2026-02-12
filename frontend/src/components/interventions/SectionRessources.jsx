@@ -687,16 +687,16 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                     
                     return (
                       <tr key={person.id} className="border-b hover:bg-gray-50">
-                        <td className="p-1 font-medium">
+                        <td className="p-2 font-medium">
                           {person.user_name || `${person.prenom} ${person.nom}` || person.user_id || 'Non assigné'}
                           {person.grade && <span className="text-gray-500 text-xs ml-1">({person.grade})</span>}
                         </td>
-                        <td className="p-1">
+                        <td className="p-2">
                           {editMode && person.is_manual ? (
                             <select
                               value={person.vehicle_number || ''}
                               onChange={(e) => updateVehicleAssignment(person.id, e.target.value)}
-                              className="text-xs rounded px-1 py-0.5 border bg-blue-50 w-full"
+                              className="text-xs rounded px-1 py-1 border bg-blue-50 w-full"
                             >
                               {vehicleOptions.map(opt => (
                                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -710,20 +710,20 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                           )}
                         </td>
                         {/* Heure d'arrivée */}
-                        <td className="p-1 text-center">
+                        <td className="p-2 text-center">
                           {editMode && person.is_manual ? (
                             <input
                               type="time"
                               value={person.heure_arrivee || ''}
                               onChange={(e) => updateHeuresPartielles(person.id, 'heure_arrivee', e.target.value)}
-                              className="text-xs rounded px-0.5 py-0.5 border w-16"
+                              className="text-xs rounded px-1 py-1 border w-full"
                             />
                           ) : (
                             <span className="text-gray-700">{person.heure_arrivee || '-'}</span>
                           )}
                         </td>
                         {/* Heure de départ */}
-                        <td className="p-1 text-center">
+                        <td className="p-2 text-center">
                           {editMode && person.is_manual ? (
                             <input
                               type="time"
