@@ -4,6 +4,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { toast } from 'sonner';
 import { Plus, Edit2, Trash2, X, Save, Wrench, Calendar, DollarSign } from 'lucide-react';
+import { useConfirmDialog } from './ui/ConfirmDialog';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -11,6 +12,7 @@ const API_URL = process.env.REACT_APP_BACKEND_URL || '';
  * Composant pour gérer les réparations/entretiens d'un véhicule
  */
 const ReparationsVehicule = ({ vehicule, tenant, onClose, onUpdate }) => {
+  const { confirm } = useConfirmDialog();
   const [reparations, setReparations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
