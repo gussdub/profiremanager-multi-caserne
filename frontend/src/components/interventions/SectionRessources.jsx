@@ -729,14 +729,14 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                               type="time"
                               value={person.heure_depart || ''}
                               onChange={(e) => updateHeuresPartielles(person.id, 'heure_depart', e.target.value)}
-                              className="text-xs rounded px-1 py-1 border w-20"
+                              className="text-xs rounded px-0.5 py-0.5 border w-16"
                             />
                           ) : (
                             <span className="text-gray-700">{person.heure_depart || '-'}</span>
                           )}
                         </td>
                         {/* Durée de présence */}
-                        <td className="p-2 text-center">
+                        <td className="p-1 text-center">
                           {(() => {
                             const duree = calculerDureePresence(person.heure_arrivee, person.heure_depart);
                             if (duree === null) return <span className="text-gray-400">-</span>;
@@ -745,37 +745,37 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                             return (
                               <span className={isPartial ? 'text-orange-600 font-medium' : 'text-green-600'}>
                                 {formatDuree(duree)}
-                                {isPartial && <span className="text-xs ml-1">⚡</span>}
+                                {isPartial && <span className="ml-0.5">⚡</span>}
                               </span>
                             );
                           })()}
                         </td>
-                        <td className="p-2">
+                        <td className="p-1 text-center">
                           {editMode && person.is_manual ? (
                             <select
                               value={person.statut_presence || 'present'}
                               onChange={(e) => updateStatutPresence(person.id, e.target.value)}
-                              className={`text-xs rounded px-2 py-1 border ${statut?.color || ''}`}
+                              className={`text-xs rounded px-1 py-0.5 border ${statut?.color || ''}`}
                             >
                               {statutsPresence.map(s => (
-                                <option key={s.value} value={s.value}>{s.label}</option>
+                                <option key={s.value} value={s.value}>{s.shortLabel}</option>
                               ))}
                             </select>
                           ) : (
-                            <span className={`px-2 py-1 rounded text-xs ${statut?.color || 'bg-gray-100'}`}>
-                              {statut?.label || 'Présent'}
+                            <span className={`px-1 py-0.5 rounded text-xs ${statut?.color || 'bg-gray-100'}`}>
+                              {statut?.shortLabel || 'Prés.'}
                             </span>
                           )}
                         </td>
-                        <td className="p-2">
+                        <td className="p-1">
                           {person.statut_presence === 'remplace' ? (
                             editMode && person.is_manual ? (
                               <select
                                 value={person.remplace_par || ''}
                                 onChange={(e) => updateRemplacant(person.id, e.target.value)}
-                                className="text-xs rounded px-2 py-1 border bg-yellow-50 w-full"
+                                className="text-xs rounded px-1 py-0.5 border bg-yellow-50 w-full"
                               >
-                                <option value="">-- Choisir --</option>
+                                <option value="">--</option>
                                 {users
                                   .filter(u => (u.statut || '').toLowerCase() === 'actif' && u.id !== person.id)
                                   .map(u => (
@@ -787,17 +787,17 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                               <span className="text-yellow-700 text-xs">{person.remplace_par_nom || '-'}</span>
                             )
                           ) : (
-                            <span className="text-gray-400 text-xs">-</span>
+                            <span className="text-gray-400">-</span>
                           )}
                         </td>
-                        <td className="p-2 text-center">
+                        <td className="p-1 text-center">
                           {estEligibleFonctionSup ? (
                             editMode && person.is_manual ? (
                               <input
                                 type="checkbox"
                                 checked={person.utilise_fonction_superieure ?? false}
                                 onChange={(e) => updateFonctionSuperieure(person.id, e.target.checked)}
-                                className="w-4 h-4"
+                                className="w-3 h-3"
                                 title="Fonction supérieure"
                               />
                             ) : (
