@@ -248,15 +248,19 @@ const GestionActifs = ({ user, ModuleEPI }) => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cet élément ?')) return;
+    const confirmed = await confirm({
+      title: 'Supprimer cet élément',
+      message: 'Êtes-vous sûr de vouloir supprimer cet élément ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
     try {
       await apiDelete(tenantSlug, `/actifs/${activeTab}/${id}`);
-      alert('✅ Supprimé avec succès!');
       if (activeTab === 'vehicules') fetchVehicules();
       else fetchBornes();
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
-      alert('❌ Erreur lors de la suppression');
     }
   };
 
