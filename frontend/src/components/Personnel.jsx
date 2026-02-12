@@ -271,9 +271,14 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   };
 
   const handleDeleteValidation = async (validationId) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette validation ?')) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: 'Supprimer la validation',
+      message: 'Êtes-vous sûr de vouloir supprimer cette validation ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    
+    if (!confirmed) return;
 
     try {
       await apiDelete(tenantSlug, `/validations-competences/${validationId}`);
