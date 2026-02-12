@@ -108,6 +108,7 @@ const SuperAdminDashboard = ({ onLogout }) => {
     mot_de_passe: ''
   });
   const { toast } = useToast();
+  const { confirm } = useConfirmDialog();
 
   // ==================== GESTION DE L'INACTIVITÉ ====================
   const resetInactivityTimer = useCallback(() => {
@@ -1005,7 +1006,13 @@ const SuperAdminDashboard = ({ onLogout }) => {
   };
 
   const handleDeleteSuperAdmin = async (superAdminId) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce super admin ?')) {
+    const confirmed = await confirm({
+      title: 'Supprimer le super admin',
+      message: 'Êtes-vous sûr de vouloir supprimer ce super admin ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) {
       return;
     }
 
