@@ -592,11 +592,36 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
             <p className="text-gray-500">Aucun personnel enregistré. Cliquez sur &quot;Importer équipe de garde&quot; ou &quot;+ Ajouter&quot;.</p>
           ) : (
             <div className="overflow-x-auto">
+              {/* Résumé des heures */}
+              {(() => {
+                const resume = calculerResumeHeures();
+                return (
+                  <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex flex-wrap gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-600">Durée intervention:</span>
+                        <span className="font-semibold ml-1">{formatDuree(resume.dureeIntervention)}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Personnel présent:</span>
+                        <span className="font-semibold ml-1">{resume.personnelTotal}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Total heures-personne:</span>
+                        <span className="font-semibold ml-1 text-blue-700">{formatDuree(resume.totalHeuresPresence)}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
               <table className="w-full text-sm">
                 <thead className="bg-gray-100">
                   <tr>
                     <th className="p-2 text-left">Nom</th>
                     <th className="p-2 text-left">Véhicule</th>
+                    <th className="p-2 text-center" title="Heure d'arrivée">Arrivée</th>
+                    <th className="p-2 text-center" title="Heure de départ">Départ</th>
+                    <th className="p-2 text-center" title="Durée de présence">Durée</th>
                     <th className="p-2 text-left">Statut</th>
                     <th className="p-2 text-left">Remplaçant</th>
                     <th className="p-2 text-left">Fct.Sup</th>
