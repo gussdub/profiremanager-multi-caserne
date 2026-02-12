@@ -3,6 +3,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useToast } from '../hooks/use-toast';
+import { useConfirmDialog } from './ui/ConfirmDialog';
 import { useTenant } from '../contexts/TenantContext';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import { SecteurForm } from './MapComponents';
@@ -21,6 +22,7 @@ const LoadingComponent = () => (
 const GestionPreventionnistes = () => {
   const { tenantSlug } = useTenant();
   const { toast } = useToast();
+  const { confirm } = useConfirmDialog();
   const [users, setUsers] = useState([]);
   const [batiments, setBatiments] = useState([]);
   const [secteurs, setSecteurs] = useState([]);
