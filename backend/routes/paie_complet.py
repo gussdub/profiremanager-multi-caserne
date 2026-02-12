@@ -894,6 +894,8 @@ async def calculer_feuille_temps(
                 description = f"Intervention #{intervention.get('external_call_id')} [{source_label}] - {intervention.get('type_intervention', 'N/A')}"
                 if utilise_fonction_superieure:
                     description += f" (Fonction supérieure +{int(prime_fonction_superieure_pct*100)}%)"
+                if heures_partielles:
+                    description += f" (présence: {heure_arrivee}-{heure_depart})"
                 if heures_payees > duree_heures:
                     description += f" (min {minimum}h)"
                 
