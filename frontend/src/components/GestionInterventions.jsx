@@ -135,6 +135,7 @@ const GestionInterventions = ({ user, tenantSlug }) => {
 
   const tabs = [
     { id: 'rapports', label: 'Cartes d\'appel', icon: '📋' },
+    { id: 'fausses-alarmes', label: 'Fausses alarmes', icon: '🚨', adminOnly: true },
     { id: 'conformite-dsi', label: 'Conformité DSI', icon: '📊', validatorsOnly: true },
     { id: 'historique', label: 'Historique', icon: '📚' },
     { id: 'parametres', label: 'Paramètres', icon: '⚙️', adminOnly: true },
