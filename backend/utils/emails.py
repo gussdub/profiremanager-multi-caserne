@@ -153,94 +153,74 @@ async def send_defaut_borne_email(
         
         defauts_html = '<br>'.join(defauts_detectes) if defauts_detectes else 'Défauts non spécifiés'
         
-        # Créer le corps HTML de l'email
-        html_body = f"""
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
-            <div style="background-color: #ffffff; border-radius: 8px; padding: 30px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        # Créer le contenu de l'email
+        content = f"""
+            <div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
+                <p style="margin: 0; color: #991b1b; font-weight: bold;">
+                    Un défaut a été détecté lors de l'inspection d'une borne sèche. Action immédiate requise.
+                </p>
+            </div>
+            
+            <!-- Détails de la borne -->
+            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 6px; margin-bottom: 20px;">
+                <h3 style="margin: 0 0 15px 0; font-size: 18px; color: #1f2937;">Informations sur la Borne</h3>
                 
-                <!-- En-tête -->
-                <div style="background-color: #dc2626; color: #ffffff; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; margin: -30px -30px 20px -30px;">
-                    <h1 style="margin: 0; font-size: 24px;">🚨 Alerte Défaut Détecté</h1>
-                    <p style="margin: 10px 0 0 0; font-size: 14px;">Inspection de Borne Sèche</p>
-                </div>
-                
-                <!-- Informations principales -->
-                <div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
-                    <p style="margin: 0; color: #991b1b; font-weight: bold;">
-                        Un défaut a été détecté lors de l'inspection d'une borne sèche. Action immédiate requise.
-                    </p>
-                </div>
-                
-                <!-- Détails de la borne -->
-                <div style="background-color: #f3f4f6; padding: 20px; border-radius: 6px; margin-bottom: 20px;">
-                    <h2 style="margin: 0 0 15px 0; font-size: 18px; color: #1f2937;">Informations sur la Borne</h2>
-                    
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <tr>
-                            <td style="padding: 8px 0; color: #6b7280; font-weight: bold; width: 40%;">Numéro de borne:</td>
-                            <td style="padding: 8px 0; color: #1f2937;">{borne_id}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px 0; color: #6b7280; font-weight: bold;">Adresse:</td>
-                            <td style="padding: 8px 0; color: #1f2937;">{borne_adresse}</td>
-                        </tr>
-                        {f'<tr><td style="padding: 8px 0; color: #6b7280; font-weight: bold;">Ville:</td><td style="padding: 8px 0; color: #1f2937;">{borne_ville}</td></tr>' if borne_ville else ''}
-                        <tr>
-                            <td style="padding: 8px 0; color: #6b7280; font-weight: bold;">Date d'inspection:</td>
-                            <td style="padding: 8px 0; color: #1f2937;">{date_inspection}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px 0; color: #6b7280; font-weight: bold;">Inspecteur:</td>
-                            <td style="padding: 8px 0; color: #1f2937;">{inspecteur}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px 0; color: #6b7280; font-weight: bold;">Statut:</td>
-                            <td style="padding: 8px 0; color: #dc2626; font-weight: bold; text-transform: uppercase;">{statut}</td>
-                        </tr>
-                    </table>
-                </div>
-                
-                <!-- Défauts détectés -->
-                <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
-                    <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #92400e;">Défauts Détectés:</h3>
-                    <div style="color: #78350f; line-height: 1.8;">
-                        {defauts_html}
-                    </div>
-                </div>
-                
-                <!-- Notes -->
-                {f'''<div style="background-color: #f9fafb; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
-                    <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #374151;">Notes de l'inspecteur:</h3>
-                    <p style="margin: 0; color: #4b5563; font-style: italic;">{notes}</p>
-                </div>''' if notes and notes != 'Aucune note' else ''}
-                
-                <!-- Bouton d'action -->
-                <div style="text-align: center; margin: 30px 0;">
-                    <a href="{borne_url}" 
-                       style="display: inline-block; background-color: #dc2626; color: #ffffff; padding: 14px 30px; 
-                              text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
-                        Voir les Détails de la Borne
-                    </a>
-                </div>
-                
-                <!-- Pied de page -->
-                <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 20px; text-align: center;">
-                    <p style="color: #6b7280; font-size: 12px; margin: 5px 0;">
-                        Ceci est une notification automatique du système ProFireManager.
-                    </p>
-                    <p style="color: #9ca3af; font-size: 11px; margin: 5px 0;">
-                        Ne pas répondre à cet email. Pour toute assistance, contactez votre administrateur système.
-                    </p>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 8px 0; color: #6b7280; font-weight: bold; width: 40%;">Numéro de borne:</td>
+                        <td style="padding: 8px 0; color: #1f2937;">{borne_id}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #6b7280; font-weight: bold;">Adresse:</td>
+                        <td style="padding: 8px 0; color: #1f2937;">{borne_adresse}</td>
+                    </tr>
+                    {f'<tr><td style="padding: 8px 0; color: #6b7280; font-weight: bold;">Ville:</td><td style="padding: 8px 0; color: #1f2937;">{borne_ville}</td></tr>' if borne_ville else ''}
+                    <tr>
+                        <td style="padding: 8px 0; color: #6b7280; font-weight: bold;">Date d'inspection:</td>
+                        <td style="padding: 8px 0; color: #1f2937;">{date_inspection}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #6b7280; font-weight: bold;">Inspecteur:</td>
+                        <td style="padding: 8px 0; color: #1f2937;">{inspecteur}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #6b7280; font-weight: bold;">Statut:</td>
+                        <td style="padding: 8px 0; color: #dc2626; font-weight: bold; text-transform: uppercase;">{statut}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <!-- Défauts détectés -->
+            <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
+                <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #92400e;">Défauts Détectés:</h3>
+                <div style="color: #78350f; line-height: 1.8;">
+                    {defauts_html}
                 </div>
             </div>
-        </div>
+            
+            <!-- Notes -->
+            {f'''<div style="background-color: #f9fafb; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+                <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #374151;">Notes de l'inspecteur:</h3>
+                <p style="margin: 0; color: #4b5563; font-style: italic;">{notes}</p>
+            </div>''' if notes and notes != 'Aucune note' else ''}
+            
+            <!-- Bouton d'action -->
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{borne_url}" 
+                   style="display: inline-block; background-color: #dc2626; color: #ffffff; padding: 14px 30px; 
+                          text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                    Voir les Détails de la Borne
+                </a>
+            </div>
         """
+        
+        html_body = get_email_template(content, "Alerte Défaut Détecté - Inspection de Borne Sèche")
         
         # Préparer les paramètres de l'email
         email_params = {
             "from": SENDER_EMAIL,
             "to": emails,
-            "subject": f"🚨 Défaut Borne #{borne_id} - {borne_adresse}",
+            "subject": f"[Défaut] Borne #{borne_id} - {borne_adresse}",
             "html": html_body
         }
         
