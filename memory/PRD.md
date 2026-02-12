@@ -85,11 +85,22 @@ Application de gestion pour les services d'incendie incluant :
 
 ## Backlog / Technical Debt
 
+### P0 - Critical (from handoff)
+- **Uniformiser les exports PDF/Excel** : Le système de téléchargement temporaire fonctionne pour le module Personnel mais doit être appliqué à tous les autres modules (~17 endpoints)
+
 ### P1 - Medium Priority
 - **Refactoriser window.confirm/window.alert** : Ces appels sont bloqués dans les environnements iframe. Créer un système de modales centralisé pour les remplacer dans toute l'application.
+- **Audit notifications complet** : Vérifier que tous les scénarios suivants ont leurs notifications:
+  - ✅ Rapports d'intervention renvoyés pour révision
+  - ✅ Véhicules/matériels hors service (notification à tous)
+  - ✅ Demandes de remplacement EPI (existant)
+  - ✅ Demandes de congés (existant)
+  - ✅ Non-conformités en retard (existant)
+  - Inspections à modifier (à vérifier)
 
 ### P2 - Low Priority
 - Améliorer l'algorithme de prédiction (actuellement keyword-based, pourrait être ML-powered)
+- Ajouter un bouton "Vérifier maintenant" pour le SFTP
 
 ---
 
