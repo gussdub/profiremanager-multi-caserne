@@ -421,6 +421,64 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
     setFormData({ ...formData, manual_vehicles: updated });
   };
   
+  // Mettre à jour les heures partielles d'un membre
+  const updateHeuresPartielles = (personnelId, field, value) => {
+    const updated = manualPersonnel.map(p => 
+      p.id === personnelId ? { ...p, [field]: value } : p
+    );
+    setManualPersonnel(updated);
+    setFormData({ ...formData, manual_personnel: updated });
+  };
+  
+  // Calculer la durée de présence d'un membre (en heures)
+  const calculerDureePresence = (heureArrivee, heureDepart) => {
+    if (!heureArrivee || !heureDepart) return null;
+    const [hA, mA] = heureArrivee.split(':').map(Number);
+    const [hD, mD] = heureDepart.split(':').map(Number);
+    let minutesArrivee = hA * 60 + (mA || 0);
+    let minutesDepart = hD * 60 + (mD || 0);
+    // Gérer le cas où l'intervention passe minuit
+    if (minutesDepart < minutesArrivee) minutesDepart += 24 * 60;
+    const dureeMinutes = minutesDepart - minutesArrivee;
+    return Math.round(dureeMinutes / 60 * 100) / 100; // Arrondi à 2 décimales
+  };
+  
+  // Formater la durée en heures:minutes
+  const formatDuree = (heures) => {
+    if (heures === null || heures === undefined) return '-';
+    const h = Math.floor(heures);
+    const m = Math.round((heures - h) * 60);
+    return `${h}h${m.toString().padStart(2, '0')}`;
+  };
+  
+  // Calculer le résumé des heures de tout le personnel
+  const calculerResumeHeures = () => {
+    const dureeIntervention = calculerDureeIntervention();
+    let totalHeuresPresence = 0;
+    let personnelAvecHeures = 0;
+    
+    allPersonnel.forEach(person => {
+      if (person.statut_presence === 'present' || person.statut_presence === 'rappele') {
+        const duree = calculerDureePresence(person.heure_arrivee, person.heure_depart);
+        if (duree !== null) {
+          totalHeuresPresence += duree;
+          personnelAvecHeures++;
+        } else {
+          // Si pas d'heures partielles, utiliser la durée totale
+          totalHeuresPresence += dureeIntervention;
+          personnelAvecHeures++;
+        }
+      }
+    });
+    
+    return {
+      dureeIntervention,
+      totalHeuresPresence,
+      personnelAvecHeures,
+      personnelTotal: allPersonnel.filter(p => p.statut_presence === 'present' || p.statut_presence === 'rappele').length
+    };
+  };
+  
   // Obtenir le nombre de personnel par véhicule
   const getVehiclePersonnelCount = (vehicleNumber) => {
     return allPersonnel.filter(r => r.vehicle_number === vehicleNumber).length;
