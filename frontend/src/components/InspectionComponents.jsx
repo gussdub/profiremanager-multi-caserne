@@ -186,9 +186,13 @@ const ListeInspections = ({ setCurrentView }) => {
   };
 
   const handleDeleteInspection = async (inspectionId) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette inspection ?')) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: 'Supprimer l\'inspection',
+      message: 'Êtes-vous sûr de vouloir supprimer cette inspection ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
 
     try {
       await apiDelete(tenantSlug, `/prevention/inspections/${inspectionId}`);
