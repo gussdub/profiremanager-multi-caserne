@@ -5,6 +5,7 @@ import { Input } from "./ui/input.jsx";
 import { Label } from "./ui/label.jsx";
 import { useToast } from "../hooks/use-toast";
 import { buildApiUrl } from "../utils/api";
+import { useConfirmDialog } from "./ui/ConfirmDialog";
 import Personnalisation from "./Personnalisation.jsx";
 
 // Lazy load des composants pour optimiser les performances
