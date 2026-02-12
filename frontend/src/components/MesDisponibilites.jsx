@@ -819,29 +819,40 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
     }
 
     if (user.role !== 'admin') {
-      alert('Accès réservé aux administrateurs');
+      toast({
+        title: 'Accès refusé',
+        description: 'Accès réservé aux administrateurs',
+        variant: 'destructive'
+      });
       return;
     }
 
-    const confirmation = window.confirm(
-      `⚠️ ATTENTION\n\nVous êtes sur le point de SUPPRIMER toutes les assignations et demandes de remplacement du mois ${moisFormatage}.\n\nCette action est IRRÉVERSIBLE.\n\nConfirmer?`
-    );
+    const confirmed = await confirm({
+      title: '⚠️ ATTENTION',
+      message: `Vous êtes sur le point de SUPPRIMER toutes les assignations et demandes de remplacement du mois ${moisFormatage}.\n\nCette action est IRRÉVERSIBLE.`,
+      variant: 'danger',
+      confirmText: 'Formater'
+    });
 
-    if (!confirmation) return;
+    if (!confirmed) return;
 
     try {
       const response = await apiDelete(tenantSlug, `/planning/formater-mois?mois=${moisFormatage}`);
 
-      alert(`✅ ${response.message}\n\n` +
-            `📊 Résumé:\n` +
-            `- ${response.assignations_supprimees} assignation(s) supprimée(s)\n` +
-            `- ${response.demandes_supprimees} demande(s) de remplacement supprimée(s)`);
+      toast({
+        title: '✅ Formatage réussi',
+        description: `${response.assignations_supprimees} assignation(s) et ${response.demandes_supprimees} demande(s) supprimée(s)`
+      });
       
       // Recharger la page
       window.location.reload();
     } catch (error) {
       console.error('Erreur formatage planning:', error);
-      alert('❌ Erreur lors du formatage: ' + error.message);
+      toast({
+        title: 'Erreur',
+        description: 'Erreur lors du formatage: ' + error.message,
+        variant: 'destructive'
+      });
     }
   };
 
