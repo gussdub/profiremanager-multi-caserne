@@ -1132,6 +1132,21 @@ async def init_ref_violations(
 class PredictionRequest(BaseModel):
     texte: str
     limite: int = 10
+    methode: str = "hybride"  # "hybride", "ml", ou "keywords"
+
+
+# Import du service de prédiction ML
+try:
+    from services.prediction_cnpi_service import (
+        get_predicteur,
+        entrainer_predicteur,
+        predire_articles_ml,
+        predire_articles_hybride
+    )
+    ML_DISPONIBLE = True
+except ImportError:
+    ML_DISPONIBLE = False
+    logger.warning("Service de prédiction ML non disponible, utilisation des mots-clés uniquement")
 
 
 @router.post("/{tenant_slug}/prevention/ref-violations/predire")
@@ -1144,31 +1159,76 @@ async def predire_articles_endpoint(
     Prédit les articles de référence pertinents basés sur un texte.
     Utilisé pour suggérer des articles lors de la création de non-conformités.
     
-    Le système analyse les mots-clés dans le texte et calcule un score de confiance
-    pour chaque article du référentiel.
+    Méthodes disponibles:
+    - "hybride" (défaut): Combine ML (TF-IDF) et mots-clés pour les meilleurs résultats
+    - "ml": Utilise uniquement l'algorithme TF-IDF + similarité cosinus
+    - "keywords": Utilise uniquement l'algorithme par mots-clés (legacy)
     """
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    resultats = await predire_articles(tenant.id, data.texte, data.limite)
+    # Toujours calculer les résultats par mots-clés (rapide et fiable)
+    resultats_keywords = await predire_articles(tenant.id, data.texte, data.limite * 2)
+    
+    # Déterminer la méthode à utiliser
+    methode_utilisee = data.methode
+    
+    if ML_DISPONIBLE and data.methode in ("hybride", "ml"):
+        # S'assurer que le modèle est entraîné
+        predicteur = get_predicteur()
+        
+        if not predicteur.is_fitted:
+            # Entraîner le modèle avec les articles du tenant
+            articles = await db.ref_violations.find({
+                "tenant_id": tenant.id,
+                "actif": True
+            }).to_list(1000)
+            
+            if articles:
+                await entrainer_predicteur(articles)
+        
+        # Utiliser la méthode appropriée
+        if predicteur.is_fitted:
+            if data.methode == "ml":
+                resultats = predire_articles_ml(data.texte, data.limite)
+            else:  # hybride
+                resultats = predire_articles_hybride(data.texte, resultats_keywords, data.limite)
+        else:
+            # Fallback aux mots-clés si l'entraînement a échoué
+            resultats = resultats_keywords[:data.limite]
+            methode_utilisee = "keywords"
+    else:
+        # Utiliser uniquement les mots-clés
+        resultats = resultats_keywords[:data.limite]
+        methode_utilisee = "keywords"
     
     # Formater les résultats pour le frontend
     suggestions = []
     for r in resultats:
         article = r["article"]
-        suggestions.append({
+        suggestion = {
             "id": article.get("id"),
             "code_article": article.get("code_article"),
             "description_standard": article.get("description_standard"),
             "categorie": article.get("categorie"),
             "severite": article.get("severite"),
             "delai_jours": article.get("delai_jours"),
-            "confiance": r["confiance"],
-            "score": r["score"],
-            "mots_cles_trouves": r["mots_cles_trouves"]
-        })
+            "confiance": r.get("confiance", 0),
+            "score": r.get("score", 0),
+            "mots_cles_trouves": r.get("mots_cles_trouves", [])
+        }
+        
+        # Ajouter les scores détaillés si disponibles (mode hybride)
+        if "score_ml" in r:
+            suggestion["score_ml"] = r["score_ml"]
+        if "score_keywords" in r:
+            suggestion["score_keywords"] = r["score_keywords"]
+        
+        suggestions.append(suggestion)
     
     return {
         "texte_analyse": data.texte,
+        "methode": methode_utilisee,
+        "ml_disponible": ML_DISPONIBLE,
         "suggestions": suggestions,
         "total": len(suggestions)
     }
