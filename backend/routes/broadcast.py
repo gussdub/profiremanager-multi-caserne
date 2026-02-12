@@ -11,9 +11,9 @@ import logging
 from routes.dependencies import (
     get_current_user,
     get_tenant_from_slug,
-    User
+    User,
+    db
 )
-from server import db
 from utils.emails import send_email_notification
 
 router = APIRouter()
