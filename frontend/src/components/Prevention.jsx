@@ -1437,9 +1437,14 @@ const Prevention = () => {
               }
             }}
             onDelete={async () => {
-              if (!window.confirm(`Supprimer le bâtiment ${selectedBatiment.nom_etablissement || selectedBatiment.adresse_civique}?`)) {
-                return;
-              }
+              const confirmed = await confirm({
+                title: 'Supprimer le bâtiment',
+                message: `Supprimer le bâtiment ${selectedBatiment.nom_etablissement || selectedBatiment.adresse_civique}?`,
+                variant: 'danger',
+                confirmText: 'Supprimer'
+              });
+              if (!confirmed) return;
+              
               try {
                 await apiDelete(tenantSlug, `/prevention/batiments/${selectedBatiment.id}`);
                 await fetchBatiments();
