@@ -62,6 +62,9 @@ const Dashboard = ({ setCurrentPage }) => {
     loading: false
   });
   
+  // État pour la modale de diffusion de message
+  const [showBroadcastModal, setShowBroadcastModal] = useState(false);
+  
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(Date.now());
 
@@ -70,6 +73,7 @@ const Dashboard = ({ setCurrentPage }) => {
     : '/api';
 
   const isAdmin = user?.role === 'admin' || user?.role === 'production';
+  const canBroadcast = user?.role && ['admin', 'superviseur', 'super_admin'].includes(user.role);
 
   // Fonction de chargement des données (mémorisée pour réutilisation)
   const fetchDashboardData = useCallback(async () => {
