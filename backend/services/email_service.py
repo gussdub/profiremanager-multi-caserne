@@ -369,32 +369,23 @@ class EmailService:
         else:
             anomalies_html = "<p style='color: #22c55e;'>✅ Aucune anomalie détectée</p>"
         
-        html = f"""
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: #dc2626; color: white; padding: 20px; text-align: center;">
-                <h1 style="margin: 0;">🔥 ProFireManager</h1>
+        content = f"""
+            <p style="color: #4b5563;">
+                <strong>Date:</strong> {ronde_info.get('date', '')}<br>
+                <strong>Agent:</strong> {agent_nom}<br>
+                <strong>Durée:</strong> {ronde_info.get('duree', 'N/A')}
+            </p>
+            {anomalies_html}
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{self.frontend_url}/{tenant_slug}/rondes" 
+                   style="background: #dc2626; color: white; padding: 12px 30px; 
+                          text-decoration: none; border-radius: 8px; font-weight: bold;">
+                    Voir le rapport complet
+                </a>
             </div>
-            <div style="padding: 30px; background: #f9fafb;">
-                <h2 style="color: #1f2937;">Rapport de ronde de sécurité</h2>
-                <p style="color: #4b5563;">
-                    <strong>Date:</strong> {ronde_info.get('date', '')}<br>
-                    <strong>Agent:</strong> {agent_nom}<br>
-                    <strong>Durée:</strong> {ronde_info.get('duree', 'N/A')}
-                </p>
-                {anomalies_html}
-                <div style="text-align: center; margin: 30px 0;">
-                    <a href="{self.frontend_url}/{tenant_slug}/rondes" 
-                       style="background: #dc2626; color: white; padding: 12px 30px; 
-                              text-decoration: none; border-radius: 6px; font-weight: bold;">
-                        Voir le rapport complet
-                    </a>
-                </div>
-            </div>
-            <div style="padding: 20px; text-align: center; color: #9ca3af; font-size: 12px;">
-                © {datetime.now().year} ProFireManager
-            </div>
-        </div>
         """
+        
+        html = get_email_template(content, "Rapport de ronde de sécurité")
         
         subject = f"Rapport ronde - {len(anomalies)} anomalie(s)" if anomalies else "Rapport ronde - RAS"
         
