@@ -496,7 +496,14 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   };
 
   const handleDeleteUser = async (userId) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce pompier ?")) return;
+    const confirmed = await confirm({
+      title: 'Supprimer le pompier',
+      message: 'Êtes-vous sûr de vouloir supprimer ce pompier ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    
+    if (!confirmed) return;
 
     try {
       await apiDelete(tenantSlug, `/users/${userId}`);
