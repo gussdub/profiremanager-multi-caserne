@@ -768,9 +768,15 @@ async def calculer_feuille_temps(
     
     for intervention in interventions:
         personnel_present = intervention.get("personnel_present", [])
+        # Récupérer aussi les données de manual_personnel pour les heures partielles
+        manual_personnel = intervention.get("manual_personnel", [])
+        
         for p in personnel_present:
             if p.get("user_id") != user_id:
                 continue
+            
+            # Récupérer les données de la personne dans manual_personnel (heures partielles)
+            manual_data = next((mp for mp in manual_personnel if mp.get("id") == user_id or mp.get("user_id") == user_id), None)
             
             # Calculer la durée de présence
             time_start = intervention.get("xml_time_call_received")
@@ -789,7 +795,24 @@ async def calculer_feuille_temps(
                 else:
                     end_dt = time_end
                 
-                duree_heures = (end_dt - start_dt).total_seconds() / 3600
+                # Utiliser les heures partielles si disponibles
+                heure_arrivee = manual_data.get("heure_arrivee") if manual_data else p.get("heure_arrivee")
+                heure_depart = manual_data.get("heure_depart") if manual_data else p.get("heure_depart")
+                
+                if heure_arrivee and heure_depart:
+                    # Calculer la durée à partir des heures partielles
+                    date_str = start_dt.strftime("%Y-%m-%d")
+                    arrivee_dt = datetime.fromisoformat(f"{date_str}T{heure_arrivee}:00")
+                    depart_dt = datetime.fromisoformat(f"{date_str}T{heure_depart}:00")
+                    # Gérer le cas où l'intervention passe minuit
+                    if depart_dt < arrivee_dt:
+                        depart_dt += timedelta(days=1)
+                    duree_heures = (depart_dt - arrivee_dt).total_seconds() / 3600
+                    heures_partielles = True
+                else:
+                    # Utiliser la durée totale de l'intervention
+                    duree_heures = (end_dt - start_dt).total_seconds() / 3600
+                    heures_partielles = False
             except:
                 continue
             
