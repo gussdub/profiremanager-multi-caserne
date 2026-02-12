@@ -614,17 +614,17 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                   </div>
                 );
               })()}
-              <table className="w-full text-sm" style={{ minWidth: '1100px' }}>
+              <table className="w-full text-xs">
                 <thead className="bg-gray-100">
                   <tr>
-                    <th className="p-2 text-left" style={{ minWidth: '150px' }}>Nom</th>
-                    <th className="p-2 text-left" style={{ minWidth: '130px' }}>Véhicule</th>
-                    <th className="p-2 text-center" style={{ width: '70px' }} title="Heure d'arrivée">Arrivée</th>
-                    <th className="p-2 text-center" style={{ width: '70px' }} title="Heure de départ">Départ</th>
-                    <th className="p-2 text-center" style={{ width: '60px' }} title="Durée de présence">Durée</th>
-                    <th className="p-2 text-left" style={{ minWidth: '100px' }}>Statut</th>
-                    <th className="p-2 text-left" style={{ minWidth: '90px' }}>Remplaçant</th>
-                    <th className="p-2 text-center" style={{ width: '50px' }}>Fct.Sup</th>
+                    <th className="p-1 text-left">Nom</th>
+                    <th className="p-1 text-left" style={{ width: '100px' }}>Véhicule</th>
+                    <th className="p-1 text-center" style={{ width: '55px' }} title="Heure d'arrivée">Arr.</th>
+                    <th className="p-1 text-center" style={{ width: '55px' }} title="Heure de départ">Dép.</th>
+                    <th className="p-1 text-center" style={{ width: '45px' }} title="Durée de présence">Durée</th>
+                    <th className="p-1 text-center" style={{ width: '70px' }}>Statut</th>
+                    <th className="p-1 text-left" style={{ width: '70px' }}>Rempl.</th>
+                    <th className="p-1 text-center" style={{ width: '35px' }} title="Fonction supérieure">F.S</th>
                     {checkRepasCouvert('dejeuner') && (
                       <th className="p-2 text-center">
                         {editMode ? (
