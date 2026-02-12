@@ -81,15 +81,23 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
   };
 
   const handleDeleteTypeEPI = async (typeId, typeName) => {
-    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer le type "${typeName}" ?`)) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: 'Supprimer le type EPI',
+      message: `Êtes-vous sûr de vouloir supprimer le type "${typeName}" ?`,
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
     
     try {
       await apiDelete(tenantSlug, `/types-epi/${typeId}`);
       await fetchTypesEPI();
     } catch (error) {
-      alert('Erreur: ' + (error.message || 'Impossible de supprimer'));
+      toast({
+        title: 'Erreur',
+        description: error.message || 'Impossible de supprimer',
+        variant: 'destructive'
+      });
     }
   };
 
