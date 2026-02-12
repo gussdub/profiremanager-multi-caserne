@@ -211,22 +211,34 @@ const MaterielEquipementsModule = ({ user }) => {
 
   // Handler suppression
   const handleDeleteEquipement = async (equip) => {
-    if (!window.confirm(`Voulez-vous vraiment supprimer "${equip.nom}" ?`)) return;
+    const confirmed = await confirm({
+      title: 'Supprimer l\'équipement',
+      message: `Voulez-vous vraiment supprimer "${equip.nom}" ?`,
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
     try {
       await apiDelete(tenantSlug, `/equipements/${equip.id}`);
       fetchData();
     } catch (err) {
-      alert('❌ Erreur: ' + (err.message || 'Impossible de supprimer'));
+      console.error('Erreur suppression:', err);
     }
   };
 
   const handleDeleteCategorie = async (cat) => {
-    if (!window.confirm(`Voulez-vous vraiment supprimer la catégorie "${cat.nom}" ?`)) return;
+    const confirmed = await confirm({
+      title: 'Supprimer la catégorie',
+      message: `Voulez-vous vraiment supprimer la catégorie "${cat.nom}" ?`,
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
     try {
       await apiDelete(tenantSlug, `/equipements/categories/${cat.id}`);
       fetchData();
     } catch (err) {
-      alert('❌ ' + (err.response?.data?.detail || err.message || 'Impossible de supprimer'));
+      console.error('Erreur suppression:', err);
     }
   };
 
