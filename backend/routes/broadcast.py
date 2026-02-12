@@ -14,7 +14,7 @@ from routes.dependencies import (
     User,
     db
 )
-from utils.emails import send_email_notification
+from services.email_service import send_notification_email
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
