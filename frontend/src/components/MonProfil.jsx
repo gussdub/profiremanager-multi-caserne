@@ -60,6 +60,7 @@ const MonProfil = () => {
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
   
   const { toast } = useToast();
+  const { confirm } = useConfirmDialog();
 
   // Synchroniser la photo_profil de userProfile avec celle de user (contexte global)
   useEffect(() => {
