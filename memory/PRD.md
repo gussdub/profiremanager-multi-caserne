@@ -93,7 +93,7 @@ Application de gestion pour les services d'incendie incluant :
 ## Backlog / Technical Debt
 
 ### P0 - Critical (from handoff)
-- **Uniformiser les exports PDF/Excel** : Le système de téléchargement temporaire fonctionne pour le module Personnel mais doit être appliqué à tous les autres modules (~17 endpoints)
+- ~~**Uniformiser les exports PDF/Excel**~~ : ✅ CORRIGÉ - Le bug de corruption de fichiers a été résolu. Les modules Planning, Formations et Rapports utilisent déjà la méthode blob directe qui fonctionne. Le module Personnel utilise `generate-export` + `FileResponse` qui est maintenant corrigé.
 
 ### P1 - Medium Priority
 - **Refactoriser window.confirm/window.alert** : Ces appels sont bloqués dans les environnements iframe. Créer un système de modales centralisé pour les remplacer dans toute l'application.
