@@ -532,6 +532,79 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
     }
   }, [formData, originalData]);
 
+  // Auto-enregistrement après 3 secondes d'inactivité
+  useEffect(() => {
+    // Ne pas auto-save si pas de changements, en lecture seule, ou si intervention verrouillée
+    const isLocked = formData.status === 'signed';
+    const isAdmin = user.role === 'admin';
+    const isSuperviseur = user.role === 'superviseur';
+    const isReporter = (formData.assigned_reporters || []).includes(user.id);
+    const isEmployee = user.role === 'pompier' || user.role === 'employe';
+    const employeeLimitedAccess = isEmployee && !isReporter;
+    const canEdit = (isAdmin || isSuperviseur || isReporter) && !employeeLimitedAccess;
+    
+    if (!hasChanges || readOnly || isLocked || !canEdit || !originalData) {
+      return;
+    }
+
+    // Annuler le timeout précédent
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    // Programmer l'auto-save après 3 secondes
+    autoSaveTimeoutRef.current = setTimeout(async () => {
+      setAutoSaveStatus('saving');
+      try {
+        const dataToSave = { ...formData };
+        if (dataToSave.status === 'new') {
+          dataToSave.status = 'draft';
+        }
+        
+        const response = await fetch(`${API}/interventions/${intervention.id}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${getToken()}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(dataToSave)
+        });
+
+        if (response.ok) {
+          setFormData(dataToSave);
+          setOriginalData(JSON.parse(JSON.stringify(dataToSave)));
+          setHasChanges(false);
+          setAutoSaveStatus('saved');
+          // Réinitialiser l'indicateur après 2 secondes
+          setTimeout(() => setAutoSaveStatus('idle'), 2000);
+        } else {
+          setAutoSaveStatus('error');
+          toast({ 
+            title: "Erreur d'enregistrement", 
+            description: "Les modifications n'ont pas pu être sauvegardées", 
+            variant: "destructive" 
+          });
+          setTimeout(() => setAutoSaveStatus('idle'), 3000);
+        }
+      } catch (error) {
+        setAutoSaveStatus('error');
+        toast({ 
+          title: "Erreur de connexion", 
+          description: "Impossible de sauvegarder les modifications", 
+          variant: "destructive" 
+        });
+        setTimeout(() => setAutoSaveStatus('idle'), 3000);
+      }
+    }, 3000);
+
+    // Cleanup
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [formData, hasChanges, readOnly, originalData]);
+
   // Charger les settings du module interventions (pour le template narratif)
   const fetchInterventionSettings = async () => {
     try {
