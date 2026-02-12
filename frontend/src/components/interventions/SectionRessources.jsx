@@ -617,14 +617,14 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
               <table className="w-full text-sm" style={{ minWidth: '1100px' }}>
                 <thead className="bg-gray-100">
                   <tr>
-                    <th className="p-2 text-left">Nom</th>
-                    <th className="p-2 text-left">Véhicule</th>
-                    <th className="p-2 text-center" title="Heure d'arrivée">Arrivée</th>
-                    <th className="p-2 text-center" title="Heure de départ">Départ</th>
-                    <th className="p-2 text-center" title="Durée de présence">Durée</th>
-                    <th className="p-2 text-left">Statut</th>
-                    <th className="p-2 text-left">Remplaçant</th>
-                    <th className="p-2 text-left">Fct.Sup</th>
+                    <th className="p-2 text-left" style={{ minWidth: '150px' }}>Nom</th>
+                    <th className="p-2 text-left" style={{ minWidth: '130px' }}>Véhicule</th>
+                    <th className="p-2 text-center" style={{ width: '70px' }} title="Heure d'arrivée">Arrivée</th>
+                    <th className="p-2 text-center" style={{ width: '70px' }} title="Heure de départ">Départ</th>
+                    <th className="p-2 text-center" style={{ width: '60px' }} title="Durée de présence">Durée</th>
+                    <th className="p-2 text-left" style={{ minWidth: '100px' }}>Statut</th>
+                    <th className="p-2 text-left" style={{ minWidth: '90px' }}>Remplaçant</th>
+                    <th className="p-2 text-center" style={{ width: '50px' }}>Fct.Sup</th>
                     {checkRepasCouvert('dejeuner') && (
                       <th className="p-2 text-center">
                         {editMode ? (
