@@ -808,13 +808,13 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                           )}
                         </td>
                         {checkRepasCouvert('dejeuner') && (
-                          <td className="p-2 text-center">
+                          <td className="p-1 text-center">
                             {editMode && person.is_manual ? (
                               <input
                                 type="checkbox"
                                 checked={person.prime_dejeuner ?? false}
                                 onChange={(e) => updatePrimeRepas(person.id, 'prime_dejeuner', e.target.checked)}
-                                className="w-4 h-4"
+                                className="w-3 h-3"
                               />
                             ) : (
                               person.prime_dejeuner ? '✓' : '-'
@@ -822,13 +822,13 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                           </td>
                         )}
                         {checkRepasCouvert('diner') && (
-                          <td className="p-2 text-center">
+                          <td className="p-1 text-center">
                             {editMode && person.is_manual ? (
                               <input
                                 type="checkbox"
                                 checked={person.prime_diner ?? false}
                                 onChange={(e) => updatePrimeRepas(person.id, 'prime_diner', e.target.checked)}
-                                className="w-4 h-4"
+                                className="w-3 h-3"
                               />
                             ) : (
                               person.prime_diner ? '✓' : '-'
@@ -836,13 +836,13 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                           </td>
                         )}
                         {checkRepasCouvert('souper') && (
-                          <td className="p-2 text-center">
+                          <td className="p-1 text-center">
                             {editMode && person.is_manual ? (
                               <input
                                 type="checkbox"
                                 checked={person.prime_souper ?? false}
                                 onChange={(e) => updatePrimeRepas(person.id, 'prime_souper', e.target.checked)}
-                                className="w-4 h-4"
+                                className="w-3 h-3"
                               />
                             ) : (
                               person.prime_souper ? '✓' : '-'
@@ -850,9 +850,9 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                           </td>
                         )}
                         {editMode && (
-                          <td className="p-2 text-center">
+                          <td className="p-1 text-center">
                             {person.is_manual && (
-                              <button onClick={() => removePersonnel(person.id)} className="text-red-500 hover:text-red-700">
+                              <button onClick={() => removePersonnel(person.id)} className="text-red-500 hover:text-red-700 text-sm">
                                 🗑️
                               </button>
                             )}
