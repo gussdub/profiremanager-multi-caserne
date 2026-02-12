@@ -575,7 +575,13 @@ const Parametres = ({ user, tenantSlug }) => {
   };
 
   const handleDeleteType = async (typeId) => {
-    if (!window.confirm("Supprimer ce type de garde ?")) return;
+    const confirmed = await confirm({
+      title: 'Supprimer le type de garde',
+      message: 'Supprimer ce type de garde ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
     
     try {
       await axios.delete(`${API}/types-garde/${typeId}`);
