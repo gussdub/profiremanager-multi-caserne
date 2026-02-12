@@ -120,8 +120,9 @@ Application de gestion pour les services d'incendie incluant :
   - Inspections à modifier (à vérifier)
 
 ### P2 - Low Priority
-- Améliorer l'algorithme de prédiction (actuellement keyword-based, pourrait être ML-powered)
-- Ajouter un bouton "Vérifier maintenant" pour le SFTP
+- ~~Améliorer l'algorithme de prédiction (actuellement keyword-based, pourrait être ML-powered)~~ ✅ FAIT - Utilise maintenant TF-IDF + similarité cosinus
+- ~~Ajouter un bouton "Vérifier maintenant" pour le SFTP~~ - Non requis par l'utilisateur
+- **Continuer migration window.confirm** : Migrer les fichiers restants vers useConfirmDialog (Parametres.js, Formations.jsx, etc.)
 
 ---
 
