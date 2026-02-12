@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
-import { useToast } from './ui/use-toast';
+import { useToast } from '../hooks/use-toast';
 import { X, Send, AlertTriangle, AlertCircle, Bell, Check } from 'lucide-react';
 
 /**
