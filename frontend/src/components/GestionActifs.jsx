@@ -71,6 +71,7 @@ const GestionActifs = ({ user, ModuleEPI }) => {
   const [selectedVehiculeForReparations, setSelectedVehiculeForReparations] = useState(null);
 
   const { tenantSlug } = useTenant();
+  const { confirm } = useConfirmDialog();
 
   useEffect(() => {
     if (activeTab === 'vehicules') {
