@@ -17,6 +17,7 @@ const PayrollProvidersAdmin = ({ token }) => {
   const [columns, setColumns] = useState([]);
   const [showColumnModal, setShowColumnModal] = useState(false);
   const [editingColumn, setEditingColumn] = useState(null);
+  const { confirm } = useConfirmDialog();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -194,7 +195,13 @@ const PayrollProvidersAdmin = ({ token }) => {
   };
 
   const handleDeleteProvider = async (providerId) => {
-    if (!window.confirm('Supprimer ce fournisseur et toutes ses colonnes ?')) return;
+    const confirmed = await confirm({
+      title: 'Supprimer le fournisseur',
+      message: 'Supprimer ce fournisseur et toutes ses colonnes ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
 
     try {
       const response = await fetch(`${API_URL}/api/super-admin/payroll-providers/${providerId}`, {
@@ -251,7 +258,13 @@ const PayrollProvidersAdmin = ({ token }) => {
   };
 
   const handleDeleteColumn = async (columnId) => {
-    if (!window.confirm('Supprimer cette colonne ?')) return;
+    const confirmed = await confirm({
+      title: 'Supprimer la colonne',
+      message: 'Supprimer cette colonne ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
 
     try {
       const response = await fetch(`${API_URL}/api/super-admin/payroll-providers/${expandedProvider}/columns/${columnId}`, {
