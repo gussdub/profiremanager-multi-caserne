@@ -1388,8 +1388,8 @@ async def download_temp_export(tenant_slug: str, file_id: str):
             # Extraire le nom original du fichier
             original_name = filename.split('_', 1)[1] if '_' in filename else filename
             
-            # Utiliser FileResponse pour un téléchargement direct
-            # Note: Content-Disposition avec "attachment" force le téléchargement
+            # FileResponse avec filename= gère automatiquement Content-Disposition: attachment
+            # NE PAS ajouter de header Content-Disposition en plus, cela corrompt le fichier
             return FileResponse(
                 path=filepath,
                 media_type=media_type,
@@ -1397,8 +1397,7 @@ async def download_temp_export(tenant_slug: str, file_id: str):
                 headers={
                     "Access-Control-Allow-Origin": "*",
                     "Access-Control-Expose-Headers": "Content-Disposition",
-                    "Cache-Control": "no-cache",
-                    "Content-Disposition": f'attachment; filename="{original_name}"'
+                    "Cache-Control": "no-cache"
                 }
             )
     
