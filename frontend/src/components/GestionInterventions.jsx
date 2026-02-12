@@ -2216,6 +2216,201 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
         </CardContent>
       </Card>
 
+      {/* Configuration Fausses Alarmes */}
+      <Card>
+        <CardHeader className="bg-orange-50">
+          <CardTitle className="text-orange-800">🚨 Facturation des fausses alarmes</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 pt-4">
+          <label className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={settings.fausse_alarme_config?.actif || false}
+              onChange={(e) => setSettings({ 
+                ...settings, 
+                fausse_alarme_config: { 
+                  ...(settings.fausse_alarme_config || {}), 
+                  actif: e.target.checked 
+                } 
+              })}
+              className="w-5 h-5"
+            />
+            <span className="font-medium">Activer la facturation des fausses alarmes récurrentes</span>
+          </label>
+
+          {settings.fausse_alarme_config?.actif && (
+            <div className="ml-8 space-y-4 p-4 bg-orange-50/50 rounded-lg border border-orange-200">
+              {/* Seuil gratuit */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Nombre d'alarmes gratuites avant facturation</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={settings.fausse_alarme_config?.seuil_gratuit || 3}
+                  onChange={(e) => setSettings({ 
+                    ...settings, 
+                    fausse_alarme_config: { 
+                      ...(settings.fausse_alarme_config || {}), 
+                      seuil_gratuit: parseInt(e.target.value) || 3 
+                    } 
+                  })}
+                  className="border border-gray-300 rounded-lg p-2 w-24"
+                />
+                <p className="text-xs text-gray-500 mt-1">Les X premières fausses alarmes ne seront pas facturées</p>
+              </div>
+
+              {/* Période de comptage */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Période de comptage</label>
+                <select
+                  value={settings.fausse_alarme_config?.periode || 'roulante_12_mois'}
+                  onChange={(e) => setSettings({ 
+                    ...settings, 
+                    fausse_alarme_config: { 
+                      ...(settings.fausse_alarme_config || {}), 
+                      periode: e.target.value 
+                    } 
+                  })}
+                  className="border border-gray-300 rounded-lg p-2"
+                >
+                  <option value="roulante_12_mois">12 mois roulants</option>
+                  <option value="annuelle">Année civile (janvier à décembre)</option>
+                </select>
+              </div>
+
+              {/* Type de facturation */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Type de facturation</label>
+                <select
+                  value={settings.fausse_alarme_config?.type_facturation || 'fixe'}
+                  onChange={(e) => setSettings({ 
+                    ...settings, 
+                    fausse_alarme_config: { 
+                      ...(settings.fausse_alarme_config || {}), 
+                      type_facturation: e.target.value 
+                    } 
+                  })}
+                  className="border border-gray-300 rounded-lg p-2"
+                >
+                  <option value="fixe">Montant fixe par alarme</option>
+                  <option value="progressif">Montant progressif</option>
+                </select>
+              </div>
+
+              {/* Montant fixe */}
+              {settings.fausse_alarme_config?.type_facturation === 'fixe' && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">Montant par fausse alarme ($)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="50"
+                    value={settings.fausse_alarme_config?.montant_fixe || 500}
+                    onChange={(e) => setSettings({ 
+                      ...settings, 
+                      fausse_alarme_config: { 
+                        ...(settings.fausse_alarme_config || {}), 
+                        montant_fixe: parseInt(e.target.value) || 500 
+                      } 
+                    })}
+                    className="border border-gray-300 rounded-lg p-2 w-32"
+                  />
+                </div>
+              )}
+
+              {/* Montants progressifs */}
+              {settings.fausse_alarme_config?.type_facturation === 'progressif' && (
+                <div>
+                  <label className="block text-sm font-medium mb-2">Montants progressifs ($)</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-xs text-gray-500">1ère facturable</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="50"
+                        value={(settings.fausse_alarme_config?.montants_progressifs || [200, 400, 600])[0]}
+                        onChange={(e) => {
+                          const current = settings.fausse_alarme_config?.montants_progressifs || [200, 400, 600];
+                          setSettings({ 
+                            ...settings, 
+                            fausse_alarme_config: { 
+                              ...(settings.fausse_alarme_config || {}), 
+                              montants_progressifs: [parseInt(e.target.value) || 200, current[1], current[2]]
+                            } 
+                          });
+                        }}
+                        className="border border-gray-300 rounded-lg p-2 w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500">2ème facturable</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="50"
+                        value={(settings.fausse_alarme_config?.montants_progressifs || [200, 400, 600])[1]}
+                        onChange={(e) => {
+                          const current = settings.fausse_alarme_config?.montants_progressifs || [200, 400, 600];
+                          setSettings({ 
+                            ...settings, 
+                            fausse_alarme_config: { 
+                              ...(settings.fausse_alarme_config || {}), 
+                              montants_progressifs: [current[0], parseInt(e.target.value) || 400, current[2]]
+                            } 
+                          });
+                        }}
+                        className="border border-gray-300 rounded-lg p-2 w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500">3ème+ facturable</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="50"
+                        value={(settings.fausse_alarme_config?.montants_progressifs || [200, 400, 600])[2]}
+                        onChange={(e) => {
+                          const current = settings.fausse_alarme_config?.montants_progressifs || [200, 400, 600];
+                          setSettings({ 
+                            ...settings, 
+                            fausse_alarme_config: { 
+                              ...(settings.fausse_alarme_config || {}), 
+                              montants_progressifs: [current[0], current[1], parseInt(e.target.value) || 600]
+                            } 
+                          });
+                        }}
+                        className="border border-gray-300 rounded-lg p-2 w-full"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Types d'intervention concernés */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Types d'intervention concernés</label>
+                <p className="text-xs text-gray-500 mb-2">Saisissez les types d'intervention (séparés par des virgules)</p>
+                <input
+                  type="text"
+                  value={(settings.fausse_alarme_config?.types_intervention_concernes || ['Alarme incendie', 'Alarme CO', 'Alarme automatique']).join(', ')}
+                  onChange={(e) => setSettings({ 
+                    ...settings, 
+                    fausse_alarme_config: { 
+                      ...(settings.fausse_alarme_config || {}), 
+                      types_intervention_concernes: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
+                    } 
+                  })}
+                  className="border border-gray-300 rounded-lg p-2 w-full"
+                  placeholder="Alarme incendie, Alarme CO, Alarme automatique"
+                />
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Template du narratif */}
       <Card>
         <CardHeader className="bg-green-50">
