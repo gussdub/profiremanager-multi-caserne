@@ -117,7 +117,13 @@ const ReparationsVehicule = ({ vehicule, tenant, onClose, onUpdate }) => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Supprimer cette entrée ?')) return;
+    const confirmed = await confirm({
+      title: 'Supprimer l\'entrée',
+      message: 'Supprimer cette entrée ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
     
     try {
       const response = await fetch(
