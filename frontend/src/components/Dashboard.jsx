@@ -322,6 +322,49 @@ const Dashboard = ({ setCurrentPage }) => {
       {/* Bannière de message broadcast */}
       <BroadcastBanner tenantSlug={tenantSlug} currentUser={user} />
 
+      {/* Bannière des délégations reçues */}
+      {delegationsRecues.length > 0 && (
+        <div style={{ 
+          marginBottom: '1.5rem',
+          background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
+          borderRadius: '12px',
+          padding: '1rem 1.5rem',
+          border: '1px solid #3b82f6'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+            <span style={{ fontSize: '1.25rem' }}>📋</span>
+            <strong style={{ color: '#1e40af' }}>Délégations actives</strong>
+            <span style={{ 
+              background: '#3b82f6', 
+              color: 'white', 
+              borderRadius: '9999px', 
+              padding: '2px 8px', 
+              fontSize: '0.75rem',
+              fontWeight: '600'
+            }}>
+              {delegationsRecues.length}
+            </span>
+          </div>
+          <div style={{ color: '#1e40af', fontSize: '0.875rem' }}>
+            {delegationsRecues.map((delegation, idx) => (
+              <div key={delegation.user_id || idx} style={{ marginBottom: idx < delegationsRecues.length - 1 ? '0.5rem' : 0 }}>
+                <strong>{delegation.user_nom}</strong> est en congé jusqu'au {delegation.date_fin}. 
+                <span style={{ color: '#64748b', marginLeft: '0.5rem' }}>
+                  Vous recevez ses notifications pour: {delegation.responsibilities?.map(r => {
+                    const labels = {
+                      'actifs': 'Actifs',
+                      'interventions': 'Interventions', 
+                      'prevention': 'Prévention'
+                    };
+                    return labels[r.module] || r.module;
+                  }).filter((v, i, a) => a.indexOf(v) === i).join(', ')}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Modale de diffusion */}
       <BroadcastModal 
         isOpen={showBroadcastModal}
