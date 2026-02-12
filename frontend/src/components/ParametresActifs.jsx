@@ -3,6 +3,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useToast } from '../hooks/use-toast';
+import { useConfirmDialog } from './ui/ConfirmDialog';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import ConfigurationEmailsRondes from './ConfigurationEmailsRondes';
 import ConfigurationEmailsBornesSeches from './ConfigurationEmailsBornesSeches';
@@ -14,6 +15,8 @@ import ImportCSVEPI from './ImportCSVEPI';
 
 // ==================== ONGLET PARAMÈTRES ====================
 const ParametresActifsTab = ({ tenantSlug, user }) => {
+  const { toast } = useToast();
+  const { confirm } = useConfirmDialog();
   const [loading, setLoading] = useState(false);
   const [parametres, setParametres] = useState({
     dates_tests_bornes_seches: []  // [{date: '2024-06-15', description: 'Test printemps'}]
