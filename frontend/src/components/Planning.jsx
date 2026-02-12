@@ -473,9 +473,14 @@ const Planning = () => {
       }
 
       // Confirmer avec le nombre trouvé
-      if (!window.confirm(`⚠️ ${count} assignation(s) invalide(s) détectée(s)!\n\nElles ne respectent pas les jours d'application de leur type de garde.\n\nVoulez-vous les supprimer?\n\nCette action est irréversible.`)) {
-        return;
-      }
+      const confirmed = await confirm({
+        title: 'Assignations invalides détectées',
+        message: `⚠️ ${count} assignation(s) invalide(s) détectée(s)!\n\nElles ne respectent pas les jours d'application de leur type de garde.\n\nVoulez-vous les supprimer?\n\nCette action est irréversible.`,
+        variant: 'warning',
+        confirmText: 'Supprimer'
+      });
+      
+      if (!confirmed) return;
 
       toast({
         title: "Suppression en cours...",
@@ -521,20 +526,23 @@ const Planning = () => {
   // Fonction pour formater le planning (demo uniquement)
   const handleFormaterPlanning = async () => {
     if (tenantSlug !== 'demo') {
-      alert('Cette fonctionnalité est réservée au tenant demo');
+      toast({ title: 'Non disponible', description: 'Cette fonctionnalité est réservée au tenant demo', variant: 'destructive' });
       return;
     }
 
     if (user.role !== 'admin') {
-      alert('Accès réservé aux administrateurs');
+      toast({ title: 'Accès refusé', description: 'Accès réservé aux administrateurs', variant: 'destructive' });
       return;
     }
 
-    const confirmation = window.confirm(
-      `⚠️ ATTENTION\n\nVous êtes sur le point de SUPPRIMER toutes les assignations et demandes de remplacement du mois ${moisFormatage}.\n\nCette action est IRRÉVERSIBLE.\n\nConfirmer?`
-    );
+    const confirmed = await confirm({
+      title: 'Formater le planning',
+      message: `⚠️ ATTENTION\n\nVous êtes sur le point de SUPPRIMER toutes les assignations et demandes de remplacement du mois ${moisFormatage}.\n\nCette action est IRRÉVERSIBLE.\n\nConfirmer?`,
+      variant: 'danger',
+      confirmText: 'Formater'
+    });
 
-    if (!confirmation) return;
+    if (!confirmed) return;
 
     try {
       const response = await apiDelete(tenantSlug, `/planning/formater-mois?mois=${moisFormatage}`);
