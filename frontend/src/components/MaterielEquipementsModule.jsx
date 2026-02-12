@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTenant } from '../contexts/TenantContext';
+import { useConfirmDialog } from './ui/ConfirmDialog';
 import { apiGet, apiPost, apiPut, apiDelete, getTenantToken } from '../utils/api';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -14,6 +15,7 @@ import HistoriqueInspectionsUnifiees from './HistoriqueInspectionsUnifiees';
 // ===== Composant principal =====
 const MaterielEquipementsModule = ({ user }) => {
   const { tenantSlug } = useTenant();
+  const { confirm } = useConfirmDialog();
   const [activeSubTab, setActiveSubTab] = useState('equipements');
   const [categories, setCategories] = useState([]);
   const [equipements, setEquipements] = useState([]);
