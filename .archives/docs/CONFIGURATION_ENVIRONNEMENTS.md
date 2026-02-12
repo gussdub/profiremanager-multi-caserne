@@ -18,8 +18,8 @@ Ce document décrit la configuration des différents environnements pour ProFire
   ```
 
 ### **2. Preview / Development**
-- **URL Frontend** : https://alert-migration.preview.emergentagent.com
-- **URL Backend** : https://alert-migration.preview.emergentagent.com/api
+- **URL Frontend** : https://dialog-refactor.preview.emergentagent.com
+- **URL Backend** : https://dialog-refactor.preview.emergentagent.com/api
 - **Base de Données** : `profiremanager-dev` (MongoDB Atlas - Cluster: profiremanager-prod)
 - **Connection String** :
   ```
@@ -61,7 +61,7 @@ CORS_ORIGINS="*"
 SENDGRID_API_KEY="your-sendgrid-key-here"
 RESEND_API_KEY="re_6BuFZ8Ut_PNXyQuTA3m9jrCLdmaKRa51A"
 SENDER_EMAIL="noreply@profiremanager.ca"
-FRONTEND_URL="https://alert-migration.preview.emergentagent.com"
+FRONTEND_URL="https://dialog-refactor.preview.emergentagent.com"
 ```
 
 ### **Backend `.env` (Production)**
