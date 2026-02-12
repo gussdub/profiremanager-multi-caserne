@@ -13,6 +13,7 @@ import { VehiculeAlertesSection } from './dashboard/VehiculeAlertesSection';
 import { AdminSection } from './dashboard/AdminSection';
 import { FormationsAVenirCard } from './dashboard/FormationsCard';
 import { EPIAlertesInline } from './dashboard/EPIAlertesInline';
+import { BroadcastBanner, BroadcastModal, BroadcastButton } from './BroadcastMessage';
 
 const Dashboard = ({ setCurrentPage }) => {
   const { user, tenant } = useAuth();
