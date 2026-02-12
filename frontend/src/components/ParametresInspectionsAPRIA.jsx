@@ -663,14 +663,19 @@ const ParametresInspectionsAPRIA = ({ tenantSlug }) => {
 
   // Supprimer un modèle
   const supprimerModele = async (modeleId) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce modèle ?')) return;
+    const confirmed = await confirm({
+      title: 'Supprimer le modèle',
+      message: 'Êtes-vous sûr de vouloir supprimer ce modèle ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
     
     try {
       await apiDelete(tenantSlug, `/apria/modeles-inspection/${modeleId}`);
       fetchModeles();
     } catch (error) {
       console.error('Erreur suppression:', error);
-      alert('Erreur: ' + (error.message || 'Impossible de supprimer'));
     }
   };
 
