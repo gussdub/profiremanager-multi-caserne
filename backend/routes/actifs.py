@@ -742,6 +742,7 @@ async def update_vehicule(
     if not vehicule:
         raise HTTPException(status_code=404, detail="Véhicule non trouvé")
     
+    ancien_statut = vehicule.get("statut")
     update_data = {k: v for k, v in vehicule_data.dict(exclude_unset=True).items() if v is not None}
     update_data["updated_at"] = datetime.now(timezone.utc)
     
@@ -749,6 +750,21 @@ async def update_vehicule(
         {"id": vehicule_id, "tenant_id": tenant.id},
         {"$set": update_data}
     )
+    
+    # Notifier tout le monde si véhicule mis hors service
+    nouveau_statut = update_data.get("statut")
+    statuts_hors_service = ["hors_service", "maintenance", "hors service"]
+    
+    if nouveau_statut and nouveau_statut.lower() in statuts_hors_service and ancien_statut != nouveau_statut:
+        vehicule_nom = vehicule.get("nom", "Véhicule")
+        await notifier_vehicule_ou_materiel_hors_service(
+            tenant_id=tenant.id,
+            type_actif="vehicule",
+            nom_actif=vehicule_nom,
+            statut=nouveau_statut,
+            raison=vehicule_data.notes if vehicule_data.notes else None,
+            modifie_par=f"{current_user.prenom} {current_user.nom}"
+        )
     
     updated_vehicule = await db.vehicules.find_one(
         {"id": vehicule_id, "tenant_id": tenant.id},
