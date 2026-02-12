@@ -353,9 +353,13 @@ const Formations = () => {
   };
   
   const handleDesinscrire = async (formationId) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir vous désinscrire de cette formation?")) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: 'Désinscription',
+      message: 'Êtes-vous sûr de vouloir vous désinscrire de cette formation?',
+      variant: 'warning',
+      confirmText: 'Se désinscrire'
+    });
+    if (!confirmed) return;
     
     try {
       await apiDelete(tenantSlug, `/formations/${formationId}/inscription`);
@@ -386,9 +390,13 @@ const Formations = () => {
   };
   
   const handleDeleteFormation = async (formationId) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette formation ? Cette action est irréversible.")) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: 'Supprimer la formation',
+      message: 'Êtes-vous sûr de vouloir supprimer cette formation ? Cette action est irréversible.',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
     
     try {
       await apiDelete(tenantSlug, `/formations/${formationId}`);
