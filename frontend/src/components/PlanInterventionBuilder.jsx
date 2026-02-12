@@ -53,6 +53,7 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [symbolToDelete, setSymbolToDelete] = useState(null);
   const [showInfoPanel, setShowInfoPanel] = useState(true);
+  const { confirm } = useConfirmDialog();
   
   // État pour les photos
   const [photos, setPhotos] = useState(existingPlan?.photos || []);
