@@ -151,11 +151,19 @@ const SectionRemisePropriete = ({ intervention, tenantSlug, user, getToken, toas
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `remise_propriete_${remise.id.slice(0, 8)}.pdf`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        
+        // Utiliser iframe pour ouvrir la fenêtre d'impression
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = url;
+        document.body.appendChild(iframe);
+        iframe.onload = () => {
+          iframe.contentWindow.print();
+          setTimeout(() => {
+            document.body.removeChild(iframe);
+            window.URL.revokeObjectURL(url);
+          }, 1000);
+        };
       }
     } catch (error) {
       toast?.({ title: 'Erreur téléchargement PDF', variant: 'destructive' });
