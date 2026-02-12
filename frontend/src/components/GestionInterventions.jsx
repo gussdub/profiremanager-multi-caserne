@@ -1422,9 +1422,13 @@ const TabHistorique = ({ user, tenantSlug, toast, readOnly = false, settings = {
   const handleUnlock = async (interventionId) => {
     if (readOnly) return; // Pas d'action en lecture seule
     
-    if (!window.confirm('Êtes-vous sûr de vouloir déverrouiller cette intervention pour modification ?')) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: 'Déverrouiller l\'intervention',
+      message: 'Êtes-vous sûr de vouloir déverrouiller cette intervention pour modification ?',
+      variant: 'warning',
+      confirmText: 'Déverrouiller'
+    });
+    if (!confirmed) return;
     
     setUnlocking(interventionId);
     try {
