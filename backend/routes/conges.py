@@ -199,6 +199,23 @@ async def approuver_demande_conge(
             data={"demande_id": demande_id}
         )
     
+    # Si le congé est approuvé, vérifier si le demandeur a des responsabilités à déléguer
+    if statut == "approuve":
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        # Si le congé commence aujourd'hui ou est déjà commencé, déclencher la délégation immédiatement
+        if demande["date_debut"] <= today <= demande["date_fin"]:
+            responsibilities = await get_user_responsibilities(tenant.id, demande["demandeur_id"])
+            if responsibilities:
+                # Construire un objet congé avec les infos nécessaires
+                conge_obj = {
+                    "id": demande_id,
+                    "date_debut": demande["date_debut"],
+                    "date_fin": demande["date_fin"],
+                    "type_conge": demande.get("type_conge")
+                }
+                await envoyer_notification_delegation_debut(tenant.id, demande["demandeur_id"], conge_obj)
+                logger.info(f"📋 Délégation activée pour {demande['demandeur_id']} - {len(responsibilities)} responsabilité(s)")
+    
     logger.info(f"📅 Demande de congé {demande_id} {statut}e par {current_user.email}")
     
     return {"message": f"Demande {statut}e avec succès"}
