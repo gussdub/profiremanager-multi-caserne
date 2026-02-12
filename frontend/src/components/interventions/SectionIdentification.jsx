@@ -134,6 +134,38 @@ const SectionIdentification = ({ formData, setFormData, editMode, formatDateTime
               <p>{formData.niveau_risque || '-'}</p>
             </div>
           </div>
+          
+          {/* Checkbox Alarme non fondée - visible pour les types alarme */}
+          {(formData.type_intervention || '').toLowerCase().includes('alarme') && (
+            <div className="mt-4 pt-4 border-t">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.alarme_non_fondee || false}
+                  onChange={(e) => {
+                    if (editMode) {
+                      setFormData({ ...formData, alarme_non_fondee: e.target.checked });
+                    }
+                  }}
+                  disabled={!editMode}
+                  className="w-5 h-5 text-orange-600 rounded border-gray-300 focus:ring-orange-500"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  🚨 Alarme non fondée (fausse alarme)
+                </span>
+                {formData.alarme_non_fondee && (
+                  <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">
+                    Sera comptabilisée pour facturation
+                  </span>
+                )}
+              </label>
+              {formData.fausse_alarme_count > 0 && (
+                <p className="text-sm text-gray-500 mt-2 ml-8">
+                  📊 Cette adresse a déjà <strong>{formData.fausse_alarme_count}</strong> fausse(s) alarme(s) enregistrée(s)
+                </p>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
