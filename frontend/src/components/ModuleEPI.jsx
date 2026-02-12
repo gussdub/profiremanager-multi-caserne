@@ -787,7 +787,13 @@ const ModuleEPI = ({ user }) => {
   };
   
   const handleDeleteISP = async (ispId) => {
-    if (!window.confirm('Supprimer ce fournisseur ?')) return;
+    const confirmed = await confirm({
+      title: 'Supprimer ce fournisseur',
+      message: 'Supprimer ce fournisseur ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
     try {
       await apiDelete(tenantSlug, `/isp/${ispId}`);
       toast({ title: "Succès", description: "Fournisseur supprimé" });
