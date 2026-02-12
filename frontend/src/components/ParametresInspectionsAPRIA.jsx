@@ -712,6 +712,20 @@ const ParametresInspectionsAPRIA = ({ tenantSlug }) => {
     }
   };
 
+  // Gérer la fermeture de l'éditeur
+  const handleCloseEditeur = async () => {
+    const confirmed = await confirm({
+      title: 'Quitter l\'éditeur',
+      message: 'Quitter sans sauvegarder ?',
+      variant: 'warning',
+      confirmText: 'Quitter'
+    });
+    if (confirmed) {
+      setShowEditeur(false);
+      setModeleEnCours(null);
+    }
+  };
+
   if (loading) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
