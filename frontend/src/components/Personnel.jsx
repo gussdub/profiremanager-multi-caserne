@@ -112,6 +112,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   const [equipesGardeParams, setEquipesGardeParams] = useState(null);
   const { toast } = useToast();
   const { tenantSlug } = useTenant();
+  const { confirm } = useConfirmDialog();
 
   useEffect(() => {
     const fetchData = async () => {
