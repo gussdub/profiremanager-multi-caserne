@@ -110,7 +110,7 @@ Application de gestion pour les services d'incendie incluant :
 - ~~**Uniformiser les exports PDF/Excel**~~ : ✅ CORRIGÉ - Le bug de corruption de fichiers a été résolu. Les modules Planning, Formations et Rapports utilisent déjà la méthode blob directe qui fonctionne. Le module Personnel utilise `generate-export` + `FileResponse` qui est maintenant corrigé.
 
 ### P1 - Medium Priority
-- **Refactoriser window.confirm/window.alert** : Ces appels sont bloqués dans les environnements iframe. Créer un système de modales centralisé pour les remplacer dans toute l'application.
+- **Refactoriser window.confirm/window.alert** : ✅ PARTIELLEMENT FAIT - Composant `ConfirmDialog` créé et intégré. Migré dans Personnel.jsx et Planning.jsx. Reste à migrer: Parametres.js, Formations.jsx, ModuleEPI.jsx, MonProfil.jsx, GestionInterventions.jsx et autres (~40 occurrences restantes)
 - **Audit notifications complet** : Vérifier que tous les scénarios suivants ont leurs notifications:
   - ✅ Rapports d'intervention renvoyés pour révision
   - ✅ Véhicules/matériels hors service (notification à tous)
