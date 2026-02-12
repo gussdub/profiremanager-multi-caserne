@@ -7,6 +7,7 @@ import { Label } from "./ui/label";
 import { useToast } from "../hooks/use-toast";
 import { useTenant } from "../contexts/TenantContext";
 import { useAuth } from "../contexts/AuthContext";
+import { useConfirmDialog } from "./ui/ConfirmDialog";
 import { fr } from "date-fns/locale";
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 
@@ -14,6 +15,7 @@ const Formations = () => {
   const { user, tenant } = useAuth();
   const { tenantSlug } = useTenant();
   const { toast } = useToast();
+  const { confirm } = useConfirmDialog();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('formations');
   const [anneeSelectionnee, setAnneeSelectionnee] = useState(new Date().getFullYear());
