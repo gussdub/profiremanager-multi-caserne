@@ -329,7 +329,10 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
             utilise_fonction_superieure: false,
             equipe_origine: equipe.equipe_nom,
             vehicle_number: null,
-            is_manual: true
+            is_manual: true,
+            // Heures partielles - pré-remplies avec les heures de l'intervention
+            heure_arrivee: heureDebut || null,
+            heure_depart: heureFin || null
           }));
         nouveauxMembres = [...nouveauxMembres, ...membresAImporter];
       });
