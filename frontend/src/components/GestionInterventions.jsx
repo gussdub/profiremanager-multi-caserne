@@ -230,9 +230,13 @@ const TabRapports = ({ user, tenantSlug, toast, readOnly = false, isSuperAdmin =
   const handleDeleteIntervention = async (intervention, e) => {
     e.stopPropagation();
     
-    const confirmMsg = `⚠️ ATTENTION - SUPPRESSION DÉFINITIVE\n\nVoulez-vous vraiment supprimer la carte d'appel #${intervention.external_call_id || intervention.id} ?\n\nCette action est irréversible et supprimera toutes les données associées.`;
-    
-    if (!window.confirm(confirmMsg)) return;
+    const confirmed = await confirm({
+      title: '⚠️ SUPPRESSION DÉFINITIVE',
+      message: `Voulez-vous vraiment supprimer la carte d'appel #${intervention.external_call_id || intervention.id} ?\n\nCette action est irréversible et supprimera toutes les données associées.`,
+      variant: 'danger',
+      confirmText: 'Supprimer définitivement'
+    });
+    if (!confirmed) return;
     
     setDeleting(intervention.id);
     try {
