@@ -84,8 +84,10 @@ export const useVehicules = (tenant) => {
     }
   }, [tenant, getToken, fetchVehicules]);
 
-  const deleteVehicule = useCallback(async (vehiculeId) => {
-    if (!window.confirm('Supprimer ce véhicule ?')) return false;
+  const deleteVehicule = useCallback(async (vehiculeId, skipConfirmation = false) => {
+    // La confirmation doit être gérée par le composant appelant avec useConfirmDialog
+    // Si skipConfirmation est false et qu'on est dans un contexte sans confirmation, 
+    // on procède directement (l'ancien comportement avec window.confirm ne fonctionne plus)
     
     try {
       const response = await fetch(`${API_URL}/api/${tenant}/actifs/vehicules/${vehiculeId}`, {
@@ -199,8 +201,8 @@ export const useEquipements = (tenant) => {
     }
   }, [tenant, getToken, fetchEquipements]);
 
-  const deleteEquipement = useCallback(async (equipementId) => {
-    if (!window.confirm('Supprimer cet équipement ?')) return false;
+  const deleteEquipement = useCallback(async (equipementId, skipConfirmation = false) => {
+    // La confirmation doit être gérée par le composant appelant avec useConfirmDialog
     
     try {
       const response = await fetch(`${API_URL}/api/${tenant}/equipements/${equipementId}`, {
