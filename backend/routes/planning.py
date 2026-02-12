@@ -330,7 +330,7 @@ async def create_assignation(
         user_id=assignation_data.user_id,
         type_notification="planning_assignation",
         titre="Nouvelle assignation",
-        message=f"Vous avez été assigné(e) le {assignation_data.date} - {assignation_data.type_garde}",
+        message=f"Vous avez été assigné(e) le {assignation_data.date} - {type_garde.get('nom', 'Garde')}",
         lien=f"/planning?date={assignation_data.date}"
     )
     
