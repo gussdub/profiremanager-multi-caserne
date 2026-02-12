@@ -184,6 +184,13 @@ const GestionInterventions = ({ user, tenantSlug }) => {
       {activeTab === 'rapports' && (
         <TabRapports user={user} tenantSlug={tenantSlug} toast={toast} readOnly={isReadOnlyMode} isSuperAdmin={isSuperAdmin} />
       )}
+      {activeTab === 'fausses-alarmes' && user?.role === 'admin' && (
+        <FaussesAlarmesView 
+          tenantSlug={tenantSlug} 
+          getToken={() => localStorage.getItem(`${tenantSlug}_token`) || localStorage.getItem('token')} 
+          toast={toast} 
+        />
+      )}
       {activeTab === 'historique' && (
         <TabHistorique user={user} tenantSlug={tenantSlug} toast={toast} confirm={confirm} readOnly={isReadOnlyMode} settings={settings} isSuperAdmin={isSuperAdmin} />
       )}
