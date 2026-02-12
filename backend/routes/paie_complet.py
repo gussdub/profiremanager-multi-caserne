@@ -841,6 +841,8 @@ async def calculer_feuille_temps(
                 description = f"Intervention #{intervention.get('external_call_id')} - {intervention.get('type_intervention', 'N/A')}"
                 if utilise_fonction_superieure:
                     description += f" (Fonction supérieure +{int(prime_fonction_superieure_pct*100)}%)"
+                if heures_partielles:
+                    description += f" (présence partielle: {heure_arrivee}-{heure_depart})"
                 
                 lignes.append({
                     "date": date_intervention,
@@ -853,6 +855,9 @@ async def calculer_feuille_temps(
                     "source_id": intervention.get("id"),
                     "source_type": "intervention",
                     "fonction_superieure": utilise_fonction_superieure,
+                    "heures_partielles": heures_partielles,
+                    "heure_arrivee": heure_arrivee if heures_partielles else None,
+                    "heure_depart": heure_depart if heures_partielles else None,
                     "note": "Déjà en garde interne - comptabilisé dans statistiques"
                 })
             elif statut_presence in ["rappele", "present"]:
