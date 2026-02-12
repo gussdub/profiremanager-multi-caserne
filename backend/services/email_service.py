@@ -403,7 +403,8 @@ async def send_notification_email(
     notification_titre: str,
     notification_message: str,
     notification_lien: Optional[str] = None,
-    user_prenom: Optional[str] = None
+    user_prenom: Optional[str] = None,
+    tenant_slug: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Fonction helper pour envoyer un email de notification générique.
@@ -416,7 +417,11 @@ async def send_notification_email(
         # Construire l'URL complète si c'est un chemin relatif
         full_url = notification_lien
         if notification_lien.startswith('/'):
-            full_url = f"{service.frontend_url}{notification_lien}"
+            # Ajouter le tenant_slug si disponible
+            if tenant_slug:
+                full_url = f"{service.frontend_url}/{tenant_slug}{notification_lien}"
+            else:
+                full_url = f"{service.frontend_url}{notification_lien}"
         
         action_button = f"""
         <div style="text-align: center; margin: 30px 0;">
@@ -430,22 +435,37 @@ async def send_notification_email(
     
     salutation = f"Bonjour {user_prenom}," if user_prenom else "Bonjour,"
     
+    # Logo URL identique à celui de l'email de réinitialisation de mot de passe
+    logo_url = "https://customer-assets.emergentagent.com/job_fireshift-manager/artifacts/6vh2i9cz_05_Icone_Flamme_Rouge_Bordure_D9072B_VISIBLE.png"
+    
     html = f"""
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: #dc2626; color: white; padding: 20px; text-align: center;">
-            <h1 style="margin: 0;">🔥 ProFireManager</h1>
-        </div>
-        <div style="padding: 30px; background: #f9fafb;">
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <img src="{logo_url}" 
+                     alt="ProFireManager" 
+                     width="60" 
+                     height="60"
+                     style="width: 60px; height: 60px; margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
+                <h1 style="color: #dc2626; margin: 0;">ProFireManager v2.0</h1>
+                <p style="color: #666; margin: 5px 0;">Système de gestion des services d'incendie</p>
+            </div>
+            
             <p style="color: #4b5563;">{salutation}</p>
             <h2 style="color: #1f2937; margin-top: 10px;">{notification_titre}</h2>
             <p style="color: #4b5563; line-height: 1.6;">{notification_message}</p>
             {action_button}
+            
+            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+            
+            <div style="text-align: center; color: #9ca3af; font-size: 12px;">
+                © {datetime.now().year} ProFireManager - Gestion des services d'incendie<br>
+                <small>Vous recevez cet email car vous avez activé les notifications par email.</small>
+            </div>
         </div>
-        <div style="padding: 20px; text-align: center; color: #9ca3af; font-size: 12px;">
-            © {datetime.now().year} ProFireManager - Gestion des services d'incendie<br>
-            <small>Vous recevez cet email car vous avez activé les notifications par email.</small>
-        </div>
-    </div>
+    </body>
+    </html>
     """
     
     return await service.send_email(
