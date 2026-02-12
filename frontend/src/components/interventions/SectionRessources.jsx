@@ -591,7 +591,7 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
           {allPersonnel.length === 0 ? (
             <p className="text-gray-500">Aucun personnel enregistré. Cliquez sur &quot;Importer équipe de garde&quot; ou &quot;+ Ajouter&quot;.</p>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto" style={{ maxWidth: '100%' }}>
               {/* Résumé des heures */}
               {(() => {
                 const resume = calculerResumeHeures();
@@ -614,7 +614,7 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                   </div>
                 );
               })()}
-              <table className="w-full text-sm">
+              <table className="w-full text-sm" style={{ minWidth: '1100px' }}>
                 <thead className="bg-gray-100">
                   <tr>
                     <th className="p-2 text-left">Nom</th>
