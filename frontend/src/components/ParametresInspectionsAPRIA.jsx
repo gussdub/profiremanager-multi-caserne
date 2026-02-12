@@ -429,6 +429,7 @@ const SortableSection = ({
 
 // Composant principal
 const ParametresInspectionsAPRIA = ({ tenantSlug }) => {
+  const { confirm } = useConfirmDialog();
   const [modeles, setModeles] = useState([]);
   const [modeleEnCours, setModeleEnCours] = useState(null);
   const [loading, setLoading] = useState(false);
