@@ -755,3 +755,359 @@ async def creer_activite(
         "tenant_id": tenant_id,
         "created_at": {"$lt": date_limite}
     })
+
+
+
+
+# ==================== DÉLÉGATION DE RESPONSABILITÉS ====================
+
+async def get_user_active_conge(tenant_id: str, user_id: str) -> Optional[dict]:
+    """
+    Vérifie si un utilisateur a un congé actif (en cours aujourd'hui).
+    Retourne le congé actif ou None.
+    """
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
+    conge = await db.demandes_conge.find_one({
+        "tenant_id": tenant_id,
+        "demandeur_id": user_id,
+        "statut": "approuve",
+        "date_debut": {"$lte": today},
+        "date_fin": {"$gte": today}
+    })
+    
+    return conge
+
+
+async def get_active_admins_supervisors(tenant_id: str, exclude_user_ids: List[str] = None) -> List[dict]:
+    """
+    Récupère tous les admins et superviseurs actifs qui ne sont PAS en congé.
+    
+    Args:
+        tenant_id: ID du tenant
+        exclude_user_ids: Liste d'IDs à exclure (ex: la personne en congé)
+    
+    Returns:
+        Liste des admins/superviseurs disponibles
+    """
+    exclude_ids = exclude_user_ids or []
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
+    # Récupérer tous les admins/superviseurs actifs
+    admins_superviseurs = await db.users.find({
+        "tenant_id": tenant_id,
+        "role": {"$in": ["admin", "superviseur"]},
+        "statut": "Actif",
+        "id": {"$nin": exclude_ids}
+    }).to_list(100)
+    
+    # Filtrer ceux qui ne sont pas en congé
+    available = []
+    for user in admins_superviseurs:
+        conge = await get_user_active_conge(tenant_id, user["id"])
+        if not conge:
+            available.append(user)
+    
+    return available
+
+
+async def get_user_responsibilities(tenant_id: str, user_id: str) -> List[dict]:
+    """
+    Récupère toutes les responsabilités d'un utilisateur.
+    
+    Returns:
+        Liste de dict avec {module, role, details}
+    """
+    responsibilities = []
+    
+    # 1. Gestion des Actifs - Personnes ressources par catégorie
+    categories = await db.categories_equipements.find({"tenant_id": tenant_id}).to_list(1000)
+    for cat in categories:
+        personnes_ressources = cat.get("personnes_ressources", [])
+        for pr in personnes_ressources:
+            if pr.get("id") == user_id or pr.get("user_id") == user_id:
+                responsibilities.append({
+                    "module": "actifs",
+                    "role": "personne_ressource",
+                    "details": f"Catégorie: {cat.get('nom', 'Sans nom')}",
+                    "categorie_id": cat.get("id"),
+                    "categorie_nom": cat.get("nom")
+                })
+                break
+    
+    # 2. Interventions - Personnes ressources et validateurs
+    intervention_settings = await db.module_settings.find_one({
+        "tenant_id": tenant_id,
+        "module": "interventions"
+    })
+    if intervention_settings:
+        settings = intervention_settings.get("settings", {})
+        
+        if user_id in settings.get("personnes_ressources", []):
+            responsibilities.append({
+                "module": "interventions",
+                "role": "personne_ressource",
+                "details": "Validation des rapports d'intervention"
+            })
+        
+        if user_id in settings.get("validateurs", []):
+            responsibilities.append({
+                "module": "interventions",
+                "role": "validateur",
+                "details": "Signature des rapports d'intervention"
+            })
+    
+    # 3. Prévention - Préventionniste
+    user = await db.users.find_one({"id": user_id, "tenant_id": tenant_id})
+    if user and user.get("est_preventionniste"):
+        responsibilities.append({
+            "module": "prevention",
+            "role": "preventionniste",
+            "details": "Responsable prévention"
+        })
+    
+    # 4. Prévention - Bâtiments assignés
+    batiments_assignes = await db.prevention_batiments.find({
+        "tenant_id": tenant_id,
+        "preventionniste_assigne_id": user_id
+    }).to_list(1000)
+    
+    if batiments_assignes:
+        noms_batiments = [b.get("nom", "Sans nom") for b in batiments_assignes[:3]]
+        details = ", ".join(noms_batiments)
+        if len(batiments_assignes) > 3:
+            details += f" et {len(batiments_assignes) - 3} autre(s)"
+        
+        responsibilities.append({
+            "module": "prevention",
+            "role": "preventionniste_batiment",
+            "details": f"Bâtiments: {details}",
+            "batiments_count": len(batiments_assignes)
+        })
+    
+    return responsibilities
+
+
+async def check_delegation_and_notify(
+    tenant_id: str,
+    original_user_id: str,
+    type_notification: str,
+    titre: str,
+    message: str,
+    lien: Optional[str] = None,
+    data: Optional[Dict[str, Any]] = None,
+    module: str = None
+) -> List[str]:
+    """
+    Vérifie si l'utilisateur destinataire est en congé et délègue si nécessaire.
+    
+    Args:
+        tenant_id: ID du tenant
+        original_user_id: ID du destinataire original
+        type_notification: Type de notification
+        titre: Titre de la notification
+        message: Message de la notification
+        lien: Lien optionnel
+        data: Données supplémentaires
+        module: Module concerné (actifs, interventions, prevention)
+    
+    Returns:
+        Liste des IDs des destinataires finaux (original + délégués si applicable)
+    """
+    destinataires_finaux = [original_user_id]
+    
+    # Vérifier si l'utilisateur original est en congé
+    conge = await get_user_active_conge(tenant_id, original_user_id)
+    
+    if conge:
+        # Récupérer les admins/superviseurs disponibles
+        delegues = await get_active_admins_supervisors(tenant_id, exclude_user_ids=[original_user_id])
+        
+        if delegues:
+            # Ajouter les délégués comme destinataires
+            delegues_ids = [d["id"] for d in delegues]
+            destinataires_finaux.extend(delegues_ids)
+            
+            # Récupérer le nom de l'utilisateur en congé
+            user_original = await db.users.find_one({"id": original_user_id, "tenant_id": tenant_id})
+            user_nom = f"{user_original.get('prenom', '')} {user_original.get('nom', '')}".strip() if user_original else "Un responsable"
+            
+            # Enrichir les données avec l'info de délégation
+            if data is None:
+                data = {}
+            data["delegation"] = {
+                "is_delegated": True,
+                "original_user_id": original_user_id,
+                "original_user_nom": user_nom,
+                "conge_fin": conge.get("date_fin"),
+                "module": module
+            }
+    
+    return destinataires_finaux
+
+
+async def envoyer_notification_delegation_debut(tenant_id: str, user_id: str, conge: dict):
+    """
+    Envoie une notification aux admins/superviseurs quand une délégation commence.
+    
+    Args:
+        tenant_id: ID du tenant
+        user_id: ID de l'utilisateur qui part en congé
+        conge: Document du congé
+    """
+    # Récupérer l'utilisateur et ses responsabilités
+    user = await db.users.find_one({"id": user_id, "tenant_id": tenant_id})
+    if not user:
+        return
+    
+    responsibilities = await get_user_responsibilities(tenant_id, user_id)
+    if not responsibilities:
+        return  # Pas de responsabilités à déléguer
+    
+    user_nom = f"{user.get('prenom', '')} {user.get('nom', '')}".strip()
+    date_fin = conge.get("date_fin", "?")
+    
+    # Construire le message avec les responsabilités
+    modules_concernes = list(set([r["module"] for r in responsibilities]))
+    modules_labels = {
+        "actifs": "Gestion des actifs",
+        "interventions": "Interventions",
+        "prevention": "Prévention"
+    }
+    modules_str = ", ".join([modules_labels.get(m, m) for m in modules_concernes])
+    
+    # Récupérer les admins/superviseurs disponibles
+    delegues = await get_active_admins_supervisors(tenant_id, exclude_user_ids=[user_id])
+    
+    if not delegues:
+        return
+    
+    titre = f"📋 Délégation de responsabilités - {user_nom}"
+    message = f"{user_nom} est en congé jusqu'au {date_fin}. Vous recevrez ses notifications pour: {modules_str}."
+    
+    await creer_notification(
+        tenant_id=tenant_id,
+        type_notification="delegation_debut",
+        titre=titre,
+        message=message,
+        lien="/tableau-de-bord",
+        data={
+            "user_id": user_id,
+            "user_nom": user_nom,
+            "date_fin": date_fin,
+            "modules": modules_concernes,
+            "responsibilities": responsibilities
+        },
+        destinataires_multiples=[d["id"] for d in delegues]
+    )
+    
+    # Enregistrer la délégation active
+    await db.delegations_actives.update_one(
+        {"tenant_id": tenant_id, "user_id": user_id},
+        {"$set": {
+            "tenant_id": tenant_id,
+            "user_id": user_id,
+            "user_nom": user_nom,
+            "conge_id": conge.get("id"),
+            "date_debut": conge.get("date_debut"),
+            "date_fin": conge.get("date_fin"),
+            "responsibilities": responsibilities,
+            "delegues_ids": [d["id"] for d in delegues],
+            "created_at": datetime.now(timezone.utc)
+        }},
+        upsert=True
+    )
+
+
+async def envoyer_notification_delegation_fin(tenant_id: str, user_id: str):
+    """
+    Envoie une notification aux admins/superviseurs quand une délégation se termine.
+    
+    Args:
+        tenant_id: ID du tenant
+        user_id: ID de l'utilisateur qui revient de congé
+    """
+    # Récupérer la délégation active
+    delegation = await db.delegations_actives.find_one({
+        "tenant_id": tenant_id,
+        "user_id": user_id
+    })
+    
+    if not delegation:
+        return
+    
+    user_nom = delegation.get("user_nom", "Un responsable")
+    delegues_ids = delegation.get("delegues_ids", [])
+    
+    if not delegues_ids:
+        return
+    
+    titre = f"✅ Fin de délégation - {user_nom}"
+    message = f"{user_nom} est de retour. La délégation de ses responsabilités est terminée."
+    
+    await creer_notification(
+        tenant_id=tenant_id,
+        type_notification="delegation_fin",
+        titre=titre,
+        message=message,
+        lien="/tableau-de-bord",
+        data={
+            "user_id": user_id,
+            "user_nom": user_nom
+        },
+        destinataires_multiples=delegues_ids
+    )
+    
+    # Supprimer la délégation active
+    await db.delegations_actives.delete_one({
+        "tenant_id": tenant_id,
+        "user_id": user_id
+    })
+
+
+async def verifier_et_mettre_a_jour_delegations(tenant_id: str):
+    """
+    Vérifie toutes les délégations actives et met à jour selon les congés.
+    À appeler périodiquement ou lors d'événements de congé.
+    """
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
+    # 1. Vérifier les nouvelles délégations (congés qui commencent aujourd'hui)
+    conges_commencent = await db.demandes_conge.find({
+        "tenant_id": tenant_id,
+        "statut": "approuve",
+        "date_debut": today
+    }).to_list(100)
+    
+    for conge in conges_commencent:
+        user_id = conge.get("demandeur_id")
+        # Vérifier si pas déjà de délégation active
+        existing = await db.delegations_actives.find_one({
+            "tenant_id": tenant_id,
+            "user_id": user_id
+        })
+        if not existing:
+            await envoyer_notification_delegation_debut(tenant_id, user_id, conge)
+    
+    # 2. Vérifier les délégations qui se terminent (congés finis hier)
+    yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
+    
+    delegations_actives = await db.delegations_actives.find({
+        "tenant_id": tenant_id,
+        "date_fin": yesterday
+    }).to_list(100)
+    
+    for delegation in delegations_actives:
+        await envoyer_notification_delegation_fin(tenant_id, delegation["user_id"])
+
+
+async def get_delegations_actives(tenant_id: str) -> List[dict]:
+    """
+    Récupère toutes les délégations actives pour un tenant.
+    Utile pour affichage dans le dashboard.
+    """
+    delegations = await db.delegations_actives.find({
+        "tenant_id": tenant_id
+    }).to_list(100)
+    
+    return [clean_mongo_doc(d) for d in delegations]
