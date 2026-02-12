@@ -626,57 +626,57 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                     <th className="p-1 text-left" style={{ width: '70px' }}>Rempl.</th>
                     <th className="p-1 text-center" style={{ width: '35px' }} title="Fonction supérieure">F.S</th>
                     {checkRepasCouvert('dejeuner') && (
-                      <th className="p-2 text-center">
+                      <th className="p-1 text-center" style={{ width: '30px' }}>
                         {editMode ? (
-                          <label className="flex flex-col items-center gap-1 cursor-pointer" title="Cocher/décocher tous les déjeuners">
+                          <label className="flex flex-col items-center cursor-pointer" title="Cocher/décocher tous les déjeuners">
                             <input
                               type="checkbox"
                               checked={areAllRepasChecked('dejeuner')}
                               onChange={(e) => toggleAllRepasType('dejeuner', e.target.checked)}
-                              className="w-4 h-4"
+                              className="w-3 h-3"
                             />
-                            <span className="text-xs">Déj.</span>
+                            <span className="text-xs">Déj</span>
                           </label>
                         ) : (
-                          <span className="text-xs">Déj.</span>
+                          <span className="text-xs">Déj</span>
                         )}
                       </th>
                     )}
                     {checkRepasCouvert('diner') && (
-                      <th className="p-2 text-center">
+                      <th className="p-1 text-center" style={{ width: '30px' }}>
                         {editMode ? (
-                          <label className="flex flex-col items-center gap-1 cursor-pointer" title="Cocher/décocher tous les dîners">
+                          <label className="flex flex-col items-center cursor-pointer" title="Cocher/décocher tous les dîners">
                             <input
                               type="checkbox"
                               checked={areAllRepasChecked('diner')}
                               onChange={(e) => toggleAllRepasType('diner', e.target.checked)}
-                              className="w-4 h-4"
+                              className="w-3 h-3"
                             />
-                            <span className="text-xs">Dîn.</span>
+                            <span className="text-xs">Dîn</span>
                           </label>
                         ) : (
-                          <span className="text-xs">Dîn.</span>
+                          <span className="text-xs">Dîn</span>
                         )}
                       </th>
                     )}
                     {checkRepasCouvert('souper') && (
-                      <th className="p-2 text-center">
+                      <th className="p-1 text-center" style={{ width: '30px' }}>
                         {editMode ? (
-                          <label className="flex flex-col items-center gap-1 cursor-pointer" title="Cocher/décocher tous les soupers">
+                          <label className="flex flex-col items-center cursor-pointer" title="Cocher/décocher tous les soupers">
                             <input
                               type="checkbox"
                               checked={areAllRepasChecked('souper')}
                               onChange={(e) => toggleAllRepasType('souper', e.target.checked)}
-                              className="w-4 h-4"
+                              className="w-3 h-3"
                             />
-                            <span className="text-xs">Soup.</span>
+                            <span className="text-xs">Sou</span>
                           </label>
                         ) : (
-                          <span className="text-xs">Soup.</span>
+                          <span className="text-xs">Sou</span>
                         )}
                       </th>
                     )}
-                    {editMode && <th className="p-2 text-center">⚡</th>}
+                    {editMode && <th className="p-1 text-center" style={{ width: '30px' }}></th>}
                   </tr>
                 </thead>
                 <tbody>
