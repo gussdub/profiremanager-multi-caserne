@@ -614,17 +614,17 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                   </div>
                 );
               })()}
-              <table className="w-full text-xs">
+              <table className="w-full text-sm">
                 <thead className="bg-gray-100">
                   <tr>
-                    <th className="p-1 text-left">Nom</th>
-                    <th className="p-1 text-left" style={{ width: '100px' }}>Véhicule</th>
-                    <th className="p-1 text-center" style={{ width: '55px' }} title="Heure d'arrivée">Arr.</th>
-                    <th className="p-1 text-center" style={{ width: '55px' }} title="Heure de départ">Dép.</th>
-                    <th className="p-1 text-center" style={{ width: '45px' }} title="Durée de présence">Durée</th>
-                    <th className="p-1 text-center" style={{ width: '70px' }}>Statut</th>
-                    <th className="p-1 text-left" style={{ width: '70px' }}>Rempl.</th>
-                    <th className="p-1 text-center" style={{ width: '35px' }} title="Fonction supérieure">F.S</th>
+                    <th className="p-2 text-left" style={{ width: '18%' }}>Nom</th>
+                    <th className="p-2 text-left" style={{ width: '12%' }}>Véhicule</th>
+                    <th className="p-2 text-center" style={{ width: '8%' }} title="Heure d'arrivée">Arr.</th>
+                    <th className="p-2 text-center" style={{ width: '8%' }} title="Heure de départ">Dép.</th>
+                    <th className="p-2 text-center" style={{ width: '7%' }} title="Durée de présence">Durée</th>
+                    <th className="p-2 text-center" style={{ width: '10%' }}>Statut</th>
+                    <th className="p-2 text-left" style={{ width: '10%' }}>Rempl.</th>
+                    <th className="p-2 text-center" style={{ width: '5%' }} title="Fonction supérieure">F.S</th>
                     {checkRepasCouvert('dejeuner') && (
                       <th className="p-1 text-center" style={{ width: '30px' }}>
                         {editMode ? (
