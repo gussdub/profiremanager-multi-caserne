@@ -23,6 +23,7 @@ const ModulePaie = ({ tenant }) => {
   const [employes, setEmployes] = useState([]);
   const [selectedFeuille, setSelectedFeuille] = useState(null);
   const [showDetail, setShowDetail] = useState(false);
+  const { confirm } = useConfirmDialog();
   
   // Mode édition feuille
   const [editMode, setEditMode] = useState(false);
@@ -290,7 +291,13 @@ const ModulePaie = ({ tenant }) => {
   };
 
   const handleSupprimerFeuille = async (feuilleId) => {
-    if (!window.confirm('Supprimer cette feuille de temps ?')) return;
+    const confirmed = await confirm({
+      title: 'Supprimer la feuille',
+      message: 'Supprimer cette feuille de temps ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
     try {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/feuilles-temps/${feuilleId}`, {
         method: 'DELETE',
@@ -341,7 +348,13 @@ const ModulePaie = ({ tenant }) => {
   const handleValiderTout = async () => {
     const feuillesBrouillon = feuilles.filter(f => f.statut === 'brouillon');
     if (feuillesBrouillon.length === 0) { toast.error('Aucune feuille en brouillon à valider'); return; }
-    if (!window.confirm(`Valider ${feuillesBrouillon.length} feuille(s) en brouillon ?`)) return;
+    const confirmed = await confirm({
+      title: 'Valider en lot',
+      message: `Valider ${feuillesBrouillon.length} feuille(s) en brouillon ?`,
+      variant: 'warning',
+      confirmText: 'Valider tout'
+    });
+    if (!confirmed) return;
     setLoading(true);
     try {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/feuilles-temps/valider-tout`, {
@@ -569,7 +582,13 @@ const ModulePaie = ({ tenant }) => {
   };
 
   const handleDeleteEventType = async (eventTypeId) => {
-    if (!window.confirm('Supprimer ce type d\'heure ? Les mappings associés seront aussi supprimés.')) return;
+    const confirmed = await confirm({
+      title: 'Supprimer le type d\'heure',
+      message: 'Supprimer ce type d\'heure ? Les mappings associés seront aussi supprimés.',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
     try {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/event-types/${eventTypeId}`, {
         method: 'DELETE', headers: { 'Authorization': `Bearer ${getToken()}` }
