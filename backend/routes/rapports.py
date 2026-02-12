@@ -1389,13 +1389,16 @@ async def download_temp_export(tenant_slug: str, file_id: str):
             original_name = filename.split('_', 1)[1] if '_' in filename else filename
             
             # Utiliser FileResponse pour un téléchargement direct
+            # Note: Content-Disposition avec "attachment" force le téléchargement
             return FileResponse(
                 path=filepath,
                 media_type=media_type,
                 filename=original_name,
                 headers={
                     "Access-Control-Allow-Origin": "*",
-                    "Cache-Control": "no-cache"
+                    "Access-Control-Expose-Headers": "Content-Disposition",
+                    "Cache-Control": "no-cache",
+                    "Content-Disposition": f'attachment; filename="{original_name}"'
                 }
             )
     
