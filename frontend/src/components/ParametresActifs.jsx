@@ -185,7 +185,13 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
   };
 
   const supprimerDateTest = async (index) => {
-    if (!confirm('Supprimer cette date de test ?')) return;
+    const confirmed = await confirm({
+      title: 'Supprimer la date de test',
+      message: 'Êtes-vous sûr de vouloir supprimer cette date de test ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
 
     setLoading(true);
     try {

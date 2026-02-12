@@ -3,6 +3,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useToast } from '../hooks/use-toast';
+import { useConfirmDialog } from './ui/ConfirmDialog';
 import { useTenant } from '../contexts/TenantContext';
 import { useAuth } from '../contexts/AuthContext';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
@@ -14,6 +15,7 @@ const ApprovisionnementEau = () => {
   const { user, tenant } = useAuth();
   const { tenantSlug } = useTenant();
   const { toast } = useToast();
+  const { confirm } = useConfirmDialog();
   
   const [currentView, setCurrentView] = useState('carte');
   const [pointsEau, setPointsEau] = useState([]);
@@ -155,7 +157,13 @@ const ApprovisionnementEau = () => {
 
   // Supprimer un point
   const deletePoint = async (pointId) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce point d\'eau ?')) return;
+    const confirmed = await confirm({
+      title: 'Supprimer le point d\'eau',
+      message: 'Êtes-vous sûr de vouloir supprimer ce point d\'eau ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
     
     try {
       await apiDelete(tenantSlug, `/points-eau/${pointId}`);

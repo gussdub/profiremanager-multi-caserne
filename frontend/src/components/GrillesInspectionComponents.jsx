@@ -4,6 +4,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { useToast } from '../hooks/use-toast';
+import { useConfirmDialog } from './ui/ConfirmDialog';
 import { useTenant } from '../contexts/TenantContext';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import {
@@ -122,6 +123,7 @@ const SortableItem = ({ item, itemIndex, sectionIndex, children }) => {
 const EditerGrille = ({ grille, onClose, onSave }) => {
   const { tenantSlug } = useTenant();
   const { toast } = useToast();
+  const { confirm } = useConfirmDialog();
   const [saving, setSaving] = useState(false);
   
   // État du formulaire
@@ -216,8 +218,14 @@ const EditerGrille = ({ grille, onClose, onSave }) => {
     setFormData(prev => ({ ...prev, sections: [...prev.sections, newSection] }));
   };
 
-  const removeSection = (index) => {
-    if (confirm('Supprimer cette section et tous ses éléments ?')) {
+  const removeSection = async (index) => {
+    const confirmed = await confirm({
+      title: 'Supprimer la section',
+      message: 'Supprimer cette section et tous ses éléments ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (confirmed) {
       setFormData(prev => ({
         ...prev,
         sections: prev.sections.filter((_, i) => i !== index)
@@ -894,6 +902,7 @@ const EditerGrille = ({ grille, onClose, onSave }) => {
 const GrillesInspection = () => {
   const { tenantSlug } = useTenant();
   const { toast } = useToast();
+  const { confirm } = useConfirmDialog();
   const [grilles, setGrilles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editingGrille, setEditingGrille] = useState(null);
@@ -921,7 +930,13 @@ const GrillesInspection = () => {
   }, [tenantSlug]);
 
   const handleDeleteGrille = async (grilleId) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette grille ?')) return;
+    const confirmed = await confirm({
+      title: 'Supprimer la grille',
+      message: 'Êtes-vous sûr de vouloir supprimer cette grille d\'inspection ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
     
     try {
       await apiDelete(tenantSlug, `/prevention/grilles-inspection/${grilleId}`);

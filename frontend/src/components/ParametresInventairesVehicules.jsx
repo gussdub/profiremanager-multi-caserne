@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import ImageUpload from './ImageUpload';
+import { useConfirmDialog } from './ui/ConfirmDialog';
 import {
   DndContext,
   closestCenter,
@@ -378,6 +379,7 @@ const SortableSection = ({
 };
 
 const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
+  const { confirm } = useConfirmDialog();
   const [modeles, setModeles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -657,7 +659,13 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
   };
 
   const supprimerModele = async (modeleId) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce modèle ?')) return;
+    const confirmed = await confirm({
+      title: 'Supprimer le modèle',
+      message: 'Êtes-vous sûr de vouloir supprimer ce modèle d\'inventaire ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
 
     try {
       await apiDelete(tenantSlug, `/parametres/modeles-inventaires-vehicules/${modeleId}`);

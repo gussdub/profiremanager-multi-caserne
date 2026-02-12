@@ -891,9 +891,13 @@ const SuperAdminDashboard = ({ onLogout }) => {
   };
 
   const handleDeleteSftpConfig = async () => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer la configuration SFTP ?")) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: 'Supprimer la configuration SFTP',
+      message: 'Êtes-vous sûr de vouloir supprimer la configuration SFTP ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
     
     try {
       const token = getToken();

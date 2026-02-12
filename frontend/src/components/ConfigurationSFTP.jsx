@@ -4,12 +4,14 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { useToast } from '../hooks/use-toast';
+import { useConfirmDialog } from './ui/ConfirmDialog';
 import { useTenant } from '../contexts/TenantContext';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 
 const ConfigurationSFTP = ({ user }) => {
   const { tenantSlug } = useTenant();
   const { toast } = useToast();
+  const { confirm } = useConfirmDialog();
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -258,9 +260,13 @@ const ConfigurationSFTP = ({ user }) => {
   };
 
   const handleDelete = async () => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer la configuration SFTP ?")) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: 'Supprimer la configuration SFTP',
+      message: 'Êtes-vous sûr de vouloir supprimer la configuration SFTP ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
     
     try {
       await apiDelete(tenantSlug, '/sftp/config');

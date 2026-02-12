@@ -207,7 +207,13 @@ const CarteApprovisionnementEau = ({ user }) => {
 
   // Supprimer un point
   const deletePoint = async (pointId) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce point d\'eau ?')) return;
+    const confirmed = await confirm({
+      title: 'Supprimer le point d\'eau',
+      message: 'Êtes-vous sûr de vouloir supprimer ce point d\'eau ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
     
     try {
       await apiDelete(tenantSlug, `/points-eau/${pointId}`);
