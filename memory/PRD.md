@@ -17,6 +17,12 @@ Application multi-tenant de gestion pour les services d'incendie du Québec, inc
   - Fichiers corrigés: ParametresActifs.jsx, ParametresInventairesVehicules.jsx, SuperAdminDashboard.js, ConfigurationSFTP.jsx, GrillesInspectionComponents.jsx, CarteApprovisionnementEau.jsx, ApprovisionnementEau.jsx
   - Tests automatisés passés à 100%
 
+- ✅ **Uniformisation des emails** - COMPLÉTÉ
+  - Tous les templates d'emails utilisent maintenant le même design avec le logo ProFireManager officiel
+  - Fonction helper `get_email_template()` créée pour standardiser le header/footer
+  - Fichiers modifiés: `server.py`, `services/email_service.py`, `utils/emails.py`, `routes/dependencies.py`
+  - Lien "Voir dans l'application" corrigé pour inclure le tenant_slug
+
 ### Sessions Précédentes
 - ✅ Correction des exports PDF/Excel corrompus
 - ✅ Mise à jour de l'algorithme CNPI vers TF-IDF/Cosine Similarity
@@ -26,6 +32,12 @@ Application multi-tenant de gestion pour les services d'incendie du Québec, inc
 ## Fichiers Clés du Système de Dialogue
 - `frontend/src/components/ui/ConfirmDialog.jsx` - Composant et Provider
 - `frontend/src/App.js` - Provider monté globalement
+
+## Fichiers Clés des Templates d'Email
+- `backend/server.py` - Constante LOGO_URL et helpers get_email_header()/get_email_footer()
+- `backend/services/email_service.py` - Fonction get_email_template() et templates standardisés
+- `backend/utils/emails.py` - Templates pour alertes bornes et inventaires véhicules
+- `backend/routes/dependencies.py` - Passage du tenant_slug dans les notifications email
 
 ## Tâches en Attente
 
@@ -40,7 +52,9 @@ Application multi-tenant de gestion pour les services d'incendie du Québec, inc
 ## Intégrations Tierces
 - SFTP Server pour le polling de fichiers
 - Scikit-learn pour les fonctionnalités ML
+- Resend API pour l'envoi d'emails
 
 ## Notes Techniques
 - Toujours utiliser `useConfirmDialog` au lieu de `window.confirm` (environnement iframe)
 - data-testid pour les tests: confirm-dialog, confirm-dialog-cancel, confirm-dialog-confirm
+- Logo officiel ProFireManager: https://customer-assets.emergentagent.com/job_fireshift-manager/artifacts/6vh2i9cz_05_Icone_Flamme_Rouge_Bordure_D9072B_VISIBLE.png
