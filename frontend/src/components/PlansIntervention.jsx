@@ -3,9 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import axios from 'axios';
 import { buildApiUrl, getTenantToken } from '../utils/api';
+import { useConfirmDialog } from './ui/ConfirmDialog';
 import PlanInterventionBuilder from './PlanInterventionBuilder';
 
 const PlansIntervention = ({ tenantSlug, filteredBatimentId, setFilteredBatimentId }) => {
+  const { confirm } = useConfirmDialog();
   const [plans, setPlans] = useState([]);
   const [batiments, setBatiments] = useState([]);
   const [loading, setLoading] = useState(true);
