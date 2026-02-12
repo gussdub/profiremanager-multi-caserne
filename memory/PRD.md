@@ -32,6 +32,13 @@ Application de gestion pour les services d'incendie incluant :
 
 ## Changelog
 
+### 2024-12-XX (Current Session)
+- **Bug Fix: Fichiers PDF/Excel corrompus lors de l'export**
+  - Cause: Double header `Content-Disposition` dans `FileResponse` (paramètre `filename=` + header personnalisé)
+  - Solution: Suppression du header `Content-Disposition` redondant dans la fonction `download_temp_export`
+  - Fichier modifié: `backend/routes/rapports.py` ligne ~1367-1405
+  - Les exports PDF et Excel fonctionnent maintenant correctement
+
 ### 2026-02-12
 - **Notifications - Rapports d'intervention renvoyés pour révision**
   - Ajout de la notification automatique aux rédacteurs assignés quand un rapport est retourné pour révision
