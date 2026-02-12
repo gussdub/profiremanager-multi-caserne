@@ -264,7 +264,13 @@ const ParametresSecteurs = ({ tenantSlug, toast }) => {
 
   // Initialiser les secteurs par défaut
   const handleInitDefault = async () => {
-    if (!window.confirm("Voulez-vous créer les secteurs par défaut (5 zones) ?")) return;
+    const confirmed = await confirm({
+      title: 'Créer les secteurs par défaut',
+      message: 'Voulez-vous créer les secteurs par défaut (5 zones) ?',
+      variant: 'info',
+      confirmText: 'Créer'
+    });
+    if (!confirmed) return;
     
     try {
       setSaving(true);
