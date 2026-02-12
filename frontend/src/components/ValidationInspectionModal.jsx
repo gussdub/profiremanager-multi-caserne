@@ -219,13 +219,19 @@ const ValidationInspectionModal = ({
       
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `avis_${avisGenere.numero_avis}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      
+      // Utiliser iframe pour ouvrir la fenêtre d'impression
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = url;
+      document.body.appendChild(iframe);
+      iframe.onload = () => {
+        iframe.contentWindow.print();
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+          window.URL.revokeObjectURL(url);
+        }, 1000);
+      };
       
     } catch (error) {
       toast?.({
