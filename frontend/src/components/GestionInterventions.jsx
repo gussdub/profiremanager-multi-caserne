@@ -27,6 +27,7 @@ import { CSS } from '@dnd-kit/utilities';
 // Composants extraits
 import SectionBatiment from './interventions/SectionBatiment';
 import SectionIdentification from './interventions/SectionIdentification';
+import FaussesAlarmesView from './interventions/FaussesAlarmesView';
 import SectionRessources from './interventions/SectionRessources';
 import SectionDSI from './interventions/SectionDSI';
 import SectionProtection from './interventions/SectionProtection';
