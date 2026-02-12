@@ -313,38 +313,29 @@ const HistoriqueRondesSecurite = ({ vehicule, onClose, onContreSignerClick }) =>
                               const token = localStorage.getItem(`${tenantSlug}_token`);
                               const pdfUrl = `${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/actifs/rondes-securite/${ronde.id}/export-pdf`;
                               
-                              // Détecter si on est sur iOS ou Android
-                              const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-                              const isAndroid = /Android/.test(navigator.userAgent);
-                              const isMobile = isIOS || isAndroid;
+                              const response = await fetch(pdfUrl, {
+                                headers: {
+                                  'Authorization': `Bearer ${token}`
+                                }
+                              });
                               
-                              if (isMobile) {
-                                // Sur mobile: ouvrir dans un nouvel onglet avec le token dans l'URL
-                                // Créer une URL avec le token en paramètre pour l'authentification
-                                const urlWithAuth = `${pdfUrl}?token=${encodeURIComponent(token)}`;
-                                window.open(urlWithAuth, '_blank');
-                              } else {
-                                // Sur desktop: téléchargement classique
-                                const response = await fetch(pdfUrl, {
-                                  headers: {
-                                    'Authorization': `Bearer ${token}`
-                                  }
-                                });
-                                
-                                if (!response.ok) throw new Error('Erreur téléchargement PDF');
-                                
-                                const blob = await response.blob();
-                                const url = window.URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                const dateLocal = parseDateLocal(ronde.date);
-                                const dateFormatted = dateLocal.toISOString().split('T')[0];
-                                a.download = `ronde_securite_${vehicule.nom}_${dateFormatted}.pdf`;
-                                document.body.appendChild(a);
-                                a.click();
-                                window.URL.revokeObjectURL(url);
-                                document.body.removeChild(a);
-                              }
+                              if (!response.ok) throw new Error('Erreur téléchargement PDF');
+                              
+                              const blob = await response.blob();
+                              const url = window.URL.createObjectURL(blob);
+                              
+                              // Utiliser iframe pour ouvrir la fenêtre d'impression
+                              const iframe = document.createElement('iframe');
+                              iframe.style.display = 'none';
+                              iframe.src = url;
+                              document.body.appendChild(iframe);
+                              iframe.onload = () => {
+                                iframe.contentWindow.print();
+                                setTimeout(() => {
+                                  document.body.removeChild(iframe);
+                                  window.URL.revokeObjectURL(url);
+                                }, 1000);
+                              };
                             } catch (error) {
                               console.error('Erreur PDF:', error);
                               alert('❌ Erreur lors du téléchargement du PDF. Veuillez réessayer.');
