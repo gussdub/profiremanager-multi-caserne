@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://download-regression.preview.emergentagent.com
+- **URL** : https://alert-migration.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://download-regression.preview.emergentagent.com"
+  "apiUrl": "https://alert-migration.preview.emergentagent.com"
 }
 ```
 
