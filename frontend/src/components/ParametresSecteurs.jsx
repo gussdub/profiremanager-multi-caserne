@@ -49,6 +49,7 @@ if (typeof window !== 'undefined') {
  * ParametresSecteurs - Gestion des secteurs d'intervention avec carte
  */
 const ParametresSecteurs = ({ tenantSlug, toast }) => {
+  const { confirm } = useConfirmDialog();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [secteurs, setSecteurs] = useState([]);
