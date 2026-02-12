@@ -2883,7 +2883,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
         </div>
       )}
 
-      {/* Modal de téléchargement PDF/Excel */}
+      {/* Modal de téléchargement PDF/Excel (fallback si téléchargement auto échoue) */}
       {showPreviewModal && previewDataUrl && (
         <div 
           className="modal-overlay" 
@@ -2947,13 +2947,47 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                 Votre fichier {previewType === 'pdf' ? 'PDF' : 'Excel'} est prêt !
               </p>
               
-              {/* Bouton principal: Copier le lien */}
+              {/* Bouton principal: Ouvrir/Télécharger */}
+              <a
+                href={previewDataUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  padding: '1rem 2rem',
+                  background: '#16a34a',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  width: '100%',
+                  maxWidth: '300px',
+                  textDecoration: 'none',
+                  marginBottom: '0.75rem'
+                }}
+                onClick={() => {
+                  toast({
+                    title: "✅ Ouverture du fichier",
+                    description: "Le fichier s'ouvre dans un nouvel onglet",
+                    variant: "success"
+                  });
+                }}
+              >
+                🔗 Ouvrir le fichier
+              </a>
+              
+              {/* Bouton secondaire: Copier le lien */}
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(previewDataUrl).then(() => {
                     toast({
                       title: "✅ Lien copié !",
-                      description: "Collez-le dans un nouvel onglet pour télécharger",
+                      description: "Vous pouvez le coller dans un nouvel onglet",
                       variant: "success"
                     });
                   });
@@ -2963,28 +2997,19 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '0.5rem',
-                  padding: '1rem 2rem',
-                  background: '#dc2626',
-                  color: 'white',
-                  border: 'none',
+                  padding: '0.75rem 1.5rem',
+                  background: 'transparent',
+                  color: '#6b7280',
+                  border: '1px solid #e5e7eb',
                   borderRadius: '8px',
-                  fontSize: '1rem',
-                  fontWeight: '600',
+                  fontSize: '0.9rem',
                   cursor: 'pointer',
                   width: '100%',
                   maxWidth: '300px'
                 }}
               >
-                📋 Copier le lien de téléchargement
+                📋 Copier le lien
               </button>
-              
-              <p style={{ 
-                marginTop: '1rem', 
-                fontSize: '0.85rem', 
-                color: '#6b7280'
-              }}>
-                Puis ouvrez un <strong>nouvel onglet</strong> et collez le lien
-              </p>
             </div>
           </div>
         </div>
