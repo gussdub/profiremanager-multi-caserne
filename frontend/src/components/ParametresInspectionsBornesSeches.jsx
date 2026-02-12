@@ -435,6 +435,7 @@ const ParametresInspectionsBornesSeches = ({ tenantSlug }) => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showEditeur, setShowEditeur] = useState(false);
+  const { confirm } = useConfirmDialog();
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -519,8 +520,14 @@ const ParametresInspectionsBornesSeches = ({ tenantSlug }) => {
   };
 
   // Supprimer une section
-  const supprimerSection = (sectionIndex) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette section ?')) {
+  const supprimerSection = async (sectionIndex) => {
+    const confirmed = await confirm({
+      title: 'Supprimer la section',
+      message: 'Êtes-vous sûr de vouloir supprimer cette section ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (confirmed) {
       const newSections = modeleEnCours.sections.filter((_, i) => i !== sectionIndex);
       setModeleEnCours({ ...modeleEnCours, sections: newSections });
     }
@@ -633,7 +640,13 @@ const ParametresInspectionsBornesSeches = ({ tenantSlug }) => {
 
   // Supprimer un modèle
   const supprimerModele = async (modeleId) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce modèle ?')) return;
+    const confirmed = await confirm({
+      title: 'Supprimer le modèle',
+      message: 'Êtes-vous sûr de vouloir supprimer ce modèle ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
     
     try {
       await apiDelete(tenantSlug, `/bornes-seches/modeles-inspection/${modeleId}`);
@@ -682,8 +695,14 @@ const ParametresInspectionsBornesSeches = ({ tenantSlug }) => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <div>
             <button
-              onClick={() => {
-                if (window.confirm('Quitter sans sauvegarder ?')) {
+              onClick={async () => {
+                const confirmed = await confirm({
+                  title: 'Quitter',
+                  message: 'Quitter sans sauvegarder ?',
+                  variant: 'warning',
+                  confirmText: 'Quitter'
+                });
+                if (confirmed) {
                   setShowEditeur(false);
                   setModeleEnCours(null);
                 }
