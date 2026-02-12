@@ -2326,7 +2326,8 @@ const Planning = () => {
                   <div className="garde-details-meta">
                     <span>⏰ {selectedGardeDetails.typeGarde.heure_debut} - {selectedGardeDetails.typeGarde.heure_fin}</span>
                     <span>👥 {selectedGardeDetails.typeGarde.personnel_requis} personnel requis</span>
-                    {selectedGardeDetails.typeGarde.officier_obligatoire && (() => {
+                    {/* Toujours afficher le statut officier */}
+                    {selectedGardeDetails.typeGarde.officier_obligatoire ? (() => {
                       const hasOfficer = selectedGardeDetails.personnelAssigne.some(u => isUserOfficer(u));
                       return (
                         <span style={{
@@ -2339,7 +2340,17 @@ const Planning = () => {
                           {hasOfficer ? '✅ Officier présent' : '⚠️ Officier manquant'}
                         </span>
                       );
-                    })()}
+                    })() : (
+                      <span style={{
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '4px',
+                        background: '#F3F4F6',
+                        color: '#6B7280',
+                        fontSize: '0.85rem'
+                      }}>
+                        Officier requis: Non
+                      </span>
+                    )}
                     {selectedGardeDetails.typeGarde.est_garde_externe && (
                       <span className="badge-externe">🏠 Garde Externe</span>
                     )}
