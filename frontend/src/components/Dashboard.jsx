@@ -280,15 +280,37 @@ const Dashboard = ({ setCurrentPage }) => {
 
   return (
     <div className="dashboard-page" style={{ maxWidth: '1400px', margin: '0 auto' }}>
-      {/* En-tête */}
+      {/* En-tête avec bouton de diffusion */}
       <div className="dashboard-header" style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: '700', color: '#1e293b' }}>
-          👋 Bienvenue, {user?.prenom || 'Utilisateur'}
-        </h1>
-        <p style={{ color: '#64748b', marginTop: '0.5rem' }}>
-          {tenant?.nom || 'ProFireManager'} - {new Date().toLocaleDateString('fr-CA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-        </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h1 style={{ fontSize: '1.75rem', fontWeight: '700', color: '#1e293b' }}>
+              👋 Bienvenue, {user?.prenom || 'Utilisateur'}
+            </h1>
+            <p style={{ color: '#64748b', marginTop: '0.5rem' }}>
+              {tenant?.nom || 'ProFireManager'} - {new Date().toLocaleDateString('fr-CA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
+          </div>
+          {/* Bouton de diffusion pour admins/superviseurs */}
+          {canBroadcast && (
+            <BroadcastButton 
+              onClick={() => setShowBroadcastModal(true)} 
+              currentUser={user} 
+            />
+          )}
+        </div>
       </div>
+
+      {/* Bannière de message broadcast */}
+      <BroadcastBanner tenantSlug={tenantSlug} currentUser={user} />
+
+      {/* Modale de diffusion */}
+      <BroadcastModal 
+        isOpen={showBroadcastModal}
+        onClose={() => setShowBroadcastModal(false)}
+        tenantSlug={tenantSlug}
+        currentUser={user}
+      />
 
       {/* Alertes Équipements */}
       <EquipementAlertesSection alertesEquipements={alertesEquipements} formatDate={formatDate} onNavigate={(lien) => {
