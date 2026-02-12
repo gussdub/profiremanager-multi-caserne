@@ -379,7 +379,10 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
         prime_diner: repasAuto.diner,
         prime_souper: repasAuto.souper,
         utilise_fonction_superieure: false,
-        is_manual: true
+        is_manual: true,
+        // Heures partielles - pré-remplies avec les heures de l'intervention
+        heure_arrivee: heureDebut || null,
+        heure_depart: heureFin || null
       };
     });
     
