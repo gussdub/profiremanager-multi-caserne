@@ -197,15 +197,21 @@ const Rapports = () => {
       
       const blob = await response.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = `rapport_${typeRapport}_${new Date().toISOString().split('T')[0]}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(downloadUrl);
       
-      toast({ title: "Succès", description: `Rapport PDF téléchargé` });
+      // Utiliser iframe pour ouvrir la fenêtre d'impression
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = downloadUrl;
+      document.body.appendChild(iframe);
+      iframe.onload = () => {
+        iframe.contentWindow.print();
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+          window.URL.revokeObjectURL(downloadUrl);
+        }, 1000);
+      };
+      
+      toast({ title: "Succès", description: `Fenêtre d'impression ouverte` });
     } catch (error) {
       toast({ title: "Erreur", description: "Impossible d'exporter le PDF", variant: "destructive" });
     }
