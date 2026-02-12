@@ -599,8 +599,16 @@ async def start_notification_scheduler():
         replace_existing=True
     )
     
+    # Job pour vérifier les délégations de responsabilités (début/fin de congés)
+    scheduler.add_job(
+        job_verifier_delegations,
+        CronTrigger(hour=7, minute=0),  # Tous les jours à 7h00
+        id='check_delegations',
+        replace_existing=True
+    )
+    
     scheduler.start()
-    logging.info("✅ Scheduler de notifications automatiques démarré (planning + équipements + disponibilités + paiements + inspections EPI)")
+    logging.info("✅ Scheduler de notifications automatiques démarré (planning + équipements + disponibilités + paiements + inspections EPI + délégations)")
 
 
 async def job_check_overdue_payments():
