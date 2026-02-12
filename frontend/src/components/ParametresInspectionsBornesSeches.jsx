@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import ImageUpload from './ImageUpload';
+import { useConfirmDialog } from './ui/ConfirmDialog';
 import {
   DndContext,
   closestCenter,

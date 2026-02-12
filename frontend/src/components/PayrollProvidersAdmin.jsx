@@ -4,6 +4,7 @@ import { Input } from './ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { toast } from 'sonner';
 import { Plus, Edit2, Trash2, GripVertical, Save, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { useConfirmDialog } from './ui/ConfirmDialog';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 

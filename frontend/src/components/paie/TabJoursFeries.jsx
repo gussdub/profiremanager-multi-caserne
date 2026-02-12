@@ -5,6 +5,7 @@ import {
   Calendar, Plus, Edit, Trash2, Check, X, AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirmDialog } from '../ui/ConfirmDialog';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 

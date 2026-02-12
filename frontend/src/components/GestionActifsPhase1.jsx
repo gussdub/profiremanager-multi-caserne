@@ -3,6 +3,7 @@ import axios from 'axios';
 import InventairesTab from './GestionInventaires';
 import { useTenant } from '../contexts/TenantContext';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
+import { useConfirmDialog } from './ui/ConfirmDialog';
 
 const GestionActifs = ({ user, ModuleEPI }) => {
   const [activeTab, setActiveTab] = useState('vehicules');

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiGet, apiPost, apiPut } from '../utils/api';
+import { useConfirmDialog } from './ui/ConfirmDialog';
 
 const Debogage = () => {
   const [activeTab, setActiveTab] = useState('bugs'); // bugs ou features

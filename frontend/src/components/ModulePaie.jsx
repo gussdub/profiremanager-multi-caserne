@@ -6,6 +6,7 @@ import {
   DollarSign, 
   RefreshCw
 } from 'lucide-react';
+import { useConfirmDialog } from './ui/ConfirmDialog';
 import TabParametres from './paie/TabParametres';
 import TabExport from './paie/TabExport';
 import TabFeuilles from './paie/TabFeuilles';
