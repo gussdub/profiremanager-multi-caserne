@@ -454,9 +454,13 @@ const ModuleEPI = ({ user }) => {
   
   // Corriger les types EPI
   const handleFixTypes = async () => {
-    if (!window.confirm(`Voulez-vous corriger ${fixTypesStatus.count_to_fix} EPI(s) ?\n\nCeci va créer automatiquement les types manquants et mettre à jour les EPI.`)) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: 'Corriger les types EPI',
+      message: `Voulez-vous corriger ${fixTypesStatus.count_to_fix} EPI(s) ?\n\nCeci va créer automatiquement les types manquants et mettre à jour les EPI.`,
+      variant: 'warning',
+      confirmText: 'Corriger'
+    });
+    if (!confirmed) return;
     
     setFixingTypes(true);
     try {
@@ -497,15 +501,21 @@ const ModuleEPI = ({ user }) => {
   
   const handleSupprimerTousEpis = async () => {
     // Première confirmation
-    const confirmation1 = window.confirm(
-      `⚠️ ATTENTION ⚠️\n\nVoulez-vous vraiment supprimer TOUS les ${epis.length} EPI ?\n\nCette action est IRRÉVERSIBLE !`
-    );
+    const confirmation1 = await confirm({
+      title: '⚠️ ATTENTION',
+      message: `Voulez-vous vraiment supprimer TOUS les ${epis.length} EPI ?\n\nCette action est IRRÉVERSIBLE !`,
+      variant: 'danger',
+      confirmText: 'Continuer'
+    });
     if (!confirmation1) return;
     
     // Deuxième confirmation
-    const confirmation2 = window.confirm(
-      `🚨 DERNIÈRE CONFIRMATION 🚨\n\nÊtes-vous ABSOLUMENT certain de vouloir supprimer définitivement ${epis.length} EPI ?\n\nCliquez OK pour confirmer la suppression.`
-    );
+    const confirmation2 = await confirm({
+      title: '🚨 DERNIÈRE CONFIRMATION',
+      message: `Êtes-vous ABSOLUMENT certain de vouloir supprimer définitivement ${epis.length} EPI ?\n\nCliquez "Supprimer tout" pour confirmer.`,
+      variant: 'danger',
+      confirmText: 'Supprimer tout'
+    });
     if (!confirmation2) return;
     
     setSupprimantTous(true);
