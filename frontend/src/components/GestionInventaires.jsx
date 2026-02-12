@@ -156,6 +156,7 @@ const InventairesTab = ({ tenantSlug }) => {
           onEdit={openModeleModal}
           tenantSlug={tenantSlug}
           fetchModeles={fetchModeles}
+          confirm={confirm}
         />
       ) : (
         <InspectionsView 
@@ -163,6 +164,7 @@ const InventairesTab = ({ tenantSlug }) => {
           vehicules={vehicules}
           tenantSlug={tenantSlug}
           fetchInspections={fetchInspections}
+          confirm={confirm}
         />
       )}
 
