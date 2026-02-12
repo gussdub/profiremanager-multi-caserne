@@ -1787,6 +1787,37 @@ async def envoyer_notifications_planning_automatique(tenant: dict, periode_debut
         logging.error(f"Erreur dans envoyer_notifications_planning_automatique: {str(e)}", exc_info=True)
         raise
 
+
+async def job_verifier_delegations():
+    """
+    Job qui vérifie les délégations de responsabilités.
+    - Détecte les congés qui commencent aujourd'hui et active les délégations
+    - Détecte les congés qui se terminent et désactive les délégations
+    S'exécute tous les jours à 7h00.
+    """
+    from routes.dependencies import verifier_et_mettre_a_jour_delegations
+    
+    try:
+        logging.info("📋 Vérification des délégations de responsabilités...")
+        
+        # Récupérer tous les tenants actifs
+        tenants = await db.tenants.find({"status": {"$ne": "suspended"}}).to_list(None)
+        
+        delegations_activees = 0
+        delegations_terminees = 0
+        
+        for tenant in tenants:
+            try:
+                await verifier_et_mettre_a_jour_delegations(tenant["id"])
+            except Exception as e:
+                logging.warning(f"Erreur vérification délégations pour tenant {tenant.get('slug', tenant['id'])}: {e}")
+        
+        logging.info(f"✅ Vérification des délégations terminée pour {len(tenants)} tenant(s)")
+        
+    except Exception as e:
+        logging.error(f"❌ Erreur dans job_verifier_delegations: {e}", exc_info=True)
+
+
 async def job_verifier_timeouts_remplacements():
     """
     Job périodique qui vérifie les timeouts des demandes de remplacement
