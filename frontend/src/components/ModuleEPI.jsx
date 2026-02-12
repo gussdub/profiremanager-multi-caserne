@@ -647,7 +647,13 @@ const ModuleEPI = ({ user }) => {
   };
   
   const handleDeleteEPI = async (epiId) => {
-    if (!window.confirm('Supprimer cet EPI ?')) return;
+    const confirmed = await confirm({
+      title: 'Supprimer cet EPI',
+      message: 'Supprimer cet EPI ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
     try {
       await apiDelete(tenantSlug, `/epi/${epiId}`);
       toast({ title: "Succès", description: "EPI supprimé" });
