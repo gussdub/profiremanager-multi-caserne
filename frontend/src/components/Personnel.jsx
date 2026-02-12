@@ -550,11 +550,16 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       const data = await response.json();
       
       if (data.success && data.download_url) {
-        // Afficher la modale avec l'URL de téléchargement direct
-        setPreviewDataUrl(data.download_url);
-        setPreviewFilename(data.filename);
-        setPreviewType(exportType);
-        setShowPreviewModal(true);
+        // Tenter le téléchargement automatique d'abord
+        const downloadSuccess = await attemptDirectDownload(data.download_url, data.filename);
+        
+        if (!downloadSuccess) {
+          // Fallback: afficher la modale avec le lien
+          setPreviewDataUrl(data.download_url);
+          setPreviewFilename(data.filename);
+          setPreviewType(exportType);
+          setShowPreviewModal(true);
+        }
       } else {
         throw new Error('URL de téléchargement non disponible');
       }
@@ -567,6 +572,39 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
         description: `Impossible d'exporter le ${exportType.toUpperCase()}`, 
         variant: "destructive" 
       });
+    }
+  };
+  
+  // Fonction pour tenter le téléchargement automatique
+  const attemptDirectDownload = async (downloadUrl, filename) => {
+    try {
+      // Vérifier si on est dans un iframe (environnement preview)
+      const isInIframe = window.self !== window.top;
+      
+      if (isInIframe) {
+        // En mode preview/iframe, on ne peut pas télécharger directement
+        return false;
+      }
+      
+      // En production (pas d'iframe), télécharger directement
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "✅ Téléchargement lancé",
+        description: filename,
+        variant: "success"
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Erreur téléchargement direct:', error);
+      return false;
     }
   };
 
