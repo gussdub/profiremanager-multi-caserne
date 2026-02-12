@@ -216,30 +216,21 @@ class EmailService:
             <div style="text-align: center; margin: 30px 0;">
                 <a href="{action_url}" 
                    style="background: #dc2626; color: white; padding: 12px 30px; 
-                          text-decoration: none; border-radius: 6px; font-weight: bold;">
+                          text-decoration: none; border-radius: 8px; font-weight: bold;">
                     {action_text}
                 </a>
             </div>
             """
         
-        html = f"""
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: #dc2626; color: white; padding: 20px; text-align: center;">
-                <h1 style="margin: 0;">🔥 ProFireManager</h1>
+        content = f"""
+            <div style="background: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin-bottom: 20px;">
+                <strong style="color: #dc2626;">⚠️ {alert_type}</strong>
             </div>
-            <div style="padding: 30px; background: #f9fafb;">
-                <div style="background: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin-bottom: 20px;">
-                    <strong style="color: #dc2626;">⚠️ {alert_type}</strong>
-                </div>
-                <h2 style="color: #1f2937;">{alert_title}</h2>
-                <p style="color: #4b5563;">{alert_message}</p>
-                {action_button}
-            </div>
-            <div style="padding: 20px; text-align: center; color: #9ca3af; font-size: 12px;">
-                © {datetime.now().year} ProFireManager
-            </div>
-        </div>
+            <p style="color: #4b5563;">{alert_message}</p>
+            {action_button}
         """
+        
+        html = get_email_template(content, alert_title)
         
         return await self.send_email(
             to=to_emails,
@@ -263,31 +254,26 @@ class EmailService:
         if defauts:
             defauts_list = "<ul>" + "".join([f"<li style='color: #dc2626;'>{d}</li>" for d in defauts]) + "</ul>"
         
-        html = f"""
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: #dc2626; color: white; padding: 20px; text-align: center;">
-                <h1 style="margin: 0;">🔥 ProFireManager</h1>
+        content = f"""
+            <div style="background: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin-bottom: 20px;">
+                <strong style="color: #dc2626;">⚠️ Défaut détecté lors d'une inspection</strong>
             </div>
-            <div style="padding: 30px; background: #f9fafb;">
-                <div style="background: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin-bottom: 20px;">
-                    <strong style="color: #dc2626;">⚠️ Défaut détecté lors d'une inspection</strong>
-                </div>
-                
-                <h3 style="color: #1f2937;">Point d'eau: {borne_info.get('numero', 'N/A')}</h3>
-                <p style="color: #4b5563;">
-                    <strong>Adresse:</strong> {borne_info.get('adresse', 'Non spécifiée')}<br>
-                    <strong>Type:</strong> {borne_info.get('type', 'Non spécifié')}<br>
-                    <strong>Inspecteur:</strong> {inspecteur_nom}<br>
-                    <strong>Date:</strong> {inspection_info.get('date', datetime.now().strftime('%Y-%m-%d %H:%M'))}
-                </p>
-                
-                <h4 style="color: #dc2626;">Défauts constatés:</h4>
-                {defauts_list or "<p>Voir les détails dans l'application</p>"}
-                
-                {f"<p><strong>Commentaires:</strong> {inspection_info.get('commentaires', '')}</p>" if inspection_info.get('commentaires') else ""}
-                
-                <div style="text-align: center; margin: 30px 0;">
-                    <a href="{self.frontend_url}/{tenant_slug}/prevention" 
+            
+            <h3 style="color: #1f2937;">Point d'eau: {borne_info.get('numero', 'N/A')}</h3>
+            <p style="color: #4b5563;">
+                <strong>Adresse:</strong> {borne_info.get('adresse', 'Non spécifiée')}<br>
+                <strong>Type:</strong> {borne_info.get('type', 'Non spécifié')}<br>
+                <strong>Inspecteur:</strong> {inspecteur_nom}<br>
+                <strong>Date:</strong> {inspection_info.get('date', datetime.now().strftime('%Y-%m-%d %H:%M'))}
+            </p>
+            
+            <h4 style="color: #dc2626;">Défauts constatés:</h4>
+            {defauts_list or "<p>Voir les détails dans l'application</p>"}
+            
+            {f"<p><strong>Commentaires:</strong> {inspection_info.get('commentaires', '')}</p>" if inspection_info.get('commentaires') else ""}
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{self.frontend_url}/{tenant_slug}/prevention" 
                        style="background: #dc2626; color: white; padding: 12px 30px; 
                               text-decoration: none; border-radius: 6px; font-weight: bold;">
                         Voir dans l'application
