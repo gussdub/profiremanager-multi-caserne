@@ -32,6 +32,17 @@ Application de gestion pour les services d'incendie incluant :
 
 ## Changelog
 
+### 2026-02-12
+- **Notifications - Rapports d'intervention renvoyés pour révision**
+  - Ajout de la notification automatique aux rédacteurs assignés quand un rapport est retourné pour révision
+  - Fichier modifié: `backend/routes/interventions.py` - fonction `validate_intervention`
+  
+- **Notifications - Véhicules/Matériels hors service**
+  - Création de la fonction `notifier_vehicule_ou_materiel_hors_service` dans `actifs.py`
+  - Création de la fonction `notifier_materiel_hors_service` dans `materiel.py`
+  - Notification push + email + in-app envoyée à TOUS les utilisateurs quand un véhicule ou matériel est mis hors service
+  - Statuts déclencheurs: "hors_service", "maintenance", "en_maintenance", "a_reparer"
+
 ### 2026-02-11
 - **Bug Fix**: Suppression des console.log de débogage dans App.js
   - Retiré `Vérification cr_action: null`
