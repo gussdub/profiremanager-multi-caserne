@@ -24,6 +24,7 @@ const GestionActifs = ({ user, ModuleEPI }) => {
   const [inspectionHistory, setInspectionHistory] = useState([]);
 
   const { tenantSlug } = useTenant();
+  const { confirm } = useConfirmDialog();
 
   useEffect(() => {
     if (activeTab === 'vehicules') {
@@ -114,7 +115,13 @@ const GestionActifs = ({ user, ModuleEPI }) => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cet élément ?')) {
+    const confirmed = await confirm({
+      title: 'Supprimer',
+      message: 'Êtes-vous sûr de vouloir supprimer cet élément ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) {
       return;
     }
 
