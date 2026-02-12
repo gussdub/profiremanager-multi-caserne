@@ -86,6 +86,7 @@ const GestionInterventions = ({ user, tenantSlug }) => {
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { confirm } = useConfirmDialog();
   const { isSuperAdmin } = useTenant();
 
   const API = `${BACKEND_URL}/api/${tenantSlug}`;
