@@ -6098,6 +6098,7 @@ app.include_router(secteurs_router, prefix="/api")  # Module Secteurs d'interven
 app.include_router(utils_router, prefix="/api")  # Module Utils (demo data, repair passwords)
 app.include_router(emails_history_router, prefix="/api")  # Module Historique E-mails
 app.include_router(horaires_personnalises_router, prefix="/api")  # Module Horaires Personnalisés
+app.include_router(broadcast_router, prefix="/api")  # Module Diffusion de messages
 app.include_router(api_router)  # Routes principales (server.py) - DOIT être avant auth_router pour que /admin/auth/login soit traité avant /{tenant_slug}/auth/login
 app.include_router(auth_router, prefix="/api")  # Module Auth (tenant routes)
 app.include_router(pwa_router, prefix="/api")
