@@ -124,15 +124,20 @@ const MaterielEquipementsModule = ({ user }) => {
 
   // Initialiser les catégories par défaut
   const handleInitialiserCategories = async () => {
-    if (!window.confirm('Voulez-vous initialiser les catégories d\'équipements par défaut ?\n\nCeci ajoutera toutes les catégories standards pour un service d\'incendie (APRIA, extincteurs, tuyaux, etc.)')) return;
+    const confirmed = await confirm({
+      title: 'Initialiser les catégories',
+      message: 'Voulez-vous initialiser les catégories d\'équipements par défaut ?\n\nCeci ajoutera toutes les catégories standards pour un service d\'incendie (APRIA, extincteurs, tuyaux, etc.)',
+      variant: 'info',
+      confirmText: 'Initialiser'
+    });
+    if (!confirmed) return;
     
     try {
       setLoading(true);
-      const result = await apiPost(tenantSlug, '/equipements/categories/initialiser');
-      alert(`✅ ${result.message}`);
+      await apiPost(tenantSlug, '/equipements/categories/initialiser');
       fetchData();
     } catch (err) {
-      alert('❌ Erreur: ' + (err.message || 'Erreur inconnue'));
+      console.error('Erreur initialisation:', err);
     } finally {
       setLoading(false);
     }
