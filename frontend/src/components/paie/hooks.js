@@ -329,8 +329,8 @@ export const useCodeMappings = (tenant) => {
     }
   }, [tenant, getToken, fetchCodeMappings]);
 
-  const deleteEventType = useCallback(async (eventTypeId) => {
-    if (!window.confirm('Supprimer ce type d\'heure ?')) return false;
+  const deleteEventType = useCallback(async (eventTypeId, skipConfirmation = false) => {
+    // La confirmation doit être gérée par le composant appelant avec useConfirmDialog
     
     try {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/event-types/${eventTypeId}`, {

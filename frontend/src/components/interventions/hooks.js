@@ -100,8 +100,8 @@ export const useInterventions = (tenantSlug) => {
     }
   }, [tenantSlug, getToken, fetchInterventions]);
 
-  const deleteIntervention = useCallback(async (interventionId) => {
-    if (!window.confirm('Supprimer cette intervention ?')) return false;
+  const deleteIntervention = useCallback(async (interventionId, skipConfirmation = false) => {
+    // La confirmation doit être gérée par le composant appelant avec useConfirmDialog
     
     try {
       const response = await fetch(`${API_URL}/api/${tenantSlug}/interventions/${interventionId}`, {
