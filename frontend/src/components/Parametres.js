@@ -822,7 +822,13 @@ const Parametres = ({ user, tenantSlug }) => {
   };
 
   const handleDeleteGrade = async (gradeId) => {
-    if (!window.confirm("Supprimer ce grade ?")) return;
+    const confirmed = await confirm({
+      title: 'Supprimer le grade',
+      message: 'Supprimer ce grade ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
     
     try {
       await axios.delete(`${API}/grades/${gradeId}`);
