@@ -131,12 +131,16 @@ const GestionInterventions = ({ user, tenantSlug }) => {
   // Paramètre permettant aux employés de consulter le module en lecture seule
   const employeeCanAccessReadOnly = settings?.acces_employes_historique || false;
   
+  // Vérifier si la facturation des fausses alarmes est activée
+  const faussesAlarmesActif = settings?.fausse_alarme_config?.actif || false;
+  
   // Mode lecture seule pour les employés (sauf s'ils sont personnes ressources)
   const isReadOnlyMode = isEmployee && !isDesignatedPerson;
 
   const tabs = [
     { id: 'rapports', label: 'Cartes d\'appel', icon: '📋' },
-    { id: 'fausses-alarmes', label: 'Fausses alarmes', icon: '🚨', adminOnly: true },
+    // Onglet fausses alarmes visible uniquement si activé ET pour admins/superviseurs
+    ...(faussesAlarmesActif && isAdminOrSupervisor ? [{ id: 'fausses-alarmes', label: 'Fausses alarmes', icon: '🚨' }] : []),
     { id: 'conformite-dsi', label: 'Conformité DSI', icon: '📊', validatorsOnly: true },
     { id: 'historique', label: 'Historique', icon: '📚' },
     { id: 'parametres', label: 'Paramètres', icon: '⚙️', adminOnly: true },
