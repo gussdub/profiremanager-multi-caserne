@@ -8,6 +8,7 @@ import { Label } from "./components/ui/label";
 import { Calendar } from "./components/ui/calendar";
 import { useToast } from "./hooks/use-toast";
 import { Toaster } from "./components/ui/toaster";
+import { ConfirmDialogProvider } from "./components/ui/ConfirmDialog";
 import VehiculeQRAction from './components/VehiculeQRAction';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import RemplacementResultat from './components/RemplacementResultat';
