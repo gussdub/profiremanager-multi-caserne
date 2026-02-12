@@ -231,6 +231,21 @@ const Dashboard = ({ setCurrentPage }) => {
         }
       }
 
+      // Charger les délégations reçues (admin/superviseur)
+      if (user?.role === 'admin' || user?.role === 'superviseur') {
+        try {
+          const delegationsResponse = await axios.get(
+            `${API}/${tenantSlug}/delegations/recues`,
+            { headers, timeout: 10000 }
+          );
+          if (delegationsResponse?.data?.delegations_recues) {
+            setDelegationsRecues(delegationsResponse.data.delegations_recues);
+          }
+        } catch (err) {
+          console.log('Délégations non disponibles:', err.message);
+        }
+      }
+
     } catch (error) {
       console.error('Erreur chargement dashboard:', error);
     } finally {
