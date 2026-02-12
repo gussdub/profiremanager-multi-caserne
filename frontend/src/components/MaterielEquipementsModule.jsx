@@ -227,9 +227,14 @@ const MaterielEquipementsModule = ({ user }) => {
   };
 
   const handleDeleteCategorie = async (cat) => {
+    // Message différent pour les catégories système
+    const message = cat.est_predefinit
+      ? `⚠️ Attention : "${cat.nom}" est une catégorie système.\n\nÊtes-vous sûr de vouloir la supprimer ?`
+      : `Voulez-vous vraiment supprimer la catégorie "${cat.nom}" ?`;
+    
     const confirmed = await confirm({
       title: 'Supprimer la catégorie',
-      message: `Voulez-vous vraiment supprimer la catégorie "${cat.nom}" ?`,
+      message: message,
       variant: 'danger',
       confirmText: 'Supprimer'
     });
