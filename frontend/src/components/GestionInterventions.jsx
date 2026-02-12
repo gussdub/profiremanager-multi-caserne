@@ -1275,7 +1275,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
 
 // ==================== ONGLET HISTORIQUE ====================
 
-const TabHistorique = ({ user, tenantSlug, toast, readOnly = false, settings = {}, isSuperAdmin = false }) => {
+const TabHistorique = ({ user, tenantSlug, toast, confirm, readOnly = false, settings = {}, isSuperAdmin = false }) => {
   const [interventions, setInterventions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ status: 'signed', dateFrom: '', dateTo: '' });
