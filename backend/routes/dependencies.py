@@ -664,9 +664,10 @@ async def creer_notification(
         # Envoyer email si activé dans les préférences
         if envoyer_email and email_actif and user.get("email"):
             try:
-                # Récupérer le tenant pour le branding
+                # Récupérer le tenant pour le branding et le slug
                 tenant = await db.tenants.find_one({"id": tenant_id})
                 tenant_nom = tenant.get("nom", "ProFireManager") if tenant else "ProFireManager"
+                tenant_slug = tenant.get("slug", "") if tenant else ""
                 
                 await send_notification_email(
                     to_email=user["email"],
@@ -674,7 +675,8 @@ async def creer_notification(
                     notification_titre=titre,
                     notification_message=message,
                     notification_lien=lien,
-                    user_prenom=user.get("prenom", "")
+                    user_prenom=user.get("prenom", ""),
+                    tenant_slug=tenant_slug
                 )
             except Exception as e:
                 logger.warning(f"Erreur envoi email notification à {user.get('email')}: {e}")
