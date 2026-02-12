@@ -195,17 +195,21 @@ const InventairesTab = ({ tenantSlug }) => {
 };
 
 // Vue des modèles d'inventaire
-const ModelesView = ({ modeles, onEdit, tenantSlug, fetchModeles }) => {
+const ModelesView = ({ modeles, onEdit, tenantSlug, fetchModeles, confirm }) => {
   const handleDelete = async (modeleId) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce modèle ?')) return;
+    const confirmed = await confirm({
+      title: 'Supprimer le modèle',
+      message: 'Êtes-vous sûr de vouloir supprimer ce modèle ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
 
     try {
       await apiDelete(tenantSlug, `/actifs/inventaires/modeles/${modeleId}`);
-      alert('✅ Modèle supprimé avec succès');
       fetchModeles();
     } catch (error) {
-      const errorMessage = error.data?.detail || error.message || 'Erreur inconnue';
-      alert('❌ Erreur lors de la suppression: ' + errorMessage);
+      console.error('Erreur lors de la suppression:', error);
     }
   };
 
