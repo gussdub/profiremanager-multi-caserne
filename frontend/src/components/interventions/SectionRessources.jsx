@@ -626,14 +626,14 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                     <th className="p-2 text-left" style={{ width: '10%' }}>Rempl.</th>
                     <th className="p-2 text-center" style={{ width: '5%' }} title="Fonction supérieure">F.S</th>
                     {checkRepasCouvert('dejeuner') && (
-                      <th className="p-1 text-center" style={{ width: '30px' }}>
+                      <th className="p-2 text-center" style={{ width: '5%' }}>
                         {editMode ? (
                           <label className="flex flex-col items-center cursor-pointer" title="Cocher/décocher tous les déjeuners">
                             <input
                               type="checkbox"
                               checked={areAllRepasChecked('dejeuner')}
                               onChange={(e) => toggleAllRepasType('dejeuner', e.target.checked)}
-                              className="w-3 h-3"
+                              className="w-4 h-4"
                             />
                             <span className="text-xs">Déj</span>
                           </label>
@@ -643,14 +643,14 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                       </th>
                     )}
                     {checkRepasCouvert('diner') && (
-                      <th className="p-1 text-center" style={{ width: '30px' }}>
+                      <th className="p-2 text-center" style={{ width: '5%' }}>
                         {editMode ? (
                           <label className="flex flex-col items-center cursor-pointer" title="Cocher/décocher tous les dîners">
                             <input
                               type="checkbox"
                               checked={areAllRepasChecked('diner')}
                               onChange={(e) => toggleAllRepasType('diner', e.target.checked)}
-                              className="w-3 h-3"
+                              className="w-4 h-4"
                             />
                             <span className="text-xs">Dîn</span>
                           </label>
@@ -660,14 +660,14 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                       </th>
                     )}
                     {checkRepasCouvert('souper') && (
-                      <th className="p-1 text-center" style={{ width: '30px' }}>
+                      <th className="p-2 text-center" style={{ width: '5%' }}>
                         {editMode ? (
                           <label className="flex flex-col items-center cursor-pointer" title="Cocher/décocher tous les soupers">
                             <input
                               type="checkbox"
                               checked={areAllRepasChecked('souper')}
                               onChange={(e) => toggleAllRepasType('souper', e.target.checked)}
-                              className="w-3 h-3"
+                              className="w-4 h-4"
                             />
                             <span className="text-xs">Sou</span>
                           </label>
@@ -676,7 +676,7 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                         )}
                       </th>
                     )}
-                    {editMode && <th className="p-1 text-center" style={{ width: '30px' }}></th>}
+                    {editMode && <th className="p-2 text-center" style={{ width: '4%' }}></th>}
                   </tr>
                 </thead>
                 <tbody>
