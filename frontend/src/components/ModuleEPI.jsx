@@ -6,6 +6,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { useToast } from "../hooks/use-toast";
 import { useTenant } from "../contexts/TenantContext";
+import { useConfirmDialog } from "./ui/ConfirmDialog";
 import MesEPI from "./MesEPI";
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import InspectionUnifieeModal from './InspectionUnifieeModal';
