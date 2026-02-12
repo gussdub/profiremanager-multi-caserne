@@ -209,10 +209,18 @@ const SectionRemisePropriete = ({ intervention, tenantSlug, user, getToken, toas
         toast?.({ title: result.email_envoye ? 'Remise enregistrée et email envoyé' : 'Remise enregistrée', variant: 'success' });
         
         if (result.pdf_base64) {
-          const link = document.createElement('a');
-          link.href = `data:application/pdf;base64,${result.pdf_base64}`;
-          link.download = `remise_propriete_${intervention.external_call_id || 'NA'}.pdf`;
-          link.click();
+          // Utiliser iframe pour ouvrir la fenêtre d'impression
+          const pdfDataUrl = `data:application/pdf;base64,${result.pdf_base64}`;
+          const iframe = document.createElement('iframe');
+          iframe.style.display = 'none';
+          iframe.src = pdfDataUrl;
+          document.body.appendChild(iframe);
+          iframe.onload = () => {
+            iframe.contentWindow.print();
+            setTimeout(() => {
+              document.body.removeChild(iframe);
+            }, 1000);
+          };
         }
         
         setShowForm(false);
