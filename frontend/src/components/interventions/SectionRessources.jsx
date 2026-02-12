@@ -40,12 +40,12 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
   
   // Statuts de présence disponibles
   const statutsPresence = [
-    { value: 'present', label: 'Présent', color: 'bg-green-100 text-green-800' },
-    { value: 'absent_non_paye', label: 'Absent (non-payé)', color: 'bg-red-100 text-red-800' },
-    { value: 'absent_paye', label: 'Absent (payé/maladie)', color: 'bg-orange-100 text-orange-800' },
-    { value: 'remplace', label: 'Remplacé par...', color: 'bg-yellow-100 text-yellow-800' },
-    { value: 'rappele', label: 'Rappelé', color: 'bg-blue-100 text-blue-800' },
-    { value: 'non_disponible', label: 'Non-disponible', color: 'bg-gray-100 text-gray-800' }
+    { value: 'present', label: 'Présent', shortLabel: 'Prés.', color: 'bg-green-100 text-green-800' },
+    { value: 'absent_non_paye', label: 'Absent (non-payé)', shortLabel: 'Abs.NP', color: 'bg-red-100 text-red-800' },
+    { value: 'absent_paye', label: 'Absent (payé/maladie)', shortLabel: 'Abs.P', color: 'bg-orange-100 text-orange-800' },
+    { value: 'remplace', label: 'Remplacé par...', shortLabel: 'Rempl.', color: 'bg-yellow-100 text-yellow-800' },
+    { value: 'rappele', label: 'Rappelé', shortLabel: 'Rapp.', color: 'bg-blue-100 text-blue-800' },
+    { value: 'non_disponible', label: 'Non-disponible', shortLabel: 'N/D', color: 'bg-gray-100 text-gray-800' }
   ];
   
   const API = `${BACKEND_URL}/api/${tenantSlug}`;
