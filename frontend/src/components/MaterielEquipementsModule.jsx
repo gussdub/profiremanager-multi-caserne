@@ -1108,15 +1108,7 @@ const CategoriesTab = ({ categories, equipements, onCreateCategorie, onEditCateg
                       ✏️
                     </button>
                     <button
-                      onClick={() => {
-                        if (cat.est_predefinit) {
-                          if (window.confirm(`⚠️ Attention : "${cat.nom}" est une catégorie système.\n\nÊtes-vous sûr de vouloir la supprimer ?`)) {
-                            onDeleteCategorie(cat);
-                          }
-                        } else {
-                          onDeleteCategorie(cat);
-                        }
-                      }}
+                      onClick={() => onDeleteCategorie(cat)}
                       style={{ padding: '0.25rem 0.5rem', background: '#ef4444', color: 'white', border: 'none', borderRadius: '0.25rem', cursor: 'pointer', fontSize: '0.75rem' }}
                       title="Supprimer la catégorie"
                     >
