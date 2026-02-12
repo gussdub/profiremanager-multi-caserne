@@ -12,6 +12,7 @@ import {
   Building2, Map, Home, AlertTriangle, Check, Eye, Pencil
 } from "lucide-react";
 import { apiGet, apiPost, apiPut, apiDelete } from "../utils/api";
+import { useConfirmDialog } from "./ui/ConfirmDialog";
 
 // Import dynamique de la carte pour éviter les erreurs SSR
 let MapContainer, TileLayer, Polygon, FeatureGroup, useMap;
