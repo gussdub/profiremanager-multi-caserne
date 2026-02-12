@@ -14,6 +14,7 @@ const ParametresInspectionsPiecesFaciales = ({ user }) => {
   const [showEditor, setShowEditor] = useState(false);
   const [editingModele, setEditingModele] = useState(null);
   const [saving, setSaving] = useState(false);
+  const { confirm } = useConfirmDialog();
 
   // État du formulaire d'édition
   const [formData, setFormData] = useState({
@@ -106,7 +107,13 @@ const ParametresInspectionsPiecesFaciales = ({ user }) => {
   };
 
   const handleDelete = async (modeleId) => {
-    if (!window.confirm('Supprimer ce formulaire ?')) return;
+    const confirmed = await confirm({
+      title: 'Supprimer le formulaire',
+      message: 'Supprimer ce formulaire ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
     try {
       await apiDelete(tenantSlug, `/parties-faciales/modeles-inspection/${modeleId}`);
       await fetchModeles();
