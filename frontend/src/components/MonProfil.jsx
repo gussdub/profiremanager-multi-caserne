@@ -10,6 +10,7 @@ import { useToast } from "../hooks/use-toast";
 import { useTenant } from "../contexts/TenantContext";
 import { apiGet, apiPost, apiPut, apiDelete, getTenantToken } from '../utils/api';
 import { useAuth } from "../contexts/AuthContext";
+import { useConfirmDialog } from "./ui/ConfirmDialog";
 import CameraCapture, { isIOS } from "./CameraCapture";
 import SignaturePad from "./ui/SignaturePad";
 
