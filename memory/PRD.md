@@ -50,9 +50,9 @@ Application de gestion pour les services d'incendie incluant :
   - Nouveau composant: `frontend/src/components/ui/ConfirmDialog.jsx`
   - Provider `ConfirmDialogProvider` ajouté dans App.js
   - Hook `useConfirmDialog()` pour une utilisation facile
-  - Migration effectuée pour: Personnel.jsx, Planning.jsx, Parametres.js, Formations.jsx, MonProfil.jsx, ModuleEPI.jsx, GestionInterventions.jsx, GestionActifs.jsx, GestionInventaires.jsx, MesDisponibilites.jsx, ParametresActifs.jsx, Prevention.jsx, MaterielEquipementsModule.jsx
+  - Migration effectuée pour (~85%): Personnel, Planning, Parametres, Formations, MonProfil, ModuleEPI, GestionInterventions, GestionActifs, GestionInventaires, MesDisponibilites, ParametresActifs, Prevention, MaterielEquipementsModule, ReparationsVehicule, PlansIntervention, InspectionComponents, ParametresInspectionsAPRIA, ParametresSecteurs, GestionPreventionnistes, CarteApprovisionnementEau
   - Les confirmations fonctionnent maintenant dans les environnements iframe/sandbox
-  - ~33 occurrences restantes dans d'autres fichiers secondaires
+  - ~23 occurrences restantes dans fichiers secondaires (GaleriePhotosBuilder, ModulePaie, Debogage, etc.)
 
 - **Bug Fix: Erreur lors de l'ajout d'une personne au planning**
   - Cause: `assignation_data.type_garde` n'existait pas (attribut incorrect)
