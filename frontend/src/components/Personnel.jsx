@@ -999,9 +999,14 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   };
 
   const handleDeleteEPI = async (epiId) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cet EPI ?")) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: 'Supprimer cet EPI',
+      message: 'Êtes-vous sûr de vouloir supprimer cet EPI ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    
+    if (!confirmed) return;
 
     try {
       await apiDelete(tenantSlug, `/epi/${epiId}`);
