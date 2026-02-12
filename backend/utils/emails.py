@@ -516,101 +516,80 @@ async def send_inventaire_vehicule_alertes_email(
             
             alertes_html += '</div>'
         
-        # Créer le corps HTML de l'email
-        html_body = f"""
-        <div style="font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
-            <div style="background-color: #ffffff; border-radius: 10px; padding: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                
-                <!-- En-tête avec gradient -->
-                <div style="background: linear-gradient(135deg, #8e44ad 0%, #6c3483 100%); color: #ffffff; padding: 25px; text-align: center; border-radius: 10px 10px 0 0; margin: -30px -30px 25px -30px;">
-                    <h1 style="margin: 0; font-size: 26px; font-weight: 700;">🚨 Alerte Inventaire Véhicule</h1>
-                    <p style="margin: 12px 0 0 0; font-size: 15px; opacity: 0.95;">{len(alertes)} item(s) nécessitent votre attention</p>
-                </div>
-                
-                <!-- Bannière d'alerte -->
-                <div style="background-color: #fef2f2; border-left: 5px solid #dc2626; padding: 18px; margin-bottom: 25px; border-radius: 6px;">
-                    <p style="margin: 0; color: #991b1b; font-weight: 600; font-size: 15px;">
-                        ⚠️ Des items manquants ou défectueux ont été signalés lors de l'inventaire. Veuillez prendre les mesures nécessaires.
-                    </p>
-                </div>
-                
-                <!-- Informations du véhicule -->
-                <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin-bottom: 25px;">
-                    <h2 style="margin: 0 0 15px 0; color: #1f2937; font-size: 18px; font-weight: 600;">🚒 Informations du Véhicule</h2>
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <tr style="border-bottom: 1px solid #e5e7eb;">
-                            <td style="padding: 10px 0; color: #6b7280; font-size: 14px; width: 40%;"><strong>Véhicule :</strong></td>
-                            <td style="padding: 10px 0; color: #1f2937; font-size: 14px; font-weight: 600;">{vehicule_nom}</td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid #e5e7eb;">
-                            <td style="padding: 10px 0; color: #6b7280; font-size: 14px;"><strong>Type :</strong></td>
-                            <td style="padding: 10px 0; color: #1f2937; font-size: 14px;">{vehicule_type}</td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid #e5e7eb;">
-                            <td style="padding: 10px 0; color: #6b7280; font-size: 14px;"><strong>Immatriculation :</strong></td>
-                            <td style="padding: 10px 0; color: #1f2937; font-size: 14px;">{vehicule_immatriculation}</td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid #e5e7eb;">
-                            <td style="padding: 10px 0; color: #6b7280; font-size: 14px;"><strong>Date :</strong></td>
-                            <td style="padding: 10px 0; color: #1f2937; font-size: 14px;">{date_inventaire}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px 0; color: #6b7280; font-size: 14px;"><strong>Effectué par :</strong></td>
-                            <td style="padding: 10px 0; color: #1f2937; font-size: 14px;">{effectue_par}</td>
-                        </tr>
-                    </table>
-                </div>
-                
-                <!-- Alertes groupées par section -->
-                <div style="margin-bottom: 25px;">
-                    <h2 style="margin: 0 0 20px 0; color: #1f2937; font-size: 20px; font-weight: 600;">🔍 Détails des Alertes</h2>
-                    {alertes_html}
-                </div>
-                
-                <!-- Notes générales -->
-                {f'''
-                <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 15px; margin-bottom: 25px; border-radius: 6px;">
-                    <h3 style="margin: 0 0 10px 0; color: #92400e; font-size: 15px; font-weight: 600;">📝 Notes Générales</h3>
-                    <p style="margin: 0; color: #78350f; font-size: 14px; line-height: 1.6;">{notes_generales}</p>
-                </div>
-                ''' if notes_generales else ''}
-                
-                <!-- Bouton d'action -->
-                <div style="text-align: center; margin: 30px 0;">
-                    <a href="{vehicule_url}" 
-                       style="display: inline-block; background: linear-gradient(135deg, #8e44ad 0%, #6c3483 100%); color: #ffffff; 
-                              padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; 
-                              box-shadow: 0 4px 6px rgba(142, 68, 173, 0.3);">
-                        🔗 Accéder à la Gestion des Actifs
-                    </a>
-                </div>
-                
-                <!-- Instructions pour voir l'historique -->
-                <div style="background-color: #f0f0f0; padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center;">
-                    <p style="margin: 0; color: #555; font-size: 14px;">
-                        💡 <strong>Pour consulter l'historique complet des inventaires :</strong><br/>
-                        Cliquez sur le bouton ci-dessus, puis sélectionnez le véhicule <strong>{vehicule_nom}</strong> et cliquez sur <strong>"📋 Historique inventaires"</strong>
-                    </p>
-                </div>
-                
-                <!-- Pied de page -->
-                <div style="border-top: 2px solid #e5e7eb; padding-top: 20px; margin-top: 30px; text-align: center;">
-                    <p style="color: #6b7280; font-size: 13px; margin: 8px 0;">
-                        📬 Ceci est une notification automatique du système ProFireManager.
-                    </p>
-                    <p style="color: #9ca3af; font-size: 12px; margin: 8px 0;">
-                        Ne pas répondre à cet email. Pour toute assistance, contactez votre administrateur système.
-                    </p>
-                </div>
+        # Créer le contenu de l'email
+        content = f"""
+            <div style="background-color: #fef2f2; border-left: 5px solid #dc2626; padding: 18px; margin-bottom: 25px; border-radius: 6px;">
+                <p style="margin: 0; color: #991b1b; font-weight: 600; font-size: 15px;">
+                    ⚠️ {len(alertes)} item(s) nécessitent votre attention. Veuillez prendre les mesures nécessaires.
+                </p>
             </div>
-        </div>
+            
+            <!-- Informations du véhicule -->
+            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+                <h3 style="margin: 0 0 15px 0; color: #1f2937; font-size: 18px; font-weight: 600;">Informations du Véhicule</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 10px 0; color: #6b7280; font-size: 14px; width: 40%;"><strong>Véhicule :</strong></td>
+                        <td style="padding: 10px 0; color: #1f2937; font-size: 14px; font-weight: 600;">{vehicule_nom}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 10px 0; color: #6b7280; font-size: 14px;"><strong>Type :</strong></td>
+                        <td style="padding: 10px 0; color: #1f2937; font-size: 14px;">{vehicule_type}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 10px 0; color: #6b7280; font-size: 14px;"><strong>Immatriculation :</strong></td>
+                        <td style="padding: 10px 0; color: #1f2937; font-size: 14px;">{vehicule_immatriculation}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 10px 0; color: #6b7280; font-size: 14px;"><strong>Date :</strong></td>
+                        <td style="padding: 10px 0; color: #1f2937; font-size: 14px;">{date_inventaire}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px 0; color: #6b7280; font-size: 14px;"><strong>Effectué par :</strong></td>
+                        <td style="padding: 10px 0; color: #1f2937; font-size: 14px;">{effectue_par}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <!-- Alertes groupées par section -->
+            <div style="margin-bottom: 25px;">
+                <h3 style="margin: 0 0 20px 0; color: #1f2937; font-size: 20px; font-weight: 600;">Détails des Alertes</h3>
+                {alertes_html}
+            </div>
+            
+            <!-- Notes générales -->
+            {f'''
+            <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 15px; margin-bottom: 25px; border-radius: 6px;">
+                <h3 style="margin: 0 0 10px 0; color: #92400e; font-size: 15px; font-weight: 600;">📝 Notes Générales</h3>
+                <p style="margin: 0; color: #78350f; font-size: 14px; line-height: 1.6;">{notes_generales}</p>
+            </div>
+            ''' if notes_generales else ''}
+            
+            <!-- Bouton d'action -->
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{vehicule_url}" 
+                   style="display: inline-block; background-color: #dc2626; color: #ffffff; 
+                          padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                    Accéder à la Gestion des Actifs
+                </a>
+            </div>
+            
+            <!-- Instructions pour voir l'historique -->
+            <div style="background-color: #f0f0f0; padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center;">
+                <p style="margin: 0; color: #555; font-size: 14px;">
+                    💡 <strong>Pour consulter l'historique complet des inventaires :</strong><br/>
+                    Cliquez sur le bouton ci-dessus, puis sélectionnez le véhicule <strong>{vehicule_nom}</strong> et cliquez sur <strong>"📋 Historique inventaires"</strong>
+                </p>
+            </div>
         """
+        
+        html_body = get_email_template(content, "Alerte Inventaire Véhicule")
         
         # Préparer les paramètres de l'email
         email_params = {
             "from": SENDER_EMAIL,
             "to": emails,
-            "subject": f"🚨 Inventaire Véhicule - {len(alertes)} Alerte(s) - {vehicule_nom}",
+            "subject": f"[Inventaire Véhicule] {len(alertes)} Alerte(s) - {vehicule_nom}",
             "html": html_body
         }
         
