@@ -21,6 +21,7 @@ const TabJoursFeries = ({ tenant }) => {
     majoration_temps_partiel: 1.5,
     majoration_temps_plein: 1.0
   });
+  const { confirm } = useConfirmDialog();
 
   const getToken = () => localStorage.getItem(`${tenant}_token`);
 
@@ -117,7 +118,13 @@ const TabJoursFeries = ({ tenant }) => {
       return;
     }
     
-    if (!window.confirm(`Supprimer le jour férié "${jour.nom}" ?`)) return;
+    const confirmed = await confirm({
+      title: 'Supprimer le jour férié',
+      message: `Supprimer le jour férié "${jour.nom}" ?`,
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
 
     try {
       const response = await fetch(
