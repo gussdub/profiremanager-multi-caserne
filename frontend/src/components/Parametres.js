@@ -736,7 +736,13 @@ const Parametres = ({ user, tenantSlug }) => {
   };
 
   const handleDeleteCompetence = async (competenceId) => {
-    if (!window.confirm("Supprimer cette compétence ?")) return;
+    const confirmed = await confirm({
+      title: 'Supprimer la compétence',
+      message: 'Supprimer cette compétence ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
     
     try {
       await axios.delete(`${API}/competences/${competenceId}`);
