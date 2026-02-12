@@ -553,35 +553,50 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
       const token = localStorage.getItem(`${tenantSlug}_token`);
       
-      // Utiliser le nouvel endpoint qui génère une URL de téléchargement direct
-      const url = `${backendUrl}/api/${tenantSlug}/personnel/generate-export?export_type=${exportType}${userId ? `&user_id=${userId}` : ''}`;
+      // Utiliser les endpoints directs comme les autres modules (Planning, Remplacements)
+      const endpoint = exportType === 'pdf' ? 'export-pdf' : 'export-excel';
+      const url = `${backendUrl}/api/${tenantSlug}/personnel/${endpoint}${userId ? `?user_id=${userId}` : ''}`;
       
       const response = await fetch(url, {
-        method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${token}`
         }
       });
       
       if (!response.ok) throw new Error('Erreur lors de l\'export');
       
-      const data = await response.json();
+      const blob = await response.blob();
       
-      if (data.success && data.download_url) {
-        // Tenter le téléchargement automatique d'abord
-        const downloadSuccess = await attemptDirectDownload(data.download_url, data.filename);
-        
-        if (!downloadSuccess) {
-          // Fallback: afficher la modale avec le lien
-          setPreviewDataUrl(data.download_url);
-          setPreviewFilename(data.filename);
-          setPreviewType(exportType);
-          setShowPreviewModal(true);
-        }
+      if (exportType === 'pdf') {
+        // Pour PDF: ouvrir dans un iframe caché et lancer l'impression (comme Remplacements)
+        const pdfUrl = window.URL.createObjectURL(blob);
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = pdfUrl;
+        document.body.appendChild(iframe);
+        iframe.onload = () => {
+          iframe.contentWindow.print();
+          setTimeout(() => {
+            document.body.removeChild(iframe);
+            window.URL.revokeObjectURL(pdfUrl);
+          }, 1000);
+        };
       } else {
-        throw new Error('URL de téléchargement non disponible');
+        // Pour Excel: téléchargement direct via blob
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = userId ? `fiche_employe_${userId}.xlsx` : 'liste_personnel.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(downloadUrl);
       }
+      
+      toast({ 
+        title: "✅ Succès", 
+        description: `Export ${exportType.toUpperCase()} ${exportType === 'pdf' ? 'ouvert pour impression' : 'téléchargé'}` 
+      });
       
       setShowExportModal(false);
     } catch (error) {
