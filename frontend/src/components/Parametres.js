@@ -264,6 +264,7 @@ const Parametres = ({ user, tenantSlug }) => {
   });
 
   const { toast } = useToast();
+  const { confirm } = useConfirmDialog();
 
   const joursOptions = [
     { value: 'monday', label: 'Lundi' },
