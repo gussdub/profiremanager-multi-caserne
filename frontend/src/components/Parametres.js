@@ -868,7 +868,13 @@ const Parametres = ({ user, tenantSlug }) => {
   };
 
   const handleDeleteFormation = async (formationId) => {
-    if (!window.confirm("Supprimer cette formation ?")) return;
+    const confirmed = await confirm({
+      title: 'Supprimer la formation',
+      message: 'Supprimer cette formation ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
     
     try {
       await axios.delete(`${API}/formations/${formationId}`);
