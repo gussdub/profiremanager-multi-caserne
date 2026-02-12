@@ -111,6 +111,7 @@ const Planning = () => {
   const [overstaffWarningMessage, setOverstaffWarningMessage] = useState('');
   
   const { toast } = useToast();
+  const { confirm } = useConfirmDialog();
 
   // Fonction utilitaire pour vérifier si un utilisateur est officier
   // Considère Lieutenant, Capitaine, Directeur comme officiers par défaut
