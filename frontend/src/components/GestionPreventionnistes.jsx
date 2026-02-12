@@ -270,9 +270,13 @@ const GestionPreventionnistes = () => {
   };
 
   const handleDeleteSecteur = async (secteurId) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce secteur ?')) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: 'Supprimer le secteur',
+      message: 'Êtes-vous sûr de vouloir supprimer ce secteur ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
     
     try {
       await apiDelete(tenantSlug, `/prevention/secteurs/${secteurId}`);
