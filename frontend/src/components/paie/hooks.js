@@ -211,8 +211,8 @@ export const useFeuillésTemps = (tenant) => {
     }
   }, [tenant, getToken, fetchFeuilles]);
 
-  const supprimerFeuille = useCallback(async (feuilleId) => {
-    if (!window.confirm('Supprimer cette feuille de temps ?')) return false;
+  const supprimerFeuille = useCallback(async (feuilleId, skipConfirmation = false) => {
+    // La confirmation doit être gérée par le composant appelant avec useConfirmDialog
     
     try {
       const response = await fetch(`${API_URL}/api/${tenant}/paie/feuilles-temps/${feuilleId}`, {
