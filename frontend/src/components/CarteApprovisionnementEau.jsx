@@ -34,6 +34,7 @@ const CarteApprovisionnementEau = ({ user }) => {
   // user passé en props
   const { tenantSlug } = useTenant();
   const { toast } = useToast();
+  const { confirm } = useConfirmDialog();
   
   const [currentView, setCurrentView] = useState('carte');
   const [pointsEau, setPointsEau] = useState([]);
