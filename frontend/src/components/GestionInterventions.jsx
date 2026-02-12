@@ -188,7 +188,7 @@ const GestionInterventions = ({ user, tenantSlug }) => {
       {activeTab === 'rapports' && (
         <TabRapports user={user} tenantSlug={tenantSlug} toast={toast} readOnly={isReadOnlyMode} isSuperAdmin={isSuperAdmin} />
       )}
-      {activeTab === 'fausses-alarmes' && user?.role === 'admin' && (
+      {activeTab === 'fausses-alarmes' && isAdminOrSupervisor && faussesAlarmesActif && (
         <FaussesAlarmesView 
           tenantSlug={tenantSlug} 
           getToken={() => localStorage.getItem(`${tenantSlug}_token`) || localStorage.getItem('token')} 
