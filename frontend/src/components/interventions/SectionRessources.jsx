@@ -710,6 +710,47 @@ const SectionRessources = ({ vehicles, resources, formData, setFormData, editMod
                             </span>
                           )}
                         </td>
+                        {/* Heure d'arrivée */}
+                        <td className="p-2 text-center">
+                          {editMode && person.is_manual ? (
+                            <input
+                              type="time"
+                              value={person.heure_arrivee || ''}
+                              onChange={(e) => updateHeuresPartielles(person.id, 'heure_arrivee', e.target.value)}
+                              className="text-xs rounded px-1 py-1 border w-20"
+                            />
+                          ) : (
+                            <span className="text-gray-700">{person.heure_arrivee || '-'}</span>
+                          )}
+                        </td>
+                        {/* Heure de départ */}
+                        <td className="p-2 text-center">
+                          {editMode && person.is_manual ? (
+                            <input
+                              type="time"
+                              value={person.heure_depart || ''}
+                              onChange={(e) => updateHeuresPartielles(person.id, 'heure_depart', e.target.value)}
+                              className="text-xs rounded px-1 py-1 border w-20"
+                            />
+                          ) : (
+                            <span className="text-gray-700">{person.heure_depart || '-'}</span>
+                          )}
+                        </td>
+                        {/* Durée de présence */}
+                        <td className="p-2 text-center">
+                          {(() => {
+                            const duree = calculerDureePresence(person.heure_arrivee, person.heure_depart);
+                            if (duree === null) return <span className="text-gray-400">-</span>;
+                            const dureeIntervention = calculerDureeIntervention();
+                            const isPartial = Math.abs(duree - dureeIntervention) > 0.1;
+                            return (
+                              <span className={isPartial ? 'text-orange-600 font-medium' : 'text-green-600'}>
+                                {formatDuree(duree)}
+                                {isPartial && <span className="text-xs ml-1">⚡</span>}
+                              </span>
+                            );
+                          })()}
+                        </td>
                         <td className="p-2">
                           {editMode && person.is_manual ? (
                             <select
