@@ -146,6 +146,7 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
   const [horairesPersonnalises, setHorairesPersonnalises] = useState([]);
   
   const { toast } = useToast();
+  const { confirm } = useConfirmDialog();
 
   // Fonction pour vérifier le blocage pour un mois donné
   const checkBlocageForMonth = async (year, month) => {
