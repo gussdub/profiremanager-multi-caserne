@@ -483,9 +483,13 @@ const MonProfil = () => {
   };
 
   const handleDeletePhoto = async () => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer votre photo de profil ?')) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: 'Supprimer la photo',
+      message: 'Êtes-vous sûr de vouloir supprimer votre photo de profil ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
 
     try {
       await apiDelete(tenantSlug, '/users/photo-profil');
