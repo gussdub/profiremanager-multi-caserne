@@ -50,6 +50,7 @@ const Prevention = () => {
   const { user, tenant } = useAuth();
   const { tenantSlug } = useTenant();
   const { toast } = useToast();
+  const { confirm } = useConfirmDialog();
   const [currentView, setCurrentView] = useState('dashboard');
   const [batiments, setBatiments] = useState([]);
   const [stats, setStats] = useState(null);
