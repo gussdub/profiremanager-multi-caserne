@@ -93,6 +93,35 @@ from PIL import Image as PILImage
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
+# Logo ProFireManager pour les emails
+LOGO_URL = "https://customer-assets.emergentagent.com/job_fireshift-manager/artifacts/6vh2i9cz_05_Icone_Flamme_Rouge_Bordure_D9072B_VISIBLE.png"
+
+
+def get_email_header():
+    """Retourne le header HTML uniforme pour tous les emails"""
+    return f"""
+    <div style="text-align: center; margin-bottom: 30px;">
+        <img src="{LOGO_URL}" 
+             alt="ProFireManager" 
+             width="60" 
+             height="60"
+             style="width: 60px; height: 60px; margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
+        <h1 style="color: #dc2626; margin: 0;">ProFireManager v2.0</h1>
+        <p style="color: #666; margin: 5px 0;">Système de gestion des services d'incendie</p>
+    </div>
+    """
+
+
+def get_email_footer():
+    """Retourne le footer HTML uniforme pour tous les emails"""
+    return f"""
+    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+    <div style="text-align: center; color: #9ca3af; font-size: 12px;">
+        © {datetime.now().year} ProFireManager - Gestion des services d'incendie<br>
+        <small>Cet email a été envoyé automatiquement par ProFireManager v2.0</small>
+    </div>
+    """
+
 # Configuration Stripe
 stripe.api_key = os.environ.get('STRIPE_API_KEY', 'sk_test_emergent')
 
