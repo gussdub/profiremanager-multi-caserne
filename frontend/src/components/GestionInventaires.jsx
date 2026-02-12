@@ -293,22 +293,26 @@ const ModelesView = ({ modeles, onEdit, tenantSlug, fetchModeles, confirm }) => 
 };
 
 // Vue des inspections
-const InspectionsView = ({ inspections, vehicules, tenantSlug, fetchInspections }) => {
+const InspectionsView = ({ inspections, vehicules, tenantSlug, fetchInspections, confirm }) => {
   const getVehiculeNom = (vehiculeId) => {
     const v = vehicules.find(veh => veh.id === vehiculeId);
     return v ? v.nom : 'Véhicule inconnu';
   };
 
   const handleDelete = async (inspectionId) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette inspection ?')) return;
+    const confirmed = await confirm({
+      title: 'Supprimer l\'inspection',
+      message: 'Êtes-vous sûr de vouloir supprimer cette inspection ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
 
     try {
       await apiDelete(tenantSlug, `/inventaire/inspections/${inspectionId}`);
-      alert('✅ Inspection supprimée avec succès');
       fetchInspections();
     } catch (error) {
-      const errorMessage = error.data?.detail || error.message || 'Erreur inconnue';
-      alert('❌ Erreur lors de la suppression: ' + errorMessage);
+      console.error('Erreur lors de la suppression:', error);
     }
   };
 
