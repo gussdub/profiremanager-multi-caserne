@@ -382,11 +382,20 @@ const ModulePaie = ({ tenant }) => {
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = response.headers.get('Content-Disposition')?.split('filename=')[1] || 'feuilles_temps.pdf';
-        document.body.appendChild(a); a.click(); a.remove();
-        window.URL.revokeObjectURL(url);
+        
+        // Utiliser iframe pour ouvrir la fenêtre d'impression
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = url;
+        document.body.appendChild(iframe);
+        iframe.onload = () => {
+          iframe.contentWindow.print();
+          setTimeout(() => {
+            document.body.removeChild(iframe);
+            window.URL.revokeObjectURL(url);
+          }, 1000);
+        };
+        
         toast.success(feuilleId ? 'PDF généré' : `PDF généré avec ${feuillesExportables.length} feuille(s)`);
       } else { const error = await response.json(); toast.error(error.detail || 'Erreur'); }
     } catch (error) { toast.error('Erreur de connexion'); }
