@@ -11,6 +11,7 @@ import axios from 'axios';
 import { buildApiUrl, getTenantToken } from '../utils/api';
 import GaleriePhotosBuilder from './GaleriePhotosBuilder';
 import html2canvas from 'html2canvas';
+import { useConfirmDialog } from './ui/ConfirmDialog';
 
 // Fix pour les icônes Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
