@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
+import { useConfirmDialog } from './ui/ConfirmDialog';
 
 const InventairesTab = ({ tenantSlug }) => {
+  const { confirm } = useConfirmDialog();
   const [viewMode, setViewMode] = useState('modeles'); // 'modeles' ou 'inspections'
   const [showModeleModal, setShowModeleModal] = useState(false);
   const [showInspectionModal, setShowInspectionModal] = useState(false);
