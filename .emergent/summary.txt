@@ -1,164 +1,161 @@
 <analysis>**original_problem_statement:**
-L'utilisateur a initialement demandé une application pour gérer les interventions et la paie des pompiers. La session actuelle a commencé par la résolution d'un bug d'affichage dans le modal de modification des EPI. Ensuite, l'utilisateur a demandé une nouvelle fonctionnalité majeure : un module pour créer des horaires de rotation d'équipes personnalisés. Après plusieurs itérations de développement et de feedback pour perfectionner ce module, l'utilisateur a demandé une autre fonctionnalité importante : un module de rapports d'interventions avancé, incluant la gestion de secteurs géographiques.
+The user initially reported several issues and requested features, including removing debug logs, fixing broken file exports, improving export content, reducing SFTP server load, fixing a production deployment, and auditing/implementing a comprehensive notification system.
 
-**PRODUCT REQUIREMENTS:**
-1.  **Gestion d'horaires personnalisés**: Permettre aux utilisateurs de créer, modifier et dupliquer des horaires de rotation complexes (cycles de 28 jours, quarts de 24h ou 12h jour/nuit, configuration des heures, gestion des équipes avec couleurs).
-2.  **Intégration des horaires**: Les horaires personnalisés doivent s'intégrer dans le module Mes disponibilités pour générer automatiquement les périodes d'indisponibilité en respectant les heures de début et de fin de quart.
-3.  **Rapports d'interventions**: Créer un nouveau module de rapport permettant d'analyser les interventions sur une période donnée.
-    *   **Vue globale**: Statistiques par nature d'incident, évolution mensuelle, temps de réponse.
-    *   **Vue par pompier**: Taux de présence aux interventions (global et pendant les gardes).
-    *   **Comparaison annuelle**: Comparer les données entre plusieurs années.
-4.  **Importation de données historiques**: Permettre l'importation des données d'interventions des années précédentes, soit via un fichier CSV, soit par une saisie manuelle détaillée (nombre d'interventions par nature).
-5.  **Gestion de secteurs**: Créer un module pour définir des secteurs géographiques d'intervention (par adresses, polygones sur une carte, ou codes postaux). Ces secteurs doivent être utilisables dans les rapports et sur les cartes d'appel.
+During this session, the user added the following requirements:
+1.  **New Notifications:** Implement push and email notifications to be sent to all users when a vehicle or piece of equipment is marked as out of service.
+2.  **Automatic Downloads:** The user was dissatisfied with the copy link workaround for file exports. They requested that in a production environment, clicking Export PDF or Export Excel should trigger an immediate, automatic file download, not require copying a link.
+3.  **Corrupted Files (BUG):** After the agent implemented the automatic download feature, the user reported that all downloaded PDF and Excel files are now corrupted and cannot be opened.
 
-**User's preferred language**: French. You MUST respond in French.
+**User's preferred language**: French
 
 **what currently exists?**
-Une application full-stack (React/FastAPI/MongoDB) riche en fonctionnalités. La session la plus récente a vu l'implémentation complète d'un module de création d'horaires personnalisés, qui a été testé et validé par l'utilisateur. L'agent a ensuite commencé le développement d'un nouveau module de rapport d'interventions et d'un système de gestion de secteurs géographiques. La structure de base pour ces deux nouvelles fonctionnalités (fichiers backend, fichiers de composants frontend et routes API) a été créée, mais l'implémentation détaillée est en cours.
+The application is a React/FastAPI/MongoDB stack for managing fire services.
+- The notification system has been expanded. Notifications are now implemented for:
+    - Intervention reports being returned for revision.
+    - Vehicles/materials being marked as out-of-service or in maintenance.
+    - An audit of notifications for Planning, Availabilities, EPI, and Leave requests confirmed they were mostly in place.
+- The file export functionality for the Personnel module was modified to address the user's request for automatic downloads. The frontend now attempts a direct download and only shows the copy link modal as a fallback (e.g., in the sandboxed preview). The backend was updated to add a  header to force the download.
+- **CRITICAL REGRESSION:** This change has resulted in all exported files being corrupted.
 
 **Last working item**:
--   **Last item agent was working**: Démarrage de l'implémentation de la gestion des secteurs d'intervention. L'agent a créé le fichier backend  et l'a enregistré dans . Il a également créé le composant frontend  et commençait à l'intégrer dans la page des paramètres . Le travail a été interrompu juste avant de modifier  pour y ajouter le nouveau composant.
--   **Status**: IN PROGRESS
--   **Agent Testing Done**: N
--   **Which testing method agent to use?**: frontend testing agent. Une fois que l'interface de gestion des secteurs est fonctionnelle, le testing agent devra être utilisé pour valider la création, la modification, la suppression de secteurs et l'intégration avec une carte (Leaflet).
--   **User Testing Done**: N
+- Last item agent was working: Investigating and fixing a critical bug where PDF and Excel files generated by the export system are corrupted. This bug was introduced after modifying the backend to force automatic downloads.
+- Status: BLOCKED
+- Agent Testing Done: N
+- Which testing method agent to use? backend testing agent. The agent must first diagnose the cause of the file corruption. A good first step would be to inspect the generated file directly on the server () to see if it's corrupted at the source or during the transfer. Then, the agent should review the  function in .
+- User Testing Done: Y (Failed)
 
 **All Pending/In progress Issue list**:
--   Aucun bug ou problème en cours. Le travail se concentre sur le développement de nouvelles fonctionnalités.
+- **Issue 1 (P0):** Exported PDF and Excel files are corrupted.
+- **Issue 2 (P1):** The new (but currently broken) export mechanism is only implemented for the Personnel module. All other modules still have the old, non-functional export system.
+- **Issue 3 (P2):** The  (Download) button in the export modal for modules other than Personnel is non-functional in the preview environment and should be removed or updated.
+
+Issues Detail:
+-   **Issue 1: Corrupted exported files.**
+    -   Attempted fixes: The agent modified the  function in  to add a  header to force the browser to download the file. This is the most likely cause of the corruption.
+    -   Next debug checklist:
+        1.  Examine the implementation of the  with the custom header in . Verify against FastAPI documentation.
+        2.  Check a newly generated file directly on the server in  to determine if the file is corrupted upon creation or during the download response.
+        3.  Review the file generation logic in  to ensure no recent changes have impacted it.
+        4.  Once fixed, test both PDF and Excel exports.
+    -   Why fix this issue and what will be achieved with the fix?: This is a critical regression. The file export feature is a core part of the application and is currently completely unusable.
+    -   Status: IN PROGRESS
+    -   Is recurring issue?: N
+    -   Should Test frontend/backend/both after fix?: both
+    -   Blocked on other issue: None
+
+-   **Issue 2: Inconsistent export functionality across modules.**
+    -   Attempted fixes: The new download logic was implemented for the  module as a proof-of-concept.
+    -   Next debug checklist:
+        1.  First, resolve Issue 1.
+        2.  Refactor the frontend modal from  into a reusable component ().
+        3.  For each module with an export function (e.g., , ), create a new backend endpoint (e.g., ) that uses the corrected file generation and download logic.
+        4.  Update each corresponding frontend component to use the new reusable modal.
+    -   Why fix this issue and what will be achieved with the fix?: To provide a consistent, functional, and user-friendly export experience across the entire application.
+    -   Status: NOT STARTED
+    -   Is recurring issue?: N
+    -   Should Test frontend/backend/both after fix?: both
+    -   Blocked on other issue: **Issue 1: Corrupted exported files.**
 
 **In progress Task List**:
--   **Task 1: (P0) Finaliser le module de gestion des secteurs.**
-    -   **Where to resume**: Intégrer le composant  dans  pour le rendre visible dans l'interface utilisateur des Paramètres.
-    -   **What will be achieved with this?**: Les utilisateurs pourront définir des zones géographiques personnalisées pour l'analyse des interventions et l'assignation des appels.
-    -   **Next Steps**:
-        1.  Intégrer  dans un nouvel onglet des .
-        2.  Développer l'interface utilisateur dans  pour permettre la création/modification/suppression de secteurs. L'interface doit supporter la définition d'un secteur par une liste d'adresses, une liste de codes postaux, et le dessin d'un polygone sur une carte (nécessitera ).
-        3.  Intégrer le sélecteur de secteur dans le formulaire de création/modification d'intervention.
-        4.  Intégrer le champ secteur dans la fiche de détail des bâtiments.
-    -   **Status**: IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?**: both
--   **Task 2: (P1) Finaliser le module de rapport d'interventions.**
-    -   **Where to resume**: Le composant  et la route  existent mais sont des squelettes. Le travail a été mis en pause pour se concentrer sur la création des secteurs, qui sont une dépendance pour ce rapport.
-    -   **What will be achieved with this?**: Fournir des statistiques détaillées sur les interventions, ce qui est une demande clé de l'utilisateur.
-    -   **Next Steps**:
-        1.  Améliorer l'endpoint d'import de l'historique () pour accepter les fichiers CSV en plus de la saisie manuelle.
-        2.  Développer l'interface dans l'onglet Historique de  pour gérer l'upload CSV et la saisie détaillée.
-        3.  Intégrer la sélection de secteur comme filtre dans tous les sous-onglets du rapport.
-        4.  Implémenter la logique de backend dans  pour agréger les données et répondre aux requêtes de l'API.
-        5.  Développer les graphiques et tableaux dans  pour afficher les données.
-    -   **Status**: IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?**: both
-    -   **Blocked on something**: Finalisation du module Secteurs (Task 1).
+-   **Task 1: Complete the notification system audit.**
+    -   Where to resume: The agent has implemented most requested notifications. The final point to check is for the **Prévention** module. The agent found no explicit return for revision function. It should be clarified with the user if the existing notification for non-conformities is sufficient or if a new feature/workflow is needed.
+    -   What will be achieved with this?: A complete and robust notification system that aligns with all user requirements.
+    -   Status: IN PROGRESS
+    -   Should Test frontend/backend/both after fix?: backend
+    -   Blocked on something: Awaiting user clarification on the Prévention module workflow.
 
 **Upcoming and Future Tasks**
--   **Upcoming Tasks:**
-    -   (P2) Refactoriser le backend, par exemple en centralisant la logique d'envoi d'e-mails.
-    -   (P2) Refactoriser les composants frontend monolithiques (, ).
--   **Future Tasks:**
-    -   (P2) Finaliser la transmission DSI réelle (actuellement MOCK).
-    -   (P2) Module de gestion des jours fériés.
-    -   (P2) Module de facturation pour l'entraide.
-    -   (P2) Module Schéma de couverture de risque (statistiques avancées sur les temps de réponse).
-    -   (P3) Gestion véhiculaire (implémenter les codes radio 10-07, 10-17, 10-90).
+- **Upcoming Tasks:**
+    - **P0:** Uniformize all PDF/Excel exports across the application (same as Issue 2). This is a large but critical task once the corruption bug is fixed.
+- **Future Tasks:**
+    - **P1:** Implement a Check Now button in the UI for manually triggering an SFTP check.
+    - **P2:** Ensure the explanatory note about the preview mode limitation is removed from the final reusable export modal.
 
 **Completed work in this session**
--   **Module d'horaires personnalisés (FINI)**:
-    -   Création d'un module complet ( et ) pour la création d'horaires de rotation personnalisés.
-    -   Implémentation d'un calendrier interactif pour peindre les jours de travail des équipes.
-    -   Ajout de la gestion des quarts de jour/nuit avec des heures configurables.
-    -   Correction des bugs de sauvegarde et d'aperçu du calendrier.
-    -   Permis la modification des horaires prédéfinis via un mécanisme de duplication automatique.
--   **Intégration (FINI)**:
-    -   Intégration des horaires personnalisés dans le module Mes disponibilités () pour la génération automatique des indisponibilités en fonction des heures de travail.
-    -   Fusion des onglets Équipes et Horaires dans les paramètres en un seul onglet Rotation.
--   **Bug Fix (FINI)**:
-    -   Correction d'un bug dans le modal de modification d'EPI où le mauvais type était présélectionné.
--   **Initialisation du module Rapports & Secteurs (COMMENCÉ)**:
-    -   Création des fichiers de base et des routes API pour les nouveaux modules de rapports d'interventions et de gestion des secteurs.
+- **Notifications:**
+    - Implemented notification for when an intervention report is returned for revision ().
+    - Implemented push and email notifications for when vehicles/materials are marked as out-of-service (, ).
+    - Reviewed and verified existing notifications for Congés, EPI, and Planning modules.
+- **File Exports (Attempted Fix & Regression):**
+    - Refactored the export flow in  to attempt an automatic download in production environments.
+    - Modified the backend download endpoint () to add a  header, which inadvertently introduced a bug that corrupts the files.
 
 **Earlier issues found/mentioned but not fixed**
--   Aucun.
+- The inconsistent export functionality across different modules was identified in the previous session and is still a pending task, now blocked by the new file corruption bug.
 
 **Known issue recurrence from previous fork**
--   La dette technique liée aux grands composants React (, ) persiste. Bien que non touchés dans cette session, ils restent un risque pour la maintenance future.
+- None in this session.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Modélisation de données complexes**: Utilisation de modèles Pydantic avec  pour gérer des structures de données variables (jours de travail pouvant être des entiers ou des objets avec segments).
--   **UI/UX pour la configuration**: Création d'une interface visuelle (calendrier interactif) pour une tâche de configuration complexe (définition d'un cycle de travail).
--   **Intégration de fonctionnalités**: Propagation d'une nouvelle entité (horaire personnalisé) à travers plusieurs modules existants (, ).
--   **Développement incrémental**: Approche par étapes pour développer une fonctionnalité majeure, en commençant par le backend, puis le frontend, en validant avec l'utilisateur à chaque étape clé.
+- **Frontend:** React, Mantine UI
+- **Backend:** FastAPI, 
+- **Database:** MongoDB
+- **Key Challenge:** Debugging file corruption potentially caused by incorrect HTTP header manipulation in a FastAPI .
+- **Environment Detection:** Using  in the frontend to differentiate behavior between a production environment and a sandboxed iframe (preview).
 
 **key DB schema**
--   ** (Nouvelle collection)**: 
--   ** (Nouvelle collection à créer)**: 
+-   **users:** Stores user data and .
+-   **notifications:** Stores individual notification records.
+-   **activites:** Stores global activity logs.
+
+**changes in tech stack**
+- None.
 
 **All files of reference**
--    et : Fichiers clés pour la prochaine étape de développement (Task 1).
--    et : Fichiers clés pour la Task 2.
--   : Fichier central pour l'intégration des nouveaux modules de paramètres.
--    et : Référence pour la fonctionnalité complexe récemment achevée.
+*   : **(MOST LIKELY CONTAINS THE BUG)**. Modified to add a  header to the  function. This needs to be fixed.
+*   : Modified to implement the new automatic download logic.
+*   : Modified to add a notification.
+*   : Modified to add a notification.
+*   : Modified to add a notification.
+*   : Was updated by the agent.
 
 **Areas that need refactoring**:
--    commence à devenir un composant très volumineux. Après l'ajout des secteurs, il pourrait être bénéfique de le décomposer.
--   Les composants monolithiques précédemment identifiés (, ) restent des candidats pour un futur refactoring.
+- **File Exports:** The entire export feature needs to be fixed and then refactored into a reusable frontend component and a consistent backend pattern to be applied across all modules.
 
 **key api endpoints**
--   **Horaires Personnalisés (CRUD complet)**:
-    -   
-    -   
-    -   
-    -   
--   **Rapports (à développer)**:
-    -   
--   **Secteurs (à créer)**:
-    -   
-    -   
+-   : **(BROKEN)** This endpoint now serves corrupted files. It was updated to force downloads.
+-   : (Updated) Now triggers a notification.
+-   : (Updated) Now triggers a notification on status change.
+-   : (Updated) Now triggers a notification on status change.
 
 **Critical Info for New Agent**
--   **Parlez exclusivement en français.**
--   **Priorité actuelle**: L'utilisateur a demandé de créer un module de gestion de secteurs et un module de rapports d'interventions. Vous devez reprendre là où l'agent précédent s'est arrêté : **finaliser le module de gestion des secteurs (Task 1)**.
--   **Plan de développement**: Suivez le plan défini dans la section In progress Task List. Commencez par intégrer le composant  dans , puis développez l'interface de gestion des secteurs, y compris l'intégration d'une carte (ex: avec ). Une fois les secteurs fonctionnels, vous pourrez passer à la finalisation du module de rapports.
+- **IMMEDIATE PRIORITY:** You must fix the file corruption bug. The export feature is completely broken. The investigation should start in  in the  function, which was recently modified.
+- **User Expectation for Exports:** The user wants automatic downloads in production. The frontend logic to detect the environment () is likely correct. The problem is on the backend. Do not revert to the copy link solution for production.
+- **Blocked Tasks:** Do not attempt to standardize the export functionality across other modules until the corruption bug is fixed and verified for the Personnel module.
 
 **documents and test reports created in this job**
--    a été mis à jour pour refléter les nouvelles exigences.
+- /memory/PRD.md
+- User provided corrupted file artifacts for debugging:
+    - 
+    - 
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: Demande à pouvoir modifier les horaires prédéfinis.
-2.  **Agent**: Propose de créer une copie modifiable lors du clic sur Modifier.
-3.  **User**:  (approuve la solution pour la modification).
-4.  **Agent**: Termine l'implémentation.
-5.  **User**: Lance une nouvelle demande majeure : créer un rapport d'interventions avec des statistiques détaillées et par pompier.
-6.  **Agent**: Pose des questions de clarification sur le rapport.
-7.  **User**: Répond aux questions, confirmant les besoins (stats par nature, pompier, comparaison annuelle).
-8.  **Agent**: Implémente la structure de base du rapport.
-9.  **User**: Pose des questions sur l'import historique et le concept de secteurs dans le rapport.
-10. **Agent**: Propose des solutions pour l'import CSV/manuel et pour un nouveau module de gestion de secteurs avec une carte.
-11. **User**: Approuve les suggestions pour l'import et la gestion des secteurs, demandant une implémentation complète. (C'est la dernière instruction de travail).
+1.  **User (pending):** Reported that the newly implemented automatic downloads result in corrupted and unusable PDF and Excel files. **Status: Pending fix.**
+2.  **User:** Requested that file exports trigger an automatic download in production instead of requiring the user to copy and paste a link. **Status: Attempted, but resulted in a bug.**
+3.  **User:** Requested notifications for when vehicles or materials are taken out of service. **Status: Completed.**
 
 **Project Health Check:**
--   **Broken**: Aucun.
--   **Mocked**: La transmission des données DSI.
--   **In Progress**: Le module de rapports d'interventions et le module de gestion des secteurs.
+-   **Broken:**
+    -   File export/download functionality is now broken for **all modules**. For the Personnel module, it generates corrupted files. For all other modules, it remains non-functional in the preview environment.
+-   **Mocked:**
+    -   None.
 
 **3rd Party Integrations**
--   **Resend**: Pour les e-mails transactionnels.
--   **Stripe**: Pour les paiements.
--   **Twilio**: Pour les notifications SMS.
--   **xlsx & papaparse**: Bibliothèques frontend pour l'analyse de fichiers.
--   **react-leaflet**: Sera probablement nécessaire pour implémenter la carte de gestion des secteurs.
+-   **SFTP Server:** The application connects to a user-provided SFTP server to poll for files.
 
 **Testing status**
--   **Testing agent used after significant changes**: NO
--   **Troubleshoot agent used after agent stuck in loop**: NO
--   **Test files created**: Aucun.
--   **Known regressions**: Aucune dans cette session.
+- Testing agent used after significant changes: NO
+- Troubleshoot agent used after agent stuck in loop: NO
+- Test files created: None
+- Known regressions: File export functionality is now generating corrupted files, a major regression from the previous state.
 
 **Credentials to test flow:**
--   Le compte super-admin de l'utilisateur () est disponible.
--   Le tenant principal pour les tests est .
+None known.
 
 **What agent forgot to execute**
--   L'agent n'a rien oublié. Il a correctement priorisé les nouvelles demandes de l'utilisateur (horaires, puis rapports/secteurs) par rapport aux tâches en suspens de la fourche précédente (vérification de l'importation EPI, rappels, etc.). Ces tâches plus anciennes sont maintenant considérées comme faisant partie du backlog. L'agent s'est arrêté au milieu d'une tâche planifiée.</analysis>
+- The agent did not test the file export functionality after modifying the backend, leading to the regression being caught by the user.
+- The agent has not yet created a reusable component for the export modal, as this is blocked by the current bug.
+- The full scope of the notification audit is pending user feedback on the Prévention module.</analysis>
