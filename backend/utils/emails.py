@@ -301,91 +301,71 @@ async def send_inventaire_vehicule_defaut_email(
             </div>
             '''
         
-        # Créer le corps HTML de l'email
-        html_body = f"""
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
-            <div style="background-color: #ffffff; border-radius: 8px; padding: 30px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        # Créer le contenu de l'email
+        content = f"""
+            <div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
+                <p style="margin: 0; color: #991b1b; font-weight: bold;">
+                    Des items manquants ou défectueux ont été signalés lors de l'inventaire hebdomadaire. Action immédiate requise.
+                </p>
+            </div>
+            
+            <!-- Détails du véhicule -->
+            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 6px; margin-bottom: 20px;">
+                <h3 style="margin: 0 0 15px 0; font-size: 18px; color: #1f2937;">Informations sur le Véhicule</h3>
                 
-                <!-- En-tête -->
-                <div style="background-color: #dc2626; color: #ffffff; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; margin: -30px -30px 20px -30px;">
-                    <h1 style="margin: 0; font-size: 24px;">🚨 Alerte Inventaire Véhicule</h1>
-                    <p style="margin: 10px 0 0 0; font-size: 14px;">Items Manquants ou Défectueux Détectés</p>
-                </div>
-                
-                <!-- Informations principales -->
-                <div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
-                    <p style="margin: 0; color: #991b1b; font-weight: bold;">
-                        Des items manquants ou défectueux ont été signalés lors de l'inventaire hebdomadaire. Action immédiate requise.
-                    </p>
-                </div>
-                
-                <!-- Détails du véhicule -->
-                <div style="background-color: #f3f4f6; padding: 20px; border-radius: 6px; margin-bottom: 20px;">
-                    <h2 style="margin: 0 0 15px 0; font-size: 18px; color: #1f2937;">Informations sur le Véhicule</h2>
-                    
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <tr>
-                            <td style="padding: 8px 0; color: #6b7280; font-weight: bold; width: 40%;">Véhicule:</td>
-                            <td style="padding: 8px 0; color: #1f2937;">{vehicule_nom}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px 0; color: #6b7280; font-weight: bold;">Immatriculation:</td>
-                            <td style="padding: 8px 0; color: #1f2937;">{vehicule_immatriculation}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px 0; color: #6b7280; font-weight: bold;">Date d'inventaire:</td>
-                            <td style="padding: 8px 0; color: #1f2937;">{date_inventaire}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px 0; color: #6b7280; font-weight: bold;">Effectué par:</td>
-                            <td style="padding: 8px 0; color: #1f2937;">{effectue_par}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px 0; color: #6b7280; font-weight: bold;">Items manquants:</td>
-                            <td style="padding: 8px 0; color: #dc2626; font-weight: bold;">{items_manquants}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px 0; color: #6b7280; font-weight: bold;">Items défectueux:</td>
-                            <td style="padding: 8px 0; color: #f59e0b; font-weight: bold;">{items_defectueux}</td>
-                        </tr>
-                    </table>
-                </div>
-                
-                <!-- Items à problèmes -->
-                <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
-                    <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #92400e;">Items Nécessitant Attention:</h3>
-                    <div style="margin-top: 10px;">
-                        {problemes_html}
-                    </div>
-                </div>
-                
-                <!-- Notes -->
-                {f'''<div style="background-color: #f9fafb; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
-                    <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #374151;">Notes:</h3>
-                    <p style="margin: 0; color: #4b5563; font-style: italic;">{notes}</p>
-                </div>''' if notes else ''}
-                
-                <!-- Bouton d'action -->
-                <div style="text-align: center; margin: 30px 0;">
-                    <a href="{vehicule_url}" 
-                       style="display: inline-block; background-color: #dc2626; color: #ffffff; padding: 14px 30px; 
-                              text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
-                        Voir le Véhicule et l'Inventaire
-                    </a>
-                </div>
-                
-                <!-- Pied de page -->
-                <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 20px; text-align: center;">
-                    <p style="color: #6b7280; font-size: 12px; margin: 5px 0;">
-                        Ceci est une notification automatique du système ProFireManager.
-                    </p>
-                    <p style="color: #9ca3af; font-size: 11px; margin: 5px 0;">
-                        Ne pas répondre à cet email. Pour toute assistance, contactez votre administrateur système.
-                    </p>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 8px 0; color: #6b7280; font-weight: bold; width: 40%;">Véhicule:</td>
+                        <td style="padding: 8px 0; color: #1f2937;">{vehicule_nom}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #6b7280; font-weight: bold;">Immatriculation:</td>
+                        <td style="padding: 8px 0; color: #1f2937;">{vehicule_immatriculation}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #6b7280; font-weight: bold;">Date d'inventaire:</td>
+                        <td style="padding: 8px 0; color: #1f2937;">{date_inventaire}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #6b7280; font-weight: bold;">Effectué par:</td>
+                        <td style="padding: 8px 0; color: #1f2937;">{effectue_par}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #6b7280; font-weight: bold;">Items manquants:</td>
+                        <td style="padding: 8px 0; color: #dc2626; font-weight: bold;">{items_manquants}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #6b7280; font-weight: bold;">Items défectueux:</td>
+                        <td style="padding: 8px 0; color: #f59e0b; font-weight: bold;">{items_defectueux}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <!-- Items à problèmes -->
+            <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
+                <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #92400e;">Items Nécessitant Attention:</h3>
+                <div style="margin-top: 10px;">
+                    {problemes_html}
                 </div>
             </div>
-        </div>
+            
+            <!-- Notes -->
+            {f'''<div style="background-color: #f9fafb; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+                <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #374151;">Notes:</h3>
+                <p style="margin: 0; color: #4b5563; font-style: italic;">{notes}</p>
+            </div>''' if notes else ''}
+            
+            <!-- Bouton d'action -->
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{vehicule_url}" 
+                   style="display: inline-block; background-color: #dc2626; color: #ffffff; padding: 14px 30px; 
+                          text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                    Voir le Véhicule et l'Inventaire
+                </a>
+            </div>
         """
+        
+        html_body = get_email_template(content, "Alerte Inventaire Véhicule - Items Manquants/Défectueux")
         
         # Préparer les paramètres de l'email
         email_params = {
