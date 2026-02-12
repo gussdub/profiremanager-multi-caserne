@@ -16,6 +16,7 @@ const GaleriePhotosBuilder = ({ photos, onPhotosChange }) => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingPhoto, setEditingPhoto] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const { confirm } = useConfirmDialog();
 
   const handleAddPhotos = async (newPhotos) => {
     const updatedPhotos = [...photos, ...newPhotos];
@@ -31,8 +32,14 @@ const GaleriePhotosBuilder = ({ photos, onPhotosChange }) => {
     setEditingPhoto(null);
   };
 
-  const handleDeletePhoto = (photoId) => {
-    if (!window.confirm('Supprimer cette photo ?')) return;
+  const handleDeletePhoto = async (photoId) => {
+    const confirmed = await confirm({
+      title: 'Supprimer la photo',
+      message: 'Supprimer cette photo ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
     const updatedPhotos = photos.filter(p => p.id !== photoId);
     onPhotosChange(updatedPhotos);
   };
