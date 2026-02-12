@@ -1129,9 +1129,13 @@ const Parametres = ({ user, tenantSlug }) => {
   };
 
   const handleRevokeUser = async (userId, userName) => {
-    if (!window.confirm(`Êtes-vous sûr de vouloir révoquer définitivement le compte de ${userName} ?\n\nCette action supprimera :\n- Le compte utilisateur\n- Toutes ses disponibilités\n- Ses assignations\n- Ses demandes de remplacement\n\nCette action est IRRÉVERSIBLE.`)) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: 'Révoquer le compte',
+      message: `Êtes-vous sûr de vouloir révoquer définitivement le compte de ${userName} ?\n\nCette action supprimera :\n- Le compte utilisateur\n- Toutes ses disponibilités\n- Ses assignations\n- Ses demandes de remplacement\n\nCette action est IRRÉVERSIBLE.`,
+      variant: 'danger',
+      confirmText: 'Révoquer définitivement'
+    });
+    if (!confirmed) return;
 
     try {
       await axios.delete(`${API}/users/${userId}/revoke`);
