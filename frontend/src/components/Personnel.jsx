@@ -395,9 +395,14 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   const handleDeletePhotoAdmin = async () => {
     if (!selectedUser) return;
     
-    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer la photo de ${selectedUser.prenom} ?`)) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: 'Supprimer la photo',
+      message: `Êtes-vous sûr de vouloir supprimer la photo de ${selectedUser.prenom} ?`,
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    
+    if (!confirmed) return;
 
     try {
       await apiDelete(tenantSlug, `/users/${selectedUser.id}/photo-profil`);
