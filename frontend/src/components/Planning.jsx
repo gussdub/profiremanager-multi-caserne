@@ -719,9 +719,14 @@ const Planning = () => {
       return;
     }
 
-    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer TOUT le personnel de cette garde ?\n\nCela supprimera ${selectedGardeDetails.assignations.length} assignation(s) pour la ${selectedGardeDetails.typeGarde.nom} du ${selectedGardeDetails.date.toLocaleDateString('fr-FR')}.`)) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: 'Supprimer tout le personnel',
+      message: `Êtes-vous sûr de vouloir supprimer TOUT le personnel de cette garde ?\n\nCela supprimera ${selectedGardeDetails.assignations.length} assignation(s) pour la ${selectedGardeDetails.typeGarde.nom} du ${selectedGardeDetails.date.toLocaleDateString('fr-FR')}.`,
+      variant: 'danger',
+      confirmText: 'Supprimer tout'
+    });
+    
+    if (!confirmed) return;
 
     try {
       // Vérifier que chaque assignation a un ID
@@ -774,9 +779,14 @@ const Planning = () => {
   };
 
   const handleRemovePersonFromGarde = async (personId, gardeName) => {
-    if (!window.confirm(`Êtes-vous sûr de vouloir retirer cette personne de la garde ${gardeName} ?`)) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: 'Retirer de la garde',
+      message: `Êtes-vous sûr de vouloir retirer cette personne de la garde ${gardeName} ?`,
+      variant: 'warning',
+      confirmText: 'Retirer'
+    });
+    
+    if (!confirmed) return;
 
     try {
       // Trouver l'assignation à supprimer
