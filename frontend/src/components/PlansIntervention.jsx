@@ -129,26 +129,20 @@ const PlansIntervention = ({ tenantSlug, filteredBatimentId, setFilteredBatiment
         }
       );
       
-      // Trouver le plan et le bâtiment pour le nom du fichier
-      const plan = plans.find(p => p.id === planId);
-      const batiment = batiments.find(b => b.id === plan?.batiment_id);
-      const batimentInfo = batiment?.adresse_civique || batiment?.nom_etablissement || batiment?.nom || '';
-      const villeInfo = batiment?.ville || '';
-      const batimentSafe = `${batimentInfo}${villeInfo ? '_' + villeInfo : ''}`.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
-      const numeroPlan = plan?.numero_plan || new Date().toISOString().slice(0, 10).replace(/-/g, '');
-      const filename = batimentSafe ? `plan_intervention_${numeroPlan}_${batimentSafe}.pdf` : `plan_intervention_${numeroPlan}.pdf`;
-      
-      // Créer un lien de téléchargement
       const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', filename);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
       
-      alert('PDF téléchargé avec succès!');
+      // Utiliser iframe pour ouvrir la fenêtre d'impression (comme Planning/Remplacements)
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = url;
+      document.body.appendChild(iframe);
+      iframe.onload = () => {
+        iframe.contentWindow.print();
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+          window.URL.revokeObjectURL(url);
+        }, 1000);
+      };
     } catch (error) {
       console.error('Erreur génération PDF:', error);
       const errorMsg = error.response?.data?.detail || error.message || 'Erreur inconnue';
