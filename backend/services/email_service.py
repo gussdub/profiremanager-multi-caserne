@@ -164,37 +164,33 @@ class EmailService:
     ) -> Dict[str, Any]:
         """Envoie un email de réinitialisation de mot de passe"""
         
-        html = f"""
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: #dc2626; color: white; padding: 20px; text-align: center;">
-                <h1 style="margin: 0;">🔥 ProFireManager</h1>
-            </div>
-            <div style="padding: 30px; background: #f9fafb;">
-                <h2 style="color: #1f2937;">Réinitialisation de mot de passe</h2>
-                <p style="color: #4b5563;">
-                    {f"Bonjour {user_name}," if user_name else "Bonjour,"}
+        salutation = f"Bonjour {user_name}," if user_name else "Bonjour,"
+        
+        content = f"""
+            <p style="color: #4b5563;">{salutation}</p>
+            <p style="color: #4b5563;">
+                Vous avez demandé la réinitialisation de votre mot de passe.
+                Cliquez sur le bouton ci-dessous pour créer un nouveau mot de passe.
+            </p>
+            <div style="background: #fef3c7; border: 2px solid #fcd34d; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <h3 style="color: #92400e; margin-top: 0;">⚠️ IMPORTANT - Sécurité</h3>
+                <p style="color: #92400e; margin: 10px 0;">
+                    Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.
                 </p>
-                <p style="color: #4b5563;">
-                    Vous avez demandé la réinitialisation de votre mot de passe.
-                    Cliquez sur le bouton ci-dessous pour créer un nouveau mot de passe.
-                </p>
-                <div style="text-align: center; margin: 30px 0;">
-                    <a href="{reset_link}" 
-                       style="background: #dc2626; color: white; padding: 12px 30px; 
-                              text-decoration: none; border-radius: 6px; font-weight: bold;">
-                        Réinitialiser mon mot de passe
-                    </a>
-                </div>
-                <p style="color: #6b7280; font-size: 14px;">
-                    Ce lien expire dans 1 heure. Si vous n'avez pas demandé cette réinitialisation,
-                    ignorez cet email.
+                <p style="color: #78350f; margin: 10px 0;">
+                    Ce lien est valide pendant <strong>1 heure</strong> seulement.
                 </p>
             </div>
-            <div style="padding: 20px; text-align: center; color: #9ca3af; font-size: 12px;">
-                © {datetime.now().year} ProFireManager - Gestion des services d'incendie
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{reset_link}" 
+                   style="background: #dc2626; color: white; padding: 14px 28px; 
+                          text-decoration: none; border-radius: 8px; font-weight: bold;">
+                    🔐 Réinitialiser mon mot de passe
+                </a>
             </div>
-        </div>
         """
+        
+        html = get_email_template(content, "Réinitialisation de mot de passe")
         
         return await self.send_email(
             to=[to_email],
