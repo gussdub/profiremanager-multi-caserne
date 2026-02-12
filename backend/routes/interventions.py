@@ -458,6 +458,15 @@ async def get_intervention_settings(
                 {"id": "2", "titre": "Intervention standard", "contenu": "L'intervention s'est déroulée sans incident. Les opérations ont consisté en..."},
                 {"id": "3", "titre": "Fausse alerte", "contenu": "Suite à notre investigation, il s'agit d'une fausse alerte causée par..."},
             ],
+            "fausse_alarme_config": {
+                "actif": False,
+                "seuil_gratuit": 3,
+                "periode": "roulante_12_mois",
+                "type_facturation": "fixe",
+                "montant_fixe": 500,
+                "montants_progressifs": [200, 400, 600],
+                "types_intervention_concernes": ["Alarme incendie", "Alarme CO", "Alarme automatique"]
+            },
             "created_at": datetime.now(timezone.utc)
         }
         await db.intervention_settings.insert_one(settings)
@@ -470,6 +479,16 @@ async def get_intervention_settings(
         settings["validateurs"] = []
     if "modeles_narratif" not in settings:
         settings["modeles_narratif"] = []
+    if "fausse_alarme_config" not in settings:
+        settings["fausse_alarme_config"] = {
+            "actif": False,
+            "seuil_gratuit": 3,
+            "periode": "roulante_12_mois",
+            "type_facturation": "fixe",
+            "montant_fixe": 500,
+            "montants_progressifs": [200, 400, 600],
+            "types_intervention_concernes": ["Alarme incendie", "Alarme CO", "Alarme automatique"]
+        }
     
     return {"settings": settings}
 
