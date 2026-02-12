@@ -576,9 +576,13 @@ const MonProfil = () => {
   };
 
   const handleDeleteSignature = async () => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer votre signature numérique ?')) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: 'Supprimer la signature',
+      message: 'Êtes-vous sûr de vouloir supprimer votre signature numérique ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
 
     try {
       await apiDelete(tenantSlug, `/users/${user.id}/signature`);
