@@ -1078,22 +1078,21 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
 
         {/* Footer Actions */}
         <div className="border-t border-gray-200 p-4 bg-gray-50 flex justify-between flex-wrap gap-2">
-          <div className="flex gap-2">
-            {/* Bouton Enregistrer - visible seulement si modifications */}
-            {canEdit && !isLocked && !readOnly && hasChanges && (
-              <Button
-                variant="default"
-                onClick={handleSave}
-                disabled={loading}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                💾 Enregistrer
-              </Button>
+          <div className="flex gap-2 items-center">
+            {/* Indicateur d'auto-enregistrement */}
+            {autoSaveStatus === 'saving' && (
+              <span className="text-blue-600 text-sm flex items-center gap-1">
+                <span className="animate-spin">⏳</span> Enregistrement...
+              </span>
             )}
-            {/* Indicateur modifications non sauvegardées */}
-            {hasChanges && (
-              <span className="text-amber-600 text-sm flex items-center gap-1">
-                ⚠️ Modifications non sauvegardées
+            {autoSaveStatus === 'saved' && (
+              <span className="text-green-600 text-sm flex items-center gap-1">
+                ✅ Enregistré
+              </span>
+            )}
+            {autoSaveStatus === 'error' && (
+              <span className="text-red-600 text-sm flex items-center gap-1">
+                ❌ Erreur d'enregistrement
               </span>
             )}
             {/* Bouton d'impression */}
