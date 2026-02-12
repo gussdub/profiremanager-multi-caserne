@@ -1147,7 +1147,75 @@ async def get_equipes_garde_for_intervention(
                     if is_in_range:
                         type_garde_cible = "externe" if tg.get("est_garde_externe", False) else "interne"
                         logging.info(f"🕐 Intervention à {heure} → Type garde: {type_garde_cible} ({tg.get('nom')})")
-
+                        break
+                except Exception as e:
+                    logging.warning(f"Erreur parsing horaire type garde: {e}")
+                    continue
+    
+    result = {"equipes": [], "type_garde_detecte": type_garde_cible}
+    
+    # Pour chaque type d'emploi (temps plein et temps partiel)
+    for type_emploi in ["temps_plein", "temps_partiel"]:
+        config_equipe = params.get(type_emploi, {})
+        
+        if not config_equipe.get("rotation_active", False):
+            continue
+        
+        type_rotation = config_equipe.get("type_rotation", "aucun")
+        if type_rotation == "aucun":
+            continue
+        
+        nb_equipes = config_equipe.get("nombre_equipes", 4)
+        
+        # Calculer quelle équipe est de garde
+        date_obj = datetime.strptime(date, "%Y-%m-%d").date()
+        date_debut_rotation = config_equipe.get("date_debut_rotation")
+        
+        if not date_debut_rotation:
+            continue
+        
+        if isinstance(date_debut_rotation, str):
+            date_debut = datetime.strptime(date_debut_rotation[:10], "%Y-%m-%d").date()
+        else:
+            date_debut = date_debut_rotation.date() if hasattr(date_debut_rotation, 'date') else date_debut_rotation
+        
+        jours_depuis_debut = (date_obj - date_debut).days
+        
+        if type_rotation == "24h":
+            equipe_index = jours_depuis_debut % nb_equipes
+        elif type_rotation == "48h":
+            equipe_index = (jours_depuis_debut // 2) % nb_equipes
+        elif type_rotation == "semaine":
+            equipe_index = (jours_depuis_debut // 7) % nb_equipes
+        else:
+            equipe_index = 0
+        
+        equipe_nom = f"Équipe {equipe_index + 1}"
+        
+        # Récupérer les membres de cette équipe
+        membres = await db.users.find({
+            "tenant_id": tenant.id,
+            "equipe_garde": equipe_nom,
+            "type_emploi": type_emploi.replace("_", " ").title(),
+            "statut": {"$in": ["Actif", "actif"]}
+        }).to_list(None)
+        
+        result["equipes"].append({
+            "type_emploi": type_emploi,
+            "type_rotation": type_rotation,
+            "equipe_numero": equipe_index + 1,
+            "equipe_nom": equipe_nom,
+            "membres": [{
+                "id": m.get("id"),
+                "nom": m.get("nom"),
+                "prenom": m.get("prenom"),
+                "matricule": m.get("matricule"),
+                "grade": m.get("grade"),
+                "fonction_superieur": m.get("fonction_superieur", False)
+            } for m in membres]
+        })
+    
+    return result
 
 
 # ==================== FAUSSES ALARMES ====================
