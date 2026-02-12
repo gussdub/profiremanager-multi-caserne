@@ -139,6 +139,7 @@ const ListeInspections = ({ setCurrentView }) => {
   const { user, tenant } = useAuth();
   const { tenantSlug } = useTenant();
   const { toast } = useToast();
+  const { confirm } = useConfirmDialog();
   const [inspections, setInspections] = useState([]);
   const [batiments, setBatiments] = useState([]);
   const [users, setUsers] = useState([]);
