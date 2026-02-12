@@ -10,6 +10,7 @@ import { useToast } from "../hooks/use-toast";
 import { useTenant } from "../contexts/TenantContext";
 import { useAuth } from "../contexts/AuthContext";
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
+import { useConfirmDialog } from './ui/ConfirmDialog';
 
 // Fonction pour parser une date en évitant les problèmes de timezone
 const parseDateLocal = (dateStr) => {
