@@ -371,7 +371,7 @@ async def send_inventaire_vehicule_defaut_email(
         email_params = {
             "from": SENDER_EMAIL,
             "to": emails,
-            "subject": f"🚨 Inventaire Véhicule - Items Manquants/Défectueux - {vehicule_nom}",
+            "subject": f"[Inventaire Véhicule] Items Manquants/Défectueux - {vehicule_nom}",
             "html": html_body
         }
         
