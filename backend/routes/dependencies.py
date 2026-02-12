@@ -791,7 +791,6 @@ async def get_active_admins_supervisors(tenant_id: str, exclude_user_ids: List[s
         Liste des admins/superviseurs disponibles
     """
     exclude_ids = exclude_user_ids or []
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     
     # Récupérer tous les admins/superviseurs actifs
     admins_superviseurs = await db.users.find({
