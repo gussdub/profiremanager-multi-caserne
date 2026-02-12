@@ -743,12 +743,7 @@ const ParametresInspectionsAPRIA = ({ tenantSlug }) => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <div>
             <button
-              onClick={() => {
-                if (window.confirm('Quitter sans sauvegarder ?')) {
-                  setShowEditeur(false);
-                  setModeleEnCours(null);
-                }
-              }}
+              onClick={handleCloseEditeur}
               style={{
                 padding: '0.5rem 1rem',
                 backgroundColor: '#6b7280',
