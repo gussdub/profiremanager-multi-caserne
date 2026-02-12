@@ -58,6 +58,7 @@ from routes.competences_grades import router as competences_grades_router
 from routes.types_garde import router as types_garde_router
 from routes.dashboard_messages import router as dashboard_messages_router
 from routes.conges import router as conges_router
+from routes.delegations import router as delegations_router
 from routes.notifications import router as notifications_router
 from routes.personnalisation import router as personnalisation_router
 from routes.materiel import router as materiel_router
