@@ -162,9 +162,15 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
         // Ajouter l'ID pour pouvoir supprimer
         marker.layerId = layer.id;
         
-        // Événement de suppression
-        marker.on('contextmenu', function() {
-          if (window.confirm('🗑️ Supprimer ce symbole ?')) {
+        // Événement de suppression - utilise une fonction asynchrone pour la confirmation
+        marker.on('contextmenu', async function() {
+          const confirmed = await confirm({
+            title: 'Supprimer le symbole',
+            message: 'Supprimer ce symbole ?',
+            variant: 'danger',
+            confirmText: 'Supprimer'
+          });
+          if (confirmed) {
             setLayers(prevLayers => prevLayers.filter(l => l.id !== layer.id));
             setHasUnsavedChanges(true);
             if (map.hasLayer(marker)) {
@@ -620,7 +626,13 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
   };
 
   const handleDeletePlan = async () => {
-    if (!window.confirm('⚠️ Êtes-vous sûr de vouloir supprimer définitivement ce plan d\'intervention ?')) return;
+    const confirmed = await confirm({
+      title: 'Supprimer le plan',
+      message: 'Êtes-vous sûr de vouloir supprimer définitivement ce plan d\'intervention ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
 
     try {
       setSaving(true);
@@ -642,7 +654,13 @@ const PlanInterventionBuilder = ({ tenantSlug, batiment, existingPlan, onClose, 
   };
 
   const handleSubmitForValidation = async () => {
-    if (!window.confirm('Soumettre ce plan pour validation?')) return;
+    const confirmed = await confirm({
+      title: 'Soumettre pour validation',
+      message: 'Soumettre ce plan pour validation ?',
+      variant: 'warning',
+      confirmText: 'Soumettre'
+    });
+    if (!confirmed) return;
     
     try {
       setSaving(true);
