@@ -712,13 +712,19 @@ const EquipementsTab = ({
                   
                   const blob = await response.blob();
                   const downloadUrl = window.URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = downloadUrl;
-                  a.download = `equipements_${new Date().toISOString().split('T')[0]}.pdf`;
-                  document.body.appendChild(a);
-                  a.click();
-                  document.body.removeChild(a);
-                  window.URL.revokeObjectURL(downloadUrl);
+                  
+                  // Utiliser iframe pour ouvrir la fenêtre d'impression
+                  const iframe = document.createElement('iframe');
+                  iframe.style.display = 'none';
+                  iframe.src = downloadUrl;
+                  document.body.appendChild(iframe);
+                  iframe.onload = () => {
+                    iframe.contentWindow.print();
+                    setTimeout(() => {
+                      document.body.removeChild(iframe);
+                      window.URL.revokeObjectURL(downloadUrl);
+                    }, 1000);
+                  };
                 } catch (err) {
                   console.error('Erreur export PDF:', err);
                   alert('Erreur export PDF: ' + err.message);
