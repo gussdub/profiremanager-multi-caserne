@@ -65,6 +65,9 @@ const Dashboard = ({ setCurrentPage }) => {
   // État pour la modale de diffusion de message
   const [showBroadcastModal, setShowBroadcastModal] = useState(false);
   
+  // État pour les délégations reçues
+  const [delegationsRecues, setDelegationsRecues] = useState([]);
+  
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(Date.now());
 
