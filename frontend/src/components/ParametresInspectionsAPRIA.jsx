@@ -543,8 +543,14 @@ const ParametresInspectionsAPRIA = ({ tenantSlug }) => {
   };
 
   // Supprimer une section
-  const supprimerSection = (sectionIndex) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette section ?')) {
+  const supprimerSection = async (sectionIndex) => {
+    const confirmed = await confirm({
+      title: 'Supprimer la section',
+      message: 'Êtes-vous sûr de vouloir supprimer cette section ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (confirmed) {
       const newSections = modeleEnCours.sections.filter((_, i) => i !== sectionIndex);
       setModeleEnCours({ ...modeleEnCours, sections: newSections });
     }
