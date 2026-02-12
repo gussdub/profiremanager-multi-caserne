@@ -17,6 +17,51 @@ RESEND_API_KEY = os.environ.get('RESEND_API_KEY')
 SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'noreply@profiremanager.ca')
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://profiremanager.ca')
 
+# Logo officiel ProFireManager
+LOGO_URL = "https://customer-assets.emergentagent.com/job_fireshift-manager/artifacts/6vh2i9cz_05_Icone_Flamme_Rouge_Bordure_D9072B_VISIBLE.png"
+
+
+def get_email_template(content: str, title: str = None) -> str:
+    """
+    Génère un template d'email uniforme avec le design ProFireManager.
+    
+    Args:
+        content: Le contenu HTML du corps de l'email
+        title: Titre optionnel affiché sous le logo
+    
+    Returns:
+        Template HTML complet avec header et footer
+    """
+    title_html = f'<h2 style="color: #1f2937; margin-top: 10px;">{title}</h2>' if title else ''
+    
+    return f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <img src="{LOGO_URL}" 
+                     alt="ProFireManager" 
+                     width="60" 
+                     height="60"
+                     style="width: 60px; height: 60px; margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
+                <h1 style="color: #dc2626; margin: 0;">ProFireManager v2.0</h1>
+                <p style="color: #666; margin: 5px 0;">Système de gestion des services d'incendie</p>
+            </div>
+            
+            {title_html}
+            {content}
+            
+            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+            
+            <div style="text-align: center; color: #9ca3af; font-size: 12px;">
+                © {datetime.now().year} ProFireManager - Gestion des services d'incendie<br>
+                <small>Cet email a été envoyé automatiquement par ProFireManager v2.0</small>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
 
 class EmailService:
     """Service centralisé pour l'envoi d'emails"""
