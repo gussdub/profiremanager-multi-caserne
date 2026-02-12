@@ -183,7 +183,7 @@ const GestionInterventions = ({ user, tenantSlug }) => {
         <TabRapports user={user} tenantSlug={tenantSlug} toast={toast} readOnly={isReadOnlyMode} isSuperAdmin={isSuperAdmin} />
       )}
       {activeTab === 'historique' && (
-        <TabHistorique user={user} tenantSlug={tenantSlug} toast={toast} readOnly={isReadOnlyMode} settings={settings} isSuperAdmin={isSuperAdmin} />
+        <TabHistorique user={user} tenantSlug={tenantSlug} toast={toast} confirm={confirm} readOnly={isReadOnlyMode} settings={settings} isSuperAdmin={isSuperAdmin} />
       )}
       {activeTab === 'conformite-dsi' && (isAdmin || isValidateur) && (
         <TabConformiteDSI user={user} tenantSlug={tenantSlug} toast={toast} />
