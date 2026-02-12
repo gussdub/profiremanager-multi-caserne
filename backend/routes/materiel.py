@@ -48,11 +48,102 @@ from routes.dependencies import (
     get_current_user,
     get_tenant_from_slug,
     clean_mongo_doc,
-    User
+    User,
+    creer_notification
 )
+
+# Import pour les notifications push (optionnel, peut échouer si module incomplet)
+try:
+    from routes.notifications import send_push_notification_to_users, send_web_push_to_users
+except ImportError:
+    send_push_notification_to_users = None
+    send_web_push_to_users = None
 
 router = APIRouter(tags=["Matériel & Stock"])
 logger = logging.getLogger(__name__)
+
+
+# ==================== FONCTION NOTIFICATION HORS SERVICE MATÉRIEL ====================
+
+async def notifier_materiel_hors_service(
+    tenant_id: str,
+    nom_materiel: str,
+    statut: str,
+    raison: str = None,
+    modifie_par: str = None
+):
+    """
+    Notifie tous les utilisateurs qu'un matériel est hors service.
+    Envoie notification push, web push et email à tout le monde.
+    """
+    try:
+        # Récupérer tous les utilisateurs actifs du tenant
+        all_users = await db.users.find({
+            "tenant_id": tenant_id,
+            "statut": "Actif"
+        }).to_list(500)
+        
+        if not all_users:
+            return
+        
+        # Préparer le message
+        statut_label = "HORS SERVICE" if "hors" in statut.lower() else "EN MAINTENANCE"
+        
+        titre = f"🛠️ Matériel {statut_label}"
+        message = f"{nom_materiel} est maintenant {statut_label.lower()}."
+        if raison:
+            message += f" Raison: {raison}"
+        if modifie_par:
+            message += f" (Signalé par {modifie_par})"
+        
+        user_ids = [u.get("id") for u in all_users if u.get("id")]
+        
+        # 1. Créer les notifications internes pour chaque utilisateur
+        for user_id in user_ids:
+            await creer_notification(
+                tenant_id=tenant_id,
+                user_id=user_id,
+                type_notification="materiel_hors_service",
+                titre=titre,
+                message=message,
+                lien="/materiel",
+                data={
+                    "type_actif": "materiel",
+                    "nom_actif": nom_materiel,
+                    "statut": statut
+                },
+                envoyer_email=True
+            )
+        
+        # 2. Envoyer notifications push FCM (si disponible)
+        if send_push_notification_to_users:
+            try:
+                await send_push_notification_to_users(
+                    user_ids=user_ids,
+                    title=titre,
+                    body=message,
+                    data={"type": "materiel_hors_service", "sound": "urgent"}
+                )
+            except Exception as e:
+                logger.warning(f"Erreur push FCM: {e}")
+        
+        # 3. Envoyer notifications Web Push (si disponible)
+        if send_web_push_to_users:
+            try:
+                await send_web_push_to_users(
+                    tenant_id=tenant_id,
+                    user_ids=user_ids,
+                    title=titre,
+                    body=message,
+                    data={"type": "materiel_hors_service"}
+                )
+            except Exception as e:
+                logger.warning(f"Erreur Web Push: {e}")
+        
+        logger.info(f"🚨 Notification hors service envoyée: {nom_materiel} ({statut}) à {len(user_ids)} utilisateurs")
+        
+    except Exception as e:
+        logger.error(f"Erreur notification hors service matériel: {e}")
 
 
 # ==================== MODÈLES ====================
