@@ -507,6 +507,10 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [submitReason, setSubmitReason] = useState('');
   const [submitAction, setSubmitAction] = useState(null);
+  
+  // États pour l'auto-enregistrement
+  const [autoSaveStatus, setAutoSaveStatus] = useState('idle'); // 'idle', 'saving', 'saved', 'error'
+  const autoSaveTimeoutRef = useRef(null);
 
   // Mode édition toujours actif si l'utilisateur a les droits
   const editMode = true;
