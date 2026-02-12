@@ -11,6 +11,7 @@ const Debogage = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const { confirm } = useConfirmDialog();
   
   // Filtres
   const [filtreStatut, setFiltreStatut] = useState('');
@@ -116,7 +117,13 @@ const Debogage = () => {
   };
 
   const handleDelete = async (itemId) => {
-    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer cet élément? Cette action est irréversible.`)) {
+    const confirmed = await confirm({
+      title: 'Supprimer',
+      message: 'Êtes-vous sûr de vouloir supprimer cet élément? Cette action est irréversible.',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) {
       return;
     }
 
