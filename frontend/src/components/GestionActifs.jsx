@@ -14,6 +14,7 @@ import { useTenant } from '../contexts/TenantContext';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import { TabButton, MobileTabButton, VehiculesTab } from './actifs/ActifsTabComponents';
 import ActifsModalsContainer from './actifs/ActifsModalsContainer';
+import { useConfirmDialog } from './ui/ConfirmDialog';
 
 // Lazy load extracted components
 const ParametresActifsTab = lazy(() => import('./ParametresActifs'));
