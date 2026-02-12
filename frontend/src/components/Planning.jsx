@@ -10,6 +10,7 @@ import { useTenant } from "../contexts/TenantContext";
 import { useAuth } from "../contexts/AuthContext";
 import { fr } from "date-fns/locale";
 import { apiGet, apiPost, apiPut, apiDelete, buildApiUrl, getTenantToken } from '../utils/api';
+import { useConfirmDialog } from './ui/ConfirmDialog';
 const RapportHeuresModal = lazy(() => import("./RapportHeuresModal"));
 const AuditModal = lazy(() => import("./AuditModal"));
 
