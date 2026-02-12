@@ -2586,12 +2586,9 @@ def send_gardes_notification_email(user_email: str, user_name: str, gardes_list:
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
         </head>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-                <h1 style="color: white; margin: 0; font-size: 24px;">🚒 ProFireManager</h1>
-                <p style="color: #fecaca; margin: 10px 0 0 0;">Planning validé</p>
-            </div>
+            {get_email_header()}
             
-            <div style="background: white; padding: 30px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 10px 10px;">
+            <div style="background: white; padding: 20px;">
                 <h2 style="color: #1e293b;">Bonjour {user_name},</h2>
                 
                 <p>Voici vos gardes assignées pour <strong>{periode}</strong>.</p>
@@ -2619,18 +2616,12 @@ def send_gardes_notification_email(user_email: str, user_name: str, gardes_list:
                 <div style="text-align: center; margin: 30px 0;">
                     <a href="https://www.profiremanager.ca/{tenant_slug}" 
                        style="background: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-                        🚒 Consulter le planning
+                        Consulter le planning
                     </a>
                 </div>
-                
-                <div style="border-top: 2px solid #e2e8f0; margin-top: 30px; padding-top: 20px; text-align: center; color: #64748b; font-size: 0.875rem;">
-                    <p>ProFireManager v2.0 - Gestion des horaires et remplacements</p>
-                    <p>Services d'incendie du Canada</p>
-                    <p style="margin-top: 10px;">
-                        Cet email a été envoyé automatiquement. Ne pas répondre.
-                    </p>
-                </div>
             </div>
+            
+            {get_email_footer()}
         </body>
         </html>
         """
