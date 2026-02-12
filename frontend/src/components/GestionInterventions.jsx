@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { useToast } from '../hooks/use-toast';
+import { useConfirmDialog } from './ui/ConfirmDialog';
 import useModalScrollLock from '../hooks/useModalScrollLock';
 import { useTenant } from '../contexts/TenantContext';
 import {
