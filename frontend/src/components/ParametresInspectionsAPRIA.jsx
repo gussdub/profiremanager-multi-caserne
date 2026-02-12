@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
+import { useConfirmDialog } from './ui/ConfirmDialog';
 import ImageUpload from './ImageUpload';
 import {
   DndContext,
