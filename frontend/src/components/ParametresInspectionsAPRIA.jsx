@@ -1149,14 +1149,18 @@ const ParametresInspectionsAPRIA = ({ tenantSlug }) => {
                   📋 Copier
                 </button>
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     if (modele.est_actif) {
-                      alert('Impossible de supprimer le modèle actif. Activez un autre modèle d\'abord.');
+                      await confirm({
+                        title: 'Impossible',
+                        message: 'Impossible de supprimer le modèle actif. Activez un autre modèle d\'abord.',
+                        variant: 'warning',
+                        confirmText: 'OK',
+                        showCancel: false
+                      });
                       return;
                     }
-                    if (window.confirm(`Êtes-vous sûr de vouloir supprimer "${modele.nom}" ?`)) {
-                      supprimerModele(modele.id);
-                    }
+                    supprimerModele(modele.id);
                   }}
                   style={{
                     padding: '0.4rem 0.6rem',
