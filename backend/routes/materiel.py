@@ -609,6 +609,8 @@ async def update_materiel(
     if not item_actuel:
         raise HTTPException(status_code=404, detail="Matériel non trouvé")
     
+    ancien_etat = item_actuel.get("etat")
+    
     update_data = {k: v for k, v in materiel.dict().items() if v is not None}
     if not update_data:
         return {"message": "Aucune modification"}
@@ -627,6 +629,20 @@ async def update_materiel(
     
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Matériel non trouvé")
+    
+    # Notifier tout le monde si matériel mis hors service
+    nouvel_etat = update_data.get("etat")
+    etats_hors_service = ["hors_service", "en_maintenance", "hors service", "a_reparer"]
+    
+    if nouvel_etat and nouvel_etat.lower() in etats_hors_service and ancien_etat != nouvel_etat:
+        nom_materiel = item_actuel.get("nom", "Matériel")
+        await notifier_materiel_hors_service(
+            tenant_id=tenant.id,
+            nom_materiel=nom_materiel,
+            statut=nouvel_etat,
+            raison=materiel.notes if materiel.notes else None,
+            modifie_par=f"{current_user.prenom} {current_user.nom}"
+        )
     
     return {"message": "Matériel mis à jour avec succès"}
 
