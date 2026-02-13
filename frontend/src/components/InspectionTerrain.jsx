@@ -13,7 +13,7 @@ const getLocalDateString = () => {
   return `${year}-${month}-${day}`;
 };
 
-const InspectionTerrain = ({ tenantSlug, grille, batiment, onComplete, onCancel }) => {
+const InspectionTerrain = ({ tenantSlug, grille, batiment, currentUser, onComplete, onCancel }) => {
   const { toast } = useToast();
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [reponses, setReponses] = useState({});
