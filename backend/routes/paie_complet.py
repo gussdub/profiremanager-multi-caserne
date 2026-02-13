@@ -2973,6 +2973,8 @@ async def test_api_connection(
             if not sftp_host or not sftp_username or not sftp_password:
                 raise HTTPException(status_code=400, detail="Credentials SFTP incomplets (host, username, password requis)")
             
+            transport = None
+            sftp = None
             try:
                 transport = paramiko.Transport((sftp_host, sftp_port))
                 transport.connect(username=sftp_username, password=sftp_password)
@@ -2980,9 +2982,6 @@ async def test_api_connection(
                 
                 # Lister le dossier racine pour vérifier la connexion
                 files = sftp.listdir('.')
-                
-                sftp.close()
-                transport.close()
                 
                 result = "success"
                 message = f"Connexion SFTP réussie à {sftp_host}. {len(files)} éléments trouvés dans le dossier racine."
@@ -2995,6 +2994,18 @@ async def test_api_connection(
             except Exception as e:
                 result = "error"
                 message = f"Erreur connexion SFTP: {str(e)}"
+            finally:
+                # TOUJOURS fermer les connexions
+                try:
+                    if sftp:
+                        sftp.close()
+                except:
+                    pass
+                try:
+                    if transport:
+                        transport.close()
+                except:
+                    pass
         
         else:
             # Fournisseur générique - test basique
