@@ -289,15 +289,17 @@ class SFTPService:
         if not config:
             return []
         
+        sftp = None
+        transport = None
+        
         try:
             # Connexion SFTP
-            sftp = self.connect_sftp(config)
+            sftp, transport = self.connect_sftp(config)
             remote_path = config.get("remote_path", "/")
             
             # Lister les fichiers XML
             xml_files = self.list_xml_files(sftp, remote_path)
             if not xml_files:
-                sftp.close()
                 return []
             
             # Grouper par intervention
@@ -317,8 +319,6 @@ class SFTPService:
                 )
                 if intervention:
                     new_interventions.append(intervention)
-            
-            sftp.close()
             
             # Notifier via WebSocket
             if new_interventions and self.websocket_manager:
@@ -343,6 +343,10 @@ class SFTPService:
         except Exception as e:
             logger.error(f"Erreur SFTP pour tenant {tenant_id}: {e}")
             return []
+        
+        finally:
+            # TOUJOURS fermer la connexion, même en cas d'erreur
+            self.close_sftp_connection(sftp, transport)
     
     async def start_polling(self, tenant_id: str, tenant_slug: str, interval: int = 300):
         """
