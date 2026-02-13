@@ -3303,6 +3303,8 @@ async def send_payroll_to_api(
             if not sftp_host or not sftp_username or not sftp_password:
                 raise HTTPException(status_code=400, detail="Credentials SFTP incomplets")
             
+            transport = None
+            sftp = None
             try:
                 transport = paramiko.Transport((sftp_host, sftp_port))
                 transport.connect(username=sftp_username, password=sftp_password)
@@ -3316,9 +3318,6 @@ async def send_payroll_to_api(
                 from io import BytesIO
                 file_obj = BytesIO(file_content)
                 sftp.putfo(file_obj, remote_path)
-                
-                sftp.close()
-                transport.close()
                 
                 # Marquer les feuilles comme exportées
                 for feuille in feuilles:
@@ -3340,6 +3339,18 @@ async def send_payroll_to_api(
                 return {"success": False, "message": "Authentification SFTP échouée"}
             except Exception as e:
                 return {"success": False, "message": f"Erreur SFTP: {str(e)}"}
+            finally:
+                # TOUJOURS fermer les connexions
+                try:
+                    if sftp:
+                        sftp.close()
+                except:
+                    pass
+                try:
+                    if transport:
+                        transport.close()
+                except:
+                    pass
         
         else:
             return {
