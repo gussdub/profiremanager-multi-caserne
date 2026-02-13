@@ -395,8 +395,11 @@ class SFTPService:
         Returns:
             Dict avec success, message, et éventuellement files_count
         """
+        sftp = None
+        transport = None
+        
         try:
-            sftp = self.connect_sftp(config)
+            sftp, transport = self.connect_sftp(config)
             remote_path = config.get("remote_path", "/")
             
             # Tester l'accès au répertoire
@@ -404,13 +407,10 @@ class SFTPService:
                 files = sftp.listdir(remote_path)
                 xml_count = len([f for f in files if f.lower().endswith('.xml')])
             except FileNotFoundError:
-                sftp.close()
                 return {
                     "success": False,
                     "message": f"Le répertoire '{remote_path}' n'existe pas"
                 }
-            
-            sftp.close()
             
             return {
                 "success": True,
@@ -434,6 +434,10 @@ class SFTPService:
                 "success": False,
                 "message": f"Erreur de connexion: {str(e)}"
             }
+        
+        finally:
+            # TOUJOURS fermer la connexion, même en cas d'erreur
+            self.close_sftp_connection(sftp, transport)
 
 
 # Instance globale du service (sera initialisée dans server.py)
