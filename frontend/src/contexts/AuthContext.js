@@ -139,6 +139,8 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, mot_de_passe) => {
     try {
+      console.log('[AuthContext] Tentative de connexion pour:', email);
+      
       // Nettoyer complètement avant une nouvelle connexion (au cas où) - uniquement pour ce tenant
       removeItem('token');
       removeItem('tenant');
@@ -150,10 +152,14 @@ export const AuthProvider = ({ children }) => {
         ? `${API}/admin/auth/login`
         : `${API}/${tenantSlug}/auth/login`;
       
+      console.log('[AuthContext] URL de login:', loginUrl);
+      
       const response = await axios.post(loginUrl, {
         email,
         mot_de_passe
       });
+      
+      console.log('[AuthContext] Réponse login réussie');
       
       // Pour Super Admin, la réponse contient 'admin' au lieu de 'user'
       const { access_token, user: userData, admin: adminData, tenant } = response.data;
