@@ -55,8 +55,13 @@ class SFTPService:
             host = host.split(':')[0]
         return host.strip()
     
-    def connect_sftp(self, config: Dict) -> paramiko.SFTPClient:
-        """Établit une connexion SFTP"""
+    def connect_sftp(self, config: Dict) -> tuple:
+        """
+        Établit une connexion SFTP
+        
+        Returns:
+            tuple: (sftp_client, transport) - Les deux doivent être fermés après usage
+        """
         host = self._clean_host(config["host"])
         port = config.get("port", 22)
         
@@ -66,13 +71,32 @@ class SFTPService:
             password=config["password"]
         )
         sftp = paramiko.SFTPClient.from_transport(transport)
-        return sftp
+        return sftp, transport
+    
+    def close_sftp_connection(self, sftp: paramiko.SFTPClient, transport: paramiko.Transport):
+        """
+        Ferme proprement une connexion SFTP (client ET transport)
+        
+        IMPORTANT: Toujours appeler cette méthode pour éviter les connexions orphelines
+        """
+        try:
+            if sftp:
+                sftp.close()
+        except Exception as e:
+            logger.warning(f"Erreur fermeture SFTP client: {e}")
+        
+        try:
+            if transport:
+                transport.close()
+        except Exception as e:
+            logger.warning(f"Erreur fermeture transport: {e}")
     
     def disconnect_sftp(self, tenant_id: str):
-        """Ferme une connexion SFTP"""
+        """Ferme une connexion SFTP stockée pour un tenant"""
         if tenant_id in self.active_connections:
             try:
-                self.active_connections[tenant_id].close()
+                sftp, transport = self.active_connections[tenant_id]
+                self.close_sftp_connection(sftp, transport)
             except:
                 pass
             del self.active_connections[tenant_id]
