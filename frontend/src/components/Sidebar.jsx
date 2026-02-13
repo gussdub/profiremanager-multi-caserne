@@ -10,6 +10,28 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
   const { user, tenant: authTenant, logout } = useAuth();
   const { tenantSlug, switchTenant } = useTenant();
   
+  // Utiliser le tenant passé en prop OU celui du contexte Auth OU celui du localStorage
+  // Cela garantit que le module Prévention s'affiche immédiatement
+  const effectiveTenant = React.useMemo(() => {
+    // Priorité 1: prop tenant (si disponible)
+    if (tenant?.parametres) return tenant;
+    
+    // Priorité 2: authTenant du contexte
+    if (authTenant?.parametres) return authTenant;
+    
+    // Priorité 3: localStorage (fallback immédiat)
+    try {
+      const storedTenant = localStorage.getItem(`${tenantSlug}_tenant`);
+      if (storedTenant) {
+        return JSON.parse(storedTenant);
+      }
+    } catch (e) {
+      // Ignorer les erreurs de parsing
+    }
+    
+    return null;
+  }, [tenant, authTenant, tenantSlug]);
+  
   // Ref pour le nav scrollable
   const navRef = useRef(null);
   const [canScrollDown, setCanScrollDown] = useState(true);
