@@ -142,6 +142,9 @@ async def tenant_login(tenant_slug: str, login: LoginRequest):
         {"$set": {"derniere_connexion": datetime.now(timezone.utc)}}
     )
     
+    # Inclure les informations du tenant dans la réponse pour éviter un chargement séparé
+    tenant_data = await db.tenants.find_one({"id": tenant.id}, {"_id": 0})
+    
     return {
         "access_token": access_token,
         "token_type": "bearer",
@@ -152,8 +155,11 @@ async def tenant_login(tenant_slug: str, login: LoginRequest):
             "prenom": user.get("prenom", ""),
             "role": user.get("role", "employe"),
             "grade": user.get("grade"),
-            "type_emploi": user.get("type_emploi")
-        }
+            "type_emploi": user.get("type_emploi"),
+            "est_preventionniste": user.get("est_preventionniste", False),
+            "photo_profil": user.get("photo_profil")
+        },
+        "tenant": tenant_data
     }
 
 
