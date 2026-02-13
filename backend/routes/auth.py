@@ -104,6 +104,9 @@ async def tenant_login(tenant_slug: str, login: LoginRequest):
                 
                 logger.info(f"🔑 Super-admin {login.email} connecté au tenant {tenant_slug}")
                 
+                # Inclure le tenant dans la réponse
+                tenant_data = await db.tenants.find_one({"id": tenant.id}, {"_id": 0})
+                
                 return {
                     "access_token": access_token,
                     "token_type": "bearer",
@@ -114,7 +117,8 @@ async def tenant_login(tenant_slug: str, login: LoginRequest):
                         "prenom": "Admin",
                         "role": "admin",
                         "is_super_admin": True
-                    }
+                    },
+                    "tenant": tenant_data
                 }
         
         raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
