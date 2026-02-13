@@ -59,6 +59,7 @@ Application multi-tenant de gestion pour les services d'incendie du Québec, inc
 
 ### P1 - En attente de clarification
 - Audit des notifications pour le module "Prévention" (besoin de précisions sur le workflow)
+- Visibilité du module Prévention pour le tenant "shefford" - CONFIRMÉ OK par utilisateur
 
 ### P2 - Futur
 - Uniformiser les exports PDF/Excel dans tous les modules
