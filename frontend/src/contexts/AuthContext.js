@@ -40,14 +40,16 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem(getStorageKey(key));
   };
 
-  // Restaurer le tenant depuis le localStorage au démarrage
+  // Restaurer le tenant depuis le localStorage au démarrage - PRIORITÉ HAUTE
+  // Cette restauration doit se faire IMMÉDIATEMENT pour éviter le double refresh
   useEffect(() => {
     if (tenantSlug) {
       const storedTenant = getItem('tenant');
-      if (storedTenant) {
+      if (storedTenant && !tenant) {
         try {
           const parsedTenant = JSON.parse(storedTenant);
-          if (parsedTenant && !tenant) {
+          if (parsedTenant) {
+            console.log('[AuthContext] Restauration tenant depuis localStorage:', parsedTenant.name);
             setTenant(parsedTenant);
           }
         } catch (e) {
@@ -55,6 +57,22 @@ export const AuthProvider = ({ children }) => {
         }
       }
     }
+  }, [tenantSlug]);
+  
+  // Synchroniser le tenant si le localStorage change (rafraîchissement externe)
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (tenantSlug && e.key === getStorageKey('tenant') && e.newValue) {
+        try {
+          const updatedTenant = JSON.parse(e.newValue);
+          setTenant(updatedTenant);
+        } catch (err) {
+          console.error('Erreur parsing tenant mis à jour:', err);
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, [tenantSlug]);
 
   useEffect(() => {
