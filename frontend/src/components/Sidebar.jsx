@@ -499,10 +499,10 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
     if (!item.roles.includes(user?.role)) return false;
     if (item.id === 'disponibilites' && !['temps_partiel', 'temporaire'].includes(user?.type_emploi) && !['admin', 'superviseur'].includes(user?.role)) return false;
     
-    // Module Prévention : vérifier si actif
+    // Module Prévention : vérifier si actif (utilise effectiveTenant pour chargement immédiat)
     if (item.id === 'prevention') {
-      // Ne pas afficher si le tenant n'est pas chargé ou si le module n'est pas explicitement activé
-      if (!authTenant?.parametres?.module_prevention_active) return false;
+      const isPreventionActive = effectiveTenant?.parametres?.module_prevention_active === true;
+      if (!isPreventionActive) return false;
     }
     
     // Module Interventions : 
