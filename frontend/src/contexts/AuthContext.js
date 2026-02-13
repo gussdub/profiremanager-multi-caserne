@@ -192,9 +192,15 @@ export const AuthProvider = ({ children }) => {
       
       return { success: true };
     } catch (error) {
+      console.error('[AuthContext] Erreur de connexion:', error.response?.status, error.response?.data);
+      
+      // Ne pas laisser un token ou header invalide trainer
+      removeItem('token');
+      delete axios.defaults.headers.common['Authorization'];
+      
       return { 
         success: false, 
-        error: error.response?.data?.detail || 'Erreur de connexion' 
+        error: error.response?.data?.detail || 'Erreur de connexion - Vérifiez vos identifiants' 
       };
     }
   };
