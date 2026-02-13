@@ -479,12 +479,7 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
     
     // Module Prévention : vérifier si actif
     if (item.id === 'prevention') {
-      // Si le tenant n'est pas encore chargé, on affiche par défaut pour admin/superviseur
-      // (sera masqué après chargement si module non activé)
-      if (!authTenant) {
-        return ['admin', 'superviseur'].includes(user?.role);
-      }
-      // Sinon, vérifier le paramètre
+      // Ne pas afficher si le tenant n'est pas chargé ou si le module n'est pas explicitement activé
       if (!authTenant?.parametres?.module_prevention_active) return false;
     }
     
