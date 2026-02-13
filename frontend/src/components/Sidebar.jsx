@@ -10,27 +10,53 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
   const { user, tenant: authTenant, logout } = useAuth();
   const { tenantSlug, switchTenant } = useTenant();
   
-  // Utiliser le tenant passé en prop OU celui du contexte Auth OU celui du localStorage
-  // Cela garantit que le module Prévention s'affiche immédiatement
-  const effectiveTenant = React.useMemo(() => {
-    // Priorité 1: prop tenant (si disponible)
-    if (tenant?.parametres) return tenant;
-    
-    // Priorité 2: authTenant du contexte
-    if (authTenant?.parametres) return authTenant;
-    
-    // Priorité 3: localStorage (fallback immédiat)
-    try {
-      const storedTenant = localStorage.getItem(`${tenantSlug}_tenant`);
-      if (storedTenant) {
-        return JSON.parse(storedTenant);
+  // État local pour stocker le tenant chargé directement par le Sidebar
+  const [localTenant, setLocalTenant] = useState(null);
+  
+  // Charger le tenant directement si pas disponible ailleurs
+  useEffect(() => {
+    const loadTenantIfNeeded = async () => {
+      // Si on a déjà le tenant d'une source, pas besoin de charger
+      if (tenant?.parametres || authTenant?.parametres) {
+        return;
       }
-    } catch (e) {
-      // Ignorer les erreurs de parsing
-    }
+      
+      // Vérifier localStorage d'abord
+      try {
+        const storedTenant = localStorage.getItem(`${tenantSlug}_tenant`);
+        if (storedTenant) {
+          const parsed = JSON.parse(storedTenant);
+          if (parsed?.parametres) {
+            setLocalTenant(parsed);
+            return;
+          }
+        }
+      } catch (e) {
+        // Ignorer
+      }
+      
+      // Sinon, charger depuis l'API
+      if (tenantSlug && user) {
+        try {
+          const tenantData = await apiGet(tenantSlug, '/../admin/tenants/by-slug/' + tenantSlug);
+          if (tenantData) {
+            setLocalTenant(tenantData);
+            // Sauvegarder pour les prochains rendus
+            localStorage.setItem(`${tenantSlug}_tenant`, JSON.stringify(tenantData));
+          }
+        } catch (error) {
+          console.error('[Sidebar] Erreur chargement tenant:', error);
+        }
+      }
+    };
     
-    return null;
-  }, [tenant, authTenant, tenantSlug]);
+    loadTenantIfNeeded();
+  }, [tenantSlug, user, tenant, authTenant]);
+  
+  // Utiliser le tenant de la meilleure source disponible
+  const effectiveTenant = tenant?.parametres ? tenant 
+    : authTenant?.parametres ? authTenant 
+    : localTenant;
   
   // Ref pour le nav scrollable
   const navRef = useRef(null);
