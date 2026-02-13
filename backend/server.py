@@ -384,6 +384,8 @@ async def initialize_default_grades():
 @app.on_event("startup")
 async def startup_event():
     """Événement de démarrage de l'application"""
+    logger.info("🚀 Démarrage de l'application ProFireManager...")
+    
     await initialize_multi_tenant()
     
     # Initialiser les grades par défaut
@@ -393,8 +395,11 @@ async def startup_event():
     from services.sftp_service import init_sftp_service
     from services.websocket_manager import get_websocket_manager
     ws_manager = get_websocket_manager()
-    init_sftp_service(db, ws_manager)
-    logger.info("Service SFTP initialisé")
+    sftp_service = init_sftp_service(db, ws_manager)
+    
+    # Nettoyage initial - fermer toute connexion orpheline d'une session précédente
+    await sftp_service.cleanup_all_connections()
+    logger.info("Service SFTP initialisé (état propre)")
     
     # Démarrer le polling SFTP pour les tenants actifs
     asyncio.create_task(start_sftp_polling_for_active_tenants())
@@ -404,6 +409,8 @@ async def startup_event():
     
     # Démarrer le nettoyage périodique des tâches SSE expirées
     asyncio.create_task(cleanup_expired_tasks())
+    
+    logger.info("✅ Application démarrée avec succès")
 
 
 async def start_sftp_polling_for_active_tenants():
