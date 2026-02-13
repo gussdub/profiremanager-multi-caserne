@@ -101,6 +101,37 @@ class SFTPService:
                 pass
             del self.active_connections[tenant_id]
     
+    async def cleanup_all_connections(self):
+        """
+        Ferme TOUTES les connexions SFTP actives et arrête tous les pollings.
+        Appelé au démarrage et à l'arrêt de l'application pour garantir un état propre.
+        """
+        logger.info("🧹 Nettoyage de toutes les connexions SFTP...")
+        
+        # 1. Arrêter tous les pollings actifs
+        polling_tenant_ids = list(self.polling_tasks.keys())
+        for tenant_id in polling_tenant_ids:
+            try:
+                await self.stop_polling(tenant_id)
+                logger.info(f"  - Polling arrêté pour tenant {tenant_id}")
+            except Exception as e:
+                logger.warning(f"  - Erreur arrêt polling {tenant_id}: {e}")
+        
+        # 2. Fermer toutes les connexions actives
+        connection_tenant_ids = list(self.active_connections.keys())
+        for tenant_id in connection_tenant_ids:
+            try:
+                self.disconnect_sftp(tenant_id)
+                logger.info(f"  - Connexion fermée pour tenant {tenant_id}")
+            except Exception as e:
+                logger.warning(f"  - Erreur fermeture connexion {tenant_id}: {e}")
+        
+        # 3. Réinitialiser les dictionnaires
+        self.active_connections.clear()
+        self.polling_tasks.clear()
+        
+        logger.info(f"✅ Nettoyage SFTP terminé: {len(polling_tenant_ids)} polling(s) arrêté(s), {len(connection_tenant_ids)} connexion(s) fermée(s)")
+    
     def list_xml_files(self, sftp: paramiko.SFTPClient, remote_path: str) -> List[str]:
         """Liste les fichiers XML dans le répertoire distant"""
         try:
