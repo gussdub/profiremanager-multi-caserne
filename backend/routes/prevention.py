@@ -1038,13 +1038,20 @@ class Inspection(BaseModel):
     tenant_id: str
     batiment_id: str
     grille_inspection_id: str
-    preventionniste_id: str  # ID de l'employé qui a fait l'inspection
+    preventionniste_id: str = ""  # ID de l'employé qui a fait l'inspection
+    inspecteur_id: str = ""  # Alias de preventionniste_id (pour compatibilité frontend)
+    
+    # Traçabilité de l'inspecteur
+    inspecteur_nom: str = ""  # Nom complet de l'inspecteur
+    inspection_realisee_par: str = ""  # Champ dédié pour le suivi ("Inspection réalisée par: Jean Dupont")
     
     # Métadonnées inspection
+    grille_nom: str = ""  # Nom de la grille utilisée
     date_inspection: str = ""  # YYYY-MM-DD
     heure_debut: str = ""
     heure_fin: str = ""
     type_inspection: str = "reguliere"  # reguliere, suivi, urgence, plainte
+    statut: str = "planifiee"  # planifiee, en_cours, en_attente_validation, validee, non_conforme
     
     # Résultats
     resultats: Dict[str, Any] = {}  # Réponses JSON de la grille
@@ -1052,7 +1059,7 @@ class Inspection(BaseModel):
     score_conformite: float = 100.0  # Pourcentage de conformité
     
     # Documentation
-    photos: List[str] = []  # URLs des photos
+    photos: Any = []  # URLs des photos ou dict avec photos par question
     notes_inspection: str = ""
     recommandations: str = ""
     
@@ -1066,20 +1073,28 @@ class Inspection(BaseModel):
 
 class InspectionCreate(BaseModel):
     batiment_id: str
-    grille_inspection_id: str
-    preventionniste_id: str
+    grille_inspection_id: str = ""
+    preventionniste_id: str = ""
+    inspecteur_id: str = ""  # Alias de preventionniste_id
+    inspecteur_nom: str = ""  # Nom complet pour traçabilité
+    inspection_realisee_par: str = ""  # Champ dédié pour le suivi
+    grille_nom: str = ""
     date_inspection: str
     heure_debut: str = ""
     heure_fin: str = ""
     type_inspection: str = "reguliere"
+    statut: str = "planifiee"
     resultats: Dict[str, Any] = {}
     statut_global: str = "conforme"
     score_conformite: float = 100.0
-    photos: List[str] = []
+    photos: Any = []  # Peut être une liste ou un dict
     notes_inspection: str = ""
     recommandations: str = ""
     signature_proprietaire: Optional[str] = None
     nom_representant: str = ""
+    
+    class Config:
+        extra = "ignore"  # Ignorer les champs supplémentaires
 
 class NonConformite(BaseModel):
     """Non-conformité identifiée lors d'une inspection ou créée manuellement"""
