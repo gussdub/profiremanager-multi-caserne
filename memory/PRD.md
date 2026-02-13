@@ -11,7 +11,23 @@ Application multi-tenant de gestion pour les services d'incendie du Québec, inc
 
 ## Tâches Complétées
 
-### Session Actuelle (Décembre 2025)
+### Session Actuelle (Février 2026)
+- ✅ **Correction du bug de double refresh du module Prévention** - COMPLÉTÉ
+  - Problème: Le module Prévention nécessitait 2 rafraîchissements pour s'afficher après connexion
+  - Cause: Le tenant était chargé de manière asynchrone après la vérification du token
+  - Solution: Restauration immédiate du tenant depuis localStorage + chargement parallèle avec vérification token
+  - Fichier modifié: `frontend/src/contexts/AuthContext.js`
+
+- ✅ **Ajout du nom de l'inspecteur aux formulaires d'inspection à faible risque** - COMPLÉTÉ
+  - Nouveau champ `inspecteur_nom` et `inspection_realisee_par` dans le modèle d'inspection
+  - Le nom complet de l'utilisateur connecté est automatiquement capturé lors de la soumission
+  - Permet la traçabilité des inspections pour les préventionnistes en charge
+  - Fichiers modifiés:
+    - `frontend/src/components/InspectionTerrain.jsx` - Capture du nom utilisateur
+    - `frontend/src/components/Prevention.jsx` - Passage du currentUser au composant
+    - `backend/routes/prevention.py` - Nouveaux champs dans les modèles Inspection/InspectionCreate
+
+### Sessions Précédentes (Décembre 2025-Février 2026)
 - ✅ **Migration window.confirm/alert vers useConfirmDialog** - COMPLÉTÉ
   - Migré 8 fichiers restants identifiés par le testing agent
   - Fichiers corrigés: ParametresActifs.jsx, ParametresInventairesVehicules.jsx, SuperAdminDashboard.js, ConfigurationSFTP.jsx, GrillesInspectionComponents.jsx, CarteApprovisionnementEau.jsx, ApprovisionnementEau.jsx
