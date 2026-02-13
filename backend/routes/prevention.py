@@ -625,7 +625,8 @@ async def create_inspection(
     current_user: User = Depends(get_current_user)
 ):
     """Créer une nouvelle inspection"""
-    if current_user.role not in ["admin", "superviseur"]:
+    # Admin, superviseur ou préventionniste peut créer une inspection
+    if current_user.role not in ["admin", "superviseur"] and not getattr(current_user, 'est_preventionniste', False):
         raise HTTPException(status_code=403, detail="Accès refusé")
     
     tenant = await get_tenant_from_slug(tenant_slug)
@@ -633,7 +634,22 @@ async def create_inspection(
     if not tenant.parametres.get('module_prevention_active', False):
         raise HTTPException(status_code=403, detail="Module prévention non activé")
     
-    inspection_obj = Inspection(tenant_id=tenant.id, **inspection.dict())
+    # Normaliser les données
+    inspection_data = inspection.dict()
+    
+    # Si inspecteur_id est fourni mais pas preventionniste_id, les synchroniser
+    if inspection_data.get('inspecteur_id') and not inspection_data.get('preventionniste_id'):
+        inspection_data['preventionniste_id'] = inspection_data['inspecteur_id']
+    elif inspection_data.get('preventionniste_id') and not inspection_data.get('inspecteur_id'):
+        inspection_data['inspecteur_id'] = inspection_data['preventionniste_id']
+    
+    # Si le nom de l'inspecteur n'est pas fourni, utiliser l'utilisateur courant
+    if not inspection_data.get('inspecteur_nom') and not inspection_data.get('inspection_realisee_par'):
+        nom_complet = f"{current_user.prenom or ''} {current_user.nom or ''}".strip()
+        inspection_data['inspecteur_nom'] = nom_complet
+        inspection_data['inspection_realisee_par'] = nom_complet
+    
+    inspection_obj = Inspection(tenant_id=tenant.id, **inspection_data)
     
     await db.inspections.insert_one(inspection_obj.dict())
     
