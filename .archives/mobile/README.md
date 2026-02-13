@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://partial-hours-fix.preview.emergentagent.com
+- **URL** : https://prevention-inspector.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://partial-hours-fix.preview.emergentagent.com"
+  "apiUrl": "https://prevention-inspector.preview.emergentagent.com"
 }
 ```
 

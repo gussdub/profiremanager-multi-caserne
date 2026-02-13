@@ -8,7 +8,7 @@ import json
 import uuid
 
 # Configuration
-base_url = "https://partial-hours-fix.preview.emergentagent.com/api"
+base_url = "https://prevention-inspector.preview.emergentagent.com/api"
 tenant_slug = "shefford"
 admin_credentials = {"email": "gussdub@gmail.com", "mot_de_passe": "230685Juin+"}
 
