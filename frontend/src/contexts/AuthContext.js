@@ -92,23 +92,35 @@ export const AuthProvider = ({ children }) => {
         ? `${API}/admin/auth/me` 
         : `${API}/${tenantSlug}/auth/me`;
       
+      // Charger le tenant en parallèle avec la vérification du token
+      // pour éviter le délai d'affichage des modules
+      const loadTenantPromise = (async () => {
+        // Vérifier d'abord si le tenant est déjà en cache/state
+        const cachedTenant = getItem('tenant');
+        if (cachedTenant && !tenant) {
+          try {
+            const parsed = JSON.parse(cachedTenant);
+            if (parsed) setTenant(parsed);
+          } catch (e) { /* ignore */ }
+        }
+        
+        // Puis rafraîchir depuis l'API en arrière-plan
+        try {
+          const tenantResponse = await axios.get(`${API}/admin/tenants/by-slug/${tenantSlug}`);
+          setTenant(tenantResponse.data);
+          setItem('tenant', JSON.stringify(tenantResponse.data));
+        } catch (error) {
+          console.error('Erreur récupération tenant:', error);
+        }
+      })();
+      
       // Verify token and get user info
       axios.get(meUrl)
         .then(async response => {
+          // Attendre que le tenant soit chargé avant de définir l'utilisateur
+          await loadTenantPromise;
           setUser(response.data);
           setLoading(false);
-          
-          // Récupérer les informations du tenant (pour tous les utilisateurs, y compris super admin)
-          if (tenantSlug) {
-            try {
-              const tenantResponse = await axios.get(`${API}/admin/tenants/by-slug/${tenantSlug}`);
-              setTenant(tenantResponse.data);
-              // Stocker dans localStorage pour les prochains chargements
-              setItem('tenant', JSON.stringify(tenantResponse.data));
-            } catch (error) {
-              console.error('Erreur récupération tenant:', error);
-            }
-          }
         })
         .catch((error) => {
           console.log('Token invalide ou expiré, nettoyage...');
