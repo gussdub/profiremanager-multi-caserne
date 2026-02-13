@@ -243,6 +243,11 @@ const InspectionTerrain = ({ tenantSlug, grille, batiment, currentUser, onComple
       // Récupérer l'inspecteur_id depuis localStorage
       const inspectionTerrainData = JSON.parse(localStorage.getItem('inspection_terrain_data') || '{}');
       const inspecteur_id = inspectionTerrainData.inspecteur_id;
+      
+      // Construire le nom complet de l'inspecteur pour la traçabilité
+      const inspecteurNom = currentUser 
+        ? `${currentUser.prenom || ''} ${currentUser.nom || ''}`.trim() 
+        : '';
 
       // Préparer les données d'inspection
       const inspectionData = {
@@ -253,6 +258,8 @@ const InspectionTerrain = ({ tenantSlug, grille, batiment, currentUser, onComple
         heure_debut: new Date().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' }),
         heure_fin: new Date().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' }),
         inspecteur_id: inspecteur_id,
+        inspecteur_nom: inspecteurNom,  // Nom complet pour traçabilité
+        inspection_realisee_par: inspecteurNom,  // Champ dédié pour le suivi
         resultats: reponses,
         photos: photosParQuestion,
         score_conformite: scoreConformite,
