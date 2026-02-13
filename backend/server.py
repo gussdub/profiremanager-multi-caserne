@@ -6165,4 +6165,19 @@ logger = logging.getLogger(__name__)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    """Nettoyage propre à l'arrêt de l'application"""
+    logger.info("🛑 Arrêt de l'application - Nettoyage des ressources...")
+    
+    # Fermer toutes les connexions SFTP actives
+    try:
+        from services.sftp_service import get_sftp_service
+        sftp_service = get_sftp_service()
+        if sftp_service:
+            await sftp_service.cleanup_all_connections()
+            logger.info("✅ Connexions SFTP fermées")
+    except Exception as e:
+        logger.error(f"Erreur fermeture SFTP: {e}")
+    
+    # Fermer la connexion MongoDB
     client.close()
+    logger.info("✅ Connexion MongoDB fermée")
