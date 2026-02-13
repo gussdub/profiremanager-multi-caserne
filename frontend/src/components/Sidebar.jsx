@@ -10,53 +10,21 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
   const { user, tenant: authTenant, logout } = useAuth();
   const { tenantSlug, switchTenant } = useTenant();
   
-  // État local pour stocker le tenant chargé directement par le Sidebar
-  const [localTenant, setLocalTenant] = useState(null);
-  
-  // Charger le tenant directement si pas disponible ailleurs
-  useEffect(() => {
-    const loadTenantIfNeeded = async () => {
-      // Si on a déjà le tenant d'une source, pas besoin de charger
-      if (tenant?.parametres || authTenant?.parametres) {
-        return;
-      }
-      
-      // Vérifier localStorage d'abord
-      try {
-        const storedTenant = localStorage.getItem(`${tenantSlug}_tenant`);
-        if (storedTenant) {
-          const parsed = JSON.parse(storedTenant);
-          if (parsed?.parametres) {
-            setLocalTenant(parsed);
-            return;
-          }
-        }
-      } catch (e) {
-        // Ignorer
-      }
-      
-      // Sinon, charger depuis l'API
-      if (tenantSlug && user) {
-        try {
-          const tenantData = await apiGet(tenantSlug, '/../admin/tenants/by-slug/' + tenantSlug);
-          if (tenantData) {
-            setLocalTenant(tenantData);
-            // Sauvegarder pour les prochains rendus
-            localStorage.setItem(`${tenantSlug}_tenant`, JSON.stringify(tenantData));
-          }
-        } catch (error) {
-          console.error('[Sidebar] Erreur chargement tenant:', error);
-        }
-      }
-    };
+  // Le tenant devrait maintenant être disponible immédiatement via authTenant
+  // car il est inclus dans la réponse de login
+  // Fallback sur le prop tenant ou localStorage si nécessaire
+  const effectiveTenant = React.useMemo(() => {
+    if (authTenant?.parametres) return authTenant;
+    if (tenant?.parametres) return tenant;
     
-    loadTenantIfNeeded();
-  }, [tenantSlug, user, tenant, authTenant]);
-  
-  // Utiliser le tenant de la meilleure source disponible
-  const effectiveTenant = tenant?.parametres ? tenant 
-    : authTenant?.parametres ? authTenant 
-    : localTenant;
+    // Fallback localStorage
+    try {
+      const stored = localStorage.getItem(`${tenantSlug}_tenant`);
+      if (stored) return JSON.parse(stored);
+    } catch (e) {}
+    
+    return null;
+  }, [authTenant, tenant, tenantSlug]);
   
   // Ref pour le nav scrollable
   const navRef = useRef(null);
