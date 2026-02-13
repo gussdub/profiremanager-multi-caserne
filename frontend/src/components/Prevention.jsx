@@ -892,6 +892,7 @@ const Prevention = () => {
             tenantSlug={tenantSlug}
             grille={inspectionData.grille}
             batiment={inspectionData.batiment}
+            currentUser={user}
             onComplete={() => {
               localStorage.removeItem('inspection_terrain_data');
               setCurrentView('calendrier');
