@@ -119,10 +119,26 @@ const HistoriqueInspectionsBorneSecheModal = ({ borne, tenantSlug, onClose }) =>
     return String(valeur);
   };
 
+  // Extraire la date depuis les réponses du formulaire si elle existe
+  const getInspectionDate = (inspection) => {
+    // D'abord, chercher une date dans les réponses du formulaire
+    const reponses = inspection.reponses || {};
+    for (const [, data] of Object.entries(reponses)) {
+      const valeur = typeof data === 'object' && data.valeur !== undefined ? data.valeur : data;
+      // Vérifier si c'est une date au format YYYY-MM-DD
+      if (typeof valeur === 'string' && valeur.length >= 10 && valeur[4] === '-' && valeur[7] === '-') {
+        return valeur;
+      }
+    }
+    // Sinon, utiliser la date_inspection ou created_at
+    return inspection.date_inspection || inspection.created_at;
+  };
+
   // Rendu des données d'une inspection unifiée (avec formulaire personnalisé)
   const renderUnifiedInspectionDetails = (inspection) => {
     const formulaire = formulairesCache[inspection.formulaire_id];
     const reponses = inspection.reponses || {};
+    const dateAffichage = getInspectionDate(inspection);
 
     // Organiser les réponses par section
     const sectionMap = {};
