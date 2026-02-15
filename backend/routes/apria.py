@@ -1204,66 +1204,86 @@ async def create_inspection_unifiee(
         logger.info(f"👥 Admins/Superviseurs trouvés pour tenant {tenant.id}: {len(admins)}")
         
         # Créer une notification pour chaque admin/superviseur
+        notifications_creees = 0
         for admin in admins:
-            notification = {
-                "id": str(uuid.uuid4()),
-                "tenant_id": tenant.id,
-                "user_id": admin.get("id"),
-                "type": "alerte_inspection",
-                "titre": f"⚠️ Alerte inspection: {asset_nom}",
-                "message": f"L'inspection de {asset_nom} a déclenché {len(alertes)} alerte(s):\n{alerte_texte}",
-                "lien": f"/actifs",
-                "lu": False,
-                "created_at": datetime.now(timezone.utc).isoformat()
-            }
-            await db.notifications.insert_one(notification)
+            try:
+                notification = {
+                    "id": str(uuid.uuid4()),
+                    "tenant_id": tenant.id,
+                    "user_id": admin.get("id"),
+                    "type": "alerte_inspection",
+                    "titre": f"⚠️ Alerte inspection: {asset_nom}",
+                    "message": f"L'inspection de {asset_nom} a déclenché {len(alertes)} alerte(s):\n{alerte_texte}",
+                    "lien": f"/actifs",
+                    "lu": False,
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                await db.notifications.insert_one(notification)
+                notifications_creees += 1
+                logger.info(f"🔔 Notification créée pour {admin.get('email', 'N/A')} (ID: {notification['id'][:8]})")
+            except Exception as notif_err:
+                logger.error(f"❌ Erreur création notification pour {admin.get('email', 'N/A')}: {notif_err}")
+        
+        logger.info(f"✅ {notifications_creees}/{len(admins)} notification(s) créée(s)")
         
         # Envoyer un email aux admins
         try:
             import resend
-            resend.api_key = os.environ.get("RESEND_API_KEY")
+            resend_api_key = os.environ.get("RESEND_API_KEY")
             sender_email = os.environ.get("SENDER_EMAIL", "noreply@profiremanager.ca")
             
-            admin_emails = [a.get("email") for a in admins if a.get("email")]
-            if admin_emails:
-                # Charger les paramètres du tenant pour le nom
-                tenant_data = await db.tenants.find_one({"id": tenant.id}, {"_id": 0})
-                tenant_nom = tenant_data.get("nom", tenant_slug) if tenant_data else tenant_slug
+            logger.info(f"📧 Configuration email - API Key présente: {bool(resend_api_key)}, Sender: {sender_email}")
+            
+            if not resend_api_key:
+                logger.error("❌ RESEND_API_KEY non configurée - Emails désactivés")
+            else:
+                resend.api_key = resend_api_key
                 
-                email_html = f"""
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <div style="background-color: #dc2626; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
-                        <h2 style="margin: 0;">⚠️ Alerte d'inspection</h2>
-                    </div>
-                    <div style="padding: 20px; background-color: #f9fafb; border-radius: 0 0 8px 8px;">
-                        <p><strong>Type:</strong> {asset_type.replace('_', ' ').title()}</p>
-                        <p><strong>Équipement:</strong> {asset_nom}</p>
-                        <p><strong>Inspecté par:</strong> {current_user.prenom} {current_user.nom}</p>
-                        <p><strong>Date:</strong> {date_inspection[:10] if date_inspection else 'N/A'}</p>
-                        
-                        <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 15px; margin-top: 15px;">
-                            <h3 style="color: #dc2626; margin: 0 0 10px 0;">Alertes détectées:</h3>
-                            <ul style="margin: 0; padding-left: 20px;">
-                                {''.join([f'<li>{msg}</li>' for msg in alertes_messages])}
-                            </ul>
+                admin_emails = [a.get("email") for a in admins if a.get("email")]
+                logger.info(f"📧 Emails admin trouvés: {admin_emails}")
+                
+                if admin_emails:
+                    # Charger les paramètres du tenant pour le nom
+                    tenant_data = await db.tenants.find_one({"id": tenant.id}, {"_id": 0})
+                    tenant_nom = tenant_data.get("nom", tenant_slug) if tenant_data else tenant_slug
+                    
+                    email_html = f"""
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <div style="background-color: #dc2626; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+                            <h2 style="margin: 0;">⚠️ Alerte d'inspection</h2>
                         </div>
-                        
-                        <p style="margin-top: 20px; font-size: 0.875rem; color: #6b7280;">
-                            Connectez-vous à ProFireManager pour plus de détails.
-                        </p>
+                        <div style="padding: 20px; background-color: #f9fafb; border-radius: 0 0 8px 8px;">
+                            <p><strong>Type:</strong> {asset_type.replace('_', ' ').title()}</p>
+                            <p><strong>Équipement:</strong> {asset_nom}</p>
+                            <p><strong>Inspecté par:</strong> {current_user.prenom} {current_user.nom}</p>
+                            <p><strong>Date:</strong> {date_inspection[:10] if date_inspection else 'N/A'}</p>
+                            
+                            <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 15px; margin-top: 15px;">
+                                <h3 style="color: #dc2626; margin: 0 0 10px 0;">Alertes détectées:</h3>
+                                <ul style="margin: 0; padding-left: 20px;">
+                                    {''.join([f'<li>{msg}</li>' for msg in alertes_messages])}
+                                </ul>
+                            </div>
+                            
+                            <p style="margin-top: 20px; font-size: 0.875rem; color: #6b7280;">
+                                Connectez-vous à ProFireManager pour plus de détails.
+                            </p>
+                        </div>
                     </div>
-                </div>
-                """
-                
-                resend.Emails.send({
-                    "from": f"ProFireManager <{sender_email}>",
-                    "to": admin_emails,
-                    "subject": f"⚠️ Alerte inspection: {asset_nom} - {tenant_nom}",
-                    "html": email_html
-                })
-                logger.info(f"Email d'alerte envoyé à {len(admin_emails)} administrateur(s)")
+                    """
+                    
+                    logger.info(f"📧 Envoi email à: {admin_emails}")
+                    email_response = resend.Emails.send({
+                        "from": f"ProFireManager <{sender_email}>",
+                        "to": admin_emails,
+                        "subject": f"⚠️ Alerte inspection: {asset_nom} - {tenant_nom}",
+                        "html": email_html
+                    })
+                    logger.info(f"✅ Email d'alerte envoyé à {len(admin_emails)} administrateur(s) - Response: {email_response}")
+                else:
+                    logger.warning("⚠️ Aucune adresse email admin trouvée pour l'envoi")
         except Exception as e:
-            logger.error(f"Erreur envoi email d'alerte: {e}")
+            logger.error(f"❌ Erreur envoi email d'alerte: {e}", exc_info=True)
     
     inspection.pop("_id", None)
     logger.info(f"Inspection unifiée créée pour {asset_type} '{asset_nom}' par {current_user.email}")
