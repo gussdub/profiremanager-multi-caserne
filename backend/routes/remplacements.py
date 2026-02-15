@@ -542,6 +542,150 @@ async def envoyer_email_remplacement(
         return False
 
 
+async def envoyer_email_remplacement_trouve(
+    demande_data: dict,
+    remplacant: dict,
+    demandeur: dict,
+    type_garde: dict,
+    tenant: dict
+):
+    """Envoie un email au demandeur pour l'informer qu'un remplaçant a été trouvé"""
+    try:
+        import resend
+        from routes.emails_history import log_email_sent
+        
+        resend_api_key = os.environ.get('RESEND_API_KEY')
+        if not resend_api_key:
+            logger.warning(f"RESEND_API_KEY non configurée - Email non envoyé")
+            return False
+        
+        resend.api_key = resend_api_key
+        
+        demandeur_email = demandeur.get("email")
+        if not demandeur_email:
+            logger.warning(f"Email non trouvé pour demandeur {demandeur.get('id')}")
+            return False
+        
+        # Vérifier les préférences de notification
+        preferences = demandeur.get("preferences_notifications", {})
+        if not preferences.get("email_actif", True):  # Par défaut activé
+            logger.info(f"📧 Email désactivé pour {demandeur.get('prenom')} - préférences utilisateur")
+            return False
+        
+        demandeur_prenom = demandeur.get("prenom", "")
+        remplacant_nom = f"{remplacant.get('prenom', '')} {remplacant.get('nom', '')}"
+        type_garde_nom = type_garde.get("nom", "Garde") if type_garde else "Garde"
+        date_garde = demande_data.get("date", "")
+        tenant_nom = tenant.get("nom", "ProFireManager")
+        
+        sender_email = os.environ.get('SENDER_EMAIL', 'noreply@profiremanager.ca')
+        frontend_url = os.environ.get('FRONTEND_URL', os.environ.get('REACT_APP_BACKEND_URL', ''))
+        
+        # Construire l'email HTML
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }}
+                .header h1 {{ margin: 0; font-size: 24px; }}
+                .content {{ background-color: #f8f9fa; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .success-box {{ background-color: #D1FAE5; border: 1px solid #10B981; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center; }}
+                .success-box .icon {{ font-size: 48px; margin-bottom: 10px; }}
+                .details {{ background-color: white; border-radius: 8px; padding: 20px; margin: 20px 0; }}
+                .details-row {{ display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }}
+                .details-row:last-child {{ border-bottom: none; }}
+                .details-label {{ color: #6B7280; }}
+                .details-value {{ font-weight: 600; color: #111827; }}
+                .btn {{ display: inline-block; background-color: #10B981; color: white; padding: 14px 30px; text-decoration: none; border-radius: 8px; margin-top: 20px; font-weight: 600; }}
+                .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>✅ Remplaçant trouvé!</h1>
+                </div>
+                <div class="content">
+                    <p>Bonjour {demandeur_prenom},</p>
+                    
+                    <div class="success-box">
+                        <div class="icon">🎉</div>
+                        <strong style="font-size: 18px; color: #059669;">Bonne nouvelle!</strong>
+                        <p style="margin: 10px 0 0 0; color: #065F46;">
+                            <strong>{remplacant_nom}</strong> a accepté de vous remplacer.
+                        </p>
+                    </div>
+                    
+                    <div class="details">
+                        <div class="details-row">
+                            <span class="details-label">📅 Date:</span>
+                            <span class="details-value">{date_garde}</span>
+                        </div>
+                        <div class="details-row">
+                            <span class="details-label">🚒 Type de garde:</span>
+                            <span class="details-value">{type_garde_nom}</span>
+                        </div>
+                        <div class="details-row">
+                            <span class="details-label">👤 Remplaçant:</span>
+                            <span class="details-value">{remplacant_nom}</span>
+                        </div>
+                    </div>
+                    
+                    <p>Votre demande de remplacement a été traitée avec succès. Le planning a été mis à jour automatiquement.</p>
+                    
+                    <center>
+                        <a href="{frontend_url}/remplacements" class="btn">Voir mes remplacements</a>
+                    </center>
+                    
+                    <p style="margin-top: 30px;">Cordialement,<br>L'équipe {tenant_nom}</p>
+                </div>
+                <div class="footer">
+                    <p>Ceci est un message automatique. Merci de ne pas y répondre.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        params = {
+            "from": f"{tenant_nom} <{sender_email}>",
+            "to": [demandeur_email],
+            "subject": f"✅ Remplaçant trouvé pour le {date_garde}",
+            "html": html_content
+        }
+        
+        response = resend.Emails.send(params)
+        logger.info(f"✅ Email 'remplacement trouvé' envoyé à {demandeur_email} (ID: {response.get('id', 'N/A')})")
+        
+        # Logger l'email dans l'historique
+        try:
+            await log_email_sent(
+                tenant_id=tenant.get("id"),
+                destinataire=demandeur_email,
+                sujet=f"✅ Remplaçant trouvé pour le {date_garde}",
+                type_email="remplacement_trouve",
+                statut="sent",
+                metadata={
+                    "demande_id": demande_data.get("id"),
+                    "remplacant_id": remplacant.get("id"),
+                    "demandeur_id": demandeur.get("id"),
+                    "date_garde": date_garde
+                }
+            )
+        except Exception as log_error:
+            logger.warning(f"⚠️ Erreur log email: {log_error}")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"❌ Erreur envoi email 'remplacement trouvé': {e}", exc_info=True)
+        return False
+
+
 async def envoyer_sms_remplacement(
     remplacant: Dict[str, Any],
     demande_data: Dict[str, Any],
