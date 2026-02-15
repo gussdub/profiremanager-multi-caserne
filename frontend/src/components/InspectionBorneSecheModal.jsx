@@ -123,6 +123,160 @@ const GeolocationField = ({ value, onChange }) => {
   );
 };
 
+// Composant Météo (auto-rempli via géolocalisation)
+const MeteoField = ({ value, onChange }) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  // Codes météo WMO vers descriptions françaises
+  const getWeatherDescription = (code) => {
+    const descriptions = {
+      0: { text: 'Ciel dégagé', icon: '☀️' },
+      1: { text: 'Principalement dégagé', icon: '🌤️' },
+      2: { text: 'Partiellement nuageux', icon: '⛅' },
+      3: { text: 'Couvert', icon: '☁️' },
+      45: { text: 'Brouillard', icon: '🌫️' },
+      48: { text: 'Brouillard givrant', icon: '🌫️' },
+      51: { text: 'Bruine légère', icon: '🌧️' },
+      53: { text: 'Bruine modérée', icon: '🌧️' },
+      55: { text: 'Bruine dense', icon: '🌧️' },
+      61: { text: 'Pluie légère', icon: '🌧️' },
+      63: { text: 'Pluie modérée', icon: '🌧️' },
+      65: { text: 'Pluie forte', icon: '🌧️' },
+      66: { text: 'Pluie verglaçante légère', icon: '🌨️' },
+      67: { text: 'Pluie verglaçante forte', icon: '🌨️' },
+      71: { text: 'Neige légère', icon: '🌨️' },
+      73: { text: 'Neige modérée', icon: '🌨️' },
+      75: { text: 'Neige forte', icon: '❄️' },
+      77: { text: 'Grains de neige', icon: '❄️' },
+      80: { text: 'Averses légères', icon: '🌦️' },
+      81: { text: 'Averses modérées', icon: '🌦️' },
+      82: { text: 'Averses violentes', icon: '🌦️' },
+      85: { text: 'Averses de neige légères', icon: '🌨️' },
+      86: { text: 'Averses de neige fortes', icon: '🌨️' },
+      95: { text: 'Orage', icon: '⛈️' },
+      96: { text: 'Orage avec grêle légère', icon: '⛈️' },
+      99: { text: 'Orage avec grêle forte', icon: '⛈️' }
+    };
+    return descriptions[code] || { text: 'Inconnu', icon: '❓' };
+  };
+
+  const fetchWeather = async () => {
+    if (!navigator.geolocation) {
+      setError('Géolocalisation non supportée');
+      return;
+    }
+    
+    setLoading(true);
+    setError('');
+    
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          
+          // Utiliser Open-Meteo API (gratuite, pas de clé requise)
+          const response = await fetch(
+            `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m&timezone=auto`
+          );
+          
+          if (!response.ok) throw new Error('Erreur API météo');
+          
+          const data = await response.json();
+          const current = data.current;
+          const weather = getWeatherDescription(current.weather_code);
+          
+          onChange({
+            temperature: current.temperature_2m,
+            humidity: current.relative_humidity_2m,
+            wind_speed: current.wind_speed_10m,
+            wind_direction: current.wind_direction_10m,
+            condition: weather.text,
+            icon: weather.icon,
+            latitude: latitude,
+            longitude: longitude,
+            timestamp: new Date().toISOString()
+          });
+          
+          setLoading(false);
+        } catch (err) {
+          setError('Erreur lors de la récupération météo: ' + err.message);
+          setLoading(false);
+        }
+      },
+      (err) => {
+        setError('Erreur géolocalisation: ' + err.message);
+        setLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
+  };
+
+  // Charger automatiquement au montage
+  useEffect(() => {
+    if (!value?.temperature) {
+      fetchWeather();
+    }
+  }, []);
+
+  return (
+    <div style={{ padding: '1rem', backgroundColor: '#f0f9ff', borderRadius: '0.5rem', border: '1px solid #bae6fd' }}>
+      {value?.temperature !== undefined ? (
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+            <span style={{ fontSize: '2.5rem' }}>{value.icon || '🌤️'}</span>
+            <div>
+              <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#0369a1' }}>
+                {value.temperature}°C
+              </div>
+              <div style={{ fontSize: '0.875rem', color: '#0284c7', fontWeight: '500' }}>
+                {value.condition}
+              </div>
+            </div>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.875rem', color: '#374151' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+              <span>💧</span> Humidité: {value.humidity}%
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+              <span>💨</span> Vent: {value.wind_speed} km/h
+            </div>
+          </div>
+          
+          <div style={{ marginTop: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.7rem', color: '#6b7280' }}>
+              📍 {value.latitude?.toFixed(4)}, {value.longitude?.toFixed(4)}
+            </span>
+            <Button 
+              type="button" 
+              onClick={fetchWeather} 
+              variant="outline" 
+              size="sm"
+              disabled={loading}
+              style={{ fontSize: '0.75rem' }}
+            >
+              {loading ? '⏳' : '🔄'} Actualiser
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div style={{ textAlign: 'center' }}>
+          <Button 
+            type="button" 
+            onClick={fetchWeather} 
+            disabled={loading} 
+            style={{ backgroundColor: '#0284c7', color: 'white' }}
+          >
+            {loading ? '⏳ Récupération météo...' : '🌤️ Capturer la météo'}
+          </Button>
+          {error && <p style={{ color: '#dc2626', marginTop: '0.5rem', fontSize: '0.875rem' }}>{error}</p>}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Composant Signature
 const SignatureField = ({ value, onChange }) => {
   const canvasRef = useRef(null);
