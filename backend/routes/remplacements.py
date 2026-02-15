@@ -895,6 +895,20 @@ async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
                     "data": {"demande_id": demande_id},
                     "created_at": datetime.now(timezone.utc).isoformat()
                 })
+                
+                # Envoyer un email au demandeur pour l'informer qu'aucun remplaçant n'a été trouvé
+                try:
+                    tenant = await db.tenants.find_one({"id": tenant_id})
+                    type_garde = await db.types_garde.find_one({"id": demande_data["type_garde_id"], "tenant_id": tenant_id})
+                    await envoyer_email_remplacement_non_trouve(
+                        demande_data=demande_data,
+                        demandeur=demandeur,
+                        type_garde=type_garde,
+                        tenant=tenant
+                    )
+                except Exception as email_error:
+                    logger.warning(f"⚠️ Erreur envoi email remplacement non trouvé: {email_error}")
+                    
             return
         
         if mode_notification == "multiple":
