@@ -4292,7 +4292,7 @@ async def envoyer_notifications_planning(tenant_slug: str, periode_debut: str, p
                     stats["heures_internes"] += duree
             
             user_name = f"{user['prenom']} {user['nom']}"
-            email_sent = send_gardes_notification_email(
+            email_sent = send_planning_notification_email(
                 user_email=user['email'],
                 user_name=user_name,
                 gardes_list=gardes,
