@@ -217,11 +217,11 @@ async def trigger_rappels_disponibilites(
         dernier_jour = date(next_month_year, next_month + 1, 1) - timedelta(days=1)
     periode_fin = dernier_jour.isoformat()
     
-    # Récupérer les employés temps partiel actifs
+    # Récupérer les employés temps partiel actifs (insensible à la casse pour statut)
     users_temps_partiel = await db.users.find({
         "tenant_id": tenant.id,
         "type_emploi": "temps_partiel",
-        "statut": "actif"
+        "statut": {"$regex": "^actif$", "$options": "i"}
     }).to_list(None)
     
     if not users_temps_partiel:
