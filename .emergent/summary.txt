@@ -1,114 +1,127 @@
 <analysis>**original_problem_statement:**
-The user's initial problem from the previous fork was a bug with corrupted file exports. During this session, the agent resolved a follow-up UI bug, then implemented several new features requested by the user:
+The user requested a series of features and bug fixes throughout the session:
 
-1.  **Add Inspector Name to Reports (FEATURE):** In prevention visit forms for low-risk inspections, automatically add the name of the logged-in user who performed the visit.
-2.  **Fix Login Corruption (BUG):** The user reported that after a failed login attempt, their credentials seemed to get corrupted, forcing a password reset.
-3.  **Fix Module Visibility on Refresh (BUG):** The Prévention module was not appearing on initial login for the demo tenant and required one or two page refreshes to show up.
-4.  **Fix SFTP Connection Leaks (BUG):** The SFTP server provider reported that the application was leaving connections open, potentially causing instability.
-5.  **Fix Vehicle QR Code Scan (BUG):** The user reported that scanning a vehicle's QR code logs the user in but does not navigate to the correct page (choice between inventory and security check).
+1.  **Fix Vehicle QR Code Scan (BUG):** The user reported that scanning a vehicle's QR code logs in but doesn't redirect to the choice page. After a fix, the user reported it redirects to the right page but the selection modal doesn't open.
+2.  **Fix Availability Reminder Emails (BUG):** The user noticed that reminder emails for availability submission were not being sent, despite the feature being enabled.
+3.  **Add Replacement Status Emails (FEATURE):** The user asked why they weren't notified by email when a replacement request was resolved (either a replacement was found or the request expired).
+4.  **Enhance Planning Schedule Email (FEATURE):** The user wanted to confirm the automatic schedule email system worked and requested enhancements to the email content, including a summary by shift type and a total of internal/external hours.
+5.  **Fix Planning Email Button (BUG):** The user reported the View Schedule button in the automated email was broken.
+6.  **Fix Water Supply Icons (BUG):** In the Inspection des bornes section, a generic tap emoji was used instead of the custom-defined icons for water points.
+7.  **Import Hydrant Inspections (FEATURE):** The user wants to import historical hydrant inspections from Excel files into the application. This requires adding a new section to the Import CSV page with intelligent data mapping.
 
 **User's preferred language**: French
 
 **what currently exists?**
-The application is a comprehensive multi-tenant management solution for fire services. In this session, the following key items were successfully resolved:
-- A bug in the login flow that incorrectly cleared saved credentials on any failed attempt has been fixed.
-- A race condition causing the Prévention module to appear only after a refresh has been resolved by modifying the backend to include tenant data directly in the login API response.
-- Multiple SFTP connection leaks in the codebase have been plugged by implementing robust  blocks. Startup and shutdown events were also added to the backend to ensure a clean state and prevent orphaned connections.
-- A feature to add the inspector's name to low-risk prevention reports has been implemented.
-
-The application is stable, with all recently reported issues resolved except for the new QR code bug.
+The application is a multi-tenant management solution for fire services. In this session, the agent successfully implemented several features and bug fixes:
+- An email notification system was added to inform users when their replacement requests are resolved (either fulfilled or expired).
+- The automated planning schedule email was significantly enhanced to include a summary by shift type, total internal/external hours, and a detailed table of assignments.
+- A bug preventing the manual and automatic sending of the planning schedule email was fixed.
+- The button link within the planning email was corrected to navigate users to the correct Planning module.
+- A bug preventing availability reminder emails from being sent was resolved by fixing a case-sensitivity issue in a database query and correcting a  value in the settings.
+- A UI bug was fixed where incorrect icons (emojis) were displayed for water supply points; they now show the correct custom images.
 
 **Last working item**:
-- Last item agent was working: The user reported that scanning a vehicle's QR code does not redirect to the expected page for choosing between inventaire and ronde de sécurité. The agent began investigating the frontend code related to this flow.
+- Last item agent was working: The agent was beginning the implementation of a new feature to import hydrant inspections from Excel files. The agent analyzed the provided Excel file, the existing application forms, and the current import logic. It clarified requirements with the user regarding how to identify the specific hydrant (from the filename) and handle certain data fields.
 - Status: IN PROGRESS
 - Agent Testing Done: N
-- Which testing method agent to use? frontend testing agent. The agent should simulate the QR code login flow and verify if the application correctly redirects to the vehicle-specific choice page.
+- Which testing method agent to use? both. The backend logic for parsing the file and creating the database entries should be tested first (e.g., via ). Once the frontend UI is built, the  should be used to test the end-to-end file upload and verification flow.
 - User Testing Done: N
 
 **All Pending/In progress Issue list**:
--   **Issue 1 (P0):** Vehicle QR code scan does not redirect to the choice page.
+-   **Issue 1 (P0):** Vehicle QR code scan does not open the action modal.
 -   **Issue 2 (P1):** Prévention module visibility is incorrect for the shefford tenant.
--   **Issue 3 (P2):** The notification system audit for the **Prévention** module is incomplete.
+-   **Issue 3 (P2):** The notification system audit for the Prévention module is incomplete.
 
 Issues Detail:
--   **Issue 1: Vehicle QR code scan does not redirect to the choice page.**
-    -   Description: When a user scans a vehicle's QR code, they are logged in, but the application does not navigate to the page where they can select inventaire or ronde de sécurité.
-    -   Attempted fixes: The agent has started to investigate the frontend code by viewing  to understand the routing logic after a QR code scan.
+-   **Issue 1: Vehicle QR code scan does not open the action modal.**
+    -   Description: After the agent's initial fix, scanning a QR code now navigates to the correct Gestion des Actifs page, but the user reported that the modal to choose inventaire or ronde de sécurité does not open automatically. The agent implemented a second, more robust fix using  to handle the action.
+    -   Attempted fixes: The agent implemented a fix in  to process the  from  more reliably upon component mount, using a  to prevent multiple executions.
     -   Next debug checklist:
-        1.  Analyze  to trace the routing logic triggered by a QR code login.
-        2.  Inspect the component that handles the post-login redirection to see why it's failing for vehicles.
-        3.  Check the data returned upon a successful vehicle QR scan to ensure it contains the necessary information to trigger the correct redirect.
-    -   Why fix this issue and what will be achieved with the fix?: This is a core workflow for vehicle management. Fixing it will restore essential functionality for field users.
-    -   Status: IN PROGRESS
-    -   Is recurring issue?: N
+        1.  Ask the user to re-test the QR code flow, ensuring they clear their browser cache first.
+        2.  If it still fails, check the browser's developer console for any errors or logs (, , ) that were added for debugging.
+        3.  Verify the timing of the  call in  and the mounting of .
+    -   Why fix this issue and what will be achieved with the fix?: This is a core workflow for field users managing vehicles. Fixing it will restore critical functionality.
+    -   Status: USER VERIFICATION PENDING
+    -   Is recurring issue?: Y
     -   Should Test frontend/backend/both after fix?: frontend
     -   Blocked on other issue: None.
 
 -   **Issue 2: Prévention module visibility is incorrect.**
-    -   Description: The user reported that the Prévention module is visible for the shefford tenant, but it should be disabled. This was carried over from the last fork.
-    -   Attempted fixes: The previous agent identified this as a data configuration issue ( is  in the DB). The user was informed but the conversation shifted. The current agent has not re-addressed this.
+    -   Description: Carried over from the last fork. The Prévention module is visible for the shefford tenant when it should be disabled.
+    -   Attempted fixes: None in this session. Identified as a database configuration issue in the previous fork.
     -   Next debug checklist:
-        1.  Confirm with the user that they want to disable the module for the shefford tenant.
-        2.  If confirmed, execute a database update: .
-        3.  Provide the user with instructions to refresh and verify the module is no longer visible.
-    -   Why fix this issue and what will be achieved with the fix?: To ensure tenants only see the modules they are subscribed to, correcting the user-facing UI.
+        1.  Confirm with the user that this is still a priority and they want to disable the module.
+        2.  If confirmed, run the database update: .
+    -   Why fix this issue and what will be achieved with the fix?: Ensures tenants only see modules they are subscribed to.
     -   Status: NOT STARTED
     -   Is recurring issue?: Y
     -   Should Test frontend/backend/both after fix?: frontend
     -   Blocked on other issue: User confirmation.
 
 -   **Issue 3: Incomplete Notification Audit for Prévention module.**
-    -   Description: This is a pending task carried over. A full audit of the notification system for the Prévention module was started but never completed.
+    -   Description: Carried over from a previous session. A full audit of the notification system for the Prévention module was never completed.
     -   Next debug checklist:
-        1.  Re-engage the user about this task.
-        2.  Ask the user for the specific requirements and desired notification triggers within the Prévention module.
-        3.  Review the existing notification code related to Prévention.
-    -   Why fix this issue and what will be achieved with the fix?: To ensure the Prévention module has a robust and complete notification system, improving workflow automation.
+        1.  Re-engage the user about this task's priority.
+        2.  Gather specific requirements for notification triggers within the module.
+    -   Why fix this issue and what will be achieved with the fix?: To ensure the module has a robust and complete notification system.
     -   Status: NOT STARTED
-    -   Is recurring issue?: Y (Carried over)
+    -   Is recurring issue?: Y
     -   Should Test frontend/backend/both after fix?: backend
     -   Blocked on other issue: User requirements.
 
 **In progress Task List**:
--   None.
+-   **Task 1 (P0):** Implement the import system for hydrant inspections.
+    -   Where to resume: Start by implementing the backend.
+        1.  Create a new route in a relevant file (e.g.,  or ) to handle the file upload for hydrant inspections.
+        2.  Implement the parsing logic, extracting the hydrant name from the filename.
+        3.  Create the intelligent mapping to translate Excel values (Conforme, Non conforme) to the application's data model.
+        4.  Create new inspection records in the database.
+        5.  Once the backend is ready, move to the frontend to add the new import option in .
+    -   What will be achieved with this?: Users will be able to bulk-import historical inspection data, saving significant manual entry time.
+    -   Status: IN PROGRESS
+    -   Should Test frontend/backend/both after fix?: both
+    -   Blocked on something: The user mentioned they will create the form and add the Cavitation field. The agent should proceed with the current structure and be prepared to update the import logic once the user finalizes the form.
 
 **Upcoming and Future Tasks**
+- **Upcoming Tasks:**
+  - **P1:** The user will create a new hydrant inspection form, which will include a Cavitation durant le pompage field. The import logic will need to be adapted to this new form structure.
 - **Future Tasks:**
-    - **P2:** Implement a Check Now button in the UI for manually triggering an SFTP check (carried over from previous handoff).
-    - **P3:** Verify that the explanatory note about the preview mode limitation has been removed from all export modals following the global refactoring (carried over from previous handoff).
+  - **P2:** Implement a Check Now button in the UI for manually triggering an SFTP check (carried over).
+  - **P3:** Verify that the explanatory note about the preview mode limitation has been removed from all export modals (carried over).
 
 **Completed work in this session**
-- **Inspector Name on Reports (COMPLETED):**
-  - **Backend:** Updated  to include  and .
-  - **Frontend:** Modified  to pass the user object to , which was updated to include the inspector's name in the form submission payload.
-- **Login Corruption Bug (RESOLVED):**
-  - **Frontend:** Modified  to stop clearing saved credentials on a failed login attempt, which was causing user confusion.
-- **Module Visibility on Refresh Bug (RESOLVED):**
-  - **Backend:** Modified  to include the full  object in the login API response for both regular and super-admin users.
-  - **Frontend:** Simplified  to rely on the  data now available immediately from the  after login, eliminating the race condition and the need for a refresh.
-- **SFTP Connection Leaks (RESOLVED):**
-  - **Backend:**
-    - Refactored  and  to use  blocks, ensuring both the SFTP client and the underlying transport layer are always closed.
-    - Added startup and shutdown event handlers in  to run a cleanup function, ensuring no orphaned SFTP connections are left after a restart or shutdown.
+- **Availability Reminder Emails (RESOLVED):**
+  - **Backend:** Fixed a case-sensitive query for employee  (Actif vs. actif) in  and  using a regex. Corrected  from  to  in the database.
+- **Replacement Request Emails (IMPLEMENTED):**
+  - **Backend:** Added new functions (, ) and logic in  to send email notifications to the requester when a replacement is found or when the request expires unfilled.
+- **Planning Schedule Email (ENHANCED & FIXED):**
+  - **Backend:** Refactored the email generation logic in  and  to include a summary by shift type and totals for internal/external hours. Fixed a circular import issue and corrected the function calls for the manual send now button. Corrected the button URL in the email to point to the correct frontend page ().
+- **Water Supply Icons (RESOLVED):**
+  - **Frontend:** Corrected the icon mapping in  to use custom image URLs instead of a hardcoded emoji for the borne_fontaine type.
 
 **Earlier issues found/mentioned but not fixed**
--   None.
+-   None. All issues raised during the session were either addressed or are listed in the pending/in-progress sections.
 
 **Known issue recurrence from previous fork**
--   None.
+-   **Prévention module visibility:** The issue of the module showing for the shefford tenant was carried over and not addressed.
+-   **Prévention notification audit:** The task to audit notifications was carried over and not addressed.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Fixing Frontend Race Conditions:** Resolved a UI loading issue not on the frontend, but by modifying the backend API () to provide all necessary data in a single, initial response, eliminating the need for subsequent asynchronous calls.
--   **Robust SFTP Connection Management:** Implemented proper error handling using  blocks to guarantee that both the  and its underlying  are closed, preventing resource leaks on the SFTP server.
--   **FastAPI Lifecycle Events:** Utilized FastAPI's  and  decorators to build a resilient system that cleans up resources (like SFTP connections) when the application starts or stops gracefully.
+-   **Asynchronous Race Conditions:** Investigated and attempted to fix a timing issue in React where an action set in  was not processed correctly after a full-page redirect. The fix involved using  to ensure a  runs only once and reliably.
+-   **Scheduled Jobs (APScheduler):** Debugged a scheduled job that wasn't running as expected due to incorrect data ( instead of ) and a case-sensitive database query.
+-   **Case-Insensitive MongoDB Queries:** Used  with the  option in Python to find documents regardless of string case (e.g., Actif vs. actif).
+-   **Dynamic Email Generation:** Enhanced HTML emails sent via  to include complex data summaries (counts by category, total hours) and conditional rendering.
+-   **Python Circular Imports:** Encountered and resolved a circular import dependency between  and  by moving the conflicting function to be locally defined within .
 
 **key DB schema**
--   **inspections:**
-    -   Added 
-    -   Added  (to align with frontend naming)
+-   **employes:**
+    -   : Found to be Actif (capitalized), while code expected actif.
+    -   : Used to filter for temps_partiel employees for availability reminders.
+-   **tenants.parametres.disponibilite:**
+    -   : Found to be , preventing reminders. Fixed to .
 
 **All files of reference**
 -   
@@ -118,41 +131,48 @@ Issues Detail:
 -   
 -   
 -   
--   
+-    (viewed for context)
+-    (viewed for context)
+-    (viewed for context)
+-    (viewed for context)
+-    (user provided artifact)
 
 **Areas that need refactoring**:
--   None identified in this session.
+-   The circular import between  and  was fixed by duplicating the  function inside . A better long-term solution would be to create a shared service file (e.g., ) to hold common email functions and avoid code duplication (DRY principle).
 
 **key api endpoints**
--    (Modified to return the full  object)
--    (Modified to return the full  object)
+-   : The manual trigger for sending schedule emails, which was fixed.
+-   The agent will need to create a new endpoint, likely , for the new import feature.
 
 **Critical Info for New Agent**
--   **User Testing Preference:** The user explicitly wants to perform all testing. **Do not** attempt to test features yourself. Instead, provide clear, step-by-step instructions in French on how the user can verify your changes.
--   **Communication Style:** All communication must be in **French**. The user appreciates a clear plan before implementation.
--   **Backend-first Fixes:** Be aware that some frontend rendering or timing issues might be more effectively solved by adjusting the data returned from backend APIs, as was the case with the Prévention module bug.
+-   **Communication:** All communication MUST be in **French**.
+-   **Testing:** The user performs **all testing**. The agent's role is to provide clear, step-by-step instructions in French for verification. Do not test features yourself.
+-   **Context Switching:** The user frequently introduces new high-priority bugs and features. It's important to get confirmation before switching tasks and to keep track of unfinished work (like the QR code bug verification).
+-   **QR Code Bug:** The fix for the QR code modal not appearing is pending user verification. This should be the first point of follow-up before diving deep into the new import feature.
 
 **documents and test reports created in this job**
--    (Updated)
+-   User artifact for the import task: 
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Reports that scanning a vehicle QR code doesn't navigate to the correct page. **Status: IN PROGRESS**
-2.  **User:** Asks the agent to ensure all SFTP connections are cleaned up when the app goes to production. **Status: COMPLETED**
-3.  **User:** Reports an issue with SFTP connections not being closed properly. **Status: COMPLETED**
-4.  **User:** Confirms the fix for the module visibility issue is working perfectly. **Status: COMPLETED**
-5.  **User:** Asks the agent to provide testing instructions, reminding the agent not to test themselves. **Status: ACKNOWLEDGED**
-6.  **User:** Reports that after clearing the cache, the module visibility fix is not working for the demo tenant. **Status: IN PROGRESS (at the time)**
-7.  **User:** Confirms that the login corruption issue is fixed, but the module visibility bug (double refresh) is still happening. **Status: IN PROGRESS (at the time)**
-8.  **User:** Asks the agent to investigate a potential bug where a failed login attempt corrupts the password. **Status: IN PROGRESS (at the time)**
-9.  **User:** Provides feedback on the implementation of the inspector name feature and the module visibility issue. **Status: ACKNOWLEDGED**
+1.  **User:** Requests an import feature for historical hydrant inspections from an Excel file, providing an example. **Status: IN PROGRESS**
+2.  **User:** Confirms the fix for the hydrant icon bug is working. **Status: COMPLETED**
+3.  **User:** Asks why a generic tap emoji is shown for water hydrants instead of the custom icons. **Status: COMPLETED**
+4.  **User:** Confirms the fix for the Consult my planning button in the email is working. **Status: COMPLETED**
+5.  **User:** Reports the button in the planning email doesn't lead to the planning module. **Status: COMPLETED**
+6.  **User:** Confirms the planning email content is perfect but the send now button was broken. **Status: COMPLETED**
+7.  **User:** Approves the suggestions to add a summary by shift type and total hours to the planning email. **Status: COMPLETED**
+8.  **User:** Asks for confirmation that the automatic planning email will be sent and requests enhancements to the email content. **Status: COMPLETED**
+9.  **User:** Asks if an email is also sent when a replacement is *not* found. **Status: COMPLETED**
+10. **User:** Asks why they are not notified by email when a replacement request is resolved. **Status: COMPLETED**
 
 **Project Health Check:**
--   **Broken:** The vehicle QR code scanning workflow is currently broken.
+-   **Broken:** The vehicle QR code scanning workflow is awaiting final user verification on a fix. It may still be broken.
 -   **Mocked/Partially Implemented:** None.
 
 **3rd Party Integrations**
--   SFTP Server
--   Scikit-learn
+-   **Resend:** Used for sending all transactional emails (replacement notifications, planning schedules, etc.).
+-   **SFTP Server:** Mentioned in the initial handoff, but not touched in this session.
+-   **Scikit-learn:** Mentioned in the initial handoff, but not touched in this session.
 
 **Testing status**
 -   Testing agent used after significant changes: NO
@@ -161,7 +181,8 @@ Issues Detail:
 -   Known regressions: None.
 
 **Credentials to test flow:**
-Credentials for the demo and shefford tenants are known by the user. The agent does not have them.
+The user has all necessary credentials for testing. The agent does not have them.
 
 **What agent forgot to execute**
--   The pending tasks from the previous session's handoff were not addressed as the user introduced a continuous stream of new, higher-priority requests. These tasks (, , ) remain in the backlog.</analysis>
+-   The agent did not follow up with the user to verify the final fix for the **Vehicle QR code scan** issue before the user changed topics. This remains a high-priority, unverified fix.
+-   The agent did not address the pending tasks from the initial handoff summary, including the **Prévention module visibility bug**, the **Prévention notification audit**, and the **SFTP Check Now button feature**. These should be re-prioritized with the user after the current tasks are completed.</analysis>
