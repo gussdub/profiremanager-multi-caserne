@@ -151,12 +151,6 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
     }
   };
 
-  const handleEditTypeEPI = (type) => {
-    setEditingTypeEPI(type);
-    setNewTypeEPI({ nom: type.nom, icone: type.icone, description: type.description || '' });
-    setShowTypeEPIModal(true);
-  };
-
   const fetchParametres = async () => {
     try {
       const data = await apiGet(tenantSlug, '/actifs/parametres');
