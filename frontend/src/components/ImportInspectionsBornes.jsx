@@ -386,7 +386,7 @@ const ImportInspectionsBornes = ({ tenantSlug, onImportComplete }) => {
                 onClick={handleImport}
                 disabled={loading || !file}
                 style={{
-                  background: loading || !file ? '#d1d5db' : '#3b82f6',
+                  background: loading || !file ? '#d1d5db' : '#dc2626',
                   color: 'white'
                 }}
               >
