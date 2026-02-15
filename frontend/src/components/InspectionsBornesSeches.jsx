@@ -390,7 +390,7 @@ const InspectionsBornesSeches = ({ user }) => {
               <Popup>
                 <div style={{ minWidth: '250px' }}>
                   <h3 style={{ fontWeight: '600', marginBottom: '0.5rem', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '1.5rem' }}>{getTypeIcon(point.type).startsWith('http') ? '' : getTypeIcon(point.type)}</span>
+                    <img src={getTypeIcon(point.type)} alt="icon" style={{ width: '32px', height: '32px' }} />
                     {point.nom || point.numero_identification}
                   </h3>
                   <div style={{ fontSize: '0.75rem', color: '#3b82f6', marginBottom: '0.5rem' }}>
