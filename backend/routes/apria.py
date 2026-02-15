@@ -1106,6 +1106,25 @@ async def create_inspection_unifiee(
             if equip:
                 asset_nom = equip.get('nom', asset_id[:8])
     
+    # Extraire la date d'inspection depuis les réponses du formulaire si présente
+    date_inspection = None
+    reponses = inspection_data.get("reponses", {})
+    for item_id, data in reponses.items():
+        valeur = data.get("valeur") if isinstance(data, dict) else data
+        # Vérifier si c'est une date (format YYYY-MM-DD ou ISO)
+        if isinstance(valeur, str) and len(valeur) >= 10:
+            try:
+                # Essayer de parser comme date
+                if valeur[4] == '-' and valeur[7] == '-':
+                    date_inspection = valeur
+                    break
+            except:
+                pass
+    
+    # Si pas de date trouvée dans le formulaire, utiliser la date actuelle
+    if not date_inspection:
+        date_inspection = datetime.now(timezone.utc).isoformat()
+    
     inspection = {
         "id": str(uuid.uuid4()),
         "tenant_id": tenant.id,
@@ -1118,14 +1137,14 @@ async def create_inspection_unifiee(
         "formulaire_id": inspection_data.get("formulaire_id"),
         "formulaire_nom": inspection_data.get("formulaire_nom", ""),
         "type_inspection": inspection_data.get("type_inspection", "inspection"),
-        "reponses": inspection_data.get("reponses", {}),
+        "reponses": reponses,
         "conforme": inspection_data.get("conforme", True),
         "remarques": inspection_data.get("remarques", "") or inspection_data.get("notes_generales", ""),
         "alertes": inspection_data.get("alertes", []),
         "metadata": inspection_data.get("metadata", {}),
         "inspecteur_id": inspection_data.get("user_id") or current_user.id,
         "inspecteur_nom": f"{current_user.prenom} {current_user.nom}",
-        "date_inspection": datetime.now(timezone.utc).isoformat(),
+        "date_inspection": date_inspection,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     
@@ -1156,11 +1175,89 @@ async def create_inspection_unifiee(
             await db.demandes_remplacement_equipements.insert_one(demande)
         logger.info(f"Demande de remplacement créée pour {asset_type} {asset_nom}")
     
-    # Envoyer des alertes si nécessaire
+    # Envoyer des notifications et emails si des alertes sont détectées
     alertes = inspection_data.get("alertes", [])
     if alertes:
         logger.warning(f"⚠️ {len(alertes)} alerte(s) détectée(s) pour {asset_type} {asset_nom}")
-        # TODO: Envoyer notification aux superviseurs
+        
+        # Construire le message d'alerte
+        alertes_messages = []
+        for alerte in alertes:
+            if isinstance(alerte, dict):
+                alertes_messages.append(alerte.get("message", str(alerte)))
+            else:
+                alertes_messages.append(str(alerte))
+        
+        alerte_texte = "\n".join([f"• {msg}" for msg in alertes_messages])
+        
+        # Récupérer les administrateurs et superviseurs pour notification
+        admins = await db.users.find({
+            "tenant_id": tenant.id,
+            "role": {"$in": ["admin", "superviseur"]},
+            "est_actif": True
+        }, {"_id": 0}).to_list(100)
+        
+        # Créer une notification pour chaque admin/superviseur
+        for admin in admins:
+            notification = {
+                "id": str(uuid.uuid4()),
+                "tenant_id": tenant.id,
+                "user_id": admin.get("id"),
+                "type": "alerte_inspection",
+                "titre": f"⚠️ Alerte inspection: {asset_nom}",
+                "message": f"L'inspection de {asset_nom} a déclenché {len(alertes)} alerte(s):\n{alerte_texte}",
+                "lien": f"/actifs",
+                "lu": False,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.notifications.insert_one(notification)
+        
+        # Envoyer un email aux admins
+        try:
+            import resend
+            resend.api_key = os.environ.get("RESEND_API_KEY")
+            sender_email = os.environ.get("SENDER_EMAIL", "noreply@profiremanager.ca")
+            
+            admin_emails = [a.get("email") for a in admins if a.get("email")]
+            if admin_emails:
+                # Charger les paramètres du tenant pour le nom
+                tenant_data = await db.tenants.find_one({"id": tenant.id}, {"_id": 0})
+                tenant_nom = tenant_data.get("nom", tenant_slug) if tenant_data else tenant_slug
+                
+                email_html = f"""
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <div style="background-color: #dc2626; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+                        <h2 style="margin: 0;">⚠️ Alerte d'inspection</h2>
+                    </div>
+                    <div style="padding: 20px; background-color: #f9fafb; border-radius: 0 0 8px 8px;">
+                        <p><strong>Type:</strong> {asset_type.replace('_', ' ').title()}</p>
+                        <p><strong>Équipement:</strong> {asset_nom}</p>
+                        <p><strong>Inspecté par:</strong> {current_user.prenom} {current_user.nom}</p>
+                        <p><strong>Date:</strong> {date_inspection[:10] if date_inspection else 'N/A'}</p>
+                        
+                        <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 15px; margin-top: 15px;">
+                            <h3 style="color: #dc2626; margin: 0 0 10px 0;">Alertes détectées:</h3>
+                            <ul style="margin: 0; padding-left: 20px;">
+                                {''.join([f'<li>{msg}</li>' for msg in alertes_messages])}
+                            </ul>
+                        </div>
+                        
+                        <p style="margin-top: 20px; font-size: 0.875rem; color: #6b7280;">
+                            Connectez-vous à ProFireManager pour plus de détails.
+                        </p>
+                    </div>
+                </div>
+                """
+                
+                resend.Emails.send({
+                    "from": f"ProFireManager <{sender_email}>",
+                    "to": admin_emails,
+                    "subject": f"⚠️ Alerte inspection: {asset_nom} - {tenant_nom}",
+                    "html": email_html
+                })
+                logger.info(f"Email d'alerte envoyé à {len(admin_emails)} administrateur(s)")
+        except Exception as e:
+            logger.error(f"Erreur envoi email d'alerte: {e}")
     
     inspection.pop("_id", None)
     logger.info(f"Inspection unifiée créée pour {asset_type} '{asset_nom}' par {current_user.email}")
