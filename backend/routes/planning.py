@@ -56,6 +56,227 @@ from routes.remplacements import ParametresRemplacements
 router = APIRouter(tags=["Planning"])
 logger = logging.getLogger(__name__)
 
+import os
+import resend
+
+
+def send_planning_notification_email(user_email: str, user_name: str, gardes_list: list, tenant_slug: str, periode: str, tenant_nom: str = None, stats: dict = None):
+    """
+    Envoie un email détaillé avec les gardes assignées pour le mois
+    """
+    resend_api_key = os.environ.get('RESEND_API_KEY')
+    
+    if not resend_api_key:
+        logger.warning(f"RESEND_API_KEY non configurée - Email NON envoyé à {user_email}")
+        return False
+    
+    try:
+        sender_email = os.environ.get('SENDER_EMAIL', 'noreply@profiremanager.ca')
+        caserne_nom = tenant_nom or tenant_slug.title()
+        
+        # Extraire le mois de la période
+        mois_noms = ["janvier", "février", "mars", "avril", "mai", "juin", 
+                     "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
+        try:
+            date_debut = datetime.strptime(periode.split(" au ")[0], "%Y-%m-%d")
+            mois_texte = f"{mois_noms[date_debut.month - 1]} {date_debut.year}"
+        except:
+            mois_texte = periode
+        
+        subject = f"📅 Votre planning validé - {mois_texte}"
+        
+        # Utiliser les stats fournies ou calculer
+        if stats is None:
+            stats = {
+                "par_type": {},
+                "heures_internes": 0,
+                "heures_externes": 0,
+                "total_gardes": len(gardes_list)
+            }
+            for g in gardes_list:
+                t = g.get('type_garde', 'Garde')
+                stats["par_type"][t] = stats["par_type"].get(t, 0) + 1
+                duree = g.get('duree_heures', 0) or 0
+                if g.get('est_externe', False):
+                    stats["heures_externes"] += duree
+                else:
+                    stats["heures_internes"] += duree
+        
+        nb_gardes = stats.get("total_gardes", len(gardes_list))
+        heures_internes = stats.get("heures_internes", 0)
+        heures_externes = stats.get("heures_externes", 0)
+        total_heures = heures_internes + heures_externes
+        par_type = stats.get("par_type", {})
+        
+        # Résumé par type de garde
+        resume_types_html = ""
+        for type_nom, count in par_type.items():
+            resume_types_html += f"""
+                <div style="display: inline-block; background: #f1f5f9; border-radius: 20px; padding: 8px 16px; margin: 4px; font-size: 14px;">
+                    <strong style="color: #dc2626;">{count}</strong> <span style="color: #475569;">{type_nom}</span>
+                </div>
+            """
+        
+        # Bloc heures
+        heures_html = ""
+        if heures_internes > 0 or heures_externes > 0:
+            heures_html = '<div style="display: flex; justify-content: center; gap: 30px; margin-top: 20px; flex-wrap: wrap;">'
+            if heures_internes > 0:
+                heures_html += f'''
+                    <div style="text-align: center; background: #f0fdf4; border-radius: 12px; padding: 15px 25px;">
+                        <span style="font-size: 28px; font-weight: bold; color: #16a34a;">{heures_internes:.1f}h</span>
+                        <br>
+                        <span style="color: #166534; font-size: 13px;">Heures internes</span>
+                    </div>
+                '''
+            if heures_externes > 0:
+                heures_html += f'''
+                    <div style="text-align: center; background: #fef3c7; border-radius: 12px; padding: 15px 25px;">
+                        <span style="font-size: 28px; font-weight: bold; color: #d97706;">{heures_externes:.1f}h</span>
+                        <br>
+                        <span style="color: #92400e; font-size: 13px;">Heures externes</span>
+                    </div>
+                '''
+            if heures_internes > 0 and heures_externes > 0:
+                heures_html += f'''
+                    <div style="text-align: center; background: #eff6ff; border-radius: 12px; padding: 15px 25px;">
+                        <span style="font-size: 28px; font-weight: bold; color: #2563eb;">{total_heures:.1f}h</span>
+                        <br>
+                        <span style="color: #1e40af; font-size: 13px;">Total</span>
+                    </div>
+                '''
+            heures_html += "</div>"
+        
+        # Liste des gardes en HTML
+        gardes_html = ''
+        for garde in gardes_list:
+            collegues_str = ', '.join(garde.get('collegues', [])) if garde.get('collegues') else 'Seul(e)'
+            jour = garde.get('jour', '')
+            horaire = garde.get('horaire', 'Horaire non défini')
+            
+            try:
+                date_obj = datetime.strptime(garde['date'], "%Y-%m-%d")
+                date_formatee = date_obj.strftime("%d/%m/%Y")
+            except:
+                date_formatee = garde['date']
+            
+            gardes_html += f"""
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                    <td style="padding: 12px; font-weight: 600; color: #1e293b;">
+                        {jour}<br>
+                        <span style="font-weight: normal; color: #64748b; font-size: 0.9rem;">{date_formatee}</span>
+                    </td>
+                    <td style="padding: 12px;">
+                        <strong style="color: #dc2626;">{garde['type_garde']}</strong><br>
+                        <span style="color: #64748b; font-size: 0.9rem;">{horaire}</span>
+                    </td>
+                    <td style="padding: 12px; color: #64748b; font-size: 0.9rem;">
+                        {collegues_str}
+                    </td>
+                </tr>
+            """
+        
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 650px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
+            
+            <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
+                <h1 style="margin: 0; font-size: 24px;">📅 Planning Validé</h1>
+                <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 16px;">{mois_texte}</p>
+            </div>
+            
+            <div style="background: white; padding: 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                
+                <p style="font-size: 16px;">Bonjour <strong>{user_name}</strong>,</p>
+                
+                <p>Votre planning pour le mois de <strong>{mois_texte}</strong> a été validé par votre administrateur.</p>
+                
+                <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 12px; padding: 25px; margin: 25px 0; text-align: center;">
+                    <h3 style="color: #1e40af; margin: 0 0 20px 0;">📊 Récapitulatif</h3>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <span style="font-size: 42px; font-weight: bold; color: #dc2626;">{nb_gardes}</span>
+                        <br>
+                        <span style="color: #64748b; font-size: 14px;">garde(s) assignée(s)</span>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        {resume_types_html}
+                    </div>
+                    
+                    {heures_html}
+                </div>
+                
+                <div style="background: #f0fdf4; border-left: 4px solid #22c55e; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+                    <strong style="color: #166534;">✅ Vos gardes pour {mois_texte} :</strong>
+                </div>
+                
+                <table style="width: 100%; border-collapse: collapse; margin: 20px 0; background: #fafafa; border-radius: 8px; overflow: hidden;">
+                    <thead>
+                        <tr style="background: #f1f5f9;">
+                            <th style="padding: 12px; text-align: left; color: #475569; font-weight: 600;">Jour</th>
+                            <th style="padding: 12px; text-align: left; color: #475569; font-weight: 600;">Type de garde</th>
+                            <th style="padding: 12px; text-align: left; color: #475569; font-weight: 600;">Collègues</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {gardes_html}
+                    </tbody>
+                </table>
+                
+                <div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 15px; margin: 25px 0;">
+                    <h4 style="color: #92400e; margin: 0 0 10px 0;">📢 Rappels importants :</h4>
+                    <ul style="color: #78350f; margin: 0; padding-left: 20px;">
+                        <li>Ce planning a été validé par votre administrateur</li>
+                        <li>Des ajustements peuvent survenir en cas de remplacements</li>
+                        <li>Consultez régulièrement l'application pour les mises à jour</li>
+                        <li>En cas d'absence imprévue, signalez-le immédiatement</li>
+                    </ul>
+                </div>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="https://www.profiremanager.ca/{tenant_slug}/planning" 
+                       style="background: #dc2626; color: white; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px;">
+                        Consulter mon planning
+                    </a>
+                </div>
+                
+                <p style="color: #64748b; margin-top: 30px;">
+                    Cordialement,<br>
+                    <strong>L'équipe {caserne_nom}</strong>
+                </p>
+            </div>
+            
+            <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
+                <p style="margin: 0;">Ceci est un message automatique de ProFireManager.</p>
+                <p style="margin: 5px 0 0 0;">© {datetime.now().year} {caserne_nom}</p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        resend.api_key = resend_api_key
+        
+        params = {
+            "from": f"{caserne_nom} <{sender_email}>",
+            "to": [user_email],
+            "subject": subject,
+            "html": html_content
+        }
+        
+        response = resend.Emails.send(params)
+        logger.info(f"✅ Email de planning envoyé à {user_email} (ID: {response.get('id', 'N/A')})")
+        return True
+            
+    except Exception as e:
+        logger.error(f"❌ Erreur envoi email planning à {user_email}: {str(e)}")
+        return False
+
 
 # ==================== SYSTÈME DE PROGRESSION TEMPS RÉEL ====================
 # Dictionnaire global pour stocker les progressions des attributions auto
