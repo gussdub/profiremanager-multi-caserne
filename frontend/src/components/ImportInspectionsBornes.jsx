@@ -180,14 +180,14 @@ const ImportInspectionsBornes = ({ tenantSlug, onImportComplete }) => {
           gap: '0.5rem'
         }}>
           <FileSpreadsheet size={24} />
-          Import Inspections Bornes Sèches
+          Inspection de borne
         </h3>
         <p style={{
           margin: '0.5rem 0 0',
           color: 'rgba(255,255,255,0.8)',
           fontSize: '0.875rem'
         }}>
-          Importez vos inspections historiques depuis un fichier Excel
+          Importez vos inspections depuis un fichier Excel
         </p>
       </div>
 
