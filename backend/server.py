@@ -88,6 +88,7 @@ from routes.emails_history import router as emails_history_router, log_email_sen
 from routes.horaires_personnalises import router as horaires_personnalises_router
 from routes.avis_non_conformite import router as avis_non_conformite_router
 from routes.broadcast import router as broadcast_router
+from routes.import_inspections_bornes import router as import_inspections_bornes_router
 from io import BytesIO
 import base64
 from PIL import Image as PILImage
