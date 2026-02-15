@@ -1178,6 +1178,8 @@ async def create_inspection_unifiee(
     
     # Envoyer des notifications et emails si des alertes sont détectées
     alertes = inspection_data.get("alertes", [])
+    logger.info(f"🔍 Vérification alertes pour {asset_type} {asset_nom}: {len(alertes)} alerte(s)")
+    
     if alertes:
         logger.warning(f"⚠️ {len(alertes)} alerte(s) détectée(s) pour {asset_type} {asset_nom}")
         
@@ -1190,13 +1192,16 @@ async def create_inspection_unifiee(
                 alertes_messages.append(str(alerte))
         
         alerte_texte = "\n".join([f"• {msg}" for msg in alertes_messages])
+        logger.info(f"📝 Messages d'alerte construits: {alertes_messages}")
         
         # Récupérer les administrateurs et superviseurs pour notification
+        # IMPORTANT: Utiliser "statut": "Actif" et non "est_actif": True (selon le modèle User)
         admins = await db.users.find({
             "tenant_id": tenant.id,
             "role": {"$in": ["admin", "superviseur"]},
-            "est_actif": True
+            "statut": "Actif"
         }, {"_id": 0}).to_list(100)
+        logger.info(f"👥 Admins/Superviseurs trouvés pour tenant {tenant.id}: {len(admins)}")
         
         # Créer une notification pour chaque admin/superviseur
         for admin in admins:
