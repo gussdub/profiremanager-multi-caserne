@@ -159,7 +159,11 @@ const MesEPI = ({ user }) => {
   const getTypeEPIForEpi = (epi) => {
     if (!epi) return null;
     const typeId = epi.type_epi_id || epi.type_epi;
-    return typesEPI.find(t => t.id === typeId || t.nom === typeId);
+    // Correspondance par ID exact ou par nom (insensible à la casse)
+    return typesEPI.find(t => 
+      t.id === typeId || 
+      t.nom?.toLowerCase() === typeId?.toLowerCase()
+    );
   };
 
   const loadEPIs = async () => {
