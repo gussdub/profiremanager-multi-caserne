@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://equipment-config.preview.emergentagent.com
+- **URL** : https://notif-backend-check.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://equipment-config.preview.emergentagent.com"
+  "apiUrl": "https://notif-backend-check.preview.emergentagent.com"
 }
 ```
 
