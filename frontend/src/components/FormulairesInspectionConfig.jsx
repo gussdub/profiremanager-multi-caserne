@@ -182,6 +182,7 @@ const FormulairesInspectionConfig = () => {
     { value: 'audio', label: '🎤 Note vocale', category: 'media' },
     { value: 'inspecteur', label: '👤 Inspecteur (auto-rempli)', category: 'auto' },
     { value: 'lieu', label: '📍 Lieu (GPS ou adresse)', category: 'auto' },
+    { value: 'meteo', label: '🌤️ Météo (auto-rempli)', category: 'auto' },
     { value: 'calcul', label: '🧮 Calcul automatique', category: 'advanced' }
   ];
 
