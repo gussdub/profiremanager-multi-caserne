@@ -102,12 +102,32 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
       await fetchTypesEPI();
       setShowTypeEPIModal(false);
       setEditingTypeEPI(null);
-      setNewTypeEPI({ nom: '', icone: '🛡️', description: '' });
+      setNewTypeEPI({ 
+        nom: '', 
+        icone: '🛡️', 
+        description: '',
+        formulaire_apres_usage_id: '',
+        formulaire_routine_id: '',
+        formulaire_avancee_id: ''
+      });
     } catch (error) {
       alert('Erreur: ' + (error.message || 'Impossible de sauvegarder'));
     } finally {
       setTypeEPILoading(false);
     }
+  };
+
+  const handleEditTypeEPI = (type) => {
+    setEditingTypeEPI(type);
+    setNewTypeEPI({
+      nom: type.nom || '',
+      icone: type.icone || '🛡️',
+      description: type.description || '',
+      formulaire_apres_usage_id: type.formulaire_apres_usage_id || '',
+      formulaire_routine_id: type.formulaire_routine_id || '',
+      formulaire_avancee_id: type.formulaire_avancee_id || ''
+    });
+    setShowTypeEPIModal(true);
   };
 
   const handleDeleteTypeEPI = async (typeId, typeName) => {
