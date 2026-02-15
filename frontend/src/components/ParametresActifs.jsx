@@ -36,8 +36,16 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
   const [typesEPI, setTypesEPI] = useState([]);
   const [showTypeEPIModal, setShowTypeEPIModal] = useState(false);
   const [editingTypeEPI, setEditingTypeEPI] = useState(null);
-  const [newTypeEPI, setNewTypeEPI] = useState({ nom: '', icone: '🛡️', description: '' });
+  const [newTypeEPI, setNewTypeEPI] = useState({ 
+    nom: '', 
+    icone: '🛡️', 
+    description: '',
+    formulaire_apres_usage_id: '',
+    formulaire_routine_id: '',
+    formulaire_avancee_id: ''
+  });
   const [typeEPILoading, setTypeEPILoading] = useState(false);
+  const [formulairesEPI, setFormulairesEPI] = useState([]);
 
   useEffect(() => {
     fetchParametres();
