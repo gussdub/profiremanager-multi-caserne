@@ -2634,17 +2634,18 @@ def send_super_admin_welcome_email(user_email: str, user_name: str, temp_passwor
         return False
 
 
-def send_gardes_notification_email(user_email: str, user_name: str, gardes_list: list, tenant_slug: str, periode: str, tenant_nom: str = None):
+def send_gardes_notification_email(user_email: str, user_name: str, gardes_list: list, tenant_slug: str, periode: str, tenant_nom: str = None, stats: dict = None):
     """
     Envoie un email détaillé avec les gardes assignées pour le mois
     
     Args:
         user_email: Email du pompier
         user_name: Nom complet du pompier
-        gardes_list: Liste des gardes [{date, jour, type_garde, horaire, collegues}]
+        gardes_list: Liste des gardes [{date, jour, type_garde, horaire, duree_heures, est_externe, collegues}]
         tenant_slug: Slug de la caserne
         periode: Période concernée (ex: "2025-03-01 au 2025-03-31")
         tenant_nom: Nom complet du tenant (optionnel)
+        stats: Statistiques calculées {par_type, heures_internes, heures_externes, total_gardes}
     """
     from routes.emails_history import log_email_sent
     import asyncio
@@ -2670,9 +2671,69 @@ def send_gardes_notification_email(user_email: str, user_name: str, gardes_list:
         
         subject = f"📅 Votre planning validé - {mois_texte}"
         
-        # Construction du récapitulatif en haut de l'email
-        nb_gardes = len(gardes_list)
-        types_uniques = list(set([g['type_garde'] for g in gardes_list]))
+        # Utiliser les stats fournies ou calculer
+        if stats is None:
+            stats = {
+                "par_type": {},
+                "heures_internes": 0,
+                "heures_externes": 0,
+                "total_gardes": len(gardes_list)
+            }
+            for g in gardes_list:
+                t = g.get('type_garde', 'Garde')
+                stats["par_type"][t] = stats["par_type"].get(t, 0) + 1
+                duree = g.get('duree_heures', 0) or 0
+                if g.get('est_externe', False):
+                    stats["heures_externes"] += duree
+                else:
+                    stats["heures_internes"] += duree
+        
+        nb_gardes = stats.get("total_gardes", len(gardes_list))
+        heures_internes = stats.get("heures_internes", 0)
+        heures_externes = stats.get("heures_externes", 0)
+        total_heures = heures_internes + heures_externes
+        par_type = stats.get("par_type", {})
+        
+        # Construction du résumé par type de garde
+        resume_types_html = ""
+        for type_nom, count in par_type.items():
+            resume_types_html += f"""
+                <div style="display: inline-block; background: #f1f5f9; border-radius: 20px; padding: 8px 16px; margin: 4px; font-size: 14px;">
+                    <strong style="color: #dc2626;">{count}</strong> <span style="color: #475569;">{type_nom}</span>
+                </div>
+            """
+        
+        # Construction du bloc heures
+        heures_html = ""
+        if heures_internes > 0 or heures_externes > 0:
+            heures_html = f"""
+                <div style="display: flex; justify-content: center; gap: 30px; margin-top: 20px; flex-wrap: wrap;">
+            """
+            if heures_internes > 0:
+                heures_html += f"""
+                    <div style="text-align: center; background: #f0fdf4; border-radius: 12px; padding: 15px 25px;">
+                        <span style="font-size: 28px; font-weight: bold; color: #16a34a;">{heures_internes:.1f}h</span>
+                        <br>
+                        <span style="color: #166534; font-size: 13px;">Heures internes</span>
+                    </div>
+                """
+            if heures_externes > 0:
+                heures_html += f"""
+                    <div style="text-align: center; background: #fef3c7; border-radius: 12px; padding: 15px 25px;">
+                        <span style="font-size: 28px; font-weight: bold; color: #d97706;">{heures_externes:.1f}h</span>
+                        <br>
+                        <span style="color: #92400e; font-size: 13px;">Heures externes</span>
+                    </div>
+                """
+            if heures_internes > 0 and heures_externes > 0:
+                heures_html += f"""
+                    <div style="text-align: center; background: #eff6ff; border-radius: 12px; padding: 15px 25px;">
+                        <span style="font-size: 28px; font-weight: bold; color: #2563eb;">{total_heures:.1f}h</span>
+                        <br>
+                        <span style="color: #1e40af; font-size: 13px;">Total</span>
+                    </div>
+                """
+            heures_html += "</div>"
         
         # Construction de la liste des gardes en HTML
         gardes_html = ''
