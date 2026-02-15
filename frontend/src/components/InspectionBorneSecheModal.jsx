@@ -619,19 +619,21 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
         if (item?.alertes?.valeurs_declenchantes && Array.isArray(item.alertes.valeurs_declenchantes)) {
           const declencheAlerte = item.alertes.valeurs_declenchantes.includes(value);
           const alerteId = `${sectionId}-${itemId}`;
+          const sectionNom = section.nom || section.titre || 'Section';
+          const itemNom = item.label || item.nom || itemId;
           
           if (declencheAlerte) {
             // Ajouter l'alerte si elle n'existe pas déjà
             const alerteExists = alertes.some(a => a.id === alerteId);
             if (!alerteExists) {
-              const messageAlerte = item.alertes.message_personnalise || 
-                `Non-conformité: ${section.titre} - ${item.nom || itemId}: ${value}`;
+              const messageAlerte = item.alertes.message || item.alertes.message_personnalise || 
+                `Non-conformité: ${sectionNom} - ${itemNom}: ${value}`;
               setAlertes(prev => [...prev, {
                 id: alerteId,
                 section_id: sectionId,
-                section_titre: section.titre,
+                section_titre: sectionNom,
                 item_id: itemId,
-                item_nom: item.nom,
+                item_nom: itemNom,
                 valeur: value,
                 message: messageAlerte,
                 severite: 'error'
@@ -650,6 +652,7 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
         
         // Vérifier les alertes au niveau section (ancien format)
         if (section?.options) {
+          const sectionNom = section.nom || section.titre || 'Section';
           const selectedOption = section.options.find(opt => opt.label === value);
           if (selectedOption?.declencherAlerte) {
             const alerteExists = alertes.some(a => a.section_id === sectionId && !a.item_id);
@@ -657,7 +660,7 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
               setAlertes(prev => [...prev, {
                 id: `${sectionId}`,
                 section_id: sectionId,
-                section_titre: section.titre,
+                section_titre: sectionNom,
                 item_id: null,
                 valeur: value,
                 message: `${section.titre}: ${value}`,
