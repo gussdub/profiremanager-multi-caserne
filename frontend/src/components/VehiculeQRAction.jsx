@@ -116,6 +116,10 @@ const VehiculeQRAction = () => {
       return;
     }
     
+    // Forcer la page courante vers 'actifs' pour redirection
+    localStorage.setItem('currentPage', 'actifs');
+    console.log('📍 currentPage forcé à "actifs" pour ronde de sécurité');
+    
     // Rediriger vers la page principale de l'application
     window.location.href = `/${tenantSlug}`;
   };
@@ -134,6 +138,10 @@ const VehiculeQRAction = () => {
       setShowLogin(true);
       return;
     }
+    
+    // Forcer la page courante vers 'actifs' pour redirection
+    localStorage.setItem('currentPage', 'actifs');
+    console.log('📍 currentPage forcé à "actifs" pour inventaire');
     
     // Rediriger vers la page principale de l'application
     window.location.href = `/${tenantSlug}`;
