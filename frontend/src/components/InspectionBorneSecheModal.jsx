@@ -405,8 +405,6 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
   const [reponses, setReponses] = useState({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [showAnomalieForm, setShowAnomalieForm] = useState(false);
-  const [anomalieData, setAnomalieData] = useState({ commentaire: '', photos: [] });
   const [alertes, setAlertes] = useState([]);
   const [sectionActuelle, setSectionActuelle] = useState(0); // Pagination par section
 
