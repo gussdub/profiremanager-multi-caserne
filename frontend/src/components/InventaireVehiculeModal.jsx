@@ -155,6 +155,58 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
     setItemsInventaire(newItems);
   };
 
+  // Calculer les alertes en temps réel
+  const calculerAlertes = useCallback(() => {
+    const newAlertes = [];
+    
+    itemsInventaire.forEach((item) => {
+      // Pour les champs avec options (radio, checkbox)
+      if (item.options && Array.isArray(item.options)) {
+        item.options.forEach(opt => {
+          if (opt.declencherAlerte) {
+            // Checkbox: vérifier si l'option est cochée
+            if (item.section_type_champ === 'checkbox' && Array.isArray(item.valeur) && item.valeur.includes(opt.label)) {
+              newAlertes.push({
+                id: `${item.id}-${opt.label}`,
+                item_nom: item.section_nom || item.nom,
+                valeur: opt.label,
+                message: `${item.section_nom || item.nom}: ${opt.label}`
+              });
+            }
+            // Radio: vérifier si l'option est sélectionnée
+            if (item.section_type_champ === 'radio' && item.valeur === opt.label) {
+              newAlertes.push({
+                id: `${item.id}-${opt.label}`,
+                item_nom: item.section_nom || item.nom,
+                valeur: opt.label,
+                message: `${item.section_nom || item.nom}: ${opt.label}`
+              });
+            }
+          }
+        });
+      }
+      
+      // Pour les items avec alertes configurées (nouveau format)
+      if (item.alertes?.valeurs_declenchantes && Array.isArray(item.alertes.valeurs_declenchantes)) {
+        if (item.alertes.valeurs_declenchantes.includes(item.valeur)) {
+          newAlertes.push({
+            id: `${item.id}`,
+            item_nom: item.nom,
+            valeur: item.valeur,
+            message: item.alertes.message || `${item.nom}: ${item.valeur}`
+          });
+        }
+      }
+    });
+    
+    setAlertesEnCours(newAlertes);
+  }, [itemsInventaire]);
+
+  // Recalculer les alertes à chaque changement d'item
+  useEffect(() => {
+    calculerAlertes();
+  }, [calculerAlertes]);
+
   const handleSubmit = async () => {
     setLoading(true);
 
