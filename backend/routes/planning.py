@@ -4028,10 +4028,12 @@ async def envoyer_notifications_planning(tenant_slug: str, periode_debut: str, p
             jour_fr = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'][date_obj.weekday()]
             
             gardes_par_user[user_id].append({
-                'date': date_obj.strftime('%d %B %Y'),
+                'date': assignation['date'],  # Format YYYY-MM-DD pour compatibilité
                 'jour': jour_fr,
                 'type_garde': type_garde.get('nom', 'Garde'),
                 'horaire': f"{type_garde.get('heure_debut', '08:00')} - {type_garde.get('heure_fin', '08:00')}",
+                'duree_heures': type_garde.get('duree_heures', 0),
+                'est_externe': type_garde.get('est_garde_externe', False),
                 'collegues': collegues
             })
         
@@ -4039,20 +4041,47 @@ async def envoyer_notifications_planning(tenant_slug: str, periode_debut: str, p
         emails_envoyes = 0
         emails_echoues = 0
         
-        periode_str = f"{dt.strptime(periode_debut, '%Y-%m-%d').strftime('%B %Y')}"
-        
         for user_id, gardes in gardes_par_user.items():
             user = users_map.get(user_id)
             if not user or not user.get('email'):
                 continue
             
+            # Vérifier les préférences de notification
+            preferences = user.get("preferences_notifications", {})
+            if not preferences.get("email_actif", True):
+                logger.info(f"📧 Email désactivé pour {user.get('prenom')} - préférences utilisateur")
+                continue
+            
+            # Calculer les statistiques pour cet utilisateur
+            stats = {
+                "par_type": {},
+                "heures_internes": 0,
+                "heures_externes": 0,
+                "total_gardes": len(gardes)
+            }
+            
+            for garde in gardes:
+                type_nom = garde.get("type_garde", "Garde")
+                duree = garde.get("duree_heures", 0) or 0
+                
+                if type_nom not in stats["par_type"]:
+                    stats["par_type"][type_nom] = 0
+                stats["par_type"][type_nom] += 1
+                
+                if garde.get("est_externe", False):
+                    stats["heures_externes"] += duree
+                else:
+                    stats["heures_internes"] += duree
+            
             user_name = f"{user['prenom']} {user['nom']}"
             email_sent = send_gardes_notification_email(
-                user['email'],
-                user_name,
-                gardes,
-                tenant_slug,
-                periode_str
+                user_email=user['email'],
+                user_name=user_name,
+                gardes_list=gardes,
+                tenant_slug=tenant_slug,
+                periode=f"{periode_debut} au {periode_fin}",
+                tenant_nom=tenant.nom,
+                stats=stats
             )
             
             if email_sent:
@@ -4080,6 +4109,7 @@ async def envoyer_notifications_planning(tenant_slug: str, periode_debut: str, p
         }
         
     except Exception as e:
+        logger.error(f"Erreur envoi notifications planning: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Erreur envoi notifications: {str(e)}")
 
 
