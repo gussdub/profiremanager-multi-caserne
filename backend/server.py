@@ -1747,10 +1747,32 @@ async def envoyer_notifications_planning_automatique(tenant: dict, periode_debut
             if not user or not user.get("email"):
                 continue
             
+            # Vérifier les préférences de notification
+            preferences = user.get("preferences_notifications", {})
+            if not preferences.get("email_actif", True):  # Par défaut activé
+                logging.info(f"📧 Email désactivé pour {user.get('prenom')} - préférences utilisateur")
+                continue
+            
             # Préparer liste des gardes avec détails
             gardes_list = []
+            
+            # Noms des jours en français
+            jours_fr = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+            
             for garde in gardes:
                 type_g = type_garde_map.get(garde["type_garde_id"], {})
+                
+                # Calculer le jour de la semaine
+                try:
+                    date_obj = datetime.strptime(garde["date"], "%Y-%m-%d")
+                    jour_semaine = jours_fr[date_obj.weekday()]
+                except:
+                    jour_semaine = ""
+                
+                # Formater l'horaire
+                heure_debut = type_g.get("heure_debut", "")
+                heure_fin = type_g.get("heure_fin", "")
+                horaire = f"{heure_debut} - {heure_fin}" if heure_debut and heure_fin else "Horaire non défini"
                 
                 # Trouver collègues sur même garde
                 collegues_meme_garde = [
@@ -1768,7 +1790,9 @@ async def envoyer_notifications_planning_automatique(tenant: dict, periode_debut
                 
                 gardes_list.append({
                     "date": garde["date"],
+                    "jour": jour_semaine,
                     "type_garde": type_g.get("nom", "Garde"),
+                    "horaire": horaire,
                     "collegues": collegues_noms
                 })
             
@@ -1782,6 +1806,7 @@ async def envoyer_notifications_planning_automatique(tenant: dict, periode_debut
                     user_name=f"{user.get('prenom', '')} {user.get('nom', '')}",
                     gardes_list=gardes_list,
                     tenant_slug=tenant["slug"],
+                    tenant_nom=tenant.get("nom", tenant["slug"].title()),
                     periode=f"{periode_debut} au {periode_fin}"
                 )
                 emails_envoyes += 1
