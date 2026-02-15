@@ -737,6 +737,9 @@ async def create_type_epi(
         "ordre": type_data.ordre if type_data.ordre > 0 else next_ordre,
         "est_defaut": False,
         "actif": True,
+        "formulaire_apres_usage_id": type_data.formulaire_apres_usage_id,
+        "formulaire_routine_id": type_data.formulaire_routine_id,
+        "formulaire_avancee_id": type_data.formulaire_avancee_id,
         "created_at": datetime.now(timezone.utc)
     }
     
