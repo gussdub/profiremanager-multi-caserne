@@ -1029,18 +1029,6 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
           )}
         </div>
 
-        {/* Alertes en cours */}
-        {alertes.length > 0 && (
-          <div style={{ padding: '0.75rem 1.25rem', backgroundColor: '#fef2f2', borderBottom: '1px solid #fecaca' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#dc2626', fontWeight: '600', marginBottom: '0.5rem' }}>
-              <span>⚠️</span> {alertes.length} alerte(s) détectée(s)
-            </div>
-            <ul style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.875rem', color: '#991b1b' }}>
-              {alertes.map((a, i) => <li key={i}>{a.message}</li>)}
-            </ul>
-          </div>
-        )}
-
         {/* Formulaire avec pagination */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem' }}>
           {(() => {
