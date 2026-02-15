@@ -613,31 +613,60 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
             [itemId]: value
           }
         };
+        
+        // Vérifier les alertes configurées sur l'item
+        const item = section?.items?.find(i => i.id === itemId);
+        if (item?.alertes?.valeurs_declenchantes && Array.isArray(item.alertes.valeurs_declenchantes)) {
+          const declencheAlerte = item.alertes.valeurs_declenchantes.includes(value);
+          const alerteId = `${sectionId}-${itemId}`;
+          
+          if (declencheAlerte) {
+            // Ajouter l'alerte si elle n'existe pas déjà
+            const alerteExists = alertes.some(a => a.id === alerteId);
+            if (!alerteExists) {
+              const messageAlerte = item.alertes.message_personnalise || 
+                `Non-conformité: ${section.titre} - ${item.nom || itemId}: ${value}`;
+              setAlertes(prev => [...prev, {
+                id: alerteId,
+                section_id: sectionId,
+                section_titre: section.titre,
+                item_id: itemId,
+                item_nom: item.nom,
+                valeur: value,
+                message: messageAlerte,
+                severite: 'error'
+              }]);
+            }
+          } else {
+            // Retirer l'alerte si la réponse change vers une valeur conforme
+            setAlertes(prev => prev.filter(a => a.id !== alerteId));
+          }
+        }
       } else {
         newReponses[sectionId] = {
           ...newReponses[sectionId],
           valeur: value
         };
-      }
-
-      // Vérifier si cette réponse déclenche une alerte
-      if (section?.options) {
-        const selectedOption = section.options.find(opt => opt.label === value);
-        if (selectedOption?.declencherAlerte) {
-          const alerteExists = alertes.some(a => a.section_id === sectionId && a.item_id === itemId);
-          if (!alerteExists) {
-            setAlertes(prev => [...prev, {
-              section_id: sectionId,
-              section_titre: section.titre,
-              item_id: itemId,
-              item_nom: itemId ? section.items?.find(i => i.id === itemId)?.nom : null,
-              message: `${section.titre}${itemId ? ' - ' + section.items?.find(i => i.id === itemId)?.nom : ''}: ${value}`,
-              severite: 'warning'
-            }]);
+        
+        // Vérifier les alertes au niveau section (ancien format)
+        if (section?.options) {
+          const selectedOption = section.options.find(opt => opt.label === value);
+          if (selectedOption?.declencherAlerte) {
+            const alerteExists = alertes.some(a => a.section_id === sectionId && !a.item_id);
+            if (!alerteExists) {
+              setAlertes(prev => [...prev, {
+                id: `${sectionId}`,
+                section_id: sectionId,
+                section_titre: section.titre,
+                item_id: null,
+                valeur: value,
+                message: `${section.titre}: ${value}`,
+                severite: 'warning'
+              }]);
+            }
+          } else {
+            setAlertes(prev => prev.filter(a => !(a.section_id === sectionId && !a.item_id)));
           }
-        } else {
-          // Retirer l'alerte si la réponse change
-          setAlertes(prev => prev.filter(a => !(a.section_id === sectionId && a.item_id === itemId)));
         }
       }
 
