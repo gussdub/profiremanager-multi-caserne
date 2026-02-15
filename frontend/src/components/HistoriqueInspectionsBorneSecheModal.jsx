@@ -82,21 +82,209 @@ const HistoriqueInspectionsBorneSecheModal = ({ borne, tenantSlug, onClose }) =>
   };
 
   const getResultatColor = (inspection) => {
-    // Vérifier si pompage conforme et pas de défectuosités majeures
-    if (inspection.pompage_continu_5min === 'Conforme') {
+    // Vérifier si conforme
+    if (inspection.conforme === true || inspection.pompage_continu_5min === 'Conforme') {
       return '#10b981'; // Vert
     }
     return '#ef4444'; // Rouge
   };
 
   const getResultatLabel = (inspection) => {
-    if (inspection.pompage_continu_5min === 'Conforme') {
+    if (inspection.conforme === true || inspection.pompage_continu_5min === 'Conforme') {
       return '✓ Conforme';
     }
     return '✗ Non conforme';
   };
 
+  // Formater une valeur de réponse pour l'affichage
+  const formatReponseValue = (valeur) => {
+    if (valeur === null || valeur === undefined) return 'N/A';
+    if (typeof valeur === 'boolean') return valeur ? 'Oui' : 'Non';
+    if (typeof valeur === 'object') {
+      // Météo
+      if (valeur.temperature !== undefined) {
+        return `${valeur.icon || '🌤️'} ${valeur.temperature}°C - ${valeur.condition || ''}`;
+      }
+      // Géolocalisation
+      if (valeur.latitude && valeur.longitude) {
+        return `📍 ${valeur.latitude.toFixed(4)}, ${valeur.longitude.toFixed(4)}`;
+      }
+      // Chronomètre
+      if (valeur.formattedTime) {
+        return `⏱️ ${valeur.formattedTime}`;
+      }
+      return JSON.stringify(valeur);
+    }
+    if (Array.isArray(valeur)) return valeur.join(', ');
+    return String(valeur);
+  };
+
+  // Rendu des données d'une inspection unifiée (avec formulaire personnalisé)
+  const renderUnifiedInspectionDetails = (inspection) => {
+    const formulaire = formulairesCache[inspection.formulaire_id];
+    const reponses = inspection.reponses || {};
+
+    // Organiser les réponses par section
+    const sectionMap = {};
+    Object.entries(reponses).forEach(([itemId, data]) => {
+      const sectionName = typeof data === 'object' && data.section ? data.section : 'Réponses';
+      const valeur = typeof data === 'object' && data.valeur !== undefined ? data.valeur : data;
+      if (!sectionMap[sectionName]) sectionMap[sectionName] = [];
+      
+      // Trouver le label du champ dans le formulaire
+      let label = itemId;
+      if (formulaire?.sections) {
+        for (const section of formulaire.sections) {
+          const item = section.items?.find(i => i.id === itemId);
+          if (item) {
+            label = item.nom || item.label || itemId;
+            break;
+          }
+        }
+      }
+      
+      sectionMap[sectionName].push({ id: itemId, label, valeur });
+    });
+
+    return (
+      <div style={{ marginTop: '1rem' }}>
+        {/* Bouton retour */}
+        <button
+          onClick={() => setSelectedInspection(null)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            padding: '0.5rem 1rem',
+            background: '#f3f4f6',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            marginBottom: '1rem',
+            fontSize: '0.875rem'
+          }}
+        >
+          ← Retour à la liste
+        </button>
+
+        {/* En-tête */}
+        <div style={{ 
+          background: getResultatColor(inspection) + '15',
+          border: `1px solid ${getResultatColor(inspection)}`,
+          borderRadius: '8px',
+          padding: '1rem',
+          marginBottom: '1rem'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div>
+              <div style={{ fontWeight: '600', fontSize: '1rem' }}>
+                Inspection du {formatDate(inspection.date_inspection || inspection.created_at)}
+              </div>
+              <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                Par: {inspection.inspecteur_nom || 'Non spécifié'}
+              </div>
+              {formulaire?.nom && (
+                <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.25rem' }}>
+                  📋 {formulaire.nom}
+                </div>
+              )}
+            </div>
+            <span style={{
+              padding: '0.5rem 1rem',
+              background: getResultatColor(inspection),
+              color: 'white',
+              borderRadius: '20px',
+              fontSize: '0.875rem',
+              fontWeight: '600'
+            }}>
+              {getResultatLabel(inspection)}
+            </span>
+          </div>
+        </div>
+
+        {/* Sections et réponses */}
+        {Object.entries(sectionMap).map(([sectionName, items], sIdx) => (
+          <div key={sIdx} style={{ 
+            background: 'white',
+            border: '1px solid #e5e7eb',
+            borderRadius: '8px',
+            padding: '1rem',
+            marginBottom: '1rem'
+          }}>
+            <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.875rem', color: '#374151' }}>
+              📋 {sectionName}
+            </h4>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.5rem' }}>
+              {items.map((item, iIdx) => (
+                <div key={iIdx} style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column',
+                  padding: '0.75rem',
+                  background: '#f9fafb',
+                  borderRadius: '6px'
+                }}>
+                  <span style={{ color: '#6b7280', fontSize: '0.75rem', marginBottom: '0.25rem' }}>{item.label}</span>
+                  <span style={{ fontWeight: '500', fontSize: '0.875rem' }}>{formatReponseValue(item.valeur)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        {/* Notes */}
+        {inspection.notes_generales && (
+          <div style={{ 
+            background: 'white',
+            border: '1px solid #e5e7eb',
+            borderRadius: '8px',
+            padding: '1rem',
+            marginBottom: '1rem'
+          }}>
+            <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.875rem', color: '#374151' }}>
+              💬 Notes
+            </h4>
+            <p style={{ margin: 0, fontSize: '0.875rem', whiteSpace: 'pre-wrap' }}>
+              {inspection.notes_generales}
+            </p>
+          </div>
+        )}
+
+        {/* Alertes */}
+        {inspection.alertes && inspection.alertes.length > 0 && (
+          <div style={{ 
+            background: '#fef2f2',
+            border: '1px solid #fecaca',
+            borderRadius: '8px',
+            padding: '1rem',
+            marginBottom: '1rem'
+          }}>
+            <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.875rem', color: '#dc2626' }}>
+              ⚠️ Alertes déclenchées
+            </h4>
+            {inspection.alertes.map((alerte, aIdx) => (
+              <div key={aIdx} style={{ 
+                padding: '0.5rem',
+                background: 'white',
+                borderRadius: '4px',
+                marginBottom: '0.25rem',
+                fontSize: '0.875rem'
+              }}>
+                {alerte.message || alerte}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderInspectionDetails = (inspection) => {
+    // Si c'est une inspection unifiée (avec reponses), utiliser le nouveau rendu
+    if (inspection.source === 'unifie' || inspection.reponses) {
+      return renderUnifiedInspectionDetails(inspection);
+    }
+    
+    // Sinon, utiliser l'ancien format (rétrocompatibilité)
     return (
       <div style={{ marginTop: '1rem' }}>
         {/* Bouton retour */}
