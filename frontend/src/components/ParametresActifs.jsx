@@ -868,7 +868,14 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
             <Button
               onClick={() => {
                 setEditingTypeEPI(null);
-                setNewTypeEPI({ nom: '', icone: '🛡️', description: '' });
+                setNewTypeEPI({ 
+                  nom: '', 
+                  icone: '🛡️', 
+                  description: '',
+                  formulaire_apres_usage_id: '',
+                  formulaire_routine_id: '',
+                  formulaire_avancee_id: ''
+                });
                 setShowTypeEPIModal(true);
               }}
               style={{ background: '#10B981', color: 'white', fontSize: '13px', padding: '8px 16px' }}
