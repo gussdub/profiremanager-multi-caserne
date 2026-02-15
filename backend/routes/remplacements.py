@@ -686,6 +686,153 @@ async def envoyer_email_remplacement_trouve(
         return False
 
 
+async def envoyer_email_remplacement_non_trouve(
+    demande_data: dict,
+    demandeur: dict,
+    type_garde: dict,
+    tenant: dict
+):
+    """Envoie un email au demandeur pour l'informer qu'aucun remplaçant n'a été trouvé"""
+    try:
+        import resend
+        from routes.emails_history import log_email_sent
+        
+        resend_api_key = os.environ.get('RESEND_API_KEY')
+        if not resend_api_key:
+            logger.warning(f"RESEND_API_KEY non configurée - Email non envoyé")
+            return False
+        
+        resend.api_key = resend_api_key
+        
+        demandeur_email = demandeur.get("email")
+        if not demandeur_email:
+            logger.warning(f"Email non trouvé pour demandeur {demandeur.get('id')}")
+            return False
+        
+        # Vérifier les préférences de notification
+        preferences = demandeur.get("preferences_notifications", {})
+        if not preferences.get("email_actif", True):  # Par défaut activé
+            logger.info(f"📧 Email désactivé pour {demandeur.get('prenom')} - préférences utilisateur")
+            return False
+        
+        demandeur_prenom = demandeur.get("prenom", "")
+        type_garde_nom = type_garde.get("nom", "Garde") if type_garde else "Garde"
+        date_garde = demande_data.get("date", "")
+        tenant_nom = tenant.get("nom", "ProFireManager")
+        
+        sender_email = os.environ.get('SENDER_EMAIL', 'noreply@profiremanager.ca')
+        frontend_url = os.environ.get('FRONTEND_URL', os.environ.get('REACT_APP_BACKEND_URL', ''))
+        
+        # Construire l'email HTML
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }}
+                .header h1 {{ margin: 0; font-size: 24px; }}
+                .content {{ background-color: #f8f9fa; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .alert-box {{ background-color: #FEE2E2; border: 1px solid #EF4444; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center; }}
+                .alert-box .icon {{ font-size: 48px; margin-bottom: 10px; }}
+                .details {{ background-color: white; border-radius: 8px; padding: 20px; margin: 20px 0; }}
+                .details-row {{ display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }}
+                .details-row:last-child {{ border-bottom: none; }}
+                .details-label {{ color: #6B7280; }}
+                .details-value {{ font-weight: 600; color: #111827; }}
+                .action-box {{ background-color: #FEF3C7; border: 1px solid #F59E0B; border-radius: 8px; padding: 15px; margin: 20px 0; }}
+                .btn {{ display: inline-block; background-color: #DC2626; color: white; padding: 14px 30px; text-decoration: none; border-radius: 8px; margin-top: 20px; font-weight: 600; }}
+                .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>❌ Aucun remplaçant trouvé</h1>
+                </div>
+                <div class="content">
+                    <p>Bonjour {demandeur_prenom},</p>
+                    
+                    <div class="alert-box">
+                        <div class="icon">😔</div>
+                        <strong style="font-size: 18px; color: #DC2626;">Demande expirée</strong>
+                        <p style="margin: 10px 0 0 0; color: #991B1B;">
+                            Malheureusement, aucun remplaçant n'a pu être trouvé pour votre demande.
+                        </p>
+                    </div>
+                    
+                    <div class="details">
+                        <div class="details-row">
+                            <span class="details-label">📅 Date:</span>
+                            <span class="details-value">{date_garde}</span>
+                        </div>
+                        <div class="details-row">
+                            <span class="details-label">🚒 Type de garde:</span>
+                            <span class="details-value">{type_garde_nom}</span>
+                        </div>
+                        <div class="details-row">
+                            <span class="details-label">📊 Statut:</span>
+                            <span class="details-value" style="color: #DC2626;">Expirée - Aucun remplaçant</span>
+                        </div>
+                    </div>
+                    
+                    <div class="action-box">
+                        <strong>⚠️ Action requise</strong>
+                        <p style="margin: 10px 0 0 0;">
+                            Veuillez contacter votre superviseur pour trouver une solution alternative.
+                        </p>
+                    </div>
+                    
+                    <center>
+                        <a href="{frontend_url}/remplacements" class="btn">Voir mes demandes</a>
+                    </center>
+                    
+                    <p style="margin-top: 30px;">Cordialement,<br>L'équipe {tenant_nom}</p>
+                </div>
+                <div class="footer">
+                    <p>Ceci est un message automatique. Merci de ne pas y répondre.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        params = {
+            "from": f"{tenant_nom} <{sender_email}>",
+            "to": [demandeur_email],
+            "subject": f"❌ Aucun remplaçant trouvé pour le {date_garde}",
+            "html": html_content
+        }
+        
+        response = resend.Emails.send(params)
+        logger.info(f"✅ Email 'remplacement non trouvé' envoyé à {demandeur_email} (ID: {response.get('id', 'N/A')})")
+        
+        # Logger l'email dans l'historique
+        try:
+            await log_email_sent(
+                tenant_id=tenant.get("id"),
+                destinataire=demandeur_email,
+                sujet=f"❌ Aucun remplaçant trouvé pour le {date_garde}",
+                type_email="remplacement_non_trouve",
+                statut="sent",
+                metadata={
+                    "demande_id": demande_data.get("id"),
+                    "demandeur_id": demandeur.get("id"),
+                    "date_garde": date_garde
+                }
+            )
+        except Exception as log_error:
+            logger.warning(f"⚠️ Erreur log email: {log_error}")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"❌ Erreur envoi email 'remplacement non trouvé': {e}", exc_info=True)
+        return False
+
+
 async def envoyer_sms_remplacement(
     remplacant: Dict[str, Any],
     demande_data: Dict[str, Any],
