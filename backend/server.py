@@ -1528,11 +1528,11 @@ async def job_verifier_rappels_disponibilites():
                     except:
                         pass
                 
-                # Récupérer les employés temps partiel actifs
+                # Récupérer les employés temps partiel actifs (insensible à la casse pour statut)
                 users_temps_partiel = await db.users.find({
                     "tenant_id": tenant_id,
                     "type_emploi": "temps_partiel",
-                    "statut": "actif"
+                    "statut": {"$regex": "^actif$", "$options": "i"}
                 }).to_list(None)
                 
                 if not users_temps_partiel:
