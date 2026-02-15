@@ -1031,6 +1031,104 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                     placeholder="Brève description du type d'équipement"
                   />
                 </div>
+
+                {/* Section Formulaires d'inspection */}
+                <div style={{ 
+                  marginTop: '8px', 
+                  padding: '16px', 
+                  backgroundColor: '#EFF6FF', 
+                  borderRadius: '8px', 
+                  border: '1px solid #BFDBFE' 
+                }}>
+                  <h4 style={{ 
+                    margin: '0 0 8px', 
+                    fontSize: '14px', 
+                    fontWeight: '600', 
+                    color: '#1E40AF',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}>
+                    📝 Formulaires d&apos;inspection (optionnel)
+                  </h4>
+                  <p style={{ fontSize: '12px', color: '#3B82F6', marginBottom: '12px' }}>
+                    Assignez des formulaires pour activer les boutons d&apos;inspection correspondants.
+                  </p>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {/* Après utilisation */}
+                    <div>
+                      <Label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                        🔍 Après utilisation
+                      </Label>
+                      <select
+                        value={newTypeEPI.formulaire_apres_usage_id || ''}
+                        onChange={e => setNewTypeEPI({...newTypeEPI, formulaire_apres_usage_id: e.target.value})}
+                        style={{ 
+                          width: '100%', 
+                          padding: '8px', 
+                          borderRadius: '6px', 
+                          border: '1px solid #93C5FD', 
+                          fontSize: '13px', 
+                          backgroundColor: 'white' 
+                        }}
+                      >
+                        <option value="">Aucun formulaire</option>
+                        {formulairesEPI.map(f => (
+                          <option key={f.id} value={f.id}>📋 {f.nom}</option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    {/* Routine mensuelle */}
+                    <div>
+                      <Label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                        📅 Routine mensuelle
+                      </Label>
+                      <select
+                        value={newTypeEPI.formulaire_routine_id || ''}
+                        onChange={e => setNewTypeEPI({...newTypeEPI, formulaire_routine_id: e.target.value})}
+                        style={{ 
+                          width: '100%', 
+                          padding: '8px', 
+                          borderRadius: '6px', 
+                          border: '1px solid #93C5FD', 
+                          fontSize: '13px', 
+                          backgroundColor: 'white' 
+                        }}
+                      >
+                        <option value="">Aucun formulaire</option>
+                        {formulairesEPI.map(f => (
+                          <option key={f.id} value={f.id}>📋 {f.nom}</option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    {/* Avancée annuelle */}
+                    <div>
+                      <Label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                        🔧 Avancée annuelle
+                      </Label>
+                      <select
+                        value={newTypeEPI.formulaire_avancee_id || ''}
+                        onChange={e => setNewTypeEPI({...newTypeEPI, formulaire_avancee_id: e.target.value})}
+                        style={{ 
+                          width: '100%', 
+                          padding: '8px', 
+                          borderRadius: '6px', 
+                          border: '1px solid #93C5FD', 
+                          fontSize: '13px', 
+                          backgroundColor: 'white' 
+                        }}
+                      >
+                        <option value="">Aucun formulaire</option>
+                        {formulairesEPI.map(f => (
+                          <option key={f.id} value={f.id}>📋 {f.nom}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
               </div>
               
               <div style={{ display: 'flex', gap: '12px', marginTop: '24px', justifyContent: 'flex-end' }}>
