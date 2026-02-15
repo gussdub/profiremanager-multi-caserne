@@ -1119,7 +1119,7 @@ async def create_inspection_unifiee(
                 if valeur[4] == '-' and valeur[7] == '-':
                     date_inspection = valeur
                     break
-            except:
+            except (IndexError, TypeError):
                 pass
     
     # Si pas de date trouvée dans le formulaire, utiliser la date actuelle
