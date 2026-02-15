@@ -757,73 +757,82 @@ const MesEPI = ({ user }) => {
                 </div>
                 
                 <div className="epi-card-actions">
-                  {/* Boutons d'inspection conditionnels selon les formulaires assignés */}
-                  {epi.formulaire_apres_usage_id && (
-                    <Button 
-                      size="sm"
-                      style={{ backgroundColor: '#f97316', color: 'white' }}
-                      onClick={() => {
-                        setSelectedEPI(epi);
-                        setSelectedTypeInspection('apres_usage');
-                        // Charger le formulaire et ouvrir le modal unifié
-                        const loadAndOpenInspection = async () => {
-                          try {
-                            const formulaire = await apiGet(tenantSlug, `/formulaires-inspection/${epi.formulaire_apres_usage_id}`);
-                            setSelectedFormulaire(formulaire);
-                            setShowInspectionUnifieeModal(true);
-                          } catch (error) {
-                            toast({
-                              title: "Erreur",
-                              description: "Impossible de charger le formulaire",
-                              variant: "destructive"
-                            });
-                          }
-                        };
-                        loadAndOpenInspection();
-                      }}
-                      disabled={epi.statut === 'Retiré'}
-                    >
-                      🔍 Après usage
-                    </Button>
-                  )}
-                  {epi.formulaire_routine_id && (
-                    <Button 
-                      size="sm"
-                      style={{ backgroundColor: '#3b82f6', color: 'white' }}
-                      onClick={() => {
-                        setSelectedEPI(epi);
-                        setSelectedTypeInspection('routine');
-                        const loadAndOpenInspection = async () => {
-                          try {
-                            const formulaire = await apiGet(tenantSlug, `/formulaires-inspection/${epi.formulaire_routine_id}`);
-                            setSelectedFormulaire(formulaire);
-                            setShowInspectionUnifieeModal(true);
-                          } catch (error) {
-                            toast({
-                              title: "Erreur",
-                              description: "Impossible de charger le formulaire",
-                              variant: "destructive"
-                            });
-                          }
-                        };
-                        loadAndOpenInspection();
-                      }}
-                      disabled={epi.statut === 'Retiré'}
-                    >
-                      📅 Routine
-                    </Button>
-                  )}
-                  {/* Bouton Avancée masqué - Uniquement disponible dans Gestion des EPI pour les admins/superviseurs */}
-                  {/* Bouton inspection par défaut si aucun formulaire assigné */}
-                  {!epi.formulaire_apres_usage_id && !epi.formulaire_routine_id && !epi.formulaire_avancee_id && (
-                    <Button 
-                      size="sm" 
-                      onClick={() => openInspectionModal(epi)}
-                      disabled={epi.statut === 'Retiré'}
-                    >
-                      📋 Inspection
-                    </Button>
-                  )}
+                  {/* Boutons d'inspection selon les formulaires de la CATÉGORIE */}
+                  {(() => {
+                    const typeEPI = getTypeEPIForEpi(epi);
+                    const hasApresUsage = typeEPI?.formulaire_apres_usage_id;
+                    const hasRoutine = typeEPI?.formulaire_routine_id;
+                    const hasAucunFormulaire = !hasApresUsage && !hasRoutine;
+                    
+                    return (
+                      <>
+                        {hasApresUsage && (
+                          <Button 
+                            size="sm"
+                            style={{ backgroundColor: '#f97316', color: 'white' }}
+                            onClick={() => {
+                              setSelectedEPI(epi);
+                              setSelectedTypeInspection('apres_usage');
+                              const loadAndOpenInspection = async () => {
+                                try {
+                                  const formulaire = await apiGet(tenantSlug, `/formulaires-inspection/${typeEPI.formulaire_apres_usage_id}`);
+                                  setSelectedFormulaire(formulaire);
+                                  setShowInspectionUnifieeModal(true);
+                                } catch (error) {
+                                  toast({
+                                    title: "Erreur",
+                                    description: "Impossible de charger le formulaire",
+                                    variant: "destructive"
+                                  });
+                                }
+                              };
+                              loadAndOpenInspection();
+                            }}
+                            disabled={epi.statut === 'Retiré'}
+                          >
+                            🔍 Après usage
+                          </Button>
+                        )}
+                        {hasRoutine && (
+                          <Button 
+                            size="sm"
+                            style={{ backgroundColor: '#3b82f6', color: 'white' }}
+                            onClick={() => {
+                              setSelectedEPI(epi);
+                              setSelectedTypeInspection('routine');
+                              const loadAndOpenInspection = async () => {
+                                try {
+                                  const formulaire = await apiGet(tenantSlug, `/formulaires-inspection/${typeEPI.formulaire_routine_id}`);
+                                  setSelectedFormulaire(formulaire);
+                                  setShowInspectionUnifieeModal(true);
+                                } catch (error) {
+                                  toast({
+                                    title: "Erreur",
+                                    description: "Impossible de charger le formulaire",
+                                    variant: "destructive"
+                                  });
+                                }
+                              };
+                              loadAndOpenInspection();
+                            }}
+                            disabled={epi.statut === 'Retiré'}
+                          >
+                            📅 Mensuelle
+                          </Button>
+                        )}
+                        {/* Bouton inspection par défaut si aucun formulaire assigné à la catégorie */}
+                        {hasAucunFormulaire && (
+                          <Button 
+                            size="sm" 
+                            onClick={() => openInspectionModal(epi)}
+                            disabled={epi.statut === 'Retiré'}
+                          >
+                            📋 Inspection
+                          </Button>
+                        )}
+                      </>
+                    );
+                  })()}
                   <Button 
                     size="sm" 
                     variant="outline"
