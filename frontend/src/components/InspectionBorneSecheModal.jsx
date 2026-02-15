@@ -1111,24 +1111,47 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
                   </button>
 
                   {estDerniereSection ? (
-                    <button
-                      type="button"
-                      onClick={handleSubmit}
-                      disabled={submitting}
-                      style={{
-                        flex: 1,
-                        padding: '0.875rem',
-                        backgroundColor: submitting ? '#9ca3af' : '#10b981',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '0.5rem',
-                        cursor: submitting ? 'not-allowed' : 'pointer',
-                        fontSize: '1rem',
-                        fontWeight: '600'
-                      }}
-                    >
-                      {submitting ? '⏳ Enregistrement...' : '✓ Valider l\'inspection'}
-                    </button>
+                    <>
+                      {/* Avertissement si des alertes sont présentes */}
+                      {alertes.length > 0 && (
+                        <div style={{
+                          width: '100%',
+                          marginBottom: '1rem',
+                          padding: '1rem',
+                          backgroundColor: '#fef2f2',
+                          border: '2px solid #dc2626',
+                          borderRadius: '0.5rem'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#dc2626', fontWeight: '700', fontSize: '1rem', marginBottom: '0.5rem' }}>
+                            ⚠️ ATTENTION - {alertes.length} non-conformité(s) détectée(s)
+                          </div>
+                          <ul style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.875rem', color: '#991b1b' }}>
+                            {alertes.map((a, i) => <li key={i} style={{ marginBottom: '0.25rem' }}>{a.message}</li>)}
+                          </ul>
+                          <p style={{ margin: '0.75rem 0 0', fontSize: '0.8rem', color: '#6b7280' }}>
+                            Une notification sera envoyée aux responsables.
+                          </p>
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleSubmit}
+                        disabled={submitting}
+                        style={{
+                          flex: 1,
+                          padding: '0.875rem',
+                          backgroundColor: submitting ? '#9ca3af' : (alertes.length > 0 ? '#dc2626' : '#10b981'),
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '0.5rem',
+                          cursor: submitting ? 'not-allowed' : 'pointer',
+                          fontSize: '1rem',
+                          fontWeight: '600'
+                        }}
+                      >
+                        {submitting ? '⏳ Enregistrement...' : (alertes.length > 0 ? '⚠️ Valider avec non-conformité' : '✓ Valider l\'inspection')}
+                      </button>
+                    </>
                   ) : (
                     <button
                       type="button"
