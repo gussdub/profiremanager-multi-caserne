@@ -194,7 +194,7 @@ const HistoriqueInspectionsBorneSecheModal = ({ borne, tenantSlug, onClose }) =>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
             <div>
               <div style={{ fontWeight: '600', fontSize: '1rem' }}>
-                Inspection du {formatDate(inspection.date_inspection || inspection.created_at)}
+                Inspection du {formatDate(dateAffichage)}
               </div>
               <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
                 Par: {inspection.inspecteur_nom || 'Non spécifié'}
