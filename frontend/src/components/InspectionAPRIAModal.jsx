@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { apiGet, apiPost } from '../utils/api';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -18,8 +18,8 @@ const InspectionAPRIAModal = ({ isOpen, onClose, tenantSlug, user, equipementPre
   const [typeInspection, setTypeInspection] = useState('mensuelle');
   const [reponses, setReponses] = useState({});
   const [pressionCylindre, setPressionCylindre] = useState('');
-  const [conforme, setConforme] = useState(true);
   const [remarques, setRemarques] = useState('');
+  const [alertesEnCours, setAlertesEnCours] = useState([]); // Alertes détectées en temps réel
 
   // Charger les équipements APRIA et le modèle actif
   useEffect(() => {
