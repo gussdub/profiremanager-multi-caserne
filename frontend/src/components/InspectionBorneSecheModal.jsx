@@ -678,13 +678,11 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
         asset_id: borne.id,
         asset_type: 'borne_seche',
         reponses: reponsesUnifiees,
-        conforme: alertes.length === 0 && !showAnomalieForm,
-        notes_generales: anomalieData.commentaire || '',
+        conforme: alertes.length === 0, // Conformité déterminée par les alertes du formulaire
+        notes_generales: '',
         alertes: alertes,
         metadata: {
           borne_nom: borne.nom || borne.numero_identification,
-          has_anomalie: showAnomalieForm,
-          photos_anomalie: anomalieData.photos || [],
           latitude: reponses.geolocation?.valeur?.latitude,
           longitude: reponses.geolocation?.valeur?.longitude,
           signature_inspecteur: Object.values(reponses).find(r => r.type_champ === 'signature')?.valeur || ''
