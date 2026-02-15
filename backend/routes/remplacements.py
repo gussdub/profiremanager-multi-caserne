@@ -1100,6 +1100,20 @@ async def accepter_remplacement(demande_id: str, remplacant_id: str, tenant_id: 
             "created_at": datetime.now(timezone.utc).isoformat()
         })
         
+        # Envoyer un email au demandeur pour l'informer que son remplacement a été trouvé
+        try:
+            tenant = await db.tenants.find_one({"id": tenant_id})
+            type_garde = await db.types_garde.find_one({"id": demande_data["type_garde_id"], "tenant_id": tenant_id})
+            await envoyer_email_remplacement_trouve(
+                demande_data=demande_data,
+                remplacant=remplacant,
+                demandeur=demandeur,
+                type_garde=type_garde,
+                tenant=tenant
+            )
+        except Exception as email_error:
+            logger.warning(f"⚠️ Erreur envoi email remplacement trouvé: {email_error}")
+        
         superviseurs = await db.users.find({
             "tenant_id": tenant_id,
             "role": {"$in": ["superviseur", "admin"]}
