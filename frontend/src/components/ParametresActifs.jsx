@@ -51,7 +51,29 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
     fetchParametres();
     fetchEpiSettings();
     fetchTypesEPI();
+    fetchFormulairesEPI();
   }, [tenantSlug]);
+
+  const fetchFormulairesEPI = async () => {
+    try {
+      const formulaires = await apiGet(tenantSlug, '/formulaires-inspection');
+      // Filtrer les formulaires applicables aux EPI
+      const epiFormulaires = (formulaires || []).filter(f => {
+        if (f.est_actif === false) return false;
+        if (Array.isArray(f.categorie_ids)) {
+          const hasEpiCategory = f.categorie_ids.some(cat => 
+            typeof cat === 'string' && cat.toLowerCase() === 'epi'
+          );
+          if (hasEpiCategory) return true;
+        }
+        if (f.nom && f.nom.toLowerCase().includes('epi')) return true;
+        return false;
+      });
+      setFormulairesEPI(epiFormulaires);
+    } catch (error) {
+      console.log('Formulaires EPI non chargés:', error);
+    }
+  };
 
   const fetchTypesEPI = async () => {
     try {
