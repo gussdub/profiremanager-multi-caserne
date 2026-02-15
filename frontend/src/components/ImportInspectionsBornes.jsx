@@ -196,9 +196,9 @@ const ImportInspectionsBornes = ({ tenantSlug, onImportComplete }) => {
         {/* Instructions */}
         <div style={{
           padding: '1rem',
-          background: '#f0f9ff',
+          background: '#fef2f2',
           borderRadius: '8px',
-          border: '1px solid #bae6fd',
+          border: '1px solid #fecaca',
           marginBottom: '1.5rem'
         }}>
           <div style={{
@@ -206,20 +206,20 @@ const ImportInspectionsBornes = ({ tenantSlug, onImportComplete }) => {
             alignItems: 'flex-start',
             gap: '0.75rem'
           }}>
-            <Info size={20} color="#0284c7" style={{ marginTop: '2px', flexShrink: 0 }} />
+            <Info size={20} color="#dc2626" style={{ marginTop: '2px', flexShrink: 0 }} />
             <div>
-              <p style={{ margin: 0, fontWeight: '600', color: '#0369a1', fontSize: '0.875rem' }}>
+              <p style={{ margin: 0, fontWeight: '600', color: '#b91c1c', fontSize: '0.875rem' }}>
                 Comment ça fonctionne?
               </p>
               <ul style={{
                 margin: '0.5rem 0 0',
                 paddingLeft: '1.25rem',
-                color: '#0369a1',
+                color: '#b91c1c',
                 fontSize: '0.8rem',
                 lineHeight: '1.6'
               }}>
                 <li>Le <strong>nom de la borne</strong> est extrait automatiquement du nom du fichier</li>
-                <li>Exemple: <code style={{ background: '#e0f2fe', padding: '2px 6px', borderRadius: '4px' }}>Darby - Fiche technique.xlsx</code> → Borne "Darby"</li>
+                <li>Exemple: <code style={{ background: '#fee2e2', padding: '2px 6px', borderRadius: '4px' }}>Darby - Fiche technique.xlsx</code> → Borne "Darby"</li>
                 <li>Les valeurs "Conforme", "Non conforme" et "N/A" sont reconnues automatiquement</li>
                 <li>Format supporté: Export Google Forms ou Excel standard</li>
               </ul>
