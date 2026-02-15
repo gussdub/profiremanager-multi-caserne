@@ -1107,36 +1107,59 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
                   </button>
 
                   {estDerniereSection ? (
-                    <>
-                      {/* Avertissement si des alertes sont présentes */}
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      {/* Box jaune: Alertes détectées (style EPI) */}
                       {alertes.length > 0 && (
                         <div style={{
-                          width: '100%',
-                          marginBottom: '1rem',
                           padding: '1rem',
-                          backgroundColor: '#fef2f2',
-                          border: '2px solid #dc2626',
+                          backgroundColor: '#fef9c3',
+                          border: '1px solid #fde047',
                           borderRadius: '0.5rem'
                         }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#dc2626', fontWeight: '700', fontSize: '1rem', marginBottom: '0.5rem' }}>
-                            ⚠️ ATTENTION - {alertes.length} non-conformité(s) détectée(s)
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#854d0e', fontWeight: '600', marginBottom: '0.5rem' }}>
+                            🔔 Alertes détectées ({alertes.length})
                           </div>
-                          <ul style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.875rem', color: '#991b1b' }}>
-                            {alertes.map((a, i) => <li key={i} style={{ marginBottom: '0.25rem' }}>{a.message}</li>)}
-                          </ul>
-                          <p style={{ margin: '0.75rem 0 0', fontSize: '0.8rem', color: '#6b7280' }}>
-                            Une notification sera envoyée aux responsables.
+                          <p style={{ margin: '0 0 0.5rem', fontSize: '0.875rem', color: '#713f12' }}>
+                            Ces alertes seront envoyées au gestionnaire:
                           </p>
+                          {alertes.map((a, i) => (
+                            <div key={i} style={{ fontSize: '0.875rem', color: '#713f12', marginLeft: '0.5rem' }}>
+                              <strong>{a.item_nom || a.section_titre}</strong>: {a.valeur}
+                            </div>
+                          ))}
                         </div>
                       )}
+
+                      {/* Box rose: NON CONFORME (style EPI) */}
+                      {alertes.length > 0 && (
+                        <div style={{
+                          padding: '1rem',
+                          backgroundColor: '#ffe4e6',
+                          border: '1px solid #fecdd3',
+                          borderRadius: '0.5rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.75rem'
+                        }}>
+                          <span style={{ fontSize: '1.5rem' }}>⚠️</span>
+                          <div>
+                            <div style={{ fontWeight: '700', color: '#be123c' }}>NON CONFORME</div>
+                            <div style={{ fontSize: '0.875rem', color: '#be123c' }}>
+                              {alertes.length} alerte(s) seront envoyées au gestionnaire
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Bouton de validation */}
                       <button
                         type="button"
                         onClick={handleSubmit}
                         disabled={submitting}
                         style={{
-                          flex: 1,
-                          padding: '0.875rem',
-                          backgroundColor: submitting ? '#9ca3af' : (alertes.length > 0 ? '#dc2626' : '#10b981'),
+                          width: '100%',
+                          padding: '1rem',
+                          backgroundColor: submitting ? '#9ca3af' : '#10b981',
                           color: 'white',
                           border: 'none',
                           borderRadius: '0.5rem',
@@ -1145,9 +1168,9 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
                           fontWeight: '600'
                         }}
                       >
-                        {submitting ? '⏳ Enregistrement...' : (alertes.length > 0 ? '⚠️ Valider avec non-conformité' : '✓ Valider l\'inspection')}
+                        {submitting ? '⏳ Enregistrement...' : '✓ Valider l\'inspection'}
                       </button>
-                    </>
+                    </div>
                   ) : (
                     <button
                       type="button"
