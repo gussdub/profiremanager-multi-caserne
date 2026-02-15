@@ -4,6 +4,7 @@ import ImportCSVEquipements from "./ImportCSVEquipements.jsx";
 import ImportCSVPersonnel from "./ImportCSVPersonnel.jsx";
 import ImportCSVRapports from "./ImportCSVRapports.jsx";
 import ImportCSVDisponibilites from "./ImportCSVDisponibilites.jsx";
+import ImportInspectionsBornes from "./ImportInspectionsBornes.jsx";
 
 /**
  * ParametresImports - Onglet d'importation CSV en masse
@@ -18,11 +19,25 @@ const ParametresImports = ({
       <div className="tab-header">
         <div>
           <h2>Imports CSV - Importation en masse</h2>
-          <p>Importez vos données rapidement via des fichiers CSV</p>
+          <p>Importez vos données rapidement via des fichiers CSV ou Excel</p>
         </div>
       </div>
       
       <div className="imports-content" style={{ display: 'grid', gap: '2rem', marginTop: '2rem' }}>
+        {/* Import Inspections Bornes Sèches - Nouveau! */}
+        <div className="import-section">
+          <ImportInspectionsBornes 
+            tenantSlug={tenantSlug}
+            onImportComplete={(results) => {
+              toast({
+                title: "Import terminé",
+                description: `${results.imported_count} inspection(s) importée(s) pour ${results.borne?.nom || 'la borne'}`,
+                variant: results.errors_count > 0 ? "warning" : "success"
+              });
+            }}
+          />
+        </div>
+
         {/* Import EPI - NFPA 1851 */}
         <div className="import-section">
           <h3 style={{ 
