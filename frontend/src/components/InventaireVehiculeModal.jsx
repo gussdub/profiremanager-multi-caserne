@@ -711,24 +711,70 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
                 </button>
 
                 {estDerniereSection ? (
-                  <button
-                    type="button"
-                    onClick={handleSubmit}
-                    disabled={loading}
-                    style={{
-                      flex: 1,
-                      padding: '1rem',
-                      backgroundColor: loading ? '#9ca3af' : '#10b981',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '0.5rem',
-                      cursor: loading ? 'not-allowed' : 'pointer',
-                      fontSize: '1rem',
-                      fontWeight: '600'
-                    }}
-                  >
-                    {loading ? 'Enregistrement...' : '🏁 Terminer l\'inventaire'}
-                  </button>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {/* Box jaune: Alertes détectées (style EPI) */}
+                    {alertesEnCours.length > 0 && (
+                      <div style={{
+                        padding: '1rem',
+                        backgroundColor: '#fef9c3',
+                        border: '1px solid #fde047',
+                        borderRadius: '0.5rem'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#854d0e', fontWeight: '600', marginBottom: '0.5rem' }}>
+                          🔔 Alertes détectées ({alertesEnCours.length})
+                        </div>
+                        <p style={{ margin: '0 0 0.5rem', fontSize: '0.875rem', color: '#713f12' }}>
+                          Ces alertes seront envoyées au gestionnaire:
+                        </p>
+                        {alertesEnCours.map((a, i) => (
+                          <div key={i} style={{ fontSize: '0.875rem', color: '#713f12', marginLeft: '0.5rem' }}>
+                            <strong>{a.item_nom}</strong>: {a.valeur}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Box rose: NON CONFORME (style EPI) */}
+                    {alertesEnCours.length > 0 && (
+                      <div style={{
+                        padding: '1rem',
+                        backgroundColor: '#ffe4e6',
+                        border: '1px solid #fecdd3',
+                        borderRadius: '0.5rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem'
+                      }}>
+                        <span style={{ fontSize: '1.5rem' }}>⚠️</span>
+                        <div>
+                          <div style={{ fontWeight: '700', color: '#be123c' }}>NON CONFORME</div>
+                          <div style={{ fontSize: '0.875rem', color: '#be123c' }}>
+                            {alertesEnCours.length} alerte(s) seront envoyées au gestionnaire
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Bouton de validation */}
+                    <button
+                      type="button"
+                      onClick={handleSubmit}
+                      disabled={loading}
+                      style={{
+                        width: '100%',
+                        padding: '1rem',
+                        backgroundColor: loading ? '#9ca3af' : '#10b981',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '0.5rem',
+                        cursor: loading ? 'not-allowed' : 'pointer',
+                        fontSize: '1rem',
+                        fontWeight: '600'
+                      }}
+                    >
+                      {loading ? 'Enregistrement...' : '🏁 Terminer l\'inventaire'}
+                    </button>
+                  </div>
                 ) : (
                   <button
                     type="button"
