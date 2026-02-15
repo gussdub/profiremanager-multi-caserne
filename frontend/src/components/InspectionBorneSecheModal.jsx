@@ -1059,57 +1059,6 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
                   {renderField(sectionCourante)}
                 </div>
 
-                {/* Bouton Signaler Anomalie - visible sur toutes les pages */}
-                <div style={{ padding: '1rem', backgroundColor: showAnomalieForm ? '#fef2f2' : '#fff7ed', borderRadius: '0.5rem', border: showAnomalieForm ? '2px solid #dc2626' : '1px solid #fed7aa', marginBottom: '1rem' }}>
-                  <button
-                    type="button"
-                    onClick={() => setShowAnomalieForm(!showAnomalieForm)}
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      backgroundColor: showAnomalieForm ? '#dc2626' : '#f97316',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '0.375rem',
-                      cursor: 'pointer',
-                      fontWeight: '600',
-                      fontSize: '1rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.5rem'
-                    }}
-                  >
-                    ⚠️ {showAnomalieForm ? 'Annuler le signalement' : 'Signaler une anomalie'}
-                  </button>
-
-                  {showAnomalieForm && (
-                    <div style={{ marginTop: '1rem' }}>
-                      <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem', color: '#991b1b' }}>
-                        Description de l&apos;anomalie *
-                      </label>
-                      <textarea
-                        value={anomalieData.commentaire}
-                        onChange={(e) => setAnomalieData({ ...anomalieData, commentaire: e.target.value })}
-                        rows={3}
-                        required={showAnomalieForm}
-                        style={{ width: '100%', padding: '0.75rem', border: '1px solid #fca5a5', borderRadius: '0.375rem', fontSize: '1rem', resize: 'vertical' }}
-                        placeholder="Décrivez l'anomalie constatée..."
-                      />
-                      <div style={{ marginTop: '0.75rem' }}>
-                        <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem', color: '#991b1b' }}>
-                          Photos de l&apos;anomalie
-                        </label>
-                        <ImageUpload
-                          value={anomalieData.photos}
-                          onChange={(urls) => setAnomalieData({ ...anomalieData, photos: Array.isArray(urls) ? urls : [urls] })}
-                          multiple={true}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-
                 {/* Boutons de navigation */}
                 <div style={{
                   display: 'flex',
