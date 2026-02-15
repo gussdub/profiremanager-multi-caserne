@@ -82,6 +82,10 @@ const InspectionUnifieeModal = ({
             case 'qr_scan':
               initialReponses[item.id] = '';
               break;
+            case 'meteo':
+              // Sera auto-rempli lors du rendu
+              initialReponses[item.id] = null;
+              break;
             case 'texte':
             case 'date':
             case 'liste':
