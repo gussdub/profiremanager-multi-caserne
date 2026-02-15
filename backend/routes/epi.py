@@ -375,6 +375,10 @@ class TypeEPICreate(BaseModel):
     icone: str = "🛡️"
     description: str = ""
     ordre: int = 0
+    # Formulaires d'inspection assignés à la catégorie
+    formulaire_apres_usage_id: Optional[str] = None
+    formulaire_routine_id: Optional[str] = None
+    formulaire_avancee_id: Optional[str] = None
 
 class TypeEPIUpdate(BaseModel):
     nom: Optional[str] = None
@@ -382,6 +386,10 @@ class TypeEPIUpdate(BaseModel):
     description: Optional[str] = None
     ordre: Optional[int] = None
     actif: Optional[bool] = None
+    # Formulaires d'inspection assignés à la catégorie
+    formulaire_apres_usage_id: Optional[str] = None
+    formulaire_routine_id: Optional[str] = None
+    formulaire_avancee_id: Optional[str] = None
 
 class EPICreate(BaseModel):
     tenant_id: Optional[str] = None
