@@ -1273,13 +1273,34 @@ async def create_inspection_unifiee(
                     """
                     
                     logger.info(f"📧 Envoi email à: {admin_emails}")
+                    sujet_email = f"⚠️ Alerte inspection: {asset_nom} - {tenant_nom}"
                     email_response = resend.Emails.send({
                         "from": f"ProFireManager <{sender_email}>",
                         "to": admin_emails,
-                        "subject": f"⚠️ Alerte inspection: {asset_nom} - {tenant_nom}",
+                        "subject": sujet_email,
                         "html": email_html
                     })
                     logger.info(f"✅ Email d'alerte envoyé à {len(admin_emails)} administrateur(s) - Response: {email_response}")
+                    
+                    # Enregistrer dans l'historique des emails pour chaque destinataire
+                    from routes.emails_history import log_email_sent
+                    for admin in admins:
+                        if admin.get("email"):
+                            await log_email_sent(
+                                type_email="alerte_inspection",
+                                destinataire_email=admin.get("email"),
+                                destinataire_nom=f"{admin.get('prenom', '')} {admin.get('nom', '')}".strip(),
+                                sujet=sujet_email,
+                                statut="sent",
+                                tenant_id=tenant.id,
+                                tenant_slug=tenant_slug,
+                                metadata={
+                                    "asset_type": asset_type,
+                                    "asset_nom": asset_nom,
+                                    "nb_alertes": len(alertes),
+                                    "inspecteur": f"{current_user.prenom} {current_user.nom}"
+                                }
+                            )
                 else:
                     logger.warning("⚠️ Aucune adresse email admin trouvée pour l'envoi")
         except Exception as e:
