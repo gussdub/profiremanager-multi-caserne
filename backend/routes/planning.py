@@ -74,6 +74,11 @@ def send_planning_notification_email(user_email: str, user_name: str, gardes_lis
         sender_email = os.environ.get('SENDER_EMAIL', 'noreply@profiremanager.ca')
         caserne_nom = tenant_nom or tenant_slug.title()
         
+        # URL de l'application (utiliser FRONTEND_URL ou construire depuis REACT_APP_BACKEND_URL)
+        frontend_url = os.environ.get('FRONTEND_URL', os.environ.get('REACT_APP_BACKEND_URL', 'https://www.profiremanager.ca'))
+        # Construire l'URL vers le planning avec le paramètre de page
+        planning_url = f"{frontend_url}/{tenant_slug}?page=planning"
+        
         # Extraire le mois de la période
         mois_noms = ["janvier", "février", "mars", "avril", "mai", "juin", 
                      "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
