@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTenant } from '../contexts/TenantContext';
 import { apiGet, apiPost } from '../utils/api';
 import ImageUpload from './ImageUpload';
@@ -12,6 +12,7 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
   const [commentaire, setCommentaire] = useState('');
   const [heureDebut, setHeureDebut] = useState(null);
   const [sectionActuelle, setSectionActuelle] = useState(0); // Navigation par section
+  const [alertesEnCours, setAlertesEnCours] = useState([]); // Alertes détectées en temps réel
 
   useEffect(() => {
     fetchModeles();
