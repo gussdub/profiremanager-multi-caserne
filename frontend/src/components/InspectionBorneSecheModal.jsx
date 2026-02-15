@@ -926,6 +926,9 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
           />
         );
 
+      case 'meteo':
+        return <MeteoField value={value} onChange={(v) => updateReponse(sectionId, v, item.id)} />;
+
       default:
         return <p style={{ color: '#9ca3af', fontStyle: 'italic' }}>Type de champ non supporté: {type}</p>;
     }
