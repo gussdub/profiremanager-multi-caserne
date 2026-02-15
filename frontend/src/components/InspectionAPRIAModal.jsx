@@ -149,8 +149,6 @@ const InspectionAPRIAModal = ({ isOpen, onClose, tenantSlug, user, equipementPre
       setSaving(true);
       
       const resultatGlobal = conforme;
-        }
-      });
 
       const inspectionData = {
         equipement_id: selectedEquipementId,
