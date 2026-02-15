@@ -86,9 +86,58 @@ const InspectionAPRIAModal = ({ isOpen, onClose, tenantSlug, user, equipementPre
     setTypeInspection('mensuelle');
     setReponses({});
     setPressionCylindre('');
-    setConforme(true);
     setRemarques('');
+    setAlertesEnCours([]);
   };
+
+  // Calculer les alertes en temps réel basé sur les réponses
+  const calculerAlertes = useCallback(() => {
+    const newAlertes = [];
+    
+    if (modeleActif?.sections) {
+      modeleActif.sections.forEach(section => {
+        const items = section.items || [{ id: section.id, nom: section.titre }];
+        items.forEach(item => {
+          const valeur = reponses[item.id];
+          
+          // Vérifier si c'est une valeur non conforme
+          if (valeur === 'Non conforme' || valeur === 'À remplacer' || valeur === 'Défectueux') {
+            newAlertes.push({
+              id: item.id,
+              item_nom: item.nom || section.titre,
+              valeur: valeur,
+              message: `${item.nom || section.titre}: ${valeur}`
+            });
+          }
+          
+          // Vérifier les alertes configurées dans le formulaire
+          if (item.alertes?.valeurs_declenchantes && Array.isArray(item.alertes.valeurs_declenchantes)) {
+            if (item.alertes.valeurs_declenchantes.includes(valeur)) {
+              const alerteExists = newAlertes.some(a => a.id === item.id);
+              if (!alerteExists) {
+                newAlertes.push({
+                  id: item.id,
+                  item_nom: item.nom || section.titre,
+                  valeur: valeur,
+                  message: item.alertes.message || `${item.nom || section.titre}: ${valeur}`
+                });
+              }
+            }
+          }
+        });
+      });
+    }
+    
+    setAlertesEnCours(newAlertes);
+  }, [reponses, modeleActif]);
+
+  // Recalculer les alertes à chaque changement de réponse
+  useEffect(() => {
+    calculerAlertes();
+  }, [calculerAlertes]);
+
+  // Conformité calculée automatiquement
+  const conforme = alertesEnCours.length === 0;
 
   const handleSubmit = async () => {
     if (!selectedEquipementId) {
@@ -99,10 +148,7 @@ const InspectionAPRIAModal = ({ isOpen, onClose, tenantSlug, user, equipementPre
     try {
       setSaving(true);
       
-      let resultatGlobal = conforme;
-      Object.values(reponses).forEach(val => {
-        if (val === 'Non conforme' || val === 'À remplacer' || val === 'Défectueux') {
-          resultatGlobal = false;
+      const resultatGlobal = conforme;
         }
       });
 
