@@ -503,7 +503,7 @@ const ImportInspectionsBornes = ({ tenantSlug, onImportComplete }) => {
               onClick={resetForm}
               style={{
                 width: '100%',
-                background: '#3b82f6',
+                background: '#dc2626',
                 color: 'white'
               }}
             >
