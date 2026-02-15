@@ -168,7 +168,7 @@ const ImportInspectionsBornes = ({ tenantSlug, onImportComplete }) => {
       <div style={{
         padding: '1.5rem',
         borderBottom: '1px solid #e5e7eb',
-        background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)'
+        background: 'linear-gradient(135deg, #dc2626 0%, #ea580c 100%)'
       }}>
         <h3 style={{
           margin: 0,
