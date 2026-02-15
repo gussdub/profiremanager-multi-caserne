@@ -2660,6 +2660,10 @@ def send_gardes_notification_email(user_email: str, user_name: str, gardes_list:
         sender_email = os.environ.get('SENDER_EMAIL', 'noreply@profiremanager.ca')
         caserne_nom = tenant_nom or tenant_slug.title()
         
+        # URL de l'application
+        frontend_url = os.environ.get('FRONTEND_URL', os.environ.get('REACT_APP_BACKEND_URL', 'https://www.profiremanager.ca'))
+        planning_url = f"{frontend_url}/{tenant_slug}?page=planning"
+        
         # Extraire le mois de la période pour un affichage plus convivial
         mois_noms = ["janvier", "février", "mars", "avril", "mai", "juin", 
                      "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
