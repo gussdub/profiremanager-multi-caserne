@@ -1793,11 +1793,36 @@ async def envoyer_notifications_planning_automatique(tenant: dict, periode_debut
                     "jour": jour_semaine,
                     "type_garde": type_g.get("nom", "Garde"),
                     "horaire": horaire,
+                    "duree_heures": type_g.get("duree_heures", 0),
+                    "est_externe": type_g.get("est_garde_externe", False),
                     "collegues": collegues_noms
                 })
             
             # Trier par date
             gardes_list.sort(key=lambda x: x["date"])
+            
+            # Calculer les statistiques
+            stats = {
+                "par_type": {},
+                "heures_internes": 0,
+                "heures_externes": 0,
+                "total_gardes": len(gardes_list)
+            }
+            
+            for garde in gardes_list:
+                type_nom = garde["type_garde"]
+                duree = garde.get("duree_heures", 0) or 0
+                
+                # Compter par type
+                if type_nom not in stats["par_type"]:
+                    stats["par_type"][type_nom] = 0
+                stats["par_type"][type_nom] += 1
+                
+                # Calculer heures
+                if garde.get("est_externe", False):
+                    stats["heures_externes"] += duree
+                else:
+                    stats["heures_internes"] += duree
             
             # Envoyer email
             try:
@@ -1805,6 +1830,7 @@ async def envoyer_notifications_planning_automatique(tenant: dict, periode_debut
                     user_email=user["email"],
                     user_name=f"{user.get('prenom', '')} {user.get('nom', '')}",
                     gardes_list=gardes_list,
+                    stats=stats,
                     tenant_slug=tenant["slug"],
                     tenant_nom=tenant.get("nom", tenant["slug"].title()),
                     periode=f"{periode_debut} au {periode_fin}"
