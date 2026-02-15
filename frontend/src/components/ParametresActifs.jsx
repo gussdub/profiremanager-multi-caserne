@@ -981,7 +981,9 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                 borderRadius: '12px',
                 padding: '24px',
                 width: '100%',
-                maxWidth: '450px',
+                maxWidth: '550px',
+                maxHeight: '90vh',
+                overflow: 'auto',
                 boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
               }}
               onClick={e => e.stopPropagation()}
