@@ -71,15 +71,25 @@ const VehiculeQRAction = () => {
       localStorage.setItem(`${tenantSlug}_token`, response.data.access_token);
       localStorage.setItem(`${tenantSlug}_user`, JSON.stringify(response.data.user));
       
+      // Stocker le tenant si présent dans la réponse
+      if (response.data.tenant) {
+        localStorage.setItem(`${tenantSlug}_tenant`, JSON.stringify(response.data.tenant));
+      }
+      
       // L'action qr_action est déjà sauvegardée par handleRondeSecurite ou handleInventaire
       // avant l'affichage du formulaire de connexion - on ne touche pas!
       const existingAction = localStorage.getItem('qr_action');
       console.log('✅ Login réussi, qr_action en attente:', existingAction);
       
+      // IMPORTANT: Forcer la page courante vers 'actifs' pour que l'AppLayout
+      // affiche directement la bonne page après redirection
+      localStorage.setItem('currentPage', 'actifs');
+      console.log('📍 currentPage forcé à "actifs" pour redirection QR');
+      
       setIsAuthenticated(true);
       
       // Rediriger vers l'application principale
-      // AppLayout détectera qr_action et changera vers 'actifs'
+      // AppLayout détectera qr_action et ouvrira le bon modal
       console.log('🔄 Redirection vers:', `/${tenantSlug}`);
       window.location.href = `/${tenantSlug}`;
     } catch (err) {
