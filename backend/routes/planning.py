@@ -245,7 +245,7 @@ def send_planning_notification_email(user_email: str, user_name: str, gardes_lis
                 </div>
                 
                 <div style="text-align: center; margin: 30px 0;">
-                    <a href="https://www.profiremanager.ca/{tenant_slug}/planning" 
+                    <a href="{planning_url}" 
                        style="background: #dc2626; color: white; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px;">
                         Consulter mon planning
                     </a>
