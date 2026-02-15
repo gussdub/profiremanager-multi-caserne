@@ -5,10 +5,24 @@ const HistoriqueInspectionsBorneSecheModal = ({ borne, tenantSlug, onClose }) =>
   const [inspections, setInspections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedInspection, setSelectedInspection] = useState(null);
+  const [formulairesCache, setFormulairesCache] = useState({}); // Cache des formulaires chargés
 
   useEffect(() => {
     fetchHistorique();
   }, [borne.id]);
+
+  // Charger un formulaire pour avoir les labels des champs
+  const loadFormulaire = async (formulaireId) => {
+    if (!formulaireId || formulairesCache[formulaireId]) return formulairesCache[formulaireId];
+    try {
+      const formulaire = await apiGet(tenantSlug, `/formulaires-inspection/${formulaireId}`);
+      setFormulairesCache(prev => ({ ...prev, [formulaireId]: formulaire }));
+      return formulaire;
+    } catch (e) {
+      console.log('Formulaire non trouvé:', formulaireId);
+      return null;
+    }
+  };
 
   const fetchHistorique = async () => {
     try {
