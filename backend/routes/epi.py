@@ -789,6 +789,14 @@ async def update_type_epi(
     if type_data.actif is not None:
         update_data["actif"] = type_data.actif
     
+    # Formulaires d'inspection - permettre null pour effacer
+    if type_data.formulaire_apres_usage_id is not None:
+        update_data["formulaire_apres_usage_id"] = type_data.formulaire_apres_usage_id or None
+    if type_data.formulaire_routine_id is not None:
+        update_data["formulaire_routine_id"] = type_data.formulaire_routine_id or None
+    if type_data.formulaire_avancee_id is not None:
+        update_data["formulaire_avancee_id"] = type_data.formulaire_avancee_id or None
+    
     if update_data:
         await db.types_epi.update_one(
             {"id": type_id, "tenant_id": tenant.id},
