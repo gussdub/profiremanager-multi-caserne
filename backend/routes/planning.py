@@ -53,9 +53,6 @@ from utils.pdf_helpers import (
 # Import de la classe ParametresRemplacements
 from routes.remplacements import ParametresRemplacements
 
-# Import de la fonction d'envoi d'email de planning
-from server import send_gardes_notification_email
-
 router = APIRouter(tags=["Planning"])
 logger = logging.getLogger(__name__)
 
