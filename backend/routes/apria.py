@@ -15,6 +15,7 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 import uuid
 import logging
+import os
 
 from routes.dependencies import (
     db,
