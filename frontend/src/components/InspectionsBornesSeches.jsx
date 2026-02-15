@@ -515,10 +515,7 @@ const InspectionsBornesSeches = ({ user }) => {
                 {filteredPointsEau.map(point => (
                   <tr key={point.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
                     <td style={{ padding: '1rem' }}>
-                      {getTypeIcon(point.type).startsWith('http') 
-                        ? <img src={getTypeIcon(point.type)} alt="icon" style={{ width: '40px', height: '40px' }} />
-                        : <span style={{ fontSize: '2rem' }}>{getTypeIcon(point.type)}</span>
-                      }
+                      <img src={getTypeIcon(point.type)} alt="icon" style={{ width: '40px', height: '40px' }} />
                     </td>
                     <td style={{ padding: '1rem', fontWeight: '600', fontSize: '0.875rem' }}>
                       {point.numero_identification}
