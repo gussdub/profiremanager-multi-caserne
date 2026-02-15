@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import InventairesTab from './GestionInventaires';
 import RondeSecurite from './RondeSecurite';
 import HistoriqueRondesSecurite from './HistoriqueRondesSecurite';
