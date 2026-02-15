@@ -583,59 +583,72 @@ const InspectionAPRIAModal = ({ isOpen, onClose, tenantSlug, user, equipementPre
                           </button>
                         </div>
 
-                        {/* Résultat global */}
-                        <div style={{ 
-                          padding: '0.75rem',
-                          backgroundColor: conforme ? '#f0fdf4' : '#fef2f2',
-                          borderRadius: '8px',
-                          border: conforme ? '2px solid #22c55e' : '2px solid #ef4444',
-                          marginBottom: '1rem'
-                        }}>
-                          <div style={{ fontWeight: '600', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-                            Résultat global
-                          </div>
-                          <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button
-                              type="button"
-                              onClick={() => setConforme(true)}
-                              style={{
-                                flex: 1,
-                                padding: '0.75rem',
-                                backgroundColor: conforme ? '#22c55e' : 'white',
-                                color: conforme ? 'white' : '#374151',
-                                border: conforme ? 'none' : '1px solid #d1d5db',
-                                borderRadius: '8px',
-                                fontSize: '0.9rem',
-                                fontWeight: '600',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              ✅ Conforme
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setConforme(false)}
-                              style={{
-                                flex: 1,
-                                padding: '0.75rem',
-                                backgroundColor: !conforme ? '#ef4444' : 'white',
-                                color: !conforme ? 'white' : '#374151',
-                                border: !conforme ? 'none' : '1px solid #d1d5db',
-                                borderRadius: '8px',
-                                fontSize: '0.9rem',
-                                fontWeight: '600',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              ❌ Non conforme
-                            </button>
-                          </div>
-                          {!conforme && (
-                            <p style={{ margin: '0.5rem 0 0', color: '#dc2626', fontSize: '0.8rem' }}>
-                              ⚠️ L'équipement sera marqué "Hors service"
+                        {/* Box jaune: Alertes détectées (style EPI) */}
+                        {alertesEnCours.length > 0 && (
+                          <div style={{
+                            padding: '1rem',
+                            backgroundColor: '#fef9c3',
+                            border: '1px solid #fde047',
+                            borderRadius: '0.5rem',
+                            marginBottom: '1rem'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#854d0e', fontWeight: '600', marginBottom: '0.5rem' }}>
+                              🔔 Alertes détectées ({alertesEnCours.length})
+                            </div>
+                            <p style={{ margin: '0 0 0.5rem', fontSize: '0.875rem', color: '#713f12' }}>
+                              Ces alertes seront envoyées au gestionnaire:
                             </p>
-                          )}
-                        </div>
+                            {alertesEnCours.map((a, i) => (
+                              <div key={i} style={{ fontSize: '0.875rem', color: '#713f12', marginLeft: '0.5rem' }}>
+                                <strong>{a.item_nom}</strong>: {a.valeur}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Box rose: NON CONFORME (style EPI) */}
+                        {alertesEnCours.length > 0 && (
+                          <div style={{
+                            padding: '1rem',
+                            backgroundColor: '#ffe4e6',
+                            border: '1px solid #fecdd3',
+                            borderRadius: '0.5rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.75rem',
+                            marginBottom: '1rem'
+                          }}>
+                            <span style={{ fontSize: '1.5rem' }}>⚠️</span>
+                            <div>
+                              <div style={{ fontWeight: '700', color: '#be123c' }}>NON CONFORME</div>
+                              <div style={{ fontSize: '0.875rem', color: '#be123c' }}>
+                                {alertesEnCours.length} alerte(s) seront envoyées au gestionnaire - L'équipement sera marqué "Hors service"
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Box verte: CONFORME (si aucune alerte) */}
+                        {alertesEnCours.length === 0 && (
+                          <div style={{
+                            padding: '1rem',
+                            backgroundColor: '#f0fdf4',
+                            border: '1px solid #bbf7d0',
+                            borderRadius: '0.5rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.75rem',
+                            marginBottom: '1rem'
+                          }}>
+                            <span style={{ fontSize: '1.5rem' }}>✅</span>
+                            <div>
+                              <div style={{ fontWeight: '700', color: '#166534' }}>CONFORME</div>
+                              <div style={{ fontSize: '0.875rem', color: '#166534' }}>
+                                Aucune anomalie détectée
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
                         {/* Remarques */}
                         <div style={{ marginBottom: '1rem' }}>
