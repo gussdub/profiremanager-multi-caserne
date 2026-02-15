@@ -2788,13 +2788,23 @@ def send_gardes_notification_email(user_email: str, user_name: str, gardes_list:
                 <p>Votre planning pour le mois de <strong>{mois_texte}</strong> a été validé par votre administrateur.</p>
                 
                 <!-- Récapitulatif -->
-                <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 12px; padding: 20px; margin: 25px 0; text-align: center;">
-                    <h3 style="color: #1e40af; margin: 0 0 15px 0;">📊 Récapitulatif</h3>
-                    <div style="display: inline-block; margin: 0 15px;">
-                        <span style="font-size: 32px; font-weight: bold; color: #dc2626;">{nb_gardes}</span>
+                <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 12px; padding: 25px; margin: 25px 0; text-align: center;">
+                    <h3 style="color: #1e40af; margin: 0 0 20px 0;">📊 Récapitulatif</h3>
+                    
+                    <!-- Nombre de gardes -->
+                    <div style="margin-bottom: 20px;">
+                        <span style="font-size: 42px; font-weight: bold; color: #dc2626;">{nb_gardes}</span>
                         <br>
                         <span style="color: #64748b; font-size: 14px;">garde(s) assignée(s)</span>
                     </div>
+                    
+                    <!-- Résumé par type -->
+                    <div style="margin-bottom: 15px;">
+                        {resume_types_html}
+                    </div>
+                    
+                    <!-- Heures -->
+                    {heures_html}
                 </div>
                 
                 <!-- Message principal -->
