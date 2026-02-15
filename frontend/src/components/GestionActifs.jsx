@@ -72,6 +72,9 @@ const GestionActifs = ({ user, ModuleEPI }) => {
 
   const { tenantSlug } = useTenant();
   const { confirm } = useConfirmDialog();
+  
+  // Ref pour éviter de traiter qr_action plusieurs fois
+  const qrActionProcessedRef = useRef(false);
 
   useEffect(() => {
     if (activeTab === 'vehicules') {
@@ -79,56 +82,51 @@ const GestionActifs = ({ user, ModuleEPI }) => {
     }
   }, [activeTab]);
 
+  // Traitement du QR code action - s'exécute une seule fois au montage
   useEffect(() => {
-    // Délai pour laisser le temps à la page de se charger
-    const timer = setTimeout(() => {
-      const qrActionData = localStorage.getItem('qr_action');
-      console.log('🔍 GestionActifs - Vérification qr_action:', qrActionData);
+    // Vérifier immédiatement s'il y a une action QR à traiter
+    const qrActionData = localStorage.getItem('qr_action');
+    
+    if (!qrActionData || qrActionProcessedRef.current) {
+      return;
+    }
+    
+    console.log('🔍 GestionActifs - QR Action détectée au montage:', qrActionData);
+    
+    try {
+      const qrAction = JSON.parse(qrActionData);
+      console.log('✅ GestionActifs - QR Action parsée:', qrAction);
       
-      if (qrActionData) {
-        try {
-          const qrAction = JSON.parse(qrActionData);
-          console.log('✅ GestionActifs - QR Action trouvée:', qrAction);
-          localStorage.removeItem('qr_action');
-          
-          if (qrAction.action === 'ronde_securite' && qrAction.vehicule_id) {
-            // Essayer de trouver le véhicule dans la liste, sinon utiliser celui du localStorage
-            let vehicule = vehicules.find(v => v.id === qrAction.vehicule_id);
-            if (!vehicule && qrAction.vehicule) {
-              // Utiliser l'objet vehicule stocké (avec id ajouté)
-              vehicule = { ...qrAction.vehicule, id: qrAction.vehicule_id };
-            }
-            
-            if (vehicule) {
-              console.log('🚀 GestionActifs - Ouverture modal Ronde pour:', vehicule.nom);
-              setSelectedVehiculeForRonde(vehicule);
-              setShowRondeSecuriteModal(true);
-            } else {
-              console.warn('⚠️ Véhicule non trouvé pour ronde:', qrAction.vehicule_id);
-            }
-          } else if (qrAction.action === 'inventaire' && qrAction.vehicule_id) {
-            // Essayer de trouver le véhicule dans la liste, sinon utiliser celui du localStorage
-            let vehicule = vehicules.find(v => v.id === qrAction.vehicule_id);
-            if (!vehicule && qrAction.vehicule) {
-              vehicule = { ...qrAction.vehicule, id: qrAction.vehicule_id };
-            }
-            
-            if (vehicule) {
-              console.log('🚀 GestionActifs - Ouverture modal Inventaire pour:', vehicule.nom);
-              setSelectedVehiculeForInventaire(vehicule);
-              setShowInventaireModal(true);
-            } else {
-              console.warn('⚠️ Véhicule non trouvé pour inventaire:', qrAction.vehicule_id);
-            }
-          }
-        } catch (e) {
-          console.error('❌ Erreur parsing QR action:', e);
-          localStorage.removeItem('qr_action');
-        }
+      // Marquer comme traité IMMÉDIATEMENT pour éviter les doublons
+      qrActionProcessedRef.current = true;
+      localStorage.removeItem('qr_action');
+      
+      // Utiliser directement le véhicule stocké dans qr_action (il contient toutes les infos)
+      const vehicule = qrAction.vehicule ? { ...qrAction.vehicule, id: qrAction.vehicule_id } : null;
+      
+      if (!vehicule) {
+        console.warn('⚠️ Pas de véhicule dans qr_action');
+        return;
       }
-    }, 800); // Délai augmenté pour s'assurer que les véhicules sont chargés
-    return () => clearTimeout(timer);
-  }, [vehicules]);
+      
+      // Petit délai pour s'assurer que le composant est bien monté
+      setTimeout(() => {
+        if (qrAction.action === 'ronde_securite') {
+          console.log('🚀 GestionActifs - Ouverture modal Ronde pour:', vehicule.nom);
+          setSelectedVehiculeForRonde(vehicule);
+          setShowRondeSecuriteModal(true);
+        } else if (qrAction.action === 'inventaire') {
+          console.log('🚀 GestionActifs - Ouverture modal Inventaire pour:', vehicule.nom);
+          setSelectedVehiculeForInventaire(vehicule);
+          setShowInventaireModal(true);
+        }
+      }, 100);
+      
+    } catch (e) {
+      console.error('❌ Erreur parsing QR action:', e);
+      localStorage.removeItem('qr_action');
+    }
+  }, []); // Exécution une seule fois au montage
 
   useEffect(() => {
     const handleNavigateToTab = (event) => {
