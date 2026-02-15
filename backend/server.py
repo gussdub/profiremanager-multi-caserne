@@ -2608,17 +2608,21 @@ def send_super_admin_welcome_email(user_email: str, user_name: str, temp_passwor
         return False
 
 
-def send_gardes_notification_email(user_email: str, user_name: str, gardes_list: list, tenant_slug: str, periode: str):
+def send_gardes_notification_email(user_email: str, user_name: str, gardes_list: list, tenant_slug: str, periode: str, tenant_nom: str = None):
     """
     Envoie un email détaillé avec les gardes assignées pour le mois
     
     Args:
         user_email: Email du pompier
         user_name: Nom complet du pompier
-        gardes_list: Liste des gardes [{date, type_garde, horaire, collegues}]
+        gardes_list: Liste des gardes [{date, jour, type_garde, horaire, collegues}]
         tenant_slug: Slug de la caserne
-        periode: Période concernée (ex: "janvier 2025")
+        periode: Période concernée (ex: "2025-03-01 au 2025-03-31")
+        tenant_nom: Nom complet du tenant (optionnel)
     """
+    from routes.emails_history import log_email_sent
+    import asyncio
+    
     resend_api_key = os.environ.get('RESEND_API_KEY')
     
     if not resend_api_key:
@@ -2627,28 +2631,51 @@ def send_gardes_notification_email(user_email: str, user_name: str, gardes_list:
     
     try:
         sender_email = os.environ.get('SENDER_EMAIL', 'noreply@profiremanager.ca')
-        subject = f"Vos gardes assignées - {periode}"
+        caserne_nom = tenant_nom or tenant_slug.title()
+        
+        # Extraire le mois de la période pour un affichage plus convivial
+        mois_noms = ["janvier", "février", "mars", "avril", "mai", "juin", 
+                     "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
+        try:
+            date_debut = datetime.strptime(periode.split(" au ")[0], "%Y-%m-%d")
+            mois_texte = f"{mois_noms[date_debut.month - 1]} {date_debut.year}"
+        except:
+            mois_texte = periode
+        
+        subject = f"📅 Votre planning validé - {mois_texte}"
+        
+        # Construction du récapitulatif en haut de l'email
+        nb_gardes = len(gardes_list)
+        types_uniques = list(set([g['type_garde'] for g in gardes_list]))
         
         # Construction de la liste des gardes en HTML
         gardes_html = ''
         for garde in gardes_list:
-            collegues_str = ', '.join(garde.get('collegues', [])) if garde.get('collegues') else 'Non spécifiés'
+            collegues_str = ', '.join(garde.get('collegues', [])) if garde.get('collegues') else 'Seul(e)'
+            jour = garde.get('jour', '')
+            horaire = garde.get('horaire', 'Horaire non défini')
+            
+            # Formater la date pour affichage
+            try:
+                date_obj = datetime.strptime(garde['date'], "%Y-%m-%d")
+                date_formatee = date_obj.strftime("%d/%m/%Y")
+            except:
+                date_formatee = garde['date']
             
             gardes_html += f"""
-                <div style="background: #f8fafc; border-left: 4px solid #3b82f6; padding: 15px; margin: 15px 0; border-radius: 4px;">
-                    <h4 style="color: #1e293b; margin: 0 0 10px 0;">
-                        📅 {garde['jour']} {garde['date']}
-                    </h4>
-                    <p style="margin: 5px 0; color: #475569;">
-                        <strong>{garde['type_garde']}</strong> ({garde['horaire']})
-                    </p>
-                    <p style="margin: 5px 0; color: #64748b; font-size: 0.9rem;">
-                        👥 Avec: {collegues_str}
-                    </p>
-                    <p style="margin: 5px 0; color: #64748b; font-size: 0.9rem;">
-                        📍 Lieu: Caserne {tenant_slug.title()}
-                    </p>
-                </div>
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                    <td style="padding: 12px; font-weight: 600; color: #1e293b;">
+                        {jour}<br>
+                        <span style="font-weight: normal; color: #64748b; font-size: 0.9rem;">{date_formatee}</span>
+                    </td>
+                    <td style="padding: 12px;">
+                        <strong style="color: #dc2626;">{garde['type_garde']}</strong><br>
+                        <span style="color: #64748b; font-size: 0.9rem;">{horaire}</span>
+                    </td>
+                    <td style="padding: 12px; color: #64748b; font-size: 0.9rem;">
+                        {collegues_str}
+                    </td>
+                </tr>
             """
         
         html_content = f"""
@@ -2658,43 +2685,80 @@ def send_gardes_notification_email(user_email: str, user_name: str, gardes_list:
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
         </head>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            {get_email_header()}
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 650px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
             
-            <div style="background: white; padding: 20px;">
-                <h2 style="color: #1e293b;">Bonjour {user_name},</h2>
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
+                <h1 style="margin: 0; font-size: 24px;">📅 Planning Validé</h1>
+                <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 16px;">{mois_texte}</p>
+            </div>
+            
+            <!-- Content -->
+            <div style="background: white; padding: 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                 
-                <p>Voici vos gardes assignées pour <strong>{periode}</strong>.</p>
+                <p style="font-size: 16px;">Bonjour <strong>{user_name}</strong>,</p>
                 
-                <p style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 12px; margin: 15px 0;">
-                    🏢 <strong>Caserne:</strong> {tenant_slug.title()}
-                </p>
+                <p>Votre planning pour le mois de <strong>{mois_texte}</strong> a été validé par votre administrateur.</p>
                 
-                <h3 style="color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">
-                    📋 Vos gardes
-                </h3>
+                <!-- Récapitulatif -->
+                <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 12px; padding: 20px; margin: 25px 0; text-align: center;">
+                    <h3 style="color: #1e40af; margin: 0 0 15px 0;">📊 Récapitulatif</h3>
+                    <div style="display: inline-block; margin: 0 15px;">
+                        <span style="font-size: 32px; font-weight: bold; color: #dc2626;">{nb_gardes}</span>
+                        <br>
+                        <span style="color: #64748b; font-size: 14px;">garde(s) assignée(s)</span>
+                    </div>
+                </div>
                 
-                {gardes_html}
+                <!-- Message principal -->
+                <div style="background: #f0fdf4; border-left: 4px solid #22c55e; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+                    <strong style="color: #166534;">✅ Vos gardes pour {mois_texte} :</strong>
+                </div>
                 
-                <div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 15px; margin: 20px 0;">
-                    <h4 style="color: #92400e; margin-top: 0;">📢 Important :</h4>
-                    <ul style="color: #78350f; margin: 10px 0;">
+                <!-- Tableau des gardes -->
+                <table style="width: 100%; border-collapse: collapse; margin: 20px 0; background: #fafafa; border-radius: 8px; overflow: hidden;">
+                    <thead>
+                        <tr style="background: #f1f5f9;">
+                            <th style="padding: 12px; text-align: left; color: #475569; font-weight: 600;">Jour</th>
+                            <th style="padding: 12px; text-align: left; color: #475569; font-weight: 600;">Type de garde</th>
+                            <th style="padding: 12px; text-align: left; color: #475569; font-weight: 600;">Collègues</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {gardes_html}
+                    </tbody>
+                </table>
+                
+                <!-- Notes importantes -->
+                <div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 15px; margin: 25px 0;">
+                    <h4 style="color: #92400e; margin: 0 0 10px 0;">📢 Rappels importants :</h4>
+                    <ul style="color: #78350f; margin: 0; padding-left: 20px;">
                         <li>Ce planning a été validé par votre administrateur</li>
-                        <li>Des ajustements peuvent encore survenir en cas de remplacements</li>
-                        <li>Consultez régulièrement le planning en ligne pour les mises à jour</li>
-                        <li>En cas d'absence, signalez-le immédiatement via l'application</li>
+                        <li>Des ajustements peuvent survenir en cas de remplacements</li>
+                        <li>Consultez régulièrement l'application pour les mises à jour</li>
+                        <li>En cas d'absence imprévue, signalez-le immédiatement</li>
                     </ul>
                 </div>
                 
+                <!-- Bouton -->
                 <div style="text-align: center; margin: 30px 0;">
-                    <a href="https://www.profiremanager.ca/{tenant_slug}" 
-                       style="background: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-                        Consulter le planning
+                    <a href="https://www.profiremanager.ca/{tenant_slug}/planning" 
+                       style="background: #dc2626; color: white; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px;">
+                        Consulter mon planning
                     </a>
                 </div>
+                
+                <p style="color: #64748b; margin-top: 30px;">
+                    Cordialement,<br>
+                    <strong>L'équipe {caserne_nom}</strong>
+                </p>
             </div>
             
-            {get_email_footer()}
+            <!-- Footer -->
+            <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
+                <p style="margin: 0;">Ceci est un message automatique de ProFireManager.</p>
+                <p style="margin: 5px 0 0 0;">© {datetime.now().year} {caserne_nom}</p>
+            </div>
         </body>
         </html>
         """
@@ -2703,18 +2767,19 @@ def send_gardes_notification_email(user_email: str, user_name: str, gardes_list:
         resend.api_key = resend_api_key
         
         params = {
-            "from": f"ProFireManager <{sender_email}>",
+            "from": f"{caserne_nom} <{sender_email}>",
             "to": [user_email],
             "subject": subject,
             "html": html_content
         }
         
         response = resend.Emails.send(params)
-        print(f"✅ Email de gardes envoyé avec succès à {user_email} via Resend (ID: {response.get('id', 'N/A')})")
+        print(f"✅ Email de planning envoyé avec succès à {user_email} via Resend (ID: {response.get('id', 'N/A')})")
+        
         return True
             
     except Exception as e:
-        print(f"❌ Erreur lors de l'envoi de l'email de gardes à {user_email}: {str(e)}")
+        print(f"❌ Erreur lors de l'envoi de l'email de planning à {user_email}: {str(e)}")
         return False
 
 # ==================== HELPERS PDF PERSONNALISÉS ====================
