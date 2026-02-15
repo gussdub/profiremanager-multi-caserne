@@ -600,12 +600,11 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
 
   // Mettre à jour une réponse
   const updateReponse = (sectionId, value, itemId = null) => {
+    // Mettre à jour les réponses
     setReponses(prev => {
-      const section = modele.sections.find(s => s.id === sectionId);
       const newReponses = { ...prev };
       
       if (itemId) {
-        // Réponse pour un item spécifique
         newReponses[sectionId] = {
           ...newReponses[sectionId],
           items: {
@@ -613,68 +612,74 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
             [itemId]: value
           }
         };
-        
-        // Vérifier les alertes configurées sur l'item
-        const item = section?.items?.find(i => i.id === itemId);
-        if (item?.alertes?.valeurs_declenchantes && Array.isArray(item.alertes.valeurs_declenchantes)) {
-          const declencheAlerte = item.alertes.valeurs_declenchantes.includes(value);
-          const alerteId = `${sectionId}-${itemId}`;
-          const sectionNom = section.nom || section.titre || 'Section';
-          const itemNom = item.label || item.nom || itemId;
-          
-          if (declencheAlerte) {
-            // Ajouter l'alerte si elle n'existe pas déjà
-            const alerteExists = alertes.some(a => a.id === alerteId);
-            if (!alerteExists) {
-              const messageAlerte = item.alertes.message || item.alertes.message_personnalise || 
-                `Non-conformité: ${sectionNom} - ${itemNom}: ${value}`;
-              setAlertes(prev => [...prev, {
-                id: alerteId,
-                section_id: sectionId,
-                section_titre: sectionNom,
-                item_id: itemId,
-                item_nom: itemNom,
-                valeur: value,
-                message: messageAlerte,
-                severite: 'error'
-              }]);
-            }
-          } else {
-            // Retirer l'alerte si la réponse change vers une valeur conforme
-            setAlertes(prev => prev.filter(a => a.id !== alerteId));
-          }
-        }
       } else {
         newReponses[sectionId] = {
           ...newReponses[sectionId],
           valeur: value
         };
-        
-        // Vérifier les alertes au niveau section (ancien format)
-        if (section?.options) {
-          const sectionNom = section.nom || section.titre || 'Section';
-          const selectedOption = section.options.find(opt => opt.label === value);
-          if (selectedOption?.declencherAlerte) {
-            const alerteExists = alertes.some(a => a.section_id === sectionId && !a.item_id);
-            if (!alerteExists) {
-              setAlertes(prev => [...prev, {
-                id: `${sectionId}`,
-                section_id: sectionId,
-                section_titre: sectionNom,
-                item_id: null,
-                valeur: value,
-                message: `${section.titre}: ${value}`,
-                severite: 'warning'
-              }]);
-            }
-          } else {
-            setAlertes(prev => prev.filter(a => !(a.section_id === sectionId && !a.item_id)));
-          }
-        }
       }
 
       return newReponses;
     });
+
+    // Vérifier les alertes séparément (évite les doublons)
+    const section = modele?.sections?.find(s => s.id === sectionId);
+    if (!section) return;
+
+    if (itemId) {
+      const item = section.items?.find(i => i.id === itemId);
+      if (item?.alertes?.valeurs_declenchantes && Array.isArray(item.alertes.valeurs_declenchantes)) {
+        const declencheAlerte = item.alertes.valeurs_declenchantes.includes(value);
+        const alerteId = `${sectionId}-${itemId}`;
+        const sectionNom = section.nom || section.titre || 'Section';
+        const itemNom = item.label || item.nom || itemId;
+        
+        setAlertes(prev => {
+          // Filtrer d'abord pour éviter les doublons
+          const filtered = prev.filter(a => a.id !== alerteId);
+          
+          if (declencheAlerte) {
+            const messageAlerte = item.alertes.message || item.alertes.message_personnalise || 
+              `${itemNom}: ${value}`;
+            return [...filtered, {
+              id: alerteId,
+              section_id: sectionId,
+              section_titre: sectionNom,
+              item_id: itemId,
+              item_nom: itemNom,
+              valeur: value,
+              message: messageAlerte,
+              severite: 'error'
+            }];
+          }
+          return filtered;
+        });
+      }
+    } else {
+      // Ancien format (alertes au niveau section)
+      if (section.options) {
+        const sectionNom = section.nom || section.titre || 'Section';
+        const selectedOption = section.options.find(opt => opt.label === value);
+        const alerteId = sectionId;
+        
+        setAlertes(prev => {
+          const filtered = prev.filter(a => a.id !== alerteId);
+          
+          if (selectedOption?.declencherAlerte) {
+            return [...filtered, {
+              id: alerteId,
+              section_id: sectionId,
+              section_titre: sectionNom,
+              item_id: null,
+              valeur: value,
+              message: `${sectionNom}: ${value}`,
+              severite: 'warning'
+            }];
+          }
+          return filtered;
+        });
+      }
+    }
   };
 
   // Soumettre l'inspection vers le système unifié
