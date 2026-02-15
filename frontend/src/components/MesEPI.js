@@ -139,7 +139,28 @@ const MesEPI = ({ user }) => {
     loadEquipementsAssignes();
     loadModelePartieFaciale();
     loadFormulairesInspection();
+    loadTypesEPI();
   }, []);
+
+  // Charger les types EPI (catégories) avec leurs formulaires assignés
+  const [typesEPI, setTypesEPI] = useState([]);
+  
+  const loadTypesEPI = async () => {
+    try {
+      const data = await apiGet(tenantSlug, '/types-epi');
+      setTypesEPI(data || []);
+    } catch (error) {
+      console.log('Types EPI non chargés:', error);
+      setTypesEPI([]);
+    }
+  };
+
+  // Trouver le type EPI (catégorie) pour un EPI donné
+  const getTypeEPIForEpi = (epi) => {
+    if (!epi) return null;
+    const typeId = epi.type_epi_id || epi.type_epi;
+    return typesEPI.find(t => t.id === typeId || t.nom === typeId);
+  };
 
   const loadEPIs = async () => {
     setLoading(true);
