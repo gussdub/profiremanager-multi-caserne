@@ -641,7 +641,13 @@ const HistoriqueInspectionsBorneSecheModal = ({ borne, tenantSlug, onClose }) =>
               {inspections.map((inspection, index) => (
                 <div 
                   key={inspection.id || index}
-                  onClick={() => setSelectedInspection(inspection)}
+                  onClick={async () => {
+                    // Charger le formulaire si c'est une inspection unifiée
+                    if (inspection.formulaire_id && !formulairesCache[inspection.formulaire_id]) {
+                      await loadFormulaire(inspection.formulaire_id);
+                    }
+                    setSelectedInspection(inspection);
+                  }}
                   style={{
                     padding: '1rem',
                     background: 'white',
