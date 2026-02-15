@@ -24,16 +24,17 @@ const InspectionsBornesSeches = ({ user }) => {
   // Icônes selon le type de point d'eau
   const typeIcons = {
     borne_seche: 'https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/wkhxcmid_Borne%20seche.png',
-    borne_fontaine: '🚰',
-    borne_incendie: '🔴',
-    piscine: '🏊',
-    lac: '🌊',
-    riviere: '🏞️',
-    point_statique: '💧',
-    autre: '💧'
+    borne_fontaine: 'https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/opwhu1ma_Borne%20fontaine.png',
+    point_eau_statique: 'https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/1nhnxx97_eau.png',
+    borne_incendie: 'https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/opwhu1ma_Borne%20fontaine.png',
+    piscine: 'https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/1nhnxx97_eau.png',
+    lac: 'https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/1nhnxx97_eau.png',
+    riviere: 'https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/1nhnxx97_eau.png',
+    point_statique: 'https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/1nhnxx97_eau.png',
+    autre: 'https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/1nhnxx97_eau.png'
   };
 
-  const getTypeIcon = (type) => typeIcons[type] || '💧';
+  const getTypeIcon = (type) => typeIcons[type] || typeIcons.point_eau_statique;
   const getTypeLabel = (type) => {
     const labels = {
       borne_seche: 'Borne sèche',
