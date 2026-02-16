@@ -3014,8 +3014,12 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         params_equipes_garde = await db.parametres_equipes_garde.find_one({"tenant_id": tenant.id})
         equipes_garde_actif = params_equipes_garde.get("actif", False) if params_equipes_garde else False
         privilegier_equipe_garde_tp = False
+        config_temps_partiel = {}
         if equipes_garde_actif and params_equipes_garde:
-            privilegier_equipe_garde_tp = params_equipes_garde.get("temps_partiel", {}).get("privilegier_equipe_garde", False)
+            config_temps_partiel = params_equipes_garde.get("temps_partiel", {})
+            privilegier_equipe_garde_tp = config_temps_partiel.get("privilegier_equipe_garde", False)
+        
+        logging.info(f"📊 [EQUIPE GARDE] Actif: {equipes_garde_actif}, Prioriser équipe de garde: {privilegier_equipe_garde_tp}")
         
         # CORRECTION CRITIQUE: Charger les paramètres des niveaux d'attribution
         niveaux_actifs = {
