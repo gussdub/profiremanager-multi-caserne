@@ -1,104 +1,83 @@
 # ProFireManager - Product Requirements Document
 
 ## Application Overview
-Full-stack fire services management application built with React (frontend) and FastAPI (backend) with MongoDB database.
+Application de gestion des services d'incendie multi-tenant avec modules de planning, personnel, actifs, prévention et interventions.
 
-## Core Modules
-- **Personnel**: Employee management, grades, formations
-- **Planning**: Shift scheduling, guard assignments, auto-attribution
-- **Actifs**: Asset management, water points, inspections
-- **EPI**: Personal protective equipment tracking
-- **Interventions**: Emergency response logging
-- **Prévention**: Building inspections, prevention tasks
-- **Rapports**: Reports generation (PDF, Excel)
-- **Paramètres**: System configuration
+## Core Features Implemented
 
-## Recent Implementation History
+### Module Planning
+- Gestion des gardes et assignations
+- Rotation des équipes (temps plein / temps partiel)
+- Configuration personnalisée du jour et heure de rotation
+- Affichage de l'équipe de garde du jour
 
-### 2026-02-16 - Fork Session
-**Completed:**
-1. **Export PDF avec carte (Points d'eau)**
-   - Created backend endpoint `/api/{tenant}/export/map-image` using `staticmap` library
-   - Generates static OpenStreetMap images with colored markers
-   - Frontend calls this API to embed map in PDF export
-   - File: `/app/backend/routes/export_map.py`
-   - Modified: `/app/frontend/src/components/CarteApprovisionnementEau.jsx`
+### Module Points d'Eau / Approvisionnement
+- Gestion des bornes fontaines, bornes sèches et points d'eau statiques
+- Carte interactive avec Leaflet
+- Export PDF avec carte statique et icônes personnalisées
+- Export Excel
 
-2. **Bug module Horaire (Équipes de garde)**
-   - Fixed team rotation calculation for custom schedules
-   - When `type_rotation` is a UUID, system now fetches from `horaires_personnalises` collection
-   - Added `get_equipe_from_horaire_personnalise()` function
-   - File: `/app/backend/routes/equipes_garde.py`
+### Module Personnel
+- Gestion des employés par tenant
+- Attribution des équipes de garde
 
-### Previous Sessions
-- Excel export for water points with GPS coordinates
-- PDF styling with service logo and color scheme
-- Import inspections bornes sèches feature
+## Recent Fixes (February 2026)
 
-## Pending Issues (Priority Order)
+### P0 - Bug Équipe de Garde (FIXED)
+- **Problème**: L'équipe affichée était incorrecte car `toISOString()` convertissait la date en UTC
+- **Solution**: Utilisation de la date locale avec `getFullYear()`, `getMonth()`, `getDate()`
+- **Fichier**: `/app/frontend/src/components/Planning.jsx`
 
-### P0 - Critical
-- [ ] User validation: PDF export with map
-- [ ] User validation: Schedule module team display fix
+### P0 - Export PDF avec Carte et Icônes (FIXED)
+- **Problème**: La carte ne s'affichait pas dans le PDF, puis les icônes manquaient
+- **Solution**: 
+  - Backend génère une carte statique avec `staticmap` library
+  - Téléchargement et mise en cache des icônes personnalisées
+  - Positionnement icône + badge de statut (style viewer)
+- **Fichier**: `/app/backend/routes/export_map.py`
 
-### P1 - High
-- [ ] Adapt hydrant import for "Cavitation durant le pompage" field
-- [ ] Import inspections hydrants - awaiting user testing
+## Technical Architecture
 
-### P2 - Medium
-- [ ] "Prévention" module visibility for "shefford" tenant
-- [ ] "Prévention" notification audit
+### Frontend
+- React 18 avec Vite
+- Shadcn/UI components
+- Leaflet pour les cartes interactives
+- jsPDF pour l'export PDF
 
-### P3 - Future
-- [ ] SFTP "Check Now" button for manual trigger
-- [ ] Remove preview mode limitation notes from export modals
+### Backend
+- FastAPI (Python)
+- MongoDB avec Motor (async)
+- staticmap pour génération de cartes statiques
+- Pillow pour manipulation d'images
 
-## Technical Stack
-- **Frontend**: React 18, TailwindCSS, Shadcn/UI, Leaflet maps
-- **Backend**: FastAPI, Python 3.11, Motor (async MongoDB)
-- **Database**: MongoDB
-- **Libraries**: jspdf, react-csv, staticmap (for map generation)
+### Database
+- MongoDB
+- Collections principales: users, tenants, points_eau, parametres_equipes_garde
 
-## Key API Endpoints
+## Pending Tasks
 
-### Export Map
-```
-POST /api/{tenant}/export/map-image
-Body: {
-  "points": [{"latitude": float, "longitude": float, "etat": string}],
-  "width": int,
-  "height": int
-}
-Response: {"success": true, "image_base64": "..."}
-```
+### P1
+- Adapter l'import d'inspections d'hydrants pour le nouveau champ "Cavitation durant le pompage"
+- Tester l'import d'inspections d'hydrants
+
+### P2
+- Bouton "Vérifier maintenant" pour déclencher manuellement une vérification SFTP
+- Corriger la visibilité du module "Prévention" pour le tenant "shefford"
+
+### P3
+- Audit du système de notifications du module "Prévention"
+
+## API Endpoints
 
 ### Équipes de Garde
-```
-GET /api/{tenant}/equipes-garde/equipe-du-jour?date=YYYY-MM-DD&type_emploi=temps_plein
-Response: {"equipe": int, "nom": string, "couleur": string}
-```
+- `GET /{tenant}/parametres/equipes-garde` - Récupérer les paramètres
+- `PUT /{tenant}/parametres/equipes-garde` - Modifier les paramètres
+- `GET /{tenant}/equipes-garde/equipe-du-jour` - Équipe de garde pour une date
 
-## File Structure (Key Files)
-```
-/app
-├── backend/
-│   ├── routes/
-│   │   ├── equipes_garde.py      # Team rotation logic
-│   │   ├── export_map.py         # NEW: Static map generation
-│   │   ├── horaires_personnalises.py
-│   │   └── points_eau.py
-│   └── server.py
-├── frontend/
-│   └── src/
-│       └── components/
-│           ├── CarteApprovisionnementEau.jsx  # Water supply map + export
-│           ├── ParametresEquipesGarde.jsx     # Team settings
-│           └── Planning.jsx                    # Schedule display
-└── memory/
-    └── PRD.md
-```
+### Export Carte
+- `POST /{tenant}/export/map-image` - Générer image carte statique avec icônes
 
-## User Preferences
-- **Language**: French
-- **External guards schedule**: Monday 18h to Monday 06h (weekly)
-- **Note**: User does not always configure start/end hours in custom guard creation
+## Icon URLs
+- Borne fontaine: `https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/opwhu1ma_Borne%20fontaine.png`
+- Borne sèche: `https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/wkhxcmid_Borne%20seche.png`
+- Point d'eau: `https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/1nhnxx97_eau.png`
