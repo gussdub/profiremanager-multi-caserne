@@ -398,6 +398,17 @@ async def send_payment_reminder(
                 """
             })
             
+            # Log email
+            from routes.emails_history import log_email_sent
+            await log_email_sent(
+                type_email="rappel_paiement_manuel",
+                destinataire_email=tenant.email_contact,
+                destinataire_nom=tenant.get("nom"),
+                sujet="Rappel de paiement - ProFireManager",
+                tenant_id=tenant_id,
+                tenant_slug=tenant.get("slug")
+            )
+            
             logger.info(f"📧 Rappel envoyé à {tenant['email_contact']} pour tenant {tenant_id}")
             return {"success": True, "message": f"Rappel envoyé à {tenant['email_contact']}"}
         else:
