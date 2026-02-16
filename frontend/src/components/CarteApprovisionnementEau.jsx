@@ -52,7 +52,18 @@ const CarteApprovisionnementEau = ({ user }) => {
   const [mapZoom, setMapZoom] = useState(12);
   const [mapLayer, setMapLayer] = useState('plan'); // 'plan' ou 'satellite'
   const [personnalisation, setPersonnalisation] = useState(null);
+  const [exporting, setExporting] = useState(false);
   const mapContainerRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+
+  // Composant pour capturer la référence de la carte Leaflet
+  const MapRefCapture = () => {
+    const mapRef = useMap();
+    useEffect(() => {
+      mapInstanceRef.current = mapRef;
+    }, [mapRef]);
+    return null;
+  };
 
   // Charger la personnalisation (logo, nom du service)
   useEffect(() => {
