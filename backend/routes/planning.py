@@ -276,6 +276,22 @@ def send_planning_notification_email(user_email: str, user_name: str, gardes_lis
         
         response = resend.Emails.send(params)
         logger.info(f"✅ Email de planning envoyé à {user_email} (ID: {response.get('id', 'N/A')})")
+        
+        # Log email (synchrone via create_task)
+        try:
+            from routes.emails_history import log_email_sent
+            import asyncio
+            asyncio.create_task(log_email_sent(
+                type_email="planning_gardes",
+                destinataire_email=user_email,
+                destinataire_nom=user_name,
+                sujet=subject,
+                tenant_slug=tenant_slug,
+                metadata={"nb_gardes": len(gardes_list), "periode": periode}
+            ))
+        except Exception as log_err:
+            logger.warning(f"Erreur log email: {log_err}")
+        
         return True
             
     except Exception as e:
