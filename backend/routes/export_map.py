@@ -65,6 +65,33 @@ def get_marker_color(etat: Optional[str]) -> str:
     return '#6b7280'  # Gris par défaut
 
 
+async def get_icon_image(point_type: str) -> Optional[Image.Image]:
+    """Télécharge et met en cache l'icône pour un type de point d'eau"""
+    global _icon_cache
+    
+    if point_type in _icon_cache:
+        return _icon_cache[point_type]
+    
+    url = ICON_URLS.get(point_type, ICON_URLS['point_eau_statique'])
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, timeout=10)
+            if response.status_code == 200:
+                img = Image.open(io.BytesIO(response.content))
+                # Redimensionner l'icône pour la carte (32x32)
+                img = img.resize((32, 32), Image.Resampling.LANCZOS)
+                # Convertir en RGBA si nécessaire
+                if img.mode != 'RGBA':
+                    img = img.convert('RGBA')
+                _icon_cache[point_type] = img
+                return img
+    except Exception as e:
+        logger.warning(f"[EXPORT MAP] Impossible de télécharger l'icône {point_type}: {e}")
+    
+    return None
+
+
 @router.post("/{tenant_slug}/export/map-image")
 async def generate_map_image(
     tenant_slug: str,
