@@ -301,10 +301,13 @@ const ApprovisionnementEau = () => {
                       borderRadius: '12px',
                       fontSize: '0.75rem',
                       fontWeight: '500',
-                      background: getMarkerColor(point.statut_couleur) + '20',
-                      color: getMarkerColor(point.statut_couleur)
+                      background: getMarkerColor(getEffectiveColor(point)) + '20',
+                      color: getMarkerColor(getEffectiveColor(point))
                     }}>
-                      {point.etat || 'Non défini'}
+                      {point.etat === 'fonctionnelle' ? '🟢 Fonctionnelle' :
+                       point.etat === 'en_reparation' ? '🟠 En réparation' :
+                       point.etat === 'hors_service' ? '🔴 Hors service' :
+                       point.etat || 'Non défini'}
                     </span></p>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.75rem' }}>
