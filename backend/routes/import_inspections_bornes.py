@@ -349,3 +349,174 @@ async def preview_import_file(
         "exemple_nom_fichier": "Darby - Fiche technique borne seche.xlsx",
         "note": "Le nom de la borne est extrait du début du nom de fichier (avant le premier tiret ou underscore)"
     }
+
+
+
+from pydantic import BaseModel
+from typing import List, Dict, Any
+
+class InspectionMappedData(BaseModel):
+    borne_nom: str = ""
+    date_inspection: str = ""
+    matricule_inspecteur: str = ""
+    accessibilite: str = ""
+    conditions_atmospheriques: str = ""
+    temperature_exterieure: str = ""
+    joint_present: str = ""
+    joint_bon_etat: str = ""
+    site_accessible: str = ""
+    site_deneige: str = ""
+    vanne_storz_4: str = ""
+    vanne_6_filetee: str = ""
+    vanne_4_filetee: str = ""
+    niveau_plan_eau: str = ""
+    pompage_continu: str = ""
+    cavitation_pompage: str = ""
+    temps_amorcage: str = ""
+    commentaire: str = ""
+
+class ImportCSVRequest(BaseModel):
+    inspections: List[Dict[str, Any]]
+
+
+@router.post("/{tenant_slug}/inspections-bornes/import-csv")
+async def import_inspections_csv_mapped(
+    tenant_slug: str,
+    request: ImportCSVRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Import des inspections de bornes sèches avec mapping pré-défini par le frontend.
+    Les données arrivent déjà mappées aux bons champs.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    created = 0
+    updated = 0
+    erreurs = []
+    
+    # Cache des bornes pour éviter les requêtes répétées
+    bornes_cache = {}
+    
+    for idx, insp_data in enumerate(request.inspections):
+        try:
+            # Trouver la borne
+            borne_nom = str(insp_data.get('borne_nom', '')).strip()
+            if not borne_nom:
+                erreurs.append({"ligne": idx + 1, "erreur": "Nom de borne manquant"})
+                continue
+            
+            # Chercher dans le cache ou en base
+            if borne_nom not in bornes_cache:
+                borne = await db.points_eau.find_one({
+                    "tenant_id": tenant.id,
+                    "type": "borne_seche",
+                    "$or": [
+                        {"nom": {"$regex": f"^{re.escape(borne_nom)}$", "$options": "i"}},
+                        {"numero_identification": {"$regex": f"^{re.escape(borne_nom)}$", "$options": "i"}}
+                    ]
+                })
+                bornes_cache[borne_nom] = borne
+            else:
+                borne = bornes_cache[borne_nom]
+            
+            if not borne:
+                erreurs.append({"ligne": idx + 1, "erreur": f"Borne '{borne_nom}' non trouvée"})
+                continue
+            
+            # Parser la date
+            date_str = str(insp_data.get('date_inspection', '')).strip()
+            date_inspection = None
+            if date_str:
+                # Essayer différents formats
+                for fmt in ['%Y-%m-%d', '%d/%m/%Y', '%d-%m-%Y', '%Y/%m/%d']:
+                    try:
+                        date_inspection = datetime.strptime(date_str, fmt).strftime('%Y-%m-%d')
+                        break
+                    except:
+                        continue
+            
+            if not date_inspection:
+                date_inspection = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+            
+            # Parser le temps d'amorçage
+            temps_amorcage = None
+            temps_str = str(insp_data.get('temps_amorcage', '')).strip()
+            if temps_str:
+                try:
+                    # Extraire les chiffres
+                    numbers = re.findall(r'\d+', temps_str)
+                    if numbers:
+                        temps_amorcage = int(numbers[0])
+                except:
+                    pass
+            
+            # Construire les réponses
+            champs_inspection = [
+                'joint_present', 'joint_bon_etat', 'site_accessible', 'site_deneige',
+                'vanne_storz_4', 'vanne_6_filetee', 'vanne_4_filetee', 'niveau_plan_eau',
+                'pompage_continu', 'cavitation_pompage'
+            ]
+            
+            reponses = {}
+            nb_non_conformes = 0
+            
+            for champ in champs_inspection:
+                valeur = normaliser_valeur(insp_data.get(champ))
+                reponses[champ] = valeur
+                if valeur == "Non conforme":
+                    nb_non_conformes += 1
+            
+            # Ajouter les autres champs
+            reponses['accessibilite'] = insp_data.get('accessibilite', '')
+            reponses['conditions_atmospheriques'] = insp_data.get('conditions_atmospheriques', '')
+            reponses['temperature_exterieure'] = insp_data.get('temperature_exterieure')
+            reponses['temps_amorcage'] = temps_amorcage
+            
+            # Créer l'inspection
+            matricule = str(insp_data.get('matricule_inspecteur', '')).replace('.0', '').strip()
+            
+            inspection = {
+                "id": str(uuid.uuid4()),
+                "tenant_id": tenant.id,
+                "asset_id": borne["id"],
+                "asset_type": "borne_seche",
+                "borne_nom": borne.get("nom") or borne.get("numero_identification"),
+                "date_inspection": date_inspection,
+                "inspecteur_matricule": matricule,
+                "inspecteur_nom": f"Matricule {matricule}" if matricule else "Inconnu",
+                "reponses": reponses,
+                "commentaire": insp_data.get('commentaire', ''),
+                "conforme": nb_non_conformes == 0,
+                "nb_non_conformes": nb_non_conformes,
+                "source": "import_csv_mapping",
+                "imported_by": current_user.id,
+                "imported_at": datetime.now(timezone.utc).isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            
+            # Insérer en base
+            await db.inspections_unifiees.insert_one(inspection)
+            created += 1
+            
+            # Mettre à jour la borne
+            await db.points_eau.update_one(
+                {"id": borne["id"], "tenant_id": tenant.id},
+                {
+                    "$set": {"derniere_inspection_date": date_inspection},
+                    "$inc": {"nombre_inspections": 1}
+                }
+            )
+            
+        except Exception as e:
+            logger.error(f"Erreur import ligne {idx + 1}: {e}")
+            erreurs.append({"ligne": idx + 1, "erreur": str(e)})
+    
+    logger.info(f"Import CSV terminé: {created} créées, {len(erreurs)} erreurs")
+    
+    return {
+        "success": True,
+        "created": created,
+        "updated": updated,
+        "errors": erreurs
+    }
