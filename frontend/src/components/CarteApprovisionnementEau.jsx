@@ -888,6 +888,54 @@ const CarteApprovisionnementEau = ({ user }) => {
           }}
         />
 
+        {/* Boutons Export */}
+        <div style={{ display: 'flex', gap: '0.4rem' }}>
+          <button
+            onClick={exportToPDF}
+            disabled={exporting}
+            data-testid="export-pdf-btn"
+            style={{
+              padding: '0.6rem 0.8rem',
+              borderRadius: '8px',
+              border: '1px solid #dc2626',
+              background: 'white',
+              color: '#dc2626',
+              cursor: exporting ? 'not-allowed' : 'pointer',
+              fontWeight: '600',
+              fontSize: '0.85rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.3rem',
+              whiteSpace: 'nowrap',
+              opacity: exporting ? 0.6 : 1
+            }}
+            title="Exporter en PDF avec carte"
+          >
+            {exporting ? '⏳' : '📄'} PDF
+          </button>
+          <button
+            onClick={exportToExcel}
+            data-testid="export-excel-btn"
+            style={{
+              padding: '0.6rem 0.8rem',
+              borderRadius: '8px',
+              border: '1px solid #16a34a',
+              background: 'white',
+              color: '#16a34a',
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '0.85rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.3rem',
+              whiteSpace: 'nowrap'
+            }}
+            title="Exporter en Excel (avec GPS)"
+          >
+            📊 Excel
+          </button>
+        </div>
+
         {/* Toggle Vue */}
         <div style={{ display: 'flex', gap: '0.4rem' }}>
           <button
