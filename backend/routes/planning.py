@@ -3082,24 +3082,30 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         
         # Créer un index/dictionnaire pour lookup rapide
         # Structure: {user_id: {date: {type_garde_id: [list of dispos with horaires]}}}
+        # Note: type_garde_id peut être None pour les disponibilités générales (toutes gardes)
         dispos_lookup = {}
         for dispo in all_disponibilites:
             user_id = dispo.get("user_id")
             date = dispo.get("date")
-            type_garde_id = dispo.get("type_garde_id")
+            type_garde_id = dispo.get("type_garde_id")  # Peut être None = disponible pour toutes les gardes
             
             if user_id not in dispos_lookup:
                 dispos_lookup[user_id] = {}
             if date not in dispos_lookup[user_id]:
-                dispos_lookup[user_id][date] = {}
-            if type_garde_id not in dispos_lookup[user_id][date]:
-                dispos_lookup[user_id][date][type_garde_id] = []
+                dispos_lookup[user_id][date] = {"_general": []}  # _general pour les dispos sans type spécifique
+            
+            # Stocker sous le type_garde_id spécifique OU sous _general si None
+            key = type_garde_id if type_garde_id else "_general"
+            if key not in dispos_lookup[user_id][date]:
+                dispos_lookup[user_id][date][key] = []
             
             # Stocker la dispo complète avec ses horaires
-            dispos_lookup[user_id][date][type_garde_id].append({
+            dispos_lookup[user_id][date][key].append({
                 "heure_debut": dispo.get("heure_debut"),
                 "heure_fin": dispo.get("heure_fin")
             })
+        
+        logging.info(f"📅 [DISPOS] Lookup créé pour {len(dispos_lookup)} utilisateurs")
         
         # ⚡ OPTIMIZATION: Précharger TOUTES les indisponibilités de la semaine
         all_indisponibilites = await db.disponibilites.find({
