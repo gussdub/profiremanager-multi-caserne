@@ -239,6 +239,30 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
 
 
 
+  // Fonction pour vérifier si un type de garde est compatible avec un jour de la semaine
+  const isTypeGardeCompatibleWithDay = (typeGardeName, dayOfWeek) => {
+    if (!typeGardeName) return true; // Pas de type spécifique = tous les jours OK
+    
+    const nameLower = typeGardeName.toLowerCase();
+    
+    // LMM = Lundi, Mardi, Mercredi (0, 1, 2)
+    if (nameLower.includes('lmm')) {
+      return [1, 2, 3].includes(dayOfWeek); // 1=Lundi, 2=Mardi, 3=Mercredi
+    }
+    
+    // JV = Jeudi, Vendredi (4, 5)
+    if (nameLower.includes('jv') && !nameLower.includes('we')) {
+      return [4, 5].includes(dayOfWeek); // 4=Jeudi, 5=Vendredi
+    }
+    
+    // WE = Weekend (Samedi, Dimanche) (6, 0)
+    if (nameLower.includes('we') || nameLower.includes('weekend')) {
+      return [0, 6].includes(dayOfWeek); // 0=Dimanche, 6=Samedi
+    }
+    
+    return true; // Autres types = tous les jours OK
+  };
+
   const handleAddConfiguration = () => {
     if (selectedDates.length === 0) {
       toast({
@@ -250,6 +274,44 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
     }
 
     const selectedType = typesGarde.find(t => t.id === availabilityConfig.type_garde_id);
+    
+    // Validation: Vérifier que les jours sélectionnés sont compatibles avec le type de garde
+    if (selectedType) {
+      const incompatibleDates = selectedDates.filter(dateStr => {
+        const date = new Date(dateStr + 'T12:00:00');
+        const dayOfWeek = date.getDay();
+        return !isTypeGardeCompatibleWithDay(selectedType.nom, dayOfWeek);
+      });
+      
+      if (incompatibleDates.length > 0) {
+        const dayNames = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+        const typeName = selectedType.nom;
+        
+        // Déterminer les jours attendus
+        let expectedDays = '';
+        const nameLower = typeName.toLowerCase();
+        if (nameLower.includes('lmm')) {
+          expectedDays = 'Lundi, Mardi ou Mercredi';
+        } else if (nameLower.includes('jv') && !nameLower.includes('we')) {
+          expectedDays = 'Jeudi ou Vendredi';
+        } else if (nameLower.includes('we') || nameLower.includes('weekend')) {
+          expectedDays = 'Samedi ou Dimanche';
+        }
+        
+        const wrongDays = [...new Set(incompatibleDates.map(d => {
+          const date = new Date(d + 'T12:00:00');
+          return dayNames[date.getDay()];
+        }))].join(', ');
+        
+        toast({
+          title: "Jours incompatibles avec le type de garde",
+          description: `"${typeName}" est prévu pour ${expectedDays}. Vous avez sélectionné des ${wrongDays}.`,
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
     const newConfig = {
       id: Date.now(),
       type_garde_id: availabilityConfig.type_garde_id,
