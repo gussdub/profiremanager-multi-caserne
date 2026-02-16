@@ -58,14 +58,10 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 
 ### P1
 - Adapter l'import d'inspections d'hydrants pour le nouveau champ "Cavitation durant le pompage"
-- Tester l'import d'inspections d'hydrants
 
-### P2
-- Bouton "Vérifier maintenant" pour déclencher manuellement une vérification SFTP
-- Corriger la visibilité du module "Prévention" pour le tenant "shefford"
-
-### P3
-- Audit du système de notifications du module "Prévention"
+### Completed/Removed
+- ~~Bouton "Vérifier maintenant" SFTP~~ - Non requis
+- ~~Visibilité module "Prévention" pour tenant "shefford"~~ - Résolu
 
 ## API Endpoints
 
