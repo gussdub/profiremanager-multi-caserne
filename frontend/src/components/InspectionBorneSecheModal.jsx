@@ -1126,8 +1126,11 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
 
       case 'chronometre':
       case 'timer':
-      case 'compte_rebours':
         return <TimerField value={value} onChange={(v) => updateReponse(sectionId, v, item.id)} unite={item.config?.unite} seuilAlerte={item.alertes?.seuil_max} />;
+
+      case 'compte_rebours':
+      case 'countdown':
+        return <CountdownField value={value} onChange={(v) => updateReponse(sectionId, v, item.id)} config={item.config} />;
 
       case 'photo':
         return (
