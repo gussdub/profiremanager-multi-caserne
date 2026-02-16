@@ -3427,80 +3427,78 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
             """
             Vérifie si l'utilisateur a une disponibilité qui couvre la plage horaire de la garde.
             Retourne True si l'utilisateur est disponible pour cette garde.
+            
+            Pour les gardes de nuit (ex: 18:00 -> 06:00):
+            - Vérifie la dispo du jour courant pour la partie soirée (18:00 -> 23:59)
+            - Vérifie la dispo du LENDEMAIN pour la partie matin (00:00 -> 06:00)
             """
-            user_dispos = dispos_lookup.get(user_id, {}).get(date_str, {})
+            def to_minutes(time_str):
+                if not time_str:
+                    return 0
+                parts = time_str.split(':')
+                return int(parts[0]) * 60 + int(parts[1])
             
-            # Vérifier les disponibilités spécifiques à ce type de garde
-            specific_dispos = user_dispos.get(type_garde_id, [])
-            # Vérifier les disponibilités générales (sans type de garde spécifique) - clé "_general"
-            general_dispos = user_dispos.get("_general", [])
+            def get_all_dispos_for_date(check_date):
+                """Récupère toutes les dispos (spécifiques + générales) pour une date donnée"""
+                user_dispos = dispos_lookup.get(user_id, {}).get(check_date, {})
+                specific = user_dispos.get(type_garde_id, [])
+                general = user_dispos.get("_general", [])
+                return specific + general
             
-            all_dispos = specific_dispos + general_dispos
-            
-            # DEBUG: Log pour diagnostic
-            user_info = users_dict.get(user_id, {})
-            user_name = f"{user_info.get('prenom', '')} {user_info.get('nom', '')}".strip()
-            if len(all_dispos) > 0:
-                logging.debug(f"🔎 [DISPO-CHECK] {user_name} @ {date_str}: {len(specific_dispos)} spécifiques + {len(general_dispos)} générales = {len(all_dispos)} total pour garde {garde_heure_debut}-{garde_heure_fin}")
-            
-            for dispo in all_dispos:
-                # IMPORTANT: Gérer les valeurs None explicitement
-                dispo_debut = dispo.get("heure_debut") or "00:00"
-                dispo_fin = dispo.get("heure_fin") or "23:59"
-                
-                # Vérifier si la disponibilité COUVRE la garde
-                # La dispo doit commencer avant ou au même moment que la garde
-                # ET finir après ou au même moment que la garde
-                def to_minutes(time_str):
-                    if not time_str:
-                        return 0
-                    parts = time_str.split(':')
-                    return int(parts[0]) * 60 + int(parts[1])
-                
-                dispo_start = to_minutes(dispo_debut)
-                dispo_end = to_minutes(dispo_fin)
-                garde_start = to_minutes(garde_heure_debut)
-                garde_end = to_minutes(garde_heure_fin)
-                
-                # Gérer 23:59 comme fin de journée
-                if dispo_end == 23 * 60 + 59:
-                    dispo_end = 24 * 60
-                if garde_end == 23 * 60 + 59:
-                    garde_end = 24 * 60
-                
-                # CAS SPÉCIAL: Garde de nuit qui traverse minuit (ex: 18:00 -> 06:00)
-                # Dans ce cas, garde_end < garde_start
-                if garde_end < garde_start:
-                    # La garde traverse minuit - elle nécessite une dispo qui couvre
-                    # SOIT la partie soirée (garde_start -> 24:00)
-                    # SOIT la partie matin (00:00 -> garde_end)
-                    # Pour être vraiment disponible, l'utilisateur devrait avoir une dispo
-                    # qui couvre AU MOINS une partie significative
-                    # 
-                    # MAIS pour l'instant, on considère que si la dispo ne couvre pas
-                    # la TOTALITÉ de la garde, l'utilisateur n'est PAS disponible
-                    # 
-                    # Pour une garde 18:00->06:00, la dispo 06:00->18:00 ne couvre RIEN
-                    # car elle finit exactement quand la garde commence
+            def dispo_covers_range(dispos_list, start_minutes, end_minutes):
+                """Vérifie si au moins une dispo dans la liste couvre la plage horaire donnée"""
+                for dispo in dispos_list:
+                    dispo_debut = dispo.get("heure_debut") or "00:00"
+                    dispo_fin = dispo.get("heure_fin") or "23:59"
                     
-                    # Vérifier si la dispo couvre la partie soirée (garde_start -> 24:00)
-                    covers_evening = (dispo_start <= garde_start and dispo_end >= 24 * 60)
-                    # Vérifier si la dispo couvre la partie matin (00:00 -> garde_end)
-                    covers_morning = (dispo_start <= 0 and dispo_end >= garde_end)
+                    dispo_start = to_minutes(dispo_debut)
+                    dispo_end = to_minutes(dispo_fin)
                     
-                    # Pour les gardes de nuit, on exige que la dispo couvre AU MOINS
-                    # le début de la garde (la partie soirée)
-                    if covers_evening:
+                    # Gérer 23:59 comme fin de journée (= minuit)
+                    if dispo_end == 23 * 60 + 59:
+                        dispo_end = 24 * 60
+                    
+                    # La dispo couvre la plage si elle englobe complètement
+                    if dispo_start <= start_minutes and dispo_end >= end_minutes:
                         return True
-                    else:
-                        # La dispo ne couvre pas la garde de nuit
-                        continue
-                
-                # La dispo couvre la garde si elle englobe complètement la plage horaire de la garde
-                if dispo_start <= garde_start and dispo_end >= garde_end:
-                    return True
+                return False
             
-            return False
+            garde_start = to_minutes(garde_heure_debut)
+            garde_end = to_minutes(garde_heure_fin)
+            
+            # Gérer 23:59 comme fin de journée
+            if garde_end == 23 * 60 + 59:
+                garde_end = 24 * 60
+            
+            # CAS SPÉCIAL: Garde de nuit qui traverse minuit (ex: 18:00 -> 06:00)
+            if garde_end < garde_start:
+                # La garde traverse minuit - vérifier les deux jours
+                # Partie soirée: du début de garde jusqu'à minuit (sur le jour courant)
+                # Partie matin: de minuit jusqu'à la fin de garde (sur le lendemain)
+                
+                all_dispos_today = get_all_dispos_for_date(date_str)
+                
+                # Calculer la date du lendemain
+                from datetime import datetime, timedelta
+                date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+                next_date_str = (date_obj + timedelta(days=1)).strftime("%Y-%m-%d")
+                all_dispos_tomorrow = get_all_dispos_for_date(next_date_str)
+                
+                # Vérifier si la partie soirée est couverte (garde_start -> 24:00)
+                covers_evening = dispo_covers_range(all_dispos_today, garde_start, 24 * 60)
+                
+                # Vérifier si la partie matin est couverte (00:00 -> garde_end)
+                covers_morning = dispo_covers_range(all_dispos_tomorrow, 0, garde_end)
+                
+                # L'utilisateur est disponible si les DEUX parties sont couvertes
+                if covers_evening and covers_morning:
+                    return True
+                else:
+                    return False
+            
+            # CAS NORMAL: Garde qui ne traverse pas minuit
+            all_dispos = get_all_dispos_for_date(date_str)
+            return dispo_covers_range(all_dispos, garde_start, garde_end)
         
         def a_indisponibilite_bloquante(user_id, date_str, garde_heure_debut, garde_heure_fin):
             """
