@@ -260,13 +260,19 @@ async def update_parametres_equipes_garde(
 async def get_equipe_garde_du_jour(
     tenant_slug: str,
     date: str,  # Format YYYY-MM-DD
+    heure: str = None,  # Format HH:MM (optionnel, utilise l'heure actuelle si non fourni)
     type_emploi: str = "temps_plein",  # temps_plein ou temps_partiel
     current_user: User = Depends(get_current_user)
 ):
     """
     Retourne quelle équipe est de garde pour une date et un type d'emploi donnés.
+    Prend en compte l'heure pour déterminer si la rotation a changé.
     """
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Si pas d'heure fournie, utiliser l'heure actuelle
+    if not heure:
+        heure = datetime.now().strftime("%H:%M")
     
     params = await db.parametres_equipes_garde.find_one({"tenant_id": tenant.id})
     
@@ -282,6 +288,10 @@ async def get_equipe_garde_du_jour(
     
     if type_rotation == "aucun":
         return {"equipe": None, "message": "Aucune rotation configurée"}
+    
+    # Récupérer les paramètres de rotation horaire
+    jour_rotation = config.get("jour_rotation", "monday")
+    heure_rotation = config.get("heure_rotation", "08:00")
     
     # Pour les rotations standards (Montreal, Quebec, Longueuil)
     if type_rotation in ["montreal", "quebec", "longueuil"]:
@@ -300,7 +310,10 @@ async def get_equipe_garde_du_jour(
             nombre_equipes=config.get("nombre_equipes", 4),
             pattern_mode=config.get("pattern_mode", "hebdomadaire"),
             pattern_personnalise=config.get("pattern_personnalise", []),
-            duree_cycle=config.get("duree_cycle", 28)
+            duree_cycle=config.get("duree_cycle", 28),
+            jour_rotation=jour_rotation,
+            heure_rotation=heure_rotation,
+            heure_actuelle=heure
         )
         equipes_config = config.get("equipes_config", [])
     else:
