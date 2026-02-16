@@ -52,44 +52,86 @@ def get_equipe_garde_du_jour_sync(
     Prend en compte le jour et l'heure de rotation si spécifiés.
     Par exemple, si jour_rotation="monday" et heure_rotation="18:00",
     la rotation change chaque lundi à 18h.
+    
+    LOGIQUE CLÉ pour rotation hebdomadaire avec jour/heure:
+    - La date de référence est le PREMIER jour où l'équipe 1 est de garde
+    - On calcule le nombre de SEMAINES complètes depuis la référence
+    - Une "semaine de rotation" commence le jour_rotation à heure_rotation
+    - Exemple: si rotation lundi 18h, alors dimanche 23h59 = même semaine que lundi 00h00
     """
     date_ref = datetime.strptime(date_reference, "%Y-%m-%d").date()
     date_obj = datetime.strptime(date_cible, "%Y-%m-%d").date()
     
-    # Si on a un jour et une heure de rotation, ajuster la date pour le calcul
-    # L'idée: on calcule la "date effective" qui correspond au début de la période de rotation actuelle
-    if jour_rotation and heure_rotation:
-        # Convertir le jour de rotation en numéro (monday=0, tuesday=1, etc.)
+    # Pour les rotations hebdomadaires avec jour/heure personnalisés
+    if jour_rotation and heure_rotation and pattern_mode == "hebdomadaire":
+        # Convertir le jour de rotation en numéro (monday=0, ..., sunday=6)
         jours_semaine = {
             "monday": 0, "tuesday": 1, "wednesday": 2, "thursday": 3,
             "friday": 4, "saturday": 5, "sunday": 6
         }
-        jour_rotation_num = jours_semaine.get(jour_rotation, 0)
+        jour_rot_num = jours_semaine.get(jour_rotation, 0)
         
-        # Jour de la semaine actuel (0=lundi, 6=dimanche)
-        jour_actuel = date_obj.weekday()
+        # Parser l'heure de rotation
+        heure_rot_parts = heure_rotation.split(":")
+        heure_rot_h = int(heure_rot_parts[0])
+        heure_rot_m = int(heure_rot_parts[1]) if len(heure_rot_parts) > 1 else 0
+        
+        # Créer le datetime de référence (on suppose que la référence est au moment de la rotation)
+        datetime_ref = datetime.combine(date_ref, datetime.min.time().replace(hour=heure_rot_h, minute=heure_rot_m))
+        
+        # Créer le datetime cible
+        if heure_actuelle:
+            heure_act_parts = heure_actuelle.split(":")
+            heure_act_h = int(heure_act_parts[0])
+            heure_act_m = int(heure_act_parts[1]) if len(heure_act_parts) > 1 else 0
+            datetime_cible = datetime.combine(date_obj, datetime.min.time().replace(hour=heure_act_h, minute=heure_act_m))
+        else:
+            # Si pas d'heure fournie, utiliser minuit (début de journée = période précédente si rotation > 00:00)
+            datetime_cible = datetime.combine(date_obj, datetime.min.time())
+        
+        # Calculer le début de la période de rotation actuelle pour la date cible
+        # On doit trouver le dernier moment où la rotation a eu lieu AVANT datetime_cible
+        jour_cible = date_obj.weekday()
         
         # Calculer combien de jours depuis le dernier jour de rotation
-        if jour_actuel >= jour_rotation_num:
-            # Le jour de rotation est déjà passé cette semaine ou c'est aujourd'hui
-            jours_depuis_rotation = jour_actuel - jour_rotation_num
-        else:
+        if jour_cible > jour_rot_num:
+            # Le jour de rotation est passé cette semaine
+            jours_depuis = jour_cible - jour_rot_num
+        elif jour_cible < jour_rot_num:
             # Le jour de rotation n'est pas encore arrivé cette semaine
-            # On est dans la période qui a commencé la semaine dernière
-            jours_depuis_rotation = 7 - (jour_rotation_num - jour_actuel)
+            # Donc on est dans la période qui a commencé la semaine dernière
+            jours_depuis = 7 - (jour_rot_num - jour_cible)
+        else:
+            # C'est le jour de rotation - vérifier l'heure
+            heure_cible = datetime_cible.time()
+            heure_rot_time = datetime.min.time().replace(hour=heure_rot_h, minute=heure_rot_m)
+            if heure_cible >= heure_rot_time:
+                # Après l'heure de rotation = nouvelle période (0 jours depuis)
+                jours_depuis = 0
+            else:
+                # Avant l'heure de rotation = encore dans la période précédente (7 jours depuis)
+                jours_depuis = 7
         
-        # Si c'est le jour de rotation, vérifier l'heure
-        if jour_actuel == jour_rotation_num and heure_actuelle:
-            heure_rot = datetime.strptime(heure_rotation, "%H:%M").time()
-            heure_act = datetime.strptime(heure_actuelle, "%H:%M").time()
-            
-            if heure_act < heure_rot:
-                # Avant l'heure de rotation, on est encore dans la période précédente
-                jours_depuis_rotation = 7
+        # Calculer le datetime du début de la période actuelle
+        debut_periode_actuelle = datetime_cible - timedelta(days=jours_depuis)
+        debut_periode_actuelle = debut_periode_actuelle.replace(hour=heure_rot_h, minute=heure_rot_m)
         
-        # Ajuster la date_obj pour qu'elle corresponde au début de la période
-        date_obj = date_obj - timedelta(days=jours_depuis_rotation)
+        # Calculer le nombre de semaines entre la référence et le début de la période actuelle
+        delta = debut_periode_actuelle - datetime_ref
+        semaines_depuis_ref = delta.days // 7
+        
+        # L'équipe est basée sur le nombre de semaines modulo le nombre d'équipes
+        if semaines_depuis_ref < 0:
+            # Pour les dates avant la référence
+            equipe = nombre_equipes - ((-semaines_depuis_ref - 1) % nombre_equipes) - 1
+            if equipe <= 0:
+                equipe = nombre_equipes
+        else:
+            equipe = (semaines_depuis_ref % nombre_equipes) + 1
+        
+        return equipe
     
+    # Logique standard pour les autres cas
     # Calculer le jour dans le cycle
     jours_depuis_ref = (date_obj - date_ref).days
     
