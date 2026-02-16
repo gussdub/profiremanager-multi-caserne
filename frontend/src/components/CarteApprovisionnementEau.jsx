@@ -568,6 +568,7 @@ const CarteApprovisionnementEau = ({ user }) => {
         variant: "destructive"
       });
     }
+    setExporting(false);
   };
 
   // Composant pour gérer le clic sur la carte
