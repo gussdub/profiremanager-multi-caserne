@@ -3003,6 +3003,9 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         users = await db.users.find({"statut": "Actif", "tenant_id": tenant.id}).to_list(1000)
         types_garde = await db.types_garde.find({"tenant_id": tenant.id}).to_list(1000)
         
+        # Créer un dictionnaire pour lookup rapide des utilisateurs par ID
+        users_dict = {u["id"]: u for u in users}
+        
         # Récupérer les paramètres de remplacements (incluant gestion heures sup)
         parametres = await db.parametres_remplacements.find_one({"tenant_id": tenant.id})
         if not parametres:
