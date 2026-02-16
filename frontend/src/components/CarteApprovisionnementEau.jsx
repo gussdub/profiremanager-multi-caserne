@@ -370,6 +370,7 @@ const CarteApprovisionnementEau = ({ user }) => {
             latitude: p.latitude,
             longitude: p.longitude,
             etat: p.etat,
+            type: p.type,
             numero_identification: p.numero_identification
           })),
           width: 800,
