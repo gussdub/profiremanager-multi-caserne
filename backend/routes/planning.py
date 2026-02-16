@@ -3818,28 +3818,26 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         # Construire une explication détaillée
                         explication_niveaux = []
                         
+                        # DEBUG pour gardes externes de nuit uniquement
+                        is_debug_externe_nuit = est_externe and "nuit" in type_garde_nom.lower()
+                        
                         # N2: Temps partiel DISPONIBLES
                         if niveau == 2:
-                            # LOG DIAGNOSTIC DÉTAILLÉ pour N2
-                            logging.info(f"📊 [N2-CHECK] {user_name}: type_emploi={type_emploi}, has_dispo_valide={has_dispo_valide}, depasserait_max={depasserait_max}")
+                            # LOG DIAGNOSTIC seulement pour gardes externes de nuit
+                            if is_debug_externe_nuit:
+                                logging.info(f"📊 [N2-EXTERNE-NUIT] {user_name}: type_emploi={type_emploi}, has_dispo={has_dispo_valide}, depasserait_max={depasserait_max}")
                             if type_emploi in ["temps_partiel", "temporaire"] and has_dispo_valide:
                                 # Vérifier qu'il n'a pas atteint son max (sauf garde externe)
                                 if not depasserait_max:
                                     candidats.append(user)
                                     accepte = True
-                                    logging.info(f"✅ [N2-ACCEPT] {user_name} accepté au N2")
+                                    if is_debug_externe_nuit:
+                                        logging.info(f"✅ [N2-ACCEPT] {user_name} accepté au N2")
                                 else:
                                     raison_rejet = f"A une dispo mais dépasserait {heures_max}h max ({heures_travaillees}h + {duree_garde}h)"
                             elif type_emploi not in ["temps_partiel", "temporaire"]:
                                 raison_rejet = f"Temps plein (N2 = temps partiel)"
                             else:
-                                # Diagnostic: Pourquoi pas de dispo?
-                                user_dates_in_lookup = dispos_lookup.get(user_id, {})
-                                has_date_in_lookup = date_str in user_dates_in_lookup
-                                logging.info(f"🔴 [N2-REJECT] {user_name}: pas de dispo. User dans lookup? {user_id in dispos_lookup}. Date {date_str} dans lookup? {has_date_in_lookup}")
-                                if has_date_in_lookup:
-                                    date_dispos = user_dates_in_lookup.get(date_str, {})
-                                    logging.info(f"   📋 Contenu pour {date_str}: {date_dispos}")
                                 raison_rejet = f"Pas de disponibilité (N2 requiert dispo)"
                         
                         # N3: Temps partiel STAND-BY (ni dispo explicite ni indispo bloquante)
