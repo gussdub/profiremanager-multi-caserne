@@ -510,7 +510,7 @@ const CarteApprovisionnementEau = ({ user }) => {
 
   // Rendu de la carte
   const renderCarte = () => (
-    <div style={{ height: 'calc(100vh - 300px)', minHeight: '500px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e5e7eb', position: 'relative' }}>
+    <div ref={mapContainerRef} style={{ height: 'calc(100vh - 300px)', minHeight: '500px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e5e7eb', position: 'relative' }}>
       {/* Toggle Plan/Satellite */}
       <div style={{
         position: 'absolute',
@@ -561,6 +561,7 @@ const CarteApprovisionnementEau = ({ user }) => {
         style={{ height: '100%', width: '100%', background: '#d3d3d3' }}
         whenCreated={setMap}
       >
+        <MapRefHandler />
         {mapLayer === 'plan' ? (
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
