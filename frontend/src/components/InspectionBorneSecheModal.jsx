@@ -571,6 +571,15 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
           case 'toggle':
             defaultValue = false;
             break;
+          case 'inspecteur':
+          case 'inspecteur_auto':
+            // Auto-remplir avec le nom de l'utilisateur connecté
+            defaultValue = currentUserName || '';
+            break;
+          case 'date':
+            // Auto-remplir avec la date du jour
+            defaultValue = new Date().toISOString().split('T')[0];
+            break;
           default:
             defaultValue = '';
         }
