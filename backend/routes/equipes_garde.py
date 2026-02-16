@@ -40,17 +40,48 @@ def get_equipe_garde_du_jour_sync(
     nombre_equipes: int, 
     pattern_mode: str, 
     pattern_personnalise: List[int],
-    duree_cycle: int
+    duree_cycle: int,
+    jour_rotation: str = None,
+    heure_rotation: str = None,
+    heure_actuelle: str = None
 ) -> int:
     """
     Calcule quelle équipe est de garde pour une date donnée.
     Retourne le numéro de l'équipe (1, 2, 3, 4, 5).
     
-    IMPORTANT: Cette fonction N'UTILISE PAS les patterns Montreal/Quebec/Longueuil existants.
-    Elle calcule uniquement pour les rotations personnalisées ou les rotations standards appliquées aux équipes de garde.
+    Prend en compte le jour et l'heure de rotation si spécifiés.
+    Par exemple, si jour_rotation="monday" et heure_rotation="18:00",
+    la rotation change chaque lundi à 18h.
     """
     date_ref = datetime.strptime(date_reference, "%Y-%m-%d").date()
     date_obj = datetime.strptime(date_cible, "%Y-%m-%d").date()
+    
+    # Si on a un jour et une heure de rotation, ajuster le calcul
+    if jour_rotation and heure_rotation and heure_actuelle:
+        # Convertir le jour de rotation en numéro (monday=0, tuesday=1, etc.)
+        jours_semaine = {
+            "monday": 0, "tuesday": 1, "wednesday": 2, "thursday": 3,
+            "friday": 4, "saturday": 5, "sunday": 6
+        }
+        jour_rotation_num = jours_semaine.get(jour_rotation, 0)
+        
+        # Heure de rotation et heure actuelle
+        heure_rot = datetime.strptime(heure_rotation, "%H:%M").time()
+        heure_act = datetime.strptime(heure_actuelle, "%H:%M").time()
+        
+        # Jour de la semaine actuel (0=lundi, 6=dimanche)
+        jour_actuel = date_obj.weekday()
+        
+        # Déterminer si on est avant ou après l'heure de rotation cette semaine
+        # Si on est le jour de rotation mais avant l'heure, on est dans la semaine précédente
+        if jour_actuel == jour_rotation_num and heure_act < heure_rot:
+            # Encore dans la semaine précédente
+            date_obj = date_obj - timedelta(days=7)
+        elif jour_actuel < jour_rotation_num:
+            # On n'a pas encore atteint le jour de rotation cette semaine
+            # Donc on est dans la semaine qui a commencé au dernier jour de rotation
+            pass
+        # Si jour_actuel > jour_rotation_num, on est déjà dans la nouvelle semaine
     
     # Calculer le jour dans le cycle
     jours_depuis_ref = (date_obj - date_ref).days
