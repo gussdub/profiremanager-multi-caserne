@@ -280,7 +280,7 @@ const ApprovisionnementEau = () => {
             <Marker
               key={point.id}
               position={[point.latitude, point.longitude]}
-              icon={getLeafletIcon(point.type, point.statut_couleur)}
+              icon={getLeafletIcon(point.type, getEffectiveColor(point))}
             >
               <Popup>
                 <div style={{ minWidth: '250px' }}>
