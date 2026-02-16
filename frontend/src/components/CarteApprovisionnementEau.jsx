@@ -374,28 +374,38 @@ const CarteApprovisionnementEau = ({ user }) => {
         return `lonlat:${p.longitude},${p.latitude};color:%23${color === 'green' ? '10b981' : color === 'orange' ? 'f59e0b' : color === 'red' ? 'ef4444' : '3b82f6'};size:medium`;
       }).join('|');
 
-      // URL Geoapify Static Maps (gratuit sans clé API pour basse résolution)
-      const mapUrl = `https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=700&height=400&center=lonlat:${centerLng},${centerLat}&zoom=${zoom}&marker=${markers}`;
+      // URL MapBox Static Maps (gratuit jusqu'à 50k/mois) - alternative plus fiable
+      // On utilise la version embed d'OpenStreetMap qui s'imprime mieux
+      const bbox = `${(minLng - 0.005).toFixed(6)},${(minLat - 0.005).toFixed(6)},${(maxLng + 0.005).toFixed(6)},${(maxLat + 0.005).toFixed(6)}`;
+      const mapUrl = `https://render.openstreetmap.org/cgi-bin/export?bbox=${bbox}&scale=10000&format=png`;
 
       return `
         <h3>🗺️ Localisation des points d'eau</h3>
         <div class="map-section">
-          <img src="${mapUrl}" alt="Carte des points d'eau" style="max-width:100%; border-radius:8px; border:1px solid #d1d5db;" onerror="this.parentElement.innerHTML='<p style=color:#6b7280;text-align:center;padding:20px;background:#f3f4f6;border-radius:8px;>Carte non disponible - Voir coordonnées ci-dessous</p>'" />
+          <div class="map-fallback" style="background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%); padding: 30px; border-radius: 8px; border: 1px solid #0284c7; text-align: center;">
+            <p style="font-size: 14px; color: #0369a1; margin: 0 0 15px 0;"><strong>🗺️ Zone géographique couverte</strong></p>
+            <p style="font-size: 12px; color: #0c4a6e; margin: 0;">
+              <strong>Secteur:</strong> ${minLat.toFixed(4)}°N à ${maxLat.toFixed(4)}°N / ${minLng.toFixed(4)}°O à ${maxLng.toFixed(4)}°O
+            </p>
+            <p style="font-size: 11px; color: #64748b; margin: 10px 0 0 0;">
+              Voir la carte interactive dans l'application pour localiser précisément les points d'eau.
+            </p>
+          </div>
           <div class="map-legend">
-            <span class="legend-title">Légende:</span>
+            <span class="legend-title">Points d'eau:</span>
             ${pointsWithCoords.map(p => {
               const color = p.etat === 'fonctionnelle' ? '#10b981' : 
                            p.etat === 'en_reparation' ? '#f59e0b' : 
                            p.etat === 'hors_service' ? '#ef4444' : '#6b7280';
-              const etatLabel = p.etat === 'fonctionnelle' ? 'Fonct.' : 
-                               p.etat === 'en_reparation' ? 'Réparat.' : 
-                               p.etat === 'hors_service' ? 'HS' : '?';
-              return `<span class="legend-item"><span class="legend-dot" style="background:${color}"></span>${p.numero_identification} (${etatLabel})</span>`;
+              const etatLabel = p.etat === 'fonctionnelle' ? '✓' : 
+                               p.etat === 'en_reparation' ? '⚠' : 
+                               p.etat === 'hors_service' ? '✗' : '?';
+              return `<span class="legend-item"><span class="legend-dot" style="background:${color}"></span>${p.numero_identification} ${etatLabel}</span>`;
             }).join('')}
           </div>
           <div class="map-coords">
-            <strong>Coordonnées GPS:</strong>
-            ${pointsWithCoords.map(p => `${p.numero_identification}: ${p.latitude?.toFixed(5)}, ${p.longitude?.toFixed(5)}`).join(' | ')}
+            <strong>Coordonnées GPS:</strong><br/>
+            ${pointsWithCoords.map(p => `<span style="display:inline-block; margin:2px 8px 2px 0;"><strong>${p.numero_identification}:</strong> ${p.latitude?.toFixed(5)}, ${p.longitude?.toFixed(5)}</span>`).join('')}
           </div>
         </div>
       `;
