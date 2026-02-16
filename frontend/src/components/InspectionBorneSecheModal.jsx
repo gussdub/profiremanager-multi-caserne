@@ -624,6 +624,31 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
     }
   };
 
+  // Auto-remplir le champ inspecteur quand le nom d'utilisateur devient disponible
+  useEffect(() => {
+    if (currentUserName && modele) {
+      setReponses(prev => {
+        const newReponses = { ...prev };
+        modele.sections?.forEach(section => {
+          (section.items || []).forEach(item => {
+            if ((item.type === 'inspecteur' || item.type === 'inspecteur_auto') && 
+                newReponses[section.id]?.items && 
+                !newReponses[section.id].items[item.id]) {
+              newReponses[section.id] = {
+                ...newReponses[section.id],
+                items: {
+                  ...newReponses[section.id].items,
+                  [item.id]: currentUserName
+                }
+              };
+            }
+          });
+        });
+        return newReponses;
+      });
+    }
+  }, [currentUserName, modele]);
+
   // Mettre à jour une réponse
   const updateReponse = (sectionId, value, itemId = null) => {
     // Mettre à jour les réponses
