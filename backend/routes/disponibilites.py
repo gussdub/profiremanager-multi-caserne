@@ -195,6 +195,38 @@ async def create_disponibilite(
         if not target_user:
             raise HTTPException(status_code=404, detail="Utilisateur cible non trouvé")
     
+    # Validation: Vérifier que le type de garde est compatible avec le jour de la semaine
+    if dispo.type_garde_id:
+        type_garde = await db.types_garde.find_one({"id": dispo.type_garde_id, "tenant_id": tenant.id})
+        if type_garde:
+            type_name = type_garde.get("nom", "").lower()
+            dispo_date = datetime.strptime(dispo.date, "%Y-%m-%d")
+            day_of_week = dispo_date.weekday()  # 0=Lundi, 6=Dimanche
+            
+            is_compatible = True
+            expected_days = ""
+            
+            # LMM = Lundi, Mardi, Mercredi (0, 1, 2)
+            if "lmm" in type_name:
+                is_compatible = day_of_week in [0, 1, 2]
+                expected_days = "Lundi, Mardi ou Mercredi"
+            # JV = Jeudi, Vendredi (3, 4)
+            elif "jv" in type_name and "we" not in type_name:
+                is_compatible = day_of_week in [3, 4]
+                expected_days = "Jeudi ou Vendredi"
+            # WE = Weekend (5, 6)
+            elif "we" in type_name or "weekend" in type_name:
+                is_compatible = day_of_week in [5, 6]
+                expected_days = "Samedi ou Dimanche"
+            
+            if not is_compatible:
+                day_names = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Le type de garde '{type_garde.get('nom')}' est prévu pour {expected_days}, "
+                           f"mais la date {dispo.date} est un {day_names[day_of_week]}"
+                )
+    
     # Vérifier si l'utilisateur peut soumettre (deadline) - seulement pour les non-admins
     if current_user.role not in ["admin", "superviseur"]:
         params = await db.parametres_disponibilites.find_one({"tenant_id": tenant.id})
