@@ -37,10 +37,8 @@ const ParametresEquipesGarde = ({ tenantSlug, toast }) => {
       ],
       pre_remplissage_auto: true,
       privilegier_equipe_garde: false,
-      // Nouveaux champs pour la rotation horaire
-      jour_rotation: "monday",  // Jour où la rotation change
-      heure_debut: "08:00",     // Heure de début de garde
-      heure_fin: "08:00"        // Heure de fin de garde (lendemain si < début)
+      jour_rotation: "monday",
+      heure_rotation: "08:00"
     },
     temps_partiel: {
       rotation_active: false,
@@ -56,10 +54,8 @@ const ParametresEquipesGarde = ({ tenantSlug, toast }) => {
       ],
       pre_remplissage_auto: false,
       privilegier_equipe_garde: true,
-      // Nouveaux champs pour la rotation horaire
-      jour_rotation: "monday",  // Jour où la rotation change
-      heure_debut: "18:00",     // Heure de début de garde externe
-      heure_fin: "06:00"        // Heure de fin de garde externe (lendemain)
+      jour_rotation: "monday",
+      heure_rotation: "18:00"
     }
   });
 
