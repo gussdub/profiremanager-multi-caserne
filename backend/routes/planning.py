@@ -3661,6 +3661,10 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     if user_a_competences_requises(u, competences_requises)
                 ]
                 
+                # Log si peu de candidats avec les compétences requises
+                if competences_requises and len(users_avec_competences) < len(users) // 2:
+                    logging.info(f"  ⚠️ {type_garde_nom}: seulement {len(users_avec_competences)}/{len(users)} ont les compétences requises")
+                
                 # ==================== N0-bis: FILTRE GARDES EXTERNES ====================
                 # Si c'est une garde externe, ne garder que les utilisateurs qui acceptent les gardes externes
                 # LOGIQUE OPT-OUT: Par défaut tous acceptent, sauf ceux qui ont explicitement refusé (False)
