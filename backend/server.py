@@ -1459,6 +1459,15 @@ async def job_rappel_inspection_epi_mensuelle():
                             
                             resend.Emails.send(params)
                             logging.info(f"📧 Email rappel inspection envoyé à {email_pompier}")
+                            # Log email
+                            await log_email_sent(
+                                type_email="rappel_inspection_epi",
+                                destinataire_email=email_pompier,
+                                destinataire_nom=f"{pompier.get('prenom', '')} {pompier.get('nom', '')}".strip(),
+                                sujet=f"🔔 Rappel: Inspection EPI mensuelle - {mois_nom} {annee_actuelle}",
+                                tenant_id=tenant.get("id"),
+                                tenant_slug=tenant.get("slug")
+                            )
                             
                         except Exception as e:
                             logging.error(f"❌ Erreur envoi email rappel à {email_pompier}: {str(e)}")
