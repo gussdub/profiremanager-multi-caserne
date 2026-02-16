@@ -3118,28 +3118,6 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         
         logging.info(f"📅 [DISPOS] Lookup créé pour {len(dispos_lookup)} utilisateurs")
         
-        # DEBUG DÉTAILLÉ: Afficher TOUS les utilisateurs avec dispos pour diagnostic
-        for uid, dates in dispos_lookup.items():
-            user_info = users_dict.get(uid, {})
-            user_name = f"{user_info.get('prenom', '')} {user_info.get('nom', '')}".strip()
-            date_count = len(dates)
-            # Compter les dispos générales vs spécifiques
-            general_count = 0
-            specific_count = 0
-            for date_data in dates.values():
-                if "_general" in date_data and len(date_data["_general"]) > 0:
-                    general_count += 1
-                for key, val in date_data.items():
-                    if key != "_general" and len(val) > 0:
-                        specific_count += 1
-            logging.info(f"  📅 [LOOKUP] {user_name} ({uid[:8]}...): {date_count} dates, {general_count} générales, {specific_count} spécifiques")
-            
-            # DEBUG SPÉCIFIQUE pour Eliott
-            if "eliott" in user_name.lower():
-                logging.info(f"  🔍 [ELIOTT DEBUG] Détail complet des disponibilités:")
-                for date_str, date_data in sorted(dates.items()):
-                    logging.info(f"     📆 {date_str}: {date_data}")
-        
         # ⚡ OPTIMIZATION: Précharger TOUTES les indisponibilités de la semaine
         all_indisponibilites = await db.disponibilites.find({
             "date": {
