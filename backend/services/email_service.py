@@ -148,6 +148,20 @@ class EmailService:
             email_id = response.get('id') if isinstance(response, dict) else getattr(response, 'id', None)
             
             logger.info(f"✅ Email envoyé: {subject} -> {to}")
+            
+            # Log email pour chaque destinataire
+            try:
+                from routes.emails_history import log_email_sent
+                import asyncio
+                for recipient in to:
+                    asyncio.create_task(log_email_sent(
+                        type_email="email_service",
+                        destinataire_email=recipient,
+                        sujet=subject
+                    ))
+            except Exception as log_err:
+                logger.warning(f"Erreur log email: {log_err}")
+            
             return {"success": True, "email_id": email_id}
             
         except Exception as e:
