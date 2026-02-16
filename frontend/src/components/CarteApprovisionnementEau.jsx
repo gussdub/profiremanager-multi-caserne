@@ -234,15 +234,6 @@ const CarteApprovisionnementEau = ({ user }) => {
     }
   };
 
-  // Composant pour capturer la référence de la carte
-  const MapRefHandler = () => {
-    const mapRef = useMap();
-    useEffect(() => {
-      mapInstanceRef.current = mapRef;
-    }, [mapRef]);
-    return null;
-  };
-
   // Export Excel avec coordonnées GPS - Format ProFireManager
   const exportToExcel = () => {
     const getTypeLabel = (type) => {
