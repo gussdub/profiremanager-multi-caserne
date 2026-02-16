@@ -255,8 +255,9 @@ async def get_equipe_garde_du_jour(
     # Pour les rotations standards (Montreal, Quebec, Longueuil)
     if type_rotation in ["montreal", "quebec", "longueuil"]:
         equipe_num = get_equipe_garde_rotation_standard(type_rotation, "", date)
-    else:
-        # Rotation personnalisée
+        equipes_config = config.get("equipes_config", [])
+    elif type_rotation == "personnalisee":
+        # Rotation personnalisée manuelle (définie directement dans les paramètres)
         date_reference = config.get("date_reference")
         if not date_reference:
             return {"equipe": None, "message": "Date de référence non configurée"}
@@ -270,9 +271,41 @@ async def get_equipe_garde_du_jour(
             pattern_personnalise=config.get("pattern_personnalise", []),
             duree_cycle=config.get("duree_cycle", 28)
         )
+        equipes_config = config.get("equipes_config", [])
+    else:
+        # C'est un UUID - aller chercher l'horaire personnalisé dans la base
+        horaire_perso = await db.horaires_personnalises.find_one({
+            "tenant_id": tenant.id,
+            "id": type_rotation
+        })
+        
+        if not horaire_perso:
+            # Si pas trouvé, peut-être que c'est basé sur un prédéfini modifié
+            horaire_perso = await db.horaires_personnalises.find_one({
+                "tenant_id": tenant.id,
+                "base_predefini_id": type_rotation
+            })
+        
+        if not horaire_perso:
+            logger.warning(f"Horaire personnalisé {type_rotation} non trouvé pour {tenant.id}")
+            return {"equipe": None, "message": "Horaire personnalisé non trouvé"}
+        
+        date_reference = horaire_perso.get("date_reference")
+        if not date_reference:
+            return {"equipe": None, "message": "Date de référence non configurée dans l'horaire"}
+        
+        # Utiliser la logique de calcul basée sur les jours de travail de chaque équipe
+        equipe_num = get_equipe_from_horaire_personnalise(horaire_perso, date)
+        equipes_config = horaire_perso.get("equipes", [])
+        
+        # Convertir les équipes au format attendu si nécessaire
+        if equipes_config and not equipes_config[0].get("numero"):
+            equipes_config = [
+                {"numero": i + 1, "nom": eq.get("nom", f"Équipe {i+1}"), "couleur": eq.get("couleur", "#3B82F6")}
+                for i, eq in enumerate(equipes_config)
+            ]
     
     # Récupérer la config de l'équipe
-    equipes_config = config.get("equipes_config", [])
     equipe_info = next((e for e in equipes_config if e.get("numero") == equipe_num), None)
     
     if equipe_info:
@@ -291,6 +324,39 @@ async def get_equipe_garde_du_jour(
             "date": date,
             "type_emploi": type_emploi
         }
+
+
+def get_equipe_from_horaire_personnalise(horaire: dict, date_cible: str) -> int:
+    """
+    Calcule quelle équipe est de garde selon un horaire personnalisé.
+    Utilise les jours_travail définis pour chaque équipe.
+    """
+    date_ref = datetime.strptime(horaire.get("date_reference"), "%Y-%m-%d").date()
+    date_obj = datetime.strptime(date_cible, "%Y-%m-%d").date()
+    duree_cycle = horaire.get("duree_cycle", 28)
+    
+    # Calculer le jour dans le cycle (1-based)
+    jours_depuis_ref = (date_obj - date_ref).days
+    
+    if jours_depuis_ref < 0:
+        jour_cycle = duree_cycle - ((-jours_depuis_ref - 1) % duree_cycle)
+    else:
+        jour_cycle = (jours_depuis_ref % duree_cycle) + 1
+    
+    # Chercher quelle équipe travaille ce jour
+    equipes = horaire.get("equipes", [])
+    for eq in equipes:
+        jours_travail = eq.get("jours_travail", [])
+        for jt in jours_travail:
+            if isinstance(jt, int):
+                if jt == jour_cycle:
+                    return eq.get("numero", 1)
+            elif isinstance(jt, dict):
+                if jt.get("jour") == jour_cycle:
+                    return eq.get("numero", 1)
+    
+    # Par défaut, retourner équipe 1
+    return 1
 
 
 @router.get("/{tenant_slug}/equipes-garde/calendrier")
