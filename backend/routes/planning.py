@@ -702,42 +702,58 @@ async def get_mes_heures(
 async def get_rapport_heures(
     tenant_slug: str,
     mois: Optional[str] = None,  # Format: YYYY-MM
+    date_debut: Optional[str] = None,
+    date_fin: Optional[str] = None,
     current_user: User = Depends(get_current_user)
 ):
     """
     Rapport d'heures global pour tous les employés (admin/superviseur)
+    
+    Les heures sont catégorisées ainsi:
+    - Heures INTERNES = gardes de type "interne" (est_garde_externe = False)
+    - Heures EXTERNES = gardes de type "externe" (est_garde_externe = True)
     """
     if current_user.role not in ["admin", "superviseur"]:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Si pas de mois spécifié, prendre le mois courant
-    if not mois:
-        mois = datetime.now(timezone.utc).strftime("%Y-%m")
-    
-    # Calculer les dates du mois
-    year, month = map(int, mois.split('-'))
-    date_debut = datetime(year, month, 1, tzinfo=timezone.utc)
-    if month == 12:
-        date_fin = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+    # Calculer les dates de la période
+    if date_debut and date_fin:
+        # Utiliser les dates fournies
+        debut_str = date_debut
+        fin_str = date_fin
+    elif mois:
+        # Calculer les dates du mois
+        year, month = map(int, mois.split('-'))
+        debut_str = f"{year}-{month:02d}-01"
+        if month == 12:
+            fin_str = f"{year + 1}-01-01"
+        else:
+            fin_str = f"{year}-{month + 1:02d}-01"
     else:
-        date_fin = datetime(year, month + 1, 1, tzinfo=timezone.utc)
+        # Mois courant par défaut
+        now = datetime.now(timezone.utc)
+        debut_str = f"{now.year}-{now.month:02d}-01"
+        if now.month == 12:
+            fin_str = f"{now.year + 1}-01-01"
+        else:
+            fin_str = f"{now.year}-{now.month + 1:02d}-01"
     
-    # Récupérer toutes les assignations du mois
+    # Récupérer toutes les assignations de la période
     assignations = await db.assignations.find({
         "tenant_id": tenant.id,
         "date": {
-            "$gte": date_debut.strftime("%Y-%m-%d"),
-            "$lt": date_fin.strftime("%Y-%m-%d")
+            "$gte": debut_str,
+            "$lt": fin_str
         }
     }, {"_id": 0}).to_list(10000)
     
-    # Récupérer les types de garde
+    # Récupérer les types de garde avec leur catégorisation interne/externe
     types_garde = await get_types_garde(tenant.id)
     types_garde_dict = {t["id"]: t for t in types_garde}
     
-    # Récupérer tous les employés actifs
+    # Récupérer tous les employés actifs (temps plein ET temps partiel)
     users = await db.users.find(
         {"tenant_id": tenant.id, "statut": "Actif"},
         {"_id": 0, "mot_de_passe_hash": 0}
@@ -750,14 +766,14 @@ async def get_rapport_heures(
         user_id = assignation.get("user_id")
         type_garde_id = assignation.get("type_garde_id")
         
+        if not user_id or user_id not in users_dict:
+            continue
+        
         if user_id not in rapport:
             user = users_dict.get(user_id, {})
             nom = user.get("nom", "")
             prenom = user.get("prenom", "")
             type_emploi = user.get("type_emploi", "")
-            
-            # Déterminer si interne ou externe
-            is_interne = type_emploi == "Temps plein"
             
             rapport[user_id] = {
                 "user_id": user_id,
@@ -766,35 +782,54 @@ async def get_rapport_heures(
                 "nom_complet": f"{prenom} {nom}".strip(),
                 "grade": user.get("grade", ""),
                 "type_emploi": type_emploi,
-                "is_interne": is_interne,
                 "total_heures": 0,
-                "heures_internes": 0,
-                "heures_externes": 0,
+                "heures_internes": 0,  # Heures de gardes INTERNES (pas externe)
+                "heures_externes": 0,  # Heures de gardes EXTERNES
                 "nombre_gardes": 0,
                 "detail_par_type": {}
             }
         
         if type_garde_id in types_garde_dict:
             tg = types_garde_dict[type_garde_id]
-            duree = tg.get("duree_heures", 0)
+            duree = tg.get("duree_heures", 0) or 0
+            est_garde_externe = tg.get("est_garde_externe", False)
+            
             rapport[user_id]["total_heures"] += duree
             rapport[user_id]["nombre_gardes"] += 1
             
-            # Répartir entre heures internes et externes
-            if rapport[user_id]["is_interne"]:
-                rapport[user_id]["heures_internes"] += duree
-            else:
+            # Catégoriser selon le TYPE DE GARDE (pas le type d'emploi!)
+            if est_garde_externe:
                 rapport[user_id]["heures_externes"] += duree
+            else:
+                rapport[user_id]["heures_internes"] += duree
             
             if type_garde_id not in rapport[user_id]["detail_par_type"]:
                 rapport[user_id]["detail_par_type"][type_garde_id] = {
                     "nom": tg.get("nom", ""),
                     "heures": 0,
-                    "count": 0
+                    "count": 0,
+                    "est_externe": est_garde_externe
                 }
             
             rapport[user_id]["detail_par_type"][type_garde_id]["heures"] += duree
             rapport[user_id]["detail_par_type"][type_garde_id]["count"] += 1
+    
+    # Ajouter les employés sans assignation (pour voir qui n'a pas d'heures)
+    for user_id, user in users_dict.items():
+        if user_id not in rapport:
+            rapport[user_id] = {
+                "user_id": user_id,
+                "nom": user.get("nom", ""),
+                "prenom": user.get("prenom", ""),
+                "nom_complet": f"{user.get('prenom', '')} {user.get('nom', '')}".strip(),
+                "grade": user.get("grade", ""),
+                "type_emploi": user.get("type_emploi", ""),
+                "total_heures": 0,
+                "heures_internes": 0,
+                "heures_externes": 0,
+                "nombre_gardes": 0,
+                "detail_par_type": {}
+            }
     
     # Convertir en liste triée
     rapport_list = list(rapport.values())
