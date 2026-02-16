@@ -2032,7 +2032,7 @@ async def export_rapport_heures_excel(
         "date": {"$gte": debut_dt.strftime("%Y-%m-%d"), "$lt": fin_dt.strftime("%Y-%m-%d")}
     }).to_list(10000)
     
-    users = await db.users.find({"tenant_id": tenant.id, "actif": True}).to_list(1000)
+    users = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
     users_dict = {u["id"]: u for u in users}
     
     # Récupérer les types de garde pour déterminer est_externe et duree
