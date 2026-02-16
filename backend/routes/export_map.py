@@ -8,13 +8,15 @@ pour l'export PDF.
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
-from typing import List, Optional
+from typing import List, Optional, Dict
 from pydantic import BaseModel
 import io
 import base64
 import logging
+import httpx
+from PIL import Image
 
-from staticmap import StaticMap, CircleMarker
+from staticmap import StaticMap, CircleMarker, IconMarker
 
 from routes.dependencies import (
     get_current_user,
@@ -24,6 +26,16 @@ from routes.dependencies import (
 
 router = APIRouter(tags=["Export Map"])
 logger = logging.getLogger(__name__)
+
+# URLs des icônes pour chaque type de point d'eau
+ICON_URLS = {
+    'borne_fontaine': 'https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/opwhu1ma_Borne%20fontaine.png',
+    'borne_seche': 'https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/wkhxcmid_Borne%20seche.png',
+    'point_eau_statique': 'https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/1nhnxx97_eau.png'
+}
+
+# Cache pour les icônes téléchargées
+_icon_cache: Dict[str, Image.Image] = {}
 
 
 class PointEauMarker(BaseModel):
