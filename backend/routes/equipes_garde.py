@@ -339,8 +339,10 @@ async def get_equipe_garde_du_jour(
         return {"equipe": None, "message": "Aucune rotation configurée"}
     
     # Récupérer les paramètres de rotation horaire
-    jour_rotation = config.get("jour_rotation", "monday")
-    heure_rotation = config.get("heure_rotation", "08:00")
+    # Valeurs par défaut différentes selon le type d'emploi
+    default_heure = "18:00" if type_emploi == "temps_partiel" else "08:00"
+    jour_rotation = config.get("jour_rotation") or "monday"
+    heure_rotation = config.get("heure_rotation") or default_heure
     
     # Pour les rotations standards (Montreal, Quebec, Longueuil)
     if type_rotation in ["montreal", "quebec", "longueuil"]:
