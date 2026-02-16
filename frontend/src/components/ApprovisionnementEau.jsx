@@ -825,8 +825,52 @@ const ApprovisionnementEau = () => {
           }}
         />
 
-        {/* Spacer pour pousser le toggle à droite */}
+        {/* Spacer pour pousser les boutons à droite */}
         <div style={{ flex: 1, minWidth: '50px' }}></div>
+
+        {/* Boutons Export */}
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button
+            onClick={exportToPDF}
+            style={{
+              padding: '0.75rem 1rem',
+              borderRadius: '8px',
+              border: '1px solid #dc2626',
+              background: 'white',
+              color: '#dc2626',
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '0.875rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              whiteSpace: 'nowrap'
+            }}
+            title="Exporter en PDF"
+          >
+            📄 PDF
+          </button>
+          <button
+            onClick={exportToExcel}
+            style={{
+              padding: '0.75rem 1rem',
+              borderRadius: '8px',
+              border: '1px solid #16a34a',
+              background: 'white',
+              color: '#16a34a',
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '0.875rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              whiteSpace: 'nowrap'
+            }}
+            title="Exporter en Excel (avec GPS)"
+          >
+            📊 Excel
+          </button>
+        </div>
 
         {/* Toggle Vue */}
         <div style={{ display: 'flex', gap: '0.5rem' }}>
