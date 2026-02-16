@@ -2641,6 +2641,21 @@ async def envoyer_email_remise_propriete(tenant: dict, intervention: dict, remis
         
         response = resend.Emails.send(params)
         print(f"Email remise propriété envoyé: {response}")
+        
+        # Log email
+        try:
+            from routes.emails_history import log_email_sent
+            import asyncio
+            asyncio.create_task(log_email_sent(
+                type_email="remise_propriete",
+                destinataire_email=recipient_email,
+                sujet=f"Remise de propriété - Intervention {intervention.get('external_call_id', 'NA')}",
+                tenant_id=tenant_id,
+                metadata={"intervention_id": intervention.get('id'), "external_call_id": intervention.get('external_call_id')}
+            ))
+        except Exception as log_err:
+            print(f"Erreur log email: {log_err}")
+        
         return True
         
     except Exception as e:
