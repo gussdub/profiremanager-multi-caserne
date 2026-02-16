@@ -3133,6 +3133,12 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     if key != "_general" and len(val) > 0:
                         specific_count += 1
             logging.info(f"  📅 [LOOKUP] {user_name} ({uid[:8]}...): {date_count} dates, {general_count} générales, {specific_count} spécifiques")
+            
+            # DEBUG SPÉCIFIQUE pour Eliott
+            if "eliott" in user_name.lower():
+                logging.info(f"  🔍 [ELIOTT DEBUG] Détail complet des disponibilités:")
+                for date_str, date_data in sorted(dates.items()):
+                    logging.info(f"     📆 {date_str}: {date_data}")
         
         # ⚡ OPTIMIZATION: Précharger TOUTES les indisponibilités de la semaine
         all_indisponibilites = await db.disponibilites.find({
