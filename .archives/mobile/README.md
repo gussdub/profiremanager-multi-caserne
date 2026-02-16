@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://water-map-export.preview.emergentagent.com
+- **URL** : https://schedule-debug-3.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://water-map-export.preview.emergentagent.com"
+  "apiUrl": "https://schedule-debug-3.preview.emergentagent.com"
 }
 ```
 
