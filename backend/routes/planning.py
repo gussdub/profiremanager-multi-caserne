@@ -3107,6 +3107,13 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         
         logging.info(f"📅 [DISPOS] Lookup créé pour {len(dispos_lookup)} utilisateurs")
         
+        # DEBUG: Afficher les détails des dispos trouvées
+        for uid, dates in list(dispos_lookup.items())[:5]:  # Limiter aux 5 premiers
+            user_info = users_dict.get(uid, {})
+            user_name = f"{user_info.get('prenom', '')} {user_info.get('nom', '')}".strip()
+            date_count = len(dates)
+            logging.info(f"  📅 {user_name} ({uid[:8]}...): {date_count} dates avec dispo")
+        
         # ⚡ OPTIMIZATION: Précharger TOUTES les indisponibilités de la semaine
         all_indisponibilites = await db.disponibilites.find({
             "date": {
