@@ -134,18 +134,34 @@ async def generate_map_image(
         for point in request.points:
             if point.latitude and point.longitude:
                 point_type = point.type or 'point_eau_statique'
+                color = get_marker_color(point.etat)
                 
                 # Essayer d'utiliser l'icône personnalisée
                 if point_type in icons:
+                    # D'abord ajouter l'icône
                     icon_marker = IconMarker(
                         (point.longitude, point.latitude),
                         icons[point_type],
                         16, 16  # offset x, y (centre de l'icône)
                     )
                     m.add_marker(icon_marker)
+                    
+                    # Ensuite ajouter le badge coloré (décalé en bas à droite)
+                    # Le badge sera superposé sur l'icône
+                    outer_badge = CircleMarker(
+                        (point.longitude + 0.0003, point.latitude - 0.0002),
+                        'white',
+                        10
+                    )
+                    m.add_marker(outer_badge)
+                    inner_badge = CircleMarker(
+                        (point.longitude + 0.0003, point.latitude - 0.0002),
+                        color,
+                        7
+                    )
+                    m.add_marker(inner_badge)
                 else:
                     # Fallback: marqueur circulaire coloré
-                    color = get_marker_color(point.etat)
                     outer_marker = CircleMarker(
                         (point.longitude, point.latitude),
                         'white',
