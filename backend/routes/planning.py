@@ -3989,6 +3989,10 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             officier_tag = " [ÉLIGIBLE]"
                         
                         logging.info(f"✅ [N{niveau}]{officier_tag} {user.get('prenom', '')} {user.get('nom', '')} → {type_garde_nom} le {date_str}")
+                
+                # Log si garde non remplie après tous les niveaux
+                if assignes_cette_garde == 0 and places_restantes > 0:
+                    logging.warning(f"❌ [NON REMPLIE] {type_garde_nom} @ {date_str}: 0 assignation sur {places_restantes} places. Candidats avec compétences: {len(users_avec_competences)}")
             
             current_date += timedelta(days=1)
         
