@@ -472,6 +472,49 @@ const ParametresEquipesGarde = ({ tenantSlug, toast }) => {
                           {(!params.temps_partiel.pattern_mode || params.temps_partiel.pattern_mode === "hebdomadaire") && "L'équipe de garde change chaque semaine (7 jours)"}
                         </p>
                       </div>
+                      
+                      {/* Jour et heure de changement de rotation */}
+                      <div className="grid grid-cols-2 gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                        <div>
+                          <Label className="text-blue-800">Jour de rotation</Label>
+                          <Select
+                            value={params.temps_partiel.jour_rotation || "monday"}
+                            onValueChange={(value) => updateTempsPartiel("jour_rotation", value)}
+                          >
+                            <SelectTrigger data-testid="select-jour-rotation-tpa">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="monday">Lundi</SelectItem>
+                              <SelectItem value="tuesday">Mardi</SelectItem>
+                              <SelectItem value="wednesday">Mercredi</SelectItem>
+                              <SelectItem value="thursday">Jeudi</SelectItem>
+                              <SelectItem value="friday">Vendredi</SelectItem>
+                              <SelectItem value="saturday">Samedi</SelectItem>
+                              <SelectItem value="sunday">Dimanche</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-blue-800">Heure de rotation</Label>
+                          <Input
+                            type="time"
+                            value={params.temps_partiel.heure_rotation || "18:00"}
+                            onChange={(e) => updateTempsPartiel("heure_rotation", e.target.value)}
+                            data-testid="input-heure-rotation-tpa"
+                          />
+                        </div>
+                        <p className="col-span-2 text-xs text-blue-700">
+                          La rotation change chaque {
+                            params.temps_partiel.jour_rotation === "monday" ? "lundi" :
+                            params.temps_partiel.jour_rotation === "tuesday" ? "mardi" :
+                            params.temps_partiel.jour_rotation === "wednesday" ? "mercredi" :
+                            params.temps_partiel.jour_rotation === "thursday" ? "jeudi" :
+                            params.temps_partiel.jour_rotation === "friday" ? "vendredi" :
+                            params.temps_partiel.jour_rotation === "saturday" ? "samedi" : "dimanche"
+                          } à {params.temps_partiel.heure_rotation || "18:00"}
+                        </p>
+                      </div>
                     </>
                   )}
 
