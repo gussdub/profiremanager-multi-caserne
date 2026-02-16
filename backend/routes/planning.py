@@ -3831,11 +3831,14 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             })
                     
                     # Trier par équité puis ancienneté, avec priorité officier si nécessaire
+                    # et priorité équipe de garde pour les gardes EXTERNES
                     candidats_tries = trier_candidats_equite_anciennete(
                         candidats, 
                         est_externe, 
                         prioriser_officiers=(besoin_officier and not officier_assigne_cette_iteration),
-                        user_monthly_hours=user_monthly_hours_internes
+                        user_monthly_hours=user_monthly_hours_internes,
+                        equipe_garde_du_jour=equipe_garde_du_jour,
+                        prioriser_equipe_garde=privilegier_equipe_garde_tp
                     )
                     
                     # Assigner les candidats
