@@ -861,7 +861,6 @@ const CarteApprovisionnementEau = ({ user }) => {
         <div style={{ display: 'flex', gap: '0.4rem' }}>
           <button
             onClick={exportToPDF}
-            disabled={exporting}
             data-testid="export-pdf-btn"
             style={{
               padding: '0.6rem 0.8rem',
@@ -869,18 +868,17 @@ const CarteApprovisionnementEau = ({ user }) => {
               border: '1px solid #dc2626',
               background: 'white',
               color: '#dc2626',
-              cursor: exporting ? 'not-allowed' : 'pointer',
+              cursor: 'pointer',
               fontWeight: '600',
               fontSize: '0.85rem',
               display: 'flex',
               alignItems: 'center',
               gap: '0.3rem',
-              whiteSpace: 'nowrap',
-              opacity: exporting ? 0.6 : 1
+              whiteSpace: 'nowrap'
             }}
-            title="Exporter en PDF avec carte"
+            title="Exporter en PDF"
           >
-            {exporting ? '⏳' : '📄'} PDF
+            📄 PDF
           </button>
           <button
             onClick={exportToExcel}
