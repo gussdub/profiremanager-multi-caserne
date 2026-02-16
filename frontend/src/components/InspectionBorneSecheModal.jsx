@@ -931,6 +931,8 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
         return <SignatureField value={value} onChange={(v) => updateReponse(sectionId, v, item.id)} />;
 
       case 'chronometre':
+      case 'timer':
+      case 'compte_rebours':
         return <TimerField value={value} onChange={(v) => updateReponse(sectionId, v, item.id)} unite={item.config?.unite} seuilAlerte={item.alertes?.seuil_max} />;
 
       case 'photo':
