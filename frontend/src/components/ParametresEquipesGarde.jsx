@@ -549,12 +549,15 @@ const ParametresEquipesGarde = ({ tenantSlug, toast }) => {
                         </div>
                         <p className="col-span-2 text-xs text-blue-700">
                           La rotation change chaque {
-                            params.temps_partiel.jour_rotation === "monday" ? "lundi" :
-                            params.temps_partiel.jour_rotation === "tuesday" ? "mardi" :
-                            params.temps_partiel.jour_rotation === "wednesday" ? "mercredi" :
-                            params.temps_partiel.jour_rotation === "thursday" ? "jeudi" :
-                            params.temps_partiel.jour_rotation === "friday" ? "vendredi" :
-                            params.temps_partiel.jour_rotation === "saturday" ? "samedi" : "dimanche"
+                            {
+                              "monday": "lundi",
+                              "tuesday": "mardi", 
+                              "wednesday": "mercredi",
+                              "thursday": "jeudi",
+                              "friday": "vendredi",
+                              "saturday": "samedi",
+                              "sunday": "dimanche"
+                            }[params.temps_partiel.jour_rotation] || "lundi"
                           } à {params.temps_partiel.heure_rotation || "18:00"}
                         </p>
                       </div>
