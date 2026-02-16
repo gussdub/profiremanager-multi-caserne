@@ -34,8 +34,8 @@ ICON_URLS = {
     'point_eau_statique': 'https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/1nhnxx97_eau.png'
 }
 
-# Cache pour les icônes téléchargées
-_icon_cache: Dict[str, Image.Image] = {}
+# Cache pour les icônes téléchargées (chemins de fichiers temporaires)
+_icon_cache: Dict[str, str] = {}
 
 
 class PointEauMarker(BaseModel):
