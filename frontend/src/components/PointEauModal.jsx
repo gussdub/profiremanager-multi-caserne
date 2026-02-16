@@ -846,11 +846,12 @@ const PointEauModal = ({
                 </div>
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
-                    État
+                    Date dernier test
                   </label>
-                  <select
-                    value={formData.etat}
-                    onChange={(e) => setFormData({ ...formData, etat: e.target.value })}
+                  <input
+                    type="date"
+                    value={formData.date_dernier_test}
+                    onChange={(e) => setFormData({ ...formData, date_dernier_test: e.target.value })}
                     style={{
                       width: '100%',
                       padding: '0.75rem',
@@ -858,30 +859,8 @@ const PointEauModal = ({
                       borderRadius: '8px',
                       fontSize: '1rem'
                     }}
-                  >
-                    <option value="fonctionnelle">Fonctionnelle</option>
-                    <option value="attention">Attention</option>
-                    <option value="hors_service">Hors service</option>
-                  </select>
+                  />
                 </div>
-              </div>
-
-              <div style={{ marginBottom: '1.25rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
-                  Date dernier test
-                </label>
-                <input
-                  type="date"
-                  value={formData.date_dernier_test}
-                  onChange={(e) => setFormData({ ...formData, date_dernier_test: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: '1rem'
-                  }}
-                />
               </div>
             </>
           )}
