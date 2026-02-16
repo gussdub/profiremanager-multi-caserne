@@ -531,7 +531,6 @@ const CarteApprovisionnementEau = ({ user }) => {
         style={{ height: '100%', width: '100%', background: '#d3d3d3' }}
         whenCreated={setMap}
       >
-        <MapRefHandler />
         {mapLayer === 'plan' ? (
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
