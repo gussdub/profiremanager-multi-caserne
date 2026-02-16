@@ -3671,11 +3671,6 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         if u.get("accepter_gardes_externes") != False  # Exclure SEULEMENT ceux qui ont explicitement refusé
                     ]
                     logging.info(f"  🏠 Garde externe: {len(users_avec_competences)}/{nb_avant} candidats acceptant les gardes externes")
-                    # DEBUG: Si garde de nuit externe et peu de candidats
-                    if "nuit" in type_garde_nom.lower() and len(users_avec_competences) < 5:
-                        logging.info(f"  ⚠️ [DEBUG EXTERNE NUIT] {type_garde_nom} @ {date_str}: seulement {len(users_avec_competences)} candidats")
-                        for u in users_avec_competences[:3]:
-                            logging.info(f"     - {u.get('prenom')} {u.get('nom')}")
                 
                 # ==================== LOGIQUE OFFICIER OBLIGATOIRE ====================
                 # Si officier obligatoire et pas encore d'officier assigné
