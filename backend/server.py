@@ -688,10 +688,11 @@ async def job_check_overdue_payments():
                     if tenant.get("email_contact") and os.environ.get("RESEND_API_KEY"):
                         try:
                             resend.api_key = os.environ.get("RESEND_API_KEY")
+                            sujet_rappel = "Dernier rappel de paiement - ProFireManager"
                             resend.Emails.send({
                                 "from": "ProFireManager <noreply@profiremanager.ca>",
                                 "to": [tenant["email_contact"]],
-                                "subject": "Dernier rappel de paiement - ProFireManager",
+                                "subject": sujet_rappel,
                                 "html": f"""
                                 <h2>Dernier rappel avant suspension</h2>
                                 <p>Bonjour,</p>
@@ -700,6 +701,15 @@ async def job_check_overdue_payments():
                                 <p>Cordialement,<br>L'équipe ProFireManager</p>
                                 """
                             })
+                            # Log email
+                            await log_email_sent(
+                                type_email="rappel_paiement",
+                                destinataire_email=tenant["email_contact"],
+                                destinataire_nom=tenant.get("nom"),
+                                sujet=sujet_rappel,
+                                tenant_id=tenant.get("id"),
+                                tenant_slug=tenant.get("slug")
+                            )
                             reminder_count += 1
                         except Exception as e:
                             logging.error(f"Erreur envoi rappel: {e}")
