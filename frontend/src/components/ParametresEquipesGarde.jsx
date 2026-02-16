@@ -36,7 +36,11 @@ const ParametresEquipesGarde = ({ tenantSlug, toast }) => {
         { numero: 4, nom: "Équipe 4", couleur: "#EF4444" }
       ],
       pre_remplissage_auto: true,
-      privilegier_equipe_garde: false
+      privilegier_equipe_garde: false,
+      // Nouveaux champs pour la rotation horaire
+      jour_rotation: "monday",  // Jour où la rotation change
+      heure_debut: "08:00",     // Heure de début de garde
+      heure_fin: "08:00"        // Heure de fin de garde (lendemain si < début)
     },
     temps_partiel: {
       rotation_active: false,
@@ -51,7 +55,11 @@ const ParametresEquipesGarde = ({ tenantSlug, toast }) => {
         { numero: 2, nom: "Équipe B", couleur: "#EF4444" }
       ],
       pre_remplissage_auto: false,
-      privilegier_equipe_garde: true
+      privilegier_equipe_garde: true,
+      // Nouveaux champs pour la rotation horaire
+      jour_rotation: "monday",  // Jour où la rotation change
+      heure_debut: "18:00",     // Heure de début de garde externe
+      heure_fin: "06:00"        // Heure de fin de garde externe (lendemain)
     }
   });
 
