@@ -384,9 +384,11 @@ const Planning = () => {
       
       // Charger les équipes de garde du jour si le système est actif
       if (equipesGardeData?.actif) {
-        const today = new Date().toISOString().split('T')[0];
-        const heureActuelle = new Date().toTimeString().slice(0, 5); // Format HH:MM
-        console.log('[DEBUG] Chargement équipes de garde - Date:', today, 'Heure:', heureActuelle);
+        // Utiliser la date locale (pas UTC)
+        const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const heureActuelle = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        console.log('[DEBUG] Chargement équipes de garde - Date locale:', today, 'Heure locale:', heureActuelle);
         try {
           const [equipeTP, equipeTPA] = await Promise.all([
             apiGet(tenantSlug, `/equipes-garde/equipe-du-jour?date=${today}&heure=${heureActuelle}&type_emploi=temps_plein`).catch(() => null),
