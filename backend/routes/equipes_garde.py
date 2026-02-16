@@ -56,8 +56,9 @@ def get_equipe_garde_du_jour_sync(
     date_ref = datetime.strptime(date_reference, "%Y-%m-%d").date()
     date_obj = datetime.strptime(date_cible, "%Y-%m-%d").date()
     
-    # Si on a un jour et une heure de rotation, ajuster le calcul
-    if jour_rotation and heure_rotation and heure_actuelle:
+    # Si on a un jour et une heure de rotation, ajuster la date pour le calcul
+    # L'idée: on calcule la "date effective" qui correspond au début de la période de rotation actuelle
+    if jour_rotation and heure_rotation:
         # Convertir le jour de rotation en numéro (monday=0, tuesday=1, etc.)
         jours_semaine = {
             "monday": 0, "tuesday": 1, "wednesday": 2, "thursday": 3,
@@ -65,23 +66,29 @@ def get_equipe_garde_du_jour_sync(
         }
         jour_rotation_num = jours_semaine.get(jour_rotation, 0)
         
-        # Heure de rotation et heure actuelle
-        heure_rot = datetime.strptime(heure_rotation, "%H:%M").time()
-        heure_act = datetime.strptime(heure_actuelle, "%H:%M").time()
-        
         # Jour de la semaine actuel (0=lundi, 6=dimanche)
         jour_actuel = date_obj.weekday()
         
-        # Déterminer si on est avant ou après l'heure de rotation cette semaine
-        # Si on est le jour de rotation mais avant l'heure, on est dans la semaine précédente
-        if jour_actuel == jour_rotation_num and heure_act < heure_rot:
-            # Encore dans la semaine précédente
-            date_obj = date_obj - timedelta(days=7)
-        elif jour_actuel < jour_rotation_num:
-            # On n'a pas encore atteint le jour de rotation cette semaine
-            # Donc on est dans la semaine qui a commencé au dernier jour de rotation
-            pass
-        # Si jour_actuel > jour_rotation_num, on est déjà dans la nouvelle semaine
+        # Calculer combien de jours depuis le dernier jour de rotation
+        if jour_actuel >= jour_rotation_num:
+            # Le jour de rotation est déjà passé cette semaine ou c'est aujourd'hui
+            jours_depuis_rotation = jour_actuel - jour_rotation_num
+        else:
+            # Le jour de rotation n'est pas encore arrivé cette semaine
+            # On est dans la période qui a commencé la semaine dernière
+            jours_depuis_rotation = 7 - (jour_rotation_num - jour_actuel)
+        
+        # Si c'est le jour de rotation, vérifier l'heure
+        if jour_actuel == jour_rotation_num and heure_actuelle:
+            heure_rot = datetime.strptime(heure_rotation, "%H:%M").time()
+            heure_act = datetime.strptime(heure_actuelle, "%H:%M").time()
+            
+            if heure_act < heure_rot:
+                # Avant l'heure de rotation, on est encore dans la période précédente
+                jours_depuis_rotation = 7
+        
+        # Ajuster la date_obj pour qu'elle corresponde au début de la période
+        date_obj = date_obj - timedelta(days=jours_depuis_rotation)
     
     # Calculer le jour dans le cycle
     jours_depuis_ref = (date_obj - date_ref).days
