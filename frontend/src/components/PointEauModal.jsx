@@ -340,9 +340,10 @@ const PointEauModal = ({
         capacite_litres: cleanNumeric(formData.capacite_litres),
         profondeur_metres: cleanNumeric(formData.profondeur_metres),
         frequence_inspection_mois: cleanNumeric(formData.frequence_inspection_mois) || 12,
+        modele_inspection_assigne_id: formData.modele_inspection_assigne_id || null,
         // Mapper l'état à la couleur correcte
         statut_couleur: formData.etat === 'fonctionnelle' ? 'vert' : 
-                        formData.etat === 'attention' ? 'orange' : 'rouge'
+                        formData.etat === 'en_reparation' ? 'orange' : 'rouge'
       };
 
       if (point?.id) {
