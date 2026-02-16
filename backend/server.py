@@ -1190,6 +1190,15 @@ async def job_verifier_alertes_equipements():
                         
                         email_response = resend.Emails.send(params)
                         logging.info(f"📧 Email envoyé à {email} pour {tenant_nom} - ID: {email_response.get('id', 'N/A')}")
+                        # Log email
+                        await log_email_sent(
+                            type_email="alerte_equipement_due",
+                            destinataire_email=email,
+                            sujet=subject,
+                            tenant_id=tenant.get("id"),
+                            tenant_slug=tenant.get("slug"),
+                            metadata={"nb_alertes": total_alertes}
+                        )
                     
                     except Exception as e:
                         logging.error(f"❌ Erreur envoi email à {email} pour {tenant_nom}: {str(e)}")
