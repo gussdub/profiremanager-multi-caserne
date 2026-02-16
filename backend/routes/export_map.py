@@ -154,9 +154,9 @@ async def generate_map_image(
                     
                     # Puis l'icône légèrement au-dessus
                     icon_marker = IconMarker(
-                        (point.longitude, point.latitude + 0.00015),
+                        (point.longitude, point.latitude + 0.00018),
                         icons[point_type],
-                        16, 16  # offset x, y (centre de l'icône)
+                        20, 20  # offset x, y (centre de l'icône 40x40)
                     )
                     m.add_marker(icon_marker)
                 else:
