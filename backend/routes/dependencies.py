@@ -550,6 +550,19 @@ def send_welcome_email(user_email: str, user_name: str, user_role: str, temp_pas
             "subject": "Bienvenue sur ProFireManager",
             "html": html_content
         })
+        # Log email
+        try:
+            from routes.emails_history import log_email_sent
+            import asyncio
+            asyncio.create_task(log_email_sent(
+                type_email="bienvenue",
+                destinataire_email=user_email,
+                destinataire_nom=user_name,
+                sujet="Bienvenue sur ProFireManager",
+                tenant_slug=tenant_slug
+            ))
+        except:
+            pass
         return True
     except Exception as e:
         logger.error(f"Erreur envoi email de bienvenue: {e}")
@@ -586,6 +599,18 @@ def send_super_admin_welcome_email(user_email: str, user_name: str, temp_passwor
             "subject": "Accès Super Admin - ProFireManager",
             "html": html_content
         })
+        # Log email
+        try:
+            from routes.emails_history import log_email_sent
+            import asyncio
+            asyncio.create_task(log_email_sent(
+                type_email="bienvenue_super_admin",
+                destinataire_email=user_email,
+                destinataire_nom=user_name,
+                sujet="Accès Super Admin - ProFireManager"
+            ))
+        except:
+            pass
         return True
     except Exception as e:
         logger.error(f"Erreur envoi email super admin: {e}")
