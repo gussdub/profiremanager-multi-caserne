@@ -887,52 +887,55 @@ const PointEauModal = ({
             </div>
           )}
 
-          {/* État du point d'eau - TOUS TYPES - Admin/Superviseur seulement */}
-          {canAssignModele && (
-            <div style={{ 
-              marginBottom: '1.25rem', 
-              padding: '1rem', 
-              backgroundColor: formData.etat === 'fonctionnelle' ? '#f0fdf4' : 
-                              formData.etat === 'en_reparation' ? '#fffbeb' : '#fef2f2',
-              borderRadius: '8px', 
-              border: `1px solid ${formData.etat === 'fonctionnelle' ? '#86efac' : 
-                                   formData.etat === 'en_reparation' ? '#fcd34d' : '#fca5a5'}`
+          {/* État du point d'eau - TOUS TYPES - Visible par tous, modifiable par Admin/Superviseur */}
+          <div style={{ 
+            marginBottom: '1.25rem', 
+            padding: '1rem', 
+            backgroundColor: formData.etat === 'fonctionnelle' ? '#f0fdf4' : 
+                            formData.etat === 'en_reparation' ? '#fffbeb' : '#fef2f2',
+            borderRadius: '8px', 
+            border: `1px solid ${formData.etat === 'fonctionnelle' ? '#86efac' : 
+                                 formData.etat === 'en_reparation' ? '#fcd34d' : '#fca5a5'}`
+          }}>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '0.5rem', 
+              fontWeight: '600', 
+              fontSize: '0.875rem',
+              color: formData.etat === 'fonctionnelle' ? '#166534' : 
+                     formData.etat === 'en_reparation' ? '#92400e' : '#991b1b'
             }}>
-              <label style={{ 
-                display: 'block', 
-                marginBottom: '0.5rem', 
-                fontWeight: '600', 
-                fontSize: '0.875rem',
+              🔧 État du point d'eau
+              {!canAssignModele && <span style={{ fontWeight: 'normal', fontSize: '0.75rem', marginLeft: '0.5rem', color: '#6b7280' }}>(lecture seule)</span>}
+            </label>
+            <select
+              value={formData.etat}
+              onChange={(e) => setFormData({ ...formData, etat: e.target.value })}
+              disabled={!canAssignModele}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                border: `1px solid ${formData.etat === 'fonctionnelle' ? '#86efac' : 
+                                     formData.etat === 'en_reparation' ? '#fcd34d' : '#fca5a5'}`,
+                borderRadius: '8px',
+                fontSize: '1rem',
+                backgroundColor: canAssignModele ? 'white' : '#f3f4f6',
+                fontWeight: '600',
                 color: formData.etat === 'fonctionnelle' ? '#166534' : 
-                       formData.etat === 'en_reparation' ? '#92400e' : '#991b1b'
-              }}>
-                🔧 État du point d'eau
-              </label>
-              <select
-                value={formData.etat}
-                onChange={(e) => setFormData({ ...formData, etat: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: `1px solid ${formData.etat === 'fonctionnelle' ? '#86efac' : 
-                                       formData.etat === 'en_reparation' ? '#fcd34d' : '#fca5a5'}`,
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                  backgroundColor: 'white',
-                  fontWeight: '600',
-                  color: formData.etat === 'fonctionnelle' ? '#166534' : 
-                         formData.etat === 'en_reparation' ? '#92400e' : '#991b1b'
-                }}
-              >
-                <option value="fonctionnelle" style={{ color: '#166534' }}>🟢 Fonctionnelle</option>
-                <option value="en_reparation" style={{ color: '#92400e' }}>🟠 En réparation</option>
-                <option value="hors_service" style={{ color: '#991b1b' }}>🔴 Hors service</option>
-              </select>
+                       formData.etat === 'en_reparation' ? '#92400e' : '#991b1b',
+                cursor: canAssignModele ? 'pointer' : 'not-allowed'
+              }}
+            >
+              <option value="fonctionnelle" style={{ color: '#166534' }}>🟢 Fonctionnelle</option>
+              <option value="en_reparation" style={{ color: '#92400e' }}>🟠 En réparation</option>
+              <option value="hors_service" style={{ color: '#991b1b' }}>🔴 Hors service</option>
+            </select>
+            {canAssignModele && (
               <p style={{ margin: '0.5rem 0 0', fontSize: '0.75rem', color: '#6b7280' }}>
                 💡 L'état détermine la couleur du point sur la carte.
               </p>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Formulaire d'inspection assigné - TOUS TYPES DE POINTS D'EAU - Admin/Superviseur */}
           {canAssignModele && (
