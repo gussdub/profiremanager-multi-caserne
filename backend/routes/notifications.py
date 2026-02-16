@@ -31,9 +31,10 @@ import json
 import time
 import os
 
-# Firebase pour les notifications push mobiles
-import firebase_admin
-from firebase_admin import messaging
+# Firebase pour les notifications push mobiles (disabled)
+# import firebase_admin
+# from firebase_admin import messaging
+FIREBASE_ENABLED = False
 
 # Web Push pour les PWA
 from pywebpush import webpush, WebPushException
