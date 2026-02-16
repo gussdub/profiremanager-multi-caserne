@@ -178,19 +178,31 @@ async def generate_map_image_raw(
         # Créer la carte statique
         m = StaticMap(request.width, request.height, url_template='https://a.tile.openstreetmap.org/{z}/{x}/{y}.png')
         
-        # Ajouter tous les marqueurs
+        # Ajouter des marqueurs pour le calcul de bounds
         for point in request.points:
             if point.latitude and point.longitude:
-                color = get_marker_color(point.etat)
                 marker = CircleMarker(
                     (point.longitude, point.latitude),
-                    color,
-                    12
+                    'transparent',
+                    1
                 )
                 m.add_marker(marker)
         
         # Rendre la carte
         image = m.render()
+        
+        # Dessiner les marqueurs personnalisés
+        image = image.convert('RGBA')
+        draw = ImageDraw.Draw(image)
+        
+        for point in request.points:
+            if point.latitude and point.longitude:
+                px_x = m._x_to_px(m._lon_to_x(point.longitude, m.zoom))
+                px_y = m._y_to_px(m._lat_to_y(point.latitude, m.zoom))
+                color = get_marker_color(point.etat)
+                draw_water_marker(draw, int(px_x), int(px_y), color, size=28)
+        
+        image = image.convert('RGB')
         
         # Convertir en bytes PNG
         img_buffer = io.BytesIO()
