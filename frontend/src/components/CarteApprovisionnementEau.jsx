@@ -340,50 +340,106 @@ const CarteApprovisionnementEau = ({ user }) => {
       autres: filteredPoints.filter(p => !['fonctionnelle', 'en_reparation', 'hors_service'].includes(p.etat)).length
     };
 
+    // Générer l'URL de la carte statique OpenStreetMap
+    const generateStaticMapUrl = () => {
+      const pointsWithCoords = filteredPoints.filter(p => p.latitude && p.longitude);
+      if (pointsWithCoords.length === 0) return null;
+
+      // Calculer le centre et les bounds
+      const lats = pointsWithCoords.map(p => p.latitude);
+      const lngs = pointsWithCoords.map(p => p.longitude);
+      const minLat = Math.min(...lats);
+      const maxLat = Math.max(...lats);
+      const minLng = Math.min(...lngs);
+      const maxLng = Math.max(...lngs);
+      const centerLat = (minLat + maxLat) / 2;
+      const centerLng = (minLng + maxLng) / 2;
+
+      // Calculer le zoom approximatif basé sur l'étendue
+      const latDiff = maxLat - minLat;
+      const lngDiff = maxLng - minLng;
+      const maxDiff = Math.max(latDiff, lngDiff);
+      let zoom = 14;
+      if (maxDiff > 0.5) zoom = 10;
+      else if (maxDiff > 0.2) zoom = 11;
+      else if (maxDiff > 0.1) zoom = 12;
+      else if (maxDiff > 0.05) zoom = 13;
+
+      // Générer les marqueurs pour l'API staticmap.openstreetmap.de
+      const markers = pointsWithCoords.map(p => {
+        const color = p.etat === 'fonctionnelle' ? 'green' : 
+                     p.etat === 'en_reparation' ? 'orange' : 
+                     p.etat === 'hors_service' ? 'red' : 'blue';
+        return `${p.longitude},${p.latitude},${color}`;
+      }).join('|');
+
+      // URL du service de carte statique
+      return `https://staticmap.openstreetmap.de/staticmap.php?center=${centerLat},${centerLng}&zoom=${zoom}&size=700x400&maptype=mapnik&markers=${markers}`;
+    };
+
+    const staticMapUrl = generateStaticMapUrl();
+    const logoHtml = personnalisation?.logo_url 
+      ? `<img src="${personnalisation.logo_url}" alt="Logo" style="max-height: 80px; max-width: 200px; object-fit: contain;" />`
+      : `<div style="font-size: 2rem;">🚒</div>`;
+    const serviceName = personnalisation?.nom_service || 'Service Incendie';
+
     const printContent = `
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Points d'eau - ProFireManager</title>
+        <title>Points d'eau - ${serviceName}</title>
         <style>
           @media print {
             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           }
-          body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
-          h1 { color: #dc2626; border-bottom: 2px solid #dc2626; padding-bottom: 10px; }
-          h2 { color: #374151; border-bottom: 1px solid #d1d5db; padding-bottom: 5px; margin-top: 20px; }
-          .header-info { display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; }
-          .logo-section { display: flex; align-items: center; gap: 10px; }
-          .summary { display: flex; gap: 15px; margin: 20px 0; flex-wrap: wrap; }
-          .summary-item { padding: 10px 20px; border-radius: 8px; text-align: center; min-width: 100px; }
+          body { font-family: Arial, sans-serif; padding: 20px; max-width: 850px; margin: 0 auto; }
+          .header { display: flex; align-items: center; gap: 20px; padding-bottom: 15px; border-bottom: 3px solid #dc2626; margin-bottom: 20px; }
+          .header-logo { flex-shrink: 0; }
+          .header-title { flex-grow: 1; }
+          .header-title h1 { color: #dc2626; margin: 0 0 5px 0; font-size: 1.5rem; }
+          .header-title h2 { color: #374151; margin: 0; font-size: 1.1rem; font-weight: normal; }
+          .header-info { text-align: right; color: #6b7280; font-size: 0.9rem; }
+          h3 { color: #374151; border-bottom: 1px solid #d1d5db; padding-bottom: 5px; margin-top: 25px; margin-bottom: 15px; }
+          .summary { display: flex; gap: 15px; margin: 15px 0; flex-wrap: wrap; }
+          .summary-item { padding: 12px 20px; border-radius: 8px; text-align: center; min-width: 100px; }
           .summary-item.vert { background: #d1fae5; border: 1px solid #10b981; }
           .summary-item.orange { background: #fef3c7; border: 1px solid #f59e0b; }
           .summary-item.rouge { background: #fee2e2; border: 1px solid #ef4444; }
-          .summary-item .count { font-size: 24px; font-weight: bold; }
-          .summary-item .label { font-size: 11px; color: #6b7280; }
-          table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-          th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }
+          .summary-item .count { font-size: 28px; font-weight: bold; }
+          .summary-item .label { font-size: 12px; color: #6b7280; margin-top: 4px; }
+          .map-section { margin: 20px 0; text-align: center; }
+          .map-section img { max-width: 100%; border: 1px solid #d1d5db; border-radius: 8px; }
+          .map-caption { font-size: 11px; color: #6b7280; margin-top: 8px; }
+          table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 11px; }
+          th, td { border: 1px solid #d1d5db; padding: 8px 6px; text-align: left; }
           th { background: #f3f4f6; font-weight: 600; }
           tr:nth-child(even) { background: #f9fafb; }
           .etat-vert { color: #065f46; font-weight: 600; }
           .etat-orange { color: #92400e; font-weight: 600; }
           .etat-rouge { color: #991b1b; font-weight: 600; }
-          .footer { margin-top: 30px; padding-top: 10px; border-top: 1px solid #d1d5db; color: #6b7280; font-size: 12px; text-align: center; }
-          @media print { body { padding: 0; } }
+          .footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #d1d5db; color: #9ca3af; font-size: 11px; text-align: center; }
+          @media print { 
+            body { padding: 10px; } 
+            .map-section { page-break-inside: avoid; }
+          }
         </style>
       </head>
       <body>
-        <h1>💧 Points d'eau - Approvisionnement</h1>
-        <div class="header-info">
-          <div>
-            <strong>Date d'export:</strong> ${new Date().toLocaleDateString('fr-CA')}
+        <div class="header">
+          <div class="header-logo">
+            ${logoHtml}
           </div>
-          <div>
-            <strong>Total:</strong> ${filteredPoints.length} point(s)
+          <div class="header-title">
+            <h1>${serviceName}</h1>
+            <h2>💧 Points d'eau - Approvisionnement</h2>
+          </div>
+          <div class="header-info">
+            <div><strong>Date:</strong> ${new Date().toLocaleDateString('fr-CA')}</div>
+            <div><strong>Total:</strong> ${filteredPoints.length} point(s)</div>
           </div>
         </div>
 
-        <h2>📊 Résumé</h2>
+        <h3>📊 Résumé par état</h3>
         <div class="summary">
           <div class="summary-item vert">
             <div class="count">${summary.fonctionnelle}</div>
@@ -399,7 +455,15 @@ const CarteApprovisionnementEau = ({ user }) => {
           </div>
         </div>
 
-        <h2>📋 Liste des points d'eau</h2>
+        ${staticMapUrl ? `
+        <h3>🗺️ Localisation des points d'eau</h3>
+        <div class="map-section">
+          <img src="${staticMapUrl}" alt="Carte des points d'eau" onerror="this.style.display='none'" />
+          <div class="map-caption">Carte générée automatiquement - Les marqueurs indiquent l'emplacement des points d'eau</div>
+        </div>
+        ` : ''}
+
+        <h3>📋 Liste détaillée</h3>
         <table>
           <thead>
             <tr>
@@ -431,7 +495,7 @@ const CarteApprovisionnementEau = ({ user }) => {
         </table>
 
         <div class="footer">
-          <p>Imprimé le ${new Date().toLocaleString('fr-CA')} | ProFireManager</p>
+          <p>Document généré le ${new Date().toLocaleString('fr-CA')} | ${serviceName} | ProFireManager</p>
         </div>
       </body>
       </html>
@@ -444,7 +508,7 @@ const CarteApprovisionnementEau = ({ user }) => {
       printWindow.focus();
       setTimeout(() => {
         printWindow.print();
-      }, 300);
+      }, 500);
 
       toast({
         title: "Export PDF",
