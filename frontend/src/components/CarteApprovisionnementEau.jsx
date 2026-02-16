@@ -135,7 +135,7 @@ const CarteApprovisionnementEau = ({ user }) => {
   const getMarkerColor = (point) => {
     // Priorité à l'état du point
     if (point.etat === 'fonctionnelle') return '#10b981'; // Vert
-    if (point.etat === 'attention') return '#f59e0b'; // Orange
+    if (point.etat === 'en_reparation' || point.etat === 'attention') return '#f59e0b'; // Orange
     if (point.etat === 'hors_service') return '#ef4444'; // Rouge
     
     // Sinon, utiliser statut_couleur (basé sur inspections)
