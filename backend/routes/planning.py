@@ -3228,7 +3228,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         # Activer heures sup si:
         # - Le paramètre dans la requête est True OU
         # - Le paramètre dans parametres_remplacements est True
-        autoriser_heures_sup = activer_heures_sup or heures_sup_from_params or params_tenant_doc.get("autoriser_heures_supplementaires", False)
+        autoriser_heures_sup = activer_heures_sup or heures_sup_from_params or tenant_params.get("autoriser_heures_supplementaires", False)
         
         # Si heures sup non autorisées, désactiver niveau 5
         if not autoriser_heures_sup:
