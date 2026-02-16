@@ -354,30 +354,31 @@ const CarteApprovisionnementEau = ({ user }) => {
       autres: filteredPoints.filter(p => !['fonctionnelle', 'en_reparation', 'hors_service'].includes(p.etat)).length
     };
 
-    // Capturer la carte Leaflet en image
+    // Capturer la carte en image avec html2canvas
     let mapImageDataUrl = null;
     const pointsWithCoords = filteredPoints.filter(p => p.latitude && p.longitude);
     
-    if (mapInstanceRef.current && pointsWithCoords.length > 0) {
+    if (mapContainerRef.current && mapInstanceRef.current && pointsWithCoords.length > 0) {
       try {
         // Ajuster la vue pour voir tous les points
         const bounds = L.latLngBounds(pointsWithCoords.map(p => [p.latitude, p.longitude]));
-        mapInstanceRef.current.fitBounds(bounds, { padding: [30, 30] });
+        mapInstanceRef.current.fitBounds(bounds, { padding: [40, 40] });
         
-        // Attendre que la carte se mette à jour
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Attendre que les tuiles de la carte se chargent
+        await new Promise(resolve => setTimeout(resolve, 2000));
         
-        // Capturer l'image avec leaflet-image
-        mapImageDataUrl = await new Promise((resolve) => {
-          leafletImage(mapInstanceRef.current, (err, canvas) => {
-            if (err || !canvas) {
-              console.warn('Erreur capture carte:', err);
-              resolve(null);
-            } else {
-              resolve(canvas.toDataURL('image/png'));
-            }
-          });
+        // Capturer l'image avec html2canvas
+        const canvas = await html2canvas(mapContainerRef.current, {
+          useCORS: true,
+          allowTaint: true,
+          scale: 1,
+          logging: false,
+          backgroundColor: '#ffffff',
+          foreignObjectRendering: false,
+          removeContainer: true
         });
+        
+        mapImageDataUrl = canvas.toDataURL('image/png', 0.9);
       } catch (error) {
         console.warn('Erreur lors de la capture de la carte:', error);
       }
