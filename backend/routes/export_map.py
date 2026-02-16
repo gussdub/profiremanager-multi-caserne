@@ -85,9 +85,9 @@ async def get_icon_image(point_type: str) -> Optional[str]:
                 # Créer un fichier temporaire persistant
                 fd, temp_path = tempfile.mkstemp(suffix='.png')
                 
-                # Redimensionner l'icône
+                # Redimensionner l'icône (40x40 pour meilleure visibilité)
                 img = Image.open(io.BytesIO(response.content))
-                img = img.resize((32, 32), Image.Resampling.LANCZOS)
+                img = img.resize((40, 40), Image.Resampling.LANCZOS)
                 if img.mode != 'RGBA':
                     img = img.convert('RGBA')
                 
