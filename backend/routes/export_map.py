@@ -223,6 +223,12 @@ async def generate_map_image_raw(
         raise HTTPException(status_code=400, detail="Aucun point à afficher")
     
     try:
+        # Pré-charger les icônes nécessaires
+        icon_types = set(p.type or 'point_eau_statique' for p in request.points)
+        icons = {}
+        for icon_type in icon_types:
+            icons[icon_type] = await get_icon_image(icon_type)
+        
         # Créer la carte statique
         m = StaticMap(request.width, request.height, url_template='https://a.tile.openstreetmap.org/{z}/{x}/{y}.png')
         
@@ -238,17 +244,19 @@ async def generate_map_image_raw(
         
         # Rendre la carte
         image = m.render()
-        
-        # Dessiner les marqueurs personnalisés
         image = image.convert('RGBA')
-        draw = ImageDraw.Draw(image)
         
+        # Dessiner les marqueurs personnalisés avec les icônes
         for point in request.points:
             if point.latitude and point.longitude:
                 px_x = m._x_to_px(m._lon_to_x(point.longitude, m.zoom))
                 px_y = m._y_to_px(m._lat_to_y(point.latitude, m.zoom))
+                
+                icon_type = point.type or 'point_eau_statique'
+                icon = icons.get(icon_type)
                 color = get_marker_color(point.etat)
-                draw_water_marker(draw, int(px_x), int(px_y), color, size=28)
+                
+                draw_marker_with_badge(image, int(px_x), int(px_y), icon, color)
         
         image = image.convert('RGB')
         
