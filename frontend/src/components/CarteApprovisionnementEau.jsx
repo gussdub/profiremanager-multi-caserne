@@ -50,7 +50,21 @@ const CarteApprovisionnementEau = ({ user }) => {
   const [mapCenter, setMapCenter] = useState([45.5017, -73.5673]); // Montréal par défaut
   const [mapZoom, setMapZoom] = useState(12);
   const [mapLayer, setMapLayer] = useState('plan'); // 'plan' ou 'satellite'
+  const [personnalisation, setPersonnalisation] = useState(null);
   const mapContainerRef = useRef(null);
+
+  // Charger la personnalisation (logo, nom du service)
+  useEffect(() => {
+    const fetchPersonnalisation = async () => {
+      try {
+        const data = await apiGet(tenantSlug, '/personnalisation');
+        setPersonnalisation(data);
+      } catch (error) {
+        console.log('Personnalisation non disponible');
+      }
+    };
+    if (tenantSlug) fetchPersonnalisation();
+  }, [tenantSlug]);
 
   // Charger les points d'eau
   const fetchPointsEau = async () => {
