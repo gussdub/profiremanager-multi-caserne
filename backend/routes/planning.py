@@ -2035,14 +2035,25 @@ async def export_rapport_heures_excel(
     users = await db.users.find({"tenant_id": tenant.id, "actif": True}).to_list(1000)
     users_dict = {u["id"]: u for u in users}
     
+    # Récupérer les types de garde pour déterminer est_externe et duree
+    types_garde = await db.types_garde.find({"tenant_id": tenant.id}).to_list(1000)
+    types_garde_dict = {tg["id"]: tg for tg in types_garde}
+    
     heures_par_employe = {}
     for assign in assignations:
         uid = assign.get("user_id")
         if uid not in heures_par_employe:
             heures_par_employe[uid] = {"internes": 0, "externes": 0}
         
-        duree = assign.get("duree_heures", 0)
-        if assign.get("externe"):
+        # Récupérer la durée depuis l'assignation OU depuis le type de garde
+        type_garde_id = assign.get("type_garde_id")
+        type_garde = types_garde_dict.get(type_garde_id, {})
+        duree = assign.get("duree_heures") or type_garde.get("duree_heures", 0)
+        
+        # Déterminer si externe depuis l'assignation OU depuis le type de garde
+        est_externe = assign.get("est_externe") or type_garde.get("est_garde_externe", False)
+        
+        if est_externe:
             heures_par_employe[uid]["externes"] += duree
         else:
             heures_par_employe[uid]["internes"] += duree
