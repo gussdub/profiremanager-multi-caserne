@@ -248,6 +248,21 @@ async def send_ronde_email_background(tenant, ronde_id: str, vehicle: dict, reci
         response = resend.Emails.send(params)
         logger.info(f"✅ Email ronde envoyé avec succès - ID: {response.get('id', 'N/A')}")
         
+        # Log email pour chaque destinataire
+        try:
+            from routes.emails_history import log_email_sent
+            import asyncio
+            for email in recipient_emails:
+                asyncio.create_task(log_email_sent(
+                    type_email="ronde_securite",
+                    destinataire_email=email,
+                    sujet=f"🔧 Ronde de Sécurité - {vehicle.get('nom', 'Véhicule')} - {date_ronde_str}",
+                    tenant_id=tenant_id,
+                    metadata={"vehicule": vehicle.get('nom'), "date": date_ronde_str}
+                ))
+        except Exception as log_err:
+            logger.warning(f"Erreur log email: {log_err}")
+        
     except Exception as e:
         logger.error(f"❌ Erreur envoi email ronde: {e}", exc_info=True)
 
