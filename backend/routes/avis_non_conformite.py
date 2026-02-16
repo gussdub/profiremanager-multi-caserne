@@ -1990,6 +1990,17 @@ async def envoyer_avis_courriel(
         
         email_response = resend.Emails.send(params)
         
+        # Log email
+        from routes.emails_history import log_email_sent
+        await log_email_sent(
+            type_email="avis_non_conformite",
+            destinataire_email=data.email,
+            sujet=f"Avis de non-conformité - {avis.get('batiment_adresse', 'N/A')}",
+            tenant_id=tenant.id,
+            tenant_slug=tenant_slug,
+            metadata={"numero_avis": avis.get('numero_avis'), "batiment": avis.get('batiment_adresse')}
+        )
+        
         # Mettre à jour le statut de l'avis
         await db.avis_non_conformite.update_one(
             {"id": avis_id, "tenant_id": tenant.id},
