@@ -971,10 +971,11 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
         );
 
       case 'inspecteur':
+      case 'inspecteur_auto':
         return (
           <input
             type="text"
-            value={value || ''}
+            value={value || currentUserName || ''}
             onChange={(e) => updateReponse(sectionId, e.target.value, item.id)}
             placeholder="Nom de l'inspecteur"
             style={{
@@ -982,7 +983,8 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
               padding: '0.75rem',
               border: '1px solid #d1d5db',
               borderRadius: '0.375rem',
-              fontSize: '1rem'
+              fontSize: '1rem',
+              backgroundColor: currentUserName ? '#f0fdf4' : 'white'
             }}
           />
         );
