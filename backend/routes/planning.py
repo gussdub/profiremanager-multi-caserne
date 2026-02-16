@@ -3080,6 +3080,11 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         
         logging.info(f"📅 [DISPOS] {len(all_disponibilites)} disponibilités trouvées pour la période {semaine_debut} - {semaine_fin}")
         
+        # DEBUG: Afficher les premières dispos brutes pour diagnostic
+        for d in all_disponibilites[:3]:
+            uid = d.get("user_id", "?")[:8]
+            logging.info(f"   📋 [RAW] user={uid}..., date={d.get('date')}, statut={d.get('statut')}, type_garde_id={d.get('type_garde_id')}, heures={d.get('heure_debut')}-{d.get('heure_fin')}")
+        
         # Créer un index/dictionnaire pour lookup rapide
         # Structure: {user_id: {date: {type_garde_id: [list of dispos with horaires]}}}
         # Note: type_garde_id peut être None pour les disponibilités générales (toutes gardes)
