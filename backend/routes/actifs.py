@@ -1462,6 +1462,151 @@ async def import_inspections_bornes(
     }
 
 
+class ImportBornesFontainesRequest(BaseModel):
+    inspections: List[dict]
+
+@router.post("/{tenant_slug}/actifs/bornes-fontaines/import-csv")
+async def import_inspections_bornes_fontaines_mapped(
+    tenant_slug: str,
+    request: ImportBornesFontainesRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Import des inspections de bornes fontaines avec mapping pré-défini par le frontend.
+    Les données arrivent déjà mappées aux bons champs.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role not in ['admin', 'superviseur']:
+        raise HTTPException(status_code=403, detail="Permission refusée")
+    
+    created = 0
+    updated = 0
+    erreurs = []
+    
+    for idx, insp_data in enumerate(request.inspections):
+        try:
+            # Trouver la borne
+            numero_borne = str(insp_data.get('numero_borne', '')).strip()
+            if not numero_borne:
+                erreurs.append({"ligne": idx + 1, "erreur": "Numéro de borne manquant"})
+                continue
+            
+            # Chercher dans bornes_incendie ou points_eau
+            borne = await db.bornes_incendie.find_one({
+                "tenant_id": tenant.id,
+                "$or": [
+                    {"nom": {"$regex": f"^{numero_borne}$", "$options": "i"}},
+                    {"numero_identification": {"$regex": f"^{numero_borne}$", "$options": "i"}}
+                ]
+            })
+            
+            if not borne:
+                # Essayer dans points_eau
+                borne = await db.points_eau.find_one({
+                    "tenant_id": tenant.id,
+                    "type": "borne_fontaine",
+                    "$or": [
+                        {"nom": {"$regex": f"^{numero_borne}$", "$options": "i"}},
+                        {"numero_identification": {"$regex": f"^{numero_borne}$", "$options": "i"}}
+                    ]
+                })
+            
+            if not borne:
+                erreurs.append({"ligne": idx + 1, "erreur": f"Borne '{numero_borne}' non trouvée"})
+                continue
+            
+            # Parser la date
+            date_str = str(insp_data.get('date_inspection', '')).strip()
+            date_inspection = None
+            if date_str:
+                for fmt in ['%Y-%m-%d', '%d/%m/%Y', '%d-%m-%Y', '%Y/%m/%d']:
+                    try:
+                        date_inspection = datetime.strptime(date_str, fmt).strftime('%Y-%m-%d')
+                        break
+                    except:
+                        continue
+            
+            if not date_inspection:
+                date_inspection = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+            
+            # Parser les valeurs numériques
+            debit_gpm = None
+            debit_str = str(insp_data.get('debit_gpm', '')).strip()
+            if debit_str:
+                try:
+                    debit_gpm = float(debit_str.replace(',', '.'))
+                except:
+                    pass
+            
+            pression_statique = None
+            ps_str = str(insp_data.get('pression_statique', '')).strip()
+            if ps_str:
+                try:
+                    pression_statique = float(ps_str.replace(',', '.'))
+                except:
+                    pass
+            
+            pression_residuelle = None
+            pr_str = str(insp_data.get('pression_residuelle', '')).strip()
+            if pr_str:
+                try:
+                    pression_residuelle = float(pr_str.replace(',', '.'))
+                except:
+                    pass
+            
+            etat = str(insp_data.get('etat', 'conforme')).strip().lower()
+            if etat not in ['conforme', 'non_conforme', 'defectueux']:
+                etat = 'conforme'
+            
+            inspection = {
+                "id": str(uuid.uuid4()),
+                "tenant_id": tenant.id,
+                "borne_id": borne['id'],
+                "numero_borne": borne.get('nom') or borne.get('numero_identification'),
+                "date_inspection": date_inspection,
+                "debit_mesure_gpm": debit_gpm,
+                "pression_statique_psi": pression_statique,
+                "pression_residuelle_psi": pression_residuelle,
+                "etat_general": etat,
+                "observations": str(insp_data.get('observations', '')).strip(),
+                "inspecteur_nom": str(insp_data.get('inspecteur', '')).strip() or f"{current_user.prenom} {current_user.nom}",
+                "inspecteur_id": current_user.id,
+                "source": "import_csv_mapping",
+                "imported_by": current_user.id,
+                "imported_at": datetime.now(timezone.utc).isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            
+            await db.inspections_bornes.insert_one(inspection)
+            created += 1
+            
+            # Mettre à jour la borne
+            update_collection = "bornes_incendie" if await db.bornes_incendie.find_one({"id": borne['id']}) else "points_eau"
+            await db[update_collection].update_one(
+                {"id": borne['id']},
+                {"$set": {
+                    "date_derniere_inspection": date_inspection,
+                    "dernier_etat_inspection": etat,
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            
+        except Exception as e:
+            logger.error(f"Erreur import ligne {idx + 1}: {e}")
+            erreurs.append({"ligne": idx + 1, "erreur": str(e)})
+    
+    logger.info(f"Import bornes fontaines terminé: {created} créées, {len(erreurs)} erreurs")
+    
+    return {
+        "success": True,
+        "created": created,
+        "updated": updated,
+        "errors": erreurs
+    }
+
+
+
 # ==================== ROUTES - INVENTAIRES ====================
 
 @router.get("/{tenant_slug}/actifs/inventaires/modeles", response_model=List[ModeleInventaire])
