@@ -15,6 +15,7 @@ import base64
 import logging
 
 from staticmap import StaticMap, CircleMarker
+from PIL import Image, ImageDraw
 
 from routes.dependencies import (
     get_current_user,
@@ -32,6 +33,7 @@ class PointEauMarker(BaseModel):
     longitude: float
     etat: Optional[str] = None
     numero_identification: Optional[str] = None
+    type: Optional[str] = None  # borne_fontaine, borne_seche, point_eau_statique
 
 
 class MapGenerationRequest(BaseModel):
@@ -52,6 +54,39 @@ def get_marker_color(etat: Optional[str]) -> str:
     return '#6b7280'  # Gris par défaut
 
 
+def hex_to_rgb(hex_color: str) -> tuple:
+    """Convertit une couleur hex en RGB"""
+    hex_color = hex_color.lstrip('#')
+    return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+
+
+def draw_water_marker(draw: ImageDraw, x: int, y: int, color: str, size: int = 24):
+    """
+    Dessine un marqueur de point d'eau personnalisé (goutte d'eau avec icône)
+    """
+    rgb = hex_to_rgb(color)
+    
+    # Dessiner le contour blanc (ombre)
+    draw.ellipse([x - size//2 - 2, y - size//2 - 2, x + size//2 + 2, y + size//2 + 2], 
+                 fill='white', outline='white')
+    
+    # Dessiner le cercle principal coloré
+    draw.ellipse([x - size//2, y - size//2, x + size//2, y + size//2], 
+                 fill=rgb, outline='white', width=2)
+    
+    # Dessiner une petite goutte d'eau au centre (symbole simplifié)
+    drop_size = size // 3
+    # Triangle du haut de la goutte
+    draw.polygon([
+        (x, y - drop_size),  # Pointe
+        (x - drop_size//2, y),  # Bas gauche
+        (x + drop_size//2, y)   # Bas droite
+    ], fill='white')
+    # Cercle du bas de la goutte
+    draw.ellipse([x - drop_size//2, y - drop_size//4, x + drop_size//2, y + drop_size//2], 
+                 fill='white')
+
+
 @router.post("/{tenant_slug}/export/map-image")
 async def generate_map_image(
     tenant_slug: str,
@@ -68,22 +103,40 @@ async def generate_map_image(
         raise HTTPException(status_code=400, detail="Aucun point à afficher")
     
     try:
-        # Créer la carte statique
+        # Créer la carte statique (sans marqueurs pour l'instant)
         m = StaticMap(request.width, request.height, url_template='https://a.tile.openstreetmap.org/{z}/{x}/{y}.png')
         
-        # Ajouter tous les marqueurs
+        # Ajouter des marqueurs invisibles pour que la carte calcule le bon zoom et centre
         for point in request.points:
             if point.latitude and point.longitude:
-                color = get_marker_color(point.etat)
+                # Marqueur très petit juste pour le calcul de bounds
                 marker = CircleMarker(
-                    (point.longitude, point.latitude),  # Note: lon, lat order for staticmap
-                    color,
-                    12  # Rayon du marqueur
+                    (point.longitude, point.latitude),
+                    'transparent',
+                    1
                 )
                 m.add_marker(marker)
         
-        # Rendre la carte avec zoom automatique
+        # Rendre la carte de base
         image = m.render()
+        
+        # Convertir en mode RGBA pour pouvoir dessiner dessus
+        image = image.convert('RGBA')
+        draw = ImageDraw.Draw(image)
+        
+        # Dessiner nos marqueurs personnalisés sur l'image
+        for point in request.points:
+            if point.latitude and point.longitude:
+                # Calculer la position en pixels sur l'image
+                # La méthode _x_to_px et _y_to_px de staticmap fait ça
+                px_x = m._x_to_px(m._lon_to_x(point.longitude, m.zoom))
+                px_y = m._y_to_px(m._lat_to_y(point.latitude, m.zoom))
+                
+                color = get_marker_color(point.etat)
+                draw_water_marker(draw, int(px_x), int(px_y), color, size=28)
+        
+        # Convertir en RGB pour le PNG final
+        image = image.convert('RGB')
         
         # Convertir en bytes PNG
         img_buffer = io.BytesIO()
