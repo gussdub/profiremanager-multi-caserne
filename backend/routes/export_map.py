@@ -138,27 +138,27 @@ async def generate_map_image(
                 
                 # Essayer d'utiliser l'icône personnalisée
                 if point_type in icons:
-                    # D'abord le badge aux coordonnées exactes
-                    outer_badge = CircleMarker(
+                    # D'abord l'icône aux coordonnées GPS
+                    icon_marker = IconMarker(
                         (point.longitude, point.latitude),
+                        icons[point_type],
+                        20, 40  # offset x=centre, y=bas de l'icône (ancrage en bas)
+                    )
+                    m.add_marker(icon_marker)
+                    
+                    # Puis le badge en bas à droite de l'icône
+                    outer_badge = CircleMarker(
+                        (point.longitude + 0.00008, point.latitude - 0.00005),
                         'white',
-                        10
+                        9
                     )
                     m.add_marker(outer_badge)
                     inner_badge = CircleMarker(
-                        (point.longitude, point.latitude),
+                        (point.longitude + 0.00008, point.latitude - 0.00005),
                         color,
-                        7
+                        6
                     )
                     m.add_marker(inner_badge)
-                    
-                    # Puis l'icône légèrement au-dessus
-                    icon_marker = IconMarker(
-                        (point.longitude, point.latitude + 0.00018),
-                        icons[point_type],
-                        20, 20  # offset x, y (centre de l'icône 40x40)
-                    )
-                    m.add_marker(icon_marker)
                 else:
                     # Fallback: marqueur circulaire coloré
                     outer_marker = CircleMarker(
