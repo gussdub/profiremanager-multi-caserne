@@ -3408,11 +3408,9 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
             Retourne True si l'utilisateur est disponible pour cette garde.
             
             LOGIQUE MÉTIER:
-            - Pour une garde de jour (ex: 06:00 -> 18:00): la dispo doit couvrir toute la plage
-            - Pour une garde de nuit (ex: 18:00 -> 06:00 le lendemain): 
-              Si quelqu'un déclare être dispo de 00:00 à 23:59, il SAIT que la garde de nuit
-              qui commence à 18h finit le lendemain. S'il voulait l'éviter, il aurait mis
-              sa dispo jusqu'à 18:00. Donc il suffit que la dispo couvre le DÉBUT de la garde.
+            - Si la dispo a le MÊME type_garde_id et les MÊMES heures → match parfait
+            - Pour une garde de jour: la dispo doit couvrir toute la plage
+            - Pour une garde de nuit: il suffit que la dispo couvre le DÉBUT de la garde
             """
             def to_minutes(time_str):
                 if not time_str:
@@ -3447,6 +3445,21 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 if dispo_end == 23 * 60 + 59:
                     dispo_end = 24 * 60
                 
+                # CAS 1: Match parfait des horaires (ex: dispo 18:00-06:00 pour garde 18:00-06:00)
+                # Peu importe si ça traverse minuit, si les heures sont identiques c'est OK
+                if dispo_debut == garde_heure_debut and dispo_fin == garde_heure_fin:
+                    return True
+                
+                # CAS 2: La dispo elle-même traverse minuit (ex: 18:00-06:00)
+                dispo_traverse_minuit = dispo_end < dispo_start
+                if dispo_traverse_minuit:
+                    # La dispo couvre de dispo_start jusqu'à minuit, puis de minuit jusqu'à dispo_end
+                    # Pour une garde de nuit qui commence à garde_start, vérifier si dispo_start <= garde_start
+                    if dispo_start <= garde_start:
+                        return True
+                    continue
+                
+                # CAS 3: Logique normale
                 if est_garde_nuit:
                     # GARDE DE NUIT: Il suffit que la dispo couvre le DÉBUT de la garde
                     # Ex: Garde 18:00->06:00, dispo 00:00->23:59 = OK car couvre 18:00
