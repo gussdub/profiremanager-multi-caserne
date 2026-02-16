@@ -3512,6 +3512,24 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
             if progress:
                 progress.current_step = f"📅 Traitement du {date_str}..."
             
+            # Calculer l'équipe de garde du jour si le système est actif
+            equipe_garde_du_jour = None
+            if privilegier_equipe_garde_tp and config_temps_partiel.get("rotation_active"):
+                # Calculer quelle équipe est de garde ce jour
+                equipe_garde_du_jour = get_equipe_garde_du_jour_sync(
+                    type_rotation=config_temps_partiel.get("type_rotation", "hebdomadaire"),
+                    date_reference=config_temps_partiel.get("date_reference", date_str),
+                    date_cible=date_str,
+                    nombre_equipes=config_temps_partiel.get("nombre_equipes", 2),
+                    pattern_mode=config_temps_partiel.get("pattern_mode", "hebdomadaire"),
+                    pattern_personnalise=config_temps_partiel.get("pattern_personnalise", []),
+                    duree_cycle=config_temps_partiel.get("duree_cycle", 14),
+                    jour_rotation=config_temps_partiel.get("jour_rotation") or "monday",
+                    heure_rotation=config_temps_partiel.get("heure_rotation") or "18:00",
+                    heure_actuelle="12:00"  # Milieu de journée pour la comparaison
+                )
+                logging.info(f"📊 [EQUIPE GARDE] {date_str}: Équipe {equipe_garde_du_jour} de garde")
+            
             # N0: Priorisation des types de garde (par priorité intrinsèque)
             types_garde_tries = sorted(types_garde, key=lambda t: t.get("priorite", 99))
             
