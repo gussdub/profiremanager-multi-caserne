@@ -193,6 +193,190 @@ const ApprovisionnementEau = () => {
     }
   };
 
+  // Export Excel avec coordonnées GPS
+  const exportToExcel = () => {
+    const dataToExport = filteredPoints.map(point => ({
+      'Numéro identification': point.numero_identification || '',
+      'Type': point.type === 'borne_fontaine' ? 'Borne-fontaine' : 
+              point.type === 'borne_seche' ? 'Borne sèche' : 'Point d\'eau statique',
+      'État': point.etat === 'fonctionnelle' ? 'Fonctionnelle' :
+              point.etat === 'en_reparation' ? 'En réparation' :
+              point.etat === 'hors_service' ? 'Hors service' : point.etat || 'Non défini',
+      'Adresse': point.adresse || '',
+      'Ville': point.ville || '',
+      'Débit (GPM)': point.debit_gpm || '',
+      'Capacité (L)': point.capacite_litres || '',
+      'Diamètre raccordement': point.diametre_raccordement || '',
+      'Latitude': point.latitude || '',
+      'Longitude': point.longitude || '',
+      'Date dernier test': point.date_dernier_test || '',
+      'Notes': point.notes || ''
+    }));
+
+    // Créer le contenu CSV
+    const headers = Object.keys(dataToExport[0] || {});
+    const csvContent = [
+      headers.join(';'),
+      ...dataToExport.map(row => 
+        headers.map(h => {
+          const val = row[h];
+          // Échapper les guillemets et entourer de guillemets si nécessaire
+          if (typeof val === 'string' && (val.includes(';') || val.includes('"') || val.includes('\n'))) {
+            return `"${val.replace(/"/g, '""')}"`;
+          }
+          return val;
+        }).join(';')
+      )
+    ].join('\n');
+
+    // Télécharger
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `points_eau_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Export réussi",
+      description: `${dataToExport.length} point(s) d'eau exporté(s) en Excel/CSV`
+    });
+  };
+
+  // Export PDF
+  const exportToPDF = () => {
+    const getEtatColor = (etat) => {
+      if (etat === 'fonctionnelle') return '#10b981';
+      if (etat === 'en_reparation') return '#f59e0b';
+      if (etat === 'hors_service') return '#ef4444';
+      return '#6b7280';
+    };
+
+    const getEtatLabel = (etat) => {
+      if (etat === 'fonctionnelle') return '🟢 Fonctionnelle';
+      if (etat === 'en_reparation') return '🟠 En réparation';
+      if (etat === 'hors_service') return '🔴 Hors service';
+      return etat || 'Non défini';
+    };
+
+    const getTypeLabel = (type) => {
+      if (type === 'borne_fontaine') return 'Borne-fontaine';
+      if (type === 'borne_seche') return 'Borne sèche';
+      return 'Point d\'eau statique';
+    };
+
+    // Grouper par état pour le résumé
+    const summary = {
+      fonctionnelle: filteredPoints.filter(p => p.etat === 'fonctionnelle').length,
+      en_reparation: filteredPoints.filter(p => p.etat === 'en_reparation').length,
+      hors_service: filteredPoints.filter(p => p.etat === 'hors_service').length,
+      autres: filteredPoints.filter(p => !['fonctionnelle', 'en_reparation', 'hors_service'].includes(p.etat)).length
+    };
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Points d'eau - Export</title>
+        <style>
+          @media print {
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          }
+          body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
+          .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #2563eb; padding-bottom: 15px; }
+          .header h1 { color: #1e40af; margin: 0; font-size: 24px; }
+          .header p { color: #6b7280; margin: 5px 0 0; }
+          .summary { display: flex; gap: 15px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+          .summary-item { padding: 10px 20px; border-radius: 8px; text-align: center; min-width: 100px; }
+          .summary-item.vert { background: #d1fae5; border: 1px solid #10b981; }
+          .summary-item.orange { background: #fef3c7; border: 1px solid #f59e0b; }
+          .summary-item.rouge { background: #fee2e2; border: 1px solid #ef4444; }
+          .summary-item .count { font-size: 24px; font-weight: bold; }
+          .summary-item .label { font-size: 11px; color: #6b7280; }
+          table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+          th { background: #1e40af; color: white; padding: 10px 8px; text-align: left; font-size: 11px; }
+          td { padding: 8px; border-bottom: 1px solid #e5e7eb; font-size: 11px; }
+          tr:nth-child(even) { background: #f9fafb; }
+          .etat-badge { padding: 3px 8px; border-radius: 12px; font-weight: 600; font-size: 10px; display: inline-block; }
+          .etat-fonctionnelle { background: #d1fae5; color: #065f46; }
+          .etat-en_reparation { background: #fef3c7; color: #92400e; }
+          .etat-hors_service { background: #fee2e2; color: #991b1b; }
+          .footer { margin-top: 20px; text-align: center; color: #9ca3af; font-size: 10px; border-top: 1px solid #e5e7eb; padding-top: 10px; }
+          @page { margin: 15mm; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>🚒 Points d'eau - Approvisionnement</h1>
+          <p>Export du ${new Date().toLocaleDateString('fr-CA')} • ${filteredPoints.length} point(s)</p>
+        </div>
+        
+        <div class="summary">
+          <div class="summary-item vert">
+            <div class="count">${summary.fonctionnelle}</div>
+            <div class="label">Fonctionnels</div>
+          </div>
+          <div class="summary-item orange">
+            <div class="count">${summary.en_reparation}</div>
+            <div class="label">En réparation</div>
+          </div>
+          <div class="summary-item rouge">
+            <div class="count">${summary.hors_service}</div>
+            <div class="label">Hors service</div>
+          </div>
+        </div>
+        
+        <table>
+          <thead>
+            <tr>
+              <th>N° Identification</th>
+              <th>Type</th>
+              <th>État</th>
+              <th>Adresse</th>
+              <th>Ville</th>
+              <th>Débit (GPM)</th>
+              <th>Dernier test</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredPoints.map(point => `
+              <tr>
+                <td><strong>${point.numero_identification || '-'}</strong></td>
+                <td>${getTypeLabel(point.type)}</td>
+                <td><span class="etat-badge etat-${point.etat || 'autre'}">${getEtatLabel(point.etat)}</span></td>
+                <td>${point.adresse || '-'}</td>
+                <td>${point.ville || '-'}</td>
+                <td>${point.debit_gpm || '-'}</td>
+                <td>${point.date_dernier_test || '-'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        
+        <div class="footer">
+          ProFireManager - Document généré automatiquement
+        </div>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 500);
+
+    toast({
+      title: "Export PDF",
+      description: "La fenêtre d'impression s'est ouverte"
+    });
+  };
+
   // Composant pour gérer le clic sur la carte
   const MapClickHandler = () => {
     const map = useMapEvents({
