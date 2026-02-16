@@ -238,7 +238,7 @@ async def generate_map_image_raw(
             if point.latitude and point.longitude:
                 marker = CircleMarker(
                     (point.longitude, point.latitude),
-                    'transparent',
+                    '#FFFFFF',  # Blanc au lieu de transparent
                     1
                 )
                 m.add_marker(marker)
