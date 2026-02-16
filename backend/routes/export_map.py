@@ -160,10 +160,11 @@ async def generate_map_image(
         # Ajouter des marqueurs invisibles pour calculer le zoom et le centre
         for point in request.points:
             if point.latitude and point.longitude:
+                # Utiliser un marqueur très petit avec une couleur valide
                 marker = CircleMarker(
                     (point.longitude, point.latitude),
-                    'transparent',
-                    1
+                    '#FFFFFF',  # Blanc au lieu de transparent
+                    1  # Très petit
                 )
                 m.add_marker(marker)
         
