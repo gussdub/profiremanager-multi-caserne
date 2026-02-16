@@ -3434,6 +3434,34 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 if garde_end == 23 * 60 + 59:
                     garde_end = 24 * 60
                 
+                # CAS SPÉCIAL: Garde de nuit qui traverse minuit (ex: 18:00 -> 06:00)
+                # Dans ce cas, garde_end < garde_start
+                if garde_end < garde_start:
+                    # La garde traverse minuit - elle nécessite une dispo qui couvre
+                    # SOIT la partie soirée (garde_start -> 24:00)
+                    # SOIT la partie matin (00:00 -> garde_end)
+                    # Pour être vraiment disponible, l'utilisateur devrait avoir une dispo
+                    # qui couvre AU MOINS une partie significative
+                    # 
+                    # MAIS pour l'instant, on considère que si la dispo ne couvre pas
+                    # la TOTALITÉ de la garde, l'utilisateur n'est PAS disponible
+                    # 
+                    # Pour une garde 18:00->06:00, la dispo 06:00->18:00 ne couvre RIEN
+                    # car elle finit exactement quand la garde commence
+                    
+                    # Vérifier si la dispo couvre la partie soirée (garde_start -> 24:00)
+                    covers_evening = (dispo_start <= garde_start and dispo_end >= 24 * 60)
+                    # Vérifier si la dispo couvre la partie matin (00:00 -> garde_end)
+                    covers_morning = (dispo_start <= 0 and dispo_end >= garde_end)
+                    
+                    # Pour les gardes de nuit, on exige que la dispo couvre AU MOINS
+                    # le début de la garde (la partie soirée)
+                    if covers_evening:
+                        return True
+                    else:
+                        # La dispo ne couvre pas la garde de nuit
+                        continue
+                
                 # La dispo couvre la garde si elle englobe complètement la plage horaire de la garde
                 if dispo_start <= garde_start and dispo_end >= garde_end:
                     return True
