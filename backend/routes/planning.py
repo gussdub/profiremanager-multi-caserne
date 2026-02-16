@@ -3210,19 +3210,15 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         logging.info(f"📊 [ÉQUITÉ] Heures calculées pour {len(users)} utilisateurs sur la période")
         
         # ==================== RÉCUPÉRATION DES PARAMÈTRES ====================
-        # Paramètres des niveaux d'attribution depuis la collection parametres du tenant
-        params_tenant_doc = await db.parametres_niveaux_attribution.find_one({"tenant_id": tenant.id})
-        if not params_tenant_doc:
-            params_tenant_doc = {}
-        
-        # Lire aussi les paramètres de remplacement pour heures_supplementaires_activees
+        # Lire les paramètres de remplacement pour heures_supplementaires_activees
         params_remplacements = await db.parametres_remplacements.find_one({"tenant_id": tenant.id})
         heures_sup_from_params = False
         if params_remplacements:
             heures_sup_from_params = params_remplacements.get("heures_supplementaires_activees", False)
         
-        # Charger les niveaux depuis les paramètres du TENANT (pas parametres_niveaux_attribution)
+        # Charger les niveaux depuis les paramètres du TENANT
         tenant_params = tenant.parametres or {}
+        logging.info(f"📊 [NIVEAUX] Paramètres tenant: {tenant_params}")
         niveaux_actifs = {
             "niveau_2": tenant_params.get("niveau_2_actif", True),  # Temps partiel DISPONIBLES
             "niveau_3": tenant_params.get("niveau_3_actif", True),  # Temps partiel STAND-BY
