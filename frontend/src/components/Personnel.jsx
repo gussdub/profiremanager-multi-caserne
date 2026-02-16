@@ -2692,19 +2692,14 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       <label className="garde-externe-checkbox">
                         <input
                           type="checkbox"
-                          checked={newUser.accepte_gardes_externes !== false} // True par défaut
-                          onChange={(e) => setNewUser({...newUser, accepte_gardes_externes: e.target.checked})}
-                          data-testid="edit-user-accepte-gardes-externes"
+                          checked={newUser.accepte_gardes_externes === false}
+                          onChange={(e) => setNewUser({...newUser, accepte_gardes_externes: !e.target.checked})}
+                          data-testid="edit-user-refuse-gardes-externes"
                         />
                         <div className="garde-externe-content">
-                          <span className="garde-externe-title">🏠 Accepter les gardes externes</span>
+                          <span className="garde-externe-title">🚫 Refuser les gardes externes</span>
                           <span className="garde-externe-description">
-                            {newUser.type_emploi === 'temps_partiel' 
-                              ? "Temps partiel: Requis pour être assigné aux gardes externes (en plus des disponibilités)"
-                              : newUser.type_emploi === 'temps_plein'
-                                ? "Temps plein: Permet d'être assigné automatiquement aux gardes externes"
-                                : "Permet d'être assigné aux gardes externes (astreinte à domicile)"
-                            }
+                            Cochez si cet employé ne souhaite PAS être assigné aux gardes externes (astreinte à domicile)
                           </span>
                         </div>
                       </label>
