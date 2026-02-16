@@ -1736,6 +1736,15 @@ async def job_verifier_rappels_disponibilites():
                             
                             resend.Emails.send(params)
                             logging.info(f"✅ Email de rappel envoyé à {user_email}")
+                            # Log email
+                            await log_email_sent(
+                                type_email="rappel_disponibilites",
+                                destinataire_email=user_email,
+                                destinataire_nom=f"{user.get('prenom', '')} {user.get('nom', '')}".strip(),
+                                sujet=f"Rappel - Saisissez vos disponibilités pour {mois_suivant_texte}",
+                                tenant_id=tenant_id,
+                                tenant_slug=tenant.get("slug")
+                            )
                             
                         except Exception as e:
                             logging.warning(f"⚠️ Erreur email pour {user_email}: {str(e)}")
