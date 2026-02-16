@@ -356,6 +356,20 @@ async def trigger_rappels_disponibilites(
                     "html": html_content
                 })
                 emails_envoyes += 1
+                # Log email
+                try:
+                    from routes.emails_history import log_email_sent
+                    import asyncio
+                    asyncio.create_task(log_email_sent(
+                        type_email="rappel_disponibilites_manuel",
+                        destinataire_email=user_email,
+                        destinataire_nom=f"{user.get('prenom', '')} {user.get('nom', '')}".strip(),
+                        sujet=f"Rappel - Saisissez vos disponibilités pour {mois_suivant_texte}",
+                        tenant_id=tenant.id,
+                        tenant_slug=tenant_slug
+                    ))
+                except:
+                    pass
             except:
                 pass
     
