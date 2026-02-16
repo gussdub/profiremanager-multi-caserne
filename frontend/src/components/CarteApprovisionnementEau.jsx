@@ -353,33 +353,35 @@ const CarteApprovisionnementEau = ({ user }) => {
       autres: filteredPoints.filter(p => !['fonctionnelle', 'en_reparation', 'hors_service'].includes(p.etat)).length
     };
 
-    // Capturer la carte en image avec html2canvas
+    // Générer la carte via l'API backend
     let mapImageDataUrl = null;
     const pointsWithCoords = filteredPoints.filter(p => p.latitude && p.longitude);
     
-    if (mapContainerRef.current && mapInstanceRef.current && pointsWithCoords.length > 0) {
+    if (pointsWithCoords.length > 0) {
       try {
-        // Ajuster la vue pour voir tous les points
-        const bounds = L.latLngBounds(pointsWithCoords.map(p => [p.latitude, p.longitude]));
-        mapInstanceRef.current.fitBounds(bounds, { padding: [40, 40] });
-        
-        // Attendre que les tuiles de la carte se chargent
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // Capturer l'image avec html2canvas
-        const canvas = await html2canvas(mapContainerRef.current, {
-          useCORS: true,
-          allowTaint: true,
-          scale: 1,
-          logging: false,
-          backgroundColor: '#ffffff',
-          foreignObjectRendering: false,
-          removeContainer: true
+        toast({
+          title: "Génération de la carte...",
+          description: "Veuillez patienter"
         });
         
-        mapImageDataUrl = canvas.toDataURL('image/png', 0.9);
+        // Appeler l'API backend pour générer l'image de carte
+        const mapResponse = await apiPost(tenantSlug, '/export/map-image', {
+          points: pointsWithCoords.map(p => ({
+            latitude: p.latitude,
+            longitude: p.longitude,
+            etat: p.etat,
+            numero_identification: p.numero_identification
+          })),
+          width: 800,
+          height: 500
+        });
+        
+        if (mapResponse?.success && mapResponse?.image_base64) {
+          mapImageDataUrl = `data:image/png;base64,${mapResponse.image_base64}`;
+        }
       } catch (error) {
-        console.warn('Erreur lors de la capture de la carte:', error);
+        console.warn('Erreur lors de la génération de la carte:', error);
+        // Continuer sans la carte
       }
     }
 
