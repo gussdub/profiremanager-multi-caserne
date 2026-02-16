@@ -111,24 +111,42 @@ async def generate_map_image(
         # Créer la carte statique
         m = StaticMap(request.width, request.height, url_template='https://a.tile.openstreetmap.org/{z}/{x}/{y}.png')
         
+        # Pré-télécharger toutes les icônes uniques
+        unique_types = set(p.type or 'point_eau_statique' for p in request.points if p.latitude and p.longitude)
+        icons = {}
+        for point_type in unique_types:
+            icon = await get_icon_image(point_type)
+            if icon:
+                icons[point_type] = icon
+        
         # Ajouter tous les marqueurs
         for point in request.points:
             if point.latitude and point.longitude:
-                color = get_marker_color(point.etat)
-                # Marqueur extérieur (contour blanc)
-                outer_marker = CircleMarker(
-                    (point.longitude, point.latitude),
-                    'white',
-                    18  # Rayon plus grand pour le contour
-                )
-                m.add_marker(outer_marker)
-                # Marqueur intérieur coloré
-                inner_marker = CircleMarker(
-                    (point.longitude, point.latitude),
-                    color,
-                    14  # Rayon du marqueur principal
-                )
-                m.add_marker(inner_marker)
+                point_type = point.type or 'point_eau_statique'
+                
+                # Essayer d'utiliser l'icône personnalisée
+                if point_type in icons:
+                    icon_marker = IconMarker(
+                        (point.longitude, point.latitude),
+                        icons[point_type],
+                        16, 16  # offset x, y (centre de l'icône)
+                    )
+                    m.add_marker(icon_marker)
+                else:
+                    # Fallback: marqueur circulaire coloré
+                    color = get_marker_color(point.etat)
+                    outer_marker = CircleMarker(
+                        (point.longitude, point.latitude),
+                        'white',
+                        18
+                    )
+                    m.add_marker(outer_marker)
+                    inner_marker = CircleMarker(
+                        (point.longitude, point.latitude),
+                        color,
+                        14
+                    )
+                    m.add_marker(inner_marker)
         
         # Rendre la carte avec zoom automatique
         image = m.render()
@@ -141,7 +159,7 @@ async def generate_map_image(
         # Encoder en base64
         img_base64 = base64.b64encode(img_buffer.getvalue()).decode('utf-8')
         
-        logger.info(f"[EXPORT MAP] Carte générée avec {len(request.points)} points pour {tenant_slug}")
+        logger.info(f"[EXPORT MAP] Carte générée avec {len(request.points)} points et icônes pour {tenant_slug}")
         
         return {
             "success": True,
