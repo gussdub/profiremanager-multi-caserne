@@ -229,6 +229,21 @@ async def send_defaut_borne_email(
         response = resend.Emails.send(email_params)
         
         logger.info(f"Email envoyé avec succès. ID: {response.get('id')}")
+        
+        # Log email pour chaque destinataire
+        try:
+            from routes.emails_history import log_email_sent
+            for email in emails:
+                await log_email_sent(
+                    type_email="defaut_borne",
+                    destinataire_email=email,
+                    sujet=f"[Défaut] Borne #{borne_id} - {borne_adresse}",
+                    tenant_slug=tenant_slug,
+                    metadata={"borne_id": borne_id, "type_defaut": type_defaut}
+                )
+        except Exception as log_err:
+            logger.warning(f"Erreur log email: {log_err}")
+        
         return {
             "success": True,
             "email_id": response.get("id"),
