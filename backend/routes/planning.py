@@ -3842,11 +3842,15 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         
                         # N3: Temps partiel STAND-BY (ni dispo explicite ni indispo bloquante)
                         elif niveau == 3:
+                            if is_debug_externe_nuit:
+                                logging.info(f"📊 [N3-EXTERNE-NUIT] {user_name}: type_emploi={type_emploi}, has_dispo={has_dispo_valide}, depasserait_max={depasserait_max}")
                             if type_emploi in ["temps_partiel", "temporaire"] and not has_dispo_valide:
                                 # Pas de dispo explicite mais pas d'indispo bloquante non plus
                                 if not depasserait_max:
                                     candidats.append(user)
                                     accepte = True
+                                    if is_debug_externe_nuit:
+                                        logging.info(f"✅ [N3-ACCEPT] {user_name} accepté au N3 (stand-by)")
                                 else:
                                     raison_rejet = f"Dépasserait {heures_max}h max ({heures_travaillees}h + {duree_garde}h)"
                             elif type_emploi not in ["temps_partiel", "temporaire"]:
