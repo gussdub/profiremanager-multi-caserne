@@ -330,7 +330,9 @@ const CarteApprovisionnementEau = ({ user }) => {
   };
 
   // Export PDF - Format ProFireManager (style cohérent avec l'application)
-  const exportToPDF = () => {
+  const exportToPDF = async () => {
+    setExporting(true);
+    
     const getEtatLabel = (etat) => {
       if (etat === 'fonctionnelle') return '✓ Fonctionnelle';
       if (etat === 'en_reparation') return '⚠ En réparation';
@@ -352,10 +354,78 @@ const CarteApprovisionnementEau = ({ user }) => {
       autres: filteredPoints.filter(p => !['fonctionnelle', 'en_reparation', 'hors_service'].includes(p.etat)).length
     };
 
-    // Générer l'URL de la carte statique avec les marqueurs
+    // Capturer la carte Leaflet en image
+    let mapImageDataUrl = null;
+    const pointsWithCoords = filteredPoints.filter(p => p.latitude && p.longitude);
+    
+    if (mapInstanceRef.current && pointsWithCoords.length > 0) {
+      try {
+        // Ajuster la vue pour voir tous les points
+        const bounds = L.latLngBounds(pointsWithCoords.map(p => [p.latitude, p.longitude]));
+        mapInstanceRef.current.fitBounds(bounds, { padding: [30, 30] });
+        
+        // Attendre que la carte se mette à jour
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Capturer l'image avec leaflet-image
+        mapImageDataUrl = await new Promise((resolve) => {
+          leafletImage(mapInstanceRef.current, (err, canvas) => {
+            if (err || !canvas) {
+              console.warn('Erreur capture carte:', err);
+              resolve(null);
+            } else {
+              resolve(canvas.toDataURL('image/png'));
+            }
+          });
+        });
+      } catch (error) {
+        console.warn('Erreur lors de la capture de la carte:', error);
+      }
+    }
+
+    // Générer la section carte (avec image ou fallback)
     const generateMapSection = () => {
-      const pointsWithCoords = filteredPoints.filter(p => p.latitude && p.longitude);
       if (pointsWithCoords.length === 0) return '';
+
+      const lats = pointsWithCoords.map(p => p.latitude);
+      const lngs = pointsWithCoords.map(p => p.longitude);
+      const minLat = Math.min(...lats);
+      const maxLat = Math.max(...lats);
+      const minLng = Math.min(...lngs);
+      const maxLng = Math.max(...lngs);
+
+      const mapContent = mapImageDataUrl 
+        ? `<img src="${mapImageDataUrl}" alt="Carte des points d'eau" style="max-width:100%; border-radius:8px; border:1px solid #d1d5db;" />`
+        : `<div class="map-fallback" style="background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%); padding: 30px; border-radius: 8px; border: 1px solid #0284c7; text-align: center;">
+            <p style="font-size: 14px; color: #0369a1; margin: 0 0 15px 0;"><strong>🗺️ Zone géographique couverte</strong></p>
+            <p style="font-size: 12px; color: #0c4a6e; margin: 0;">
+              <strong>Secteur:</strong> ${minLat.toFixed(4)}°N à ${maxLat.toFixed(4)}°N / ${Math.abs(minLng).toFixed(4)}°O à ${Math.abs(maxLng).toFixed(4)}°O
+            </p>
+          </div>`;
+
+      return `
+        <h3>🗺️ Localisation des points d'eau</h3>
+        <div class="map-section">
+          ${mapContent}
+          <div class="map-legend">
+            <span class="legend-title">Points d'eau:</span>
+            ${pointsWithCoords.map(p => {
+              const color = p.etat === 'fonctionnelle' ? '#10b981' : 
+                           p.etat === 'en_reparation' ? '#f59e0b' : 
+                           p.etat === 'hors_service' ? '#ef4444' : '#6b7280';
+              const etatLabel = p.etat === 'fonctionnelle' ? '✓' : 
+                               p.etat === 'en_reparation' ? '⚠' : 
+                               p.etat === 'hors_service' ? '✗' : '?';
+              return `<span class="legend-item"><span class="legend-dot" style="background:${color}"></span>${p.numero_identification} ${etatLabel}</span>`;
+            }).join('')}
+          </div>
+          <div class="map-coords">
+            <strong>Coordonnées GPS:</strong><br/>
+            ${pointsWithCoords.map(p => `<span style="display:inline-block; margin:2px 8px 2px 0;"><strong>${p.numero_identification}:</strong> ${p.latitude?.toFixed(5)}, ${p.longitude?.toFixed(5)}</span>`).join('')}
+          </div>
+        </div>
+      `;
+    };
 
       // Calculer les bounds
       const lats = pointsWithCoords.map(p => p.latitude);
