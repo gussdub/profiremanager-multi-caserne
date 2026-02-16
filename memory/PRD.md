@@ -1,77 +1,104 @@
-# PRD - Application de Gestion des Services d'Incendie
+# ProFireManager - Product Requirements Document
 
-## Problème Original
-Application multi-tenant de gestion pour les services d'incendie du Québec, incluant la gestion du personnel, des formations, des équipements, des interventions, de la prévention et de la paie.
+## Application Overview
+Full-stack fire services management application built with React (frontend) and FastAPI (backend) with MongoDB database.
 
-## Architecture
-- **Frontend:** React avec Shadcn/UI
-- **Backend:** FastAPI (Python)
-- **Base de données:** MongoDB
-- **Multi-tenant:** Isolation par tenant_slug
+## Core Modules
+- **Personnel**: Employee management, grades, formations
+- **Planning**: Shift scheduling, guard assignments, auto-attribution
+- **Actifs**: Asset management, water points, inspections
+- **EPI**: Personal protective equipment tracking
+- **Interventions**: Emergency response logging
+- **Prévention**: Building inspections, prevention tasks
+- **Rapports**: Reports generation (PDF, Excel)
+- **Paramètres**: System configuration
 
-## Tâches Complétées
+## Recent Implementation History
 
-### Session Actuelle (Février 2026)
-- ✅ **Correction du bug de double refresh du module Prévention** - COMPLÉTÉ
-  - Problème: Le module Prévention nécessitait 2 rafraîchissements pour s'afficher après connexion
-  - Cause: Le tenant était chargé de manière asynchrone après la vérification du token
-  - Solution: Restauration immédiate du tenant depuis localStorage + chargement parallèle avec vérification token
-  - Fichier modifié: `frontend/src/contexts/AuthContext.js`
+### 2026-02-16 - Fork Session
+**Completed:**
+1. **Export PDF avec carte (Points d'eau)**
+   - Created backend endpoint `/api/{tenant}/export/map-image` using `staticmap` library
+   - Generates static OpenStreetMap images with colored markers
+   - Frontend calls this API to embed map in PDF export
+   - File: `/app/backend/routes/export_map.py`
+   - Modified: `/app/frontend/src/components/CarteApprovisionnementEau.jsx`
 
-- ✅ **Ajout du nom de l'inspecteur aux formulaires d'inspection à faible risque** - COMPLÉTÉ
-  - Nouveau champ `inspecteur_nom` et `inspection_realisee_par` dans le modèle d'inspection
-  - Le nom complet de l'utilisateur connecté est automatiquement capturé lors de la soumission
-  - Permet la traçabilité des inspections pour les préventionnistes en charge
-  - Fichiers modifiés:
-    - `frontend/src/components/InspectionTerrain.jsx` - Capture du nom utilisateur
-    - `frontend/src/components/Prevention.jsx` - Passage du currentUser au composant
-    - `backend/routes/prevention.py` - Nouveaux champs dans les modèles Inspection/InspectionCreate
+2. **Bug module Horaire (Équipes de garde)**
+   - Fixed team rotation calculation for custom schedules
+   - When `type_rotation` is a UUID, system now fetches from `horaires_personnalises` collection
+   - Added `get_equipe_from_horaire_personnalise()` function
+   - File: `/app/backend/routes/equipes_garde.py`
 
-### Sessions Précédentes (Décembre 2025-Février 2026)
-- ✅ **Migration window.confirm/alert vers useConfirmDialog** - COMPLÉTÉ
-  - Migré 8 fichiers restants identifiés par le testing agent
-  - Fichiers corrigés: ParametresActifs.jsx, ParametresInventairesVehicules.jsx, SuperAdminDashboard.js, ConfigurationSFTP.jsx, GrillesInspectionComponents.jsx, CarteApprovisionnementEau.jsx, ApprovisionnementEau.jsx
-  - Tests automatisés passés à 100%
+### Previous Sessions
+- Excel export for water points with GPS coordinates
+- PDF styling with service logo and color scheme
+- Import inspections bornes sèches feature
 
-- ✅ **Uniformisation des emails** - COMPLÉTÉ
-  - Tous les templates d'emails utilisent maintenant le même design avec le logo ProFireManager officiel
-  - Fonction helper `get_email_template()` créée pour standardiser le header/footer
-  - Fichiers modifiés: `server.py`, `services/email_service.py`, `utils/emails.py`, `routes/dependencies.py`
-  - Lien "Voir dans l'application" corrigé pour inclure le tenant_slug
+## Pending Issues (Priority Order)
 
-### Sessions Précédentes
-- ✅ Correction des exports PDF/Excel corrompus
-- ✅ Mise à jour de l'algorithme CNPI vers TF-IDF/Cosine Similarity
-- ✅ Correction du bug de planning (Internal Server Error)
-- ✅ Système de dialogue personnalisé (ConfirmDialog, ConfirmDialogProvider, useConfirmDialog)
+### P0 - Critical
+- [ ] User validation: PDF export with map
+- [ ] User validation: Schedule module team display fix
 
-## Fichiers Clés du Système de Dialogue
-- `frontend/src/components/ui/ConfirmDialog.jsx` - Composant et Provider
-- `frontend/src/App.js` - Provider monté globalement
+### P1 - High
+- [ ] Adapt hydrant import for "Cavitation durant le pompage" field
+- [ ] Import inspections hydrants - awaiting user testing
 
-## Fichiers Clés des Templates d'Email
-- `backend/server.py` - Constante LOGO_URL et helpers get_email_header()/get_email_footer()
-- `backend/services/email_service.py` - Fonction get_email_template() et templates standardisés
-- `backend/utils/emails.py` - Templates pour alertes bornes et inventaires véhicules
-- `backend/routes/dependencies.py` - Passage du tenant_slug dans les notifications email
+### P2 - Medium
+- [ ] "Prévention" module visibility for "shefford" tenant
+- [ ] "Prévention" notification audit
 
-## Tâches en Attente
+### P3 - Future
+- [ ] SFTP "Check Now" button for manual trigger
+- [ ] Remove preview mode limitation notes from export modals
 
-### P1 - En attente de clarification
-- Audit des notifications pour le module "Prévention" (besoin de précisions sur le workflow)
-- Visibilité du module Prévention pour le tenant "shefford" - CONFIRMÉ OK par utilisateur
+## Technical Stack
+- **Frontend**: React 18, TailwindCSS, Shadcn/UI, Leaflet maps
+- **Backend**: FastAPI, Python 3.11, Motor (async MongoDB)
+- **Database**: MongoDB
+- **Libraries**: jspdf, react-csv, staticmap (for map generation)
 
-### P2 - Futur
-- Uniformiser les exports PDF/Excel dans tous les modules
-- Bouton "Vérifier maintenant" pour SFTP
-- Corriger le bouton "Télécharger" non-fonctionnel dans certains modules d'export
+## Key API Endpoints
 
-## Intégrations Tierces
-- SFTP Server pour le polling de fichiers
-- Scikit-learn pour les fonctionnalités ML
-- Resend API pour l'envoi d'emails
+### Export Map
+```
+POST /api/{tenant}/export/map-image
+Body: {
+  "points": [{"latitude": float, "longitude": float, "etat": string}],
+  "width": int,
+  "height": int
+}
+Response: {"success": true, "image_base64": "..."}
+```
 
-## Notes Techniques
-- Toujours utiliser `useConfirmDialog` au lieu de `window.confirm` (environnement iframe)
-- data-testid pour les tests: confirm-dialog, confirm-dialog-cancel, confirm-dialog-confirm
-- Logo officiel ProFireManager: https://customer-assets.emergentagent.com/job_fireshift-manager/artifacts/6vh2i9cz_05_Icone_Flamme_Rouge_Bordure_D9072B_VISIBLE.png
+### Équipes de Garde
+```
+GET /api/{tenant}/equipes-garde/equipe-du-jour?date=YYYY-MM-DD&type_emploi=temps_plein
+Response: {"equipe": int, "nom": string, "couleur": string}
+```
+
+## File Structure (Key Files)
+```
+/app
+├── backend/
+│   ├── routes/
+│   │   ├── equipes_garde.py      # Team rotation logic
+│   │   ├── export_map.py         # NEW: Static map generation
+│   │   ├── horaires_personnalises.py
+│   │   └── points_eau.py
+│   └── server.py
+├── frontend/
+│   └── src/
+│       └── components/
+│           ├── CarteApprovisionnementEau.jsx  # Water supply map + export
+│           ├── ParametresEquipesGarde.jsx     # Team settings
+│           └── Planning.jsx                    # Schedule display
+└── memory/
+    └── PRD.md
+```
+
+## User Preferences
+- **Language**: French
+- **External guards schedule**: Monday 18h to Monday 06h (weekly)
+- **Note**: User does not always configure start/end hours in custom guard creation
