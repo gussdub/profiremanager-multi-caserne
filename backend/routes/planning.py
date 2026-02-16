@@ -28,6 +28,9 @@ from datetime import datetime, timezone, timedelta
 from io import BytesIO
 import uuid
 import logging
+
+# Import de la fonction de calcul d'équipe de garde
+from routes.equipes_garde import get_equipe_garde_du_jour_sync
 import json
 import asyncio
 import asyncio
