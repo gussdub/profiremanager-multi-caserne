@@ -3221,12 +3221,13 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         if params_remplacements:
             heures_sup_from_params = params_remplacements.get("heures_supplementaires_activees", False)
         
-        # Utiliser les niveaux chargés plus haut ou les défauts
+        # Charger les niveaux depuis les paramètres du TENANT (pas parametres_niveaux_attribution)
+        tenant_params = tenant.parametres or {}
         niveaux_actifs = {
-            "niveau_2": params_tenant_doc.get("niveau_2_actif", True),  # Temps partiel DISPONIBLES
-            "niveau_3": params_tenant_doc.get("niveau_3_actif", True),  # Temps partiel STAND-BY
-            "niveau_4": params_tenant_doc.get("niveau_4_actif", True),  # Temps plein INCOMPLETS
-            "niveau_5": params_tenant_doc.get("niveau_5_actif", True)   # Temps plein COMPLETS (heures sup)
+            "niveau_2": tenant_params.get("niveau_2_actif", True),  # Temps partiel DISPONIBLES
+            "niveau_3": tenant_params.get("niveau_3_actif", True),  # Temps partiel STAND-BY
+            "niveau_4": tenant_params.get("niveau_4_actif", True),  # Temps plein INCOMPLETS
+            "niveau_5": tenant_params.get("niveau_5_actif", True)   # Temps plein COMPLETS (heures sup)
         }
         # Activer heures sup si:
         # - Le paramètre dans la requête est True OU
