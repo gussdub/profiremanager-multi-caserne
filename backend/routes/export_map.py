@@ -65,8 +65,8 @@ def get_marker_color(etat: Optional[str]) -> str:
     return '#6b7280'  # Gris par défaut
 
 
-async def get_icon_image(point_type: str) -> Optional[Image.Image]:
-    """Télécharge et met en cache l'icône pour un type de point d'eau"""
+async def get_icon_image(point_type: str) -> Optional[str]:
+    """Télécharge et met en cache l'icône pour un type de point d'eau. Retourne le chemin du fichier temporaire."""
     global _icon_cache
     
     if point_type in _icon_cache:
@@ -78,14 +78,25 @@ async def get_icon_image(point_type: str) -> Optional[Image.Image]:
         async with httpx.AsyncClient() as client:
             response = await client.get(url, timeout=10)
             if response.status_code == 200:
+                # Sauvegarder dans un fichier temporaire
+                import tempfile
+                import os
+                
+                # Créer un fichier temporaire persistant
+                fd, temp_path = tempfile.mkstemp(suffix='.png')
+                
+                # Redimensionner l'icône
                 img = Image.open(io.BytesIO(response.content))
-                # Redimensionner l'icône pour la carte (32x32)
                 img = img.resize((32, 32), Image.Resampling.LANCZOS)
-                # Convertir en RGBA si nécessaire
                 if img.mode != 'RGBA':
                     img = img.convert('RGBA')
-                _icon_cache[point_type] = img
-                return img
+                
+                # Sauvegarder dans le fichier temporaire
+                img.save(temp_path, format='PNG')
+                os.close(fd)
+                
+                _icon_cache[point_type] = temp_path
+                return temp_path
     except Exception as e:
         logger.warning(f"[EXPORT MAP] Impossible de télécharger l'icône {point_type}: {e}")
     
