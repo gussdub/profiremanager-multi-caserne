@@ -407,6 +407,23 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
   const [submitting, setSubmitting] = useState(false);
   const [alertes, setAlertes] = useState([]);
   const [sectionActuelle, setSectionActuelle] = useState(0); // Pagination par section
+  const [currentUserName, setCurrentUserName] = useState('');
+
+  // Récupérer le nom de l'utilisateur connecté
+  useEffect(() => {
+    try {
+      const savedCredentials = localStorage.getItem('profiremanager_saved_credentials');
+      if (savedCredentials) {
+        const creds = JSON.parse(savedCredentials);
+        if (creds[tenantSlug]) {
+          const userName = creds[tenantSlug].userName || creds[tenantSlug].name || '';
+          setCurrentUserName(userName);
+        }
+      }
+    } catch (e) {
+      console.warn('Erreur récupération nom utilisateur:', e);
+    }
+  }, [tenantSlug]);
 
   // Vérifier si l'utilisateur peut choisir le formulaire
   const canSelectModele = userRole === 'admin' || userRole === 'superviseur';
