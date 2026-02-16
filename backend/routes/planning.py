@@ -3448,9 +3448,10 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
             
             return False
         
-        def trier_candidats_equite_anciennete(candidats, type_garde_externe=False, prioriser_officiers=False, user_monthly_hours=None):
+        def trier_candidats_equite_anciennete(candidats, type_garde_externe=False, prioriser_officiers=False, user_monthly_hours=None, equipe_garde_du_jour=None, prioriser_equipe_garde=False):
             """
             Trie les candidats selon:
+            0. Si prioriser_equipe_garde: Membres de l'équipe de garde du jour d'abord (NON ABSOLU - juste priorité)
             1. Si prioriser_officiers: Officiers d'abord, puis éligibles, puis autres
             2. Équité (moins d'heures d'abord)
             3. Ancienneté (plus ancien d'abord)
@@ -3460,6 +3461,18 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 
             def sort_key(user):
                 user_id = user["id"]
+                
+                # Priorité équipe de garde (0=membre équipe garde, 1=autre)
+                # C'est une priorité NON ABSOLUE - elle influence le tri mais ne bloque pas les autres
+                if prioriser_equipe_garde and equipe_garde_du_jour and type_garde_externe:
+                    # La priorité équipe de garde s'applique uniquement aux gardes EXTERNES
+                    equipe_utilisateur = user.get("equipe_garde")
+                    if equipe_utilisateur == equipe_garde_du_jour:
+                        equipe_priority = 0  # Membre de l'équipe de garde
+                    else:
+                        equipe_priority = 1  # Pas membre
+                else:
+                    equipe_priority = 0  # Pas de tri par équipe de garde
                 
                 # Priorité officier (0=officier, 1=éligible, 2=autre)
                 if prioriser_officiers:
@@ -3481,7 +3494,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 # Ancienneté (date_embauche)
                 date_embauche = user.get("date_embauche", "2099-12-31")
                 
-                return (officier_priority, heures, date_embauche)
+                return (equipe_priority, officier_priority, heures, date_embauche)
             
             return sorted(candidats, key=sort_key)
         
