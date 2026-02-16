@@ -3792,20 +3792,13 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         explication_niveaux = []
                         
                         # DEBUG pour gardes externes de nuit uniquement
-                        is_debug_externe_nuit = est_externe and "nuit" in type_garde_nom.lower()
-                        
                         # N2: Temps partiel DISPONIBLES
                         if niveau == 2:
-                            # LOG DIAGNOSTIC seulement pour gardes externes de nuit
-                            if is_debug_externe_nuit:
-                                logging.info(f"📊 [N2-EXTERNE-NUIT] {user_name}: type_emploi={type_emploi}, has_dispo={has_dispo_valide}, depasserait_max={depasserait_max}")
                             if type_emploi in ["temps_partiel", "temporaire"] and has_dispo_valide:
                                 # Vérifier qu'il n'a pas atteint son max (sauf garde externe)
                                 if not depasserait_max:
                                     candidats.append(user)
                                     accepte = True
-                                    if is_debug_externe_nuit:
-                                        logging.info(f"✅ [N2-ACCEPT] {user_name} accepté au N2")
                                 else:
                                     raison_rejet = f"A une dispo mais dépasserait {heures_max}h max ({heures_travaillees}h + {duree_garde}h)"
                             elif type_emploi not in ["temps_partiel", "temporaire"]:
@@ -3815,15 +3808,11 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         
                         # N3: Temps partiel STAND-BY (ni dispo explicite ni indispo bloquante)
                         elif niveau == 3:
-                            if is_debug_externe_nuit:
-                                logging.info(f"📊 [N3-EXTERNE-NUIT] {user_name}: type_emploi={type_emploi}, has_dispo={has_dispo_valide}, depasserait_max={depasserait_max}")
                             if type_emploi in ["temps_partiel", "temporaire"] and not has_dispo_valide:
                                 # Pas de dispo explicite mais pas d'indispo bloquante non plus
                                 if not depasserait_max:
                                     candidats.append(user)
                                     accepte = True
-                                    if is_debug_externe_nuit:
-                                        logging.info(f"✅ [N3-ACCEPT] {user_name} accepté au N3 (stand-by)")
                                 else:
                                     raison_rejet = f"Dépasserait {heures_max}h max ({heures_travaillees}h + {duree_garde}h)"
                             elif type_emploi not in ["temps_partiel", "temporaire"]:
