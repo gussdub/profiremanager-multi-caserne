@@ -1855,8 +1855,8 @@ async def export_rapport_heures_pdf(
         "date": {"$gte": debut_dt.strftime("%Y-%m-%d"), "$lt": fin_dt.strftime("%Y-%m-%d")}
     }).to_list(10000)
     
-    # Récupérer tous les utilisateurs
-    users = await db.users.find({"tenant_id": tenant.id, "actif": True}).to_list(1000)
+    # Récupérer tous les utilisateurs (actifs ou pas - pour afficher tous ceux qui ont des assignations)
+    users = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
     users_dict = {u["id"]: u for u in users}
     
     # Récupérer les types de garde pour déterminer est_externe et duree
