@@ -146,15 +146,15 @@ async def generate_map_image(
                     )
                     m.add_marker(icon_marker)
                     
-                    # Ensuite ajouter le badge coloré (juste en bas à droite de l'icône)
+                    # Ensuite ajouter le badge coloré (directement sous l'icône)
                     outer_badge = CircleMarker(
-                        (point.longitude + 0.00015, point.latitude - 0.00012),
+                        (point.longitude + 0.00004, point.latitude - 0.00018),
                         'white',
                         10
                     )
                     m.add_marker(outer_badge)
                     inner_badge = CircleMarker(
-                        (point.longitude + 0.00015, point.latitude - 0.00012),
+                        (point.longitude + 0.00004, point.latitude - 0.00018),
                         color,
                         7
                     )
