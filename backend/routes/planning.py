@@ -3429,9 +3429,16 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
             
             all_dispos = specific_dispos + general_dispos
             
+            # DEBUG: Log pour diagnostic
+            user_info = users_dict.get(user_id, {})
+            user_name = f"{user_info.get('prenom', '')} {user_info.get('nom', '')}".strip()
+            if len(all_dispos) > 0:
+                logging.debug(f"🔎 [DISPO-CHECK] {user_name} @ {date_str}: {len(specific_dispos)} spécifiques + {len(general_dispos)} générales = {len(all_dispos)} total pour garde {garde_heure_debut}-{garde_heure_fin}")
+            
             for dispo in all_dispos:
-                dispo_debut = dispo.get("heure_debut", "00:00")
-                dispo_fin = dispo.get("heure_fin", "23:59")
+                # IMPORTANT: Gérer les valeurs None explicitement
+                dispo_debut = dispo.get("heure_debut") or "00:00"
+                dispo_fin = dispo.get("heure_fin") or "23:59"
                 
                 # Vérifier si la disponibilité COUVRE la garde
                 # La dispo doit commencer avant ou au même moment que la garde
