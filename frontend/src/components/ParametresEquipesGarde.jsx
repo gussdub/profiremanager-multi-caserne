@@ -69,7 +69,24 @@ const ParametresEquipesGarde = ({ tenantSlug, toast }) => {
       setLoading(true);
       const response = await axios.get(`${API}/parametres/equipes-garde`);
       if (response.data) {
-        setParams(response.data);
+        // Fusionner avec les valeurs par défaut pour garantir que jour_rotation et heure_rotation existent
+        const data = response.data;
+        setParams(prev => ({
+          ...prev,
+          ...data,
+          temps_plein: {
+            ...prev.temps_plein,
+            ...data.temps_plein,
+            jour_rotation: data.temps_plein?.jour_rotation || prev.temps_plein.jour_rotation,
+            heure_rotation: data.temps_plein?.heure_rotation || prev.temps_plein.heure_rotation
+          },
+          temps_partiel: {
+            ...prev.temps_partiel,
+            ...data.temps_partiel,
+            jour_rotation: data.temps_partiel?.jour_rotation || prev.temps_partiel.jour_rotation,
+            heure_rotation: data.temps_partiel?.heure_rotation || prev.temps_partiel.heure_rotation
+          }
+        }));
       }
     } catch (error) {
       console.error("Erreur chargement paramètres équipes de garde:", error);
