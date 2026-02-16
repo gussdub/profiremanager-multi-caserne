@@ -55,7 +55,7 @@ import os
 class P1FeaturesTester:
     def __init__(self):
         # Utiliser l'URL depuis frontend/.env comme spécifié
-        self.base_url = "https://notif-backend-check.preview.emergentagent.com/api"
+        self.base_url = "https://inspection-audit-app.preview.emergentagent.com/api"
         self.headers = {}
         self.token = None
         self.tenant_slug = "shefford"

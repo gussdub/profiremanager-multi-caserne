@@ -10,7 +10,7 @@ import sys
 from datetime import datetime, timedelta
 
 # Configuration
-BACKEND_URL = "https://notif-backend-check.preview.emergentagent.com/api"
+BACKEND_URL = "https://inspection-audit-app.preview.emergentagent.com/api"
 
 # Credentials pour les tests
 DEMO_ADMIN = {

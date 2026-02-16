@@ -32,7 +32,7 @@ export default function LoginScreen() {
 
   const loadTenants = async () => {
     try {
-      const response = await fetch('https://notif-backend-check.preview.emergentagent.com/api/tenants');
+      const response = await fetch('https://inspection-audit-app.preview.emergentagent.com/api/tenants');
       const data = await response.json();
       setTenants(data);
     } catch (error) {
