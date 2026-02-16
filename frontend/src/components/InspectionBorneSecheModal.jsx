@@ -3,7 +3,7 @@ import { apiGet, apiPost } from '../utils/api';
 import ImageUpload from './ImageUpload';
 import { Button } from './ui/button';
 
-// Composant Chronomètre
+// Composant Chronomètre (s'incrémente)
 const TimerField = ({ value, onChange, unite, seuilAlerte }) => {
   const [isRunning, setIsRunning] = useState(false);
   const [time, setTime] = useState(value || 0);
@@ -61,6 +61,149 @@ const TimerField = ({ value, onChange, unite, seuilAlerte }) => {
         </Button>
       </div>
       {unite && <p style={{ textAlign: 'center', color: '#6b7280', fontSize: '0.7rem', marginTop: '0.5rem' }}>Unité: {unite}</p>}
+    </div>
+  );
+};
+
+// Composant Compte à Rebours (se décrémente et sonne à 0)
+const CountdownField = ({ value, onChange, config }) => {
+  const dureeInitiale = (config?.duree_minutes || 5) * 60; // Durée en secondes
+  const [isRunning, setIsRunning] = useState(false);
+  const [time, setTime] = useState(value !== undefined && value !== null && value !== '' ? value : dureeInitiale);
+  const [hasFinished, setHasFinished] = useState(false);
+  const intervalRef = useRef(null);
+  const audioRef = useRef(null);
+
+  // Créer l'audio pour l'alarme
+  useEffect(() => {
+    // Créer un contexte audio pour la sonnerie
+    audioRef.current = {
+      play: () => {
+        try {
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          oscillator.frequency.value = 880; // Note LA
+          oscillator.type = 'sine';
+          gainNode.gain.value = 0.5;
+          
+          oscillator.start();
+          
+          // Faire biper 3 fois
+          setTimeout(() => { gainNode.gain.value = 0; }, 200);
+          setTimeout(() => { gainNode.gain.value = 0.5; }, 400);
+          setTimeout(() => { gainNode.gain.value = 0; }, 600);
+          setTimeout(() => { gainNode.gain.value = 0.5; }, 800);
+          setTimeout(() => { gainNode.gain.value = 0; }, 1000);
+          setTimeout(() => { oscillator.stop(); }, 1200);
+        } catch (e) {
+          console.warn('Audio non supporté:', e);
+        }
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isRunning && time > 0) {
+      intervalRef.current = setInterval(() => {
+        setTime(prev => {
+          const newTime = Math.max(0, prev - 0.1);
+          onChange(Math.round(newTime * 10) / 10);
+          
+          if (newTime <= 0 && !hasFinished) {
+            setHasFinished(true);
+            setIsRunning(false);
+            // Jouer la sonnerie
+            audioRef.current?.play();
+          }
+          
+          return newTime;
+        });
+      }, 100);
+    } else {
+      clearInterval(intervalRef.current);
+    }
+    return () => clearInterval(intervalRef.current);
+  }, [isRunning, time, hasFinished]);
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    const ms = Math.floor((seconds % 1) * 10);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms}`;
+  };
+
+  const resetCountdown = () => {
+    setTime(dureeInitiale);
+    onChange(dureeInitiale);
+    setIsRunning(false);
+    setHasFinished(false);
+  };
+
+  const isLowTime = time <= 30 && time > 0; // Moins de 30 secondes
+  const isFinished = time <= 0;
+
+  return (
+    <div style={{ 
+      padding: '0.75rem', 
+      backgroundColor: isFinished ? '#fef2f2' : isLowTime ? '#fffbeb' : '#f0fdf4', 
+      borderRadius: '0.5rem', 
+      border: isFinished ? '2px solid #dc2626' : isLowTime ? '2px solid #f59e0b' : '1px solid #10b981' 
+    }}>
+      <div style={{ textAlign: 'center', marginBottom: '0.5rem', color: '#6b7280', fontSize: '0.75rem' }}>
+        ⏱️ Compte à rebours ({config?.duree_minutes || 5} min)
+      </div>
+      <div style={{ 
+        fontSize: 'clamp(1.75rem, 8vw, 2.5rem)', 
+        fontFamily: 'monospace', 
+        fontWeight: 'bold', 
+        textAlign: 'center', 
+        color: isFinished ? '#dc2626' : isLowTime ? '#d97706' : '#059669', 
+        marginBottom: '0.75rem' 
+      }}>
+        {formatTime(time)}
+      </div>
+      {isFinished && (
+        <div style={{ textAlign: 'center', color: '#dc2626', fontWeight: '700', marginBottom: '0.5rem', fontSize: '1rem', animation: 'pulse 1s infinite' }}>
+          🔔 TEMPS ÉCOULÉ!
+        </div>
+      )}
+      {isLowTime && !isFinished && (
+        <div style={{ textAlign: 'center', color: '#d97706', fontWeight: '600', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
+          ⚠️ Moins de 30 secondes!
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+        <Button
+          type="button"
+          onClick={() => { setIsRunning(!isRunning); setHasFinished(false); }}
+          disabled={isFinished}
+          style={{ 
+            backgroundColor: isRunning ? '#f59e0b' : '#10b981', 
+            color: 'white', 
+            padding: '0.625rem 1rem', 
+            fontWeight: '600', 
+            fontSize: '0.875rem', 
+            flex: '1 1 auto', 
+            maxWidth: '140px',
+            opacity: isFinished ? 0.5 : 1
+          }}
+        >
+          {isRunning ? '⏸️ Pause' : '▶️ Démarrer'}
+        </Button>
+        <Button
+          type="button"
+          onClick={resetCountdown}
+          variant="outline"
+          style={{ padding: '0.625rem 1rem', fontSize: '0.875rem', flex: '1 1 auto', maxWidth: '140px' }}
+        >
+          🔄 Réinitialiser
+        </Button>
+      </div>
     </div>
   );
 };
