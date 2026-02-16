@@ -3405,8 +3405,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
             
             # Vérifier les disponibilités spécifiques à ce type de garde
             specific_dispos = user_dispos.get(type_garde_id, [])
-            # Vérifier les disponibilités générales (sans type de garde spécifique)
-            general_dispos = user_dispos.get(None, [])
+            # Vérifier les disponibilités générales (sans type de garde spécifique) - clé "_general"
+            general_dispos = user_dispos.get("_general", [])
             
             all_dispos = specific_dispos + general_dispos
             
