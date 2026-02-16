@@ -3068,14 +3068,17 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         
         # ⚡ OPTIMIZATION: Précharger TOUTES les disponibilités de la semaine en UNE SEULE requête
         # Cela évite le problème N+1 (une requête par user/garde)
+        # Note: Accepter plusieurs formats de statut (disponible, Disponible, dispo, etc.)
         all_disponibilites = await db.disponibilites.find({
             "date": {
                 "$gte": semaine_debut,
                 "$lte": semaine_fin
             },
-            "statut": "disponible",
+            "statut": {"$regex": "^dispo", "$options": "i"},  # Accepte "disponible", "Disponible", "dispo"
             "tenant_id": tenant.id
         }).to_list(10000)
+        
+        logging.info(f"📅 [DISPOS] {len(all_disponibilites)} disponibilités trouvées pour la période {semaine_debut} - {semaine_fin}")
         
         # Créer un index/dictionnaire pour lookup rapide
         # Structure: {user_id: {date: {type_garde_id: [list of dispos with horaires]}}}
