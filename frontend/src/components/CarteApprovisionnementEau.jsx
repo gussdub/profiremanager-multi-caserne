@@ -418,9 +418,12 @@ const CarteApprovisionnementEau = ({ user }) => {
           .summary-item.rouge { background: #fee2e2; border: 1px solid #ef4444; }
           .summary-item .count { font-size: 28px; font-weight: bold; }
           .summary-item .label { font-size: 12px; color: #6b7280; margin-top: 4px; }
-          .map-section { margin: 20px 0; text-align: center; }
-          .map-section img { max-width: 100%; border: 1px solid #d1d5db; border-radius: 8px; }
-          .map-caption { font-size: 11px; color: #6b7280; margin-top: 8px; }
+          .map-section { margin: 20px 0; }
+          .map-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; font-size: 11px; align-items: center; }
+          .legend-title { font-weight: 600; color: #374151; }
+          .legend-item { display: flex; align-items: center; gap: 4px; background: #f3f4f6; padding: 3px 8px; border-radius: 4px; }
+          .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+          .map-coords { margin-top: 10px; font-size: 10px; color: #6b7280; background: #f9fafb; padding: 8px; border-radius: 4px; }
           table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 11px; }
           th, td { border: 1px solid #d1d5db; padding: 8px 6px; text-align: left; }
           th { background: #f3f4f6; font-weight: 600; }
@@ -466,13 +469,7 @@ const CarteApprovisionnementEau = ({ user }) => {
           </div>
         </div>
 
-        ${staticMapUrl ? `
-        <h3>🗺️ Localisation des points d'eau</h3>
-        <div class="map-section">
-          <img src="${staticMapUrl}" alt="Carte des points d'eau" onerror="this.style.display='none'" />
-          <div class="map-caption">Carte générée automatiquement - Les marqueurs indiquent l'emplacement des points d'eau</div>
-        </div>
-        ` : ''}
+        ${mapHtml}
 
         <h3>📋 Liste détaillée</h3>
         <table>
