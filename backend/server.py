@@ -658,10 +658,11 @@ async def job_check_overdue_payments():
                     if tenant.get("email_contact") and os.environ.get("RESEND_API_KEY"):
                         try:
                             resend.api_key = os.environ.get("RESEND_API_KEY")
+                            sujet_suspension = "⚠️ Compte suspendu - ProFireManager"
                             resend.Emails.send({
                                 "from": "ProFireManager <noreply@profiremanager.ca>",
                                 "to": [tenant["email_contact"]],
-                                "subject": "⚠️ Compte suspendu - ProFireManager",
+                                "subject": sujet_suspension,
                                 "html": f"""
                                 <h2>Votre compte a été suspendu</h2>
                                 <p>Bonjour,</p>
@@ -670,6 +671,15 @@ async def job_check_overdue_payments():
                                 <p>Cordialement,<br>L'équipe ProFireManager</p>
                                 """
                             })
+                            # Log email
+                            await log_email_sent(
+                                type_email="compte_suspendu",
+                                destinataire_email=tenant["email_contact"],
+                                destinataire_nom=tenant.get("nom"),
+                                sujet=sujet_suspension,
+                                tenant_id=tenant.get("id"),
+                                tenant_slug=tenant.get("slug")
+                            )
                         except Exception as e:
                             logging.error(f"Erreur envoi email suspension: {e}")
                             
