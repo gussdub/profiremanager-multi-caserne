@@ -628,6 +628,21 @@ async def send_inventaire_vehicule_alertes_email(
         response = resend.Emails.send(email_params)
         
         logger.info(f"Email d'alertes inventaire véhicule envoyé avec succès. ID: {response.get('id')}")
+        
+        # Log email pour chaque destinataire
+        try:
+            from routes.emails_history import log_email_sent
+            for email in emails:
+                await log_email_sent(
+                    type_email="inventaire_vehicule_alertes",
+                    destinataire_email=email,
+                    sujet=f"[Inventaire Véhicule] {len(alertes)} Alerte(s) - {vehicule_nom}",
+                    tenant_slug=tenant_slug,
+                    metadata={"vehicule_nom": vehicule_nom, "nb_alertes": len(alertes)}
+                )
+        except Exception as log_err:
+            logger.warning(f"Erreur log email: {log_err}")
+        
         return {
             "success": True,
             "email_id": response.get("id"),
