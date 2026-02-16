@@ -324,6 +324,49 @@ const ParametresEquipesGarde = ({ tenantSlug, toast }) => {
                           {(!params.temps_plein.pattern_mode || params.temps_plein.pattern_mode === "hebdomadaire") && "L'équipe de garde change chaque semaine (7 jours)"}
                         </p>
                       </div>
+                      
+                      {/* Jour et heure de changement de rotation */}
+                      <div className="grid grid-cols-2 gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                        <div>
+                          <Label className="text-green-800">Jour de rotation</Label>
+                          <Select
+                            value={params.temps_plein.jour_rotation || "monday"}
+                            onValueChange={(value) => updateTempsPlein("jour_rotation", value)}
+                          >
+                            <SelectTrigger data-testid="select-jour-rotation-tp">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="monday">Lundi</SelectItem>
+                              <SelectItem value="tuesday">Mardi</SelectItem>
+                              <SelectItem value="wednesday">Mercredi</SelectItem>
+                              <SelectItem value="thursday">Jeudi</SelectItem>
+                              <SelectItem value="friday">Vendredi</SelectItem>
+                              <SelectItem value="saturday">Samedi</SelectItem>
+                              <SelectItem value="sunday">Dimanche</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-green-800">Heure de rotation</Label>
+                          <Input
+                            type="time"
+                            value={params.temps_plein.heure_rotation || "08:00"}
+                            onChange={(e) => updateTempsPlein("heure_rotation", e.target.value)}
+                            data-testid="input-heure-rotation-tp"
+                          />
+                        </div>
+                        <p className="col-span-2 text-xs text-green-700">
+                          La rotation change chaque {
+                            params.temps_plein.jour_rotation === "monday" ? "lundi" :
+                            params.temps_plein.jour_rotation === "tuesday" ? "mardi" :
+                            params.temps_plein.jour_rotation === "wednesday" ? "mercredi" :
+                            params.temps_plein.jour_rotation === "thursday" ? "jeudi" :
+                            params.temps_plein.jour_rotation === "friday" ? "vendredi" :
+                            params.temps_plein.jour_rotation === "saturday" ? "samedi" : "dimanche"
+                          } à {params.temps_plein.heure_rotation || "08:00"}
+                        </p>
+                      </div>
                     </>
                   )}
 
