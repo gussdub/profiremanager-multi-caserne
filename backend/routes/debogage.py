@@ -174,6 +174,17 @@ def send_debogage_notification_email(
                 }
                 response = resend.Emails.send(params)
                 logger.info(f"Email de notification envoyé à {admin_email} via Resend (ID: {response.get('id', 'N/A')})")
+                # Log email
+                try:
+                    from routes.emails_history import log_email_sent
+                    import asyncio
+                    asyncio.create_task(log_email_sent(
+                        type_email="notification_debogage",
+                        destinataire_email=admin_email,
+                        sujet=f"{type_label}: {titre}"
+                    ))
+                except:
+                    pass
             except Exception as e:
                 logger.error(f"Erreur lors de l'envoi de l'email à {admin_email}: {e}")
                 
