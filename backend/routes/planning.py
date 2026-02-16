@@ -3100,9 +3100,12 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 dispos_lookup[user_id][date][key] = []
             
             # Stocker la dispo complète avec ses horaires
+            # IMPORTANT: S'assurer que les heures ont des valeurs par défaut si None
+            heure_debut = dispo.get("heure_debut") or "00:00"
+            heure_fin = dispo.get("heure_fin") or "23:59"
             dispos_lookup[user_id][date][key].append({
-                "heure_debut": dispo.get("heure_debut"),
-                "heure_fin": dispo.get("heure_fin")
+                "heure_debut": heure_debut,
+                "heure_fin": heure_fin
             })
         
         logging.info(f"📅 [DISPOS] Lookup créé pour {len(dispos_lookup)} utilisateurs")
