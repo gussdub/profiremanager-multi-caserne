@@ -1210,12 +1210,13 @@ async def create_inspection_unifiee(
                 notification = {
                     "id": str(uuid.uuid4()),
                     "tenant_id": tenant.id,
-                    "user_id": admin.get("id"),
+                    "destinataire_id": admin.get("id"),
                     "type": "alerte_inspection",
                     "titre": f"⚠️ Alerte inspection: {asset_nom}",
                     "message": f"L'inspection de {asset_nom} a déclenché {len(alertes)} alerte(s):\n{alerte_texte}",
                     "lien": f"/actifs",
-                    "lu": False,
+                    "statut": "non_lu",
+                    "date_creation": datetime.now(timezone.utc).isoformat(),
                     "created_at": datetime.now(timezone.utc).isoformat()
                 }
                 await db.notifications.insert_one(notification)
