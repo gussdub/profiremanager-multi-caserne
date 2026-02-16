@@ -89,6 +89,7 @@ from routes.horaires_personnalises import router as horaires_personnalises_route
 from routes.avis_non_conformite import router as avis_non_conformite_router
 from routes.broadcast import router as broadcast_router
 from routes.import_inspections_bornes import router as import_inspections_bornes_router
+from routes.export_map import router as export_map_router
 from io import BytesIO
 import base64
 from PIL import Image as PILImage
