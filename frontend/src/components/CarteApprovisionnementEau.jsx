@@ -340,44 +340,53 @@ const CarteApprovisionnementEau = ({ user }) => {
       autres: filteredPoints.filter(p => !['fonctionnelle', 'en_reparation', 'hors_service'].includes(p.etat)).length
     };
 
-    // Générer l'URL de la carte statique OpenStreetMap
-    const generateStaticMapUrl = () => {
+    // Générer l'iframe OpenStreetMap avec bounds pour afficher tous les points
+    const generateMapHtml = () => {
       const pointsWithCoords = filteredPoints.filter(p => p.latitude && p.longitude);
-      if (pointsWithCoords.length === 0) return null;
+      if (pointsWithCoords.length === 0) return '';
 
-      // Calculer le centre et les bounds
+      // Calculer les bounds
       const lats = pointsWithCoords.map(p => p.latitude);
       const lngs = pointsWithCoords.map(p => p.longitude);
-      const minLat = Math.min(...lats);
-      const maxLat = Math.max(...lats);
-      const minLng = Math.min(...lngs);
-      const maxLng = Math.max(...lngs);
-      const centerLat = (minLat + maxLat) / 2;
-      const centerLng = (minLng + maxLng) / 2;
+      const minLat = Math.min(...lats) - 0.005;
+      const maxLat = Math.max(...lats) + 0.005;
+      const minLng = Math.min(...lngs) - 0.005;
+      const maxLng = Math.max(...lngs) + 0.005;
 
-      // Calculer le zoom approximatif basé sur l'étendue
-      const latDiff = maxLat - minLat;
-      const lngDiff = maxLng - minLng;
-      const maxDiff = Math.max(latDiff, lngDiff);
-      let zoom = 14;
-      if (maxDiff > 0.5) zoom = 10;
-      else if (maxDiff > 0.2) zoom = 11;
-      else if (maxDiff > 0.1) zoom = 12;
-      else if (maxDiff > 0.05) zoom = 13;
+      // URL OpenStreetMap avec bbox
+      const osmUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${minLng},${minLat},${maxLng},${maxLat}&layer=mapnik`;
 
-      // Générer les marqueurs pour l'API staticmap.openstreetmap.de
-      const markers = pointsWithCoords.map(p => {
-        const color = p.etat === 'fonctionnelle' ? 'green' : 
-                     p.etat === 'en_reparation' ? 'orange' : 
-                     p.etat === 'hors_service' ? 'red' : 'blue';
-        return `${p.longitude},${p.latitude},${color}`;
-      }).join('|');
-
-      // URL du service de carte statique
-      return `https://staticmap.openstreetmap.de/staticmap.php?center=${centerLat},${centerLng}&zoom=${zoom}&size=700x400&maptype=mapnik&markers=${markers}`;
+      return `
+        <h3>🗺️ Localisation des points d'eau</h3>
+        <div class="map-section">
+          <iframe 
+            src="${osmUrl}" 
+            width="100%" 
+            height="350" 
+            style="border: 1px solid #d1d5db; border-radius: 8px;"
+            frameborder="0"
+          ></iframe>
+          <div class="map-legend">
+            <span class="legend-title">Légende:</span>
+            ${pointsWithCoords.map(p => {
+              const color = p.etat === 'fonctionnelle' ? '#10b981' : 
+                           p.etat === 'en_reparation' ? '#f59e0b' : 
+                           p.etat === 'hors_service' ? '#ef4444' : '#6b7280';
+              const etatLabel = p.etat === 'fonctionnelle' ? 'Fonct.' : 
+                               p.etat === 'en_reparation' ? 'Réparat.' : 
+                               p.etat === 'hors_service' ? 'HS' : '?';
+              return `<span class="legend-item"><span class="legend-dot" style="background:${color}"></span>${p.numero_identification} (${etatLabel})</span>`;
+            }).join('')}
+          </div>
+          <div class="map-coords">
+            <strong>Coordonnées des points:</strong>
+            ${pointsWithCoords.map(p => `${p.numero_identification}: ${p.latitude?.toFixed(5)}, ${p.longitude?.toFixed(5)}`).join(' | ')}
+          </div>
+        </div>
+      `;
     };
 
-    const staticMapUrl = generateStaticMapUrl();
+    const mapHtml = generateMapHtml();
     const logoHtml = personnalisation?.logo_url 
       ? `<img src="${personnalisation.logo_url}" alt="Logo" style="max-height: 80px; max-width: 200px; object-fit: contain;" />`
       : `<div style="font-size: 2rem;">🚒</div>`;
@@ -391,6 +400,8 @@ const CarteApprovisionnementEau = ({ user }) => {
         <style>
           @media print {
             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            iframe { display: none !important; }
+            .map-section { page-break-inside: avoid; }
           }
           body { font-family: Arial, sans-serif; padding: 20px; max-width: 850px; margin: 0 auto; }
           .header { display: flex; align-items: center; gap: 20px; padding-bottom: 15px; border-bottom: 3px solid #dc2626; margin-bottom: 20px; }
