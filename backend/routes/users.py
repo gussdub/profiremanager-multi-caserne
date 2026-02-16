@@ -199,6 +199,19 @@ async def create_user(tenant_slug: str, user_create: UserCreate, current_user: U
                     """
                 }
                 resend.Emails.send(params)
+                # Log email
+                try:
+                    from routes.emails_history import log_email_sent
+                    import asyncio
+                    asyncio.create_task(log_email_sent(
+                        type_email="alerte_limite_palier",
+                        destinataire_email=super_admin_email,
+                        sujet=f"⚠️ Limite palier atteinte - {tenant.nom}",
+                        tenant_id=tenant.id,
+                        tenant_slug=tenant_slug
+                    ))
+                except:
+                    pass
         except Exception as e:
             print(f"Erreur envoi email super admin: {str(e)}")
         
