@@ -698,7 +698,7 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
                         style={jourEquipe ? { 
                           backgroundColor: getEquipeCouleur(jourEquipe),
                         } : { backgroundColor: '#fff' }}
-                        title={`Jour: ${jourEquipe ? getEquipeNom(jourEquipe) : 'Repos'}`}
+                        title={`Jour: ${jourEquipe ? getEquipeNom(jourEquipe) : 'Vacant'}`}
                       >
                         {jourEquipe ? (
                           <span 
@@ -714,6 +714,62 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
                       </button>
                     </div>
                   );
+                } else if (isDemiQuarts) {
+                  // Mode demi-quarts (6h): afficher AM et PM séparément
+                  const amEquipe = jourData.segments.am;
+                  const pmEquipe = jourData.segments.pm;
+                  return (
+                    <div
+                      key={jourData.jour}
+                      className="border-r last:border-r-0 flex flex-col"
+                    >
+                      <div className="text-xs text-gray-500 text-center py-1 bg-gray-50 border-b">
+                        J{jourData.jour}
+                      </div>
+                      {/* Segment AM (6h-12h) */}
+                      <button
+                        onClick={() => handleSegmentClick(jourData.jour, "am")}
+                        className="flex-1 p-1 min-h-[40px] flex items-center justify-center transition-all hover:opacity-80 border-b"
+                        style={amEquipe ? { 
+                          backgroundColor: getEquipeCouleur(amEquipe),
+                        } : { backgroundColor: '#fff8f0' }}
+                        title={`AM (6h-12h): ${amEquipe ? getEquipeNom(amEquipe) : 'Vacant'}`}
+                      >
+                        {amEquipe ? (
+                          <span 
+                            className="text-xs font-bold px-1 rounded flex items-center gap-0.5"
+                            style={{ color: ['#EAB308', '#22C55E', '#14B8A6', '#F97316'].includes(getEquipeCouleur(amEquipe)) ? '#000' : '#fff' }}
+                          >
+                            <Sun className="w-3 h-3" />
+                            {getEquipeNom(amEquipe).substring(0, 2)}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-orange-300">AM</span>
+                        )}
+                      </button>
+                      {/* Segment PM (12h-18h) */}
+                      <button
+                        onClick={() => handleSegmentClick(jourData.jour, "pm")}
+                        className="flex-1 p-1 min-h-[40px] flex items-center justify-center transition-all hover:opacity-80"
+                        style={pmEquipe ? { 
+                          backgroundColor: getEquipeCouleur(pmEquipe),
+                        } : { backgroundColor: '#fffbeb' }}
+                        title={`PM (12h-18h): ${pmEquipe ? getEquipeNom(pmEquipe) : 'Vacant'}`}
+                      >
+                        {pmEquipe ? (
+                          <span 
+                            className="text-xs font-bold px-1 rounded flex items-center gap-0.5"
+                            style={{ color: ['#EAB308', '#22C55E', '#14B8A6', '#F97316'].includes(getEquipeCouleur(pmEquipe)) ? '#000' : '#fff' }}
+                          >
+                            <Sun className="w-3 h-3" />
+                            {getEquipeNom(pmEquipe).substring(0, 2)}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-amber-300">PM</span>
+                        )}
+                      </button>
+                    </div>
+                  );
                 } else {
                   // Mode 24h
                   const equipe = jourData.segments["24h"];
@@ -725,7 +781,7 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
                       style={equipe ? { 
                         backgroundColor: getEquipeCouleur(equipe) + 'cc',
                       } : { backgroundColor: '#fff' }}
-                      title={equipe ? getEquipeNom(equipe) : 'Repos'}
+                      title={equipe ? getEquipeNom(equipe) : 'Vacant'}
                     >
                       <span className="text-xs text-gray-500 mb-1">J{jourData.jour}</span>
                       {equipe && (
