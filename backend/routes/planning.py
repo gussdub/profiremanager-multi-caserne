@@ -504,6 +504,7 @@ async def get_assignations_periode(
 async def create_assignation(
     tenant_slug: str,
     assignation_data: AssignationCreate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user)
 ):
     """Créer une nouvelle assignation"""
