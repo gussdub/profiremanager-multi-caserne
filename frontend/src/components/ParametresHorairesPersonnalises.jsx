@@ -115,6 +115,14 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
             nuit: null    // équipe assignée à la nuit (null = repos)
           }
         });
+      } else if (typeQuart === "12h_jour_seulement") {
+        // Mode jour seulement - la nuit est gérée par les gardes externes
+        cal.push({
+          jour: i,
+          segments: {
+            jour: null    // équipe assignée au jour uniquement
+          }
+        });
       } else {
         cal.push({
           jour: i,
