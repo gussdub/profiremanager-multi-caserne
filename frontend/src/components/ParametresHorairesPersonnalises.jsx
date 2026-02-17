@@ -497,6 +497,7 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
   const renderCalendrierEdition = () => {
     const is12h = formData.type_quart === "12h_jour_nuit";
     const isJourSeulement = formData.type_quart === "12h_jour_seulement";
+    const isDemiQuarts = formData.type_quart === "6h_demi_quarts";
     const semaines = [];
     for (let i = 0; i < calendrierEdition.length; i += 7) {
       semaines.push(calendrierEdition.slice(i, i + 7));
