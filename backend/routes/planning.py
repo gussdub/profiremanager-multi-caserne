@@ -1144,7 +1144,7 @@ async def formater_planning_mois(
 
 
 # GET export-pdf
-@router.get("/{tenant_slug}/planning/export-pdf")
+@router.get("/{tenant_slug}/planning/exports/pdf")
 async def export_planning_pdf(
     tenant_slug: str, 
     periode: str,
