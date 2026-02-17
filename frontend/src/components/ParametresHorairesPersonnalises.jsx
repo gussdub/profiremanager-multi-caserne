@@ -1289,7 +1289,12 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
               <div className="text-xs text-gray-500 space-y-1 mb-3">
                 <div className="flex items-center gap-1">
                   <Clock className="w-3 h-3" />
-                  <span>Type: {horaire.type_quart === '12h_jour_nuit' ? 'Jour/Nuit' : '24h'}</span>
+                  <span>Type: {
+                    horaire.type_quart === '12h_jour_nuit' ? 'Jour/Nuit (12h)' : 
+                    horaire.type_quart === '12h_jour_seulement' ? 'Jour seulement (12h)' :
+                    horaire.type_quart === '6h_demi_quarts' ? 'Demi-quarts (6h)' :
+                    '24h'
+                  }</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Users className="w-3 h-3" />
