@@ -905,6 +905,63 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
                       </div>
                     </div>
                   );
+                } else if (isDemiQuartsApercu) {
+                  // Mode demi-quarts (6h): afficher AM et PM
+                  return (
+                    <div
+                      key={jour.date}
+                      className="border-r last:border-r-0 min-h-[100px] flex flex-col"
+                    >
+                      <div className="text-xs text-gray-500 p-1 bg-gray-50 border-b">
+                        {new Date(jour.date).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' })}
+                        <span className="text-gray-400 ml-1">J{jour.jour_cycle}</span>
+                      </div>
+                      {/* Segment AM */}
+                      <div 
+                        className="flex-1 flex items-center justify-center p-1 border-b"
+                        style={jour.equipe_am ? { 
+                          backgroundColor: jour.equipe_am.couleur + '40'
+                        } : { backgroundColor: '#fff8f0' }}
+                      >
+                        {jour.equipe_am ? (
+                          <span 
+                            className="text-xs font-bold px-1.5 py-0.5 rounded flex items-center gap-1"
+                            style={{ 
+                              backgroundColor: jour.equipe_am.couleur,
+                              color: ['#EAB308', '#22C55E', '#14B8A6', '#F97316'].includes(jour.equipe_am.couleur) ? '#000' : '#fff'
+                            }}
+                          >
+                            <Sun className="w-3 h-3" />
+                            {jour.equipe_am.nom}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-orange-300">AM</span>
+                        )}
+                      </div>
+                      {/* Segment PM */}
+                      <div 
+                        className="flex-1 flex items-center justify-center p-1"
+                        style={jour.equipe_pm ? { 
+                          backgroundColor: jour.equipe_pm.couleur + '40'
+                        } : { backgroundColor: '#fffbeb' }}
+                      >
+                        {jour.equipe_pm ? (
+                          <span 
+                            className="text-xs font-bold px-1.5 py-0.5 rounded flex items-center gap-1"
+                            style={{ 
+                              backgroundColor: jour.equipe_pm.couleur,
+                              color: ['#EAB308', '#22C55E', '#14B8A6', '#F97316'].includes(jour.equipe_pm.couleur) ? '#000' : '#fff'
+                            }}
+                          >
+                            <Sun className="w-3 h-3" />
+                            {jour.equipe_pm.nom}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-amber-300">PM</span>
+                        )}
+                      </div>
+                    </div>
+                  );
                 } else {
                   // Mode 24h
                   return (
