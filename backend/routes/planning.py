@@ -1359,7 +1359,11 @@ async def export_planning_pdf(
             # ===== FORMAT GRILLE MOIS - Une grille par semaine =====
             from reportlab.platypus import PageBreak
             
-            current = date_debut
+            # IMPORTANT: Trouver le lundi de la semaine contenant le 1er du mois
+            # weekday() : 0 = lundi, 6 = dimanche
+            jours_depuis_lundi = date_debut.weekday()  # Ex: dimanche = 6
+            current = date_debut - timedelta(days=jours_depuis_lundi)  # Reculer au lundi
+            
             semaine_num = 1
             page_width = landscape(letter)[0]
             
@@ -1375,8 +1379,9 @@ async def export_planning_pdf(
             )
             
             while current <= date_fin:
-                fin_semaine = min(current + timedelta(days=6), date_fin)
-                nb_jours = (fin_semaine - current).days + 1
+                # Toujours afficher 7 jours (lundi à dimanche)
+                fin_semaine = current + timedelta(days=6)
+                nb_jours = 7
                 
                 # Titre de la semaine
                 elements.append(Paragraph(
