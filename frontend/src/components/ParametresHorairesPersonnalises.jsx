@@ -878,7 +878,17 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
           </div>
           {semaines.map((semaine, sIdx) => (
             <div key={sIdx} className="grid grid-cols-7 border-t">
-              {semaine.map((jour) => {
+              {semaine.map((jour, jIdx) => {
+                // Case vide (pour l'alignement du calendrier)
+                if (!jour) {
+                  return (
+                    <div 
+                      key={`empty-${sIdx}-${jIdx}`} 
+                      className="border-r last:border-r-0 min-h-[80px] bg-gray-50"
+                    />
+                  );
+                }
+                
                 if (is12h) {
                   // Mode jour/nuit
                   return (
