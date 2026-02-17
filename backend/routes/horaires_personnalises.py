@@ -544,10 +544,19 @@ async def apercu_horaire(
     apercu = []
     for i in range(nb_jours):
         current_date = start_date + timedelta(days=i)
+        # Calculer le nombre de jours depuis la date de référence
         jours_depuis_ref = (current_date - date_ref).days
-        jour_cycle = (jours_depuis_ref % duree_cycle) + 1
         
-        if jours_depuis_ref < 0:
+        # Calculer le jour du cycle (1 à duree_cycle)
+        # Si date_ref = 1er février et current_date = 1er février: jours_depuis_ref = 0, jour_cycle = 1
+        # Si date_ref = 1er février et current_date = 2 février: jours_depuis_ref = 1, jour_cycle = 2
+        # etc.
+        if jours_depuis_ref >= 0:
+            jour_cycle = (jours_depuis_ref % duree_cycle) + 1
+        else:
+            # Pour les dates avant la date de référence
+            # Ex: date_ref = 1er février, current_date = 31 janvier: jours_depuis_ref = -1
+            # On veut jour_cycle = 28 (dernier jour du cycle précédent)
             jour_cycle = duree_cycle - ((-jours_depuis_ref - 1) % duree_cycle)
         
         # Trouver quelle équipe travaille ce jour
