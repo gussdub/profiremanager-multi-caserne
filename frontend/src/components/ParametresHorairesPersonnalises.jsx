@@ -898,7 +898,12 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
                       className="border-r last:border-r-0 min-h-[100px] flex flex-col"
                     >
                       <div className="text-xs text-gray-500 p-1 bg-gray-50 border-b">
-                        {new Date(jour.date).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' })}
+                        {/* Éviter le problème de timezone en parsant manuellement */}
+                        {(() => {
+                          const [y, m, d] = jour.date.split('-');
+                          const date = new Date(y, m - 1, d);
+                          return date.toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' });
+                        })()}
                         <span className="text-gray-400 ml-1">J{jour.jour_cycle}</span>
                       </div>
                       {/* Segment Jour */}
@@ -951,7 +956,12 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
                       className="border-r last:border-r-0 min-h-[100px] flex flex-col"
                     >
                       <div className="text-xs text-gray-500 p-1 bg-gray-50 border-b">
-                        {new Date(jour.date).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' })}
+                        {/* Éviter le problème de timezone en parsant manuellement */}
+                        {(() => {
+                          const [y, m, d] = jour.date.split('-');
+                          const date = new Date(y, m - 1, d);
+                          return date.toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' });
+                        })()}
                         <span className="text-gray-400 ml-1">J{jour.jour_cycle}</span>
                       </div>
                       {/* Segment AM */}
@@ -1011,7 +1021,12 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
                       } : {}}
                     >
                       <div className="text-xs text-gray-500">
-                        {new Date(jour.date).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' })}
+                        {/* Éviter le problème de timezone en parsant manuellement */}
+                        {(() => {
+                          const [y, m, d] = jour.date.split('-');
+                          const date = new Date(y, m - 1, d);
+                          return date.toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' });
+                        })()}
                       </div>
                       <div className="text-xs text-gray-400">J{jour.jour_cycle}</div>
                       {jour.equipe && (
