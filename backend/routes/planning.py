@@ -1421,6 +1421,13 @@ async def export_planning_pdf(
                         date_str = d.strftime('%Y-%m-%d')
                         day_name = d.strftime('%A').lower()
                         
+                        # Vérifier si le jour est dans le mois affiché
+                        if d < date_debut or d > date_fin:
+                            # Jour hors du mois - afficher en gris clair
+                            row.append(Paragraph("-", day_cell_style_mois))
+                            row_colors.append(LIGHT_GRAY)
+                            continue
+                        
                         if jours_app and day_name not in jours_app:
                             row.append(Paragraph("-", day_cell_style_mois))
                             row_colors.append(LIGHT_GRAY)
