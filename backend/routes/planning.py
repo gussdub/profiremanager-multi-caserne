@@ -1153,8 +1153,6 @@ async def export_planning_pdf(
 ):
     """Export du planning en PDF"""
     try:
-        logging.warning(f"[PDF EXPORT] Début - periode={periode}, type={type}")
-        
         from reportlab.lib.pagesizes import letter, landscape
         from reportlab.lib import colors
         from reportlab.lib.units import inch
@@ -1169,11 +1167,9 @@ async def export_planning_pdf(
         if type == 'semaine':
             date_debut = datetime.strptime(periode, '%Y-%m-%d')
             date_fin = date_debut + timedelta(days=6)
-            logging.warning(f"[PDF EXPORT] Mode SEMAINE - date_debut={date_debut}")
         else:  # mois
             year, month = map(int, periode.split('-'))
             date_debut = datetime(year, month, 1)
-            logging.warning(f"[PDF EXPORT] Mode MOIS - date_debut={date_debut}")
             if month == 12:
                 date_fin = datetime(year + 1, 1, 1) - timedelta(days=1)
             else:
