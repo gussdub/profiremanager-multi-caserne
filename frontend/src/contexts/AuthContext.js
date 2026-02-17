@@ -49,11 +49,10 @@ export const AuthProvider = ({ children }) => {
         try {
           const parsedTenant = JSON.parse(storedTenant);
           if (parsedTenant) {
-            console.log('[AuthContext] Restauration tenant depuis localStorage:', parsedTenant.name);
             setTenant(parsedTenant);
           }
         } catch (e) {
-          console.error('Erreur parsing tenant stocké:', e);
+          // Erreur silencieuse - le tenant sera rechargé depuis l'API
         }
       }
     }
