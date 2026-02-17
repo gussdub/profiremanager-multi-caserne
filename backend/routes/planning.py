@@ -1789,6 +1789,9 @@ async def export_planning_ical(
             if type_garde.get('description'):
                 description += f"\\n{type_garde.get('description')}"
             
+            # Titre de l'événement avec le nom du tenant pour distinguer les casernes
+            event_title = f"{tenant.nom} - {garde_nom}"
+            
             # Ajouter l'événement
             ical_lines.extend([
                 "BEGIN:VEVENT",
@@ -1796,7 +1799,7 @@ async def export_planning_ical(
                 f"DTSTAMP:{dtstamp}",
                 f"DTSTART;TZID=America/Montreal:{dtstart}",
                 f"DTEND;TZID=America/Montreal:{dtend}",
-                f"SUMMARY:{garde_nom}",
+                f"SUMMARY:{event_title}",
                 f"DESCRIPTION:{description}",
                 "STATUS:CONFIRMED",
                 "TRANSP:OPAQUE",
