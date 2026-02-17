@@ -274,6 +274,17 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
     }
   };
   
+  // Marquer automatiquement les notifications comme lues quand le panneau s'ouvre
+  useEffect(() => {
+    if (showNotifications && unreadCount > 0) {
+      // Petit délai pour que l'utilisateur voit les notifications avant qu'elles soient marquées comme lues
+      const timer = setTimeout(() => {
+        marquerToutesLues();
+      }, 1500); // 1.5 secondes de délai
+      return () => clearTimeout(timer);
+    }
+  }, [showNotifications]);
+  
   // Jouer le son de notification
   const playNotificationSound = (customSettings = null) => {
     const settings = customSettings || notificationSettings;
