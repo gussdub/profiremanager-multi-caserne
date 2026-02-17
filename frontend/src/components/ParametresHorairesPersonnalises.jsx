@@ -33,7 +33,8 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
     description: "",
     duree_cycle: 28,
     nombre_equipes: 4,
-    date_reference: new Date().toISOString().split('T')[0],
+    // Utiliser la date locale (pas UTC) pour éviter les décalages de timezone
+    date_reference: new Date().toLocaleDateString('en-CA'), // Format YYYY-MM-DD en date locale
     type_quart: "24h",
     heures_quart: {
       jour_debut: "07:00",
