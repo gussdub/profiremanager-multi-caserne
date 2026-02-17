@@ -930,6 +930,7 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
               <SelectItem value="24h">24 heures</SelectItem>
               <SelectItem value="12h_jour_nuit">Jour / Nuit (12h chaque)</SelectItem>
               <SelectItem value="12h_jour_seulement">Jour seulement (nuit = externe)</SelectItem>
+              <SelectItem value="6h_demi_quarts">Demi-quarts (6h) - AM/PM</SelectItem>
             </SelectContent>
           </Select>
         </div>
