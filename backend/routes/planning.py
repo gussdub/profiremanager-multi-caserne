@@ -1003,6 +1003,7 @@ async def recalculer_durees_gardes(
 
 # ==================== ROUTE GÉNÉRIQUE (DOIT ÊTRE À LA FIN) ====================
 # Cette route capture tout ce qui n'a pas été capturé par les routes spécifiques ci-dessus
+# IMPORTANT: Les routes spécifiques comme /export-pdf doivent être définies AVANT dans le fichier
 
 @router.get("/{tenant_slug}/planning/{semaine_debut}")
 async def get_planning_semaine(
@@ -1017,6 +1018,12 @@ async def get_planning_semaine(
     IMPORTANT: Cette route DOIT être définie en DERNIER car {semaine_debut} 
     est un paramètre générique qui capturerait sinon les autres routes.
     """
+    # Vérifier que semaine_debut est bien une date (format YYYY-MM-DD)
+    # Sinon, c'est probablement une autre route qui n'a pas été matchée
+    import re
+    if not re.match(r'^\d{4}-\d{2}-\d{2}$', semaine_debut):
+        raise HTTPException(status_code=404, detail=f"Route non trouvée: /planning/{semaine_debut}")
+    
     tenant = await get_tenant_from_slug(tenant_slug)
     
     date_debut, date_fin = get_semaine_range(semaine_debut)
