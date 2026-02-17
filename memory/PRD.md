@@ -10,6 +10,7 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 - Rotation des équipes (temps plein / temps partiel)
 - Configuration personnalisée du jour et heure de rotation
 - Affichage de l'équipe de garde du jour
+- Export PDF du planning (vue semaine et mois)
 
 ### Module Points d'Eau / Approvisionnement
 - Gestion des bornes fontaines, bornes sèches et points d'eau statiques
@@ -22,6 +23,15 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 - Attribution des équipes de garde
 
 ## Recent Fixes (February 2026)
+
+### P0 - Export PDF Planning Vue Mois - Semaines commençant le dimanche (FIXED - 17 Feb 2026)
+- **Problème**: En vue mois, l'export PDF commençait les semaines le 1er du mois (ex: dimanche 1er février 2026) au lieu du lundi
+- **Cause**: Le code utilisait `date_debut` (1er du mois) comme début de la première semaine sans chercher le lundi précédent
+- **Solution**: 
+  - Calcul du lundi de la semaine contenant le 1er du mois: `current = date_debut - timedelta(days=date_debut.weekday())`
+  - Chaque semaine affiche exactement 7 jours (lundi à dimanche)
+  - Les jours hors du mois sont affichés en gris avec "-"
+- **Fichier**: `/app/backend/routes/planning.py` (lignes ~1358-1510)
 
 ### P0 - Bug Équipe de Garde (FIXED)
 - **Problème**: L'équipe affichée était incorrecte car `toISOString()` convertissait la date en UTC
@@ -49,21 +59,29 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 - MongoDB avec Motor (async)
 - staticmap pour génération de cartes statiques
 - Pillow pour manipulation d'images
+- ReportLab pour génération de PDF backend
 
 ### Database
 - MongoDB
-- Collections principales: users, tenants, points_eau, parametres_equipes_garde
+- Collections principales: users, tenants, points_eau, parametres_equipes_garde, assignations, types_garde
 
 ## Pending Tasks
 
 ### P1
 - Adapter l'import d'inspections d'hydrants pour le nouveau champ "Cavitation durant le pompage"
 
-### Completed/Removed
-- ~~Bouton "Vérifier maintenant" SFTP~~ - Non requis
-- ~~Visibilité module "Prévention" pour tenant "shefford"~~ - Résolu
+### P3
+- Réactivation de l'intégration Firebase pour les notifications push (quand les apps mobiles seront prêtes)
+
+### Refactoring recommandé
+- Le fichier `backend/routes/planning.py` dépasse 5000 lignes et devrait être découpé en modules plus petits
 
 ## API Endpoints
+
+### Planning Export
+- `GET /{tenant}/planning/exports/pdf?periode=YYYY-MM-DD&type=semaine` - Export PDF vue semaine
+- `GET /{tenant}/planning/exports/pdf?periode=YYYY-MM&type=mois` - Export PDF vue mois
+- `GET /{tenant}/planning/exports/excel?periode=...&type=...` - Export Excel
 
 ### Équipes de Garde
 - `GET /{tenant}/parametres/equipes-garde` - Récupérer les paramètres
