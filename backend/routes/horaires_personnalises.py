@@ -541,6 +541,10 @@ async def apercu_horaire(
     duree_cycle = horaire.get("duree_cycle", 28)
     type_quart = horaire.get("type_quart", "24h")
     
+    # DEBUG: Log pour vérifier les dates
+    import logging
+    logging.info(f"[APERCU DEBUG] date_reference brute: {horaire.get('date_reference')}, parsée: {date_ref}, start_date: {start_date}")
+    
     apercu = []
     for i in range(nb_jours):
         current_date = start_date + timedelta(days=i)
@@ -558,6 +562,10 @@ async def apercu_horaire(
             # Ex: date_ref = 1er février, current_date = 31 janvier: jours_depuis_ref = -1
             # On veut jour_cycle = 28 (dernier jour du cycle précédent)
             jour_cycle = duree_cycle - ((-jours_depuis_ref - 1) % duree_cycle)
+        
+        # DEBUG: Log pour les premiers jours
+        if i < 3:
+            logging.info(f"[APERCU DEBUG] {current_date}: jours_depuis_ref={jours_depuis_ref}, jour_cycle={jour_cycle}")
         
         # Trouver quelle équipe travaille ce jour
         # Le format de jours_travail peut être:
