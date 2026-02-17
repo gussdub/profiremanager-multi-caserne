@@ -110,6 +110,19 @@ const Planning = () => {
   const [showOverstaffWarningModal, setShowOverstaffWarningModal] = useState(false);
   const [overstaffWarningMessage, setOverstaffWarningMessage] = useState('');
   
+  // État pour le modal d'export calendrier (iCal)
+  const [showExportCalendarModal, setShowExportCalendarModal] = useState(false);
+  const [exportCalendarConfig, setExportCalendarConfig] = useState(() => {
+    // Par défaut: mois suivant (M+1)
+    const today = new Date();
+    const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    const lastDayNextMonth = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+    return {
+      dateDebut: `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}-01`,
+      dateFin: `${lastDayNextMonth.getFullYear()}-${String(lastDayNextMonth.getMonth() + 1).padStart(2, '0')}-${String(lastDayNextMonth.getDate()).padStart(2, '0')}`
+    };
+  });
+  
   const { toast } = useToast();
   const { confirm } = useConfirmDialog();
 
