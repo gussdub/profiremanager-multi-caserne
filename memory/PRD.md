@@ -92,6 +92,7 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 - `GET /{tenant}/planning/exports/pdf?periode=YYYY-MM-DD&type=semaine` - Export PDF vue semaine
 - `GET /{tenant}/planning/exports/pdf?periode=YYYY-MM&type=mois` - Export PDF vue mois
 - `GET /{tenant}/planning/exports/excel?periode=...&type=...` - Export Excel
+- `GET /{tenant}/planning/exports/ical?date_debut=YYYY-MM-DD&date_fin=YYYY-MM-DD` - Export iCal (.ics) des gardes de l'utilisateur connecté
 
 ### Équipes de Garde
 - `GET /{tenant}/parametres/equipes-garde` - Récupérer les paramètres
