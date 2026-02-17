@@ -1296,8 +1296,11 @@ const Planning = () => {
       // Ajouter timestamp pour éviter le cache
       const timestamp = Date.now();
       
+      const exportUrl = buildApiUrl(tenantSlug, `/planning/exports/pdf?periode=${periode}&type=${viewMode}&t=${timestamp}`);
+      console.log('[PDF Export] URL:', exportUrl, 'viewMode:', viewMode, 'periode:', periode);
+      
       const response = await fetch(
-        buildApiUrl(tenantSlug, `/planning/exports/pdf?periode=${periode}&type=${viewMode}&t=${timestamp}`),
+        exportUrl,
         {
           headers: {
             'Authorization': `Bearer ${getTenantToken()}`,
@@ -1305,6 +1308,8 @@ const Planning = () => {
           }
         }
       );
+      
+      console.log('[PDF Export] Response status:', response.status);
       
       if (!response.ok) throw new Error('Erreur génération rapport');
       
