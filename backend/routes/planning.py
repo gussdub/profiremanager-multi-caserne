@@ -1501,7 +1501,8 @@ async def export_planning_pdf(
                 elements.append(table)
                 elements.append(Spacer(1, 0.2*inch))
                 
-                current = fin_semaine + timedelta(days=1)
+                # Avancer au lundi de la semaine suivante
+                current = current + timedelta(days=7)
                 semaine_num += 1
                 
                 if current <= date_fin:
