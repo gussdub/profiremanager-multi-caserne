@@ -570,25 +570,33 @@ async def create_assignation(
     
     await db.assignations.insert_one(assignation.dict())
     
-    # Créer une notification pour l'employé assigné
-    await creer_notification(
-        tenant_id=tenant.id,
-        user_id=assignation_data.user_id,
-        type_notification="planning_assignation",
-        titre="Nouvelle assignation",
-        message=f"Vous avez été assigné(e) le {assignation_data.date} - {type_garde.get('nom', 'Garde')}",
-        lien=f"/planning?date={assignation_data.date}"
-    )
+    # Créer une notification pour l'employé assigné (push uniquement pour réponse rapide)
+    # L'email sera envoyé en tâche de fond pour ne pas bloquer la réponse
+    try:
+        await creer_notification(
+            tenant_id=tenant.id,
+            user_id=assignation_data.user_id,
+            type_notification="planning_assignation",
+            titre="Nouvelle assignation",
+            message=f"Vous avez été assigné(e) le {assignation_data.date} - {type_garde.get('nom', 'Garde')}",
+            lien=f"/planning?date={assignation_data.date}",
+            envoyer_email=False  # Désactiver l'email pour réponse rapide
+        )
+    except Exception as e:
+        logging.warning(f"Erreur lors de la création de notification: {e}")
     
     # Créer un log d'activité
-    await creer_activite(
-        tenant_id=tenant.id,
-        type_activite="planning",
-        description=f"Nouvelle assignation créée pour {user.get('prenom', '')} {user.get('nom', '')}",
-        user_id=current_user.id,
-        user_nom=f"{current_user.prenom} {current_user.nom}",
-        data={"assignation_id": assignation.id, "date": assignation_data.date}
-    )
+    try:
+        await creer_activite(
+            tenant_id=tenant.id,
+            type_activite="planning",
+            description=f"Nouvelle assignation créée pour {user.get('prenom', '')} {user.get('nom', '')}",
+            user_id=current_user.id,
+            user_nom=f"{current_user.prenom} {current_user.nom}",
+            data={"assignation_id": assignation.id, "date": assignation_data.date}
+        )
+    except Exception as e:
+        logging.warning(f"Erreur lors de la création d'activité: {e}")
     
     # Retourner l'assignation avec un éventuel avertissement
     result = clean_mongo_doc(assignation.dict())
