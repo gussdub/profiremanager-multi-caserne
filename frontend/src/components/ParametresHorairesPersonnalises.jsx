@@ -816,8 +816,35 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
     if (!apercu) return null;
     
     const semaines = [];
-    for (let i = 0; i < apercu.apercu.length; i += 7) {
-      semaines.push(apercu.apercu.slice(i, i + 7));
+    
+    // Aligner les jours selon le jour de la semaine réel
+    // On ajoute des cases vides au début si la première date n'est pas un dimanche
+    if (apercu.apercu.length > 0) {
+      const firstDate = new Date(apercu.apercu[0].date);
+      const firstDayOfWeek = firstDate.getDay(); // 0 = dimanche, 1 = lundi, etc.
+      
+      // Créer la première semaine avec des cases vides au début si nécessaire
+      let currentWeek = [];
+      for (let i = 0; i < firstDayOfWeek; i++) {
+        currentWeek.push(null); // Case vide
+      }
+      
+      // Ajouter tous les jours
+      for (const jour of apercu.apercu) {
+        currentWeek.push(jour);
+        if (currentWeek.length === 7) {
+          semaines.push(currentWeek);
+          currentWeek = [];
+        }
+      }
+      
+      // Ajouter la dernière semaine si elle n'est pas complète
+      if (currentWeek.length > 0) {
+        while (currentWeek.length < 7) {
+          currentWeek.push(null);
+        }
+        semaines.push(currentWeek);
+      }
     }
     
     const is12h = apercu.apercu[0]?.type_quart === "12h_jour_nuit";
