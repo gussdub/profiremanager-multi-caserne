@@ -481,6 +481,7 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
   // Rendu du calendrier d'édition
   const renderCalendrierEdition = () => {
     const is12h = formData.type_quart === "12h_jour_nuit";
+    const isJourSeulement = formData.type_quart === "12h_jour_seulement";
     const semaines = [];
     for (let i = 0; i < calendrierEdition.length; i += 7) {
       semaines.push(calendrierEdition.slice(i, i + 7));
@@ -521,7 +522,15 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
             </button>
           </div>
           
-          {/* Sélecteur de segment si 12h */}
+          {/* Info pour mode jour seulement */}
+          {isJourSeulement && (
+            <div className="flex items-center gap-2 pt-2 border-t text-sm text-blue-600 bg-blue-50 p-2 rounded">
+              <Sun className="w-4 h-4" />
+              <span>Mode jour seulement - Les nuits sont assurées par les gardes externes</span>
+            </div>
+          )}
+          
+          {/* Sélecteur de segment si 12h jour/nuit */}
           {is12h && (
             <div className="flex items-center gap-2 pt-2 border-t">
               <span className="text-sm font-medium">Segment :</span>
