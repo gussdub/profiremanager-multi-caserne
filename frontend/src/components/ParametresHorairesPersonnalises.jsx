@@ -984,6 +984,38 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
         </div>
       )}
       
+      {/* Configuration des heures si jour seulement */}
+      {formData.type_quart === '12h_jour_seulement' && (
+        <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div>
+            <Label className="text-xs flex items-center gap-1"><Sun className="w-3 h-3" /> Début du quart de jour</Label>
+            <Input
+              type="time"
+              value={formData.heures_quart.jour_debut}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                heures_quart: { ...prev.heures_quart, jour_debut: e.target.value }
+              }))}
+            />
+          </div>
+          <div>
+            <Label className="text-xs flex items-center gap-1"><Sun className="w-3 h-3" /> Fin du quart de jour</Label>
+            <Input
+              type="time"
+              value={formData.heures_quart.jour_fin}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                heures_quart: { ...prev.heures_quart, jour_fin: e.target.value }
+              }))}
+            />
+          </div>
+          <div className="col-span-2 text-sm text-blue-600 flex items-center gap-2">
+            <Moon className="w-4 h-4" />
+            <span>Les quarts de nuit ne sont pas gérés dans ce mode - ils sont assurés par les gardes externes.</span>
+          </div>
+        </div>
+      )}
+      
       {/* Configuration des équipes */}
       <div>
         <Label className="mb-2 block">Configuration des équipes</Label>
