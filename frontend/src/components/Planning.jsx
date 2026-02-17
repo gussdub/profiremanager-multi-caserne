@@ -1695,6 +1695,22 @@ const Planning = () => {
           >
             🖨️ Imprimer Planning
           </Button>
+          
+          {/* Exporter mes gardes vers Calendrier */}
+          <Button 
+            variant="outline" 
+            onClick={() => setShowExportCalendarModal(true)}
+            style={{ 
+              borderColor: '#10B981', 
+              color: '#10B981',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+            data-testid="export-calendar-btn"
+          >
+            📆 Exporter mes gardes
+          </Button>
         </div>
         
         {/* Indicateur de résultats de recherche */}
