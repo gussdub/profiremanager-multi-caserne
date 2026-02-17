@@ -118,7 +118,7 @@ const Dashboard = ({ setCurrentPage }) => {
           axios.get(`${API}/${tenantSlug}/actifs/vehicules`, { headers, timeout: 10000 }).catch(() => null),
           axios.get(`${API}/${tenantSlug}/demandes-conge?statut=approuve&date_actuelle=${todayStr}`, { headers, timeout: 10000 }).catch(() => null),
           axios.get(`${API}/${tenantSlug}/planning/assignations/${premierJourMoisCourant}`, { headers, timeout: 10000 }).catch(() => null),
-          axios.get(`${API}/${tenantSlug}/notifications?limit=10`, { headers, timeout: 10000 }).catch(() => null),
+          axios.get(`${API}/${tenantSlug}/dashboard/activites-systeme?limit=20`, { headers, timeout: 10000 }).catch(() => null),
         );
       }
 
