@@ -581,32 +581,8 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
             </div>
           )}
           
-          {/* Sélecteur de segment si demi-quarts */}
-          {isDemiQuarts && (
-            <div className="flex items-center gap-2 pt-2 border-t">
-              <span className="text-sm font-medium">Segment :</span>
-              <button
-                onClick={() => setSegmentSelectionne("am")}
-                className={`px-3 py-1.5 rounded text-sm font-medium flex items-center gap-1 transition-all ${
-                  segmentSelectionne === "am"
-                    ? 'bg-orange-400 text-black ring-2 ring-offset-1 ring-orange-600'
-                    : 'bg-orange-100 text-orange-800 hover:bg-orange-200'
-                }`}
-              >
-                <Sun className="w-4 h-4" /> AM (6h-12h)
-              </button>
-              <button
-                onClick={() => setSegmentSelectionne("pm")}
-                className={`px-3 py-1.5 rounded text-sm font-medium flex items-center gap-1 transition-all ${
-                  segmentSelectionne === "pm"
-                    ? 'bg-amber-400 text-black ring-2 ring-offset-1 ring-amber-600'
-                    : 'bg-amber-100 text-amber-800 hover:bg-amber-200'
-                }`}
-              >
-                <Sun className="w-4 h-4" /> PM (12h-18h)
-              </button>
-            </div>
-          )}
+          {/* Sélecteur de segment si demi-quarts - Non nécessaire car on clique directement sur AM ou PM */}
+          {/* Les cases AM et PM sont cliquables séparément */}
         </div>
         
         {/* Instructions */}
