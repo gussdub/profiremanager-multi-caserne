@@ -822,6 +822,7 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
     
     const is12h = apercu.apercu[0]?.type_quart === "12h_jour_nuit";
     const isJourSeulementApercu = apercu.apercu[0]?.type_quart === "12h_jour_seulement";
+    const isDemiQuartsApercu = apercu.apercu[0]?.type_quart === "6h_demi_quarts";
     
     return (
       <div className="space-y-4">
