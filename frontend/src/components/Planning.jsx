@@ -1297,7 +1297,7 @@ const Planning = () => {
       const timestamp = Date.now();
       
       const response = await fetch(
-        buildApiUrl(tenantSlug, `/planning/export-pdf?periode=${periode}&type=${viewMode}&t=${timestamp}`),
+        buildApiUrl(tenantSlug, `/planning/exports/pdf?periode=${periode}&type=${viewMode}&t=${timestamp}`),
         {
           headers: {
             'Authorization': `Bearer ${getTenantToken()}`,
