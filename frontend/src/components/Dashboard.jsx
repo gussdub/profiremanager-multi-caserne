@@ -178,7 +178,7 @@ const Dashboard = ({ setCurrentPage }) => {
         const vehiculesData = results[10]?.data;
         const congesData = results[11]?.data;
         const planningDataAdmin = results[12]?.data;
-        const notificationsData = results[13]?.data;
+        const activitesData = results[13]?.data;
         
         setStatsGenerales({
           personnel: Array.isArray(usersData) ? usersData.length : 0,
@@ -199,13 +199,17 @@ const Dashboard = ({ setCurrentPage }) => {
           setTauxCouverture(Math.min(100, Math.round((joursCouverts / joursTotal) * 100)));
         }
         
-        if (Array.isArray(notificationsData)) {
+        // Activités système (audit log)
+        if (activitesData?.activites && Array.isArray(activitesData.activites)) {
           setActivitesRecentes(
-            notificationsData.slice(0, 5).map(n => ({
-              id: n.id,
-              message: n.message || n.titre,
-              date: n.created_at || n.date_creation,
-              type: n.type
+            activitesData.activites.map(a => ({
+              id: a.id,
+              titre: a.description || a.titre,
+              message: a.description,
+              description: a.user_nom ? `Par ${a.user_nom}` : '',
+              date: a.created_at,
+              type: a.type_activite || 'default',
+              user: a.user_nom
             }))
           );
         }
