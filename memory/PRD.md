@@ -24,6 +24,16 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 
 ## Recent Fixes (February 2026)
 
+### NEW - Export Calendrier iCal (17 Feb 2026)
+- **Fonctionnalité**: Export des gardes personnelles au format iCalendar (.ics)
+- **Compatible avec**: Google Calendar, Apple Calendar, Outlook
+- **Options**: 
+  - Période rapide (mois en cours, mois suivant M+1, 3 prochains mois)
+  - Dates personnalisées
+- **Fichiers**: 
+  - Backend: `/app/backend/routes/planning.py` (endpoint `/exports/ical`)
+  - Frontend: `/app/frontend/src/components/Planning.jsx` (bouton + modal)
+
 ### P0 - Export PDF Planning Vue Mois - Semaines commençant le dimanche (FIXED - 17 Feb 2026)
 - **Problème**: En vue mois, l'export PDF commençait les semaines le 1er du mois (ex: dimanche 1er février 2026) au lieu du lundi
 - **Cause**: Le code utilisait `date_debut` (1er du mois) comme début de la première semaine sans chercher le lundi précédent
