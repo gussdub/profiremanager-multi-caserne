@@ -1423,10 +1423,44 @@ const Planning = () => {
       }
       
       const blob = await response.blob();
+      const filename = `mes_gardes_${dateDebut}_${dateFin}.ics`;
+      
+      // Sur iOS/mobile, utiliser l'API Web Share pour permettre "Enregistrer dans Fichiers"
+      // ou ouvrir directement dans l'app Calendrier
+      if (navigator.share && navigator.canShare) {
+        const file = new File([blob], filename, { type: 'text/calendar' });
+        
+        // Vérifier si le partage de fichiers est supporté
+        if (navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: 'Mes gardes',
+              text: 'Exporter mes gardes vers le calendrier'
+            });
+            
+            setShowExportCalendarModal(false);
+            toast({
+              title: "Export réussi",
+              description: "Choisissez où enregistrer le fichier ou ouvrez-le dans Calendrier.",
+              variant: "success"
+            });
+            return;
+          } catch (shareError) {
+            // L'utilisateur a annulé ou erreur de partage - on continue avec le fallback
+            if (shareError.name === 'AbortError') {
+              return; // L'utilisateur a annulé, on ne fait rien
+            }
+            console.log('Share API non disponible, utilisation du téléchargement classique');
+          }
+        }
+      }
+      
+      // Fallback: téléchargement classique (desktop ou si Share API non disponible)
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.download = `mes_gardes_${dateDebut}_${dateFin}.ics`;
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       link.remove();
