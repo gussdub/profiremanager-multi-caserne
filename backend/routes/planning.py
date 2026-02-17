@@ -1704,6 +1704,134 @@ async def export_planning_excel(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur export Excel: {str(e)}")
 
+
+# GET export-ical - Export des gardes au format iCalendar (.ics)
+@router.get("/{tenant_slug}/planning/exports/ical")
+async def export_planning_ical(
+    tenant_slug: str,
+    date_debut: str,
+    date_fin: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Export des gardes de l'utilisateur connecté au format iCalendar (.ics)
+    Compatible avec Google Calendar, Apple Calendar, Outlook, etc.
+    """
+    try:
+        tenant = await get_tenant_from_slug(tenant_slug)
+        
+        # Récupérer les assignations de l'utilisateur connecté
+        assignations_list = await db.assignations.find({
+            "tenant_id": tenant.id,
+            "user_id": current_user.id,
+            "date": {
+                "$gte": date_debut,
+                "$lte": date_fin
+            }
+        }, {"_id": 0}).to_list(length=None)
+        
+        # Récupérer les types de garde pour avoir les horaires
+        types_garde_list = await db.types_garde.find({"tenant_id": tenant.id}, {"_id": 0}).to_list(length=None)
+        types_map = {t['id']: t for t in types_garde_list}
+        
+        # Générer le contenu iCalendar
+        ical_lines = [
+            "BEGIN:VCALENDAR",
+            "VERSION:2.0",
+            "PRODID:-//ProFireManager//Planning Export//FR",
+            "CALSCALE:GREGORIAN",
+            "METHOD:PUBLISH",
+            f"X-WR-CALNAME:Mes Gardes - {tenant.nom}",
+            "X-WR-TIMEZONE:America/Montreal"
+        ]
+        
+        for assignation in assignations_list:
+            type_garde_id = assignation.get('type_garde_id')
+            type_garde = types_map.get(type_garde_id, {})
+            
+            garde_nom = type_garde.get('nom', 'Garde')
+            heure_debut = type_garde.get('heure_debut', '08:00')
+            heure_fin = type_garde.get('heure_fin', '20:00')
+            date_str = assignation.get('date')  # Format: YYYY-MM-DD
+            
+            # Parser la date
+            try:
+                date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+            except:
+                continue
+            
+            # Parser les heures
+            try:
+                h_debut, m_debut = map(int, heure_debut.split(':'))
+                h_fin, m_fin = map(int, heure_fin.split(':'))
+            except:
+                h_debut, m_debut = 8, 0
+                h_fin, m_fin = 20, 0
+            
+            # Créer les datetime de début et fin
+            dt_debut = date_obj.replace(hour=h_debut, minute=m_debut)
+            dt_fin = date_obj.replace(hour=h_fin, minute=m_fin)
+            
+            # Si l'heure de fin est avant l'heure de début, c'est une garde de nuit (finit le lendemain)
+            if dt_fin <= dt_debut:
+                dt_fin = dt_fin + timedelta(days=1)
+            
+            # Générer un UID unique pour l'événement
+            uid = f"{assignation.get('id', uuid.uuid4())}@profiremanager.com"
+            
+            # Formater les dates au format iCal (YYYYMMDDTHHMMSS)
+            dtstart = dt_debut.strftime('%Y%m%dT%H%M%S')
+            dtend = dt_fin.strftime('%Y%m%dT%H%M%S')
+            dtstamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+            
+            # Description de l'événement
+            description = f"Type: {garde_nom}\\nHoraire: {heure_debut} - {heure_fin}"
+            if type_garde.get('description'):
+                description += f"\\n{type_garde.get('description')}"
+            
+            # Ajouter l'événement
+            ical_lines.extend([
+                "BEGIN:VEVENT",
+                f"UID:{uid}",
+                f"DTSTAMP:{dtstamp}",
+                f"DTSTART;TZID=America/Montreal:{dtstart}",
+                f"DTEND;TZID=America/Montreal:{dtend}",
+                f"SUMMARY:{garde_nom}",
+                f"DESCRIPTION:{description}",
+                "STATUS:CONFIRMED",
+                "TRANSP:OPAQUE",
+                "BEGIN:VALARM",
+                "ACTION:DISPLAY",
+                "DESCRIPTION:Rappel de garde",
+                "TRIGGER:-PT1H",
+                "END:VALARM",
+                "END:VEVENT"
+            ])
+        
+        ical_lines.append("END:VCALENDAR")
+        
+        # Joindre les lignes avec CRLF (standard iCal)
+        ical_content = "\r\n".join(ical_lines)
+        
+        # Créer le buffer
+        buffer = BytesIO(ical_content.encode('utf-8'))
+        buffer.seek(0)
+        
+        # Nom du fichier
+        filename = f"gardes_{current_user.prenom}_{current_user.nom}_{date_debut}_{date_fin}.ics"
+        filename = filename.replace(' ', '_')
+        
+        return StreamingResponse(
+            buffer,
+            media_type="text/calendar",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+        
+    except Exception as e:
+        logging.error(f"Erreur export iCal: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erreur export iCal: {str(e)}")
+
+
 # ===== RAPPORT D'HEURES =====
 
 
