@@ -3666,6 +3666,185 @@ const Planning = () => {
         </div>
       )}
 
+      {/* Modal Export Calendrier (iCal) */}
+      {showExportCalendarModal && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            zIndex: 1000010,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem'
+          }}
+          onClick={() => setShowExportCalendarModal(false)}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'white',
+              borderRadius: '16px',
+              maxWidth: '500px',
+              width: '100%',
+              overflow: 'hidden',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)'
+            }}
+          >
+            {/* Header vert */}
+            <div style={{
+              background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+              padding: '1.5rem',
+              color: 'white'
+            }}>
+              <h2 style={{ 
+                margin: 0, 
+                fontSize: '1.5rem', 
+                fontWeight: '700',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem'
+              }}>
+                <span style={{ fontSize: '2rem' }}>📆</span>
+                Exporter mes gardes
+              </h2>
+              <p style={{ margin: '0.5rem 0 0 0', opacity: 0.9, fontSize: '0.9rem' }}>
+                Importez vos gardes dans Google Calendar, Apple Calendar ou Outlook
+              </p>
+            </div>
+            
+            {/* Contenu */}
+            <div style={{ padding: '1.5rem' }}>
+              {/* Raccourcis de période */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <Label style={{ marginBottom: '0.5rem', display: 'block', fontWeight: '600' }}>
+                  Période rapide
+                </Label>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setExportPeriod('mois_courant')}
+                    style={{ fontSize: '0.85rem' }}
+                  >
+                    Mois en cours
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setExportPeriod('mois_suivant')}
+                    style={{ 
+                      fontSize: '0.85rem',
+                      background: '#ECFDF5',
+                      borderColor: '#10B981',
+                      color: '#059669'
+                    }}
+                  >
+                    Mois suivant (M+1)
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setExportPeriod('3_mois')}
+                    style={{ fontSize: '0.85rem' }}
+                  >
+                    3 prochains mois
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Dates personnalisées */}
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: '1fr 1fr', 
+                gap: '1rem',
+                marginBottom: '1rem'
+              }}>
+                <div>
+                  <Label htmlFor="export-date-debut" style={{ marginBottom: '0.25rem', display: 'block' }}>
+                    Date de début
+                  </Label>
+                  <Input
+                    id="export-date-debut"
+                    type="date"
+                    value={exportCalendarConfig.dateDebut}
+                    onChange={(e) => setExportCalendarConfig({
+                      ...exportCalendarConfig,
+                      dateDebut: e.target.value
+                    })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="export-date-fin" style={{ marginBottom: '0.25rem', display: 'block' }}>
+                    Date de fin
+                  </Label>
+                  <Input
+                    id="export-date-fin"
+                    type="date"
+                    value={exportCalendarConfig.dateFin}
+                    onChange={(e) => setExportCalendarConfig({
+                      ...exportCalendarConfig,
+                      dateFin: e.target.value
+                    })}
+                  />
+                </div>
+              </div>
+              
+              {/* Info */}
+              <div style={{
+                background: '#F0FDF4',
+                border: '1px solid #BBF7D0',
+                borderRadius: '8px',
+                padding: '0.75rem',
+                fontSize: '0.85rem',
+                color: '#166534'
+              }}>
+                <strong>💡 Comment importer ?</strong>
+                <ul style={{ margin: '0.5rem 0 0 0', paddingLeft: '1.25rem' }}>
+                  <li><strong>Google Calendar :</strong> Paramètres → Importer et exporter → Importer</li>
+                  <li><strong>Apple Calendar :</strong> Fichier → Importer</li>
+                  <li><strong>Outlook :</strong> Fichier → Ouvrir et exporter → Importer</li>
+                </ul>
+              </div>
+            </div>
+            
+            {/* Footer */}
+            <div style={{
+              padding: '1rem 1.5rem',
+              borderTop: '1px solid #E5E7EB',
+              display: 'flex',
+              justifyContent: 'space-between',
+              background: '#F9FAFB'
+            }}>
+              <Button 
+                variant="outline"
+                onClick={() => setShowExportCalendarModal(false)}
+              >
+                Annuler
+              </Button>
+              <Button 
+                onClick={handleExportCalendar}
+                style={{ 
+                  background: '#10B981', 
+                  color: 'white',
+                  padding: '0.75rem 1.5rem',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  borderRadius: '8px'
+                }}
+                data-testid="confirm-export-calendar-btn"
+              >
+                📥 Télécharger (.ics)
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
