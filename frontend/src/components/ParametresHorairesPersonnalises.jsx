@@ -883,7 +883,8 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="24h">24 heures</SelectItem>
-              <SelectItem value="12h_jour_nuit">Jour / Nuit (12h)</SelectItem>
+              <SelectItem value="12h_jour_nuit">Jour / Nuit (12h chaque)</SelectItem>
+              <SelectItem value="12h_jour_seulement">Jour seulement (nuit = externe)</SelectItem>
             </SelectContent>
           </Select>
         </div>
