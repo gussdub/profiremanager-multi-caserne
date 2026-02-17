@@ -574,7 +574,7 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
             <div key={sIdx} className="grid grid-cols-7 border-t">
               {semaine.map((jourData) => {
                 if (is12h) {
-                  // Mode 12h: afficher jour et nuit séparément
+                  // Mode 12h jour/nuit: afficher jour et nuit séparément
                   const jourEquipe = jourData.segments.jour;
                   const nuitEquipe = jourData.segments.nuit;
                   return (
@@ -625,6 +625,40 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
                           </span>
                         ) : (
                           <Moon className="w-3 h-3 text-gray-500" />
+                        )}
+                      </button>
+                    </div>
+                  );
+                } else if (isJourSeulement) {
+                  // Mode jour seulement: afficher uniquement le jour (pas de nuit)
+                  const jourEquipe = jourData.segments.jour;
+                  return (
+                    <div
+                      key={jourData.jour}
+                      className="border-r last:border-r-0 flex flex-col"
+                    >
+                      <div className="text-xs text-gray-500 text-center py-1 bg-gray-50 border-b">
+                        J{jourData.jour}
+                      </div>
+                      {/* Segment Jour uniquement */}
+                      <button
+                        onClick={() => handleSegmentClick(jourData.jour, "jour")}
+                        className="flex-1 p-1 min-h-[60px] flex items-center justify-center transition-all hover:opacity-80"
+                        style={jourEquipe ? { 
+                          backgroundColor: getEquipeCouleur(jourEquipe),
+                        } : { backgroundColor: '#fff' }}
+                        title={`Jour: ${jourEquipe ? getEquipeNom(jourEquipe) : 'Repos'}`}
+                      >
+                        {jourEquipe ? (
+                          <span 
+                            className="text-xs font-bold px-1 rounded flex items-center gap-0.5"
+                            style={{ color: ['#EAB308', '#22C55E', '#14B8A6', '#F97316'].includes(getEquipeCouleur(jourEquipe)) ? '#000' : '#fff' }}
+                          >
+                            <Sun className="w-3 h-3" />
+                            {getEquipeNom(jourEquipe).substring(0, 2)}
+                          </span>
+                        ) : (
+                          <Sun className="w-3 h-3 text-gray-300" />
                         )}
                       </button>
                     </div>
