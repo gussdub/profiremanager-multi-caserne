@@ -123,6 +123,15 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
             jour: null    // équipe assignée au jour uniquement
           }
         });
+      } else if (typeQuart === "6h_demi_quarts") {
+        // Mode demi-quarts (6h) - AM (6h-12h) et PM (12h-18h)
+        cal.push({
+          jour: i,
+          segments: {
+            am: null,    // équipe assignée au matin (6h-12h)
+            pm: null     // équipe assignée à l'après-midi (12h-18h)
+          }
+        });
       } else {
         cal.push({
           jour: i,
