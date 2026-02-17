@@ -280,8 +280,14 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
   const handleTypeQuartChange = (newType) => {
     setFormData(prev => ({ ...prev, type_quart: newType }));
     setCalendrierEdition(initCalendrier(formData.duree_cycle, newType));
-    // Pour jour/nuit et jour seulement, sélectionner "jour" par défaut
-    setSegmentSelectionne(newType === "12h_jour_nuit" || newType === "12h_jour_seulement" ? "jour" : "24h");
+    // Sélectionner le premier segment selon le type
+    if (newType === "12h_jour_nuit" || newType === "12h_jour_seulement") {
+      setSegmentSelectionne("jour");
+    } else if (newType === "6h_demi_quarts") {
+      setSegmentSelectionne("am");
+    } else {
+      setSegmentSelectionne("24h");
+    }
   };
 
   // Cliquer sur un segment du calendrier
