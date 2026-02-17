@@ -1361,10 +1361,8 @@ async def export_planning_pdf(
             
             # IMPORTANT: Trouver le lundi de la semaine contenant le 1er du mois
             # weekday() : 0 = lundi, 6 = dimanche
-            jours_depuis_lundi = date_debut.weekday()  # Ex: dimanche = 6
-            current = date_debut - timedelta(days=jours_depuis_lundi)  # Reculer au lundi
-            
-            logging.warning(f"[PDF MOIS] date_debut={date_debut}, weekday={date_debut.weekday()}, current (lundi)={current}")
+            jours_depuis_lundi = date_debut.weekday()
+            current = date_debut - timedelta(days=jours_depuis_lundi)
             
             semaine_num = 1
             page_width = landscape(letter)[0]
@@ -1384,8 +1382,6 @@ async def export_planning_pdf(
                 # Toujours afficher 7 jours (lundi à dimanche)
                 fin_semaine = current + timedelta(days=6)
                 nb_jours = 7
-                
-                logging.warning(f"[PDF MOIS] Semaine {semaine_num}: current={current.strftime('%Y-%m-%d')} ({current.strftime('%A')})")
                 
                 # Titre de la semaine
                 elements.append(Paragraph(
