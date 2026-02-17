@@ -237,6 +237,55 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
     }
 
 
+# ==================== ACTIVITÉS SYSTÈME (FLUX D'AUDIT) ====================
+
+@router.get("/{tenant_slug}/dashboard/activites-systeme")
+async def get_activites_systeme(
+    tenant_slug: str,
+    limit: int = 20,
+    skip: int = 0,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Récupère les activités système (audit log) pour les administrateurs.
+    Affiche TOUT ce qui se passe dans le système :
+    - Assignations créées/supprimées
+    - Disponibilités modifiées
+    - Modifications de personnel
+    - Etc.
+    """
+    if current_user.role not in ["admin", "superviseur"]:
+        return {"activites": [], "total": 0, "message": "Accès réservé aux administrateurs"}
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Compter le total
+    total = await db.activites.count_documents({"tenant_id": tenant.id})
+    
+    # Récupérer les activités avec pagination
+    activites = await db.activites.find({
+        "tenant_id": tenant.id
+    }).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    
+    # Enrichir avec les informations utilisateur
+    activites_enrichies = []
+    for act in activites:
+        activite = clean_mongo_doc(act)
+        # Ajouter le nom de l'utilisateur qui a fait l'action si disponible
+        if activite.get("user_id"):
+            user = await db.users.find_one({"id": activite["user_id"]}, {"prenom": 1, "nom": 1})
+            if user:
+                activite["user_nom"] = f"{user.get('prenom', '')} {user.get('nom', '')}".strip()
+        activites_enrichies.append(activite)
+    
+    return {
+        "activites": activites_enrichies,
+        "total": total,
+        "limit": limit,
+        "skip": skip
+    }
+
+
 # ==================== ALERTES ÉQUIPEMENTS POUR DASHBOARD ====================
 
 @router.get("/{tenant_slug}/dashboard/alertes-equipements")
