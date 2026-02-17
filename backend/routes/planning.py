@@ -20,7 +20,7 @@ Routes Outils:
 - GET    /{tenant_slug}/planning/rapport-assignations-invalides - Rapport assignations invalides
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
