@@ -556,6 +556,8 @@ async def apercu_horaire(
         # - Liste d'objets: [{jour: 1, segment: "jour"}, {jour: 2, segment: "nuit"}] (nouveau format)
         equipe_jour = None
         equipe_nuit = None
+        equipe_am = None
+        equipe_pm = None
         
         for eq in horaire.get("equipes", []):
             jours_travail = eq.get("jours_travail", [])
@@ -565,6 +567,8 @@ async def apercu_horaire(
                     if jt == jour_cycle:
                         equipe_jour = eq
                         equipe_nuit = eq
+                        equipe_am = eq
+                        equipe_pm = eq
                         break
                 elif isinstance(jt, dict):
                     # Nouveau format: {jour: int, segment: str}
@@ -573,13 +577,22 @@ async def apercu_horaire(
                         if seg == "24h":
                             equipe_jour = eq
                             equipe_nuit = eq
+                            equipe_am = eq
+                            equipe_pm = eq
                         elif seg == "jour":
                             equipe_jour = eq
                         elif seg == "nuit":
                             equipe_nuit = eq
+                        elif seg == "am":
+                            equipe_am = eq
+                        elif seg == "pm":
+                            equipe_pm = eq
         
-        # Pour l'aperçu, on affiche l'équipe principale (jour ou 24h)
-        equipe_travail = equipe_jour or equipe_nuit
+        # Pour l'aperçu, on affiche l'équipe principale selon le type
+        if type_quart == "6h_demi_quarts":
+            equipe_travail = equipe_am or equipe_pm
+        else:
+            equipe_travail = equipe_jour or equipe_nuit
         
         apercu.append({
             "date": current_date.strftime("%Y-%m-%d"),
@@ -588,6 +601,8 @@ async def apercu_horaire(
             "equipe": equipe_travail,
             "equipe_jour": equipe_jour,
             "equipe_nuit": equipe_nuit,
+            "equipe_am": equipe_am,
+            "equipe_pm": equipe_pm,
             "type_quart": type_quart
         })
     
