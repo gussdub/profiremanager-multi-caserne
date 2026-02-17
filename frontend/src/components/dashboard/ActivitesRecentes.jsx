@@ -96,36 +96,59 @@ const ActivityItem = ({ activite }) => {
   );
 };
 
-// Carte des activités récentes
+// Carte des activités récentes avec bouton "Voir plus"
 export const ActivitesRecentesCard = ({ activites = [], maxItems = 5 }) => {
-  const displayActivites = activites.slice(0, maxItems);
+  const [showAll, setShowAll] = useState(false);
+  const displayActivites = showAll ? activites : activites.slice(0, maxItems);
 
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
-          <Activity className="h-4 w-4 text-blue-500" />
-          Activités récentes
+        <CardTitle className="text-sm font-medium flex items-center justify-between">
+          <span className="flex items-center gap-2">
+            <Activity className="h-4 w-4 text-blue-500" />
+            Flux d'activité système
+          </span>
+          {activites.length > 0 && (
+            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+              {activites.length}
+            </span>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-0">
         {displayActivites.length > 0 ? (
-          <div className="divide-y">
-            {displayActivites.map((activite, index) => (
-              <ActivityItem key={activite.id || index} activite={activite} />
-            ))}
-          </div>
+          <>
+            <div className="divide-y max-h-[400px] overflow-y-auto">
+              {displayActivites.map((activite, index) => (
+                <ActivityItem key={activite.id || index} activite={activite} />
+              ))}
+            </div>
+            {activites.length > maxItems && (
+              <div className="pt-3 text-center border-t mt-2">
+                <button
+                  onClick={() => setShowAll(!showAll)}
+                  className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1 mx-auto"
+                >
+                  {showAll ? (
+                    <>
+                      <X className="h-4 w-4" />
+                      Afficher moins
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-4 w-4" />
+                      Voir tout ({activites.length - maxItems} de plus)
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </>
         ) : (
           <p className="text-sm text-gray-500 py-4 text-center">
             Aucune activité récente
           </p>
-        )}
-        {activites.length > maxItems && (
-          <div className="pt-3 text-center">
-            <span className="text-xs text-gray-500">
-              +{activites.length - maxItems} autres activités
-            </span>
-          </div>
         )}
       </CardContent>
     </Card>
