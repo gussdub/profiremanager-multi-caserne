@@ -637,7 +637,25 @@ async def delete_assignation(
         envoyer_email=False  # Pas d'email pour les annulations
     )
     
+    # Récupérer les infos de l'employé concerné pour le log
+    employe = await db.users.find_one({"id": assignation.get("user_id")}, {"prenom": 1, "nom": 1})
+    employe_nom = f"{employe.get('prenom', '')} {employe.get('nom', '')}".strip() if employe else "Inconnu"
+    
+    # Récupérer le nom du type de garde
+    type_garde = await db.types_garde.find_one({"id": assignation.get("type_garde_id")}, {"nom": 1})
+    type_garde_nom = type_garde.get("nom", "Garde") if type_garde else "Garde"
+    
     await db.assignations.delete_one({"id": assignation_id})
+    
+    # Créer un log d'activité pour la suppression
+    await creer_activite(
+        tenant_id=tenant.id,
+        type_activite="planning_suppression",
+        description=f"Assignation supprimée: {employe_nom} - {type_garde_nom} le {assignation.get('date', '')}",
+        user_id=current_user.id,
+        user_nom=f"{current_user.prenom} {current_user.nom}",
+        data={"assignation_id": assignation_id, "date": assignation.get("date"), "employe": employe_nom}
+    )
     
     return {"message": "Assignation supprimée avec succès"}
 
