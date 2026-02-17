@@ -533,7 +533,7 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
                   : 'border-gray-300 opacity-60 hover:opacity-100'
               }`}
             >
-              ⬜ Repos
+              ⬜ Vacant
             </button>
           </div>
           
@@ -542,6 +542,14 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
             <div className="flex items-center gap-2 pt-2 border-t text-sm text-blue-600 bg-blue-50 p-2 rounded">
               <Sun className="w-4 h-4" />
               <span>Mode jour seulement - Les nuits sont assurées par les gardes externes</span>
+            </div>
+          )}
+          
+          {/* Info pour mode demi-quarts */}
+          {isDemiQuarts && (
+            <div className="flex items-center gap-2 pt-2 border-t text-sm text-purple-600 bg-purple-50 p-2 rounded">
+              <Clock className="w-4 h-4" />
+              <span>Mode demi-quarts (6h) - Cases vides = postes vacants pour l'attribution automatique</span>
             </div>
           )}
           
@@ -568,6 +576,33 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
                 }`}
               >
                 <Moon className="w-4 h-4" /> Nuit ({formData.heures_quart.nuit_debut}-{formData.heures_quart.nuit_fin})
+              </button>
+            </div>
+          )}
+          
+          {/* Sélecteur de segment si demi-quarts */}
+          {isDemiQuarts && (
+            <div className="flex items-center gap-2 pt-2 border-t">
+              <span className="text-sm font-medium">Segment :</span>
+              <button
+                onClick={() => setSegmentSelectionne("am")}
+                className={`px-3 py-1.5 rounded text-sm font-medium flex items-center gap-1 transition-all ${
+                  segmentSelectionne === "am"
+                    ? 'bg-orange-400 text-black ring-2 ring-offset-1 ring-orange-600'
+                    : 'bg-orange-100 text-orange-800 hover:bg-orange-200'
+                }`}
+              >
+                <Sun className="w-4 h-4" /> AM (6h-12h)
+              </button>
+              <button
+                onClick={() => setSegmentSelectionne("pm")}
+                className={`px-3 py-1.5 rounded text-sm font-medium flex items-center gap-1 transition-all ${
+                  segmentSelectionne === "pm"
+                    ? 'bg-amber-400 text-black ring-2 ring-offset-1 ring-amber-600'
+                    : 'bg-amber-100 text-amber-800 hover:bg-amber-200'
+                }`}
+              >
+                <Sun className="w-4 h-4" /> PM (12h-18h)
               </button>
             </div>
           )}
