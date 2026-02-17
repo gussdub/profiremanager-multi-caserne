@@ -617,14 +617,15 @@ async def delete_assignation(
     if not assignation:
         raise HTTPException(status_code=404, detail="Assignation non trouvée")
     
-    # Notifier l'employé de la suppression
+    # Notifier l'employé de la suppression (push uniquement, pas d'email)
     await creer_notification(
         tenant_id=tenant.id,
         user_id=assignation.get("user_id"),
         type_notification="planning_suppression",
         titre="Assignation annulée",
         message=f"Votre assignation du {assignation.get('date', '')} a été annulée",
-        lien="/planning"
+        lien="/planning",
+        envoyer_email=False  # Pas d'email pour les annulations
     )
     
     await db.assignations.delete_one({"id": assignation_id})
