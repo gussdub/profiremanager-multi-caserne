@@ -1349,7 +1349,7 @@ const Planning = () => {
       const token = getTenantToken();
       
       const periode = viewMode === 'semaine' ? currentWeek : currentMonth;
-      const url = `${backendUrl}/api/${tenantSlug}/planning/export-excel?periode=${periode}&type=${viewMode}`;
+      const url = `${backendUrl}/api/${tenantSlug}/planning/exports/excel?periode=${periode}&type=${viewMode}`;
       
       const response = await fetch(url, {
         method: 'GET',
