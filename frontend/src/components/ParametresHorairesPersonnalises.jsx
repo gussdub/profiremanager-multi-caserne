@@ -719,7 +719,7 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
                   color: eq.couleur
                 }}
               >
-                {eq.nom}: {nbJours} {is12h ? 'segment(s)' : 'jour(s)'}
+                {eq.nom}: {nbJours} {is12h || isJourSeulement ? 'segment(s)' : 'jour(s)'}
               </span>
             );
           })}
@@ -738,6 +738,7 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
     }
     
     const is12h = apercu.apercu[0]?.type_quart === "12h_jour_nuit";
+    const isJourSeulementApercu = apercu.apercu[0]?.type_quart === "12h_jour_seulement";
     
     return (
       <div className="space-y-4">
