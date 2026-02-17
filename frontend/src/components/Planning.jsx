@@ -1293,14 +1293,10 @@ const Planning = () => {
   const handleExportPDFPlanning = async () => {
     try {
       const periode = viewMode === 'semaine' ? currentWeek : currentMonth;
-      // Ajouter timestamp pour éviter le cache
       const timestamp = Date.now();
       
-      const exportUrl = buildApiUrl(tenantSlug, `/planning/exports/pdf?periode=${periode}&type=${viewMode}&t=${timestamp}`);
-      console.log('[PDF Export] URL:', exportUrl, 'viewMode:', viewMode, 'periode:', periode);
-      
       const response = await fetch(
-        exportUrl,
+        buildApiUrl(tenantSlug, `/planning/exports/pdf?periode=${periode}&type=${viewMode}&t=${timestamp}`),
         {
           headers: {
             'Authorization': `Bearer ${getTenantToken()}`,
@@ -1308,8 +1304,6 @@ const Planning = () => {
           }
         }
       );
-      
-      console.log('[PDF Export] Response status:', response.status);
       
       if (!response.ok) throw new Error('Erreur génération rapport');
       
@@ -1326,7 +1320,6 @@ const Planning = () => {
       iframe.onload = () => {
         try {
           iframe.contentWindow.print();
-          // Nettoyer après un délai
           setTimeout(() => {
             document.body.removeChild(iframe);
             window.URL.revokeObjectURL(url);
