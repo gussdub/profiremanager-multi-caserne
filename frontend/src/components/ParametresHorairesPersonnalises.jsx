@@ -821,7 +821,9 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
     // Aligner les jours selon le jour de la semaine réel
     // On ajoute des cases vides au début si la première date n'est pas un dimanche
     if (apercu.apercu.length > 0) {
-      const firstDate = new Date(apercu.apercu[0].date);
+      // Parser la date sans problème de timezone (YYYY-MM-DD -> Date locale)
+      const [y, m, d] = apercu.apercu[0].date.split('-');
+      const firstDate = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
       const firstDayOfWeek = firstDate.getDay(); // 0 = dimanche, 1 = lundi, etc.
       
       // Créer la première semaine avec des cases vides au début si nécessaire
