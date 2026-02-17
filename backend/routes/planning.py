@@ -1526,7 +1526,7 @@ async def export_planning_pdf(
 
 
 # GET export-excel
-@router.get("/{tenant_slug}/planning/export-excel")
+@router.get("/{tenant_slug}/planning/exports/excel")
 async def export_planning_excel(
     tenant_slug: str, 
     periode: str,
