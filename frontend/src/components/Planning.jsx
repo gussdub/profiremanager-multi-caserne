@@ -1395,6 +1395,90 @@ const Planning = () => {
     }
   };
 
+  // Export des gardes personnelles au format iCalendar (.ics)
+  const handleExportCalendar = async () => {
+    try {
+      const { dateDebut, dateFin } = exportCalendarConfig;
+      
+      if (!dateDebut || !dateFin) {
+        toast({
+          title: "Dates requises",
+          description: "Veuillez sélectionner une période",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      const response = await fetch(
+        buildApiUrl(tenantSlug, `/planning/exports/ical?date_debut=${dateDebut}&date_fin=${dateFin}`),
+        {
+          headers: {
+            'Authorization': `Bearer ${getTenantToken()}`
+          }
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error('Erreur lors de la génération du fichier');
+      }
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `mes_gardes_${dateDebut}_${dateFin}.ics`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      setShowExportCalendarModal(false);
+      
+      toast({
+        title: "Export réussi",
+        description: "Fichier .ics téléchargé. Importez-le dans Google Calendar, Apple Calendar ou Outlook.",
+        variant: "success"
+      });
+    } catch (error) {
+      console.error('Erreur export calendrier:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'exporter le calendrier",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Raccourcis pour sélectionner rapidement une période
+  const setExportPeriod = (periodType) => {
+    const today = new Date();
+    let dateDebut, dateFin;
+    
+    switch (periodType) {
+      case 'mois_suivant':
+        const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        const lastDayNext = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+        dateDebut = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}-01`;
+        dateFin = `${lastDayNext.getFullYear()}-${String(lastDayNext.getMonth() + 1).padStart(2, '0')}-${String(lastDayNext.getDate()).padStart(2, '0')}`;
+        break;
+      case 'mois_courant':
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        dateDebut = `${firstDay.getFullYear()}-${String(firstDay.getMonth() + 1).padStart(2, '0')}-01`;
+        dateFin = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
+        break;
+      case '3_mois':
+        const threeMonthsLater = new Date(today.getFullYear(), today.getMonth() + 3, 0);
+        dateDebut = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        dateFin = `${threeMonthsLater.getFullYear()}-${String(threeMonthsLater.getMonth() + 1).padStart(2, '0')}-${String(threeMonthsLater.getDate()).padStart(2, '0')}`;
+        break;
+      default:
+        return;
+    }
+    
+    setExportCalendarConfig({ dateDebut, dateFin });
+  };
+
   if (loading) return <div className="loading" data-testid="planning-loading">Chargement du planning...</div>;
 
   return (
