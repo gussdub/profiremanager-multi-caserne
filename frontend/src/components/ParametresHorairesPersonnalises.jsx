@@ -1125,6 +1125,30 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
         </div>
       )}
       
+      {/* Configuration des heures si demi-quarts */}
+      {formData.type_quart === '6h_demi_quarts' && (
+        <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+          <div className="grid grid-cols-2 gap-4 mb-3">
+            <div className="p-3 bg-orange-100 rounded-lg">
+              <Label className="text-xs flex items-center gap-1 text-orange-700 font-medium">
+                <Sun className="w-3 h-3" /> Segment AM (matin)
+              </Label>
+              <div className="text-sm font-bold text-orange-800 mt-1">6h00 - 12h00</div>
+            </div>
+            <div className="p-3 bg-amber-100 rounded-lg">
+              <Label className="text-xs flex items-center gap-1 text-amber-700 font-medium">
+                <Sun className="w-3 h-3" /> Segment PM (après-midi)
+              </Label>
+              <div className="text-sm font-bold text-amber-800 mt-1">12h00 - 18h00</div>
+            </div>
+          </div>
+          <div className="text-sm text-purple-600 flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            <span><strong>Astuce:</strong> Pour un quart de 12h, assignez la même équipe aux segments AM et PM. Les cases vides deviennent des postes vacants pour l'attribution automatique.</span>
+          </div>
+        </div>
+      )}
+      
       {/* Configuration des équipes */}
       <div>
         <Label className="mb-2 block">Configuration des équipes</Label>
