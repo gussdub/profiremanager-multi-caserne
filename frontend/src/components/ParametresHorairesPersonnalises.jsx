@@ -155,7 +155,7 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
       description: "",
       duree_cycle: dureeCycle,
       nombre_equipes: nbEquipes,
-      date_reference: new Date().toISOString().split('T')[0],
+      date_reference: new Date().toLocaleDateString('en-CA'), // Format YYYY-MM-DD en date locale
       type_quart: typeQuart,
       heures_quart: {
         jour_debut: "07:00",
