@@ -1,7 +1,8 @@
 /**
  * Composant de liste des activités récentes pour le Dashboard
+ * Affiche le flux d'audit système (TOUT ce qui se passe dans l'application)
  */
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { 
   Activity, 
@@ -11,7 +12,12 @@ import {
   Wrench,
   Calendar,
   FileText,
-  Bell
+  Bell,
+  Trash2,
+  Edit,
+  Plus,
+  X,
+  ChevronDown
 } from 'lucide-react';
 
 // Icône selon le type d'activité
@@ -19,11 +25,20 @@ const getActivityIcon = (type) => {
   const icons = {
     'intervention': { icon: Flame, color: '#ef4444' },
     'formation': { icon: GraduationCap, color: '#8b5cf6' },
+    'formation_creation': { icon: GraduationCap, color: '#8b5cf6' },
     'personnel': { icon: UserPlus, color: '#3b82f6' },
     'equipement': { icon: Wrench, color: '#10b981' },
     'planning': { icon: Calendar, color: '#f59e0b' },
+    'planning_assignation': { icon: Plus, color: '#10b981' },
+    'planning_suppression': { icon: Trash2, color: '#ef4444' },
+    'disponibilite': { icon: Calendar, color: '#3b82f6' },
+    'disponibilite_creation': { icon: Plus, color: '#10b981' },
+    'disponibilite_suppression': { icon: Trash2, color: '#ef4444' },
+    'conge': { icon: Calendar, color: '#f59e0b' },
     'rapport': { icon: FileText, color: '#6366f1' },
     'notification': { icon: Bell, color: '#ec4899' },
+    'prevention': { icon: FileText, color: '#f97316' },
+    'validation_competence': { icon: GraduationCap, color: '#10b981' },
     'default': { icon: Activity, color: '#6b7280' }
   };
   return icons[type] || icons['default'];
