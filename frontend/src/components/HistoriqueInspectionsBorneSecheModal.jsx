@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { apiGet, apiDelete } from '../utils/api';
-import { AuthContext } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui/button';
 
 const HistoriqueInspectionsBorneSecheModal = ({ borne, tenantSlug, onClose }) => {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
   const [inspections, setInspections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedInspection, setSelectedInspection] = useState(null);
