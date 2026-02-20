@@ -888,9 +888,20 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
         // Si la section a des items, les ajouter séparément
         if (r.items && Object.keys(r.items).length > 0) {
           Object.entries(r.items).forEach(([itemId, valeur]) => {
+            // Trouver le label de l'item dans le modèle
+            let itemLabel = itemId;
+            const section = modele?.sections?.find(s => s.id === r.section_id);
+            if (section) {
+              const item = section.items?.find(i => i.id === itemId);
+              if (item) {
+                itemLabel = item.nom || item.label || itemId;
+              }
+            }
+            
             reponsesUnifiees[itemId] = {
               valeur: valeur,
-              section: r.section_titre
+              section: r.section_titre,
+              label: itemLabel  // Stocker le label pour l'affichage dans l'historique
             };
           });
         } else {
