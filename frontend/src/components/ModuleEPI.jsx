@@ -2807,11 +2807,25 @@ const ModuleEPI = ({ user }) => {
         <div className="modal-overlay" onClick={() => setShowNettoyageModal(false)}>
           <div className="modal-content large-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>🧼 Nouveau Nettoyage - {getTypeName(getEpiType(selectedEPI))} #{selectedEPI.numero_serie}</h2>
+              <h2>🧼 {selectedEPI?.statut === 'Au nettoyage' ? 'Retour de nettoyage' : 'Nouveau Nettoyage'} - {getTypeName(getEpiType(selectedEPI))} #{selectedEPI.numero_serie}</h2>
               <Button variant="ghost" onClick={() => setShowNettoyageModal(false)}>✕</Button>
             </div>
             
             <div className="modal-body">
+              {selectedEPI?.statut === 'Au nettoyage' && (
+                <div style={{ 
+                  background: '#FEF3C7', 
+                  border: '1px solid #F59E0B', 
+                  borderRadius: '8px', 
+                  padding: '1rem', 
+                  marginBottom: '1rem' 
+                }}>
+                  <p style={{ margin: 0, color: '#92400E' }}>
+                    <strong>📋 Retour de nettoyage :</strong> Remplissez les détails du nettoyage effectué. 
+                    L'EPI sera automatiquement remis en service et le pompier sera notifié.
+                  </p>
+                </div>
+              )}
               <div className="form-grid">
                 <div>
                   <Label>Type de nettoyage *</Label>
