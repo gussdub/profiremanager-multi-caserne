@@ -30,11 +30,129 @@ from routes.dependencies import (
     get_current_user,
     get_tenant_from_slug,
     clean_mongo_doc,
-    User
+    User,
+    creer_notification
 )
 
 router = APIRouter(tags=["Points d'Eau"])
 logger = logging.getLogger(__name__)
+
+
+# ==================== FONCTION NOTIFICATION CHANGEMENT STATUT ====================
+
+async def notifier_equipement_changement_statut(
+    tenant_id: str,
+    type_equipement: str,
+    nom_equipement: str,
+    nouveau_statut: str,  # "hors_service" ou "en_service"
+    modifie_par: str = None
+):
+    """
+    Notifie TOUT le personnel qu'un équipement change de statut (hors service ou retour en service).
+    Envoie notification in-app et email à tous les utilisateurs actifs.
+    """
+    try:
+        import resend
+        import os
+        
+        # Récupérer tous les utilisateurs actifs du tenant
+        all_users = await db.users.find({
+            "tenant_id": tenant_id,
+            "statut": "Actif"
+        }).to_list(500)
+        
+        if not all_users:
+            logger.warning(f"Aucun utilisateur actif trouvé pour le tenant {tenant_id}")
+            return
+        
+        # Préparer le message selon le statut
+        if nouveau_statut == "hors_service":
+            titre = f"🚨 {type_equipement} HORS SERVICE"
+            message = f"{nom_equipement} est maintenant HORS SERVICE."
+            couleur_email = "#DC2626"  # Rouge
+            icon = "🔴"
+        else:
+            titre = f"✅ {type_equipement} DE RETOUR EN SERVICE"
+            message = f"{nom_equipement} est de nouveau EN SERVICE."
+            couleur_email = "#10B981"  # Vert
+            icon = "🟢"
+        
+        if modifie_par:
+            message += f" (Modifié par {modifie_par})"
+        
+        # 1. Créer les notifications internes pour chaque utilisateur
+        notifications_creees = 0
+        for user in all_users:
+            user_id = user.get("id")
+            if user_id:
+                try:
+                    await creer_notification(
+                        tenant_id=tenant_id,
+                        destinataire_id=user_id,
+                        type="equipement_statut",
+                        titre=titre,
+                        message=message,
+                        lien="/approvisionnement"
+                    )
+                    notifications_creees += 1
+                except Exception as e:
+                    logger.error(f"Erreur création notification pour {user_id}: {e}")
+        
+        logger.info(f"{icon} {notifications_creees} notifications créées pour {nom_equipement} ({nouveau_statut})")
+        
+        # 2. Envoyer un email groupé à tous les utilisateurs
+        try:
+            resend_api_key = os.environ.get("RESEND_API_KEY")
+            sender_email = os.environ.get("SENDER_EMAIL", "noreply@profiremanager.ca")
+            
+            if resend_api_key:
+                resend.api_key = resend_api_key
+                
+                # Récupérer le nom du tenant
+                tenant_data = await db.tenants.find_one({"id": tenant_id}, {"_id": 0})
+                tenant_nom = tenant_data.get("nom", "ProFireManager") if tenant_data else "ProFireManager"
+                
+                # Liste des emails
+                emails = [u.get("email") for u in all_users if u.get("email")]
+                
+                if emails:
+                    email_html = f"""
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <div style="background-color: {couleur_email}; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
+                            <h1 style="margin: 0; font-size: 24px;">{icon} {type_equipement}</h1>
+                            <h2 style="margin: 10px 0 0 0; font-size: 20px;">{"HORS SERVICE" if nouveau_statut == "hors_service" else "DE RETOUR EN SERVICE"}</h2>
+                        </div>
+                        <div style="padding: 20px; background-color: #f9fafb; border-radius: 0 0 8px 8px;">
+                            <p style="font-size: 16px; margin-bottom: 15px;">
+                                <strong>{nom_equipement}</strong> est maintenant 
+                                <strong style="color: {couleur_email};">{"HORS SERVICE" if nouveau_statut == "hors_service" else "EN SERVICE"}</strong>.
+                            </p>
+                            {f'<p style="color: #6b7280; font-size: 14px;">Modifié par: {modifie_par}</p>' if modifie_par else ''}
+                            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+                            <p style="font-size: 12px; color: #9ca3af; text-align: center;">
+                                {tenant_nom} - ProFireManager
+                            </p>
+                        </div>
+                    </div>
+                    """
+                    
+                    sujet = f"{icon} {type_equipement} {'HORS SERVICE' if nouveau_statut == 'hors_service' else 'EN SERVICE'}: {nom_equipement}"
+                    
+                    email_response = resend.Emails.send({
+                        "from": f"ProFireManager <{sender_email}>",
+                        "to": emails,
+                        "subject": sujet,
+                        "html": email_html
+                    })
+                    logger.info(f"📧 Email envoyé à {len(emails)} utilisateurs pour {nom_equipement}")
+            else:
+                logger.warning("RESEND_API_KEY non configurée - Emails non envoyés")
+                
+        except Exception as e:
+            logger.error(f"Erreur envoi email changement statut: {e}")
+        
+    except Exception as e:
+        logger.error(f"Erreur notification changement statut: {e}")
 
 
 # ==================== MODÈLES ====================
