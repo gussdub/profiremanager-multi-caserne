@@ -474,6 +474,12 @@ const FormulairesInspectionConfig = () => {
         };
       } else {
         items[itemIndex] = { ...items[itemIndex], [field]: value };
+        // Si on modifie le label, supprimer nom pour éviter les conflits (et vice versa)
+        if (field === 'label') {
+          delete items[itemIndex].nom;
+        } else if (field === 'nom') {
+          delete items[itemIndex].label;
+        }
       }
       
       sections[sectionIndex] = { ...sections[sectionIndex], items };
