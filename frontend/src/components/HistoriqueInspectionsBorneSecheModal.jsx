@@ -122,9 +122,15 @@ const HistoriqueInspectionsBorneSecheModal = ({ borne, tenantSlug, onClose }) =>
   };
 
   // Formater une valeur de réponse pour l'affichage
-  const formatReponseValue = (valeur) => {
+  const formatReponseValue = (valeur, type) => {
     if (valeur === null || valeur === undefined) return 'N/A';
     if (typeof valeur === 'boolean') return valeur ? 'Oui' : 'Non';
+    
+    // Si c'est un type date ou si la valeur ressemble à une date YYYY-MM-DD
+    if (type === 'date' || (typeof valeur === 'string' && valeur.length === 10 && valeur[4] === '-' && valeur[7] === '-')) {
+      return formatDateOnly(valeur);
+    }
+    
     if (typeof valeur === 'object') {
       // Météo
       if (valeur.temperature !== undefined) {
