@@ -590,11 +590,11 @@ const InspectionBorneSecheModal = ({ borne, tenantSlug, onClose, onSuccess, user
           est_actif: f.est_actif !== false,
           sections: (f.sections || []).map((s, idx) => ({
             id: s.id || `section_${idx}`,
-            titre: s.titre || s.nom,
+            titre: s.nom || s.titre,  // Priorité au nom (modifié via l'interface)
             description: '',
             items: (s.items || []).map((item, itemIdx) => ({
               id: item.id || `item_${idx}_${itemIdx}`,
-              nom: item.label || item.nom,
+              nom: item.nom || item.label,  // Priorité au nom (modifié via l'interface)
               type: item.type,
               options: item.options || [],
               obligatoire: item.obligatoire || false,
