@@ -1416,7 +1416,7 @@ const FormulairesInspectionConfig = () => {
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                                     <Input
-                                      value={item.label || item.nom || ''}
+                                      value={item.label !== undefined ? item.label : (item.nom || '')}
                                       onChange={(e) => updateItem(sectionIndex, itemIndex, 'label', e.target.value)}
                                       placeholder="Nom du critère"
                                       style={{ flex: 1, minWidth: '150px' }}
