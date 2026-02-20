@@ -784,6 +784,28 @@ const HistoriqueInspectionsBorneSecheModal = ({ borne, tenantSlug, onClose }) =>
                       }}>
                         {getResultatLabel(inspection)}
                       </span>
+                      {user?.role === 'admin' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteInspection(inspection.id);
+                          }}
+                          disabled={deletingId === inspection.id}
+                          style={{
+                            padding: '0.25rem 0.5rem',
+                            background: deletingId === inspection.id ? '#9CA3AF' : '#EF4444',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            fontSize: '0.7rem',
+                            cursor: deletingId === inspection.id ? 'wait' : 'pointer',
+                            fontWeight: '500'
+                          }}
+                          title="Supprimer cette inspection"
+                        >
+                          {deletingId === inspection.id ? '...' : '🗑️'}
+                        </button>
+                      )}
                       <span style={{ color: '#9ca3af', fontSize: '1.25rem' }}>→</span>
                     </div>
                   </div>
