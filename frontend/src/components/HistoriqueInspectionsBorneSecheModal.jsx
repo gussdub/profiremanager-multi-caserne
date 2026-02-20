@@ -1,15 +1,41 @@
-import React, { useState, useEffect } from 'react';
-import { apiGet } from '../utils/api';
+import React, { useState, useEffect, useContext } from 'react';
+import { apiGet, apiDelete } from '../utils/api';
+import { AuthContext } from '../context/AuthContext';
+import { Button } from './ui/button';
 
 const HistoriqueInspectionsBorneSecheModal = ({ borne, tenantSlug, onClose }) => {
+  const { user } = useContext(AuthContext);
   const [inspections, setInspections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedInspection, setSelectedInspection] = useState(null);
   const [formulairesCache, setFormulairesCache] = useState({}); // Cache des formulaires chargés
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     fetchHistorique();
   }, [borne.id]);
+
+  // Supprimer une inspection (admin uniquement)
+  const handleDeleteInspection = async (inspectionId) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette inspection ? Cette action est irréversible.')) {
+      return;
+    }
+    
+    try {
+      setDeletingId(inspectionId);
+      await apiDelete(tenantSlug, `/approvisionnement-eau/inspections/${inspectionId}`);
+      // Recharger la liste
+      await fetchHistorique();
+      // Fermer le détail si c'était l'inspection sélectionnée
+      if (selectedInspection?.id === inspectionId) {
+        setSelectedInspection(null);
+      }
+    } catch (error) {
+      alert(error.response?.data?.detail || 'Erreur lors de la suppression');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   // Charger un formulaire pour avoir les labels des champs
   const loadFormulaire = async (formulaireId) => {
