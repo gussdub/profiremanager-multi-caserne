@@ -295,7 +295,7 @@ const HistoriqueInspectionsBorneSecheModal = ({ borne, tenantSlug, onClose }) =>
                   borderRadius: '6px'
                 }}>
                   <span style={{ color: '#6b7280', fontSize: '0.75rem', marginBottom: '0.25rem' }}>{item.label}</span>
-                  <span style={{ fontWeight: '500', fontSize: '0.875rem' }}>{formatReponseValue(item.valeur)}</span>
+                  <span style={{ fontWeight: '500', fontSize: '0.875rem' }}>{formatReponseValue(item.valeur, item.type)}</span>
                 </div>
               ))}
             </div>
