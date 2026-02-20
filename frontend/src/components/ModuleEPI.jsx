@@ -1802,27 +1802,58 @@ const ModuleEPI = ({ user }) => {
             </ul>
           </div>
           
+          {/* Section: EPIs en service - peuvent être envoyés au nettoyage */}
+          <div className="nettoyage-list" style={{ marginBottom: '2rem' }}>
+            <h3>📤 Envoyer un EPI au nettoyage</h3>
+            <p style={{ color: '#6B7280', fontSize: '0.9rem', marginBottom: '1rem' }}>
+              Sélectionnez un EPI en service pour l'envoyer au nettoyage. Le pompier sera notifié automatiquement.
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              {epis.filter(e => e.statut === 'En service').slice(0, 10).map(epi => (
+                <Button
+                  key={epi.id}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleEnvoyerNettoyage(epi)}
+                  style={{ borderColor: '#3B82F6', color: '#3B82F6' }}
+                >
+                  {getTypeIcon(getEpiType(epi))} #{epi.numero_serie}
+                </Button>
+              ))}
+              {epis.filter(e => e.statut === 'En service').length > 10 && (
+                <span style={{ color: '#9CA3AF', alignSelf: 'center' }}>
+                  +{epis.filter(e => e.statut === 'En service').length - 10} autres...
+                </span>
+              )}
+            </div>
+          </div>
+          
+          {/* Section: EPIs au nettoyage - peuvent revenir */}
           <div className="nettoyage-list">
-            <h3>EPIs en nettoyage ({epis.filter(e => e.statut === 'En nettoyage' || e.statut === 'En maintenance').length})</h3>
-            {epis.filter(e => e.statut === 'En nettoyage' || e.statut === 'En maintenance').length === 0 ? (
+            <h3>🧼 EPIs au nettoyage ({epis.filter(e => e.statut === 'Au nettoyage').length})</h3>
+            {epis.filter(e => e.statut === 'Au nettoyage').length === 0 ? (
               <div className="empty-state">
-                <p>Aucun EPI en nettoyage actuellement</p>
+                <p>Aucun EPI au nettoyage actuellement</p>
               </div>
             ) : (
-              epis.filter(e => e.statut === 'En nettoyage' || e.statut === 'En maintenance').map(epi => (
+              epis.filter(e => e.statut === 'Au nettoyage').map(epi => (
                 <div key={epi.id} className="nettoyage-epi-card">
                   <div className="nettoyage-epi-header">
                     <span>{getTypeIcon(getEpiType(epi))} {getTypeName(getEpiType(epi))}</span>
                     <span>#{epi.numero_serie}</span>
+                    <span className="epi-statut-badge" style={{backgroundColor: '#F59E0B', color: 'white', padding: '0.25rem 0.5rem', borderRadius: '4px'}}>
+                      Au nettoyage
+                    </span>
                     <Button 
                       size="sm"
+                      style={{ backgroundColor: '#10B981', color: 'white' }}
                       onClick={async () => {
                         setSelectedEPI(epi);
                         await loadNettoyages(epi.id);
                         setShowNettoyageModal(true);
                       }}
                     >
-                      ➕ Ajouter nettoyage
+                      ✅ Retour de nettoyage
                     </Button>
                   </div>
                 </div>
