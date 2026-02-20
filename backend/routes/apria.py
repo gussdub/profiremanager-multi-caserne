@@ -1234,7 +1234,7 @@ async def create_inspection_unifiee(
                 notification = {
                     "id": str(uuid.uuid4()),
                     "tenant_id": tenant.id,
-                    "destinataire_id": admin.get("id"),
+                    "destinataire_id": dest.get("id"),
                     "type": "alerte_inspection",
                     "titre": f"⚠️ Alerte inspection: {asset_nom}",
                     "message": f"L'inspection de {asset_nom} a déclenché {len(alertes)} alerte(s):\n{alerte_texte}",
@@ -1245,13 +1245,13 @@ async def create_inspection_unifiee(
                 }
                 await db.notifications.insert_one(notification)
                 notifications_creees += 1
-                logger.info(f"🔔 Notification créée pour {admin.get('email', 'N/A')} (ID: {notification['id'][:8]})")
+                logger.info(f"🔔 Notification créée pour {dest.get('email', 'N/A')} (ID: {notification['id'][:8]})")
             except Exception as notif_err:
-                logger.error(f"❌ Erreur création notification pour {admin.get('email', 'N/A')}: {notif_err}")
+                logger.error(f"❌ Erreur création notification pour {dest.get('email', 'N/A')}: {notif_err}")
         
-        logger.info(f"✅ {notifications_creees}/{len(admins)} notification(s) créée(s)")
+        logger.info(f"✅ {notifications_creees}/{len(destinataires)} notification(s) créée(s)")
         
-        # Envoyer un email aux admins
+        # Envoyer un email aux destinataires configurés
         try:
             import resend
             resend_api_key = os.environ.get("RESEND_API_KEY")
@@ -1264,12 +1264,11 @@ async def create_inspection_unifiee(
             else:
                 resend.api_key = resend_api_key
                 
-                admin_emails = [a.get("email") for a in admins if a.get("email")]
-                logger.info(f"📧 Emails admin trouvés: {admin_emails}")
+                dest_emails = [d.get("email") for d in destinataires if d.get("email")]
+                logger.info(f"📧 Emails destinataires trouvés: {dest_emails}")
                 
-                if admin_emails:
-                    # Charger les paramètres du tenant pour le nom
-                    tenant_data = await db.tenants.find_one({"id": tenant.id}, {"_id": 0})
+                if dest_emails:
+                    # Utiliser le nom du tenant déjà récupéré plus haut
                     tenant_nom = tenant_data.get("nom", tenant_slug) if tenant_data else tenant_slug
                     
                     email_html = f"""
