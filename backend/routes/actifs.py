@@ -841,20 +841,31 @@ async def update_vehicule(
         {"$set": update_data}
     )
     
-    # Notifier tout le monde si véhicule mis hors service
+    # Notifier tout le monde si véhicule mis hors service OU de retour en service
     nouveau_statut = update_data.get("statut")
     statuts_hors_service = ["hors_service", "maintenance", "hors service"]
+    statuts_en_service = ["en_service", "en service", "actif", "disponible"]
     
-    if nouveau_statut and nouveau_statut.lower() in statuts_hors_service and ancien_statut != nouveau_statut:
+    if nouveau_statut and ancien_statut != nouveau_statut:
         vehicule_nom = vehicule.get("nom", "Véhicule")
-        await notifier_vehicule_ou_materiel_hors_service(
-            tenant_id=tenant.id,
-            type_actif="vehicule",
-            nom_actif=vehicule_nom,
-            statut=nouveau_statut,
-            raison=vehicule_data.notes if vehicule_data.notes else None,
-            modifie_par=f"{current_user.prenom} {current_user.nom}"
-        )
+        
+        if nouveau_statut.lower() in statuts_hors_service:
+            # Véhicule passe HORS SERVICE
+            await notifier_vehicule_ou_materiel_hors_service(
+                tenant_id=tenant.id,
+                type_actif="vehicule",
+                nom_actif=vehicule_nom,
+                statut=nouveau_statut,
+                raison=vehicule_data.notes if vehicule_data.notes else None,
+                modifie_par=f"{current_user.prenom} {current_user.nom}"
+            )
+        elif nouveau_statut.lower() in statuts_en_service and ancien_statut and ancien_statut.lower() in statuts_hors_service:
+            # Véhicule REVIENT en service (était hors service avant)
+            await notifier_vehicule_retour_en_service(
+                tenant_id=tenant.id,
+                nom_vehicule=vehicule_nom,
+                modifie_par=f"{current_user.prenom} {current_user.nom}"
+            )
     
     updated_vehicule = await db.vehicules.find_one(
         {"id": vehicule_id, "tenant_id": tenant.id},
