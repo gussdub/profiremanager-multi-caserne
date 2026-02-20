@@ -72,13 +72,38 @@ const HistoriqueInspectionsBorneSecheModal = ({ borne, tenantSlug, onClose }) =>
 
   const formatDate = (dateStr) => {
     if (!dateStr) return 'N/A';
-    return new Date(dateStr).toLocaleDateString('fr-FR', {
+    
+    // Si c'est une date au format YYYY-MM-DD (sans heure), l'afficher telle quelle sans conversion UTC
+    if (typeof dateStr === 'string' && dateStr.length === 10 && dateStr[4] === '-' && dateStr[7] === '-') {
+      const [year, month, day] = dateStr.split('-');
+      return `${day}/${month}/${year}`;
+    }
+    
+    // Si c'est une date ISO avec heure, convertir en heure locale
+    const date = new Date(dateStr);
+    // Vérifier si la date est valide
+    if (isNaN(date.getTime())) return dateStr;
+    
+    return date.toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+  
+  // Formater une date sans conversion UTC (pour les dates saisies comme YYYY-MM-DD)
+  const formatDateOnly = (dateStr) => {
+    if (!dateStr) return 'N/A';
+    
+    // Si c'est déjà au format YYYY-MM-DD, convertir simplement
+    if (typeof dateStr === 'string' && dateStr.length >= 10 && dateStr[4] === '-' && dateStr[7] === '-') {
+      const [year, month, day] = dateStr.substring(0, 10).split('-');
+      return `${day}/${month}/${year}`;
+    }
+    
+    return dateStr;
   };
 
   const getResultatColor = (inspection) => {
