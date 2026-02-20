@@ -151,6 +151,7 @@ def normalize_statut_epi(statut_raw: str) -> str:
     - 'En service'
     - 'En inspection'
     - 'En réparation'
+    - 'Au nettoyage'
     - 'Hors service'
     - 'Retiré'
     """
@@ -190,6 +191,13 @@ def normalize_statut_epi(statut_raw: str) -> str:
         'reparation': 'En réparation',
         'à réparer': 'En réparation',
         'a reparer': 'En réparation',
+        
+        # Au nettoyage
+        'au nettoyage': 'Au nettoyage',
+        'au_nettoyage': 'Au nettoyage',
+        'en nettoyage': 'Au nettoyage',
+        'en_nettoyage': 'Au nettoyage',
+        'nettoyage': 'Au nettoyage',
         
         # Hors service
         'hors service': 'Hors service',
