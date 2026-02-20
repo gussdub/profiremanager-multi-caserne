@@ -331,6 +331,10 @@ const FormulairesInspectionConfig = () => {
     setFormData(prev => {
       const sections = [...prev.sections];
       sections[index] = { ...sections[index], [field]: value };
+      // Si on modifie le nom, supprimer titre pour éviter les conflits
+      if (field === 'nom') {
+        delete sections[index].titre;
+      }
       return { ...prev, sections };
     });
   };
