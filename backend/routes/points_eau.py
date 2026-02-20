@@ -255,6 +255,10 @@ async def update_point_eau(
     if current_user.role not in ['admin', 'superviseur']:
         raise HTTPException(status_code=403, detail="Permission refusée")
     
+    # Récupérer l'ancien état pour détecter les changements de statut
+    ancien_point = await db.points_eau.find_one({"id": point_id, "tenant_id": tenant.id})
+    ancien_etat = ancien_point.get("etat") if ancien_point else None
+    
     update_data = {k: v for k, v in point_data.dict().items() if v is not None}
     if not update_data:
         return {"message": "Aucune modification"}
@@ -268,6 +272,35 @@ async def update_point_eau(
     
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Point d'eau non trouvé")
+    
+    # Détecter si le statut/état a changé et notifier tout le personnel
+    nouveau_etat = update_data.get("etat")
+    if nouveau_etat and ancien_etat != nouveau_etat:
+        nom_point = ancien_point.get("nom") or ancien_point.get("numero_identification") or point_id
+        type_point = ancien_point.get("type", "Point d'eau")
+        modifie_par = f"{current_user.prenom} {current_user.nom}"
+        
+        etats_hors_service = ["hors_service", "hors service", "defaillante", "non_fonctionnelle"]
+        etats_en_service = ["fonctionnelle", "en_service", "en service", "operationnelle"]
+        
+        if nouveau_etat.lower() in etats_hors_service:
+            # Notifier que l'équipement est HORS SERVICE
+            await notifier_equipement_changement_statut(
+                tenant_id=tenant.id,
+                type_equipement=type_point,
+                nom_equipement=nom_point,
+                nouveau_statut="hors_service",
+                modifie_par=modifie_par
+            )
+        elif nouveau_etat.lower() in etats_en_service and ancien_etat and ancien_etat.lower() in etats_hors_service:
+            # Notifier que l'équipement est de retour EN SERVICE
+            await notifier_equipement_changement_statut(
+                tenant_id=tenant.id,
+                type_equipement=type_point,
+                nom_equipement=nom_point,
+                nouveau_statut="en_service",
+                modifie_par=modifie_par
+            )
     
     return {"message": "Point d'eau mis à jour avec succès"}
 
