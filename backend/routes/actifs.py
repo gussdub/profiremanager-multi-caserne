@@ -159,6 +159,111 @@ async def notifier_vehicule_ou_materiel_hors_service(
         logger.error(f"Erreur notification hors service: {e}")
 
 
+async def notifier_vehicule_retour_en_service(
+    tenant_id: str,
+    nom_vehicule: str,
+    modifie_par: str = None
+):
+    """
+    Notifie tous les utilisateurs qu'un véhicule est de retour en service.
+    """
+    try:
+        import resend
+        import os
+        
+        # Récupérer tous les utilisateurs actifs du tenant
+        all_users = await db.users.find({
+            "tenant_id": tenant_id,
+            "statut": "Actif"
+        }).to_list(500)
+        
+        if not all_users:
+            return
+        
+        titre = f"✅ Véhicule DE RETOUR EN SERVICE"
+        message = f"🚒 {nom_vehicule} est de nouveau EN SERVICE."
+        if modifie_par:
+            message += f" (Modifié par {modifie_par})"
+        
+        user_ids = [u.get("id") for u in all_users if u.get("id")]
+        
+        # 1. Créer les notifications internes
+        for user_id in user_ids:
+            await creer_notification(
+                tenant_id=tenant_id,
+                user_id=user_id,
+                type_notification="vehicule_en_service",
+                titre=titre,
+                message=message,
+                lien="/actifs",
+                data={
+                    "type_actif": "vehicule",
+                    "nom_actif": nom_vehicule,
+                    "statut": "en_service"
+                },
+                envoyer_email=True
+            )
+        
+        # 2. Envoyer notifications push FCM
+        try:
+            await send_push_notification_to_users(
+                user_ids=user_ids,
+                title=titre,
+                body=message,
+                data={"type": "vehicule_en_service"}
+            )
+        except Exception as e:
+            logger.warning(f"Erreur push FCM: {e}")
+        
+        # 3. Envoyer email groupé
+        try:
+            resend_api_key = os.environ.get("RESEND_API_KEY")
+            sender_email = os.environ.get("SENDER_EMAIL", "noreply@profiremanager.ca")
+            
+            if resend_api_key:
+                resend.api_key = resend_api_key
+                
+                tenant_data = await db.tenants.find_one({"id": tenant_id}, {"_id": 0})
+                tenant_nom = tenant_data.get("nom", "ProFireManager") if tenant_data else "ProFireManager"
+                
+                emails = [u.get("email") for u in all_users if u.get("email")]
+                
+                if emails:
+                    email_html = f"""
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <div style="background-color: #10B981; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
+                            <h1 style="margin: 0; font-size: 24px;">✅ Véhicule</h1>
+                            <h2 style="margin: 10px 0 0 0; font-size: 20px;">DE RETOUR EN SERVICE</h2>
+                        </div>
+                        <div style="padding: 20px; background-color: #f9fafb; border-radius: 0 0 8px 8px;">
+                            <p style="font-size: 16px; margin-bottom: 15px;">
+                                <strong>🚒 {nom_vehicule}</strong> est de nouveau <strong style="color: #10B981;">EN SERVICE</strong>.
+                            </p>
+                            {f'<p style="color: #6b7280; font-size: 14px;">Modifié par: {modifie_par}</p>' if modifie_par else ''}
+                            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+                            <p style="font-size: 12px; color: #9ca3af; text-align: center;">
+                                {tenant_nom} - ProFireManager
+                            </p>
+                        </div>
+                    </div>
+                    """
+                    
+                    resend.Emails.send({
+                        "from": f"ProFireManager <{sender_email}>",
+                        "to": emails,
+                        "subject": f"✅ Véhicule EN SERVICE: {nom_vehicule}",
+                        "html": email_html
+                    })
+                    logger.info(f"📧 Email retour en service envoyé à {len(emails)} utilisateurs")
+        except Exception as e:
+            logger.error(f"Erreur envoi email retour en service: {e}")
+        
+        logger.info(f"✅ Notification retour en service envoyée: {nom_vehicule} à {len(user_ids)} utilisateurs")
+        
+    except Exception as e:
+        logger.error(f"Erreur notification retour en service: {e}")
+
+
 # ==================== MODÈLES - VÉHICULES ====================
 
 class LocalisationGPS(BaseModel):
