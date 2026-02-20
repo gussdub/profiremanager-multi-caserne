@@ -231,7 +231,7 @@ async def get_points_eau(
     type_filter: Optional[str] = None,
     current_user: User = Depends(get_current_user)
 ):
-    """Récupérer tous les points d'eau"""
+    """Récupérer tous les points d'eau avec le nombre d'inspections"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     query = {"tenant_id": tenant.id}
@@ -242,6 +242,21 @@ async def get_points_eau(
         query,
         {"_id": 0}
     ).to_list(length=None)
+    
+    # Ajouter le nombre d'inspections pour chaque point
+    for point in points:
+        point_id = point.get("id")
+        if point_id:
+            # Compter les inspections dans les deux collections possibles
+            count_bornes_seches = await db.inspections_bornes_seches.count_documents({
+                "point_eau_id": point_id,
+                "tenant_id": tenant.id
+            })
+            count_unifiees = await db.inspections_unifiees.count_documents({
+                "asset_id": point_id,
+                "tenant_id": tenant.id
+            })
+            point["nombre_inspections"] = count_bornes_seches + count_unifiees
     
     return points
 
