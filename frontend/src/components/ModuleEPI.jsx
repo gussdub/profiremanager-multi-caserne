@@ -2923,7 +2923,13 @@ const ModuleEPI = ({ user }) => {
             
             <div className="modal-actions">
               <Button variant="outline" onClick={() => setShowNettoyageModal(false)}>Annuler</Button>
-              <Button onClick={handleSaveNettoyage}>Enregistrer</Button>
+              {selectedEPI?.statut === 'Au nettoyage' ? (
+                <Button onClick={handleRetourNettoyage} style={{ backgroundColor: '#10B981', color: 'white' }}>
+                  ✅ Confirmer le retour
+                </Button>
+              ) : (
+                <Button onClick={handleSaveNettoyage}>Enregistrer</Button>
+              )}
             </div>
           </div>
         </div>
