@@ -388,6 +388,35 @@ async def get_inspections_point_eau(
     return inspections
 
 
+@router.delete("/{tenant_slug}/approvisionnement-eau/inspections/{inspection_id}")
+async def delete_inspection(
+    tenant_slug: str,
+    inspection_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer une inspection (admin uniquement)"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent supprimer des inspections")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Essayer de supprimer dans les deux collections possibles
+    result1 = await db.inspections_bornes_seches.delete_one({
+        "id": inspection_id, 
+        "tenant_id": tenant.id
+    })
+    
+    result2 = await db.inspections_unifiees.delete_one({
+        "id": inspection_id, 
+        "tenant_id": tenant.id
+    })
+    
+    if result1.deleted_count == 0 and result2.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Inspection non trouvée")
+    
+    return {"success": True, "message": "Inspection supprimée avec succès"}
+
+
 @router.get("/{tenant_slug}/parametres/dates-tests-bornes-seches")
 async def get_dates_tests_bornes_seches(
     tenant_slug: str,
