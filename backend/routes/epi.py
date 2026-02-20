@@ -2013,6 +2013,93 @@ async def get_nettoyages_epi(
     
     return [NettoyageEPI(**n) for n in cleaned_nettoyages]
 
+
+@router.post("/{tenant_slug}/epi/{epi_id}/envoyer-nettoyage")
+async def envoyer_au_nettoyage(
+    tenant_slug: str,
+    epi_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Envoie un EPI au nettoyage - change statut et notifie l'employé"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    epi = await db.epis.find_one({"id": epi_id, "tenant_id": tenant.id})
+    if not epi:
+        raise HTTPException(status_code=404, detail="EPI non trouvé")
+    
+    # Mettre à jour le statut
+    await db.epis.update_one(
+        {"id": epi_id, "tenant_id": tenant.id},
+        {"$set": {"statut": "Au nettoyage"}}
+    )
+    
+    # Notifier le pompier assigné
+    if epi.get("user_id"):
+        type_epi_nom = epi.get("type_epi", "EPI")
+        await creer_notification(
+            tenant_id=tenant.id,
+            destinataire_id=epi["user_id"],
+            type="epi_envoi_nettoyage",
+            titre="EPI envoyé au nettoyage",
+            message=f"Votre {type_epi_nom} #{epi.get('numero_serie', '')} a été envoyé au nettoyage",
+            lien="/epi"
+        )
+    
+    return {"success": True, "message": "EPI envoyé au nettoyage"}
+
+
+@router.post("/{tenant_slug}/epi/{epi_id}/retour-nettoyage")
+async def retour_de_nettoyage(
+    tenant_slug: str,
+    epi_id: str,
+    nettoyage: NettoyageEPICreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Enregistre le retour de nettoyage d'un EPI - remet en service et notifie l'employé"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    epi = await db.epis.find_one({"id": epi_id, "tenant_id": tenant.id})
+    if not epi:
+        raise HTTPException(status_code=404, detail="EPI non trouvé")
+    
+    # Enregistrer le nettoyage dans l'historique
+    nettoyage_dict = nettoyage.dict()
+    nettoyage_dict["tenant_id"] = tenant.id
+    nettoyage_dict["epi_id"] = epi_id
+    nettoyage_obj = NettoyageEPI(**nettoyage_dict)
+    
+    nettoyage_data = nettoyage_obj.dict()
+    nettoyage_data["created_at"] = nettoyage_obj.created_at.isoformat()
+    
+    await db.nettoyages_epi.insert_one(nettoyage_data)
+    
+    # Remettre le statut en service
+    await db.epis.update_one(
+        {"id": epi_id, "tenant_id": tenant.id},
+        {"$set": {"statut": "En service"}}
+    )
+    
+    # Notifier le pompier assigné
+    if epi.get("user_id"):
+        type_epi_nom = epi.get("type_epi", "EPI")
+        await creer_notification(
+            tenant_id=tenant.id,
+            destinataire_id=epi["user_id"],
+            type="epi_retour_nettoyage",
+            titre="EPI de retour du nettoyage",
+            message=f"Votre {type_epi_nom} #{epi.get('numero_serie', '')} est revenu du nettoyage et remis en service",
+            lien="/epi"
+        )
+    
+    return {"success": True, "message": "EPI remis en service après nettoyage", "nettoyage": nettoyage_obj}
+
+
 # ========== PHASE 2 : RÉPARATIONS EPI ==========
 
 @router.post("/{tenant_slug}/epi/{epi_id}/reparation", response_model=ReparationEPI)
