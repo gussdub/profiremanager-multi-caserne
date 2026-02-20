@@ -236,8 +236,15 @@ const HistoriqueInspectionsBorneSecheModal = ({ borne, tenantSlug, onClose }) =>
         sectionName = sectionNameMap[data.section] || data.section;
       }
       
-      // Obtenir le label du champ
-      const label = itemInfo?.label || itemId;
+      // Obtenir le label du champ - PRIORITÉ au label stocké dans les réponses
+      let label = itemId;
+      if (typeof data === 'object' && data.label) {
+        // Utiliser le label stocké avec la réponse (le plus fiable)
+        label = data.label;
+      } else if (itemInfo?.label) {
+        // Fallback: utiliser le label du formulaire actuel
+        label = itemInfo.label;
+      }
       
       if (!sectionMap[sectionName]) sectionMap[sectionName] = [];
       sectionMap[sectionName].push({ id: itemId, label, valeur, type: itemInfo?.type });
