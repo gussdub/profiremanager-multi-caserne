@@ -1194,18 +1194,42 @@ async def create_inspection_unifiee(
         alerte_texte = "\n".join([f"• {msg}" for msg in alertes_messages])
         logger.info(f"📝 Messages d'alerte construits: {alertes_messages}")
         
-        # Récupérer les administrateurs et superviseurs pour notification
-        # IMPORTANT: Utiliser "statut": "Actif" et non "est_actif": True (selon le modèle User)
-        admins = await db.users.find({
-            "tenant_id": tenant.id,
-            "role": {"$in": ["admin", "superviseur"]},
-            "statut": "Actif"
-        }, {"_id": 0}).to_list(100)
-        logger.info(f"👥 Admins/Superviseurs trouvés pour tenant {tenant.id}: {len(admins)}")
+        # Récupérer les destinataires configurés selon le type d'asset
+        # Pour les bornes sèches, utiliser la liste configurée dans les paramètres
+        tenant_data = await db.tenants.find_one({"id": tenant.id}, {"_id": 0})
+        parametres = tenant_data.get("parametres", {}) if tenant_data else {}
+        actifs_params = parametres.get("actifs", {})
         
-        # Créer une notification pour chaque admin/superviseur
+        destinataires_ids = []
+        if asset_type == "borne_seche":
+            # Utiliser les destinataires configurés pour les bornes sèches
+            destinataires_ids = actifs_params.get("emails_notifications_bornes_seches", [])
+            logger.info(f"📋 Destinataires configurés pour bornes sèches: {destinataires_ids}")
+        elif asset_type == "vehicule":
+            # Utiliser les destinataires configurés pour les véhicules
+            destinataires_ids = actifs_params.get("emails_notifications_vehicules", [])
+            logger.info(f"📋 Destinataires configurés pour véhicules: {destinataires_ids}")
+        
+        # Si aucun destinataire configuré, fallback sur les admins/superviseurs
+        if destinataires_ids:
+            destinataires = await db.users.find({
+                "tenant_id": tenant.id,
+                "id": {"$in": destinataires_ids},
+                "statut": "Actif"
+            }, {"_id": 0}).to_list(100)
+            logger.info(f"👥 Destinataires configurés trouvés: {len(destinataires)}")
+        else:
+            # Fallback: tous les admins/superviseurs
+            destinataires = await db.users.find({
+                "tenant_id": tenant.id,
+                "role": {"$in": ["admin", "superviseur"]},
+                "statut": "Actif"
+            }, {"_id": 0}).to_list(100)
+            logger.info(f"👥 Fallback: Admins/Superviseurs trouvés: {len(destinataires)}")
+        
+        # Créer une notification pour chaque destinataire
         notifications_creees = 0
-        for admin in admins:
+        for dest in destinataires:
             try:
                 notification = {
                     "id": str(uuid.uuid4()),
