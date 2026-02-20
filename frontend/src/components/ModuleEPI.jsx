@@ -866,6 +866,56 @@ const ModuleEPI = ({ user }) => {
     }
   };
   
+  // Handler pour envoyer un EPI au nettoyage
+  const handleEnvoyerNettoyage = async (epi) => {
+    try {
+      await apiPost(tenantSlug, `/epi/${epi.id}/envoyer-nettoyage`, {});
+      toast({ title: "Succès", description: "EPI envoyé au nettoyage. Une notification a été envoyée au pompier." });
+      loadData(); // Recharger la liste
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Erreur lors de l'envoi",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  // Handler pour le retour de nettoyage
+  const handleRetourNettoyage = async () => {
+    try {
+      const data = {
+        ...nettoyageForm,
+        epi_id: selectedEPI.id,
+        effectue_par: nettoyageForm.effectue_par || `${user?.prenom || ''} ${user?.nom || ''}`
+      };
+      await apiPost(tenantSlug, `/epi/${selectedEPI.id}/retour-nettoyage`, data);
+      toast({ title: "Succès", description: "EPI remis en service. Une notification a été envoyée au pompier." });
+      setShowNettoyageModal(false);
+      loadNettoyages(selectedEPI.id);
+      loadData(); // Recharger la liste pour mettre à jour le statut
+      setNettoyageForm({
+        type_nettoyage: 'routine',
+        date_nettoyage: getLocalDateString(),
+        methode: 'laveuse_extractrice',
+        effectue_par: '',
+        effectue_par_id: user?.id || '',
+        isp_id: '',
+        nombre_cycles: 1,
+        temperature: '',
+        produits_utilises: '',
+        cout_nettoyage: 0,
+        notes: ''
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Erreur lors du retour de nettoyage",
+        variant: "destructive"
+      });
+    }
+  };
+  
   // Phase 2 - Handlers Réparation
   const handleSaveReparation = async () => {
     try {
