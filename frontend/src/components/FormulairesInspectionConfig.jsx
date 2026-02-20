@@ -1308,7 +1308,7 @@ const FormulairesInspectionConfig = () => {
                                 ⋮⋮
                               </button>
                               <Input
-                                value={section.nom || section.titre || ''}
+                                value={section.nom !== undefined ? section.nom : (section.titre || '')}
                                 onChange={(e) => updateSection(sectionIndex, 'nom', e.target.value)}
                                 placeholder="Nom de la section"
                                 style={{ flex: 1, minWidth: '100px', fontSize: 'clamp(0.8rem, 2.5vw, 0.9rem)' }}
