@@ -2137,6 +2137,19 @@ async def create_reparation(
         {"$set": {"statut": "En réparation"}}
     )
     
+    # Notifier le pompier assigné que son EPI part en réparation
+    if epi.get("user_id"):
+        type_epi_nom = epi.get("type_epi", "EPI")
+        motif = reparation.description or "Non spécifié"
+        await creer_notification(
+            tenant_id=tenant.id,
+            destinataire_id=epi["user_id"],
+            type="epi_envoi_reparation",
+            titre="EPI envoyé en réparation",
+            message=f"Votre {type_epi_nom} #{epi.get('numero_serie', '')} a été envoyé en réparation. Motif: {motif[:50]}",
+            lien="/epi"
+        )
+    
     return reparation_obj
 
 @router.get("/{tenant_slug}/epi/{epi_id}/reparations", response_model=List[ReparationEPI])
