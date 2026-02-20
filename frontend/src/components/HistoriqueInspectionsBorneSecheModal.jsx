@@ -165,26 +165,50 @@ const HistoriqueInspectionsBorneSecheModal = ({ borne, tenantSlug, onClose }) =>
     const reponses = inspection.reponses || {};
     const dateAffichage = getInspectionDate(inspection);
 
-    // Organiser les réponses par section
+    // Créer un mapping des IDs d'items vers leurs infos (label, section)
+    const itemInfoMap = {};
+    const sectionNameMap = {}; // Mapping des sectionId vers le nom réel de la section
+    
+    if (formulaire?.sections) {
+      formulaire.sections.forEach(section => {
+        const sectionId = section.id || section.nom;
+        sectionNameMap[sectionId] = section.nom;
+        sectionNameMap[section.nom] = section.nom; // Au cas où l'ID est le nom
+        
+        section.items?.forEach(item => {
+          itemInfoMap[item.id] = {
+            label: item.nom || item.label || item.id,
+            sectionId: sectionId,
+            sectionName: section.nom,
+            type: item.type
+          };
+        });
+      });
+    }
+
+    // Organiser les réponses par section en utilisant le formulaire comme référence
     const sectionMap = {};
+    
     Object.entries(reponses).forEach(([itemId, data]) => {
-      const sectionName = typeof data === 'object' && data.section ? data.section : 'Réponses';
       const valeur = typeof data === 'object' && data.valeur !== undefined ? data.valeur : data;
-      if (!sectionMap[sectionName]) sectionMap[sectionName] = [];
       
-      // Trouver le label du champ dans le formulaire
-      let label = itemId;
-      if (formulaire?.sections) {
-        for (const section of formulaire.sections) {
-          const item = section.items?.find(i => i.id === itemId);
-          if (item) {
-            label = item.nom || item.label || itemId;
-            break;
-          }
-        }
+      // Obtenir les infos de l'item depuis le formulaire
+      const itemInfo = itemInfoMap[itemId];
+      
+      // Utiliser le nom de section du formulaire, ou celui stocké dans data, ou 'Réponses' par défaut
+      let sectionName = 'Réponses';
+      if (itemInfo?.sectionName) {
+        sectionName = itemInfo.sectionName;
+      } else if (typeof data === 'object' && data.section) {
+        // Essayer de traduire l'ID de section vers son nom
+        sectionName = sectionNameMap[data.section] || data.section;
       }
       
-      sectionMap[sectionName].push({ id: itemId, label, valeur });
+      // Obtenir le label du champ
+      const label = itemInfo?.label || itemId;
+      
+      if (!sectionMap[sectionName]) sectionMap[sectionName] = [];
+      sectionMap[sectionName].push({ id: itemId, label, valeur, type: itemInfo?.type });
     });
 
     return (
