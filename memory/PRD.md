@@ -34,6 +34,18 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
   - Backend: `/app/backend/routes/planning.py` (endpoint `/exports/ical`)
   - Frontend: `/app/frontend/src/components/Planning.jsx` (bouton + modal)
 
+### NEW - Notifications EPI Nettoyage/Réparation (20 Feb 2026)
+- **Fonctionnalité**: Notifications in-app quand un EPI part ou revient de nettoyage/réparation
+- **Notifications déclenchées**:
+  - EPI envoyé au nettoyage → Notification au pompier
+  - EPI de retour du nettoyage → Notification au pompier
+  - EPI envoyé en réparation → Notification au pompier
+  - EPI de retour de réparation → Notification au pompier (existait déjà)
+- **Nouveau statut**: "Au nettoyage" ajouté
+- **Fichiers**:
+  - Backend: `/app/backend/routes/epi.py` (endpoints `envoyer-nettoyage`, `retour-nettoyage`)
+  - Frontend: `/app/frontend/src/components/ModuleEPI.jsx` (onglet Nettoyage refait)
+
 ### P0 - Export PDF Planning Vue Mois - Semaines commençant le dimanche (FIXED - 17 Feb 2026)
 - **Problème**: En vue mois, l'export PDF commençait les semaines le 1er du mois (ex: dimanche 1er février 2026) au lieu du lundi
 - **Cause**: Le code utilisait `date_debut` (1er du mois) comme début de la première semaine sans chercher le lundi précédent
