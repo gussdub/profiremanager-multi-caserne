@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { apiGet, apiDelete } from '../utils/api';
-import { AuthContext } from '../context/AuthContext';
+import { AuthContext } from '../contexts/AuthContext';
 import { Button } from './ui/button';
 
 const HistoriqueInspectionsBorneSecheModal = ({ borne, tenantSlug, onClose }) => {
