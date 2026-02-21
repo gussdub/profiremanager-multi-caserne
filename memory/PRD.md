@@ -24,6 +24,19 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 
 ## Recent Fixes (February 2026)
 
+### NEW - Firebase Push Notifications Activé (20 Feb 2026)
+- **Fonctionnalité**: Notifications push mobiles activées via Firebase Cloud Messaging
+- **Backend**: Firebase Admin SDK initialisé avec credentials depuis `.env`
+- **Fichiers**: `backend/server.py`, `backend/routes/notifications.py`
+
+### NEW - Bouton Caméra sur tous les modules photos (20 Feb 2026)
+- **Fonctionnalité**: Ajout du bouton "📸 Caméra" pour capturer des photos directement
+- **Modules améliorés**:
+  - `InspectionUnifieeModal.jsx` - Inspections d'équipements
+  - `InspectionComponents.jsx` - PhotoUploader (prévention)
+  - `ImageUpload.jsx` - Composant d'upload générique
+- **Utilise**: `CameraCapture.jsx` (existant)
+
 ### NEW - Export Calendrier iCal (17 Feb 2026)
 - **Fonctionnalité**: Export des gardes personnelles au format iCalendar (.ics)
 - **Compatible avec**: Google Calendar, Apple Calendar, Outlook
