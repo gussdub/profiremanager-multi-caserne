@@ -170,7 +170,7 @@ zipp==3.23.0
 zopfli==0.4.0
 
 # Firebase push notifications
-firebase-admin==6.5.0
+firebase-admin==5.4.0
 
 # Calendar export
 icalendar==5.0.13
