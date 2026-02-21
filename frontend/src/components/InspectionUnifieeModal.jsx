@@ -1353,6 +1353,18 @@ const InspectionUnifieeModal = ({
           </Button>
         </div>
       </div>
+      
+      {/* Modal Caméra pour capture de photos */}
+      {showCameraForItem && (
+        <CameraCapture
+          onCapture={(imageData) => {
+            const currentValue = reponses[showCameraForItem] || [];
+            handleReponseChange(showCameraForItem, [...currentValue, { data: imageData, name: `photo_${Date.now()}.jpg` }]);
+            setShowCameraForItem(null);
+          }}
+          onClose={() => setShowCameraForItem(null)}
+        />
+      )}
     </div>
   );
 };
