@@ -7,6 +7,7 @@ import { Label } from './ui/label';
 import Stopwatch from './ui/Stopwatch';
 import SignaturePad from './ui/SignaturePad';
 import Slider from './ui/Slider';
+import CameraCapture, { isIOS } from './CameraCapture';
 
 const InspectionUnifieeModal = ({ 
   isOpen, 
@@ -24,6 +25,7 @@ const InspectionUnifieeModal = ({
   const [demanderRemplacement, setDemanderRemplacement] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
   const [sectionActuelle, setSectionActuelle] = useState(0); // Pagination par section
+  const [showCameraForItem, setShowCameraForItem] = useState(null); // ID de l'item pour lequel la caméra est ouverte
   const fileInputRefs = useRef({});
 
   // Initialiser les réponses selon le formulaire
