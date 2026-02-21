@@ -753,7 +753,6 @@ const InspectionUnifieeModal = ({
               <input
                 type="file"
                 accept="image/*"
-                capture="environment"
                 style={{ display: 'none' }}
                 onChange={(e) => {
                   const file = e.target.files[0];
@@ -767,6 +766,18 @@ const InspectionUnifieeModal = ({
                 }}
               />
             </label>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => setShowCameraForItem(item.id)}
+              style={{ 
+                backgroundColor: '#3b82f6', 
+                color: 'white',
+                marginLeft: '0.5rem'
+              }}
+            >
+              📸 Prendre une photo
+            </Button>
           </div>
         );
       
