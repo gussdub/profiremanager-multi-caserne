@@ -87,7 +87,7 @@
   "main_agent_can_self_test": true,
   "context_for_next_testing_agent": "ConfirmDialog works in Personnel (delete user), Formations (delete formation), Planning modules. 8 files still need migration from native confirm(). Test credentials are working.",
   "tested_features": {
-    "app_loads": "PASS - Frontend loads correctly on https://week-start-monday.preview.emergentagent.com/",
+    "app_loads": "PASS - Frontend loads correctly on https://favicon-sync.preview.emergentagent.com/",
     "tenant_selection": "PASS - Can enter tenant code 'demo' and proceed",
     "login": "PASS - Login works with demo tenant credentials",
     "navigation": "PASS - Can navigate to Personnel, Horaire, Formations, Prévention modules",

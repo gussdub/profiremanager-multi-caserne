@@ -8,7 +8,7 @@ import json
 import uuid
 
 # Configuration
-base_url = "https://week-start-monday.preview.emergentagent.com/api"
+base_url = "https://favicon-sync.preview.emergentagent.com/api"
 tenant_slug = "shefford"
 admin_credentials = {"email": "gussdub@gmail.com", "mot_de_passe": "230685Juin+"}
 
