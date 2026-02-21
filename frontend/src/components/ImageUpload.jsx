@@ -430,6 +430,14 @@ const ImageUpload = ({ value, onChange, label = "Photo", compact = false }) => {
           </button>
         </div>
       )}
+      
+      {/* Modal Caméra */}
+      {showCamera && (
+        <CameraCapture
+          onCapture={handleCameraCapture}
+          onClose={() => setShowCamera(false)}
+        />
+      )}
     </div>
   );
 };
