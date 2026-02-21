@@ -32,9 +32,15 @@ import time
 import os
 import base64
 
-# Firebase pour les notifications push mobiles
-import firebase_admin
-from firebase_admin import messaging
+# Firebase pour les notifications push mobiles (import conditionnel)
+try:
+    import firebase_admin
+    from firebase_admin import messaging
+    FIREBASE_AVAILABLE = True
+except ImportError:
+    firebase_admin = None
+    messaging = None
+    FIREBASE_AVAILABLE = False
 
 # Vérifier si Firebase est initialisé
 def is_firebase_enabled():
