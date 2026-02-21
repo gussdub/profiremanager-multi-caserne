@@ -142,9 +142,25 @@ const PhotoUploader = ({ photos, setPhotos, maxPhotos = 10 }) => {
           onClick={() => document.getElementById('photo-upload').click()}
           disabled={uploading || photos.length >= maxPhotos}
         >
-          {uploading ? '⏳ Téléversement...' : '📷 Ajouter photos'}
+          {uploading ? '⏳ Téléversement...' : '📷 Galerie'}
+        </Button>
+        <Button
+          size="sm"
+          onClick={() => setShowCamera(true)}
+          disabled={uploading || photos.length >= maxPhotos}
+          style={{ marginLeft: '0.5rem', backgroundColor: '#3b82f6', color: 'white' }}
+        >
+          📸 Caméra
         </Button>
       </div>
+
+      {/* Modal Caméra */}
+      {showCamera && (
+        <CameraCapture
+          onCapture={handleCameraCapture}
+          onClose={() => setShowCamera(false)}
+        />
+      )}
 
       {photos.length > 0 && (
         <div className="photos-grid">
