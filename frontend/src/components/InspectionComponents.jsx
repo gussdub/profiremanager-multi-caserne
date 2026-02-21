@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import { Calendar } from './ui/calendar';
 import { fr } from 'date-fns/locale';
+import CameraCapture from './CameraCapture';
 
 // Fonction utilitaire pour obtenir la date locale au format YYYY-MM-DD (sans décalage timezone)
 const getLocalDateString = () => {
@@ -23,6 +24,40 @@ const PhotoUploader = ({ photos, setPhotos, maxPhotos = 10 }) => {
   const { tenantSlug } = useTenant();
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+
+  const handleCameraCapture = async (imageData) => {
+    if (photos.length >= maxPhotos) {
+      toast({
+        title: "Limite atteinte",
+        description: `Maximum ${maxPhotos} photos`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setUploading(true);
+    try {
+      const response = await apiPost(tenantSlug, '/prevention/upload-photo', {
+        photo_base64: imageData,
+        filename: `camera_${Date.now()}.jpg`
+      });
+      
+      if (response.url) {
+        setPhotos(prev => [...prev, response.url]);
+        toast({
+          title: "Photo ajoutée",
+          description: "La photo a été capturée avec succès"
+        });
+      }
+    } catch (error) {
+      // Si l'upload échoue, utiliser le base64 directement
+      setPhotos(prev => [...prev, imageData]);
+    } finally {
+      setUploading(false);
+      setShowCamera(false);
+    }
+  };
 
   const handleFileChange = async (e) => {
     const files = Array.from(e.target.files);
