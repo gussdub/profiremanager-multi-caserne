@@ -145,6 +145,12 @@ const ImageUpload = ({ value, onChange, label = "Photo", compact = false }) => {
     }
   };
 
+  const handleCameraCapture = (imageData) => {
+    setPreviewUrl(imageData);
+    onChange(imageData);
+    setShowCamera(false);
+  };
+
   // Mode compact
   if (compact) {
     return (
