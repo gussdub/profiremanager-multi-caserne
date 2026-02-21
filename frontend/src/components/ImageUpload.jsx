@@ -305,57 +305,85 @@ const ImageUpload = ({ value, onChange, label = "Photo", compact = false }) => {
       </label>
 
       {!previewUrl ? (
-        <div
-          ref={dropZoneRef}
-          onClick={handleClick}
-          onDragEnter={handleDragEnter}
-          onDragLeave={handleDragLeave}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          style={{
-            border: `2px dashed ${isDragging ? '#3b82f6' : '#d1d5db'}`,
-            borderRadius: '0.5rem',
-            padding: '2rem',
-            textAlign: 'center',
-            cursor: uploading ? 'not-allowed' : 'pointer',
-            backgroundColor: isDragging ? '#eff6ff' : '#fafafa',
-            transition: 'all 0.2s'
-          }}
-        >
-          {uploading ? (
-            <div style={{ color: '#6b7280' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⏳</div>
-              <p>Upload en cours...</p>
-            </div>
-          ) : (
-            <div style={{ color: '#6b7280' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📷</div>
-              <p style={{ marginBottom: '0.5rem', fontWeight: '600' }}>
-                Cliquez, glissez-déposez ou Ctrl+V
-              </p>
-              <p style={{ fontSize: '0.75rem' }}>
-                PNG, JPG jusqu'à 5MB
-              </p>
-            </div>
-          )}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            
-            onChange={handleFileSelect}
-            style={{ 
-              position: 'absolute',
-              width: '1px',
-              height: '1px',
-              padding: '0',
-              margin: '-1px',
-              overflow: 'hidden',
-              clip: 'rect(0, 0, 0, 0)',
-              whiteSpace: 'nowrap',
-              border: '0'
+        <div>
+          <div
+            ref={dropZoneRef}
+            onClick={handleClick}
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            style={{
+              border: `2px dashed ${isDragging ? '#3b82f6' : '#d1d5db'}`,
+              borderRadius: '0.5rem',
+              padding: '2rem',
+              textAlign: 'center',
+              cursor: uploading ? 'not-allowed' : 'pointer',
+              backgroundColor: isDragging ? '#eff6ff' : '#fafafa',
+              transition: 'all 0.2s'
             }}
-          />
+          >
+            {uploading ? (
+              <div style={{ color: '#6b7280' }}>
+                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⏳</div>
+                <p>Upload en cours...</p>
+              </div>
+            ) : (
+              <div style={{ color: '#6b7280' }}>
+                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📷</div>
+                <p style={{ marginBottom: '0.5rem', fontWeight: '600' }}>
+                  Cliquez, glissez-déposez ou Ctrl+V
+                </p>
+                <p style={{ fontSize: '0.75rem' }}>
+                  PNG, JPG jusqu'à 5MB
+                </p>
+              </div>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              
+              onChange={handleFileSelect}
+              style={{ 
+                position: 'absolute',
+                width: '1px',
+                height: '1px',
+                padding: '0',
+                margin: '-1px',
+                overflow: 'hidden',
+                clip: 'rect(0, 0, 0, 0)',
+                whiteSpace: 'nowrap',
+                border: '0'
+              }}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowCamera(true)}
+            disabled={uploading}
+            style={{
+              marginTop: '0.75rem',
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              padding: '0.75rem',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '0.5rem',
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
+          >
+            📸 Prendre une photo avec la caméra
+          </button>
         </div>
       ) : (
         <div style={{
