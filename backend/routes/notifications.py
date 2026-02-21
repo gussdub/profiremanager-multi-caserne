@@ -44,6 +44,8 @@ except ImportError:
 
 # Vérifier si Firebase est initialisé
 def is_firebase_enabled():
+    if not FIREBASE_AVAILABLE or firebase_admin is None:
+        return False
     try:
         firebase_admin.get_app()
         return True
