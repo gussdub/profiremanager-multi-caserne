@@ -24,6 +24,14 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 
 ## Recent Fixes (February 2026)
 
+### NEW - Mise à jour du Favicon / Icônes App Mobile (21 Feb 2026)
+- **Fonctionnalité**: Mise à jour du favicon web et des icônes natives pour iOS et Android
+- **Fichiers modifiés**:
+  - Web: `frontend/public/favicon.ico`, `favicon-16x16.png`, `favicon-32x32.png`, `apple-touch-icon.png`, `logo192.png`, `logo512.png`
+  - iOS: `frontend/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png`
+  - Android: `frontend/android/app/src/main/res/mipmap-*/ic_launcher*.png`
+- **Action requise**: Reconstruire les apps natives avec Xcode (iOS) et Android Studio (Android) puis soumettre aux stores
+
 ### NEW - Firebase Push Notifications Activé (20 Feb 2026)
 - **Fonctionnalité**: Notifications push mobiles activées via Firebase Cloud Messaging
 - **Backend**: Firebase Admin SDK initialisé avec credentials depuis `.env`
@@ -103,10 +111,11 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 ## Pending Tasks
 
 ### P1
+- **Test complet notifications push**: Vérifier les notifications Firebase sur appareil réel (iOS/Android)
 - Adapter l'import d'inspections d'hydrants pour le nouveau champ "Cavitation durant le pompage"
 
-### P3
-- Réactivation de l'intégration Firebase pour les notifications push (quand les apps mobiles seront prêtes)
+### P2
+- **Rebuild et déploiement apps natives**: Reconstruire avec Xcode/Android Studio puis soumettre aux stores
 
 ### Refactoring recommandé
 - Le fichier `backend/routes/planning.py` dépasse 5000 lignes et devrait être découpé en modules plus petits
