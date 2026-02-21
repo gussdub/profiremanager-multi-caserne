@@ -168,3 +168,9 @@ xlsxwriter==3.2.9
 yarl==1.22.0
 zipp==3.23.0
 zopfli==0.4.0
+
+# Firebase push notifications
+firebase-admin==6.5.0
+
+# Calendar export
+icalendar==5.0.13
