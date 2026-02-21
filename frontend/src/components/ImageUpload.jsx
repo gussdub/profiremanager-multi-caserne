@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTenant } from '../contexts/TenantContext';
+import CameraCapture from './CameraCapture';
 
 const ImageUpload = ({ value, onChange, label = "Photo", compact = false }) => {
   const { tenantSlug } = useTenant();
@@ -7,6 +8,7 @@ const ImageUpload = ({ value, onChange, label = "Photo", compact = false }) => {
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(value || '');
   const [showFullUploader, setShowFullUploader] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
   const fileInputRef = useRef(null);
   const dropZoneRef = useRef(null);
 
