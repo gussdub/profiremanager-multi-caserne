@@ -192,10 +192,28 @@ def is_temps_plein(user: dict) -> bool:
 
 # ==================== FIREBASE INITIALIZATION ====================
 
-# Firebase initialization disabled - feature not used
-# firebase_credentials_env = os.environ.get('FIREBASE_CREDENTIALS')
-# firebase_cred_path = ROOT_DIR / 'firebase-credentials.json'
-print("ℹ️ Firebase not configured - Push notifications disabled")
+# Initialize Firebase for push notifications
+firebase_credentials_env = os.environ.get('FIREBASE_CREDENTIALS')
+firebase_initialized = False
+
+if firebase_credentials_env:
+    try:
+        import base64
+        import json
+        # Decode base64 credentials
+        firebase_creds_json = base64.b64decode(firebase_credentials_env).decode('utf-8')
+        firebase_creds_dict = json.loads(firebase_creds_json)
+        
+        # Initialize Firebase Admin SDK
+        cred = credentials.Certificate(firebase_creds_dict)
+        firebase_admin.initialize_app(cred)
+        firebase_initialized = True
+        print("✅ Firebase initialized successfully - Push notifications enabled")
+    except Exception as e:
+        print(f"⚠️ Firebase initialization error: {e}")
+        print("ℹ️ Push notifications disabled")
+else:
+    print("ℹ️ Firebase credentials not found - Push notifications disabled")
 
 # ==================== INITIALIZATION ====================
 
