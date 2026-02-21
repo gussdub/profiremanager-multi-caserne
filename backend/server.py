@@ -34,9 +34,7 @@ import base64
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 import resend
-# Firebase imports for push notifications
-import firebase_admin
-from firebase_admin import credentials, messaging
+# Firebase imports for push notifications (optional - loaded conditionally below)
 import qrcode
 from pwa_manifest import pwa_router
 from routes.dsi import router as dsi_router
