@@ -193,9 +193,13 @@ def is_temps_plein(user: dict) -> bool:
 # Initialize Firebase for push notifications
 firebase_credentials_env = os.environ.get('FIREBASE_CREDENTIALS')
 firebase_initialized = False
+firebase_admin = None
+messaging = None
 
 if firebase_credentials_env:
     try:
+        import firebase_admin as _firebase_admin
+        from firebase_admin import credentials as _credentials, messaging as _messaging
         import base64
         import json
         # Decode base64 credentials
@@ -203,10 +207,14 @@ if firebase_credentials_env:
         firebase_creds_dict = json.loads(firebase_creds_json)
         
         # Initialize Firebase Admin SDK
-        cred = credentials.Certificate(firebase_creds_dict)
-        firebase_admin.initialize_app(cred)
+        cred = _credentials.Certificate(firebase_creds_dict)
+        _firebase_admin.initialize_app(cred)
+        firebase_admin = _firebase_admin
+        messaging = _messaging
         firebase_initialized = True
         print("✅ Firebase initialized successfully - Push notifications enabled")
+    except ImportError:
+        print("⚠️ firebase-admin package not installed - Push notifications disabled")
     except Exception as e:
         print(f"⚠️ Firebase initialization error: {e}")
         print("ℹ️ Push notifications disabled")
