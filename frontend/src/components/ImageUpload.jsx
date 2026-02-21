@@ -175,29 +175,54 @@ const ImageUpload = ({ value, onChange, label = "Photo", compact = false }) => {
         />
         
         {!previewUrl ? (
-          <button
-            type="button"
-            onClick={handleClick}
-            disabled={uploading}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-              padding: '0.375rem 0.75rem',
-              backgroundColor: uploading ? '#9ca3af' : '#6366f1',
-              color: 'white',
-              border: 'none',
-              borderRadius: '0.375rem',
-              cursor: uploading ? 'not-allowed' : 'pointer',
-              fontSize: '0.8rem',
-              fontWeight: '500',
-              transition: 'background-color 0.2s'
-            }}
-            onMouseEnter={(e) => !uploading && (e.currentTarget.style.backgroundColor = '#4f46e5')}
-            onMouseLeave={(e) => !uploading && (e.currentTarget.style.backgroundColor = '#6366f1')}
-          >
-            {uploading ? '⏳' : '📷'} {uploading ? 'Téléversement...' : 'Prendre photo'}
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              type="button"
+              onClick={handleClick}
+              disabled={uploading}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.25rem',
+                padding: '0.375rem 0.75rem',
+                backgroundColor: uploading ? '#9ca3af' : '#6366f1',
+                color: 'white',
+                border: 'none',
+                borderRadius: '0.375rem',
+                cursor: uploading ? 'not-allowed' : 'pointer',
+                fontSize: '0.8rem',
+                fontWeight: '500',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => !uploading && (e.currentTarget.style.backgroundColor = '#4f46e5')}
+              onMouseLeave={(e) => !uploading && (e.currentTarget.style.backgroundColor = '#6366f1')}
+            >
+              📁 {uploading ? 'Téléversement...' : 'Fichier'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowCamera(true)}
+              disabled={uploading}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.25rem',
+                padding: '0.375rem 0.75rem',
+                backgroundColor: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '0.375rem',
+                cursor: 'pointer',
+                fontSize: '0.8rem',
+                fontWeight: '500',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
+            >
+              📸 Caméra
+            </button>
+          </div>
         ) : (
           <div style={{ 
             display: 'inline-flex', 
