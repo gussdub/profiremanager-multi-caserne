@@ -30,11 +30,21 @@ import uuid
 import json
 import time
 import os
+import base64
 
-# Firebase pour les notifications push mobiles (disabled)
-# import firebase_admin
-# from firebase_admin import messaging
-FIREBASE_ENABLED = False
+# Firebase pour les notifications push mobiles
+import firebase_admin
+from firebase_admin import messaging
+
+# Vérifier si Firebase est initialisé
+def is_firebase_enabled():
+    try:
+        firebase_admin.get_app()
+        return True
+    except ValueError:
+        return False
+
+FIREBASE_ENABLED = is_firebase_enabled()
 
 # Web Push pour les PWA
 from pywebpush import webpush, WebPushException
