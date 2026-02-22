@@ -3,30 +3,45 @@
  * Utilise Capacitor pour accéder aux fonctionnalités natives
  */
 
-import { Capacitor } from '@capacitor/core';
-
 // Import dynamique pour éviter les erreurs sur le web
+let Capacitor = null;
 let BiometricAuth = null;
 let SecureStorage = null;
+let isNative = false;
+
+// Vérifier si on est sur une plateforme native
+const checkNativePlatform = async () => {
+  try {
+    const capacitorModule = await import('@capacitor/core');
+    Capacitor = capacitorModule.Capacitor;
+    isNative = Capacitor && Capacitor.isNativePlatform();
+    return isNative;
+  } catch (error) {
+    console.log('[Biometric] Capacitor non disponible');
+    return false;
+  }
+};
 
 // Initialiser les plugins si on est sur mobile
 const initPlugins = async () => {
-  if (Capacitor.isNativePlatform()) {
-    try {
-      const biometricModule = await import('@aparajita/capacitor-biometric-auth');
-      BiometricAuth = biometricModule.BiometricAuth;
-      
-      const storageModule = await import('@aparajita/capacitor-secure-storage');
-      SecureStorage = storageModule.SecureStorage;
-      
-      console.log('[Biometric] ✅ Plugins chargés avec succès');
-      return true;
-    } catch (error) {
-      console.log('[Biometric] ⚠️ Plugins non disponibles:', error.message);
-      return false;
-    }
+  const native = await checkNativePlatform();
+  if (!native) {
+    return false;
   }
-  return false;
+  
+  try {
+    const biometricModule = await import('@aparajita/capacitor-biometric-auth');
+    BiometricAuth = biometricModule.BiometricAuth;
+    
+    const storageModule = await import('@aparajita/capacitor-secure-storage');
+    SecureStorage = storageModule.SecureStorage;
+    
+    console.log('[Biometric] ✅ Plugins chargés avec succès');
+    return true;
+  } catch (error) {
+    console.log('[Biometric] ⚠️ Plugins non disponibles:', error.message);
+    return false;
+  }
 };
 
 // Vérifier si l'authentification biométrique est disponible
