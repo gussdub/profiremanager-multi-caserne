@@ -435,6 +435,28 @@ const Login = () => {
     });
   }, []);
 
+  // Vérifier la disponibilité de la biométrie au montage
+  useEffect(() => {
+    const checkBiometric = async () => {
+      try {
+        const { available, biometryType: type } = await BiometricService.checkBiometricAvailability();
+        setBiometricAvailable(available);
+        setBiometryType(type);
+        console.log('[Login] Biométrie disponible:', available, type);
+        
+        if (available && tenantSlug) {
+          const hasCredentials = await BiometricService.hasBiometricCredentials(tenantSlug);
+          setHasBiometricCredentials(hasCredentials);
+          console.log('[Login] Identifiants biométriques enregistrés:', hasCredentials);
+        }
+      } catch (error) {
+        console.log('[Login] Erreur vérification biométrie:', error);
+      }
+    };
+    
+    checkBiometric();
+  }, [tenantSlug]);
+
   // Charger les identifiants sauvegardés (SANS auto-login)
   // L'utilisateur devra cliquer sur "Se connecter" manuellement
   useEffect(() => {
