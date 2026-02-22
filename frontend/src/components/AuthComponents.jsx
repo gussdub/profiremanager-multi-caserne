@@ -544,6 +544,53 @@ const Login = () => {
     return <ForgotPassword onBack={() => setShowForgotPassword(false)} />;
   }
 
+  // Fonction pour gérer la connexion biométrique
+  const handleBiometricLogin = async () => {
+    setBiometricLoading(true);
+    try {
+      // Récupérer les identifiants via authentification biométrique
+      const credentials = await BiometricService.loginWithBiometric(tenantSlug);
+      
+      // Connexion avec les identifiants récupérés
+      const result = await login(credentials.email, credentials.password);
+      
+      if (result.success) {
+        toast({
+          title: "✅ Connexion réussie",
+          description: `Bienvenue ! Connecté avec ${biometryType}`
+        });
+      } else {
+        toast({
+          title: "Erreur de connexion",
+          description: result.error || "Identifiants invalides. Reconnectez-vous avec votre email/mot de passe.",
+          variant: "destructive"
+        });
+        // Effacer les identifiants biométriques invalides
+        await BiometricService.clearStoredCredentials(tenantSlug);
+        setHasBiometricCredentials(false);
+      }
+    } catch (error) {
+      console.error('[Login] Erreur biométrique:', error);
+      
+      let errorMessage = "Authentification biométrique échouée";
+      if (error.message?.includes('Aucun identifiant')) {
+        errorMessage = error.message;
+      } else if (error.code === 'userCancel' || error.message?.includes('cancel')) {
+        errorMessage = "Authentification annulée";
+      } else if (error.code === 'lockout' || error.message?.includes('lockout')) {
+        errorMessage = "Trop de tentatives. Réessayez plus tard.";
+      }
+      
+      toast({
+        title: "Authentification échouée",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    } finally {
+      setBiometricLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -558,6 +605,18 @@ const Login = () => {
           title: "✅ Identifiants sauvegardés",
           description: "Vos identifiants seront pré-remplis lors de votre prochaine visite"
         });
+      }
+      
+      // Sauvegarder aussi pour la biométrie si disponible
+      if (biometricAvailable && rememberMe) {
+        const saved = await BiometricService.storeCredentials(tenantSlug, email, motDePasse);
+        if (saved) {
+          setHasBiometricCredentials(true);
+          toast({
+            title: `✅ ${biometryType} activé`,
+            description: `Utilisez ${biometryType} pour vous connecter la prochaine fois`
+          });
+        }
       }
     } else {
       // En cas d'échec, ne PAS effacer les credentials immédiatement
