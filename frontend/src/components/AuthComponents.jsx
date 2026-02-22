@@ -8,6 +8,8 @@ import { Label } from './ui/label';
 import { useToast } from '../hooks/use-toast';
 import { useTenant } from '../contexts/TenantContext';
 import { useAuth } from '../contexts/AuthContext';
+import { Fingerprint } from 'lucide-react';
+import * as BiometricService from '../services/biometricAuth';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const API = BACKEND_URL ? `${BACKEND_URL}/api` : '/api';
