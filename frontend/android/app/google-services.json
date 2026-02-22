@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "598997641399",
-    "project_id": "profiremanager",
-    "storage_bucket": "profiremanager.firebasestorage.app"
+    "project_number": "1036275104562",
+    "project_id": "profiremanager-notification",
+    "storage_bucket": "profiremanager-notification.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:598997641399:android:891b740b2580d7ec968532",
+        "mobilesdk_app_id": "1:1036275104562:android:4329d28b0615a20c94352b",
         "android_client_info": {
           "package_name": "com.profiremanager.app"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyC7eGaD1n6BaaTw3dHdi6LVlBp6xKaHuPo"
+          "current_key": "AIzaSyCnd1pCI6-azpc6qFd3zmEKR8KiutYW3CM"
         }
       ],
       "services": {
