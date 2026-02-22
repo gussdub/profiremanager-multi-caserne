@@ -789,10 +789,52 @@ const Login = () => {
                   Se souvenir de moi sur cet appareil
                 </label>
               </div>
+              
+              {/* Bouton d'authentification biométrique */}
+              {biometricAvailable && hasBiometricCredentials && (
+                <Button 
+                  type="button"
+                  onClick={handleBiometricLogin}
+                  className="w-full"
+                  variant="outline"
+                  disabled={biometricLoading || loading}
+                  data-testid="biometric-login-btn"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    backgroundColor: '#1a1a2e',
+                    borderColor: '#dc2626',
+                    color: 'white',
+                    marginBottom: '0.5rem'
+                  }}
+                >
+                  <Fingerprint size={20} />
+                  {biometricLoading ? 'Authentification...' : `Se connecter avec ${biometryType}`}
+                </Button>
+              )}
+              
+              {/* Message si biométrie disponible mais pas encore configurée */}
+              {biometricAvailable && !hasBiometricCredentials && (
+                <div style={{ 
+                  fontSize: '0.8rem', 
+                  color: '#888', 
+                  textAlign: 'center', 
+                  marginBottom: '0.5rem',
+                  padding: '0.5rem',
+                  backgroundColor: 'rgba(255,255,255,0.05)',
+                  borderRadius: '4px'
+                }}>
+                  <Fingerprint size={16} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
+                  Connectez-vous une fois pour activer {biometryType}
+                </div>
+              )}
+              
               <Button 
                 type="submit" 
                 className="w-full" 
-                disabled={loading}
+                disabled={loading || biometricLoading}
                 data-testid="login-submit-btn"
               >
                 {loading ? 'Connexion...' : 'Se connecter'}
