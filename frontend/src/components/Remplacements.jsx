@@ -1020,24 +1020,27 @@ const Remplacements = () => {
                   size="sm" 
                   onClick={handleFilterUrgentConges}
                   data-testid="filter-urgent-conges"
+                  className="flex items-center gap-1"
                 >
-                  🚨 Congés urgents
+                  <AlertTriangle size={14} /> Congés urgents
                 </Button>
                 <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={handleExportConges}
                   data-testid="export-conges"
+                  className="flex items-center gap-1"
                 >
-                  📊 Exporter congés
+                  <FileSpreadsheet size={14} /> Exporter congés
                 </Button>
                 <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={handlePlanningImpact}
                   data-testid="planning-impact"
+                  className="flex items-center gap-1"
                 >
-                  📅 Impact planning
+                  <CalendarDays size={14} /> Impact planning
                 </Button>
               </div>
             )}
