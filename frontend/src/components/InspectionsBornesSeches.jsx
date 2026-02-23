@@ -502,18 +502,19 @@ const InspectionsBornesSeches = ({ user }) => {
         /* Vue Liste */
         <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px' }}>
               <thead>
                 <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem' }}>Icône</th>
-                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem' }}>N° Identification</th>
-                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem' }}>Nom</th>
-                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem' }}>Adresse</th>
-                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem' }}>Dernière Inspection</th>
-                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem' }}>Prochaine Due</th>
-                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem' }}>Nb Inspections</th>
-                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem' }}>Statut Inspection</th>
-                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem' }}>Actions</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '0.75rem' }}>Type</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>N° Ident.</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '0.75rem' }}>Nom</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '0.75rem' }}>Adresse</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>Dern. Insp.</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>Proch. Due</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'center', fontWeight: '600', fontSize: '0.75rem' }}>Nb</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '0.75rem' }}>Statut</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '0.75rem' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
