@@ -2560,17 +2560,17 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
                 </h4>
                 <div className="bg-gray-50 rounded-lg p-3 space-y-2">
                   {usersByRole.superviseur.map(u => (
-                    <label key={u.id} className="flex items-center gap-3 cursor-pointer hover:bg-gray-100 p-2 rounded">
+                    <label key={u.id} className="flex flex-wrap items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 rounded">
                       <input
                         type="checkbox"
                         checked={(settings.validateurs || []).includes(u.id)}
                         onChange={() => toggleValidateur(u.id)}
-                        className="w-5 h-5 rounded"
+                        className="w-5 h-5 rounded flex-shrink-0"
                       />
                       <span className="font-medium">{u.prenom} {u.nom}</span>
-                      <span className="text-gray-500 text-sm">({u.email})</span>
+                      <span className="text-gray-500 text-xs break-all">({u.email})</span>
                       {(settings.validateurs || []).includes(u.id) && (
-                        <span className="ml-auto text-green-600 text-sm">✓ Validateur</span>
+                        <span className="text-green-600 text-xs whitespace-nowrap">✓ Validateur</span>
                       )}
                     </label>
                   ))}
