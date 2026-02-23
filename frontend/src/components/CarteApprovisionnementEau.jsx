@@ -769,17 +769,17 @@ const CarteApprovisionnementEau = ({ user }) => {
 
   // Rendu de la vue liste
   const renderListe = () => (
-    <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+    <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e5e7eb', overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
         <thead>
           <tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
-            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem' }}>Type</th>
-            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem' }}>N° Identification</th>
-            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem' }}>Adresse</th>
-            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem' }}>Débit</th>
-            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem' }}>État</th>
-            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem' }}>Dernière Inspection</th>
-            <th style={{ padding: '1rem', textAlign: 'center', fontWeight: '600', fontSize: '0.875rem' }}>Actions</th>
+            <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>Type</th>
+            <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>N° Identification</th>
+            <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '0.75rem' }}>Adresse</th>
+            <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>Débit</th>
+            <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '0.75rem' }}>État</th>
+            <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>Inspection</th>
+            <th style={{ padding: '0.75rem', textAlign: 'center', fontWeight: '600', fontSize: '0.75rem' }}>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -792,41 +792,42 @@ const CarteApprovisionnementEau = ({ user }) => {
           ) : (
             filteredPoints.map(point => (
               <tr key={point.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                <td style={{ padding: '1rem' }}>
-                  <img src={getTypeIcon(point.type)} alt="icon" style={{ width: '40px', height: '40px' }} />
+                <td style={{ padding: '0.75rem' }}>
+                  <img src={getTypeIcon(point.type)} alt="icon" style={{ width: '32px', height: '32px' }} />
                 </td>
-                <td style={{ padding: '1rem', fontSize: '0.875rem', fontWeight: '500' }}>
+                <td style={{ padding: '0.75rem', fontSize: '0.8rem', fontWeight: '500', whiteSpace: 'nowrap' }}>
                   {point.numero_identification}
                 </td>
-                <td style={{ padding: '1rem', fontSize: '0.875rem', color: '#6b7280' }}>
+                <td style={{ padding: '0.75rem', fontSize: '0.8rem', color: '#6b7280', maxWidth: '150px' }}>
                   {point.adresse || '-'}<br/>
-                  <span style={{ fontSize: '0.75rem' }}>{point.ville || ''}</span>
+                  <span style={{ fontSize: '0.7rem' }}>{point.ville || ''}</span>
                 </td>
-                <td style={{ padding: '1rem', fontSize: '0.875rem' }}>
-                  {point.debit_gpm ? `${point.debit_gpm} GPM` : '-'}
+                <td style={{ padding: '0.75rem', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                  {point.debit_gpm ? `${point.debit_gpm}` : '-'}
                 </td>
-                <td style={{ padding: '1rem' }}>
+                <td style={{ padding: '0.75rem' }}>
                   <span style={{
-                    padding: '4px 12px',
+                    padding: '2px 8px',
                     borderRadius: '12px',
-                    fontSize: '0.75rem',
+                    fontSize: '0.7rem',
                     fontWeight: '500',
                     background: getMarkerColor(point) + '20',
-                    color: getMarkerColor(point)
+                    color: getMarkerColor(point),
+                    whiteSpace: 'nowrap'
                   }}>
-                    {point.etat === 'fonctionnelle' && '✓ Fonctionnelle'}
-                    {point.etat === 'attention' && '⚠ Attention'}
-                    {point.etat === 'hors_service' && '✗ Hors service'}
-                    {!point.etat && '◯ Non défini'}
+                    {point.etat === 'fonctionnelle' && '✓ OK'}
+                    {point.etat === 'attention' && '⚠ Att.'}
+                    {point.etat === 'hors_service' && '✗ HS'}
+                    {!point.etat && '◯ N/D'}
                   </span>
                 </td>
-                <td style={{ padding: '1rem', fontSize: '0.875rem', color: '#6b7280' }}>
+                <td style={{ padding: '0.75rem', fontSize: '0.8rem', color: '#6b7280', whiteSpace: 'nowrap' }}>
                   {point.date_derniere_inspection ? 
                     new Date(point.date_derniere_inspection).toLocaleDateString('fr-FR') : 
                     'Jamais'}
                 </td>
-                <td style={{ padding: '1rem' }}>
-                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                <td style={{ padding: '0.75rem' }}>
+                  <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center' }}>
                     <button
                       onClick={() => openPointModal(point)}
                       style={{
