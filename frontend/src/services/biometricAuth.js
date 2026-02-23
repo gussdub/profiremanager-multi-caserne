@@ -46,14 +46,17 @@ const initPlugins = async () => {
 
 // Vérifier si l'authentification biométrique est disponible
 export const checkBiometricAvailability = async () => {
-  // Sur le web, pas de biométrie
-  if (!Capacitor.isNativePlatform()) {
+  // D'abord vérifier si on est sur une plateforme native
+  const native = await checkNativePlatform();
+  if (!native) {
+    console.log('[Biometric] Pas sur plateforme native');
     return { available: false, biometryType: null };
   }
 
-  await initPlugins();
+  const pluginsLoaded = await initPlugins();
   
-  if (!BiometricAuth) {
+  if (!pluginsLoaded || !BiometricAuth) {
+    console.log('[Biometric] Plugins non chargés');
     return { available: false, biometryType: null };
   }
 
