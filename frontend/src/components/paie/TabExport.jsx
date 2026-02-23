@@ -289,33 +289,34 @@ const TabExport = ({ context }) => {
 
         {/* Liste des mappings */}
         <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', minWidth: '500px' }}>
             <thead>
               <tr style={{ background: '#f8fafc' }}>
-                <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Type d&apos;heures</th>
-                <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Code de gain</th>
-                <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Description</th>
-                <th style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid #e5e7eb', width: '80px' }}>Actions</th>
+                <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #e5e7eb', whiteSpace: 'nowrap' }}>Type d&apos;heures</th>
+                <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #e5e7eb', whiteSpace: 'nowrap' }}>Code</th>
+                <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Description</th>
+                <th style={{ padding: '8px', textAlign: 'center', borderBottom: '1px solid #e5e7eb', width: '60px' }}>Act.</th>
               </tr>
             </thead>
             <tbody>
               {codeMappings.length === 0 ? (
                 <tr>
                   <td colSpan="4" style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>
-                    Aucune association configurée. Ajoutez vos codes de gains pour activer l&apos;export.
+                    Aucune association configurée.
                   </td>
                 </tr>
               ) : (
                 codeMappings.map(m => (
                   <tr key={m.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                    <td style={{ padding: '10px' }}>
+                    <td style={{ padding: '8px', fontSize: '0.75rem' }}>
                       {eventTypes.find(et => et.code === m.internal_event_type)?.label || m.internal_event_type}
                     </td>
-                    <td style={{ padding: '10px', fontFamily: 'monospace', fontWeight: '600', color: '#2563eb' }}>{m.external_pay_code}</td>
-                    <td style={{ padding: '10px', color: '#64748b' }}>{m.description || '-'}</td>
-                    <td style={{ padding: '10px', textAlign: 'center' }}>
+                    <td style={{ padding: '8px', fontFamily: 'monospace', fontWeight: '600', color: '#2563eb', fontSize: '0.75rem' }}>{m.external_pay_code}</td>
+                    <td style={{ padding: '8px', color: '#64748b', fontSize: '0.75rem' }}>{m.description || '-'}</td>
+                    <td style={{ padding: '8px', textAlign: 'center' }}>
                       <Button variant="ghost" size="sm" onClick={() => handleDeleteCodeMapping(m.id)}>
-                        <Trash2 size={16} style={{ color: '#ef4444' }} />
+                        <Trash2 size={14} style={{ color: '#ef4444' }} />
                       </Button>
                     </td>
                   </tr>
@@ -323,6 +324,7 @@ const TabExport = ({ context }) => {
               )}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </div>
