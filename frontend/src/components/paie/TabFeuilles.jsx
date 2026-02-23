@@ -219,6 +219,7 @@ const TabFeuilles = ({ context }) => {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Modal détail */}
