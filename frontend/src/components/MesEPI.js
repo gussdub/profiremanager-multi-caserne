@@ -1460,7 +1460,7 @@ const MesEPI = ({ user }) => {
           user={user}
           equipement={{
             id: selectedEPI.id,
-            nom: selectedEPI.type_epi,
+            nom: selectedEPI.type_epi_nom || selectedEPI.type_epi,
             code_unique: selectedEPI.numero_serie,
             categorie_nom: `${selectedEPI.marque || ''} ${selectedEPI.modele || ''}`.trim(),
             asset_type: 'epi',
