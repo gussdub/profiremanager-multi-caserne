@@ -520,56 +520,65 @@ const InspectionsBornesSeches = ({ user }) => {
               <tbody>
                 {filteredPointsEau.map(point => (
                   <tr key={point.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                    <td style={{ padding: '1rem' }}>
-                      <img src={getTypeIcon(point.type)} alt="icon" style={{ width: '40px', height: '40px' }} />
+                    <td style={{ padding: '0.5rem' }}>
+                      <img 
+                        src={getTypeIcon(point.type)} 
+                        alt={point.type || 'icon'} 
+                        style={{ width: '32px', height: '32px' }} 
+                        onError={(e) => {
+                          console.log('[InspectionsBornesSeches] Image load error for type:', point.type);
+                          e.target.style.display = 'none';
+                        }}
+                      />
                     </td>
-                    <td style={{ padding: '1rem', fontWeight: '600', fontSize: '0.875rem' }}>
+                    <td style={{ padding: '0.5rem', fontWeight: '600', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
                       {point.numero_identification}
                     </td>
-                    <td style={{ padding: '1rem', fontSize: '0.875rem' }}>
+                    <td style={{ padding: '0.5rem', fontSize: '0.75rem' }}>
                       {point.nom}
-                      <div style={{ fontSize: '0.7rem', color: '#3b82f6' }}>{getTypeLabel(point.type)}</div>
+                      <div style={{ fontSize: '0.65rem', color: '#3b82f6' }}>{getTypeLabel(point.type)}</div>
                     </td>
-                    <td style={{ padding: '1rem', fontSize: '0.875rem', color: '#6b7280' }}>
-                      {point.adresse || 'Non défini'}
+                    <td style={{ padding: '0.5rem', fontSize: '0.75rem', color: '#6b7280', maxWidth: '120px' }}>
+                      {point.adresse || '-'}
                     </td>
-                    <td style={{ padding: '1rem', fontSize: '0.875rem' }}>
+                    <td style={{ padding: '0.5rem', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
                       {point.derniere_inspection_date 
                         ? new Date(point.derniere_inspection_date).toLocaleDateString('fr-FR')
                         : 'Jamais'}
                     </td>
-                    <td style={{ padding: '1rem', fontSize: '0.875rem', color: '#6b7280' }}>
+                    <td style={{ padding: '0.5rem', fontSize: '0.75rem', color: '#6b7280', whiteSpace: 'nowrap' }}>
                       {point.derniere_inspection_date 
                         ? new Date(new Date(point.derniere_inspection_date).getTime() + 6 * 30 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')
-                        : 'À déterminer'}
+                        : '-'}
                     </td>
-                    <td style={{ padding: '1rem', fontSize: '0.875rem', fontWeight: '600', textAlign: 'center' }}>
+                    <td style={{ padding: '0.5rem', fontSize: '0.75rem', fontWeight: '600', textAlign: 'center' }}>
                       {point.nombre_inspections || 0}
                     </td>
-                    <td style={{ padding: '1rem' }}>
+                    <td style={{ padding: '0.5rem' }}>
                       <span style={{
-                        padding: '4px 12px',
+                        padding: '2px 8px',
                         borderRadius: '12px',
-                        fontSize: '0.75rem',
+                        fontSize: '0.65rem',
                         fontWeight: '500',
                         background: getInspectionColor(point) + '20',
-                        color: getInspectionColor(point)
+                        color: getInspectionColor(point),
+                        whiteSpace: 'nowrap'
                       }}>
                         {getInspectionLabel(point)}
                       </span>
                     </td>
-                    <td style={{ padding: '1rem' }}>
-                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <td style={{ padding: '0.5rem' }}>
+                      <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
                         <button
                           onClick={() => openInspectionModal(point)}
                           style={{
-                            padding: '0.5rem 0.75rem',
+                            padding: '0.35rem 0.5rem',
                             background: '#3b82f6',
                             color: 'white',
                             border: 'none',
-                            borderRadius: '6px',
+                            borderRadius: '4px',
                             cursor: 'pointer',
-                            fontSize: '0.75rem',
+                            fontSize: '0.65rem',
                             fontWeight: '500'
                           }}
                         >
