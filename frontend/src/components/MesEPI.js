@@ -317,7 +317,7 @@ const MesEPI = ({ user }) => {
 
   // Vérifier si tous les critères sont cochés
   const tousCriteresCoches = () => {
-    const criteres = getCriteresPourEPI(selectedEPI?.type_epi);
+    const criteres = getCriteresPourEPI(selectedEPI?.type_epi_nom || selectedEPI?.type_epi);
     return criteres.every(critere => inspectionForm.criteres_inspection[critere.id] === true);
   };
 
