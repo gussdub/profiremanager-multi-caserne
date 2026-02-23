@@ -68,7 +68,11 @@
 		<string>remote-notification</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>L'application a besoin d'accéder à la caméra pour prendre des photos.</string>
+	<string>L'application a besoin d'accéder à la caméra pour prendre des photos lors des inspections.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>L'application a besoin d'accéder à vos photos pour joindre des images aux inspections et rapports.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>L'application a besoin de sauvegarder des photos dans votre photothèque.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>L'application a besoin de votre position pour les inspections et rondes de sécurité.</string>
 	<key>NSFaceIDUsageDescription</key>
