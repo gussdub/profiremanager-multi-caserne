@@ -871,9 +871,9 @@ const MesEPI = ({ user }) => {
             <div className="modal-body">
               {/* EPI Info Card */}
               <div className="epi-info-card">
-                <div className="epi-info-icon">🛡️</div>
+                <div className="epi-info-icon">{selectedEPI.type_epi_icone || '🛡️'}</div>
                 <div className="epi-info-details">
-                  <h4>{selectedEPI.type_epi}</h4>
+                  <h4>{selectedEPI.type_epi_nom || selectedEPI.type_epi}</h4>
                   <p>{selectedEPI.marque} {selectedEPI.modele}</p>
                   <span className="epi-serial">N° {selectedEPI.numero_serie}</span>
                 </div>
@@ -883,7 +883,7 @@ const MesEPI = ({ user }) => {
               <div className="form-group">
                 <Label className="form-label-bold">Liste de contrôle visuel</Label>
                 <p style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '1rem' }}>
-                  Vérifiez chaque critère pour votre {selectedEPI.type_epi}
+                  Vérifiez chaque critère pour votre {selectedEPI.type_epi_nom || selectedEPI.type_epi}
                 </p>
                 
                 <div className="criteres-checklist" style={{
