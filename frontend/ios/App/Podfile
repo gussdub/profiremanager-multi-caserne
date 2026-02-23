@@ -13,6 +13,7 @@ def capacitor_pods
   pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
   pod 'AparajitaCapacitorBiometricAuth', :path => '../../node_modules/@aparajita/capacitor-biometric-auth'
   pod 'AparajitaCapacitorSecureStorage', :path => '../../node_modules/@aparajita/capacitor-secure-storage'
+  pod 'CapacitorCamera', :path => '../../node_modules/@capacitor/camera'
   pod 'CapacitorPreferences', :path => '../../node_modules/@capacitor/preferences'
   pod 'CapacitorPushNotifications', :path => '../../node_modules/@capacitor/push-notifications'
 end
