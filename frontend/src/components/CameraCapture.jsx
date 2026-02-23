@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import ReactDOM from 'react-dom';
 import { Button } from './ui/button';
+import { Capacitor } from '@capacitor/core';
 
 /**
  * Détection iOS
@@ -7,6 +9,19 @@ import { Button } from './ui/button';
 const isIOSDevice = () => {
   return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+};
+
+export const isIOS = isIOSDevice;
+
+/**
+ * Détection si on est en mode natif Capacitor
+ */
+const isNativeApp = () => {
+  try {
+    return Capacitor && Capacitor.isNativePlatform();
+  } catch {
+    return false;
+  }
 };
 
 /**
@@ -21,7 +36,8 @@ const isPWAMode = () => {
 /**
  * CameraCapture - Composant de capture photo compatible iOS
  * 
- * Sur iOS: Utilise l'input natif avec capture="environment" (fiable)
+ * Sur app native Capacitor: Utilise le plugin Camera natif
+ * Sur iOS web: Utilise l'input natif avec capture="environment" (fiable)
  * Ailleurs: Utilise getUserMedia() pour une meilleure UX
  * 
  * @param {function} onCapture - Callback appelé avec le fichier capturé (File object)
@@ -47,13 +63,47 @@ const CameraCapture = ({
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // Sur iOS, utiliser l'input natif directement
+  // Sur app native, utiliser le plugin Camera de Capacitor
   useEffect(() => {
-    if (isIOSDevice()) {
-      setUseNativeInput(true);
-      setIsLoading(false);
-    }
-  }, []);
+    const initCamera = async () => {
+      if (isNativeApp()) {
+        try {
+          // Import dynamique du plugin Camera
+          const { Camera, CameraResultType, CameraSource } = await import('@capacitor/camera');
+          
+          const image = await Camera.getPhoto({
+            quality: Math.round(quality * 100),
+            allowEditing: false,
+            resultType: CameraResultType.DataUrl,
+            source: CameraSource.Camera,
+            direction: facingMode === 'user' ? 'FRONT' : 'REAR'
+          });
+          
+          if (image.dataUrl) {
+            // Convertir dataUrl en File
+            const response = await fetch(image.dataUrl);
+            const blob = await response.blob();
+            const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+            onCapture(file);
+          } else {
+            onClose();
+          }
+        } catch (err) {
+          console.log('[Camera] Erreur ou annulation:', err);
+          onClose();
+        }
+        return;
+      }
+      
+      // Sur iOS web, utiliser l'input natif
+      if (isIOSDevice()) {
+        setUseNativeInput(true);
+        setIsLoading(false);
+      }
+    };
+    
+    initCamera();
+  }, [facingMode, quality, onCapture, onClose]);
 
   // Gérer la sélection de fichier (pour iOS ou fallback)
   const handleFileSelect = useCallback((event) => {
