@@ -125,8 +125,10 @@ export const authenticateWithBiometric = async (reason = 'Authentifiez-vous pour
 
 // Stocker les identifiants de manière sécurisée
 export const storeCredentials = async (tenantSlug, email, password) => {
-  if (!Capacitor.isNativePlatform()) {
+  const native = await checkNativePlatform();
+  if (!native) {
     // Sur le web, utiliser le stockage existant
+    console.log('[Biometric] storeCredentials: pas sur plateforme native');
     return false;
   }
 
