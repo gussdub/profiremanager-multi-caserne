@@ -947,20 +947,20 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
           </div>
         )}
 
-        {/* Navigation - Style bien visible, flex wrap pour éviter le scroll */}
-        <div className="bg-gray-100 px-4 py-3 border-b border-gray-300">
-          <div className="flex flex-wrap gap-2">
+        {/* Navigation - Scrollable horizontalement sur mobile */}
+        <div className="bg-gray-100 border-b border-gray-300 overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="flex gap-1 p-2 min-w-max">
             {visibleSections.map(section => (
               <button
                 key={section.id}
                 onClick={() => setActiveSection(section.id)}
-                className={`px-3 py-2 rounded-lg font-medium transition-all text-sm border ${
+                className={`px-2 py-1.5 rounded-lg font-medium transition-all text-xs border whitespace-nowrap flex-shrink-0 ${
                   activeSection === section.id
                     ? 'bg-red-600 text-white border-red-700 shadow-lg'
                     : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
                 }`}
               >
-                {section.icon} {section.label}
+                {section.icon} <span className="hidden sm:inline">{section.label}</span><span className="sm:hidden">{section.label.split(' ')[0]}</span>
               </button>
             ))}
           </div>
