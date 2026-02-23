@@ -154,15 +154,16 @@ const TabFeuilles = ({ context }) => {
 
       {/* Liste des feuilles */}
       <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px' }}>
           <thead>
             <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e5e7eb' }}>
-              <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem' }}>Employé</th>
-              <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', fontSize: '0.875rem' }}>Période</th>
-              <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: '600', fontSize: '0.875rem' }}>Heures</th>
-              <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: '600', fontSize: '0.875rem' }}>Montant</th>
-              <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', fontSize: '0.875rem' }}>Statut</th>
-              <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', fontSize: '0.875rem' }}>Actions</th>
+              <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '600', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>Employé</th>
+              <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '600', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>Période</th>
+              <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: '600', fontSize: '0.75rem' }}>Heures</th>
+              <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: '600', fontSize: '0.75rem' }}>Montant</th>
+              <th style={{ padding: '10px 12px', textAlign: 'center', fontWeight: '600', fontSize: '0.75rem' }}>Statut</th>
+              <th style={{ padding: '10px 12px', textAlign: 'center', fontWeight: '600', fontSize: '0.75rem' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -175,17 +176,17 @@ const TabFeuilles = ({ context }) => {
             ) : (
               feuilles.map(f => (
                 <tr key={f.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                  <td style={{ padding: '12px 16px' }}>
-                    <div style={{ fontWeight: '500' }}>{f.employe_prenom} {f.employe_nom}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{f.employe_grade} • {f.employe_type_emploi}</div>
+                  <td style={{ padding: '10px 12px' }}>
+                    <div style={{ fontWeight: '500', fontSize: '0.8rem' }}>{f.employe_prenom} {f.employe_nom}</div>
+                    <div style={{ fontSize: '0.65rem', color: '#64748b' }}>{f.employe_grade} • {f.employe_type_emploi}</div>
                   </td>
-                  <td style={{ padding: '12px 16px' }}>
+                  <td style={{ padding: '10px 12px', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
                     {f.periode_debut} → {f.periode_fin}
                   </td>
-                  <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                  <td style={{ padding: '10px 12px', textAlign: 'right', fontSize: '0.8rem' }}>
                     {f.total_heures_payees}h
                   </td>
-                  <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: '600' }}>
+                  <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: '600', fontSize: '0.8rem' }}>
                     {formatMontant(f.total_montant_final)}
                   </td>
                   <td style={{ padding: '12px 16px', textAlign: 'center' }}>
