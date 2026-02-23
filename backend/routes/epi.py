@@ -2848,25 +2848,6 @@ async def demander_remplacement_epi(
                 logger.info(f"✅ Push notifications envoyées à {len(admin_ids)} admin(s) pour demande remplacement EPI")
         except Exception as push_error:
             logger.error(f"Erreur envoi push notification: {push_error}")
-        
-        # 3. Envoyer les SMS aux admins
-        try:
-            tenant_data = await db.tenants.find_one({"id": tenant.id})
-            tenant_nom = tenant_data.get("nom", "ProFireManager") if tenant_data else "ProFireManager"
-            
-            for admin in admins:
-                try:
-                    await envoyer_sms_demande_remplacement_epi(
-                        admin=admin,
-                        demandeur_nom=user_name,
-                        epi_type=epi_type,
-                        raison=demande.raison,
-                        tenant_nom=tenant_nom
-                    )
-                except Exception as sms_error:
-                    logger.error(f"Erreur envoi SMS à {admin.get('prenom')}: {sms_error}")
-        except Exception as sms_global_error:
-            logger.error(f"Erreur globale envoi SMS: {sms_global_error}")
             
     except Exception as e:
         logger.error(f"Erreur récupération admins pour notification: {e}")
