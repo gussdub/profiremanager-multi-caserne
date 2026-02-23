@@ -2829,7 +2829,7 @@ async def demander_remplacement_epi(
             except Exception as e:
                 logger.error(f"Erreur création notification admin {admin.get('id')}: {e}")
         
-        # 2. Envoyer les PUSH NOTIFICATIONS avec Critical Alerts (pour iOS)
+        # 2. Envoyer les PUSH NOTIFICATIONS normales
         try:
             send_push_notification_to_users = await get_send_push_notification()
             if send_push_notification_to_users and admin_ids:
@@ -2839,7 +2839,6 @@ async def demander_remplacement_epi(
                     body=f"{user_name} demande le remplacement de {epi_type} - Raison: {demande.raison}",
                     data={
                         "type": "demande_remplacement_epi",
-                        "sound": "urgent",  # Déclenche Critical Alert sur iOS
                         "demande_id": demande_obj.id,
                         "epi_id": epi_id,
                         "lien": "/gestion-epi"
