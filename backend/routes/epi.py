@@ -26,7 +26,6 @@ from routes.dependencies import (
     User,
     creer_notification
 )
-import os
 
 router = APIRouter(tags=["EPI - Équipements de Protection"])
 logger = logging.getLogger(__name__)
@@ -42,83 +41,6 @@ async def get_send_push_notification():
     except Exception as e:
         logger.warning(f"send_push_notification_to_users non disponible: {e}")
         return None
-
-
-async def envoyer_sms_demande_remplacement_epi(
-    admin: Dict[str, Any],
-    demandeur_nom: str,
-    epi_type: str,
-    raison: str,
-    tenant_nom: str
-) -> bool:
-    """Envoie un SMS aux admins pour une demande de remplacement EPI"""
-    try:
-        from twilio.rest import Client
-        
-        # Récupérer les credentials Twilio
-        account_sid = os.environ.get('TWILIO_ACCOUNT_SID')
-        auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
-        twilio_phone = os.environ.get('TWILIO_PHONE_NUMBER')
-        
-        if not all([account_sid, auth_token, twilio_phone]):
-            logger.warning("⚠️ Configuration Twilio incomplète - SMS non envoyé")
-            return False
-        
-        # Vérifier les préférences de notification
-        preferences = admin.get("preferences_notifications", {})
-        if not preferences.get("sms_actif", True):
-            logger.info(f"📵 SMS désactivé pour {admin.get('prenom')} - préférences utilisateur")
-            return False
-        
-        # Récupérer et formater le numéro
-        telephone = admin.get("telephone", "")
-        if not telephone:
-            logger.warning(f"Pas de téléphone pour {admin.get('prenom')} {admin.get('nom')}")
-            return False
-        
-        # Formater au format E.164
-        telephone_formate = formater_numero_telephone_epi(telephone)
-        if not telephone_formate:
-            return False
-        
-        # Préparer le message
-        message = (
-            f"🔄 ProFireManager: {demandeur_nom} demande le remplacement de son {epi_type}. "
-            f"Raison: {raison}. Connectez-vous pour traiter cette demande."
-        )
-        
-        # Envoyer le SMS
-        client = Client(account_sid, auth_token)
-        sms = client.messages.create(
-            body=message,
-            from_=twilio_phone,
-            to=telephone_formate
-        )
-        
-        logger.info(f"✅ SMS demande remplacement EPI envoyé à {telephone_formate} (SID: {sms.sid})")
-        return True
-        
-    except Exception as e:
-        logger.error(f"❌ Erreur envoi SMS demande remplacement EPI: {e}")
-        return False
-
-
-def formater_numero_telephone_epi(numero: str) -> str:
-    """Formate un numéro de téléphone au format E.164"""
-    if not numero:
-        return ""
-    
-    # Nettoyer le numéro
-    numero_clean = ''.join(filter(str.isdigit, numero))
-    
-    if len(numero_clean) == 10:
-        return f"+1{numero_clean}"
-    elif len(numero_clean) == 11 and numero_clean.startswith('1'):
-        return f"+{numero_clean}"
-    elif numero.startswith('+'):
-        return numero
-    
-    return ""
 
 
 # ==================== FONCTIONS UTILITAIRES DE MATCHING ====================
