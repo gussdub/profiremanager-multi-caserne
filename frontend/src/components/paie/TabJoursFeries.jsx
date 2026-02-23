@@ -519,9 +519,10 @@ const TabJoursFeries = ({ tenant }) => {
                         style={{ color: '#ef4444' }}
                         data-testid={`delete-jour-${jour.id}`}
                       >
-                        <Trash2 size={16} />
-                    </Button>
-                  )}
+                          <Trash2 size={16} />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
