@@ -510,12 +510,4 @@ const CameraCapture = ({
   );
 };
 
-/**
- * Utilitaire pour détecter iOS
- */
-export const isIOS = () => {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-};
-
 export default CameraCapture;
