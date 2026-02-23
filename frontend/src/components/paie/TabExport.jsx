@@ -218,15 +218,15 @@ const TabExport = ({ context }) => {
             ))}
           </div>
 
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <Button onClick={handleSaveApiCredentials} disabled={loading}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <Button onClick={handleSaveApiCredentials} disabled={loading} style={{ whiteSpace: 'nowrap' }}>
               <Check size={16} /> Enregistrer les credentials
             </Button>
             <Button 
               variant="outline" 
               onClick={handleTestApiConnection} 
               disabled={testingConnection}
-              style={{ background: 'white' }}
+              style={{ background: 'white', whiteSpace: 'nowrap' }}
             >
               {testingConnection ? <RefreshCw className="animate-spin" size={16} /> : <Zap size={16} />}
               <span style={{ marginLeft: '8px' }}>Tester la connexion</span>
