@@ -892,7 +892,7 @@ const MesEPI = ({ user }) => {
                   gap: '0.75rem',
                   marginBottom: '1.5rem'
                 }}>
-                  {getCriteresPourEPI(selectedEPI.type_epi).map(critere => (
+                  {getCriteresPourEPI(selectedEPI.type_epi_nom || selectedEPI.type_epi).map(critere => (
                     <div key={critere.id} className="critere-item" style={{
                       display: 'flex',
                       alignItems: 'center',
