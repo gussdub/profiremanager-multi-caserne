@@ -960,7 +960,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
                     : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
                 }`}
               >
-                {section.icon} <span className="hidden sm:inline">{section.label}</span><span className="sm:hidden">{section.label.split(' ')[0]}</span>
+                {section.icon} {section.label}
               </button>
             ))}
           </div>
