@@ -1048,7 +1048,7 @@ const Remplacements = () => {
             {/* Statistics Cards pour congés - Affiche MES stats pour employés, TOUTES pour admins */}
             <div className="conge-stats">
               <div className="stat-card-conge pending">
-                <div className="stat-icon">⏳</div>
+                <div className="stat-icon"><Clock size={20} /></div>
                 <div className="stat-content">
                   <h3>En attente</h3>
                   <p className="stat-number">{mesConges.filter(d => d.statut === 'en_attente').length}</p>
@@ -1057,7 +1057,7 @@ const Remplacements = () => {
               </div>
 
               <div className="stat-card-conge approved">
-                <div className="stat-icon">✅</div>
+                <div className="stat-icon"><CheckCircle size={20} /></div>
                 <div className="stat-content">
                   <h3>Approuvés</h3>
                   <p className="stat-number">{mesConges.filter(d => d.statut === 'approuve').length}</p>
