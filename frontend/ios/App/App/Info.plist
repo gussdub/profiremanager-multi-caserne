@@ -62,5 +62,16 @@
 			</dict>
 		</dict>
 	</dict>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
+	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>L'application a besoin d'accéder à la caméra pour prendre des photos.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>L'application a besoin de votre position pour les inspections et rondes de sécurité.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Utilisez Face ID pour vous connecter rapidement à l'application.</string>
 </dict>
 </plist>
