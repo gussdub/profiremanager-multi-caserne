@@ -264,7 +264,7 @@ const MesEPI = ({ user }) => {
     setSelectedEPI(epi);
     
     // Initialiser les critères d'inspection pour ce type d'EPI
-    const criteres = getCriteresPourEPI(epi.type_epi);
+    const criteres = getCriteresPourEPI(epi.type_epi_nom || epi.type_epi);
     const criteresInit = {};
     criteres.forEach(critere => {
       criteresInit[critere.id] = true; // Tous cochés par défaut
