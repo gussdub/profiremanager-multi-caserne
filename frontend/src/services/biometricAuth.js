@@ -159,7 +159,8 @@ export const storeCredentials = async (tenantSlug, email, password) => {
 
 // Récupérer les identifiants stockés
 export const getStoredCredentials = async (tenantSlug) => {
-  if (!Capacitor.isNativePlatform()) {
+  const native = await checkNativePlatform();
+  if (!native) {
     return null;
   }
 
@@ -186,7 +187,8 @@ export const getStoredCredentials = async (tenantSlug) => {
 
 // Supprimer les identifiants stockés
 export const clearStoredCredentials = async (tenantSlug) => {
-  if (!Capacitor.isNativePlatform()) {
+  const native = await checkNativePlatform();
+  if (!native) {
     return false;
   }
 
