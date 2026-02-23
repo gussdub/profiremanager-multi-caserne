@@ -1066,7 +1066,7 @@ const Remplacements = () => {
               </div>
 
               <div className="stat-card-conge total">
-                <div className="stat-icon">📊</div>
+                <div className="stat-icon"><BarChart3 size={20} /></div>
                 <div className="stat-content">
                   <h3>Total jours</h3>
                   <p className="stat-number">{mesConges.reduce((total, d) => total + (d.nombre_jours || 0), 0)}</p>
