@@ -2490,7 +2490,7 @@ async def get_masque_apria_assigne(tenant_slug: str, current_user: User = Depend
 
 @router.get("/{tenant_slug}/mes-epi")
 async def get_mes_epi(tenant_slug: str, current_user: User = Depends(get_current_user)):
-    """Récupère les EPI de l'utilisateur connecté"""
+    """Récupère les EPI de l'utilisateur connecté avec les détails du type d'EPI"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     # Récupérer tous les EPI assignés à cet utilisateur
@@ -2499,10 +2499,38 @@ async def get_mes_epi(tenant_slug: str, current_user: User = Depends(get_current
         "user_id": current_user.id
     }).to_list(1000)
     
-    # Nettoyer les documents MongoDB et récupérer la dernière inspection
+    # Précharger tous les types d'EPI du tenant pour éviter des requêtes multiples
+    types_epi_list = await db.types_epi.find({"tenant_id": tenant.id}).to_list(1000)
+    types_epi_by_id = {t.get("id"): t for t in types_epi_list}
+    types_epi_by_nom = {t.get("nom", "").lower(): t for t in types_epi_list}
+    
+    # Nettoyer les documents MongoDB et enrichir avec les infos du type d'EPI
     cleaned_epis = []
     for epi in mes_epis:
         cleaned_epi = clean_mongo_doc(epi)
+        
+        # Enrichir avec les informations du type d'EPI
+        type_epi_info = None
+        
+        # Chercher par type_epi_id d'abord
+        if cleaned_epi.get("type_epi_id"):
+            type_epi_info = types_epi_by_id.get(cleaned_epi["type_epi_id"])
+        
+        # Fallback: chercher par type_epi (ancien format avec le nom)
+        if not type_epi_info and cleaned_epi.get("type_epi"):
+            type_epi_nom = cleaned_epi["type_epi"].lower()
+            type_epi_info = types_epi_by_nom.get(type_epi_nom)
+        
+        # Ajouter les infos du type d'EPI
+        if type_epi_info:
+            cleaned_epi["type_epi_nom"] = type_epi_info.get("nom", "")
+            cleaned_epi["type_epi_icone"] = type_epi_info.get("icone", "🛡️")
+            cleaned_epi["type_epi_description"] = type_epi_info.get("description", "")
+        else:
+            # Si pas trouvé, utiliser le type_epi ou type_epi_id comme fallback
+            cleaned_epi["type_epi_nom"] = cleaned_epi.get("type_epi", cleaned_epi.get("type_epi_id", "Type inconnu"))
+            cleaned_epi["type_epi_icone"] = "🛡️"
+            cleaned_epi["type_epi_description"] = ""
         
         # Récupérer la dernière inspection après usage
         derniereInspection = await db.inspections_apres_usage.find_one(
