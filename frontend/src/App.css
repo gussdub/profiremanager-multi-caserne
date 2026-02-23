@@ -26,6 +26,45 @@ div[style*="position: fixed"][style*="bottom: 20px"][style*="right: 20px"] {
   --header-offset: calc(60px + var(--safe-area-top));
 }
 
+/* Capacitor Native App Safe Area Handling */
+html {
+  /* Ensure safe areas are respected */
+  padding: env(safe-area-inset-top, 0px) 
+           env(safe-area-inset-right, 0px) 
+           env(safe-area-inset-bottom, 0px) 
+           env(safe-area-inset-left, 0px);
+}
+
+/* iOS Native App specific fixes */
+@supports (padding: max(0px)) {
+  body {
+    /* Ensure content doesn't go under notch or home indicator */
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+  }
+  
+  /* Fix for status bar area on iOS */
+  .app-header, .main-header {
+    padding-top: max(1rem, calc(1rem + env(safe-area-inset-top)));
+  }
+}
+
+/* Capacitor iOS specific - detected by presence of capacitor in user agent or standalone mode */
+@media screen and (display-mode: standalone) {
+  .mobile-menu-toggle {
+    left: calc(1rem + env(safe-area-inset-left, 0px)) !important;
+  }
+  
+  .sidebar {
+    padding-left: env(safe-area-inset-left, 0px);
+  }
+  
+  .main-content {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+}
+
 /* ==================== MODAL SCROLL LOCK ==================== */
 /* Empêche le scroll du body lorsqu'une modale est ouverte */
 body.modal-open {
