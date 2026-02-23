@@ -735,9 +735,9 @@ const MesEPI = ({ user }) => {
             {epis.filter(e => e.statut !== 'Retiré').map((epi) => (
               <div key={epi.id} className="epi-card">
                 <div className="epi-card-header">
-                  <span className="epi-icon">{getTypeIcon(epi.type_epi)}</span>
+                  <span className="epi-icon">{epi.type_epi_icone || getTypeIcon(epi.type_epi_nom || epi.type_epi)}</span>
                   <div>
-                    <h3>{epi.type_epi || 'EPI'}</h3>
+                    <h3>{epi.type_epi_nom || epi.type_epi || 'EPI'}</h3>
                     <p className="epi-numero">#{epi.numero_serie}</p>
                   </div>
                   <span 
