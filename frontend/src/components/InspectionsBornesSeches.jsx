@@ -34,7 +34,12 @@ const InspectionsBornesSeches = ({ user }) => {
     autre: 'https://customer-assets.emergentagent.com/job_1c79b284-3589-40f0-b5e3-5fa8640320ff/artifacts/1nhnxx97_eau.png'
   };
 
-  const getTypeIcon = (type) => typeIcons[type] || typeIcons.point_eau_statique;
+  const getTypeIcon = (type) => {
+    console.log('[InspectionsBornesSeches] getTypeIcon called with type:', type);
+    const icon = typeIcons[type] || typeIcons.point_eau_statique || typeIcons.borne_seche;
+    console.log('[InspectionsBornesSeches] returning icon:', icon);
+    return icon;
+  };
   const getTypeLabel = (type) => {
     const labels = {
       borne_seche: 'Borne sèche',
