@@ -2803,9 +2803,18 @@ async def demander_remplacement_epi(
         }).to_list(1000)
         
         photo_indicator = " 📷" if demande.photo_defaut else ""
-        epi_type = epi.get('type_epi') or epi.get('modele') or 'EPI'
+        
+        # Récupérer le nom du type d'EPI enrichi
+        type_epi_info = None
+        if epi.get('type_epi_id'):
+            type_epi_info = await db.types_epi.find_one({"id": epi['type_epi_id'], "tenant_id": tenant.id})
+        
+        epi_type = (type_epi_info.get('nom') if type_epi_info else None) or epi.get('type_epi') or epi.get('modele') or 'EPI'
         user_name = f"{current_user.prenom or ''} {current_user.nom or ''}".strip() or current_user.email
         
+        admin_ids = [admin["id"] for admin in admins]
+        
+        # 1. Créer les notifications dans la base de données
         for admin in admins:
             try:
                 await creer_notification(
@@ -2818,7 +2827,48 @@ async def demander_remplacement_epi(
                     data={"epi_id": epi_id, "demande_id": demande_obj.id, "raison": demande.raison, "has_photo": bool(demande.photo_defaut)}
                 )
             except Exception as e:
-                logger.error(f"Erreur envoi notification admin {admin.get('id')}: {e}")
+                logger.error(f"Erreur création notification admin {admin.get('id')}: {e}")
+        
+        # 2. Envoyer les PUSH NOTIFICATIONS avec Critical Alerts (pour iOS)
+        try:
+            send_push_notification_to_users = await get_send_push_notification()
+            if send_push_notification_to_users and admin_ids:
+                await send_push_notification_to_users(
+                    user_ids=admin_ids,
+                    title="🔄 Demande de remplacement EPI",
+                    body=f"{user_name} demande le remplacement de {epi_type} - Raison: {demande.raison}",
+                    data={
+                        "type": "demande_remplacement_epi",
+                        "sound": "urgent",  # Déclenche Critical Alert sur iOS
+                        "demande_id": demande_obj.id,
+                        "epi_id": epi_id,
+                        "lien": "/gestion-epi"
+                    },
+                    tenant_slug=tenant_slug
+                )
+                logger.info(f"✅ Push notifications envoyées à {len(admin_ids)} admin(s) pour demande remplacement EPI")
+        except Exception as push_error:
+            logger.error(f"Erreur envoi push notification: {push_error}")
+        
+        # 3. Envoyer les SMS aux admins
+        try:
+            tenant_data = await db.tenants.find_one({"id": tenant.id})
+            tenant_nom = tenant_data.get("nom", "ProFireManager") if tenant_data else "ProFireManager"
+            
+            for admin in admins:
+                try:
+                    await envoyer_sms_demande_remplacement_epi(
+                        admin=admin,
+                        demandeur_nom=user_name,
+                        epi_type=epi_type,
+                        raison=demande.raison,
+                        tenant_nom=tenant_nom
+                    )
+                except Exception as sms_error:
+                    logger.error(f"Erreur envoi SMS à {admin.get('prenom')}: {sms_error}")
+        except Exception as sms_global_error:
+            logger.error(f"Erreur globale envoi SMS: {sms_global_error}")
+            
     except Exception as e:
         logger.error(f"Erreur récupération admins pour notification: {e}")
     
