@@ -10,6 +10,7 @@ import { useTenant } from "../contexts/TenantContext";
 import { useAuth } from "../contexts/AuthContext";
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import { fr } from "date-fns/locale";
+import { AlertTriangle, FileSpreadsheet, CalendarDays, Clock, CheckCircle, BarChart3 } from 'lucide-react';
 
 // Fonction pour parser une date en évitant les problèmes de timezone
 const parseDateLocal = (dateStr) => {
