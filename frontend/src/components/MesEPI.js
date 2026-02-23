@@ -1055,7 +1055,7 @@ const MesEPI = ({ user }) => {
             </div>
             <div className="modal-body">
               <p className="mb-4">
-                <strong>EPI:</strong> {selectedEPI.type_epi} - {selectedEPI.numero_serie}
+                <strong>EPI:</strong> {selectedEPI.type_epi_nom || selectedEPI.type_epi} - {selectedEPI.numero_serie}
               </p>
 
               {historique.length === 0 ? (
