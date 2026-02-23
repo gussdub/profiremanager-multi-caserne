@@ -1137,11 +1137,11 @@ const MesEPI = ({ user }) => {
                 border: selectedEquipement ? '1px solid #ddd6fe' : 'none'
               }}>
                 <div style={{ fontSize: '2.5rem' }}>
-                  {selectedEquipement ? '🎭' : getTypeIcon(selectedEPI?.type_epi)}
+                  {selectedEquipement ? '🎭' : (selectedEPI?.type_epi_icone || getTypeIcon(selectedEPI?.type_epi_nom || selectedEPI?.type_epi))}
                 </div>
                 <div>
                   <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '600' }}>
-                    {selectedEquipement ? selectedEquipement.nom : selectedEPI?.type_epi}
+                    {selectedEquipement ? selectedEquipement.nom : (selectedEPI?.type_epi_nom || selectedEPI?.type_epi)}
                   </h4>
                   <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.9rem', color: '#64748b' }}>
                     {selectedEquipement 
