@@ -447,77 +447,79 @@ const TabJoursFeries = ({ tenant }) => {
                 data-testid={`jour-ferie-${jour.id}`}
                 style={{
                   display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '12px 16px',
+                  flexDirection: 'column',
+                  padding: '12px',
                   background: '#f8fafc',
                   border: '1px solid #e2e8f0',
-                  borderRadius: '8px'
+                  borderRadius: '8px',
+                  gap: '8px'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
+                {/* Ligne 1: Date + Nom */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                   <div style={{ 
-                    width: '50px', 
-                    height: '50px', 
+                    width: '45px', 
+                    height: '45px', 
                     background: '#fee2e2',
                     borderRadius: '8px',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    flexShrink: 0
                   }}>
-                    <span style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase' }}>
+                    <span style={{ fontSize: '0.6rem', color: '#64748b', textTransform: 'uppercase' }}>
                       {new Date(jour.date + 'T00:00:00').toLocaleDateString('fr-CA', { month: 'short' })}
                     </span>
-                    <span style={{ fontSize: '1.25rem', fontWeight: '700', color: '#dc2626' }}>
+                    <span style={{ fontSize: '1rem', fontWeight: '700', color: '#dc2626' }}>
                       {jour.date.split('-')[2]}
                     </span>
                   </div>
 
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: '600', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      {jour.nom}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: '600', color: '#1e293b', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}>
+                      <span style={{ wordBreak: 'break-word' }}>{jour.nom}</span>
                       {getTypeBadge(jour)}
                     </div>
-                    <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
                       {formatDate(jour.date)}
-                    </div>
-                  </div>
-
-                  <div style={{ textAlign: 'right', minWidth: '150px' }}>
-                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Majoration</div>
-                    <div style={{ fontSize: '0.875rem' }}>
-                      <span style={{ color: '#7c3aed', fontWeight: '600' }}>
-                        Partiel: ×{jour.majoration_temps_partiel || 1.5}
-                      </span>
-                      <span style={{ color: '#94a3b8', margin: '0 4px' }}>|</span>
-                      <span style={{ color: '#64748b' }}>
-                        Plein: ×{jour.majoration_temps_plein || 1.0}
-                      </span>
                     </div>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '4px', marginLeft: '16px' }}>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => startEdit(jour)}
-                    title="Modifier les majorations"
-                    data-testid={`edit-jour-${jour.id}`}
-                  >
-                    <Edit size={16} />
-                  </Button>
-                  {jour.est_personnalise && (
+                {/* Ligne 2: Majorations + Actions */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '57px' }}>
+                  <div style={{ fontSize: '0.75rem' }}>
+                    <span style={{ color: '#64748b' }}>Maj: </span>
+                    <span style={{ color: '#7c3aed', fontWeight: '600' }}>
+                      Partiel ×{jour.majoration_temps_partiel || 1.5}
+                    </span>
+                    <span style={{ color: '#94a3b8', margin: '0 4px' }}>|</span>
+                    <span style={{ color: '#64748b' }}>
+                      Plein ×{jour.majoration_temps_plein || 1.0}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '4px' }}>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleDeleteJourFerie(jour)}
-                      title="Supprimer"
-                      style={{ color: '#ef4444' }}
-                      data-testid={`delete-jour-${jour.id}`}
+                      onClick={() => startEdit(jour)}
+                      title="Modifier les majorations"
+                      data-testid={`edit-jour-${jour.id}`}
                     >
-                      <Trash2 size={16} />
+                      <Edit size={16} />
+                    </Button>
+                    {jour.est_personnalise && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteJourFerie(jour)}
+                        title="Supprimer"
+                        style={{ color: '#ef4444' }}
+                        data-testid={`delete-jour-${jour.id}`}
+                      >
+                        <Trash2 size={16} />
                     </Button>
                   )}
                 </div>
