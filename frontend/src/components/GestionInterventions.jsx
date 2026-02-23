@@ -2898,12 +2898,12 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
                   </span>
                 ))}
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="text"
                   id="nouvelle_mun_couverte"
                   placeholder="Nom de la municipalité"
-                  className="flex-1 border rounded p-2"
+                  className="flex-1 border rounded p-2 text-sm"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && e.target.value.trim()) {
                       const newMun = e.target.value.trim();
@@ -2919,6 +2919,8 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
                 />
                 <Button
                   variant="outline"
+                  size="sm"
+                  className="whitespace-nowrap"
                   onClick={() => {
                     const input = document.getElementById('nouvelle_mun_couverte');
                     if (input.value.trim()) {
