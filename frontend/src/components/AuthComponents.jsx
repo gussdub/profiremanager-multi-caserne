@@ -417,9 +417,10 @@ const Login = () => {
   const [debugInfo, setDebugInfo] = useState(null);
   // États pour la biométrie
   const [biometricAvailable, setBiometricAvailable] = useState(false);
-  const [biometryType, setBiometryType] = useState(null);
+  const [biometryType, setBiometryType] = useState('Face ID');
   const [hasBiometricCredentials, setHasBiometricCredentials] = useState(false);
   const [biometricLoading, setBiometricLoading] = useState(false);
+  const [biometricAutoLoginAttempted, setBiometricAutoLoginAttempted] = useState(false);
   const { login } = useAuth();
   const { toast } = useToast();
   const { tenantSlug } = useTenant();
