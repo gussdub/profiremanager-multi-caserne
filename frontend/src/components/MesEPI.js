@@ -4,6 +4,7 @@ import { Label } from './ui/label';
 import { useToast } from '../hooks/use-toast';
 import { apiGet, apiPost } from '../utils/api';
 import { useTenant } from '../contexts/TenantContext';
+import { useWebSocketUpdate } from '../hooks/useWebSocketUpdate';
 import InspectionAPRIAModal from './InspectionAPRIAModal';
 import HistoriqueInspectionsAPRIA from './HistoriqueInspectionsAPRIA';
 import CameraCapture, { isIOS } from './CameraCapture';
