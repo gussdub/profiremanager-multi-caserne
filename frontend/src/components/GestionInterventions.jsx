@@ -6,6 +6,7 @@ import { useToast } from '../hooks/use-toast';
 import { useConfirmDialog } from './ui/ConfirmDialog';
 import useModalScrollLock from '../hooks/useModalScrollLock';
 import { useTenant } from '../contexts/TenantContext';
+import { useWebSocketUpdate } from '../hooks/useWebSocketUpdate';
 import {
   DndContext,
   closestCenter,
