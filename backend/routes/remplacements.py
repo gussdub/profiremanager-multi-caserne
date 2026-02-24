@@ -579,7 +579,7 @@ async def envoyer_email_remplacement_trouve(
         tenant_nom = tenant.get("nom", "ProFireManager")
         
         sender_email = os.environ.get('SENDER_EMAIL', 'noreply@profiremanager.ca')
-        frontend_url = os.environ.get('FRONTEND_URL', os.environ.get('REACT_APP_BACKEND_URL', ''))
+        frontend_url = os.environ.get('FRONTEND_URL', 'https://www.profiremanager.ca')
         
         # Construire l'email HTML
         html_content = f"""
@@ -721,7 +721,7 @@ async def envoyer_email_remplacement_non_trouve(
         tenant_nom = tenant.get("nom", "ProFireManager")
         
         sender_email = os.environ.get('SENDER_EMAIL', 'noreply@profiremanager.ca')
-        frontend_url = os.environ.get('FRONTEND_URL', os.environ.get('REACT_APP_BACKEND_URL', ''))
+        frontend_url = os.environ.get('FRONTEND_URL', 'https://www.profiremanager.ca')
         
         # Construire l'email HTML
         html_content = f"""
