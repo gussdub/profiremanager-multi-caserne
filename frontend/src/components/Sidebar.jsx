@@ -274,15 +274,14 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
     }
   };
   
-  // Marquer automatiquement les notifications comme lues quand le panneau s'ouvre
+  // Marquer les notifications comme lues quand le panneau SE FERME (pas quand il s'ouvre)
+  const prevShowNotifications = React.useRef(showNotifications);
   useEffect(() => {
-    if (showNotifications && unreadCount > 0) {
-      // Petit délai pour que l'utilisateur voit les notifications avant qu'elles soient marquées comme lues
-      const timer = setTimeout(() => {
-        marquerToutesLues();
-      }, 1500); // 1.5 secondes de délai
-      return () => clearTimeout(timer);
+    // Détecter quand le panneau passe de ouvert à fermé
+    if (prevShowNotifications.current && !showNotifications && unreadCount > 0) {
+      marquerToutesLues();
     }
+    prevShowNotifications.current = showNotifications;
   }, [showNotifications]);
   
   // Jouer le son de notification
