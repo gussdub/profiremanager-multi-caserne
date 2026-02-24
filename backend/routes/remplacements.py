@@ -1139,10 +1139,11 @@ async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
         
         for remplacant in remplacants_a_contacter:
             try:
+                logger.info(f"📧 Envoi email à {remplacant.get('nom_complet', 'N/A')} ({remplacant.get('email', 'N/A')})")
                 token = await generer_token_remplacement(demande_id, remplacant["user_id"], tenant_id)
                 
                 # Envoyer l'email
-                await envoyer_email_remplacement(
+                email_result = await envoyer_email_remplacement(
                     demande_data=demande_data,
                     remplacant=remplacant,
                     demandeur=demandeur,
@@ -1150,9 +1151,10 @@ async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
                     tenant_id=tenant_id,
                     token=token
                 )
+                logger.info(f"📧 Résultat email: {email_result}")
                 
                 # Envoyer le SMS
-                await envoyer_sms_remplacement(
+                sms_result = await envoyer_sms_remplacement(
                     remplacant=remplacant,
                     demande_data=demande_data,
                     demandeur=demandeur,
@@ -1160,9 +1162,10 @@ async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
                     tenant_id=tenant_id,
                     token=token
                 )
+                logger.info(f"📱 Résultat SMS: {sms_result}")
                 
             except Exception as notif_error:
-                logger.error(f"Erreur envoi notification à {remplacant['nom_complet']}: {notif_error}")
+                logger.error(f"Erreur envoi notification à {remplacant.get('nom_complet', 'N/A')}: {notif_error}", exc_info=True)
         
         logger.info(f"✅ Recherche lancée pour demande {demande_id}: {nombre_a_contacter} remplaçant(s) contacté(s)")
         
