@@ -988,6 +988,13 @@ async def update_vehicule(
         {"_id": 0}
     )
     
+    # Broadcast WebSocket pour mise à jour temps réel
+    asyncio.create_task(broadcast_actif_update(tenant.id, "update", {
+        "type": "vehicule",
+        "id": vehicule_id,
+        "nom": updated_vehicule.get("nom")
+    }))
+    
     return updated_vehicule
 
 
