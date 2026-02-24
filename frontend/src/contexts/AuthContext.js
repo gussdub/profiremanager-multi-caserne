@@ -2,6 +2,7 @@ import React, { useState, useEffect, createContext, useContext } from "react";
 import axios from "axios";
 import { useTenant } from "./TenantContext";
 import PushNotificationService from "../services/pushNotifications";
+import WebSocketService from "../services/websocket";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const API = BACKEND_URL ? `${BACKEND_URL}/api` : '/api';
