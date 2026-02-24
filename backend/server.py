@@ -6362,6 +6362,7 @@ app.include_router(prevention_router, prefix="/api")  # Module Prévention (bât
 app.include_router(avis_non_conformite_router, prefix="/api")  # Module Avis Non-Conformité
 app.include_router(planning_router, prefix="/api")  # Module Planning (assignations, rapports heures)
 app.include_router(sftp_router, prefix="/api")  # Module SFTP (cartes d'appel 911, WebSocket)
+app.include_router(websocket_router)  # WebSocket temps réel (pas de prefix /api)
 app.include_router(billing_router, prefix="/api")  # Module Billing (Stripe, facturation)
 app.include_router(admin_router, prefix="/api")  # Module Admin (centrales 911, audit logs)
 app.include_router(debogage_router, prefix="/api")  # Module Débogage (bugs, features)
