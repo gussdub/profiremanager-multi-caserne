@@ -18,6 +18,7 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone, date, timedelta
 import uuid
 import logging
+import asyncio
 
 # Import des dépendances partagées
 from routes.dependencies import (
