@@ -925,7 +925,7 @@ async def create_epi(tenant_slug: str, epi: EPICreate, current_user: User = Depe
         )
     
     # Broadcast WebSocket pour mise à jour temps réel
-    asyncio.create_task(broadcast_epi_update(tenant.id, "create", {
+    asyncio.create_task(broadcast_epi_update(tenant_slug, "create", {
         "epi_id": epi_obj.id,
         "type_epi": epi.type_epi,
         "user_id": epi.user_id
@@ -1645,7 +1645,7 @@ async def update_epi(
         cleaned_epi["updated_at"] = datetime.fromisoformat(cleaned_epi["updated_at"].replace('Z', '+00:00'))
     
     # Broadcast WebSocket pour mise à jour temps réel
-    asyncio.create_task(broadcast_epi_update(tenant.id, "update", {
+    asyncio.create_task(broadcast_epi_update(tenant_slug, "update", {
         "epi_id": epi_id,
         "user_id": cleaned_epi.get("user_id")
     }))
@@ -1669,7 +1669,7 @@ async def delete_epi(tenant_slug: str, epi_id: str, current_user: User = Depends
     await db.inspections_epi.delete_many({"epi_id": epi_id, "tenant_id": tenant.id})
     
     # Broadcast WebSocket pour mise à jour temps réel
-    asyncio.create_task(broadcast_epi_update(tenant.id, "delete", {"epi_id": epi_id}))
+    asyncio.create_task(broadcast_epi_update(tenant_slug, "delete", {"epi_id": epi_id}))
     
     return {"message": "EPI supprimé avec succès"}
 
