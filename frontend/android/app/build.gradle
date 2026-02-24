@@ -2,13 +2,13 @@ apply plugin: 'com.android.application'
 
 android {
     namespace "com.profiremanager.app"
-    compileSdk rootProject.ext.compileSdkVersion
+    compileSdk 35
     defaultConfig {
         applicationId "com.profiremanager.app"
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        minSdkVersion 23
+        targetSdkVersion 35
+        versionCode 7
+        versionName "7.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
