@@ -25,7 +25,8 @@ from routes.dependencies import (
     get_tenant_from_slug,
     clean_mongo_doc,
     User,
-    creer_notification
+    creer_notification,
+    creer_activite
 )
 
 # Import WebSocket pour synchronisation temps réel
