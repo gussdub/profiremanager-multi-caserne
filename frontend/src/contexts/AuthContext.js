@@ -185,6 +185,14 @@ export const AuthProvider = ({ children }) => {
           console.error('⚠️ Push notifications initialization failed:', error);
           // Ne pas bloquer la connexion si les notifications échouent
         }
+        
+        // Initialiser la connexion WebSocket pour la synchronisation temps réel
+        try {
+          WebSocketService.connect(tenantSlug, finalUserData.id);
+          console.log('✅ WebSocket initialized');
+        } catch (error) {
+          console.error('⚠️ WebSocket initialization failed:', error);
+        }
       }
       
       // Réinitialiser la page courante vers le dashboard après connexion
