@@ -18,6 +18,7 @@ import xml.etree.ElementTree as ET
 import uuid
 import logging
 import re
+import asyncio
 
 from routes.dependencies import (
     db,
@@ -28,6 +29,9 @@ from routes.dependencies import (
     creer_notification,
     creer_activite
 )
+
+# Import WebSocket pour synchronisation temps réel
+from routes.websocket import broadcast_intervention_update
 
 router = APIRouter(tags=["Interventions"])
 logger = logging.getLogger(__name__)
