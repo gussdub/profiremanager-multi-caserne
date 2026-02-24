@@ -923,6 +923,13 @@ async def create_epi(tenant_slug: str, epi: EPICreate, current_user: User = Depe
             data={"concerne_user_id": epi.user_id}
         )
     
+    # Broadcast WebSocket pour mise à jour temps réel
+    asyncio.create_task(broadcast_epi_update(tenant.id, "create", {
+        "epi_id": epi_obj.id,
+        "type_epi": epi.type_epi,
+        "user_id": epi.user_id
+    }))
+    
     return epi_obj
 
 @router.post("/{tenant_slug}/epi/import-csv")
