@@ -17,6 +17,7 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone, timedelta
 import uuid
 import logging
+import asyncio
 
 from routes.dependencies import (
     db,
@@ -26,6 +27,9 @@ from routes.dependencies import (
     User,
     creer_notification
 )
+
+# Import WebSocket pour synchronisation temps réel
+from routes.websocket import broadcast_epi_update
 
 router = APIRouter(tags=["EPI - Équipements de Protection"])
 logger = logging.getLogger(__name__)
