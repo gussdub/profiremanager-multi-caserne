@@ -1189,7 +1189,7 @@ async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
         logger.error(f"❌ Erreur lors du lancement de la recherche de remplaçant: {e}", exc_info=True)
 
 
-async def accepter_remplacement(demande_id: str, remplacant_id: str, tenant_id: str):
+async def accepter_remplacement(demande_id: str, remplacant_id: str, tenant_id: str, tenant_slug: str = None):
     """Traite l'acceptation d'un remplacement par un remplaçant"""
     try:
         send_push_notification_to_users = await get_send_push_notification()
