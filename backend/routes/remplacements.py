@@ -1500,21 +1500,26 @@ async def create_demande_remplacement(tenant_slug: str, demande: DemandeRemplace
                 }
             )
         
-        await lancer_recherche_remplacant(demande_obj.id, tenant.id)
+        # Lancer la recherche de remplaçant EN ARRIÈRE-PLAN pour une réponse plus rapide
+        asyncio.create_task(lancer_recherche_remplacant(demande_obj.id, tenant.id))
         
         type_garde = await db.types_garde.find_one({"id": demande.type_garde_id, "tenant_id": tenant.id})
         garde_nom = type_garde['nom'] if type_garde else 'garde'
-        await creer_activite(
+        
+        # Créer l'activité aussi en arrière-plan
+        asyncio.create_task(creer_activite(
             tenant_id=tenant.id,
             type_activite="remplacement_demande",
             description=f"🔄 {current_user.prenom} {current_user.nom} cherche un remplaçant pour la {garde_nom} du {demande.date}",
             user_id=current_user.id,
             user_nom=f"{current_user.prenom} {current_user.nom}"
-        )
+        ))
         
         cleaned_demande = clean_mongo_doc(demande_obj.dict())
         return DemandeRemplacement(**cleaned_demande)
         
+    except HTTPException:
+        raise  # Re-raise les HTTPException (comme notre validation)
     except Exception as e:
         logger.error(f"❌ Erreur lors de la création de la demande de remplacement: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Erreur lors de la création de la demande")
