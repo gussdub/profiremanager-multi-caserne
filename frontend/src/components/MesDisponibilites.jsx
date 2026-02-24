@@ -180,6 +180,18 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
     fetchBlocageStatus();
   }, [tenantSlug, calendarCurrentYear, calendarCurrentMonth, user, targetUser, managingUser]);
 
+  // Fonction de rechargement des données
+  const reloadData = useCallback(async () => {
+    if (!tenantSlug || !targetUser || !targetUser.id) return;
+    
+    try {
+      const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
+      setUserDisponibilites(dispoData);
+    } catch (error) {
+      console.error('Erreur rechargement disponibilités:', error);
+    }
+  }, [tenantSlug, targetUser]);
+
   useEffect(() => {
     const fetchDisponibilites = async () => {
       if (!tenantSlug || !targetUser || !targetUser.id) return;
@@ -217,6 +229,17 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       setLoading(false);
     }
   }, [targetUser, tenantSlug, toast]);
+
+  // Écouter les mises à jour WebSocket pour synchronisation temps réel
+  useWebSocketUpdate('disponibilite_update', (data) => {
+    console.log('[Disponibilités] Mise à jour WebSocket:', data);
+    reloadData();
+    toast({
+      title: "📅 Disponibilités mises à jour",
+      description: "Les disponibilités ont été modifiées",
+      duration: 3000
+    });
+  }, [reloadData, toast]);
 
   const handleTypeGardeChange = (typeGardeId) => {
     const selectedType = typesGarde.find(t => t.id === typeGardeId);
