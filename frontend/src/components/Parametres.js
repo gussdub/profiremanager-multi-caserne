@@ -907,30 +907,37 @@ const Parametres = ({ user, tenantSlug }) => {
       [setting]: value
     }));
     
-    // Sauvegarder dans le backend si c'est un niveau d'attribution
-    if (setting.startsWith('niveau_')) {
-      try {
+    // Sauvegarder dans le backend
+    try {
+      if (setting.startsWith('niveau_')) {
+        // Paramètres d'attribution
         await axios.put(`${API}/parametres/niveaux-attribution`, {
           [setting]: value
         });
-        toast({
-          title: "Paramètre mis à jour",
-          description: "La configuration a été sauvegardée",
-          variant: "success"
+      } else if (['mode_notification', 'nombre_simultane', 'delai_relance', 'delai_expiration', 
+                  'privilegier_disponibles', 'competences_egales', 'auto_attribution'].includes(setting)) {
+        // Paramètres de remplacement
+        await axios.put(`${API}/parametres/remplacements`, {
+          [setting]: value
         });
-      } catch (error) {
-        console.error("Erreur sauvegarde niveau:", error);
-        toast({
-          title: "Erreur",
-          description: "Impossible de sauvegarder la configuration",
-          variant: "destructive"
+      } else {
+        // Autres paramètres système
+        await axios.put(`${API}/parametres/systeme`, {
+          [setting]: value
         });
       }
-    } else {
+      
       toast({
         title: "Paramètre mis à jour",
         description: "La configuration a été sauvegardée",
         variant: "success"
+      });
+    } catch (error) {
+      console.error("Erreur sauvegarde paramètre:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de sauvegarder la configuration",
+        variant: "destructive"
       });
     }
   };
