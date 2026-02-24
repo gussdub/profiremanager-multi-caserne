@@ -589,7 +589,7 @@ def send_super_admin_welcome_email(user_email: str, user_name: str, temp_passwor
             <li>Email: {user_email}</li>
             <li>Mot de passe: {temp_password}</li>
         </ul>
-        <p><a href="https://profiremanager.com/super-admin">Accéder au panneau Super Admin</a></p>
+        <p><a href="https://www.profiremanager.ca/super-admin">Accéder au panneau Super Admin</a></p>
         <p><strong>Important:</strong> Changez votre mot de passe dès votre première connexion.</p>
         """
         
