@@ -33,7 +33,6 @@ import logging
 from routes.equipes_garde import get_equipe_garde_du_jour_sync
 import json
 import asyncio
-import asyncio
 import time
 
 from routes.dependencies import (
@@ -45,6 +44,9 @@ from routes.dependencies import (
     creer_activite,
     creer_notification
 )
+
+# Import WebSocket pour synchronisation temps réel
+from routes.websocket import broadcast_planning_update
 
 # Import des helpers PDF partagés
 from utils.pdf_helpers import (
