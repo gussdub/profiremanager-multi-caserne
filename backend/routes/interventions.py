@@ -622,6 +622,12 @@ async def update_intervention(
         {"id": intervention_id}, {"_id": 0}
     )
     
+    # Broadcast WebSocket pour mise à jour temps réel
+    asyncio.create_task(broadcast_intervention_update(tenant.id, "update", {
+        "id": intervention_id,
+        "numero": updated.get("numero")
+    }))
+    
     return {"success": True, "intervention": updated}
 
 
