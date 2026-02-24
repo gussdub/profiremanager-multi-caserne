@@ -989,6 +989,10 @@ async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
             exclus_ids=exclus_ids
         )
         
+        logger.info(f"📋 Résultat recherche remplaçants: {len(remplacants)} trouvé(s)")
+        for r in remplacants[:5]:
+            logger.info(f"  - {r.get('nom_complet')} (priorité {r.get('priorite')}, {r.get('raison')})")
+        
         if not remplacants:
             logger.warning(f"⚠️ Aucun remplaçant trouvé pour la demande {demande_id}")
             await db.demandes_remplacement.update_one(
