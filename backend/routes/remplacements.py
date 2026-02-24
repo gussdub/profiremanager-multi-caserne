@@ -1437,6 +1437,25 @@ async def create_demande_remplacement(tenant_slug: str, demande: DemandeRemplace
         
         tenant = await get_tenant_from_slug(tenant_slug)
         
+        # ==================== VALIDATION: Vérifier que le demandeur est bien planifié ====================
+        assignation_existante = await db.assignations.find_one({
+            "tenant_id": tenant.id,
+            "user_id": current_user.id,
+            "date": demande.date,
+            "type_garde_id": demande.type_garde_id
+        })
+        
+        if not assignation_existante:
+            # Récupérer le nom du type de garde pour un message clair
+            type_garde = await db.types_garde.find_one({"id": demande.type_garde_id, "tenant_id": tenant.id})
+            type_garde_nom = type_garde.get("nom", "ce type de garde") if type_garde else "ce type de garde"
+            
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Vous n'êtes pas planifié sur '{type_garde_nom}' le {demande.date}. Veuillez vérifier votre planning."
+            )
+        # ==================== FIN VALIDATION ====================
+        
         priorite = await calculer_priorite_demande(demande.date)
         
         demande_dict = demande.dict()
