@@ -143,6 +143,13 @@ const MesEPI = ({ user }) => {
     loadTypesEPI();
   }, []);
 
+  // WebSocket pour mise à jour temps réel des EPI
+  useWebSocketUpdate('epi_update', (data) => {
+    console.log('[MesEPI] WebSocket: epi_update reçu', data);
+    loadEPIs();
+    loadEquipementsAssignes();
+  }, [tenantSlug]);
+
   // Charger les types EPI (catégories) avec leurs formulaires assignés
   const [typesEPI, setTypesEPI] = useState([]);
   
