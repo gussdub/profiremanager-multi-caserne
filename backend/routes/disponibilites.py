@@ -255,6 +255,13 @@ async def create_disponibilite(
     
     await db.disponibilites.insert_one(dispo_dict)
     
+    # Broadcaster la mise à jour
+    asyncio.create_task(broadcast_disponibilite_update(tenant.id, "create", {
+        "user_id": target_user_id,
+        "date": dispo.date,
+        "statut": dispo.statut
+    }))
+    
     # Supprimer _id ajouté par MongoDB avant de retourner
     dispo_dict.pop("_id", None)
     
