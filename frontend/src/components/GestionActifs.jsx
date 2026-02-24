@@ -27,7 +27,14 @@ const LoadingSpinner = () => (
 );
 
 const GestionActifs = ({ user, ModuleEPI }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(() => {
+    // Vérifier d'abord le paramètre URL ?tab=xxx
+    const urlTab = new URLSearchParams(window.location.search).get('tab');
+    if (urlTab) {
+      return urlTab;
+    }
+    // Puis vérifier localStorage
     const targetTab = localStorage.getItem('actifs_target_tab');
     if (targetTab) {
       localStorage.removeItem('actifs_target_tab');
