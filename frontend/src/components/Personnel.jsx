@@ -143,6 +143,25 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     fetchData();
   }, [tenantSlug]);
 
+  // WebSocket pour mise à jour temps réel du personnel
+  const refreshUsers = useCallback(async () => {
+    try {
+      const usersData = await apiGet(tenantSlug, '/users');
+      setUsers(usersData);
+    } catch (error) {
+      console.error('Erreur rechargement users:', error);
+    }
+  }, [tenantSlug]);
+
+  useWebSocketUpdate('user_update', (data) => {
+    console.log('[Personnel] WebSocket: user_update reçu', data);
+    toast({
+      title: "👤 Mise à jour Personnel",
+      description: "Les données du personnel ont été mises à jour.",
+    });
+    refreshUsers();
+  }, [tenantSlug]);
+
   const handleCreateUser = async () => {
     if (!newUser.nom || !newUser.prenom || !newUser.email) {
       toast({
