@@ -30,57 +30,62 @@ export class PushNotificationService {
     }
 
     try {
+      // IMPORTANT: Ajouter les listeners AVANT d'appeler register()
+      console.log('[PushNotifications] Setting up listeners...');
+      
+      // Listener pour le token FCM - doit être ajouté AVANT register()
+      await PushNotifications.addListener('registration', async (token) => {
+        console.log('[PushNotifications] ✅ Registration success, token:', token.value?.substring(0, 50) + '...');
+        
+        // Envoyer le token au backend
+        try {
+          const response = await apiPost(tenantSlug, '/notifications/register-device', {
+            user_id: userId,
+            device_token: token.value,
+            platform: Capacitor.getPlatform()
+          });
+          console.log('[PushNotifications] ✅ Device token saved to backend:', response);
+        } catch (error) {
+          console.error('[PushNotifications] ❌ Error saving device token:', error);
+        }
+      });
+
+      // Listener pour les erreurs d'enregistrement
+      await PushNotifications.addListener('registrationError', (error) => {
+        console.error('[PushNotifications] ❌ Registration error:', JSON.stringify(error));
+      });
+
+      // Listener pour les notifications reçues (app au premier plan)
+      await PushNotifications.addListener('pushNotificationReceived', (notification) => {
+        console.log('[PushNotifications] 📬 Notification received:', notification);
+      });
+
+      // Listener pour les actions sur les notifications (app en arrière-plan)
+      await PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
+        console.log('[PushNotifications] 👆 Action performed:', notification.actionId, notification.notification);
+      });
+
+      console.log('[PushNotifications] Listeners ready, requesting permissions...');
+      
       // Demander la permission
-      console.log('[PushNotifications] Requesting permissions...');
       const permResult = await PushNotifications.requestPermissions();
       console.log('[PushNotifications] Permission result:', permResult);
       
       if (permResult.receive === 'granted') {
         // Enregistrer l'appareil pour recevoir des notifications
-        console.log('[PushNotifications] Registering device...');
+        console.log('[PushNotifications] Registering device with APNs/FCM...');
         await PushNotifications.register();
-
-        // Listener pour le token FCM
-        await PushNotifications.addListener('registration', async (token) => {
-          console.log('[PushNotifications] Registration success, token:', token.value?.substring(0, 50) + '...');
-          
-          // Envoyer le token au backend
-          try {
-            const response = await apiPost(tenantSlug, '/notifications/register-device', {
-              user_id: userId,
-              device_token: token.value,
-              platform: Capacitor.getPlatform()
-            });
-            console.log('[PushNotifications] Device token saved to backend:', response);
-          } catch (error) {
-            console.error('[PushNotifications] Error saving device token:', error);
-          }
-        });
-
-        // Listener pour les erreurs d'enregistrement
-        await PushNotifications.addListener('registrationError', (error) => {
-          console.error('[PushNotifications] Registration error:', JSON.stringify(error));
-        });
-
-        // Listener pour les notifications reçues (app au premier plan)
-        await PushNotifications.addListener('pushNotificationReceived', (notification) => {
-          console.log('[PushNotifications] Notification received:', notification);
-        });
-
-        // Listener pour les actions sur les notifications (app en arrière-plan)
-        await PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
-          console.log('[PushNotifications] Action performed:', notification.actionId, notification.notification);
-        });
+        console.log('[PushNotifications] Register called, waiting for token...');
 
         this.isInitialized = true;
-        console.log('[PushNotifications] Initialized successfully');
+        console.log('[PushNotifications] ✅ Initialized successfully');
         return true;
       } else {
-        console.log('[PushNotifications] Permission not granted:', permResult.receive);
+        console.log('[PushNotifications] ❌ Permission not granted:', permResult.receive);
         return false;
       }
     } catch (error) {
-      console.error('[PushNotifications] Initialization error:', error);
+      console.error('[PushNotifications] ❌ Initialization error:', error);
       return false;
     }
   }
@@ -96,9 +101,9 @@ export class PushNotificationService {
     try {
       await PushNotifications.removeAllListeners();
       this.isInitialized = false;
-      console.log('Push notifications: Unregistered');
+      console.log('[PushNotifications] Unregistered');
     } catch (error) {
-      console.error('Error unregistering push notifications:', error);
+      console.error('[PushNotifications] Error unregistering:', error);
     }
   }
 }
