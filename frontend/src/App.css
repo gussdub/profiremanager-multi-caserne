@@ -7618,12 +7618,20 @@ body.mobile-menu-open .sidebar {
 }
 
 .day-detail-footer {
-  padding: 1.5rem;
+  padding: 1rem;
   background: #f8fafc;
   border-top: 2px solid #e2e8f0;
   display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.day-detail-footer button {
+  flex: 1;
+  min-width: 120px;
+  font-size: 0.85rem;
+  padding: 0.75rem 0.5rem;
 }
 
 /* Responsive Mobile */
