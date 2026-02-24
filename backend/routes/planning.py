@@ -605,6 +605,15 @@ async def create_assignation(
     if warning_message:
         result["warning"] = warning_message
     
+    # Broadcaster la mise à jour à tous les clients connectés
+    asyncio.create_task(broadcast_planning_update(tenant.id, "create", {
+        "assignation_id": assignation.id,
+        "date": assignation_data.date,
+        "user_id": assignation_data.user_id,
+        "type_garde_id": assignation_data.type_garde_id,
+        "user_nom": f"{user.get('prenom', '')} {user.get('nom', '')}"
+    }))
+    
     return result
 
 
