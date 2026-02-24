@@ -190,3 +190,39 @@ async def broadcast_generic_update(tenant_id: str, update_type: str, action: str
         "data": data or {},
         "timestamp": __import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat()
     })
+
+async def broadcast_conge_update(tenant_id: str, action: str, data: dict = None):
+    """Notifier tous les clients d'une mise à jour des congés"""
+    await manager.broadcast_to_tenant(tenant_id, {
+        "type": "conge_update",
+        "action": action,
+        "data": data or {},
+        "timestamp": __import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat()
+    })
+
+async def broadcast_user_update(tenant_id: str, action: str, data: dict = None):
+    """Notifier tous les clients d'une mise à jour des utilisateurs"""
+    await manager.broadcast_to_tenant(tenant_id, {
+        "type": "user_update",
+        "action": action,
+        "data": data or {},
+        "timestamp": __import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat()
+    })
+
+async def broadcast_intervention_update(tenant_id: str, action: str, data: dict = None):
+    """Notifier tous les clients d'une mise à jour des interventions"""
+    await manager.broadcast_to_tenant(tenant_id, {
+        "type": "intervention_update",
+        "action": action,
+        "data": data or {},
+        "timestamp": __import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat()
+    })
+
+async def broadcast_actif_update(tenant_id: str, action: str, data: dict = None):
+    """Notifier tous les clients d'une mise à jour des actifs/équipements"""
+    await manager.broadcast_to_tenant(tenant_id, {
+        "type": "actif_update",
+        "action": action,
+        "data": data or {},
+        "timestamp": __import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat()
+    })
