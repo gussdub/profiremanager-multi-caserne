@@ -362,10 +362,18 @@ async def trouver_remplacants_potentiels(
                 continue
             
             # Si aucune catégorie ne correspond, logger pourquoi
-            logger.warning(f"⚠️ {user_name} ne correspond à aucune catégorie: "
+            logger.debug(f"⚠️ {user_name} ne correspond à aucune catégorie: "
                           f"grade_equiv={est_grade_equivalent}, fonc_sup={est_fonction_superieure}, "
                           f"type={user_type_emploi}, depasserait_max={depasserait_max}, "
                           f"grade_user={user_grade_niveau}, grade_demandeur={demandeur_grade_niveau}")
+            
+            # FALLBACK: Si aucune catégorie spécifique, ajouter quand même en priorité basse
+            # Cela permet de trouver des remplaçants même si la config n'est pas parfaite
+            if not depasserait_max:
+                candidat_data["priorite"] = 7
+                candidat_data["raison"] = "Fallback - Disponible (grade différent)"
+                candidats_par_priorite.setdefault(7, []).append(candidat_data)
+                logger.info(f"✅ {user_name} → Priorité 7 (Fallback)")
         
         # ========== ASSEMBLER LA LISTE FINALE ==========
         remplacants_potentiels = []
