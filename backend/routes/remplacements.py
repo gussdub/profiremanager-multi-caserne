@@ -43,6 +43,9 @@ from routes.dependencies import (
     creer_activite
 )
 
+# Import WebSocket pour synchronisation temps réel
+from routes.websocket import broadcast_remplacement_update
+
 router = APIRouter(tags=["Remplacements"])
 logger = logging.getLogger(__name__)
 
