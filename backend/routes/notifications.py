@@ -256,7 +256,8 @@ async def send_push_notification_to_users(user_ids: List[str], title: str, body:
     """
     Helper function pour envoyer des notifications push FCM à plusieurs utilisateurs
     """
-    if not FIREBASE_ENABLED:
+    # Vérifier dynamiquement si Firebase est activé
+    if not is_firebase_enabled():
         logger.warning("⚠️ Firebase not enabled, skipping push notification")
         return None
     
