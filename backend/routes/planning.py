@@ -636,32 +636,35 @@ async def delete_assignation(
     # SUPPRIMER L'ASSIGNATION D'ABORD (action principale)
     await db.assignations.delete_one({"id": assignation_id})
     
-    # Notifier l'employé (en arrière-plan, ne bloque pas si erreur)
-    try:
-        await creer_notification(
-            tenant_id=tenant.id,
-            user_id=assignation.get("user_id"),
-            type_notification="planning_suppression",
-            titre="Assignation annulée",
-            message=f"Votre assignation du {assignation.get('date', '')} a été annulée",
-            lien="/planning",
-            envoyer_email=False
-        )
-    except Exception as notif_error:
-        logger.warning(f"Erreur notification suppression assignation: {notif_error}")
+    # Notifier l'employé EN ARRIÈRE-PLAN (ne bloque pas la réponse)
+    async def notify_and_log():
+        try:
+            await creer_notification(
+                tenant_id=tenant.id,
+                user_id=assignation.get("user_id"),
+                type_notification="planning_suppression",
+                titre="Assignation annulée",
+                message=f"Votre assignation du {assignation.get('date', '')} a été annulée",
+                lien="/planning",
+                envoyer_email=False
+            )
+        except Exception as notif_error:
+            logger.warning(f"Erreur notification suppression assignation: {notif_error}")
+        
+        try:
+            await creer_activite(
+                tenant_id=tenant.id,
+                type_activite="planning_suppression",
+                description=f"Assignation supprimée: {employe_nom} - {type_garde_nom} le {assignation.get('date', '')}",
+                user_id=current_user.id,
+                user_nom=f"{current_user.prenom} {current_user.nom}",
+                data={"assignation_id": assignation_id, "date": assignation.get("date"), "employe": employe_nom}
+            )
+        except Exception as activite_error:
+            logger.warning(f"Erreur activité suppression assignation: {activite_error}")
     
-    # Créer un log d'activité (en arrière-plan, ne bloque pas si erreur)
-    try:
-        await creer_activite(
-            tenant_id=tenant.id,
-            type_activite="planning_suppression",
-            description=f"Assignation supprimée: {employe_nom} - {type_garde_nom} le {assignation.get('date', '')}",
-            user_id=current_user.id,
-            user_nom=f"{current_user.prenom} {current_user.nom}",
-            data={"assignation_id": assignation_id, "date": assignation.get("date"), "employe": employe_nom}
-        )
-    except Exception as activite_error:
-        logger.warning(f"Erreur activité suppression assignation: {activite_error}")
+    # Lancer en arrière-plan
+    asyncio.create_task(notify_and_log())
     
     return {"message": "Assignation supprimée avec succès"}
 
