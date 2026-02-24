@@ -84,7 +84,7 @@ def create_pdf_footer_text(tenant):
     
     # Toujours afficher ProFireManager (sauf si explicitement désactivé)
     if not hasattr(tenant, 'afficher_profiremanager') or tenant.afficher_profiremanager:
-        footer_parts.append("Généré par ProFireManager • www.profiremanager.com")
+        footer_parts.append("Généré par ProFireManager • www.profiremanager.ca")
     
     return " | ".join(footer_parts) if footer_parts else ""
 

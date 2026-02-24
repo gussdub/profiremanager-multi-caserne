@@ -529,7 +529,7 @@ def send_welcome_email(user_email: str, user_name: str, user_role: str, temp_pas
         
         resend.api_key = resend_api_key
         
-        login_url = f"https://profiremanager.com/{tenant_slug}/login" if tenant_slug else "https://profiremanager.com/login"
+        login_url = f"https://www.profiremanager.ca/{tenant_slug}/login" if tenant_slug else "https://www.profiremanager.ca/login"
         
         html_content = f"""
         <h1>Bienvenue sur ProFireManager</h1>
