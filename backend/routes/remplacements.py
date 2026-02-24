@@ -1902,7 +1902,7 @@ async def accepter_demande_remplacement(
             "demande_id": demande_id
         }
     else:
-        await accepter_remplacement(demande_id, current_user.id, tenant.id)
+        await accepter_remplacement(demande_id, current_user.id, tenant.id, tenant_slug)
         
         return {
             "message": "Remplacement accepté avec succès",
