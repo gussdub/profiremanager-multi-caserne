@@ -626,36 +626,42 @@ async def delete_assignation(
     if not assignation:
         raise HTTPException(status_code=404, detail="Assignation non trouvée")
     
-    # Notifier l'employé de la suppression (push uniquement, pas d'email)
-    await creer_notification(
-        tenant_id=tenant.id,
-        user_id=assignation.get("user_id"),
-        type_notification="planning_suppression",
-        titre="Assignation annulée",
-        message=f"Votre assignation du {assignation.get('date', '')} a été annulée",
-        lien="/planning",
-        envoyer_email=False  # Pas d'email pour les annulations
-    )
-    
-    # Récupérer les infos de l'employé concerné pour le log
+    # Récupérer les infos AVANT la suppression
     employe = await db.users.find_one({"id": assignation.get("user_id")}, {"prenom": 1, "nom": 1})
     employe_nom = f"{employe.get('prenom', '')} {employe.get('nom', '')}".strip() if employe else "Inconnu"
     
-    # Récupérer le nom du type de garde
     type_garde = await db.types_garde.find_one({"id": assignation.get("type_garde_id")}, {"nom": 1})
     type_garde_nom = type_garde.get("nom", "Garde") if type_garde else "Garde"
     
+    # SUPPRIMER L'ASSIGNATION D'ABORD (action principale)
     await db.assignations.delete_one({"id": assignation_id})
     
-    # Créer un log d'activité pour la suppression
-    await creer_activite(
-        tenant_id=tenant.id,
-        type_activite="planning_suppression",
-        description=f"Assignation supprimée: {employe_nom} - {type_garde_nom} le {assignation.get('date', '')}",
-        user_id=current_user.id,
-        user_nom=f"{current_user.prenom} {current_user.nom}",
-        data={"assignation_id": assignation_id, "date": assignation.get("date"), "employe": employe_nom}
-    )
+    # Notifier l'employé (en arrière-plan, ne bloque pas si erreur)
+    try:
+        await creer_notification(
+            tenant_id=tenant.id,
+            user_id=assignation.get("user_id"),
+            type_notification="planning_suppression",
+            titre="Assignation annulée",
+            message=f"Votre assignation du {assignation.get('date', '')} a été annulée",
+            lien="/planning",
+            envoyer_email=False
+        )
+    except Exception as notif_error:
+        logger.warning(f"Erreur notification suppression assignation: {notif_error}")
+    
+    # Créer un log d'activité (en arrière-plan, ne bloque pas si erreur)
+    try:
+        await creer_activite(
+            tenant_id=tenant.id,
+            type_activite="planning_suppression",
+            description=f"Assignation supprimée: {employe_nom} - {type_garde_nom} le {assignation.get('date', '')}",
+            user_id=current_user.id,
+            user_nom=f"{current_user.prenom} {current_user.nom}",
+            data={"assignation_id": assignation_id, "date": assignation.get("date"), "employe": employe_nom}
+        )
+    except Exception as activite_error:
+        logger.warning(f"Erreur activité suppression assignation: {activite_error}")
     
     return {"message": "Assignation supprimée avec succès"}
 
