@@ -1728,7 +1728,7 @@ async def export_remplacements_excel(
 
 @router.get("/{tenant_slug}/remplacements", response_model=List[DemandeRemplacement])
 async def get_demandes_remplacement(tenant_slug: str, current_user: User = Depends(get_current_user)):
-    """Liste des demandes de remplacement"""
+    """Liste des demandes de remplacement avec les noms des demandeurs"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     if current_user.role == "employe":
@@ -1739,8 +1739,26 @@ async def get_demandes_remplacement(tenant_slug: str, current_user: User = Depen
     else:
         demandes = await db.demandes_remplacement.find({"tenant_id": tenant.id}).to_list(1000)
     
-    cleaned_demandes = [clean_mongo_doc(demande) for demande in demandes]
-    return [DemandeRemplacement(**demande) for demande in cleaned_demandes]
+    # Enrichir les demandes avec le nom du demandeur
+    enriched_demandes = []
+    for demande in demandes:
+        cleaned = clean_mongo_doc(demande)
+        
+        # Récupérer le nom du demandeur si non présent
+        if not cleaned.get("demandeur_nom") and cleaned.get("demandeur_id"):
+            demandeur = await db.users.find_one({"id": cleaned["demandeur_id"]}, {"prenom": 1, "nom": 1})
+            if demandeur:
+                cleaned["demandeur_nom"] = f"{demandeur.get('prenom', '')} {demandeur.get('nom', '')}".strip()
+        
+        # Récupérer le nom du remplaçant si présent
+        if cleaned.get("remplacant_id") and not cleaned.get("remplacant_nom"):
+            remplacant = await db.users.find_one({"id": cleaned["remplacant_id"]}, {"prenom": 1, "nom": 1})
+            if remplacant:
+                cleaned["remplacant_nom"] = f"{remplacant.get('prenom', '')} {remplacant.get('nom', '')}".strip()
+        
+        enriched_demandes.append(DemandeRemplacement(**cleaned))
+    
+    return enriched_demandes
 
 
 @router.get("/{tenant_slug}/remplacements/propositions")
