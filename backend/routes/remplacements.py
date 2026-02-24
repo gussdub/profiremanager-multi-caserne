@@ -437,7 +437,7 @@ async def envoyer_email_remplacement(
         remplacant_email = remplacant_user["email"]
         remplacant_prenom = remplacant_user.get("prenom", "")
         
-        frontend_url = os.environ.get('FRONTEND_URL', 'https://mes-epi-debug.preview.emergentagent.com')
+        frontend_url = os.environ.get('FRONTEND_URL', 'https://www.profiremanager.ca')
         backend_url = os.environ.get('REACT_APP_BACKEND_URL', frontend_url)
         
         lien_accepter = f"{backend_url}/api/remplacement-action/{token}/accepter"
