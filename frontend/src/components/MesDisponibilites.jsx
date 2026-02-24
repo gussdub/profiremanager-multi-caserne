@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -12,6 +12,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { apiGet, apiPost, apiPut, apiDelete, apiCall } from '../utils/api';
 import { fr } from "date-fns/locale";
 import { ReinitModal, ExportModal, DayDetailModal, QuickAddModal, BatchConflictModal } from './disponibilites';
+import { useWebSocketUpdate } from '../hooks/useWebSocketUpdate';
 
 // Fonction pour parser une date en évitant les problèmes de timezone
 const parseDateLocal = (dateStr) => {
