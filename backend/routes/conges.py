@@ -17,6 +17,7 @@ from typing import List, Optional
 from datetime import datetime, timezone
 import uuid
 import logging
+import asyncio
 
 from routes.dependencies import (
     db,
@@ -28,6 +29,9 @@ from routes.dependencies import (
     envoyer_notification_delegation_debut,
     get_user_responsibilities
 )
+
+# Import WebSocket pour synchronisation temps réel
+from routes.websocket import broadcast_conge_update
 
 router = APIRouter(tags=["Demandes de Congé"])
 logger = logging.getLogger(__name__)
