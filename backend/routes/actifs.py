@@ -1021,6 +1021,12 @@ async def delete_vehicule(
     
     await db.vehicules.delete_one({"id": vehicule_id, "tenant_id": tenant.id})
     
+    # Broadcast WebSocket pour mise à jour temps réel
+    asyncio.create_task(broadcast_actif_update(tenant.id, "delete", {
+        "type": "vehicule",
+        "id": vehicule_id
+    }))
+    
     return {"message": "Véhicule supprimé avec succès"}
 
 
