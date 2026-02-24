@@ -218,7 +218,7 @@ async def create_user(
     )
     
     # Broadcast WebSocket pour mise à jour temps réel
-    asyncio.create_task(broadcast_user_update(tenant.id, "create", {
+    asyncio.create_task(broadcast_user_update(tenant_slug, "create", {
         "user_id": user_dict["id"],
         "nom": f"{user_create.prenom} {user_create.nom}"
     }))
@@ -289,7 +289,7 @@ async def update_user(
     )
     
     # Broadcast WebSocket pour mise à jour temps réel
-    asyncio.create_task(broadcast_user_update(tenant.id, "update", {
+    asyncio.create_task(broadcast_user_update(tenant_slug, "update", {
         "user_id": user_id,
         "nom": f"{user_cleaned.get('prenom')} {user_cleaned.get('nom')}"
     }))
@@ -343,7 +343,7 @@ async def delete_user(
     )
     
     # Broadcast WebSocket pour mise à jour temps réel
-    asyncio.create_task(broadcast_user_update(tenant.id, "delete", {"user_id": user_id}))
+    asyncio.create_task(broadcast_user_update(tenant_slug, "delete", {"user_id": user_id}))
     
     logging.info(f"✅ Utilisateur supprimé: {user_id} dans tenant {tenant_slug}")
     
