@@ -231,4 +231,11 @@ async def approuver_demande_conge(
     
     logger.info(f"📅 Demande de congé {demande_id} {statut}e par {current_user.email}")
     
+    # Broadcaster la mise à jour
+    asyncio.create_task(broadcast_conge_update(tenant.id, "update", {
+        "demande_id": demande_id,
+        "statut": statut,
+        "approuve_par": f"{current_user.prenom} {current_user.nom}"
+    }))
+    
     return {"message": f"Demande {statut}e avec succès"}
