@@ -530,7 +530,7 @@ async def get_alertes_equipements_dashboard(
                     "date_echeance": date_expiration,
                     "en_retard": est_en_retard,
                     "epi_id": epi.get("id"),
-                    "lien": "/mes-epi" if not is_admin else "/actifs/epi"
+                    "lien": "/mes-epi" if not is_admin else "/actifs?tab=epi"
                 })
         
         # 2. Fin de vie EPI (date_mise_en_service + duree_vie_annees)
@@ -554,7 +554,7 @@ async def get_alertes_equipements_dashboard(
                         "date_echeance": date_fin_vie_str,
                         "en_retard": est_en_retard,
                         "epi_id": epi.get("id"),
-                        "lien": "/mes-epi" if not is_admin else "/actifs/epi"
+                        "lien": "/mes-epi" if not is_admin else "/actifs?tab=epi"
                     })
             except Exception:
                 pass
