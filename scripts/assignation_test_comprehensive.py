@@ -10,7 +10,7 @@ import sys
 from datetime import datetime, timedelta
 
 # Configuration
-BACKEND_URL = "https://mes-epi-debug.preview.emergentagent.com/api"
+BACKEND_URL = "https://emergency-dispatch-23.preview.emergentagent.com/api"
 
 # Credentials pour les tests
 DEMO_ADMIN = {
