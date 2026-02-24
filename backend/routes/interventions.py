@@ -2228,6 +2228,11 @@ async def delete_intervention(
     await db.intervention_resources.delete_many({"intervention_id": intervention_id})
     await db.intervention_personnel.delete_many({"intervention_id": intervention_id})
     
+    # Broadcast WebSocket pour mise à jour temps réel
+    asyncio.create_task(broadcast_intervention_update(tenant.id, "delete", {
+        "id": intervention_id
+    }))
+    
     logger.warning(f"🗑️ SUPERADMIN {current_user.email} a supprimé l'intervention {intervention.get('external_call_id', intervention_id)} du tenant {tenant_slug}")
     
     return {
