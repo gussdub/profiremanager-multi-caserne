@@ -917,7 +917,7 @@ async def create_vehicule(
     await db.vehicules.insert_one(vehicule.dict())
     
     # Broadcast WebSocket pour mise à jour temps réel
-    asyncio.create_task(broadcast_actif_update(tenant.id, "create", {
+    asyncio.create_task(broadcast_actif_update(tenant_slug, "create", {
         "type": "vehicule",
         "id": vehicule.id,
         "nom": vehicule.nom
@@ -989,7 +989,7 @@ async def update_vehicule(
     )
     
     # Broadcast WebSocket pour mise à jour temps réel
-    asyncio.create_task(broadcast_actif_update(tenant.id, "update", {
+    asyncio.create_task(broadcast_actif_update(tenant_slug, "update", {
         "type": "vehicule",
         "id": vehicule_id,
         "nom": updated_vehicule.get("nom")
@@ -1022,7 +1022,7 @@ async def delete_vehicule(
     await db.vehicules.delete_one({"id": vehicule_id, "tenant_id": tenant.id})
     
     # Broadcast WebSocket pour mise à jour temps réel
-    asyncio.create_task(broadcast_actif_update(tenant.id, "delete", {
+    asyncio.create_task(broadcast_actif_update(tenant_slug, "delete", {
         "type": "vehicule",
         "id": vehicule_id
     }))
