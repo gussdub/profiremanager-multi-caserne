@@ -134,7 +134,7 @@ const Remplacements = () => {
     };
   }, [tenantSlug, demandesConge.length, demandes.length]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!tenantSlug) return;
     
     setLoading(true);
@@ -146,7 +146,7 @@ const Remplacements = () => {
         apiGet(tenantSlug, '/remplacements/propositions').catch(() => []) // Propositions reçues par l'utilisateur
       ];
       
-      if (!['employe', 'pompier'].includes(user.role)) {
+      if (!['employe', 'pompier'].includes(user?.role)) {
         promises.push(apiGet(tenantSlug, '/users'));
       }
 
@@ -173,7 +173,21 @@ const Remplacements = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [tenantSlug, user?.role, toast]);
+
+  // Écouter les mises à jour WebSocket pour synchronisation temps réel
+  useWebSocketUpdate(['remplacement_update', 'conge_update'], (data) => {
+    console.log('[Remplacements] Mise à jour WebSocket:', data);
+    fetchData();
+    
+    if (data.type === 'remplacement_update' && data.action === 'accepte') {
+      toast({
+        title: "✅ Remplacement accepté",
+        description: `${data.data?.remplacant_nom || 'Un remplaçant'} a accepté une demande`,
+        duration: 5000
+      });
+    }
+  }, [fetchData, toast]);
 
   // Basculer automatiquement vers l'onglet propositions s'il y en a
   useEffect(() => {
