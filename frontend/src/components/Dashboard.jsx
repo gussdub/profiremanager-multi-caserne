@@ -379,6 +379,14 @@ const Dashboard = ({ setCurrentPage }) => {
 
       {/* Alertes Équipements */}
       <EquipementAlertesSection alertesEquipements={alertesEquipements} formatDate={formatDate} onNavigate={(lien) => {
+        // Gérer les différents types de liens
+        if (lien === '/mes-epi') {
+          // Rediriger vers la page Actifs avec l'onglet EPI
+          localStorage.setItem('actifs_target_tab', 'epi');
+          setCurrentPage('actifs');
+          return;
+        }
+        
         // Extraire le tab depuis le lien (ex: /actifs?tab=epi -> epi)
         let targetTab = 'materiel';
         if (lien && lien.includes('?tab=')) {
