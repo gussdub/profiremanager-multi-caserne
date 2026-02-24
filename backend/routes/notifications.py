@@ -42,7 +42,7 @@ except ImportError:
     messaging = None
     FIREBASE_AVAILABLE = False
 
-# Vérifier si Firebase est initialisé
+# Vérifier si Firebase est initialisé (appelé dynamiquement)
 def is_firebase_enabled():
     if not FIREBASE_AVAILABLE or firebase_admin is None:
         return False
@@ -52,7 +52,7 @@ def is_firebase_enabled():
     except ValueError:
         return False
 
-FIREBASE_ENABLED = is_firebase_enabled()
+# Note: FIREBASE_ENABLED sera vérifié dynamiquement dans send_push_notification_to_users
 
 # Web Push pour les PWA
 from pywebpush import webpush, WebPushException
