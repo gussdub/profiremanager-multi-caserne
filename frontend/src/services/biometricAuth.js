@@ -78,17 +78,25 @@ export const checkBiometricAvailability = async () => {
 // Convertir le type de biométrie en nom lisible
 const getBiometryTypeName = (type) => {
   // Types possibles: 'none', 'touchId', 'faceId', 'fingerprintAuthentication', 'faceAuthentication', 'irisAuthentication'
+  console.log('[Biometric] Type de biométrie reçu:', type);
   switch (type) {
     case 'touchId':
     case 'fingerprintAuthentication':
+    case 1: // Valeur numérique pour Touch ID
       return 'Touch ID';
     case 'faceId':
     case 'faceAuthentication':
+    case 2: // Valeur numérique pour Face ID
       return 'Face ID';
     case 'irisAuthentication':
+    case 3:
       return 'Iris';
     default:
-      return null;
+      // Fallback intelligent basé sur la plateforme
+      if (typeof type === 'number' && type > 0) {
+        return 'Biométrie';
+      }
+      return 'Face ID / Touch ID';
   }
 };
 
