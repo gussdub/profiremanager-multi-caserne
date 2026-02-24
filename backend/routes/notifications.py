@@ -295,14 +295,15 @@ async def send_push_notification_to_users(user_ids: List[str], title: str, body:
         # Configuration iOS/APNs avec support Critical Alerts
         apns_config = messaging.APNSConfig(
             headers={
-                "apns-priority": "10" if is_urgent else "5",  # 10 = immediate delivery
+                "apns-priority": "10",  # Toujours priorité maximale pour livraison immédiate
                 "apns-push-type": "alert"
             },
             payload=messaging.APNSPayload(
                 aps=messaging.Aps(
                     sound=messaging.CriticalSound(name="default", critical=is_urgent, volume=1.0) if is_urgent else "default",
                     badge=1,
-                    content_available=True if is_urgent else False  # Wake up app in background
+                    content_available=True,  # Permet de réveiller l'app en background
+                    mutable_content=True  # Permet la modification de la notification
                 )
             )
         )
