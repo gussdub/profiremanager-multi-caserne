@@ -1338,7 +1338,7 @@ async def accepter_remplacement(demande_id: str, remplacant_id: str, tenant_id: 
         )
         
         # Broadcaster la mise à jour à tous les clients
-        asyncio.create_task(broadcast_remplacement_update(tenant_id, "accepte", {
+        asyncio.create_task(broadcast_remplacement_update(tenant_slug or tenant_id, "accepte", {
             "demande_id": demande_id,
             "remplacant_id": remplacant_id,
             "remplacant_nom": f"{remplacant.get('prenom', '')} {remplacant.get('nom', '')}",
