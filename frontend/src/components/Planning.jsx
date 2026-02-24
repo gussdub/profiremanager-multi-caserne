@@ -427,7 +427,23 @@ const Planning = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [tenantSlug, viewMode, currentMonth, currentWeek]);
+  
+  // Écouter les mises à jour WebSocket pour synchronisation temps réel
+  useWebSocketUpdate('planning_update', (data) => {
+    console.log('[Planning] Mise à jour WebSocket reçue:', data);
+    // Recharger les données automatiquement
+    fetchPlanningData();
+    
+    // Afficher un toast pour informer l'utilisateur
+    toast({
+      title: "📅 Planning mis à jour",
+      description: data.action === 'create' ? "Une nouvelle assignation a été ajoutée" :
+                   data.action === 'delete' ? "Une assignation a été supprimée" :
+                   "Le planning a été modifié",
+      duration: 3000
+    });
+  }, [fetchPlanningData, toast]);
 
   const getGardeCoverage = (date, typeGarde) => {
     const dateStr = date.toISOString().split('T')[0];
