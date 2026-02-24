@@ -54,6 +54,7 @@ import os
 import qrcode
 import base64
 import csv
+import asyncio
 from io import BytesIO, StringIO
 
 # Import des dépendances partagées
@@ -68,6 +69,9 @@ from routes.dependencies import (
 
 # Import pour les notifications push
 from routes.notifications import send_push_notification_to_users, send_web_push_to_users
+
+# Import WebSocket pour synchronisation temps réel
+from routes.websocket import broadcast_actif_update
 
 router = APIRouter(tags=["Actifs"])
 logger = logging.getLogger(__name__)
