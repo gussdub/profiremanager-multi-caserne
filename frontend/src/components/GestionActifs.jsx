@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import InventairesTab from './GestionInventaires';
 import RondeSecurite from './RondeSecurite';
 import HistoriqueRondesSecurite from './HistoriqueRondesSecurite';
