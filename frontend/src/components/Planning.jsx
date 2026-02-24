@@ -810,16 +810,33 @@ const Planning = () => {
       // Trouver l'assignation à supprimer
       const assignationToRemove = selectedGardeDetails.assignations.find(a => a.user_id === personId);
       
-      if (!assignationToRemove) {
-        toast({
-          title: "Erreur",
-          description: "Assignation non trouvée",
-          variant: "destructive"
-        });
-        return;
+      console.log('[Planning] Suppression assignation:', {
+        personId,
+        assignationToRemove,
+        assignationId: assignationToRemove?.id,
+        allAssignations: selectedGardeDetails.assignations
+      });
+      
+      if (!assignationToRemove || !assignationToRemove.id) {
+        // Essayer de trouver par assignation_id si id n'existe pas
+        const altAssignation = selectedGardeDetails.assignations.find(a => 
+          a.user_id === personId && (a.id || a.assignation_id)
+        );
+        
+        if (altAssignation) {
+          const idToUse = altAssignation.id || altAssignation.assignation_id;
+          await apiDelete(tenantSlug, `/planning/assignation/${idToUse}`);
+        } else {
+          toast({
+            title: "Erreur",
+            description: "Assignation non trouvée - Veuillez rafraîchir la page",
+            variant: "destructive"
+          });
+          return;
+        }
+      } else {
+        await apiDelete(tenantSlug, `/planning/assignation/${assignationToRemove.id}`);
       }
-
-      await apiDelete(tenantSlug, `/planning/assignation/${assignationToRemove.id}`);
       
       toast({
         title: "Personne retirée",
