@@ -668,6 +668,14 @@ async def delete_assignation(
     # Lancer en arrière-plan
     asyncio.create_task(notify_and_log())
     
+    # Broadcaster la mise à jour à tous les clients connectés
+    asyncio.create_task(broadcast_planning_update(tenant.id, "delete", {
+        "assignation_id": assignation_id,
+        "date": assignation.get("date"),
+        "user_id": assignation.get("user_id"),
+        "type_garde_id": assignation.get("type_garde_id")
+    }))
+    
     return {"message": "Assignation supprimée avec succès"}
 
 
