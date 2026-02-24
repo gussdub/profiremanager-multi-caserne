@@ -16,69 +16,71 @@ export class PushNotificationService {
    * @param {string} userId - ID de l'utilisateur
    */
   static async initialize(tenantSlug, userId) {
+    console.log('[PushNotifications] Initialize called - Platform:', Capacitor.getPlatform(), 'isNative:', Capacitor.isNativePlatform());
+    
     // Vérifier si on est sur une plateforme mobile
     if (!Capacitor.isNativePlatform()) {
-      console.log('Push notifications: Not on native platform, skipping initialization');
+      console.log('[PushNotifications] Not on native platform, skipping initialization');
       return false;
     }
 
     if (this.isInitialized) {
-      console.log('Push notifications: Already initialized');
+      console.log('[PushNotifications] Already initialized');
       return true;
     }
 
     try {
       // Demander la permission
+      console.log('[PushNotifications] Requesting permissions...');
       const permResult = await PushNotifications.requestPermissions();
+      console.log('[PushNotifications] Permission result:', permResult);
       
       if (permResult.receive === 'granted') {
         // Enregistrer l'appareil pour recevoir des notifications
+        console.log('[PushNotifications] Registering device...');
         await PushNotifications.register();
 
         // Listener pour le token FCM
         await PushNotifications.addListener('registration', async (token) => {
-          console.log('Push registration success, token: ' + token.value);
+          console.log('[PushNotifications] Registration success, token:', token.value?.substring(0, 50) + '...');
           
           // Envoyer le token au backend
           try {
-            await apiPost(tenantSlug, '/notifications/register-device', {
+            const response = await apiPost(tenantSlug, '/notifications/register-device', {
               user_id: userId,
               device_token: token.value,
               platform: Capacitor.getPlatform()
             });
-            console.log('Device token saved to backend');
+            console.log('[PushNotifications] Device token saved to backend:', response);
           } catch (error) {
-            console.error('Error saving device token:', error);
+            console.error('[PushNotifications] Error saving device token:', error);
           }
         });
 
         // Listener pour les erreurs d'enregistrement
         await PushNotifications.addListener('registrationError', (error) => {
-          console.error('Error on registration: ' + JSON.stringify(error));
+          console.error('[PushNotifications] Registration error:', JSON.stringify(error));
         });
 
         // Listener pour les notifications reçues (app au premier plan)
         await PushNotifications.addListener('pushNotificationReceived', (notification) => {
-          console.log('Push notification received: ', notification);
-          // Vous pouvez afficher un toast ou une alerte ici
+          console.log('[PushNotifications] Notification received:', notification);
         });
 
         // Listener pour les actions sur les notifications (app en arrière-plan)
         await PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
-          console.log('Push notification action performed', notification.actionId, notification.notification);
-          // Vous pouvez naviguer vers une page spécifique ici
-          // Par exemple, ouvrir le module remplacements si c'est une notification de remplacement
+          console.log('[PushNotifications] Action performed:', notification.actionId, notification.notification);
         });
 
         this.isInitialized = true;
-        console.log('Push notifications: Initialized successfully');
+        console.log('[PushNotifications] Initialized successfully');
         return true;
       } else {
-        console.log('Push notifications: Permission not granted');
+        console.log('[PushNotifications] Permission not granted:', permResult.receive);
         return false;
       }
     } catch (error) {
-      console.error('Push notifications: Initialization error', error);
+      console.error('[PushNotifications] Initialization error:', error);
       return false;
     }
   }
