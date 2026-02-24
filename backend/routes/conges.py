@@ -110,6 +110,15 @@ async def create_demande_conge(
     
     logger.info(f"📅 Nouvelle demande de congé créée par {current_user.email}: {demande.type_conge} du {demande.date_debut} au {demande.date_fin}")
     
+    # Broadcaster la mise à jour
+    asyncio.create_task(broadcast_conge_update(tenant.id, "create", {
+        "demande_id": demande_obj.id,
+        "demandeur": f"{current_user.prenom} {current_user.nom}",
+        "type_conge": demande.type_conge,
+        "date_debut": demande.date_debut,
+        "date_fin": demande.date_fin
+    }))
+    
     return demande_obj
 
 
