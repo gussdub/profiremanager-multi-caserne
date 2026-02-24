@@ -647,7 +647,17 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
                           max="100"
                           value={notificationSettings.volume}
                           onChange={(e) => saveNotificationSettings({...notificationSettings, volume: parseInt(e.target.value)})}
-                          style={{width: '100%'}}
+                          style={{
+                            width: '100%',
+                            height: '36px',
+                            WebkitAppearance: 'none',
+                            appearance: 'none',
+                            background: `linear-gradient(to right, #dc2626 0%, #dc2626 ${notificationSettings.volume}%, #e5e7eb ${notificationSettings.volume}%, #e5e7eb 100%)`,
+                            borderRadius: '8px',
+                            outline: 'none',
+                            cursor: 'pointer',
+                            touchAction: 'manipulation'
+                          }}
                         />
                       </div>
                     </>
