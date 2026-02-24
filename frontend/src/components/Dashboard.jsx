@@ -380,25 +380,25 @@ const Dashboard = ({ setCurrentPage }) => {
       {/* Alertes Équipements */}
       <EquipementAlertesSection alertesEquipements={alertesEquipements} formatDate={formatDate} onNavigate={(lien) => {
         // Gérer les différents types de liens
-        if (lien === '/mes-epi') {
-          // Rediriger vers la page Actifs avec l'onglet EPI
-          localStorage.setItem('actifs_target_tab', 'epi');
-          setCurrentPage('actifs');
-          return;
-        }
-        
-        // Extraire le tab depuis le lien (ex: /actifs?tab=epi -> epi)
         let targetTab = 'materiel';
-        if (lien && lien.includes('?tab=')) {
+        
+        if (lien === '/mes-epi') {
+          targetTab = 'epi';
+        } else if (lien && lien.includes('?tab=')) {
           const match = lien.match(/\?tab=(\w+)/);
           if (match) targetTab = match[1];
         }
+        
+        // Stocker le tab cible et émettre un event pour forcer la navigation
         localStorage.setItem('actifs_target_tab', targetTab);
         
         if (lien) {
           const equipementMatch = lien.match(/equipements\/(.+)/);
           if (equipementMatch) localStorage.setItem('actifs_target_equipement_id', equipementMatch[1]);
         }
+        
+        // Émettre un event custom pour forcer le changement de tab
+        window.dispatchEvent(new CustomEvent('navigateToTab', { detail: { tab: targetTab } }));
         setCurrentPage('actifs');
       }} />
 
