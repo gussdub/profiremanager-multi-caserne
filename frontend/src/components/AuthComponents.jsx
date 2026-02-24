@@ -442,7 +442,10 @@ const Login = () => {
       try {
         const { available, biometryType: type } = await BiometricService.checkBiometricAvailability();
         setBiometricAvailable(available);
-        setBiometryType(type);
+        // Utiliser le type retourné ou garder le défaut "Face ID"
+        if (type) {
+          setBiometryType(type);
+        }
         console.log('[Login] Biométrie disponible:', available, type);
         
         if (available && tenantSlug) {
@@ -457,6 +460,27 @@ const Login = () => {
     
     checkBiometric();
   }, [tenantSlug]);
+
+  // Auto-login biométrique si les identifiants sont enregistrés
+  useEffect(() => {
+    const attemptBiometricAutoLogin = async () => {
+      // Ne pas réessayer si déjà tenté ou si pas disponible
+      if (biometricAutoLoginAttempted || !biometricAvailable || !hasBiometricCredentials || !tenantSlug) {
+        return;
+      }
+      
+      setBiometricAutoLoginAttempted(true);
+      console.log('[Login] Tentative auto-login biométrique...');
+      
+      // Petite pause pour laisser l'UI se charger
+      await new Promise(r => setTimeout(r, 500));
+      
+      // Lancer automatiquement l'authentification biométrique
+      handleBiometricLogin();
+    };
+    
+    attemptBiometricAutoLogin();
+  }, [biometricAvailable, hasBiometricCredentials, tenantSlug, biometricAutoLoginAttempted]);
 
   // Charger les identifiants sauvegardés (SANS auto-login)
   // L'utilisateur devra cliquer sur "Se connecter" manuellement
