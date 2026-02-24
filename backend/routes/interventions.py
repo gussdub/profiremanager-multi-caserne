@@ -623,7 +623,7 @@ async def update_intervention(
     )
     
     # Broadcast WebSocket pour mise à jour temps réel
-    asyncio.create_task(broadcast_intervention_update(tenant.id, "update", {
+    asyncio.create_task(broadcast_intervention_update(tenant_slug, "update", {
         "id": intervention_id,
         "numero": updated.get("numero")
     }))
@@ -2229,7 +2229,7 @@ async def delete_intervention(
     await db.intervention_personnel.delete_many({"intervention_id": intervention_id})
     
     # Broadcast WebSocket pour mise à jour temps réel
-    asyncio.create_task(broadcast_intervention_update(tenant.id, "delete", {
+    asyncio.create_task(broadcast_intervention_update(tenant_slug, "delete", {
         "id": intervention_id
     }))
     
