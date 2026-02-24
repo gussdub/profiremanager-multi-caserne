@@ -82,6 +82,7 @@ const GestionActifs = ({ user, ModuleEPI }) => {
 
   const { tenantSlug } = useTenant();
   const { confirm } = useConfirmDialog();
+  const { toast } = useToast();
   
   // Ref pour éviter de traiter qr_action plusieurs fois
   const qrActionProcessedRef = useRef(false);
@@ -91,6 +92,18 @@ const GestionActifs = ({ user, ModuleEPI }) => {
       fetchVehicules();
     }
   }, [activeTab]);
+
+  // WebSocket pour mise à jour temps réel des actifs
+  useWebSocketUpdate('actif_update', (data) => {
+    console.log('[GestionActifs] WebSocket: actif_update reçu', data);
+    toast({
+      title: "🚗 Mise à jour Actifs",
+      description: "Les données des actifs ont été mises à jour.",
+    });
+    if (activeTab === 'vehicules') {
+      fetchVehicules();
+    }
+  }, [activeTab, tenantSlug]);
 
   // Traitement du QR code action - s'exécute une seule fois au montage
   useEffect(() => {
