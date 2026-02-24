@@ -342,6 +342,9 @@ async def delete_user(
         user_nom=f"{current_user.prenom} {current_user.nom}"
     )
     
+    # Broadcast WebSocket pour mise à jour temps réel
+    asyncio.create_task(broadcast_user_update(tenant.id, "delete", {"user_id": user_id}))
+    
     logging.info(f"✅ Utilisateur supprimé: {user_id} dans tenant {tenant_slug}")
     
     return {"message": "Utilisateur supprimé avec succès"}
