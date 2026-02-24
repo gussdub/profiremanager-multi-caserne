@@ -1667,6 +1667,9 @@ async def delete_epi(tenant_slug: str, epi_id: str, current_user: User = Depends
     # Supprimer aussi toutes les inspections associées
     await db.inspections_epi.delete_many({"epi_id": epi_id, "tenant_id": tenant.id})
     
+    # Broadcast WebSocket pour mise à jour temps réel
+    asyncio.create_task(broadcast_epi_update(tenant.id, "delete", {"epi_id": epi_id}))
+    
     return {"message": "EPI supprimé avec succès"}
 
 # ========== INSPECTIONS EPI ==========
