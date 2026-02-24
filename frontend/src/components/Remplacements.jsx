@@ -388,9 +388,12 @@ const Remplacements = () => {
     });
   };
 
-  const getUserName = (userId) => {
+  const getUserName = (userId, demandeurNom = null) => {
+    // Si on a déjà le nom du demandeur, l'utiliser directement
+    if (demandeurNom) return demandeurNom;
+    
     const foundUser = users.find(u => u.id === userId);
-    return foundUser ? `${foundUser.prenom} ${foundUser.nom}` : `Employé #${userId?.slice(-4)}`;
+    return foundUser ? `${foundUser.prenom} ${foundUser.nom}` : `Employé #${userId?.slice(-4) || '?'}`;
   };
 
   const getPrioriteColor = (priorite) => {
