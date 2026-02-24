@@ -214,6 +214,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
+    // Déconnecter le WebSocket
+    WebSocketService.disconnect();
+    
     // Désenregistrer les notifications push
     PushNotificationService.unregister().catch(err => 
       console.error('Error unregistering push notifications:', err)
