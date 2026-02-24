@@ -582,7 +582,7 @@ const Login = () => {
       if (result.success) {
         toast({
           title: "✅ Connexion réussie",
-          description: `Bienvenue ! Connecté avec ${biometryType}`
+          description: `Bienvenue !`
         });
       } else {
         toast({
