@@ -31,6 +31,9 @@ from routes.dependencies import (
     creer_notification
 )
 
+# Import WebSocket pour synchronisation temps réel
+from routes.websocket import broadcast_disponibilite_update
+
 router = APIRouter(tags=["Disponibilités"])
 
 
