@@ -217,6 +217,12 @@ async def create_user(
         user_nom=f"{current_user.prenom} {current_user.nom}"
     )
     
+    # Broadcast WebSocket pour mise à jour temps réel
+    asyncio.create_task(broadcast_user_update(tenant.id, "create", {
+        "user_id": user_dict["id"],
+        "nom": f"{user_create.prenom} {user_create.nom}"
+    }))
+    
     logging.info(f"✅ Utilisateur créé: {user_create.email} dans tenant {tenant_slug}")
     
     return User(**user_dict)
