@@ -23,6 +23,7 @@ import os
 import re
 import bcrypt
 import base64
+import asyncio
 from io import BytesIO
 
 # Import des dépendances partagées
@@ -34,6 +35,9 @@ from routes.dependencies import (
     creer_activite,
     User
 )
+
+# Import WebSocket pour synchronisation temps réel
+from routes.websocket import broadcast_user_update
 
 router = APIRouter(tags=["Personnel"])
 
