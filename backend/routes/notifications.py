@@ -282,13 +282,15 @@ async def send_push_notification_to_users(user_ids: List[str], title: str, body:
         # S'assurer que toutes les valeurs sont des strings (requis par FCM)
         string_data = {k: str(v) if v is not None else "" for k, v in notification_data.items()}
         
-        # Configuration Android
+        # Configuration Android - Toujours haute priorité pour le son
         android_config = messaging.AndroidConfig(
-            priority="high" if is_urgent else "normal",
+            priority="high",  # Haute priorité pour garantir la livraison immédiate
             notification=messaging.AndroidNotification(
                 sound="default",
-                priority="max" if is_urgent else "default",
-                channel_id="urgent_channel" if is_urgent else "default_channel"
+                priority="max" if is_urgent else "high",  # Au moins "high" pour le son
+                channel_id="urgent_channel" if is_urgent else "default_channel",
+                default_sound=True,  # Utiliser le son par défaut du système
+                default_vibrate_timings=True  # Activer les vibrations
             )
         )
         
