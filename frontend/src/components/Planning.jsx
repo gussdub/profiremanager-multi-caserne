@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from "react";
+import React, { useState, useEffect, Suspense, lazy, useCallback } from "react";
 import axios from "axios";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -11,6 +11,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { fr } from "date-fns/locale";
 import { apiGet, apiPost, apiPut, apiDelete, buildApiUrl, getTenantToken } from '../utils/api';
 import { useConfirmDialog } from './ui/ConfirmDialog';
+import { useWebSocketUpdate } from '../hooks/useWebSocketUpdate';
 const RapportHeuresModal = lazy(() => import("./RapportHeuresModal"));
 const AuditModal = lazy(() => import("./AuditModal"));
 
