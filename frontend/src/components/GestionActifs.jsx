@@ -105,6 +105,22 @@ const GestionActifs = ({ user, ModuleEPI }) => {
     }
   }, [activeTab, tenantSlug]);
 
+  // Écouter les changements de tab via localStorage (navigation depuis Dashboard)
+  useEffect(() => {
+    const checkTargetTab = () => {
+      const targetTab = localStorage.getItem('actifs_target_tab');
+      if (targetTab) {
+        localStorage.removeItem('actifs_target_tab');
+        setActiveTab(targetTab);
+      }
+    };
+    
+    // Vérifier au montage et à chaque focus de la fenêtre
+    checkTargetTab();
+    window.addEventListener('focus', checkTargetTab);
+    return () => window.removeEventListener('focus', checkTargetTab);
+  }, []);
+
   // Traitement du QR code action - s'exécute une seule fois au montage
   useEffect(() => {
     // Vérifier immédiatement s'il y a une action QR à traiter
