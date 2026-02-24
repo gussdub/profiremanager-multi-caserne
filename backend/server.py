@@ -46,6 +46,7 @@ from routes.equipements import router as equipements_router
 from routes.prevention import router as prevention_router
 from routes.planning import router as planning_router
 from routes.sftp import router as sftp_router
+from routes.websocket import router as websocket_router
 from routes.billing import router as billing_router
 from routes.admin import router as admin_router
 from routes.debogage import router as debogage_router
