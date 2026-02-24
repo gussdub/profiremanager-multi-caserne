@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 # Configuration de Resend API avec la clé d'environnement
 RESEND_API_KEY = os.environ.get('RESEND_API_KEY')
 SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'noreply@profiremanager.ca')
-FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://profiremanager.ca')
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://www.profiremanager.ca')
 
 # Logo officiel ProFireManager
 LOGO_URL = "https://customer-assets.emergentagent.com/job_fireshift-manager/artifacts/6vh2i9cz_05_Icone_Flamme_Rouge_Bordure_D9072B_VISIBLE.png"
