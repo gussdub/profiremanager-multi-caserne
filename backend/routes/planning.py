@@ -678,7 +678,7 @@ async def delete_assignation(
     asyncio.create_task(notify_and_log())
     
     # Broadcaster la mise à jour à tous les clients connectés
-    asyncio.create_task(broadcast_planning_update(tenant.id, "delete", {
+    asyncio.create_task(broadcast_planning_update(tenant_slug, "delete", {
         "assignation_id": assignation_id,
         "date": assignation.get("date"),
         "user_id": assignation.get("user_id"),
