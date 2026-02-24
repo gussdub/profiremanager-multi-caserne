@@ -373,7 +373,7 @@ const Planning = () => {
     }
   }, [pendingOpenDate, typesGarde, assignations, users, loading]);
 
-  const fetchPlanningData = async () => {
+  const fetchPlanningData = useCallback(async () => {
     if (!tenantSlug) return;
     
     setLoading(true);
