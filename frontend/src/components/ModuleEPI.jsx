@@ -305,6 +305,16 @@ const ModuleEPI = ({ user }) => {
     }
   }, [tenantSlug, user]);
 
+  // WebSocket pour mise à jour temps réel des EPI
+  useWebSocketUpdate('epi_update', (data) => {
+    console.log('[ModuleEPI] WebSocket: epi_update reçu', data);
+    toast({
+      title: "📦 Mise à jour EPI",
+      description: "Les données EPI ont été mises à jour.",
+    });
+    loadData();
+  }, [tenantSlug]);
+
   // Écouter les événements de navigation précise (depuis les notifications)
   useEffect(() => {
     const handleOpenDemandeRemplacement = async (event) => {
