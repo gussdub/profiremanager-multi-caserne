@@ -1907,7 +1907,7 @@ async def refuser_demande_remplacement(
 @router.get("/remplacement-action/{token}/{action}")
 async def action_remplacement_via_email(token: str, action: str):
     """Traite une action de remplacement via le lien email"""
-    frontend_url = os.environ.get('FRONTEND_URL', 'https://mes-epi-debug.preview.emergentagent.com')
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://www.profiremanager.ca')
     
     try:
         token_data = await db.tokens_remplacement.find_one({"token": token})
