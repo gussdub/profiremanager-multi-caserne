@@ -256,7 +256,7 @@ async def create_disponibilite(
     await db.disponibilites.insert_one(dispo_dict)
     
     # Broadcaster la mise à jour
-    asyncio.create_task(broadcast_disponibilite_update(tenant.id, "create", {
+    asyncio.create_task(broadcast_disponibilite_update(tenant_slug, "create", {
         "user_id": target_user_id,
         "date": dispo.date,
         "statut": dispo.statut
