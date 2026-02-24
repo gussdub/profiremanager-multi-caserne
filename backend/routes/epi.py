@@ -1643,6 +1643,12 @@ async def update_epi(
     if isinstance(cleaned_epi.get("updated_at"), str):
         cleaned_epi["updated_at"] = datetime.fromisoformat(cleaned_epi["updated_at"].replace('Z', '+00:00'))
     
+    # Broadcast WebSocket pour mise à jour temps réel
+    asyncio.create_task(broadcast_epi_update(tenant.id, "update", {
+        "epi_id": epi_id,
+        "user_id": cleaned_epi.get("user_id")
+    }))
+    
     return EPI(**cleaned_epi)
 
 @router.delete("/{tenant_slug}/epi/{epi_id}")
