@@ -379,10 +379,17 @@ const Dashboard = ({ setCurrentPage }) => {
 
       {/* Alertes Équipements */}
       <EquipementAlertesSection alertesEquipements={alertesEquipements} formatDate={formatDate} onNavigate={(lien) => {
-        localStorage.setItem('actifs_target_tab', 'materiel');
+        // Extraire le tab depuis le lien (ex: /actifs?tab=epi -> epi)
+        let targetTab = 'materiel';
+        if (lien && lien.includes('?tab=')) {
+          const match = lien.match(/\?tab=(\w+)/);
+          if (match) targetTab = match[1];
+        }
+        localStorage.setItem('actifs_target_tab', targetTab);
+        
         if (lien) {
-          const match = lien.match(/equipements\/(.+)/);
-          if (match) localStorage.setItem('actifs_target_equipement_id', match[1]);
+          const equipementMatch = lien.match(/equipements\/(.+)/);
+          if (equipementMatch) localStorage.setItem('actifs_target_equipement_id', equipementMatch[1]);
         }
         setCurrentPage('actifs');
       }} />
