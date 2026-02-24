@@ -589,7 +589,7 @@ async def get_alertes_equipements_dashboard(
                             "date_echeance": None,
                             "en_retard": True,
                             "user_id": uid,
-                            "lien": "/mes-epi" if uid == current_user.id else "/actifs/epi"
+                            "lien": "/mes-epi" if uid == current_user.id else "/actifs?tab=epi"
                         })
     
     # Trier les alertes: en retard d'abord, puis par date d'échéance
