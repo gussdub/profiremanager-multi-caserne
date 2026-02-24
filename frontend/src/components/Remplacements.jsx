@@ -920,7 +920,7 @@ const Remplacements = () => {
                     </div>
                     <div className="demande-details">
                       <div className="demande-meta" style={{ marginTop: '12px' }}>
-                        <span>Demandé par: {getUserName(demande.demandeur_id)} </span>
+                        <span>Demandé par: {demande.demandeur_nom || getUserName(demande.demandeur_id)} </span>
                         <span>Le: {new Date(demande.created_at).toLocaleDateString('fr-FR')}</span>
                       </div>
                     </div>
