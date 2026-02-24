@@ -1545,6 +1545,16 @@ const TabHistorique = ({ user, tenantSlug, toast, confirm, readOnly = false, set
     fetchInterventions();
   }, [filters]);
 
+  // WebSocket pour mise à jour temps réel des interventions
+  useWebSocketUpdate('intervention_update', (data) => {
+    console.log('[GestionInterventions] WebSocket: intervention_update reçu', data);
+    toast({
+      title: "🚒 Mise à jour Intervention",
+      description: "Les données ont été mises à jour.",
+    });
+    fetchInterventions();
+  }, [filters]);
+
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
     try {
