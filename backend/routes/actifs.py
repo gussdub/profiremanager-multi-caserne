@@ -916,6 +916,13 @@ async def create_vehicule(
     
     await db.vehicules.insert_one(vehicule.dict())
     
+    # Broadcast WebSocket pour mise à jour temps réel
+    asyncio.create_task(broadcast_actif_update(tenant.id, "create", {
+        "type": "vehicule",
+        "id": vehicule.id,
+        "nom": vehicule.nom
+    }))
+    
     return vehicule
 
 
