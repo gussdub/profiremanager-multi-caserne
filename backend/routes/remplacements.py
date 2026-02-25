@@ -449,6 +449,9 @@ async def trouver_remplacants_potentiels(
         
         remplacants_potentiels = []
         
+        # Log de résumé par niveau
+        logger.info(f"📊 Résumé par niveau: N2={len(candidats_par_niveau[2])}, N3={len(candidats_par_niveau[3])}, N4={len(candidats_par_niveau[4])}, N5={len(candidats_par_niveau[5])}")
+        
         for niveau in [2, 3, 4, 5]:
             candidats = candidats_par_niveau[niveau]
             candidats_tries = sorted(candidats, key=sort_key)
