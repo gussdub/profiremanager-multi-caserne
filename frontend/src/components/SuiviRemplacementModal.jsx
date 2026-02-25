@@ -468,6 +468,179 @@ const SuiviRemplacementModal = ({ demande, tenantSlug, onClose, users = [] }) =>
           )}
         </div>
 
+        {/* Section "Comprendre la logique" */}
+        <div style={{ borderTop: '1px solid #E5E7EB' }}>
+          <button
+            onClick={toggleLogique}
+            style={{
+              width: '100%',
+              padding: '14px 24px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: showLogique ? '#F8FAFC' : 'white',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'background 0.2s'
+            }}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '500', color: '#374151' }}>
+              <Info size={18} style={{ color: '#6366F1' }} />
+              Comprendre la logique de sélection
+            </span>
+            {showLogique ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          </button>
+
+          {showLogique && (
+            <div style={{ padding: '0 24px 20px', background: '#F8FAFC' }}>
+              {logiqueLoading ? (
+                <div style={{ textAlign: 'center', padding: '20px', color: '#6B7280' }}>
+                  <div className="spinner" style={{ margin: '0 auto 12px' }}></div>
+                  Chargement de la logique...
+                </div>
+              ) : logiqueError ? (
+                <div style={{ 
+                  textAlign: 'center', 
+                  padding: '20px', 
+                  color: '#DC2626',
+                  background: '#FEF2F2',
+                  borderRadius: '8px'
+                }}>
+                  <AlertTriangle size={24} style={{ marginBottom: '8px' }} />
+                  <p>{logiqueError}</p>
+                </div>
+              ) : logiqueData ? (
+                <div>
+                  {/* Règle Officier */}
+                  {logiqueData.regle_officier && (
+                    <div style={{
+                      background: logiqueData.regle_officier.regle_active ? '#FEF3C7' : '#F0FDF4',
+                      borderRadius: '10px',
+                      padding: '14px',
+                      marginBottom: '16px',
+                      border: logiqueData.regle_officier.regle_active ? '1px solid #F59E0B' : '1px solid #22C55E'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                        <Shield size={18} style={{ color: logiqueData.regle_officier.regle_active ? '#D97706' : '#16A34A' }} />
+                        <strong style={{ color: logiqueData.regle_officier.regle_active ? '#92400E' : '#166534' }}>
+                          Règle Officier {logiqueData.regle_officier.regle_active ? 'ACTIVE' : 'Non active'}
+                        </strong>
+                      </div>
+                      <p style={{ fontSize: '0.85rem', color: '#4B5563', margin: 0 }}>
+                        {logiqueData.regle_officier.explication}
+                      </p>
+                      <div style={{ marginTop: '10px', fontSize: '0.8rem', color: '#6B7280' }}>
+                        <div>• Type de garde officier obligatoire: {logiqueData.regle_officier.officier_obligatoire ? 'Oui' : 'Non'}</div>
+                        <div>• Demandeur est officier: {logiqueData.regle_officier.demandeur_est_officier ? 'Oui' : 'Non'}</div>
+                        <div>• Autre officier sur la garde: {logiqueData.regle_officier.autre_officier_present_sur_garde ? 'Oui' : 'Non'}</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Résumé */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    gap: '10px',
+                    marginBottom: '16px'
+                  }}>
+                    <div style={{ background: 'white', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#111827' }}>
+                        {logiqueData.resume?.total_utilisateurs || 0}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>Total évalués</div>
+                    </div>
+                    <div style={{ background: '#DCFCE7', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#166534' }}>
+                        {logiqueData.resume?.eligibles || 0}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#166534' }}>Éligibles</div>
+                    </div>
+                    <div style={{ background: '#FEE2E2', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#991B1B' }}>
+                        {logiqueData.resume?.non_eligibles || 0}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#991B1B' }}>Exclus</div>
+                    </div>
+                  </div>
+
+                  {/* Liste des candidats */}
+                  <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
+                    {/* Éligibles */}
+                    {logiqueData.eligibles?.length > 0 && (
+                      <div style={{ marginBottom: '12px' }}>
+                        <h4 style={{ fontSize: '0.85rem', fontWeight: '600', color: '#166534', marginBottom: '8px' }}>
+                          ✅ Candidats éligibles ({logiqueData.eligibles.length})
+                        </h4>
+                        {logiqueData.eligibles.slice(0, 10).map((candidat, idx) => (
+                          <div key={idx} style={{
+                            background: 'white',
+                            borderRadius: '6px',
+                            padding: '8px 12px',
+                            marginBottom: '6px',
+                            fontSize: '0.85rem',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}>
+                            <span style={{ fontWeight: '500' }}>{candidat.nom}</span>
+                            <span style={{ 
+                              fontSize: '0.75rem', 
+                              color: '#6B7280',
+                              background: '#F3F4F6',
+                              padding: '2px 8px',
+                              borderRadius: '4px'
+                            }}>
+                              {candidat.niveau || candidat.type_emploi}
+                              {candidat.est_officier && ' 🎖️'}
+                              {candidat.est_eligible_fonction_sup && ' ⭐'}
+                            </span>
+                          </div>
+                        ))}
+                        {logiqueData.eligibles.length > 10 && (
+                          <div style={{ fontSize: '0.8rem', color: '#6B7280', textAlign: 'center', marginTop: '4px' }}>
+                            ... et {logiqueData.eligibles.length - 10} autres
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Non éligibles */}
+                    {logiqueData.non_eligibles?.length > 0 && (
+                      <div>
+                        <h4 style={{ fontSize: '0.85rem', fontWeight: '600', color: '#991B1B', marginBottom: '8px' }}>
+                          ❌ Candidats exclus ({logiqueData.non_eligibles.length})
+                        </h4>
+                        {logiqueData.non_eligibles.slice(0, 8).map((candidat, idx) => (
+                          <div key={idx} style={{
+                            background: 'white',
+                            borderRadius: '6px',
+                            padding: '8px 12px',
+                            marginBottom: '6px',
+                            fontSize: '0.85rem'
+                          }}>
+                            <div style={{ fontWeight: '500', marginBottom: '4px' }}>{candidat.nom}</div>
+                            {candidat.raisons_exclusion?.map((raison, rIdx) => (
+                              <div key={rIdx} style={{ fontSize: '0.75rem', color: '#DC2626', marginLeft: '8px' }}>
+                                • {raison}
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                        {logiqueData.non_eligibles.length > 8 && (
+                          <div style={{ fontSize: '0.8rem', color: '#6B7280', textAlign: 'center', marginTop: '4px' }}>
+                            ... et {logiqueData.non_eligibles.length - 8} autres
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          )}
+        </div>
+
         {/* Footer */}
         <div style={{
           padding: '16px 24px',
