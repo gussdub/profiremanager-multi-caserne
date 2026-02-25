@@ -13,6 +13,10 @@ const SuiviRemplacementModal = ({ demande, tenantSlug, onClose, users = [] }) =>
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
+  const [showLogique, setShowLogique] = useState(false);
+  const [logiqueData, setLogiqueData] = useState(null);
+  const [logiqueLoading, setLogiqueLoading] = useState(false);
+  const [logiqueError, setLogiqueError] = useState(null);
 
   const fetchSuivi = useCallback(async (showLoading = true) => {
     if (showLoading) setLoading(true);
