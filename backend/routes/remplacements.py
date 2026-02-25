@@ -168,15 +168,23 @@ async def trouver_remplacants_potentiels(
         # Récupérer les paramètres de remplacements pour ce tenant
         parametres = await db.parametres_remplacements.find_one({"tenant_id": tenant_id})
         
-        # Récupérer les paramètres d'attribution pour N5 (heures sup)
-        params_attribution = await db.parametres_attribution.find_one({"tenant_id": tenant_id})
-        activer_n5 = params_attribution.get("activer_n5", False) if params_attribution else False
+        # Récupérer le tenant pour les niveaux d'attribution
+        tenant = await db.tenants.find_one({"id": tenant_id})
+        tenant_params = tenant.get("parametres", {}) if tenant else {}
+        
+        # Lire les niveaux d'attribution actifs (MÊMES QUE LE PLANNING)
+        niveau_2_actif = tenant_params.get("niveau_2_actif", True)  # Temps partiel DISPONIBLES
+        niveau_3_actif = tenant_params.get("niveau_3_actif", True)  # Temps partiel STAND-BY
+        niveau_4_actif = tenant_params.get("niveau_4_actif", True)  # Temps plein INCOMPLETS
+        niveau_5_actif = tenant_params.get("niveau_5_actif", True)  # Temps plein COMPLETS (heures sup)
+        
+        logger.info(f"⚙️ Niveaux d'attribution actifs - N2:{niveau_2_actif}, N3:{niveau_3_actif}, N4:{niveau_4_actif}, N5:{niveau_5_actif}")
         
         # Valeurs par défaut si pas de paramètres
         privilegier_disponibles = parametres.get("privilegier_disponibles", False) if parametres else False
         competences_egales = parametres.get("competences_egales", False) if parametres else False
         
-        logger.info(f"⚙️ Paramètres remplacements - privilegier_disponibles: {privilegier_disponibles}, competences_egales: {competences_egales}, N5 actif: {activer_n5}")
+        logger.info(f"⚙️ Paramètres remplacements - privilegier_disponibles: {privilegier_disponibles}, competences_egales: {competences_egales}")
         
         # Récupérer le type de garde pour connaître les compétences requises et la durée
         type_garde_data = await db.types_garde.find_one({"id": type_garde_id, "tenant_id": tenant_id})
