@@ -976,16 +976,22 @@ async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
             logger.error(f"Demande de remplacement non trouvée: {demande_id}")
             return
         
-        parametres_data = await db.parametres.find_one({"tenant_id": tenant_id})
+        # IMPORTANT: Lire depuis parametres_remplacements (pas parametres) 
+        # C'est là que le frontend sauvegarde les paramètres
+        parametres_data = await db.parametres_remplacements.find_one({"tenant_id": tenant_id})
         if not parametres_data:
             mode_notification = "un_par_un"
             delai_attente_minutes = 120  # 2 heures par défaut
             nombre_simultane = 1
+            max_contacts = 5
+            logger.info(f"⚙️ Paramètres remplacements: Aucun trouvé, utilisation des valeurs par défaut")
         else:
             mode_notification = parametres_data.get("mode_notification", "un_par_un")
             # Utiliser delai_attente_minutes si disponible, sinon convertir delai_attente_heures
             delai_attente_minutes = parametres_data.get("delai_attente_minutes") or (parametres_data.get("delai_attente_heures", 2) * 60)
             nombre_simultane = parametres_data.get("nombre_simultane", 3)
+            max_contacts = parametres_data.get("max_contacts", 5)
+            logger.info(f"⚙️ Paramètres remplacements chargés: délai={delai_attente_minutes}min, mode={mode_notification}, max_contacts={max_contacts}")
         
         exclus_ids = [t.get("user_id") for t in demande_data.get("tentatives_historique", [])]
         
