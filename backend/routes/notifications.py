@@ -314,20 +314,23 @@ async def send_push_notification_to_users(user_ids: List[str], title: str, body:
             )
         )
         
-        # Créer le message
-        message = messaging.MulticastMessage(
-            notification=messaging.Notification(
-                title=title,
-                body=body
-            ),
-            data=string_data,
-            tokens=device_tokens,
-            android=android_config,
-            apns=apns_config
-        )
+        # Créer les messages individuels pour chaque token (API v7+)
+        messages = [
+            messaging.Message(
+                notification=messaging.Notification(
+                    title=title,
+                    body=body
+                ),
+                data=string_data,
+                token=token,
+                android=android_config,
+                apns=apns_config
+            )
+            for token in device_tokens
+        ]
         
-        # Envoyer
-        response = messaging.send_multicast(message)
+        # Envoyer avec la nouvelle API
+        response = messaging.send_each(messages)
         logger.info(f"✅ Push notification sent: {response.success_count} success, {response.failure_count} failures")
         
         # Supprimer les tokens invalides
