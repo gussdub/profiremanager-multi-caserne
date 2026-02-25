@@ -468,7 +468,7 @@ const SuiviRemplacementModal = ({ demande, tenantSlug, onClose, users = [] }) =>
           )}
         </div>
 
-        {/* Section "Comprendre la logique" */}
+        {/* Section "Audit" */}
         <div style={{ borderTop: '1px solid #E5E7EB' }}>
           <button
             onClick={toggleLogique}
@@ -486,7 +486,7 @@ const SuiviRemplacementModal = ({ demande, tenantSlug, onClose, users = [] }) =>
           >
             <span style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '500', color: '#374151' }}>
               <Info size={18} style={{ color: '#6366F1' }} />
-              Comprendre la logique de sélection
+              Audit
             </span>
             {showLogique ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
           </button>
