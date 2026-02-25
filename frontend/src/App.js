@@ -385,6 +385,32 @@ const AppLayout = () => {
         link.href = `${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/manifest.json`;
         document.head.appendChild(link);
       }
+      
+      // Initialiser le gestionnaire de deep links pour les apps mobiles
+      initDeepLinkHandler((path) => {
+        // Navigation basée sur le path du deep link
+        console.log('[DeepLink] Navigating to:', path);
+        const pathParts = path.split('/').filter(Boolean);
+        const module = pathParts[0] || '';
+        
+        // Mapper le module vers la page
+        const moduleToPage = {
+          'remplacements': 'remplacements',
+          'planning': 'planning',
+          'personnel': 'personnel',
+          'disponibilites': 'disponibilites',
+          'actifs': 'actifs',
+          'epi': 'actifs',
+          'interventions': 'interventions',
+          'formations': 'formations',
+          'dashboard': 'dashboard',
+          'prevention': 'prevention',
+          'rapports': 'rapports'
+        };
+        
+        const targetPage = moduleToPage[module] || 'dashboard';
+        setCurrentPage(targetPage);
+      }, tenantSlug);
     }
   }, [tenantSlug]);
 
