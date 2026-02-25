@@ -267,3 +267,68 @@ async def approuver_demande_conge(
     }))
     
     return {"message": f"Demande {statut}e avec succès"}
+
+
+@router.get("/{tenant_slug}/demandes-conge/{demande_id}/impact-planning")
+async def get_impact_planning_conge(
+    tenant_slug: str,
+    demande_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Récupère l'impact de la demande de congé sur le planning.
+    Retourne la liste des assignations qui seront supprimées si le congé est approuvé.
+    """
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    demande = await db.demandes_conge.find_one({"id": demande_id, "tenant_id": tenant.id})
+    if not demande:
+        raise HTTPException(status_code=404, detail="Demande non trouvée")
+    
+    # Récupérer le demandeur
+    demandeur = await db.users.find_one({"id": demande["demandeur_id"], "tenant_id": tenant.id})
+    demandeur_nom = f"{demandeur.get('prenom', '')} {demandeur.get('nom', '')}" if demandeur else "Inconnu"
+    
+    # Récupérer les assignations pendant la période de congé
+    assignations = await db.assignations.find({
+        "tenant_id": tenant.id,
+        "user_id": demande["demandeur_id"],
+        "date": {
+            "$gte": demande["date_debut"],
+            "$lte": demande["date_fin"]
+        }
+    }).to_list(1000)
+    
+    # Enrichir avec les noms des types de garde
+    assignations_enrichies = []
+    for assignation in assignations:
+        type_garde = await db.types_garde.find_one({"id": assignation.get("type_garde_id"), "tenant_id": tenant.id})
+        type_garde_nom = type_garde.get("nom", "Inconnu") if type_garde else "Inconnu"
+        
+        assignations_enrichies.append({
+            "id": assignation.get("id"),
+            "date": assignation.get("date"),
+            "type_garde_id": assignation.get("type_garde_id"),
+            "type_garde_nom": type_garde_nom,
+            "debut": assignation.get("debut"),
+            "fin": assignation.get("fin")
+        })
+    
+    # Trier par date
+    assignations_enrichies.sort(key=lambda x: x["date"])
+    
+    logger.info(f"📊 Impact planning pour congé {demande_id}: {len(assignations_enrichies)} assignation(s) impactée(s)")
+    
+    return {
+        "demande_id": demande_id,
+        "demandeur_id": demande["demandeur_id"],
+        "demandeur_nom": demandeur_nom,
+        "date_debut": demande["date_debut"],
+        "date_fin": demande["date_fin"],
+        "nombre_jours": demande.get("nombre_jours", 0),
+        "assignations_impactees": assignations_enrichies,
+        "total_assignations": len(assignations_enrichies)
+    }
