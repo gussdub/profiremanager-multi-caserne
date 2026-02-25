@@ -5152,6 +5152,41 @@ body.mobile-menu-open .sidebar {
     width: 100% !important;
     min-height: 44px !important;
   }
+  
+  /* Calendrier responsive avec zoom */
+  .interactive-calendar {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  
+  .interactive-calendar .rdp {
+    min-width: 280px !important;
+  }
+  
+  .interactive-calendar .rdp-table {
+    min-width: 280px !important;
+  }
+  
+  .interactive-calendar .rdp-head_cell,
+  .interactive-calendar .rdp-cell {
+    min-width: 36px !important;
+    padding: 2px !important;
+  }
+  
+  .interactive-calendar .rdp-day {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 0.875rem !important;
+  }
+  
+  .interactive-calendar .rdp-caption {
+    padding: 0 8px !important;
+  }
+  
+  .interactive-calendar .rdp-nav_button {
+    width: 36px !important;
+    height: 36px !important;
+  }
 }
 
 /* Tablettes */
