@@ -1103,15 +1103,6 @@ const Remplacements = () => {
                 >
                   <FileSpreadsheet size={14} /> Exporter congés
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handlePlanningImpact}
-                  data-testid="planning-impact"
-                  className="flex items-center gap-1"
-                >
-                  <CalendarDays size={14} /> Impact planning
-                </Button>
               </div>
             )}
 
