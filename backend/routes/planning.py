@@ -598,7 +598,7 @@ async def create_assignation(
             description=f"Nouvelle assignation créée pour {user.get('prenom', '')} {user.get('nom', '')}",
             user_id=current_user.id,
             user_nom=f"{current_user.prenom} {current_user.nom}",
-            data={"assignation_id": assignation.id, "date": assignation_data.date}
+            metadata={"assignation_id": assignation.id, "date": assignation_data.date}
         )
     except Exception as e:
         logging.warning(f"Erreur lors de la création d'activité: {e}")
