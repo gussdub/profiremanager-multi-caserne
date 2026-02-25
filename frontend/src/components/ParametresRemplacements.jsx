@@ -56,9 +56,9 @@ const ParametresRemplacements = ({
                 </div>
               )}
 
-              <div className="input-group-compact">
-                <Label>Délai avant notification globale (minutes)</Label>
-                <div className="input-with-reset">
+              {(systemSettings.mode_notification === 'sequentiel' || systemSettings.mode_notification === 'groupe_sequentiel') && (
+                <div className="input-group-compact">
+                  <Label>Délai d'attente (minutes)</Label>
                   <Input
                     type="number"
                     min="5"
@@ -68,29 +68,17 @@ const ParametresRemplacements = ({
                     onChange={(e) => handleSettingChange('delai_attente_minutes', parseInt(e.target.value))}
                     data-testid="delai-attente-input"
                   />
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => handleSettingChange('delai_attente_minutes', 15)}
-                    title="Réinitialiser à 15 min"
-                    data-testid="reset-delai-btn"
-                  >
-                    🔄
-                  </Button>
+                  <small>Temps d'attente avant de passer au suivant (en cas de non-réponse). Par défaut: 24h (1440 min)</small>
                 </div>
-                <small>
-                  Délai avant de contacter les remplaçants suivants si pas de réponse. 
-                  {systemSettings.mode_notification === 'simultane' && " En mode simultané: délai avant relance globale."}
-                </small>
-              </div>
+              )}
 
               <div className="input-group-compact">
-                <Label>Nombre max de personnes à contacter</Label>
+                <Label>Max personnes à contacter</Label>
                 <div className="input-with-reset">
                   <Input
                     type="number"
                     min="1"
-                    max="100"
+                    max="200"
                     value={systemSettings.max_personnes_contact || 5}
                     onChange={(e) => handleSettingChange('max_personnes_contact', parseInt(e.target.value))}
                     data-testid="max-contact-input"
@@ -99,13 +87,11 @@ const ParametresRemplacements = ({
                     variant="ghost" 
                     size="sm" 
                     onClick={() => handleSettingChange('max_personnes_contact', 5)}
-                    title="Réinitialiser à 5"
                     data-testid="reset-contact-btn"
                   >
                     🔄
                   </Button>
                 </div>
-                <small>Nombre maximum de remplaçants potentiels à contacter par demande</small>
               </div>
             </div>
           </div>
