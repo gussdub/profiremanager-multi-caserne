@@ -6095,6 +6095,69 @@ async def health_check():
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
+
+# ==================== DEEP LINKING - WELL-KNOWN FILES ====================
+# Ces endpoints sont nécessaires pour Universal Links (iOS) et App Links (Android)
+# Ils doivent retourner du JSON sans authentification
+
+@app.get("/.well-known/apple-app-site-association")
+async def apple_app_site_association():
+    """
+    Apple App Site Association pour Universal Links iOS
+    Ce fichier permet à iOS d'associer le domaine à l'app native
+    """
+    return {
+        "applinks": {
+            "apps": [],
+            "details": [
+                {
+                    "appID": "B595367QA9.com.profiremanager.app",
+                    "paths": [
+                        "/*/remplacements*",
+                        "/*/planning*",
+                        "/*/personnel*",
+                        "/*/disponibilites*",
+                        "/*/epi*",
+                        "/*/actifs*",
+                        "/*/interventions*",
+                        "/*/formations*",
+                        "/*/notifications*",
+                        "/*/dashboard*",
+                        "/*/prevention*",
+                        "/*/rapports*",
+                        "/*/parametres*"
+                    ]
+                }
+            ]
+        },
+        "webcredentials": {
+            "apps": [
+                "B595367QA9.com.profiremanager.app"
+            ]
+        }
+    }
+
+
+@app.get("/.well-known/assetlinks.json")
+async def android_asset_links():
+    """
+    Digital Asset Links pour App Links Android
+    Ce fichier permet à Android d'associer le domaine à l'app native
+    """
+    return [
+        {
+            "relation": ["delegate_permission/common.handle_all_urls"],
+            "target": {
+                "namespace": "android_app",
+                "package_name": "com.profiremanager.app",
+                "sha256_cert_fingerprints": [
+                    "8F:49:27:9E:22:EE:5A:7A:64:34:DE:CC:17:17:DA:0C:90:37:2E:41:49:81:30:50:12:20:36:0D:1C:EA:15:B3"
+                ]
+            }
+        }
+    ]
+
+
 # Endpoint d'initialisation (à appeler une fois après déploiement)
 @app.post("/api/admin/initialize-production")
 async def initialize_production_data():
