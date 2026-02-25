@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from './ui/button';
 import { apiGet } from '../utils/api';
-import { X, Mail, MessageSquare, Bell, Clock, CheckCircle, XCircle, HelpCircle, User, Users, RefreshCw } from 'lucide-react';
+import { X, Mail, MessageSquare, Bell, Clock, CheckCircle, XCircle, HelpCircle, User, Users, RefreshCw, Info, ChevronDown, ChevronUp, Shield, AlertTriangle } from 'lucide-react';
 
 /**
  * Modal de suivi détaillé d'une demande de remplacement
