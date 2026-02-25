@@ -317,75 +317,67 @@ async def trouver_remplacants_potentiels(
             }
             
             # ========== CLASSIFICATION PAR PRIORITÉ ==========
+            # IMPORTANT: Respecter les niveaux d'attribution actifs (comme le Planning)
             
-            # Priorité 1-2: Avec disponibilité déclarée (si privilegier_disponibles)
-            if privilegier_disponibles and has_disponibilite and not depasserait_max:
+            # N2: Temps partiel DISPONIBLES (priorité 1-2)
+            if niveau_2_actif and user_type_emploi in ["temps_partiel", "temporaire"] and has_disponibilite and not depasserait_max:
                 if est_grade_equivalent:
                     candidat_data["priorite"] = 1
-                    candidat_data["raison"] = "Grade équivalent + Disponible"
+                    candidat_data["raison"] = "N2 - Temps partiel disponible (grade équivalent)"
                     candidats_par_priorite[1].append(candidat_data)
-                    logger.info(f"✅ {user_name} → Priorité 1 (Grade équivalent + Dispo)")
+                    logger.info(f"✅ {user_name} → N2 Priorité 1 (TP Dispo + Grade équiv.)")
                     continue
                 elif est_fonction_superieure:
                     candidat_data["priorite"] = 2
-                    candidat_data["raison"] = "Fonction supérieure + Disponible"
+                    candidat_data["raison"] = "N2 - Temps partiel disponible (fonction supérieure)"
                     candidats_par_priorite[2].append(candidat_data)
-                    logger.info(f"✅ {user_name} → Priorité 2 (Fonction sup. + Dispo)")
+                    logger.info(f"✅ {user_name} → N2 Priorité 2 (TP Dispo + Fonction sup.)")
                     continue
             
-            # Priorité 3-4: Stand-by N3 (temps partiel, ni dispo ni indispo)
-            if user_type_emploi in ["temps_partiel", "temporaire"] and not has_disponibilite and not depasserait_max:
+            # N3: Temps partiel STAND-BY (ni dispo ni indispo)
+            if niveau_3_actif and user_type_emploi in ["temps_partiel", "temporaire"] and not has_disponibilite and not depasserait_max:
                 if est_grade_equivalent:
                     candidat_data["priorite"] = 3
-                    candidat_data["raison"] = "Grade équivalent + Stand-by (N3)"
+                    candidat_data["raison"] = "N3 - Temps partiel stand-by (grade équivalent)"
                     candidats_par_priorite[3].append(candidat_data)
-                    logger.info(f"✅ {user_name} → Priorité 3 (Grade équivalent + N3)")
+                    logger.info(f"✅ {user_name} → N3 Priorité 3 (TP Stand-by + Grade équiv.)")
                     continue
                 elif est_fonction_superieure:
                     candidat_data["priorite"] = 4
-                    candidat_data["raison"] = "Fonction supérieure + Stand-by (N3)"
+                    candidat_data["raison"] = "N3 - Temps partiel stand-by (fonction supérieure)"
                     candidats_par_priorite[4].append(candidat_data)
-                    logger.info(f"✅ {user_name} → Priorité 4 (Fonction sup. + N3)")
+                    logger.info(f"✅ {user_name} → N3 Priorité 4 (TP Stand-by + Fonction sup.)")
                     continue
             
-            # Priorité 5: N4 - Temps plein incomplets
-            if user_type_emploi == "temps_plein" and not depasserait_max:
+            # N4: Temps plein INCOMPLETS (heures < max)
+            if niveau_4_actif and user_type_emploi == "temps_plein" and not depasserait_max:
                 candidat_data["priorite"] = 5
                 candidat_data["raison"] = "N4 - Temps plein incomplet"
                 candidats_par_priorite[5].append(candidat_data)
-                logger.info(f"✅ {user_name} → Priorité 5 (N4 - Temps plein)")
+                logger.info(f"✅ {user_name} → N4 Priorité 5 (Temps plein incomplet)")
                 continue
             
-            # Priorité 6: N5 - Heures supplémentaires (si activé)
-            if activer_n5 and depasserait_max:
+            # N5: Heures supplémentaires (dépasserait max)
+            if niveau_5_actif and depasserait_max:
                 # Temps partiel doit avoir une dispo pour heures sup
                 if user_type_emploi in ["temps_partiel", "temporaire"]:
                     if has_disponibilite:
                         candidat_data["priorite"] = 6
                         candidat_data["raison"] = "N5 - Heures sup (temps partiel + dispo)"
                         candidats_par_priorite[6].append(candidat_data)
-                        logger.info(f"✅ {user_name} → Priorité 6 (N5 - Heures sup TP)")
+                        logger.info(f"✅ {user_name} → N5 Priorité 6 (Heures sup TP)")
                 else:
                     # Temps plein peut faire heures sup sans dispo
                     candidat_data["priorite"] = 6
                     candidat_data["raison"] = "N5 - Heures sup (temps plein)"
                     candidats_par_priorite[6].append(candidat_data)
-                    logger.info(f"✅ {user_name} → Priorité 6 (N5 - Heures sup)")
+                    logger.info(f"✅ {user_name} → N5 Priorité 6 (Heures sup)")
                 continue
             
-            # Si aucune catégorie ne correspond, logger pourquoi
-            logger.debug(f"⚠️ {user_name} ne correspond à aucune catégorie: "
-                          f"grade_equiv={est_grade_equivalent}, fonc_sup={est_fonction_superieure}, "
-                          f"type={user_type_emploi}, depasserait_max={depasserait_max}, "
-                          f"grade_user={user_grade_niveau}, grade_demandeur={demandeur_grade_niveau}")
-            
-            # FALLBACK: Si aucune catégorie spécifique, ajouter quand même en priorité basse
-            # Cela permet de trouver des remplaçants même si la config n'est pas parfaite
-            if not depasserait_max:
-                candidat_data["priorite"] = 7
-                candidat_data["raison"] = "Fallback - Disponible (grade différent)"
-                candidats_par_priorite.setdefault(7, []).append(candidat_data)
-                logger.info(f"✅ {user_name} → Priorité 7 (Fallback)")
+            # Si aucune catégorie ne correspond, logger pourquoi (PAS de fallback)
+            logger.debug(f"⚠️ {user_name} exclu: type={user_type_emploi}, dispo={has_disponibilite}, "
+                          f"depasserait_max={depasserait_max}, grade_equiv={est_grade_equivalent}, "
+                          f"N2={niveau_2_actif}, N3={niveau_3_actif}, N4={niveau_4_actif}, N5={niveau_5_actif}")
         
         # ========== ASSEMBLER LA LISTE FINALE ==========
         remplacants_potentiels = []
