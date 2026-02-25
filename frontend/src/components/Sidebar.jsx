@@ -4,6 +4,8 @@ import { useToast } from '../hooks/use-toast';
 import { useTenant } from '../contexts/TenantContext';
 import { useAuth } from '../contexts/AuthContext';
 import { apiGet, apiPost, apiPut } from '../utils/api';
+import { Capacitor } from '@capacitor/core';
+import { PushNotifications } from '@capacitor/push-notifications';
 
 const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
   const { toast } = useToast();
