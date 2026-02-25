@@ -6140,6 +6140,7 @@ async def apple_app_site_association():
 
 
 @app.get("/.well-known/assetlinks.json")
+@app.get("/api/.well-known/assetlinks.json")
 async def android_asset_links():
     """
     Digital Asset Links pour App Links Android
