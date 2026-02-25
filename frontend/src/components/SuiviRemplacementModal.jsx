@@ -1,29 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from './ui/button';
 import { apiGet } from '../utils/api';
-import { X, Mail, MessageSquare, Bell, Clock, CheckCircle, XCircle, HelpCircle, User, Users } from 'lucide-react';
+import { X, Mail, MessageSquare, Bell, Clock, CheckCircle, XCircle, HelpCircle, User, Users, RefreshCw } from 'lucide-react';
 
 /**
  * Modal de suivi détaillé d'une demande de remplacement
  * Affiche la timeline des contacts, les canaux utilisés et les réponses
+ * Auto-actualisation toutes les 30 secondes
  */
 const SuiviRemplacementModal = ({ demande, tenantSlug, onClose, users = [] }) => {
   const [suivi, setSuivi] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [lastUpdate, setLastUpdate] = useState(null);
 
-  useEffect(() => {
-    if (demande?.id) {
-      fetchSuivi();
-    }
-  }, [demande?.id]);
-
-  const fetchSuivi = async () => {
-    setLoading(true);
+  const fetchSuivi = useCallback(async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     setError(null);
     try {
       const data = await apiGet(tenantSlug, `/remplacements/${demande.id}/suivi`);
       setSuivi(data);
+      setLastUpdate(new Date());
     } catch (err) {
       console.error('Erreur chargement suivi:', err);
       setError('Impossible de charger le suivi');
@@ -44,7 +41,20 @@ const SuiviRemplacementModal = ({ demande, tenantSlug, onClose, users = [] }) =>
     } finally {
       setLoading(false);
     }
-  };
+  }, [demande?.id, demande?.tentatives_historique, demande?.statut, tenantSlug]);
+
+  useEffect(() => {
+    if (demande?.id) {
+      fetchSuivi();
+      
+      // Auto-actualisation toutes les 30 secondes
+      const interval = setInterval(() => {
+        fetchSuivi(false); // false = ne pas afficher le loading spinner
+      }, 30000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [demande?.id, fetchSuivi]);
 
   const getUserName = (userId) => {
     const user = users.find(u => u.id === userId);
