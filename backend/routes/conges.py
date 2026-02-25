@@ -214,6 +214,34 @@ async def approuver_demande_conge(
     
     # Si le congé est approuvé, vérifier si le demandeur a des responsabilités à déléguer
     if statut == "approuve":
+        # ========== RETIRER LES ASSIGNATIONS DU PLANNING ==========
+        # Supprimer toutes les assignations de l'employé pendant la période de congé
+        date_debut_str = demande["date_debut"]
+        date_fin_str = demande["date_fin"]
+        
+        deleted_assignations = await db.assignations.delete_many({
+            "tenant_id": tenant.id,
+            "user_id": demande["demandeur_id"],
+            "date": {
+                "$gte": date_debut_str,
+                "$lte": date_fin_str
+            }
+        })
+        
+        if deleted_assignations.deleted_count > 0:
+            logger.info(f"🗑️ {deleted_assignations.deleted_count} assignation(s) supprimée(s) pour {demande['demandeur_id']} ({date_debut_str} → {date_fin_str})")
+            
+            # Broadcaster la mise à jour du planning pour que le frontend se rafraîchisse
+            from routes.websocket import broadcast_planning_update
+            asyncio.create_task(broadcast_planning_update(tenant_slug, "delete", {
+                "user_id": demande["demandeur_id"],
+                "date_debut": date_debut_str,
+                "date_fin": date_fin_str,
+                "raison": "conge_approuve",
+                "count": deleted_assignations.deleted_count
+            }))
+        
+        # Vérifier les responsabilités à déléguer
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         # Si le congé commence aujourd'hui ou est déjà commencé, déclencher la délégation immédiatement
         if demande["date_debut"] <= today <= demande["date_fin"]:
