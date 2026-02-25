@@ -1741,6 +1741,19 @@ const Remplacements = () => {
           </div>
         </div>
       )}
+
+      {/* Modal de suivi de remplacement */}
+      {showSuiviModal && selectedDemandeForSuivi && (
+        <SuiviRemplacementModal
+          demande={selectedDemandeForSuivi}
+          tenantSlug={tenantSlug}
+          onClose={() => {
+            setShowSuiviModal(false);
+            setSelectedDemandeForSuivi(null);
+          }}
+          users={users}
+        />
+      )}
     </div>
   );
 };
