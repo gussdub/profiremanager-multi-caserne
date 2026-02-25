@@ -123,6 +123,8 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 ## Pending Tasks
 
 ### P1
+- **Vérification notifications push Android**: Tester les notifications avec la nouvelle config AndroidManifest.xml et build.gradle
+- **Déploiement deep linking**: Effectuer les dernières étapes pour activer Universal Links (iOS) et App Links (Android)
 - **Test complet notifications push**: Vérifier les notifications Firebase sur appareil réel (iOS/Android)
 - Adapter l'import d'inspections d'hydrants pour le nouveau champ "Cavitation durant le pompage"
 
