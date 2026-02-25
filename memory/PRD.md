@@ -133,6 +133,8 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 
 ### Refactoring recommandé
 - Le fichier `backend/routes/planning.py` dépasse 5000 lignes et devrait être découpé en modules plus petits
+- Le fichier `backend/routes/remplacements.py` est très volumineux (2600+ lignes) et devrait être refactorisé
+- Le composant `frontend/src/components/Remplacements.jsx` gère remplacements ET congés, devrait être séparé
 
 ## API Endpoints
 
