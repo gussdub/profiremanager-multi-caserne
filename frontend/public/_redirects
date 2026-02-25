@@ -1,7 +1,0 @@
-# Redirections pour Deep Linking (Universal Links / App Links)
-# Ces fichiers doivent être servis comme JSON, pas interceptés par React Router
-
-/.well-known/*    /api/.well-known/:splat    200
-
-# Toutes les autres routes vers React (SPA fallback)
-/*    /index.html    200
