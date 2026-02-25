@@ -5,11 +5,32 @@
   "framework": "create-react-app",
   "rewrites": [
     {
+      "source": "/.well-known/apple-app-site-association",
+      "destination": "https://profiremanager-backend.onrender.com/api/.well-known/apple-app-site-association"
+    },
+    {
+      "source": "/.well-known/assetlinks.json",
+      "destination": "https://profiremanager-backend.onrender.com/api/.well-known/assetlinks.json"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
   "headers": [
+    {
+      "source": "/.well-known/(.*)",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    },
     {
       "source": "/(.*)",
       "headers": [
