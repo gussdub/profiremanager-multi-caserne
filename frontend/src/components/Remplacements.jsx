@@ -969,33 +969,6 @@ const Remplacements = () => {
                       </div>
                     </div>
                     
-                    {/* Bouton de suivi - visible pour le demandeur et les admins/superviseurs */}
-                    {(demande.demandeur_id === user.id || !['employe', 'pompier'].includes(user.role)) && (
-                      <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #E5E7EB' }}>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setSelectedDemandeForSuivi(demande);
-                            setShowSuiviModal(true);
-                          }}
-                          data-testid={`suivi-replacement-${demande.id}`}
-                          style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: '6px',
-                            color: '#6366F1',
-                            borderColor: '#6366F1'
-                          }}
-                        >
-                          <ClipboardList size={16} />
-                          📋 Voir le suivi
-                        </Button>
-                      </div>
-                    )}
-                    
                     {!['employe', 'pompier'].includes(user.role) && (demande.statut === 'en_cours' || demande.statut === 'en_attente') && (
                       <div className="demande-actions">
                         <Button 
