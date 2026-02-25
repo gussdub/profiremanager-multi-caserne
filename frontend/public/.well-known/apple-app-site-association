@@ -1,0 +1,30 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAM_ID.com.profiremanager.app",
+        "paths": [
+          "/*/remplacements*",
+          "/*/planning*",
+          "/*/personnel*",
+          "/*/disponibilites*",
+          "/*/epi*",
+          "/*/actifs*",
+          "/*/interventions*",
+          "/*/formations*",
+          "/*/notifications*",
+          "/*/dashboard*",
+          "/*/prevention*",
+          "/*/rapports*",
+          "/*/parametres*"
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "TEAM_ID.com.profiremanager.app"
+    ]
+  }
+}
