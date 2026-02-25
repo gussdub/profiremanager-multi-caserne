@@ -167,15 +167,16 @@ async def trouver_remplacants_potentiels(
         # Paramètres de remplacements
         parametres = await db.parametres_remplacements.find_one({"tenant_id": tenant_id})
         
-        # Tenant pour les niveaux d'attribution
+        # Tenant pour les équipes de garde
         tenant = await db.tenants.find_one({"id": tenant_id})
         tenant_params = tenant.get("parametres", {}) if tenant else {}
         
-        # Niveaux d'attribution actifs (MÊMES QUE LE PLANNING)
-        niveau_2_actif = tenant_params.get("niveau_2_actif", True)  # Temps partiel DISPONIBLES
-        niveau_3_actif = tenant_params.get("niveau_3_actif", True)  # Temps partiel STAND-BY
-        niveau_4_actif = tenant_params.get("niveau_4_actif", True)  # Temps plein INCOMPLETS
-        niveau_5_actif = tenant_params.get("niveau_5_actif", True)  # Heures supplémentaires
+        # IMPORTANT: Pour les remplacements, TOUS les niveaux sont TOUJOURS actifs
+        # (contrairement au planning qui respecte les paramètres de tenant)
+        niveau_2_actif = True  # Temps partiel DISPONIBLES
+        niveau_3_actif = True  # Temps partiel STAND-BY
+        niveau_4_actif = True  # Temps plein INCOMPLETS
+        niveau_5_actif = True  # Heures supplémentaires
         
         # Paramètres équipe de garde
         params_equipes_garde = await db.parametres_equipes_garde.find_one({"tenant_id": tenant_id})
@@ -185,7 +186,7 @@ async def trouver_remplacants_potentiels(
             config_temps_partiel = params_equipes_garde.get("temps_partiel", {})
             privilegier_equipe_garde = config_temps_partiel.get("privilegier_equipe_garde", False)
         
-        logger.info(f"⚙️ Niveaux actifs - N2:{niveau_2_actif}, N3:{niveau_3_actif}, N4:{niveau_4_actif}, N5:{niveau_5_actif}")
+        logger.info(f"⚙️ Remplacements: Tous niveaux actifs (N2, N3, N4, N5 = True)")
         logger.info(f"⚙️ Équipe de garde - actif:{equipes_garde_actif}, prioriser:{privilegier_equipe_garde}")
         
         # Paramètres de remplacements
