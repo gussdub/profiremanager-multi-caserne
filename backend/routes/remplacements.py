@@ -2570,6 +2570,18 @@ async def debug_recherche_remplacant(
             resultat["eligible"] = False
             resultat["raisons_exclusion"].append("Indisponibilité déclarée pour cette date")
         
+        # Check 4b: Règle officier
+        if besoin_officier_remplacement:
+            user_grade = user.get("grade", "")
+            user_est_officier = est_officier_grade(user_grade)
+            user_est_eligible = user.get("fonction_superieur", False) == True
+            resultat["est_officier"] = user_est_officier
+            resultat["est_eligible_fonction_sup"] = user_est_eligible
+            
+            if not user_est_officier and not user_est_eligible:
+                resultat["eligible"] = False
+                resultat["raisons_exclusion"].append(f"Règle officier: Le demandeur est le seul officier, le remplaçant doit être officier ou éligible (grade={user_grade})")
+        
         # Check 5: Déjà assigné
         assignation = await db.assignations.find_one({
             "user_id": user_id,
