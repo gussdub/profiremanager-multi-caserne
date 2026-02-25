@@ -669,7 +669,7 @@ async def delete_assignation(
                 description=f"Assignation supprimée: {employe_nom} - {type_garde_nom} le {assignation.get('date', '')}",
                 user_id=current_user.id,
                 user_nom=f"{current_user.prenom} {current_user.nom}",
-                data={"assignation_id": assignation_id, "date": assignation.get("date"), "employe": employe_nom}
+                metadata={"assignation_id": assignation_id, "date": assignation.get("date"), "employe": employe_nom}
             )
         except Exception as activite_error:
             logger.warning(f"Erreur activité suppression assignation: {activite_error}")
