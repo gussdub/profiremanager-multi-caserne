@@ -290,13 +290,13 @@ async def trouver_remplacants_potentiels(
             if competences_egales:
                 user_competences = set(user.get("competences", []))
                 if demandeur_competences and not demandeur_competences.issubset(user_competences):
-                    logger.debug(f"❌ {user_name} - N0: Compétences insuffisantes")
+                    logger.info(f"❌ {user_name} - N0: Compétences insuffisantes (manque: {demandeur_competences - user_competences})")
                     continue
             
             if competences_requises:
                 user_competences = set(user.get("competences", []))
                 if not set(competences_requises).issubset(user_competences):
-                    logger.debug(f"❌ {user_name} - N0: Compétences garde insuffisantes")
+                    logger.info(f"❌ {user_name} - N0: Compétences garde insuffisantes (requises: {competences_requises}, a: {list(user_competences)})")
                     continue
             
             # ========== N0: FILTRE INDISPONIBILITÉ ==========
@@ -307,7 +307,7 @@ async def trouver_remplacants_potentiels(
                 "statut": "indisponible"
             })
             if indispo:
-                logger.debug(f"❌ {user_name} - N0: Indisponible")
+                logger.info(f"❌ {user_name} - N0: Indisponible déclaré pour {date_garde}")
                 continue
             
             # ========== N1: FILTRE ASSIGNATION EN CONFLIT ==========
@@ -317,7 +317,7 @@ async def trouver_remplacants_potentiels(
                 "date": date_garde
             })
             if assignation_existante:
-                logger.debug(f"❌ {user_name} - N1: Déjà assigné ce jour")
+                logger.info(f"❌ {user_name} - N1: Déjà assigné ce jour ({date_garde})")
                 continue
             
             # ========== CALCULS COMMUNS ==========
