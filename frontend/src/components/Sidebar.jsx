@@ -271,6 +271,16 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
     try {
       await apiPut(tenantSlug, '/notifications/marquer-toutes-lues', {});
       loadNotifications();
+      
+      // Effacer le badge sur iOS/Android
+      if (Capacitor.isNativePlatform()) {
+        try {
+          await PushNotifications.removeAllDeliveredNotifications();
+          console.log('[Notifications] Badge et notifications effacés');
+        } catch (e) {
+          console.log('[Notifications] Erreur effacement badge:', e);
+        }
+      }
     } catch (error) {
       console.error('Erreur marquage toutes notifications:', error);
     }
