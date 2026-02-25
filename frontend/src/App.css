@@ -4898,16 +4898,18 @@ body.mobile-menu-open .sidebar {
     margin: 0 !important;
     border-radius: 0 !important;
     overflow-y: auto !important;
-    overflow-x: hidden !important;
+    overflow-x: auto !important;
     /* Safe area pour iOS (notch, barre de statut) */
     padding-top: env(safe-area-inset-top, 0px) !important;
   }
   
   .extra-large-modal .modal-body {
     padding: 12px !important;
-    overflow-x: hidden !important;
+    overflow-x: auto !important;
     width: 100% !important;
     box-sizing: border-box !important;
+    /* Assurer que le calendrier a assez d'espace */
+    min-width: min-content !important;
   }
   
   .extra-large-modal .modal-header {
