@@ -2356,3 +2356,144 @@ async def update_parametres_remplacements(
         logger.info(f"✅ Paramètres remplacements CRÉÉS pour {tenant.slug}")
     
     return {"message": "Paramètres mis à jour avec succès"}
+
+
+
+@router.get("/{tenant_slug}/remplacements/debug/{demande_id}")
+async def debug_recherche_remplacant(
+    tenant_slug: str,
+    demande_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Endpoint de diagnostic pour comprendre pourquoi aucun remplaçant n'est trouvé.
+    Retourne des détails sur chaque utilisateur et pourquoi il est éligible ou non.
+    """
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès réservé aux admins")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer la demande
+    demande = await db.demandes_remplacement.find_one({"id": demande_id, "tenant_id": tenant.id})
+    if not demande:
+        raise HTTPException(status_code=404, detail="Demande non trouvée")
+    
+    date_garde = demande.get("date")
+    type_garde_id = demande.get("type_garde_id")
+    demandeur_id = demande.get("demandeur_id")
+    exclus_ids = demande.get("remplacants_contactes_ids", [])
+    
+    # Type de garde
+    type_garde = await db.types_garde.find_one({"id": type_garde_id, "tenant_id": tenant.id})
+    competences_requises = type_garde.get("competences_requises", []) if type_garde else []
+    
+    # Demandeur
+    demandeur = await db.users.find_one({"id": demandeur_id})
+    
+    # Tous les utilisateurs actifs
+    users = await db.users.find({"tenant_id": tenant.id, "statut": "Actif"}).to_list(1000)
+    
+    resultats = []
+    
+    for user in users:
+        user_id = user["id"]
+        user_name = f"{user.get('prenom', '')} {user.get('nom', '')}"
+        user_competences = user.get("competences", [])
+        user_type_emploi = user.get("type_emploi", "")
+        
+        resultat = {
+            "nom": user_name,
+            "id": user_id,
+            "type_emploi": user_type_emploi,
+            "competences": user_competences,
+            "eligible": True,
+            "raisons_exclusion": []
+        }
+        
+        # Check 1: Est-ce le demandeur ?
+        if user_id == demandeur_id:
+            resultat["eligible"] = False
+            resultat["raisons_exclusion"].append("C'est le demandeur lui-même")
+            resultats.append(resultat)
+            continue
+        
+        # Check 2: Déjà contacté ?
+        if user_id in exclus_ids:
+            resultat["eligible"] = False
+            resultat["raisons_exclusion"].append("Déjà contacté précédemment")
+            resultats.append(resultat)
+            continue
+        
+        # Check 3: Compétences requises
+        if competences_requises:
+            manquantes = set(competences_requises) - set(user_competences)
+            if manquantes:
+                resultat["eligible"] = False
+                resultat["raisons_exclusion"].append(f"Compétences manquantes: {list(manquantes)}")
+        
+        # Check 4: Indisponibilité déclarée
+        indispo = await db.disponibilites.find_one({
+            "user_id": user_id,
+            "tenant_id": tenant.id,
+            "date": date_garde,
+            "statut": "indisponible"
+        })
+        if indispo:
+            resultat["eligible"] = False
+            resultat["raisons_exclusion"].append("Indisponibilité déclarée pour cette date")
+        
+        # Check 5: Déjà assigné
+        assignation = await db.assignations.find_one({
+            "user_id": user_id,
+            "tenant_id": tenant.id,
+            "date": date_garde
+        })
+        if assignation:
+            resultat["eligible"] = False
+            type_garde_assignation = await db.types_garde.find_one({"id": assignation.get("type_garde_id")})
+            resultat["raisons_exclusion"].append(f"Déjà assigné ce jour: {type_garde_assignation.get('nom', 'Inconnu') if type_garde_assignation else 'Inconnu'}")
+        
+        # Check 6: Disponibilité déclarée
+        dispo = await db.disponibilites.find_one({
+            "user_id": user_id,
+            "tenant_id": tenant.id,
+            "date": date_garde,
+            "statut": "disponible"
+        })
+        resultat["a_disponibilite"] = dispo is not None
+        
+        # Classification niveau
+        if resultat["eligible"]:
+            if user_type_emploi in ["temps_partiel", "temporaire"]:
+                if dispo:
+                    resultat["niveau"] = "N2 (TP Disponible)"
+                else:
+                    resultat["niveau"] = "N3 (TP Stand-by)"
+            elif user_type_emploi == "temps_plein":
+                resultat["niveau"] = "N4 (Temps plein)"
+            else:
+                resultat["niveau"] = "N5 ou non classé"
+        
+        resultats.append(resultat)
+    
+    # Compter les éligibles
+    eligibles = [r for r in resultats if r["eligible"]]
+    non_eligibles = [r for r in resultats if not r["eligible"]]
+    
+    return {
+        "demande": {
+            "id": demande_id,
+            "date": date_garde,
+            "type_garde": type_garde.get("nom") if type_garde else "Inconnu",
+            "competences_requises": competences_requises,
+            "demandeur": f"{demandeur.get('prenom', '')} {demandeur.get('nom', '')}" if demandeur else "Inconnu"
+        },
+        "resume": {
+            "total_utilisateurs": len(resultats),
+            "eligibles": len(eligibles),
+            "non_eligibles": len(non_eligibles)
+        },
+        "eligibles": eligibles,
+        "non_eligibles": non_eligibles
+    }
