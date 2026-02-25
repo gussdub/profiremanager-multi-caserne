@@ -430,7 +430,7 @@ async def trouver_remplacants_potentiels(
                 logger.info(f"✅ {user_name} → N5")
                 continue
             
-            logger.debug(f"⚠️ {user_name} - Aucun niveau applicable")
+            logger.info(f"⚠️ {user_name} exclu - type:{user_type_emploi}, dispo:{has_disponibilite}, depasseMax:{depasserait_max}, N2:{niveau_2_actif}, N3:{niveau_3_actif}, N4:{niveau_4_actif}, N5:{niveau_5_actif}")
         
         # ==================== TRI ET ASSEMBLAGE FINAL ====================
         # Ordre de tri:
