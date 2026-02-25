@@ -37,6 +37,8 @@ const Remplacements = () => {
   const [showCreateRemplacementModal, setShowCreateRemplacementModal] = useState(false);
   const [showCreateCongeModal, setShowCreateCongeModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showSuiviModal, setShowSuiviModal] = useState(false);
+  const [selectedDemandeForSuivi, setSelectedDemandeForSuivi] = useState(null);
   const [exportType, setExportType] = useState(''); // 'pdf' ou 'excel'
   // Fonction pour obtenir la date locale au format YYYY-MM-DD
   const getLocalDateString = () => {
