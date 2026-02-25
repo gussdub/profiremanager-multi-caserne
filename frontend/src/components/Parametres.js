@@ -915,11 +915,19 @@ const Parametres = ({ user, tenantSlug }) => {
           [setting]: value
         });
       } else if (['mode_notification', 'nombre_simultane', 'delai_relance', 'delai_expiration', 
-                  'privilegier_disponibles', 'competences_egales', 'auto_attribution'].includes(setting)) {
-        // Paramètres de remplacement
-        await axios.put(`${API}/parametres/remplacements`, {
-          [setting]: value
-        });
+                  'privilegier_disponibles', 'competences_egales', 'auto_attribution',
+                  'delai_attente_minutes', 'max_personnes_contact'].includes(setting)) {
+        // Paramètres de remplacement - convertir les noms de champs pour le backend
+        let backendData = {};
+        if (setting === 'delai_attente_minutes') {
+          // Convertir minutes en heures pour le backend
+          backendData = { delai_attente_heures: Math.round(value / 60) || 1 };
+        } else if (setting === 'max_personnes_contact') {
+          backendData = { max_contacts: value };
+        } else {
+          backendData = { [setting]: value };
+        }
+        await axios.put(`${API}/parametres/remplacements`, backendData);
       } else {
         // Autres paramètres système
         await axios.put(`${API}/parametres/systeme`, {
