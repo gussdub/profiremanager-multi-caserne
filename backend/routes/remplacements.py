@@ -387,6 +387,19 @@ async def trouver_remplacants_potentiels(
                 logger.info(f"❌ {user_name} - N0: Indisponible déclaré pour {date_garde}")
                 continue
             
+            # ========== N0: FILTRE RÈGLE OFFICIER ==========
+            # Si la règle officier est active, seuls les officiers ou éligibles peuvent remplacer
+            if besoin_officier_remplacement:
+                user_est_officier = est_officier_grade(user_grade)
+                user_est_eligible = est_eligible_fonction_superieure(user)
+                
+                if not user_est_officier and not user_est_eligible:
+                    logger.info(f"❌ {user_name} - N0: Règle officier - n'est pas officier ni éligible (grade={user_grade})")
+                    continue
+                else:
+                    officier_tag = "OFFICIER" if user_est_officier else "ÉLIGIBLE"
+                    logger.info(f"✅ {user_name} - Règle officier OK [{officier_tag}]")
+            
             # ========== N1: FILTRE ASSIGNATION EN CONFLIT ==========
             assignation_existante = await db.assignations.find_one({
                 "user_id": user_id,
