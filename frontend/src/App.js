@@ -19,6 +19,7 @@ import { getTenantToken, buildApiUrl } from "./utils/api";
 const SecteursMap = lazy(() => import("./components/SecteursMap"));
 import { apiGet, apiPost, apiPut, apiPatch, apiDelete, apiCall } from "./utils/api";
 import PushNotificationService from "./services/pushNotifications";
+import { initDeepLinkHandler } from "./services/deepLinking";
 import { fr } from "date-fns/locale";
 // Chart dynamique pour réduire bundle initial
 const Chart = lazy(() => import("react-apexcharts"));
