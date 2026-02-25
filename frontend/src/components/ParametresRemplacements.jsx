@@ -85,13 +85,13 @@ const ParametresRemplacements = ({
               </div>
 
               <div className="input-group-compact">
-                <Label>Max personnes à contacter</Label>
+                <Label>Nombre max de personnes à contacter</Label>
                 <div className="input-with-reset">
                   <Input
                     type="number"
                     min="1"
-                    max="20"
-                    value={systemSettings.max_personnes_contact}
+                    max="100"
+                    value={systemSettings.max_personnes_contact || 5}
                     onChange={(e) => handleSettingChange('max_personnes_contact', parseInt(e.target.value))}
                     data-testid="max-contact-input"
                   />
@@ -99,11 +99,13 @@ const ParametresRemplacements = ({
                     variant="ghost" 
                     size="sm" 
                     onClick={() => handleSettingChange('max_personnes_contact', 5)}
+                    title="Réinitialiser à 5"
                     data-testid="reset-contact-btn"
                   >
                     🔄
                   </Button>
                 </div>
+                <small>Nombre maximum de remplaçants potentiels à contacter par demande</small>
               </div>
             </div>
           </div>
