@@ -2150,11 +2150,13 @@ async def get_parametres_remplacements(tenant_slug: str, current_user: User = De
     parametres = await db.parametres_remplacements.find_one({"tenant_id": tenant.id})
     
     if not parametres:
+        logger.info(f"📋 Création des paramètres de remplacement par défaut pour tenant {tenant.slug}")
         default_params = ParametresRemplacements(tenant_id=tenant.id)
         await db.parametres_remplacements.insert_one(default_params.dict())
         return default_params
     
     cleaned_params = clean_mongo_doc(parametres)
+    logger.info(f"📋 Paramètres remplacements chargés pour {tenant.slug}: delai={cleaned_params.get('delai_attente_minutes')}min, max_contacts={cleaned_params.get('max_contacts')}")
     return cleaned_params
 
 
@@ -2170,6 +2172,8 @@ async def update_parametres_remplacements(
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
+    logger.info(f"💾 Sauvegarde paramètres remplacements pour {tenant.slug}: {parametres_data}")
+    
     existing = await db.parametres_remplacements.find_one({"tenant_id": tenant.id})
     
     parametres_data["tenant_id"] = tenant.id
@@ -2179,9 +2183,11 @@ async def update_parametres_remplacements(
             {"tenant_id": tenant.id},
             {"$set": parametres_data}
         )
+        logger.info(f"✅ Paramètres remplacements MIS À JOUR pour {tenant.slug}")
     else:
         if "id" not in parametres_data:
             parametres_data["id"] = str(uuid.uuid4())
         await db.parametres_remplacements.insert_one(parametres_data)
+        logger.info(f"✅ Paramètres remplacements CRÉÉS pour {tenant.slug}")
     
     return {"message": "Paramètres mis à jour avec succès"}
