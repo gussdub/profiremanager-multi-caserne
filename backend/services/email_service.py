@@ -21,6 +21,73 @@ FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://www.profiremanager.ca')
 LOGO_URL = "https://customer-assets.emergentagent.com/job_fireshift-manager/artifacts/6vh2i9cz_05_Icone_Flamme_Rouge_Bordure_D9072B_VISIBLE.png"
 
 
+def generer_lien_app(
+    tenant_slug: str,
+    module: str,
+    item_id: str = None,
+    params: dict = None
+) -> str:
+    """
+    Génère un lien intelligent vers l'application.
+    
+    Ces liens fonctionnent avec les Universal Links (iOS) et App Links (Android):
+    - Sur ordinateur: ouvre le site web dans le module correspondant
+    - Sur mobile avec l'app: ouvre directement l'app dans le bon module
+    - Sur mobile sans l'app: ouvre le site web en fallback
+    
+    Args:
+        tenant_slug: Slug du tenant
+        module: Module cible (remplacements, planning, epi, etc.)
+        item_id: ID optionnel d'un élément spécifique
+        params: Paramètres additionnels en query string
+    
+    Returns:
+        URL complète
+    """
+    base_url = os.environ.get('FRONTEND_URL', FRONTEND_URL)
+    url = f"{base_url}/{tenant_slug}/{module}"
+    
+    query_parts = []
+    if item_id:
+        query_parts.append(f"id={item_id}")
+    if params:
+        for key, value in params.items():
+            if value is not None:
+                query_parts.append(f"{key}={value}")
+    
+    if query_parts:
+        url += "?" + "&".join(query_parts)
+    
+    return url
+
+
+def generer_bouton_email(
+    url: str,
+    texte: str,
+    couleur: str = "#dc2626"
+) -> str:
+    """
+    Génère un bouton HTML stylé pour les emails.
+    
+    Args:
+        url: URL du lien (sera ouvert dans l'app si installée sur mobile)
+        texte: Texte du bouton
+        couleur: Couleur de fond (hex)
+    
+    Returns:
+        HTML du bouton
+    """
+    return f'''
+    <a href="{url}" 
+       style="display: inline-block; background-color: {couleur}; color: white; 
+              padding: 15px 30px; text-decoration: none; border-radius: 8px; 
+              font-weight: bold; font-size: 16px; text-align: center;
+              box-shadow: 0 2px 5px rgba(0,0,0,0.15);">
+        {texte}
+    </a>
+    '''
+
+
 def get_email_template(content: str, title: str = None) -> str:
     """
     Génère un template d'email uniforme avec le design ProFireManager.
