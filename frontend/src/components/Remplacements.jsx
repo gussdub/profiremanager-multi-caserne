@@ -927,6 +927,32 @@ const Remplacements = () => {
                         <p style={{ margin: '4px 0 0 0', color: '#4B5563', fontSize: '0.95rem' }}>{demande.raison}</p>
                       </div>
                       <div className="demande-status" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        {/* Bouton de suivi - visible pour le demandeur et les admins/superviseurs */}
+                        {(demande.demandeur_id === user.id || !['employe', 'pompier'].includes(user.role)) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setSelectedDemandeForSuivi(demande);
+                              setShowSuiviModal(true);
+                            }}
+                            data-testid={`suivi-replacement-${demande.id}`}
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '4px',
+                              color: '#6366F1',
+                              borderColor: '#6366F1',
+                              padding: '4px 10px',
+                              fontSize: '12px'
+                            }}
+                          >
+                            <ClipboardList size={14} />
+                            Suivi
+                          </Button>
+                        )}
                         {/* Badge de statut */}
                         <span 
                           className="status-badge" 
