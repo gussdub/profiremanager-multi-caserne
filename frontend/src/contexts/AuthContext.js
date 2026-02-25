@@ -121,6 +121,16 @@ export const AuthProvider = ({ children }) => {
           await loadTenantPromise;
           setUser(response.data);
           setLoading(false);
+          
+          // Initialiser WebSocket pour les utilisateurs avec token en cache
+          if (!isSuperAdmin && tenantSlug && response.data?.id) {
+            try {
+              WebSocketService.connect(tenantSlug, response.data.id);
+              console.log('✅ WebSocket initialized (from cached token)');
+            } catch (error) {
+              console.error('⚠️ WebSocket initialization failed:', error);
+            }
+          }
         })
         .catch((error) => {
           console.log('Token invalide ou expiré, nettoyage...');
