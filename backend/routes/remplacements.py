@@ -103,7 +103,8 @@ class ParametresRemplacements(BaseModel):
     tenant_id: str
     mode_notification: str = "simultane"  # simultane, sequentiel, groupe_sequentiel
     taille_groupe: int = 3
-    delai_attente_heures: int = 24
+    delai_attente_heures: int = 24  # Gardé pour compatibilité
+    delai_attente_minutes: int = 1440  # Nouveau: en minutes
     max_contacts: int = 5
     priorite_grade: bool = True
     priorite_competences: bool = True
