@@ -6101,6 +6101,7 @@ async def health_check():
 # Ils doivent retourner du JSON sans authentification
 
 @app.get("/.well-known/apple-app-site-association")
+@app.get("/api/.well-known/apple-app-site-association")
 async def apple_app_site_association():
     """
     Apple App Site Association pour Universal Links iOS
