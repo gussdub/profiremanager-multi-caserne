@@ -1,0 +1,8 @@
+# Redirections pour Deep Linking (Universal Links / App Links)
+# Ces fichiers doivent être servis depuis le backend car React Router intercepte tout
+
+/.well-known/apple-app-site-association    /api/.well-known/apple-app-site-association    200
+/.well-known/assetlinks.json               /api/.well-known/assetlinks.json               200
+
+# Toutes les autres routes vers React (SPA fallback)
+/*    /index.html    200
