@@ -433,14 +433,18 @@ async def trouver_remplacants_potentiels(
             logger.debug(f"⚠️ {user_name} - Aucun niveau applicable")
         
         # ==================== TRI ET ASSEMBLAGE FINAL ====================
-        # Tri: grade_priorite → équitabilité (heures_mois) → équipe_priorite → ancienneté
+        # Ordre de tri:
+        # 1. Grade priorité (1=équivalent, 2=fonction sup, 3=autre)
+        # 2. Équipe de garde (0=membre équipe, 1=autre) - privilégié mais pas restrictif
+        # 3. Équitabilité (heures_mois - moins d'heures = priorité)
+        # 4. Ancienneté (date_embauche - plus ancien = priorité)
         
         def sort_key(candidat):
             return (
-                candidat.get("grade_priorite", 3),  # 1=grade equiv, 2=fonction sup, 3=autre
-                candidat.get("heures_mois", 999),   # Équitabilité: moins d'heures = priorité
-                candidat.get("equipe_priorite", 1), # 0=membre équipe garde, 1=autre
-                candidat.get("date_embauche", "2999-12-31")  # Ancienneté
+                candidat.get("grade_priorite", 3),      # 1=grade equiv, 2=fonction sup, 3=autre
+                candidat.get("equipe_priorite", 1),     # 0=membre équipe garde, 1=autre
+                candidat.get("heures_mois", 999),       # Équitabilité: moins d'heures = priorité
+                candidat.get("date_embauche", "2999-12-31")  # Ancienneté: plus ancien = priorité
             )
         
         remplacants_potentiels = []
@@ -450,9 +454,10 @@ async def trouver_remplacants_potentiels(
             candidats_tries = sorted(candidats, key=sort_key)
             remplacants_potentiels.extend(candidats_tries)
         
-        logger.info(f"✅ Trouvé {len(remplacants_potentiels)} remplaçants potentiels:")
+        logger.info(f"✅ Trouvé {len(remplacants_potentiels)} remplaçants potentiels (tri: grade → équipe → équité → ancienneté):")
         for i, c in enumerate(remplacants_potentiels[:15]):
-            logger.info(f"   {i+1}. {c['nom_complet']} - N{c.get('niveau')} - {c.get('raison', 'N/A')}")
+            equipe_info = f", équipe:{c.get('equipe_garde')}" if c.get('equipe_garde') else ""
+            logger.info(f"   {i+1}. {c['nom_complet']} - N{c.get('niveau')} - grade_prio:{c.get('grade_priorite')}, {c.get('heures_mois')}h/mois{equipe_info}")
         
         return remplacants_potentiels
         
