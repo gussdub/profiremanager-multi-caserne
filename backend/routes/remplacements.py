@@ -290,16 +290,24 @@ async def trouver_remplacants_potentiels(
             user_equipe_garde = user.get("equipe_garde")
             
             # ========== N0: FILTRE COMPÉTENCES ==========
+            # Normaliser les compétences (lowercase, strip) pour comparaison insensible à la casse
+            def normalize_competences(comp_list):
+                return set(c.lower().strip() for c in comp_list if c)
+            
             if competences_egales:
-                user_competences = set(user.get("competences", []))
-                if demandeur_competences and not demandeur_competences.issubset(user_competences):
-                    logger.info(f"❌ {user_name} - N0: Compétences insuffisantes (manque: {demandeur_competences - user_competences})")
+                user_competences_norm = normalize_competences(user.get("competences", []))
+                demandeur_competences_norm = normalize_competences(list(demandeur_competences))
+                if demandeur_competences_norm and not demandeur_competences_norm.issubset(user_competences_norm):
+                    manquantes = demandeur_competences_norm - user_competences_norm
+                    logger.info(f"❌ {user_name} - N0: Compétences insuffisantes (manque: {manquantes})")
                     continue
             
             if competences_requises:
-                user_competences = set(user.get("competences", []))
-                if not set(competences_requises).issubset(user_competences):
-                    logger.info(f"❌ {user_name} - N0: Compétences garde insuffisantes (requises: {competences_requises}, a: {list(user_competences)})")
+                user_competences_norm = normalize_competences(user.get("competences", []))
+                competences_requises_norm = normalize_competences(competences_requises)
+                if not competences_requises_norm.issubset(user_competences_norm):
+                    manquantes = competences_requises_norm - user_competences_norm
+                    logger.info(f"❌ {user_name} - N0: Compétences garde insuffisantes (requises: {list(competences_requises_norm)}, a: {list(user_competences_norm)}, manque: {list(manquantes)})")
                     continue
             
             # ========== N0: FILTRE INDISPONIBILITÉ ==========
