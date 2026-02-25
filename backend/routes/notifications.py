@@ -296,7 +296,7 @@ async def send_push_notification_to_users(user_ids: List[str], title: str, body:
         )
         
         # Configuration iOS/APNs 
-        # Utiliser un son explicite pour garantir la lecture
+        # Format simple pour garantir le son en arrière-plan
         apns_config = messaging.APNSConfig(
             headers={
                 "apns-priority": "10",  # Priorité maximale pour livraison immédiate
@@ -308,13 +308,8 @@ async def send_push_notification_to_users(user_ids: List[str], title: str, body:
                         title=title,
                         body=body
                     ),
-                    sound=messaging.CriticalSound(
-                        name="default",
-                        volume=1.0  # Volume maximum
-                    ),
-                    badge=1,
-                    content_available=True,  # Réveille l'app en background
-                    mutable_content=True
+                    sound="default",
+                    badge=1
                 )
             )
         )
