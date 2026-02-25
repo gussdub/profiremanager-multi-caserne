@@ -532,13 +532,15 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
         <div 
           className="notifications-overlay"
           onClick={() => setShowNotifications(false)}
+          onTouchStart={() => setShowNotifications(false)}
           style={{
             position: 'fixed',
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            zIndex: 998
+            zIndex: 998,
+            WebkitTapHighlightColor: 'transparent'
           }}
         />
       )}
