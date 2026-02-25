@@ -225,15 +225,46 @@ async def trouver_remplacants_potentiels(
         demandeur_competences = set(demandeur.get("competences", [])) if demandeur else set()
         
         # ==================== RÈGLE OFFICIER ====================
-        # Si le type de garde nécessite un officier ET que le demandeur est officier,
-        # alors le remplaçant DOIT aussi être un officier ou éligible à fonction supérieure
-        demandeur_est_officier = est_officier_grade(demandeur_grade)
-        besoin_officier_remplacement = officier_obligatoire and demandeur_est_officier
+        # La règle officier s'applique SEULEMENT si:
+        # 1. Le type de garde nécessite un officier (officier_obligatoire = True)
+        # 2. Le demandeur est officier
+        # 3. ET il n'y a PAS d'autre officier déjà assigné à cette garde à cette date
+        #
+        # Si un autre officier est déjà assigné, la règle est respectée même si le remplaçant n'est pas officier
         
-        if besoin_officier_remplacement:
-            logger.info(f"🎖️ RÈGLE OFFICIER ACTIVE: Le remplaçant doit être officier ou éligible")
-            logger.info(f"🎖️ Type de garde: officier_obligatoire={officier_obligatoire}")
-            logger.info(f"🎖️ Demandeur {demandeur.get('prenom', '')} {demandeur.get('nom', '')} - grade={demandeur_grade} - est_officier={demandeur_est_officier}")
+        demandeur_est_officier = est_officier_grade(demandeur_grade)
+        besoin_officier_remplacement = False
+        
+        if officier_obligatoire and demandeur_est_officier:
+            # Vérifier s'il y a d'autres officiers assignés à cette garde à cette date
+            autres_assignations = await db.assignations.find({
+                "tenant_id": tenant_id,
+                "type_garde_id": type_garde_id,
+                "date": date_garde,
+                "user_id": {"$ne": demandeur_id}  # Exclure le demandeur
+            }).to_list(100)
+            
+            # Vérifier si au moins un des autres assignés est officier
+            autre_officier_present = False
+            for assignation in autres_assignations:
+                autre_user = await db.users.find_one({"id": assignation["user_id"], "tenant_id": tenant_id})
+                if autre_user:
+                    autre_grade = autre_user.get("grade", "")
+                    if est_officier_grade(autre_grade):
+                        autre_officier_present = True
+                        logger.info(f"🎖️ Autre officier trouvé sur cette garde: {autre_user.get('prenom', '')} {autre_user.get('nom', '')} ({autre_grade})")
+                        break
+            
+            # La règle s'applique SEULEMENT s'il n'y a pas d'autre officier
+            besoin_officier_remplacement = not autre_officier_present
+            
+            if besoin_officier_remplacement:
+                logger.info(f"🎖️ RÈGLE OFFICIER ACTIVE: Le remplaçant doit être officier ou éligible")
+                logger.info(f"🎖️ Le demandeur {demandeur.get('prenom', '')} {demandeur.get('nom', '')} est le SEUL officier sur cette garde")
+            else:
+                logger.info(f"🎖️ Règle officier NON ACTIVE: Un autre officier est déjà présent sur cette garde")
+        
+        logger.info(f"🎖️ officier_obligatoire={officier_obligatoire}, demandeur_est_officier={demandeur_est_officier}, besoin_officier_remplacement={besoin_officier_remplacement}")
         
         # Hiérarchie des grades (fallback si pas en DB)
         grades_hierarchie = {
