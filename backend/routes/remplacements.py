@@ -399,13 +399,13 @@ async def trouver_remplacants_potentiels(
         
         for priorite in sorted(candidats_par_priorite.keys()):
             candidats = candidats_par_priorite[priorite]
-            # Trier par ancienneté (date_embauche la plus ancienne en premier)
-            candidats.sort(key=lambda x: x["date_embauche"])
+            # Trier par sous-priorité (grade) puis par ancienneté (date_embauche la plus ancienne en premier)
+            candidats.sort(key=lambda x: (x.get("sous_priorite", 3), x["date_embauche"]))
             remplacants_potentiels.extend(candidats)
         
         logger.info(f"✅ Trouvé {len(remplacants_potentiels)} remplaçants potentiels:")
         for i, c in enumerate(remplacants_potentiels[:10]):
-            logger.info(f"   {i+1}. {c['nom_complet']} - {c.get('raison', 'N/A')}")
+            logger.info(f"   {i+1}. {c['nom_complet']} - {c.get('raison', 'N/A')} (sous-priorité: {c.get('sous_priorite', '?')})")
         
         return remplacants_potentiels
         
