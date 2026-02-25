@@ -665,6 +665,19 @@ async def delete_assignation(
         except Exception as notif_error:
             logger.warning(f"Erreur notification suppression assignation: {notif_error}")
         
+        # Envoyer une notification push à l'employé concerné
+        try:
+            send_push = await send_push_notification_to_users()
+            if send_push:
+                await send_push(
+                    user_ids=[assignation.get("user_id")],
+                    title="📅 Assignation annulée",
+                    body=f"Votre assignation du {assignation.get('date', '')} ({type_garde_nom}) a été annulée",
+                    data={"type": "planning_suppression", "date": assignation.get("date", "")}
+                )
+        except Exception as push_error:
+            logger.warning(f"Erreur push notification suppression assignation: {push_error}")
+        
         try:
             await creer_activite(
                 tenant_id=tenant.id,
