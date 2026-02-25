@@ -56,21 +56,33 @@ const ParametresRemplacements = ({
                 </div>
               )}
 
-              {(systemSettings.mode_notification === 'sequentiel' || systemSettings.mode_notification === 'groupe_sequentiel') && (
-                <div className="input-group-compact">
-                  <Label>Délai d'attente (minutes)</Label>
+              <div className="input-group-compact">
+                <Label>Délai avant notification globale (minutes)</Label>
+                <div className="input-with-reset">
                   <Input
                     type="number"
-                    min="30"
+                    min="5"
                     max="4320"
-                    step="30"
+                    step="5"
                     value={systemSettings.delai_attente_minutes || 1440}
                     onChange={(e) => handleSettingChange('delai_attente_minutes', parseInt(e.target.value))}
                     data-testid="delai-attente-input"
                   />
-                  <small>Temps d'attente avant de passer au suivant (en cas de non-réponse). Par défaut: 24h (1440 min)</small>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => handleSettingChange('delai_attente_minutes', 15)}
+                    title="Réinitialiser à 15 min"
+                    data-testid="reset-delai-btn"
+                  >
+                    🔄
+                  </Button>
                 </div>
-              )}
+                <small>
+                  Délai avant de contacter les remplaçants suivants si pas de réponse. 
+                  {systemSettings.mode_notification === 'simultane' && " En mode simultané: délai avant relance globale."}
+                </small>
+              </div>
 
               <div className="input-group-compact">
                 <Label>Max personnes à contacter</Label>
