@@ -12,7 +12,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Initialiser Firebase
         FirebaseApp.configure()
         
-        // Configurer Firebase Messaging delegate pour obtenir le token FCM
+        // Configurer Firebase Messaging delegate
         Messaging.messaging().delegate = self
         
         // Configurer les notifications
@@ -48,13 +48,41 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     // MARK: - Push Notifications - APNs Token
     
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-        // Passer le token APNs à Firebase pour qu'il génère le token FCM
-        Messaging.messaging().apnsToken = deviceToken
         print("[AppDelegate] APNs token received, passing to Firebase")
+        
+        // Passer le token APNs à Firebase
+        Messaging.messaging().apnsToken = deviceToken
+        
+        // Forcer la récupération du token FCM
+        Messaging.messaging().token { token, error in
+            if let error = error {
+                print("[AppDelegate] ❌ Error fetching FCM token: \(error)")
+                return
+            }
+            
+            if let fcmToken = token {
+                print("[AppDelegate] ✅ FCM Token received: \(fcmToken.prefix(50))...")
+                
+                // Envoyer le token FCM à Capacitor via une notification custom
+                NotificationCenter.default.post(
+                    name: Notification.Name("FCMTokenReceived"),
+                    object: nil,
+                    userInfo: ["token": fcmToken]
+                )
+                
+                // Aussi poster à Capacitor de manière standard
+                if let tokenData = fcmToken.data(using: .utf8) {
+                    NotificationCenter.default.post(
+                        name: .capacitorDidRegisterForRemoteNotifications,
+                        object: tokenData
+                    )
+                }
+            }
+        }
     }
     
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
-        print("[AppDelegate] Failed to register for remote notifications: \(error)")
+        print("[AppDelegate] ❌ Failed to register for remote notifications: \(error)")
         NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
     }
 }
@@ -62,15 +90,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 // MARK: - Firebase MessagingDelegate
 extension AppDelegate: MessagingDelegate {
     
-    // Cette méthode est appelée quand Firebase génère un nouveau token FCM
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
-        print("[AppDelegate] FCM Token received: \(fcmToken ?? "nil")")
+        print("[AppDelegate] MessagingDelegate - FCM Token: \(fcmToken?.prefix(50) ?? "nil")...")
         
         guard let token = fcmToken else { return }
         
-        // Convertir le token en Data pour Capacitor
+        // Poster le token FCM à Capacitor
         if let tokenData = token.data(using: .utf8) {
-            // Poster le token FCM à Capacitor (pas le token APNs)
             NotificationCenter.default.post(
                 name: .capacitorDidRegisterForRemoteNotifications,
                 object: tokenData
@@ -82,15 +108,12 @@ extension AppDelegate: MessagingDelegate {
 // MARK: - UNUserNotificationCenterDelegate
 extension AppDelegate: UNUserNotificationCenterDelegate {
     
-    // Afficher les notifications quand l'app est au premier plan
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 willPresent notification: UNNotification,
                                 withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-        // Afficher bannière + son + badge même en premier plan
         completionHandler([.banner, .sound, .badge])
     }
     
-    // Gérer le clic sur une notification
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse,
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
