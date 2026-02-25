@@ -235,7 +235,7 @@ async def trouver_remplacants_potentiels(
             logger.info(f"🎖️ Type de garde: officier_obligatoire={officier_obligatoire}")
             logger.info(f"🎖️ Demandeur {demandeur.get('prenom', '')} {demandeur.get('nom', '')} - grade={demandeur_grade} - est_officier={demandeur_est_officier}")
         
-        # Hiérarchie des grades
+        # Hiérarchie des grades (fallback si pas en DB)
         grades_hierarchie = {
             "pompier": 1,
             "lieutenant": 2,
@@ -246,7 +246,16 @@ async def trouver_remplacants_potentiels(
             "eligible": 2,
             "éligible": 2
         }
-        demandeur_grade_niveau = grades_hierarchie.get(demandeur_grade, 1)
+        
+        def get_niveau_hierarchique(grade_nom: str) -> int:
+            """Retourne le niveau hiérarchique d'un grade (depuis DB ou fallback)"""
+            grade_info = grades_map.get(grade_nom, {})
+            niveau_db = grade_info.get("niveau_hierarchique")
+            if niveau_db is not None:
+                return niveau_db
+            return grades_hierarchie.get(grade_nom.lower() if grade_nom else "", 1)
+        
+        demandeur_grade_niveau = get_niveau_hierarchique(demandeur_grade)
         
         # Tous les utilisateurs actifs
         exclus_ids_set = set(exclus_ids + [demandeur_id])
