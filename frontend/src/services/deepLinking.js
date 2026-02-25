@@ -5,7 +5,6 @@
  * l'application directement dans le bon module depuis les emails.
  */
 
-import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 
 /**
@@ -13,27 +12,33 @@ import { Capacitor } from '@capacitor/core';
  * @param {Function} navigate - Fonction de navigation React Router
  * @param {string} tenantSlug - Slug du tenant actuel
  */
-export const initDeepLinkHandler = (navigate, tenantSlug) => {
+export const initDeepLinkHandler = async (navigate, tenantSlug) => {
   if (!Capacitor.isNativePlatform()) {
     console.log('[DeepLink] Running on web, skipping native deep link handler');
     return;
   }
 
-  console.log('[DeepLink] Initializing deep link handler');
+  try {
+    // Import dynamique pour éviter les erreurs de build sur Vercel
+    const { App } = await import('@capacitor/app');
+    
+    console.log('[DeepLink] Initializing deep link handler');
 
-  // Gérer les liens ouverts quand l'app est déjà en cours d'exécution
-  App.addListener('appUrlOpen', (event) => {
-    console.log('[DeepLink] App URL opened:', event.url);
-    handleDeepLink(event.url, navigate, tenantSlug);
-  });
+    // Gérer les liens ouverts quand l'app est déjà en cours d'exécution
+    App.addListener('appUrlOpen', (event) => {
+      console.log('[DeepLink] App URL opened:', event.url);
+      handleDeepLink(event.url, navigate, tenantSlug);
+    });
 
-  // Vérifier si l'app a été lancée via un deep link
-  App.getLaunchUrl().then((result) => {
-    if (result && result.url) {
-      console.log('[DeepLink] App launched with URL:', result.url);
-      handleDeepLink(result.url, navigate, tenantSlug);
+    // Vérifier si l'app a été lancée via un deep link
+    const launchUrl = await App.getLaunchUrl();
+    if (launchUrl && launchUrl.url) {
+      console.log('[DeepLink] App launched with URL:', launchUrl.url);
+      handleDeepLink(launchUrl.url, navigate, tenantSlug);
     }
-  });
+  } catch (error) {
+    console.log('[DeepLink] Capacitor App not available:', error.message);
+  }
 };
 
 /**
