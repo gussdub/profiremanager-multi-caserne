@@ -447,8 +447,26 @@ const SuiviRemplacementModal = ({ demande, tenantSlug, onClose, users = [] }) =>
           padding: '16px 24px',
           borderTop: '1px solid #E5E7EB',
           display: 'flex',
-          justifyContent: 'flex-end'
+          justifyContent: 'space-between',
+          alignItems: 'center'
         }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <Button 
+              onClick={() => fetchSuivi(true)} 
+              variant="ghost" 
+              size="sm"
+              disabled={loading}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+              Actualiser
+            </Button>
+            {lastUpdate && (
+              <span style={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
+                Mis à jour: {lastUpdate.toLocaleTimeString('fr-FR')}
+              </span>
+            )}
+          </div>
           <Button onClick={onClose} variant="outline">
             Fermer
           </Button>
