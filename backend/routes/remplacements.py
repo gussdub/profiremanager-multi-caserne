@@ -979,11 +979,12 @@ async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
         parametres_data = await db.parametres.find_one({"tenant_id": tenant_id})
         if not parametres_data:
             mode_notification = "un_par_un"
-            delai_attente_heures = 2
+            delai_attente_minutes = 120  # 2 heures par défaut
             nombre_simultane = 1
         else:
             mode_notification = parametres_data.get("mode_notification", "un_par_un")
-            delai_attente_heures = parametres_data.get("delai_attente_heures", 2)
+            # Utiliser delai_attente_minutes si disponible, sinon convertir delai_attente_heures
+            delai_attente_minutes = parametres_data.get("delai_attente_minutes") or (parametres_data.get("delai_attente_heures", 2) * 60)
             nombre_simultane = parametres_data.get("nombre_simultane", 3)
         
         exclus_ids = [t.get("user_id") for t in demande_data.get("tentatives_historique", [])]
