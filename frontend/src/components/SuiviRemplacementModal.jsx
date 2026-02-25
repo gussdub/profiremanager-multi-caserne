@@ -392,15 +392,21 @@ const SuiviRemplacementModal = ({ demande, tenantSlug, onClose, users = [] }) =>
                           )}
                         </div>
 
-                        {/* Date de réponse si disponible */}
+                        {/* Date limite ou date de réponse */}
                         {tentative.date_reponse && (
                           <div style={{ 
                             marginTop: '12px', 
                             fontSize: '0.85rem', 
-                            color: tentative.statut === 'accepted' ? '#166534' : '#991B1B',
+                            color: tentative.statut === 'accepted' ? '#166534' : 
+                                   tentative.statut === 'refused' ? '#991B1B' : '#6B7280',
                             fontStyle: 'italic'
                           }}>
-                            Répondu le {formatDate(tentative.date_reponse)}
+                            {tentative.statut === 'accepted' ? 
+                              `A accepté le ${formatDate(tentative.date_reponse)}` :
+                             tentative.statut === 'refused' ? 
+                              `A refusé le ${formatDate(tentative.date_reponse)}` :
+                              `Devait répondre avant le ${formatDate(tentative.date_reponse)}`
+                            }
                           </div>
                         )}
                       </div>
