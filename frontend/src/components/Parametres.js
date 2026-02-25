@@ -483,11 +483,13 @@ const Parametres = ({ user, tenantSlug }) => {
         });
         
         // Charger aussi les autres paramètres de remplacements dans systemSettings
+        const delaiHeures = paramsRemplacementsResponse.data.delai_attente_heures;
+        const maxContacts = paramsRemplacementsResponse.data.max_contacts;
         setSystemSettings(prev => ({
           ...prev,
           mode_notification: paramsRemplacementsResponse.data.mode_notification || 'simultane',
-          delai_attente_minutes: paramsRemplacementsResponse.data.delai_attente_heures * 60 || 1440,
-          max_personnes_contact: paramsRemplacementsResponse.data.max_contacts || 5
+          delai_attente_minutes: delaiHeures ? delaiHeures * 60 : 1440,
+          max_personnes_contact: maxContacts || 5
         }));
       }
     } catch (error) {
