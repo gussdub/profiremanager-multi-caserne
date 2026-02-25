@@ -293,6 +293,12 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
     if (prevShowNotifications.current && !showNotifications && unreadCount > 0) {
       marquerToutesLues();
     }
+    
+    // Quand le panneau s'ouvre, effacer le badge immédiatement
+    if (showNotifications && Capacitor.isNativePlatform()) {
+      PushNotifications.removeAllDeliveredNotifications().catch(() => {});
+    }
+    
     prevShowNotifications.current = showNotifications;
   }, [showNotifications]);
   
