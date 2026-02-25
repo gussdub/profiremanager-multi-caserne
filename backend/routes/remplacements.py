@@ -2626,7 +2626,20 @@ async def debug_recherche_remplacant(
             "date": date_garde,
             "type_garde": type_garde.get("nom") if type_garde else "Inconnu",
             "competences_requises": competences_requises,
-            "demandeur": f"{demandeur.get('prenom', '')} {demandeur.get('nom', '')}" if demandeur else "Inconnu"
+            "demandeur": f"{demandeur.get('prenom', '')} {demandeur.get('nom', '')}" if demandeur else "Inconnu",
+            "demandeur_grade": demandeur_grade,
+            "demandeur_est_officier": demandeur_est_officier
+        },
+        "regle_officier": {
+            "officier_obligatoire": officier_obligatoire,
+            "demandeur_est_officier": demandeur_est_officier,
+            "autre_officier_present_sur_garde": autre_officier_present,
+            "regle_active": besoin_officier_remplacement,
+            "explication": (
+                "Le remplaçant DOIT être officier ou éligible car le demandeur est le seul officier sur cette garde"
+                if besoin_officier_remplacement else
+                "Pas de contrainte officier (soit type de garde sans officier obligatoire, soit le demandeur n'est pas officier, soit un autre officier est déjà présent)"
+            )
         },
         "resume": {
             "total_utilisateurs": len(resultats),
