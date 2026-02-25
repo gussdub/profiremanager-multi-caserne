@@ -61,3 +61,37 @@ async def update_niveaux_attribution(
         logger.info(f"✅ Niveaux d'attribution mis à jour pour {tenant.slug}: {update_fields}")
     
     return {"message": "Niveaux d'attribution mis à jour avec succès"}
+
+
+@router.get("/{tenant_slug}/parametres/systeme")
+async def get_parametres_systeme(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Récupère les paramètres système généraux du tenant"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Retourner les paramètres système stockés dans tenant.parametres.systeme
+    systeme_params = tenant.parametres.get("systeme", {})
+    return systeme_params
+
+
+@router.put("/{tenant_slug}/parametres/systeme")
+async def update_parametres_systeme(
+    tenant_slug: str,
+    systeme_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour les paramètres système généraux du tenant"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Mettre à jour les paramètres système
+    update_fields = {}
+    for key, value in systeme_data.items():
+        update_fields[f"parametres.systeme.{key}"] = value
+    
+    if update_fields:
+        await db.tenants.update_one(
+            {"id": tenant.id},
+            {"$set": update_fields}
+        )
+        logger.info(f"✅ Paramètres système mis à jour pour {tenant.slug}: {list(systeme_data.keys())}")
+    
+    return {"message": "Paramètres système mis à jour avec succès"}
