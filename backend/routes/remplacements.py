@@ -1101,7 +1101,7 @@ async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
             remplacant_ids.append(remplacant["user_id"])
             logger.info(f"📤 Contact remplaçant {remplacant['nom_complet']} pour demande {demande_id}")
         
-        date_prochaine = maintenant + timedelta(hours=delai_attente_heures)
+        date_prochaine = maintenant + timedelta(minutes=delai_attente_minutes)
         
         await db.demandes_remplacement.update_one(
             {"id": demande_id},
