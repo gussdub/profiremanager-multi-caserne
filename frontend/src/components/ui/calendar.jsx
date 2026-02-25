@@ -137,41 +137,50 @@ function Calendar({
       modifiersStyles={modifiersStyles}
       weekStartsOn={1}
       locale={fr}
+      style={{
+        // Assurer une largeur minimale pour que tous les jours soient visibles
+        minWidth: isMobile ? '100%' : 'auto',
+        overflowX: 'auto'
+      }}
       classNames={{
-        months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-        month: cn("w-full", isMobile && "space-y-2"),
+        months: cn(
+          "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+          (isMobile || isZoomed) && "overflow-x-auto"
+        ),
+        month: cn("w-full", (isMobile || isZoomed) && "space-y-2 min-w-[280px]"),
         caption: cn(
           "w-full",
-          isMobile 
-            ? "grid grid-cols-[32px_1fr_32px] gap-2 items-center mb-2 px-1" 
+          (isMobile || isZoomed)
+            ? "grid grid-cols-[40px_1fr_40px] gap-1 items-center mb-2 px-1" 
             : "flex justify-center items-center relative mb-4"
         ),
         caption_label: cn(
-          "text-sm font-semibold text-center",
-          isMobile && "col-start-2"
+          "text-sm font-semibold text-center whitespace-nowrap",
+          (isMobile || isZoomed) && "col-start-2 text-base"
         ),
-        nav: isMobile ? "contents" : "flex items-center gap-1",
+        nav: (isMobile || isZoomed) ? "contents" : "flex items-center gap-1",
         nav_button: cn(
           buttonVariants({ variant: "outline" }),
-          isMobile
-            ? "h-8 w-8 p-0 bg-white border border-gray-300 rounded-lg"
+          (isMobile || isZoomed)
+            ? "h-9 w-9 p-0 bg-white border-2 border-gray-400 rounded-lg flex items-center justify-center"
             : isLargeCalendar 
               ? "h-9 w-9 bg-white p-0 hover:bg-gray-100 border-2 border-gray-400"
               : "h-7 w-7 bg-white p-0 hover:bg-gray-100 border border-gray-300"
         ),
-        nav_button_previous: isMobile ? "col-start-1 row-start-1" : "absolute left-1",
-        nav_button_next: isMobile ? "col-start-3 row-start-1" : "absolute right-1",
-        table: "w-full border-collapse",
+        nav_button_previous: (isMobile || isZoomed) ? "col-start-1 row-start-1" : "absolute left-1",
+        nav_button_next: (isMobile || isZoomed) ? "col-start-3 row-start-1" : "absolute right-1",
+        table: cn("w-full border-collapse", (isMobile || isZoomed) && "table-fixed min-w-[280px]"),
         head_row: "flex w-full",
         head_cell: cn(
-          "text-muted-foreground font-normal text-center flex-1",
-          isLargeCalendar ? "w-[125px] text-lg font-bold" : "text-xs",
-          isMobile && "py-1 text-gray-400"
+          "text-muted-foreground font-normal text-center",
+          isLargeCalendar ? "w-[125px] text-lg font-bold flex-1" : "text-xs flex-1",
+          (isMobile || isZoomed) && "py-1 text-gray-500 text-xs font-medium min-w-[36px]"
         ),
         row: "flex w-full mt-1",
         cell: cn(
-          "relative p-0.5 text-center text-sm focus-within:relative focus-within:z-20 flex-1",
-          isLargeCalendar && "w-[125px]",
+          "relative p-0.5 text-center text-sm focus-within:relative focus-within:z-20",
+          isLargeCalendar ? "w-[125px] flex-1" : "flex-1",
+          (isMobile || isZoomed) && "min-w-[36px]",
           props.mode === "range"
             ? "[&:has(>.day-range-end)]:rounded-r-md [&:has(>.day-range-start)]:rounded-l-md first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md"
             : "[&:has([aria-selected])]:rounded-md"
@@ -180,38 +189,38 @@ function Calendar({
           buttonVariants({ variant: "ghost" }),
           isLargeCalendar 
             ? "h-[125px] w-[125px] text-xl font-semibold border-2 border-gray-200 rounded-xl" 
-            : isMobile 
-              ? "h-9 w-full rounded-lg bg-white border border-gray-200 text-sm"
+            : (isMobile || isZoomed)
+              ? "h-9 w-9 rounded-lg bg-white border border-gray-200 text-sm flex items-center justify-center"
               : "h-10 w-full max-w-full overflow-hidden",
           "p-0 font-normal aria-selected:opacity-100"
         ),
         day_range_start: "day-range-start",
         day_range_end: "day-range-end",
         day_selected: cn(
-          isMobile 
-            ? "bg-pink-100 text-pink-800 border-pink-200"
+          (isMobile || isZoomed)
+            ? "bg-pink-100 text-pink-800 border-pink-300 border-2"
             : "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground"
         ),
         day_today: cn(
-          isMobile
-            ? "bg-white border-2 border-red-400 text-red-600 font-semibold"
+          (isMobile || isZoomed)
+            ? "bg-white border-2 border-red-400 text-red-600 font-bold"
             : "bg-accent text-accent-foreground"
         ),
         day_outside: cn(
           "text-muted-foreground opacity-30",
-          isMobile && "bg-transparent border-transparent"
+          (isMobile || isZoomed) && "bg-transparent border-transparent"
         ),
         day_disabled: cn(
           "text-muted-foreground opacity-30",
-          isMobile && "bg-gray-50 border-gray-100"
+          (isMobile || isZoomed) && "bg-gray-50 border-gray-100"
         ),
         day_range_middle:
           "aria-selected:bg-accent aria-selected:text-accent-foreground",
         day_hidden: "invisible",
       }}
       components={{
-        IconLeft: ({ ...props }) => <ChevronLeft className="h-4 w-4" />,
-        IconRight: ({ ...props }) => <ChevronRight className="h-4 w-4" />,
+        IconLeft: ({ ...props }) => <ChevronLeft className={cn("h-4 w-4", (isMobile || isZoomed) && "h-5 w-5")} />,
+        IconRight: ({ ...props }) => <ChevronRight className={cn("h-4 w-4", (isMobile || isZoomed) && "h-5 w-5")} />,
       }}
       {...props}
     />
