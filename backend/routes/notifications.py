@@ -296,8 +296,7 @@ async def send_push_notification_to_users(user_ids: List[str], title: str, body:
         )
         
         # Configuration iOS/APNs 
-        # Note: CriticalSound nécessite l'entitlement Apple approuvé
-        # Pour l'instant, utiliser le son standard pour toutes les notifications
+        # Utiliser un son explicite pour garantir la lecture
         apns_config = messaging.APNSConfig(
             headers={
                 "apns-priority": "10",  # Priorité maximale pour livraison immédiate
@@ -305,7 +304,14 @@ async def send_push_notification_to_users(user_ids: List[str], title: str, body:
             },
             payload=messaging.APNSPayload(
                 aps=messaging.Aps(
-                    sound="default",  # Son standard - fonctionne toujours
+                    alert=messaging.ApsAlert(
+                        title=title,
+                        body=body
+                    ),
+                    sound=messaging.CriticalSound(
+                        name="default",
+                        volume=1.0  # Volume maximum
+                    ),
                     badge=1,
                     content_available=True,  # Réveille l'app en background
                     mutable_content=True
