@@ -922,8 +922,8 @@ const Parametres = ({ user, tenantSlug }) => {
         // Paramètres de remplacement - convertir les noms de champs pour le backend
         let backendData = {};
         if (setting === 'delai_attente_minutes') {
-          // Convertir minutes en heures pour le backend
-          backendData = { delai_attente_heures: Math.round(value / 60) || 1 };
+          // Envoyer directement en minutes
+          backendData = { delai_attente_minutes: value };
         } else if (setting === 'max_personnes_contact') {
           backendData = { max_contacts: value };
         } else {
