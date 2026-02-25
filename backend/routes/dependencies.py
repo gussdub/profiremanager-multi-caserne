@@ -703,6 +703,8 @@ async def creer_notification(
                     user_prenom=user.get("prenom", ""),
                     tenant_slug=tenant_slug
                 )
+                # Délai pour respecter le rate limit de Resend (2 req/sec)
+                await asyncio.sleep(0.6)
             except Exception as e:
                 logger.warning(f"Erreur envoi email notification à {user.get('email')}: {e}")
     
