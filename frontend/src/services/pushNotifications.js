@@ -35,13 +35,32 @@ export class PushNotificationService {
       
       // Listener pour le token FCM - doit être ajouté AVANT register()
       await PushNotifications.addListener('registration', async (token) => {
-        console.log('[PushNotifications] ✅ Registration success, token:', token.value?.substring(0, 50) + '...');
+        let deviceToken = token.value;
+        
+        // Décoder le token si c'est du hexadécimal (iOS avec Firebase)
+        // Le token FCM contient toujours ":" mais le hex n'en contient pas directement
+        if (deviceToken && !deviceToken.includes(':') && /^[0-9a-fA-F]+$/.test(deviceToken)) {
+          try {
+            // Convertir hex en string
+            const hexString = deviceToken;
+            let decodedToken = '';
+            for (let i = 0; i < hexString.length; i += 2) {
+              decodedToken += String.fromCharCode(parseInt(hexString.substr(i, 2), 16));
+            }
+            console.log('[PushNotifications] Token décodé du hex:', decodedToken.substring(0, 50) + '...');
+            deviceToken = decodedToken;
+          } catch (e) {
+            console.log('[PushNotifications] Pas besoin de décoder le token');
+          }
+        }
+        
+        console.log('[PushNotifications] ✅ Registration success, token:', deviceToken?.substring(0, 50) + '...');
         
         // Envoyer le token au backend
         try {
           const response = await apiPost(tenantSlug, '/notifications/register-device', {
             user_id: userId,
-            device_token: token.value,
+            device_token: deviceToken,
             platform: Capacitor.getPlatform()
           });
           console.log('[PushNotifications] ✅ Device token saved to backend:', response);
