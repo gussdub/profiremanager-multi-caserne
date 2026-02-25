@@ -333,11 +333,17 @@ async def send_push_notification_to_users(user_ids: List[str], title: str, body:
         response = messaging.send_each(messages)
         logger.info(f"✅ Push notification sent: {response.success_count} success, {response.failure_count} failures")
         
-        # Supprimer les tokens invalides
+        # Supprimer les tokens invalides et logger les erreurs
         if response.failure_count > 0:
-            failed_tokens = [device_tokens[idx] for idx, resp in enumerate(response.responses) if not resp.success]
-            await db.device_tokens.delete_many({"device_token": {"$in": failed_tokens}})
-            logger.info(f"Removed {len(failed_tokens)} invalid tokens")
+            failed_tokens = []
+            for idx, resp in enumerate(response.responses):
+                if not resp.success:
+                    failed_tokens.append(device_tokens[idx])
+                    logger.error(f"❌ Push failed for token {device_tokens[idx][:20]}...: {resp.exception}")
+            
+            if failed_tokens:
+                await db.device_tokens.delete_many({"device_token": {"$in": failed_tokens}})
+                logger.info(f"Removed {len(failed_tokens)} invalid tokens")
         
         return response
     
