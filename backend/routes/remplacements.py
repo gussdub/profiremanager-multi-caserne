@@ -2435,10 +2435,15 @@ async def debug_recherche_remplacant(
         
         # Check 3: Compétences requises
         if competences_requises:
-            manquantes = set(competences_requises) - set(user_competences)
+            # Normaliser pour comparaison insensible à la casse
+            competences_requises_norm = set(c.lower().strip() for c in competences_requises if c)
+            user_competences_norm = set(c.lower().strip() for c in user_competences if c)
+            manquantes = competences_requises_norm - user_competences_norm
             if manquantes:
                 resultat["eligible"] = False
                 resultat["raisons_exclusion"].append(f"Compétences manquantes: {list(manquantes)}")
+            resultat["competences_requises_norm"] = list(competences_requises_norm)
+            resultat["competences_user_norm"] = list(user_competences_norm)
         
         # Check 4: Indisponibilité déclarée
         indispo = await db.disponibilites.find_one({
