@@ -957,17 +957,12 @@ def formater_numero_telephone(numero: str) -> str:
     return ""
 
 
-# Import de send_push_notification_to_users depuis server.py (sera appelé dynamiquement)
+# Import direct de send_push_notification_to_users depuis notifications.py
+from routes.notifications import send_push_notification_to_users as push_notification_func
+
 async def get_send_push_notification():
-    """Récupère la fonction send_push_notification_to_users depuis server.py"""
-    try:
-        import server
-        return server.send_push_notification_to_users
-    except:
-        # Fonction de fallback qui ne fait rien si l'import échoue
-        async def noop(*args, **kwargs):
-            logger.warning("send_push_notification_to_users non disponible")
-        return noop
+    """Retourne la fonction send_push_notification_to_users"""
+    return push_notification_func
 
 
 async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
