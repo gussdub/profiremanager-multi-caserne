@@ -2474,9 +2474,44 @@ async def debug_recherche_remplacant(
     # Type de garde
     type_garde = await db.types_garde.find_one({"id": type_garde_id, "tenant_id": tenant.id})
     competences_requises = type_garde.get("competences_requises", []) if type_garde else []
+    officier_obligatoire = type_garde.get("officier_obligatoire", False) if type_garde else False
+    
+    # Récupérer les grades pour déterminer qui est officier
+    grades_list = await db.grades.find({"tenant_id": tenant.id}).to_list(100)
+    grades_map = {g.get("nom"): g for g in grades_list}
+    
+    def est_officier_grade(grade_nom: str) -> bool:
+        """Vérifie si un grade est considéré comme officier"""
+        grade_info = grades_map.get(grade_nom, {})
+        return grade_info.get("est_officier", False) == True
     
     # Demandeur
     demandeur = await db.users.find_one({"id": demandeur_id})
+    demandeur_grade = demandeur.get("grade", "") if demandeur else ""
+    demandeur_est_officier = est_officier_grade(demandeur_grade)
+    
+    # Vérifier la règle officier
+    besoin_officier_remplacement = False
+    autre_officier_present = False
+    
+    if officier_obligatoire and demandeur_est_officier:
+        # Vérifier s'il y a d'autres officiers assignés à cette garde à cette date
+        autres_assignations = await db.assignations.find({
+            "tenant_id": tenant.id,
+            "type_garde_id": type_garde_id,
+            "date": date_garde,
+            "user_id": {"$ne": demandeur_id}
+        }).to_list(100)
+        
+        for assignation in autres_assignations:
+            autre_user = await db.users.find_one({"id": assignation["user_id"], "tenant_id": tenant.id})
+            if autre_user:
+                autre_grade = autre_user.get("grade", "")
+                if est_officier_grade(autre_grade):
+                    autre_officier_present = True
+                    break
+        
+        besoin_officier_remplacement = not autre_officier_present
     
     # Tous les utilisateurs actifs
     users = await db.users.find({"tenant_id": tenant.id, "statut": "Actif"}).to_list(1000)
