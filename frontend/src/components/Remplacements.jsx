@@ -409,6 +409,25 @@ const Remplacements = () => {
     });
   };
 
+  // Charger l'impact planning pour un congé spécifique
+  const handleShowImpact = async (congeId) => {
+    setLoadingImpact(true);
+    try {
+      const data = await apiGet(tenantSlug, `/demandes-conge/${congeId}/impact-planning`);
+      setImpactData(data);
+      setShowImpactModal(true);
+    } catch (error) {
+      console.error('Erreur chargement impact:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger l'impact sur le planning",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingImpact(false);
+    }
+  };
+
   const getUserName = (userId, demandeurNom = null) => {
     // Si on a déjà le nom du demandeur, l'utiliser directement
     if (demandeurNom) return demandeurNom;
