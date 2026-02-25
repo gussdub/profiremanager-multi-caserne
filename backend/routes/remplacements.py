@@ -145,48 +145,55 @@ async def trouver_remplacants_potentiels(
     exclus_ids: List[str] = []
 ) -> List[Dict[str, Any]]:
     """
-    Trouve les remplaçants potentiels selon la logique de priorisation:
+    Trouve les remplaçants potentiels selon la MÊME logique que le Planning:
     
-    Filtres préliminaires (sauf N5):
-    - Indisponible pour cette date/horaire → Ne pas contacter
-    - Heures max hebdo dépassées → Ne pas contacter (sauf N5)
-    - Compétences requises (si competences_egales activé)
-    
-    Ordre de priorité:
-    1-2. SI privilegier_disponibles activé:
-         - Grade équivalent + Dispo déclarée
-         - Fonction supérieure + Dispo déclarée
-    3-4. Stand-by (N3):
-         - Grade équivalent (ni dispo ni indispo)
-         - Fonction supérieure (ni dispo ni indispo)
-    5.   N4: Temps plein incomplets
-    6.   N5: Heures supplémentaires (si activé)
-    
-    Départage: ancienneté (date_embauche)
+    N0: Filtres absolus
+        - Compétences requises
+        - Pas d'assignation en conflit
+        - Pas d'indisponibilité
+        
+    N1: Filtres secondaires
+        - Statut actif
+        
+    Pour chaque niveau (N2, N3, N4, N5):
+        Sous-tri par:
+        1. Grade équivalent → équitabilité → équipe (si actif) → ancienneté
+        2. Fonction supérieure → équitabilité → équipe (si actif) → ancienneté
+        3. Autres → équitabilité → équipe (si actif) → ancienneté
     """
     try:
-        # Récupérer les paramètres de remplacements pour ce tenant
+        # ==================== CHARGEMENT DES PARAMÈTRES ====================
+        
+        # Paramètres de remplacements
         parametres = await db.parametres_remplacements.find_one({"tenant_id": tenant_id})
         
-        # Récupérer le tenant pour les niveaux d'attribution
+        # Tenant pour les niveaux d'attribution
         tenant = await db.tenants.find_one({"id": tenant_id})
         tenant_params = tenant.get("parametres", {}) if tenant else {}
         
-        # Lire les niveaux d'attribution actifs (MÊMES QUE LE PLANNING)
+        # Niveaux d'attribution actifs (MÊMES QUE LE PLANNING)
         niveau_2_actif = tenant_params.get("niveau_2_actif", True)  # Temps partiel DISPONIBLES
         niveau_3_actif = tenant_params.get("niveau_3_actif", True)  # Temps partiel STAND-BY
         niveau_4_actif = tenant_params.get("niveau_4_actif", True)  # Temps plein INCOMPLETS
-        niveau_5_actif = tenant_params.get("niveau_5_actif", True)  # Temps plein COMPLETS (heures sup)
+        niveau_5_actif = tenant_params.get("niveau_5_actif", True)  # Heures supplémentaires
         
-        logger.info(f"⚙️ Niveaux d'attribution actifs - N2:{niveau_2_actif}, N3:{niveau_3_actif}, N4:{niveau_4_actif}, N5:{niveau_5_actif}")
+        # Paramètres équipe de garde
+        params_equipes_garde = await db.parametres_equipes_garde.find_one({"tenant_id": tenant_id})
+        equipes_garde_actif = params_equipes_garde.get("actif", False) if params_equipes_garde else False
+        privilegier_equipe_garde = False
+        if equipes_garde_actif and params_equipes_garde:
+            config_temps_partiel = params_equipes_garde.get("temps_partiel", {})
+            privilegier_equipe_garde = config_temps_partiel.get("privilegier_equipe_garde", False)
         
-        # Valeurs par défaut si pas de paramètres
-        privilegier_disponibles = parametres.get("privilegier_disponibles", False) if parametres else False
+        logger.info(f"⚙️ Niveaux actifs - N2:{niveau_2_actif}, N3:{niveau_3_actif}, N4:{niveau_4_actif}, N5:{niveau_5_actif}")
+        logger.info(f"⚙️ Équipe de garde - actif:{equipes_garde_actif}, prioriser:{privilegier_equipe_garde}")
+        
+        # Paramètres de remplacements
         competences_egales = parametres.get("competences_egales", False) if parametres else False
         
-        logger.info(f"⚙️ Paramètres remplacements - privilegier_disponibles: {privilegier_disponibles}, competences_egales: {competences_egales}")
+        # ==================== RÉCUPÉRATION DES DONNÉES ====================
         
-        # Récupérer le type de garde pour connaître les compétences requises et la durée
+        # Type de garde
         type_garde_data = await db.types_garde.find_one({"id": type_garde_id, "tenant_id": tenant_id})
         if not type_garde_data:
             logger.error(f"Type de garde non trouvé: {type_garde_id}")
@@ -194,13 +201,14 @@ async def trouver_remplacants_potentiels(
         
         competences_requises = type_garde_data.get("competences_requises", [])
         duree_garde = type_garde_data.get("duree_heures", 8)
+        est_garde_externe = type_garde_data.get("est_garde_externe", False)
         
-        # Récupérer le demandeur pour comparer grade/compétences
+        # Demandeur
         demandeur = await db.users.find_one({"id": demandeur_id, "tenant_id": tenant_id})
         demandeur_grade = demandeur.get("grade", "pompier").lower() if demandeur else "pompier"
         demandeur_competences = set(demandeur.get("competences", [])) if demandeur else set()
         
-        # Hiérarchie des grades (du plus bas au plus haut)
+        # Hiérarchie des grades
         grades_hierarchie = {
             "pompier": 1,
             "lieutenant": 2,
@@ -213,10 +221,8 @@ async def trouver_remplacants_potentiels(
         }
         demandeur_grade_niveau = grades_hierarchie.get(demandeur_grade, 1)
         
-        # Récupérer tous les utilisateurs du tenant (sauf demandeur et déjà exclus)
+        # Tous les utilisateurs actifs
         exclus_ids_set = set(exclus_ids + [demandeur_id])
-        
-        # Chercher temps partiel ET temps plein pour N4
         users_cursor = db.users.find({
             "tenant_id": tenant_id,
             "id": {"$nin": list(exclus_ids_set)},
@@ -224,18 +230,48 @@ async def trouver_remplacants_potentiels(
         })
         users_list = await users_cursor.to_list(length=None)
         
-        logger.info(f"🔍 Recherche remplaçants - Type garde: {type_garde_id}, Compétences requises: {competences_requises}")
-        logger.info(f"🔍 Trouvé {len(users_list)} employés actifs (excluant {len(exclus_ids_set)} IDs)")
+        logger.info(f"🔍 Recherche remplaçants - {len(users_list)} employés actifs")
         
-        # Structure pour stocker les candidats par niveau de priorité
-        candidats_par_priorite = {
-            1: [],  # Grade équivalent + Dispo (si privilegier_disponibles)
-            2: [],  # Fonction supérieure + Dispo (si privilegier_disponibles)
-            3: [],  # Grade équivalent + Stand-by (N3)
-            4: [],  # Fonction supérieure + Stand-by (N3)
-            5: [],  # N4: Temps plein incomplets
-            6: [],  # N5: Heures supplémentaires
-        }
+        # Calculer les heures mensuelles pour l'équitabilité
+        debut_mois = datetime.strptime(date_garde, "%Y-%m-%d").replace(day=1)
+        fin_mois = (debut_mois + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+        
+        user_monthly_hours = {}
+        for user in users_list:
+            assignations_mois = await db.assignations.find({
+                "user_id": user["id"],
+                "tenant_id": tenant_id,
+                "date": {
+                    "$gte": debut_mois.strftime("%Y-%m-%d"),
+                    "$lte": fin_mois.strftime("%Y-%m-%d")
+                }
+            }).to_list(1000)
+            user_monthly_hours[user["id"]] = sum(8 for _ in assignations_mois)
+        
+        # Calculer l'équipe de garde du jour si actif
+        equipe_garde_du_jour = None
+        if privilegier_equipe_garde and params_equipes_garde:
+            config_tp = params_equipes_garde.get("temps_partiel", {})
+            if config_tp.get("rotation_active"):
+                from routes.equipes_garde import get_equipe_garde_du_jour_sync
+                equipe_garde_du_jour = get_equipe_garde_du_jour_sync(
+                    type_rotation=config_tp.get("type_rotation", "hebdomadaire"),
+                    date_reference=config_tp.get("date_reference", date_garde),
+                    date_cible=date_garde,
+                    nombre_equipes=config_tp.get("nombre_equipes", 2),
+                    pattern_mode=config_tp.get("pattern_mode", "hebdomadaire"),
+                    pattern_personnalise=config_tp.get("pattern_personnalise", []),
+                    duree_cycle=config_tp.get("duree_cycle", 14),
+                    jour_rotation=config_tp.get("jour_rotation") or "monday",
+                    heure_rotation=config_tp.get("heure_rotation") or "18:00",
+                    heure_actuelle="12:00"
+                )
+                logger.info(f"📊 Équipe de garde du jour: {equipe_garde_du_jour}")
+        
+        # ==================== CLASSIFICATION DES CANDIDATS ====================
+        
+        # Structure: niveau -> liste de candidats
+        candidats_par_niveau = {2: [], 3: [], 4: [], 5: []}
         
         for user in users_list:
             user_name = f"{user.get('prenom', '')} {user.get('nom', '')}"
@@ -247,30 +283,45 @@ async def trouver_remplacants_potentiels(
             user_type_emploi = user.get("type_emploi", "temps_partiel")
             user_heures_max = user.get("heures_max_semaine", 40)
             date_embauche = user.get("date_embauche", "2999-12-31")
+            user_equipe_garde = user.get("equipe_garde")
             
-            # ========== FILTRE 1: Compétences (si activé) ==========
+            # ========== N0: FILTRE COMPÉTENCES ==========
             if competences_egales:
                 user_competences = set(user.get("competences", []))
                 if demandeur_competences and not demandeur_competences.issubset(user_competences):
-                    logger.debug(f"❌ {user_name} - Compétences insuffisantes")
-                    continue
-                if competences_requises and not set(competences_requises).issubset(user_competences):
-                    logger.debug(f"❌ {user_name} - Compétences type garde insuffisantes")
+                    logger.debug(f"❌ {user_name} - N0: Compétences insuffisantes")
                     continue
             
-            # ========== FILTRE 2: Indisponibilité ==========
+            if competences_requises:
+                user_competences = set(user.get("competences", []))
+                if not set(competences_requises).issubset(user_competences):
+                    logger.debug(f"❌ {user_name} - N0: Compétences garde insuffisantes")
+                    continue
+            
+            # ========== N0: FILTRE INDISPONIBILITÉ ==========
             indispo = await db.disponibilites.find_one({
                 "user_id": user_id,
                 "tenant_id": tenant_id,
                 "date": date_garde,
                 "statut": "indisponible"
             })
-            
             if indispo:
-                logger.debug(f"❌ {user_name} - Indisponible pour cette date")
+                logger.debug(f"❌ {user_name} - N0: Indisponible")
                 continue
             
-            # ========== Vérifier disponibilité déclarée ==========
+            # ========== N1: FILTRE ASSIGNATION EN CONFLIT ==========
+            assignation_existante = await db.assignations.find_one({
+                "user_id": user_id,
+                "tenant_id": tenant_id,
+                "date": date_garde
+            })
+            if assignation_existante:
+                logger.debug(f"❌ {user_name} - N1: Déjà assigné ce jour")
+                continue
+            
+            # ========== CALCULS COMMUNS ==========
+            
+            # Disponibilité déclarée
             dispo = await db.disponibilites.find_one({
                 "user_id": user_id,
                 "tenant_id": tenant_id,
@@ -279,7 +330,7 @@ async def trouver_remplacants_potentiels(
             })
             has_disponibilite = dispo is not None
             
-            # ========== Calculer heures de la semaine ==========
+            # Heures de la semaine
             semaine_debut = datetime.strptime(date_garde, "%Y-%m-%d")
             while semaine_debut.weekday() != 0:
                 semaine_debut -= timedelta(days=1)
@@ -294,18 +345,36 @@ async def trouver_remplacants_potentiels(
                 }
             }).to_list(1000)
             
-            heures_travaillees = sum(8 for _ in assignations_semaine)  # TODO: utiliser durée réelle
+            heures_travaillees = sum(8 for _ in assignations_semaine)
             depasserait_max = (heures_travaillees + duree_garde) > user_heures_max
             
-            # ========== Déterminer le grade équivalent ou fonction supérieure ==========
+            # Grade équivalent ou fonction supérieure
             est_grade_equivalent = user_grade_niveau == demandeur_grade_niveau
             est_fonction_superieure = user_fonction_superieure and user_grade_niveau == demandeur_grade_niveau - 1
+            
+            # Priorité grade: 1=équivalent, 2=fonction sup, 3=autre
+            if est_grade_equivalent:
+                grade_priorite = 1
+            elif est_fonction_superieure:
+                grade_priorite = 2
+            else:
+                grade_priorite = 3
+            
+            # Priorité équipe de garde: 0=membre équipe garde, 1=autre
+            equipe_priorite = 1
+            if privilegier_equipe_garde and equipe_garde_du_jour and est_garde_externe:
+                if user_equipe_garde == equipe_garde_du_jour:
+                    equipe_priorite = 0
+            
+            # Équitabilité (heures mensuelles)
+            heures_mois = user_monthly_hours.get(user_id, 0)
             
             # Données du candidat
             candidat_data = {
                 "user_id": user_id,
                 "nom_complet": user_name,
                 "email": user.get("email", ""),
+                "telephone": user.get("telephone", ""),
                 "grade": user_grade,
                 "date_embauche": date_embauche,
                 "has_disponibilite": has_disponibilite,
@@ -313,99 +382,77 @@ async def trouver_remplacants_potentiels(
                 "type_emploi": user_type_emploi,
                 "heures_travaillees": heures_travaillees,
                 "heures_max": user_heures_max,
-                "fonction_superieure": user_fonction_superieure
+                "heures_mois": heures_mois,
+                "fonction_superieure": user_fonction_superieure,
+                "equipe_garde": user_equipe_garde,
+                # Clés de tri
+                "grade_priorite": grade_priorite,
+                "equipe_priorite": equipe_priorite
             }
             
-            # ========== CLASSIFICATION PAR PRIORITÉ ==========
-            # IMPORTANT: Le niveau (N2, N3, N4, N5) détermine la priorité PRINCIPALE
-            # Le grade équivalent/fonction supérieure est un SOUS-TRI dans chaque niveau
+            # ========== CLASSIFICATION PAR NIVEAU ==========
             
-            # N2: Temps partiel DISPONIBLES - TOUS les temps partiels avec dispo
+            # N2: Temps partiel DISPONIBLES
             if niveau_2_actif and user_type_emploi in ["temps_partiel", "temporaire"] and has_disponibilite and not depasserait_max:
-                candidat_data["priorite"] = 1
-                if est_grade_equivalent:
-                    candidat_data["sous_priorite"] = 1  # Grade équivalent en premier
-                    candidat_data["raison"] = "N2 - Temps partiel disponible (grade équivalent)"
-                elif est_fonction_superieure:
-                    candidat_data["sous_priorite"] = 2  # Fonction supérieure ensuite
-                    candidat_data["raison"] = "N2 - Temps partiel disponible (fonction supérieure)"
-                else:
-                    candidat_data["sous_priorite"] = 3  # Autres grades après
-                    candidat_data["raison"] = "N2 - Temps partiel disponible"
-                candidats_par_priorite[1].append(candidat_data)
-                logger.info(f"✅ {user_name} → N2 (TP Dispo, sous-priorité {candidat_data['sous_priorite']})")
+                candidat_data["niveau"] = 2
+                candidat_data["raison"] = f"N2 - TP Dispo (grade_prio:{grade_priorite}, équité:{heures_mois}h)"
+                candidats_par_niveau[2].append(candidat_data.copy())
+                logger.info(f"✅ {user_name} → N2")
                 continue
             
-            # N3: Temps partiel STAND-BY - TOUS les temps partiels sans dispo déclarée
+            # N3: Temps partiel STAND-BY
             if niveau_3_actif and user_type_emploi in ["temps_partiel", "temporaire"] and not has_disponibilite and not depasserait_max:
-                candidat_data["priorite"] = 2
-                if est_grade_equivalent:
-                    candidat_data["sous_priorite"] = 1
-                    candidat_data["raison"] = "N3 - Temps partiel stand-by (grade équivalent)"
-                elif est_fonction_superieure:
-                    candidat_data["sous_priorite"] = 2
-                    candidat_data["raison"] = "N3 - Temps partiel stand-by (fonction supérieure)"
-                else:
-                    candidat_data["sous_priorite"] = 3
-                    candidat_data["raison"] = "N3 - Temps partiel stand-by"
-                candidats_par_priorite[2].append(candidat_data)
-                logger.info(f"✅ {user_name} → N3 (TP Stand-by, sous-priorité {candidat_data['sous_priorite']})")
+                candidat_data["niveau"] = 3
+                candidat_data["raison"] = f"N3 - TP Stand-by (grade_prio:{grade_priorite}, équité:{heures_mois}h)"
+                candidats_par_niveau[3].append(candidat_data.copy())
+                logger.info(f"✅ {user_name} → N3")
                 continue
             
-            # N4: Temps plein INCOMPLETS (heures < max)
+            # N4: Temps plein INCOMPLETS
             if niveau_4_actif and user_type_emploi == "temps_plein" and not depasserait_max:
-                candidat_data["priorite"] = 3
-                if est_grade_equivalent:
-                    candidat_data["sous_priorite"] = 1
-                elif est_fonction_superieure:
-                    candidat_data["sous_priorite"] = 2
-                else:
-                    candidat_data["sous_priorite"] = 3
-                candidat_data["raison"] = "N4 - Temps plein incomplet"
-                candidats_par_priorite[3].append(candidat_data)
-                logger.info(f"✅ {user_name} → N4 (Temps plein, sous-priorité {candidat_data.get('sous_priorite', 3)})")
+                candidat_data["niveau"] = 4
+                candidat_data["raison"] = f"N4 - TP Incomplet (grade_prio:{grade_priorite}, équité:{heures_mois}h)"
+                candidats_par_niveau[4].append(candidat_data.copy())
+                logger.info(f"✅ {user_name} → N4")
                 continue
             
-            # N5: Heures supplémentaires (dépasserait max)
+            # N5: Heures supplémentaires
             if niveau_5_actif and depasserait_max:
-                candidat_data["priorite"] = 4
-                if est_grade_equivalent:
-                    candidat_data["sous_priorite"] = 1
-                elif est_fonction_superieure:
-                    candidat_data["sous_priorite"] = 2
-                else:
-                    candidat_data["sous_priorite"] = 3
-                    
                 # Temps partiel doit avoir une dispo pour heures sup
                 if user_type_emploi in ["temps_partiel", "temporaire"]:
-                    if has_disponibilite:
-                        candidat_data["raison"] = "N5 - Heures sup (temps partiel + dispo)"
-                        candidats_par_priorite[4].append(candidat_data)
-                        logger.info(f"✅ {user_name} → N5 (Heures sup TP)")
-                else:
-                    # Temps plein peut faire heures sup sans dispo
-                    candidat_data["raison"] = "N5 - Heures sup (temps plein)"
-                    candidats_par_priorite[4].append(candidat_data)
-                    logger.info(f"✅ {user_name} → N5 (Heures sup)")
+                    if not has_disponibilite:
+                        logger.debug(f"❌ {user_name} - N5: TP sans dispo")
+                        continue
+                
+                candidat_data["niveau"] = 5
+                candidat_data["raison"] = f"N5 - Heures sup (grade_prio:{grade_priorite}, équité:{heures_mois}h)"
+                candidats_par_niveau[5].append(candidat_data.copy())
+                logger.info(f"✅ {user_name} → N5")
                 continue
             
-            # Si aucune catégorie ne correspond, logger pourquoi (PAS de fallback)
-            logger.debug(f"⚠️ {user_name} exclu: type={user_type_emploi}, dispo={has_disponibilite}, "
-                          f"depasserait_max={depasserait_max}, N2={niveau_2_actif}, N3={niveau_3_actif}, "
-                          f"N4={niveau_4_actif}, N5={niveau_5_actif}")
+            logger.debug(f"⚠️ {user_name} - Aucun niveau applicable")
         
-        # ========== ASSEMBLER LA LISTE FINALE ==========
+        # ==================== TRI ET ASSEMBLAGE FINAL ====================
+        # Tri: grade_priorite → équitabilité (heures_mois) → équipe_priorite → ancienneté
+        
+        def sort_key(candidat):
+            return (
+                candidat.get("grade_priorite", 3),  # 1=grade equiv, 2=fonction sup, 3=autre
+                candidat.get("heures_mois", 999),   # Équitabilité: moins d'heures = priorité
+                candidat.get("equipe_priorite", 1), # 0=membre équipe garde, 1=autre
+                candidat.get("date_embauche", "2999-12-31")  # Ancienneté
+            )
+        
         remplacants_potentiels = []
         
-        for priorite in sorted(candidats_par_priorite.keys()):
-            candidats = candidats_par_priorite[priorite]
-            # Trier par sous-priorité (grade) puis par ancienneté (date_embauche la plus ancienne en premier)
-            candidats.sort(key=lambda x: (x.get("sous_priorite", 3), x["date_embauche"]))
-            remplacants_potentiels.extend(candidats)
+        for niveau in [2, 3, 4, 5]:
+            candidats = candidats_par_niveau[niveau]
+            candidats_tries = sorted(candidats, key=sort_key)
+            remplacants_potentiels.extend(candidats_tries)
         
         logger.info(f"✅ Trouvé {len(remplacants_potentiels)} remplaçants potentiels:")
-        for i, c in enumerate(remplacants_potentiels[:10]):
-            logger.info(f"   {i+1}. {c['nom_complet']} - {c.get('raison', 'N/A')} (sous-priorité: {c.get('sous_priorite', '?')})")
+        for i, c in enumerate(remplacants_potentiels[:15]):
+            logger.info(f"   {i+1}. {c['nom_complet']} - N{c.get('niveau')} - {c.get('raison', 'N/A')}")
         
         return remplacants_potentiels
         
