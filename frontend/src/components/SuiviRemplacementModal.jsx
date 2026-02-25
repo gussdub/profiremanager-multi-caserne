@@ -60,6 +60,28 @@ const SuiviRemplacementModal = ({ demande, tenantSlug, onClose, users = [] }) =>
     }
   }, [demande?.id, fetchSuivi]);
 
+  // Fonction pour charger la logique de sélection
+  const fetchLogique = async () => {
+    setLogiqueLoading(true);
+    setLogiqueError(null);
+    try {
+      const data = await apiGet(tenantSlug, `/remplacements/debug/${demande.id}`);
+      setLogiqueData(data);
+    } catch (err) {
+      console.error('Erreur chargement logique:', err);
+      setLogiqueError('Impossible de charger les détails de la logique. Cette fonction est réservée aux administrateurs.');
+    } finally {
+      setLogiqueLoading(false);
+    }
+  };
+
+  const toggleLogique = () => {
+    if (!showLogique && !logiqueData && !logiqueLoading) {
+      fetchLogique();
+    }
+    setShowLogique(!showLogique);
+  };
+
   const getUserName = (userId) => {
     const user = users.find(u => u.id === userId);
     return user ? `${user.prenom} ${user.nom}` : userId;
