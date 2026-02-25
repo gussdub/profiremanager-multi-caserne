@@ -24,6 +24,18 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 
 ## Recent Fixes (February 2026)
 
+### NEW - Règle Officier pour Remplacements (25 Feb 2026)
+- **Fonctionnalité**: Implémentation de la "règle officier" dans la recherche de remplaçants
+- **Logique**:
+  1. Si le type de garde a `officier_obligatoire = True`
+  2. ET le demandeur est un officier (basé sur son grade dans la DB)
+  3. ET il n'y a PAS d'autre officier déjà assigné à cette garde
+  4. ALORS seuls les officiers ou les employés avec `fonction_superieur = True` peuvent remplacer
+  5. SI un autre officier est déjà présent sur la garde, n'importe qui peut remplacer (la règle est déjà respectée)
+- **Fichiers modifiés**:
+  - `backend/routes/remplacements.py` - Fonction `trouver_remplacants_potentiels` et endpoint `/debug`
+- **Endpoint debug**: `GET /{tenant}/remplacements/debug/{demande_id}` - Retourne maintenant les détails de la règle officier
+
 ### NEW - Mise à jour du Favicon / Icônes App Mobile (21 Feb 2026)
 - **Fonctionnalité**: Mise à jour du favicon web et des icônes natives pour iOS et Android
 - **Fichiers modifiés**:
