@@ -16,12 +16,28 @@ function Calendar({
 }) {
   // Detect screen size for responsive calendar
   const [isMobile, setIsMobile] = React.useState(false);
+  const [isZoomed, setIsZoomed] = React.useState(false);
   
   React.useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    const checkMobile = () => {
+      // Détecter le mobile ou le zoom élevé
+      const width = window.innerWidth;
+      const devicePixelRatio = window.devicePixelRatio || 1;
+      const visualViewportScale = window.visualViewport?.scale || 1;
+      
+      // Considérer comme mobile si écran petit OU zoom élevé
+      const effectiveWidth = width / (devicePixelRatio > 1 ? 1 : visualViewportScale);
+      setIsMobile(width < 768 || effectiveWidth < 500);
+      setIsZoomed(visualViewportScale > 1.2 || devicePixelRatio > 2);
+    };
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    // Écouter aussi les changements de viewport (zoom)
+    window.visualViewport?.addEventListener('resize', checkMobile);
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+      window.visualViewport?.removeEventListener('resize', checkMobile);
+    };
   }, []);
 
   // Detect if used in modal (large calendar) - but only on desktop
