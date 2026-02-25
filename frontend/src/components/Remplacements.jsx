@@ -63,6 +63,9 @@ const Remplacements = () => {
     priorite: 'normale'
   });
   const [propositionsRecues, setPropositionsRecues] = useState([]);
+  const [showImpactModal, setShowImpactModal] = useState(false);
+  const [impactData, setImpactData] = useState(null);
+  const [loadingImpact, setLoadingImpact] = useState(false);
   const { toast } = useToast();
 
   const typesConge = [
