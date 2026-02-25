@@ -1849,6 +1849,97 @@ async def get_propositions_remplacement(tenant_slug: str, current_user: User = D
     return propositions
 
 
+@router.get("/{tenant_slug}/remplacements/{demande_id}/suivi")
+async def get_suivi_remplacement(
+    tenant_slug: str,
+    demande_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Récupère le suivi détaillé d'une demande de remplacement
+    Accessible par le demandeur, les admins et les superviseurs
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    demande = await db.demandes_remplacement.find_one({
+        "id": demande_id,
+        "tenant_id": tenant.id
+    })
+    
+    if not demande:
+        raise HTTPException(status_code=404, detail="Demande non trouvée")
+    
+    # Vérifier les permissions : demandeur ou admin/superviseur
+    if current_user.role == "employe" and demande.get("demandeur_id") != current_user.id:
+        raise HTTPException(status_code=403, detail="Accès non autorisé")
+    
+    # Récupérer les informations de notifications envoyées
+    tentatives = demande.get("tentatives_historique", [])
+    
+    # Enrichir chaque tentative avec les informations de l'utilisateur
+    tentatives_enrichies = []
+    for tentative in tentatives:
+        user_id = tentative.get("user_id")
+        user_info = await db.users.find_one({"id": user_id}, {"prenom": 1, "nom": 1, "email": 1, "telephone": 1})
+        
+        tentative_enrichie = {
+            **tentative,
+            "nom_complet": tentative.get("nom_complet") or (f"{user_info.get('prenom', '')} {user_info.get('nom', '')}" if user_info else "Inconnu"),
+            "email": user_info.get("email") if user_info else None,
+            "telephone": user_info.get("telephone") if user_info else None,
+            # Par défaut, on considère que tous les canaux ont été utilisés
+            # (à améliorer plus tard avec un vrai tracking des envois)
+            "email_envoye": True,
+            "sms_envoye": True,
+            "push_envoye": True
+        }
+        tentatives_enrichies.append(tentative_enrichie)
+    
+    # Calculer les statistiques
+    nb_tentatives = len(tentatives_enrichies)
+    nb_acceptes = sum(1 for t in tentatives if t.get("statut") == "accepted")
+    nb_refuses = sum(1 for t in tentatives if t.get("statut") == "refused")
+    nb_en_attente = sum(1 for t in tentatives if t.get("statut") == "contacted")
+    
+    # Récupérer les informations du demandeur et du remplaçant
+    demandeur = await db.users.find_one({"id": demande.get("demandeur_id")}, {"prenom": 1, "nom": 1})
+    remplacant = None
+    if demande.get("remplacant_id"):
+        remplacant = await db.users.find_one({"id": demande.get("remplacant_id")}, {"prenom": 1, "nom": 1})
+    
+    type_garde = await db.types_garde.find_one({"id": demande.get("type_garde_id"), "tenant_id": tenant.id})
+    
+    suivi = {
+        "demande_id": demande_id,
+        "statut": demande.get("statut"),
+        "date_garde": demande.get("date"),
+        "raison": demande.get("raison"),
+        "priorite": demande.get("priorite"),
+        "type_garde": type_garde.get("nom") if type_garde else "Inconnu",
+        "demandeur_nom": f"{demandeur.get('prenom', '')} {demandeur.get('nom', '')}" if demandeur else "Inconnu",
+        "remplacant_nom": f"{remplacant.get('prenom', '')} {remplacant.get('nom', '')}" if remplacant else None,
+        "created_at": demande.get("created_at"),
+        "updated_at": demande.get("updated_at"),
+        "tentatives": tentatives_enrichies,
+        "notifications_envoyees": {
+            "email": nb_tentatives,
+            "sms": nb_tentatives,  # Approximation - à améliorer
+            "push": nb_tentatives  # Approximation - à améliorer
+        },
+        "statistiques": {
+            "total_contactes": nb_tentatives,
+            "acceptes": nb_acceptes,
+            "refuses": nb_refuses,
+            "en_attente": nb_en_attente,
+            "sans_reponse": nb_tentatives - nb_acceptes - nb_refuses - nb_en_attente
+        }
+    }
+    
+    logger.info(f"📋 Suivi demande {demande_id}: {nb_tentatives} tentatives, statut={demande.get('statut')}")
+    
+    return suivi
+
+
 @router.put("/{tenant_slug}/remplacements/{demande_id}/accepter")
 async def accepter_demande_remplacement(
     tenant_slug: str,
