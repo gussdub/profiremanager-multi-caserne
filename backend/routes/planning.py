@@ -48,6 +48,9 @@ from routes.dependencies import (
 # Import WebSocket pour synchronisation temps réel
 from routes.websocket import broadcast_planning_update
 
+# Import pour les notifications push
+from routes.notifications import send_push_notification_to_users
+
 # Import des helpers PDF partagés
 from utils.pdf_helpers import (
     create_branded_pdf,
