@@ -231,7 +231,10 @@ async def trouver_remplacants_potentiels(
         })
         users_list = await users_cursor.to_list(length=None)
         
-        logger.info(f"🔍 Recherche remplaçants - {len(users_list)} employés actifs")
+        logger.info(f"🔍 Recherche remplaçants pour date={date_garde}, type_garde={type_garde_id}")
+        logger.info(f"🔍 {len(users_list)} employés actifs (excluant {len(exclus_ids)} déjà contactés + demandeur)")
+        if exclus_ids:
+            logger.info(f"🔍 IDs exclus (déjà contactés): {exclus_ids}")
         
         # Calculer les heures mensuelles pour l'équitabilité
         debut_mois = datetime.strptime(date_garde, "%Y-%m-%d").replace(day=1)
