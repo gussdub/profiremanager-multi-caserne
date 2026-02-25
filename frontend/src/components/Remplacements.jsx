@@ -1189,6 +1189,21 @@ const Remplacements = () => {
                     {!['employe', 'pompier'].includes(user.role) && conge.statut === 'en_attente' && (
                       <div className="conge-actions">
                         <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleShowImpact(conge.id);
+                          }}
+                          disabled={loadingImpact}
+                          data-testid={`impact-conge-${conge.id}`}
+                          style={{ color: '#6366F1', borderColor: '#6366F1' }}
+                        >
+                          <CalendarDays size={14} style={{ marginRight: '4px' }} />
+                          {loadingImpact ? 'Chargement...' : 'Impact Planning'}
+                        </Button>
+                        <Button 
                           variant="default" 
                           size="sm" 
                           onClick={(e) => {
