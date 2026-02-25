@@ -3,7 +3,7 @@
     "apps": [],
     "details": [
       {
-        "appID": "TEAM_ID.com.profiremanager.app",
+        "appID": "B595367QA9.com.profiremanager.app",
         "paths": [
           "/*/remplacements*",
           "/*/planning*",
@@ -24,7 +24,7 @@
   },
   "webcredentials": {
     "apps": [
-      "TEAM_ID.com.profiremanager.app"
+      "B595367QA9.com.profiremanager.app"
     ]
   }
 }
