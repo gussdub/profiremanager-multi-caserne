@@ -348,7 +348,7 @@ async def trouver_remplacants_potentiels(
             user_id = user["id"]
             user_grade = user.get("grade", "pompier")
             user_grade_lower = user_grade.lower() if user_grade else "pompier"
-            user_grade_niveau = grades_hierarchie.get(user_grade_lower, 1)
+            user_grade_niveau = get_niveau_hierarchique(user_grade)
             user_fonction_superieure = user.get("fonction_superieur", False)
             user_type_emploi = user.get("type_emploi", "temps_partiel")
             user_heures_max = user.get("heures_max_semaine", 40)
