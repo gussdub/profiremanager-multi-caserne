@@ -203,11 +203,37 @@ async def trouver_remplacants_potentiels(
         competences_requises = type_garde_data.get("competences_requises", [])
         duree_garde = type_garde_data.get("duree_heures", 8)
         est_garde_externe = type_garde_data.get("est_garde_externe", False)
+        officier_obligatoire = type_garde_data.get("officier_obligatoire", False)
+        
+        # ==================== RÉCUPÉRATION DES GRADES ====================
+        grades_list = await db.grades.find({"tenant_id": tenant_id}).to_list(100)
+        grades_map = {g.get("nom"): g for g in grades_list}
+        
+        def est_officier_grade(grade_nom: str) -> bool:
+            """Vérifie si un grade est considéré comme officier"""
+            grade_info = grades_map.get(grade_nom, {})
+            return grade_info.get("est_officier", False) == True
+        
+        def est_eligible_fonction_superieure(user_data: dict) -> bool:
+            """Vérifie si l'utilisateur peut opérer en fonction supérieure"""
+            return user_data.get("fonction_superieur", False) == True
         
         # Demandeur
         demandeur = await db.users.find_one({"id": demandeur_id, "tenant_id": tenant_id})
-        demandeur_grade = demandeur.get("grade", "pompier").lower() if demandeur else "pompier"
+        demandeur_grade = demandeur.get("grade", "pompier") if demandeur else "pompier"
+        demandeur_grade_lower = demandeur_grade.lower() if demandeur_grade else "pompier"
         demandeur_competences = set(demandeur.get("competences", [])) if demandeur else set()
+        
+        # ==================== RÈGLE OFFICIER ====================
+        # Si le type de garde nécessite un officier ET que le demandeur est officier,
+        # alors le remplaçant DOIT aussi être un officier ou éligible à fonction supérieure
+        demandeur_est_officier = est_officier_grade(demandeur_grade)
+        besoin_officier_remplacement = officier_obligatoire and demandeur_est_officier
+        
+        if besoin_officier_remplacement:
+            logger.info(f"🎖️ RÈGLE OFFICIER ACTIVE: Le remplaçant doit être officier ou éligible")
+            logger.info(f"🎖️ Type de garde: officier_obligatoire={officier_obligatoire}")
+            logger.info(f"🎖️ Demandeur {demandeur.get('prenom', '')} {demandeur.get('nom', '')} - grade={demandeur_grade} - est_officier={demandeur_est_officier}")
         
         # Hiérarchie des grades
         grades_hierarchie = {
