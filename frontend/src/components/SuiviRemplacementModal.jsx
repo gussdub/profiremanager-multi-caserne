@@ -595,23 +595,27 @@ const SuiviRemplacementModal = ({ demande, tenantSlug, onClose, users = [] }) =>
                             borderRadius: '6px',
                             padding: '8px 12px',
                             marginBottom: '6px',
-                            fontSize: '0.85rem',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center'
+                            fontSize: '0.85rem'
                           }}>
-                            <span style={{ fontWeight: '500' }}>{candidat.nom}</span>
-                            <span style={{ 
-                              fontSize: '0.75rem', 
-                              color: '#6B7280',
-                              background: '#F3F4F6',
-                              padding: '2px 8px',
-                              borderRadius: '4px'
-                            }}>
-                              {candidat.niveau || candidat.type_emploi}
-                              {candidat.est_officier && ' 🎖️'}
-                              {candidat.est_eligible_fonction_sup && ' ⭐'}
-                            </span>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontWeight: '500' }}>{candidat.nom}</span>
+                              <span style={{ 
+                                fontSize: '0.75rem', 
+                                color: '#6B7280',
+                                background: '#F3F4F6',
+                                padding: '2px 8px',
+                                borderRadius: '4px'
+                              }}>
+                                {candidat.niveau || candidat.type_emploi}
+                                {candidat.est_officier && ' 🎖️'}
+                                {candidat.est_eligible_fonction_sup && ' ⭐'}
+                              </span>
+                            </div>
+                            {candidat.assignations_sans_conflit?.length > 0 && (
+                              <div style={{ fontSize: '0.7rem', color: '#059669', marginTop: '4px' }}>
+                                ℹ️ Aussi assigné (sans conflit): {candidat.assignations_sans_conflit.join(', ')}
+                              </div>
+                            )}
                           </div>
                         ))}
                         {logiqueData.eligibles.length > 10 && (
