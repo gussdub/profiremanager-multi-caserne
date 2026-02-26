@@ -1242,15 +1242,31 @@ async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
             superviseur_ids = [s["id"] for s in superviseurs]
             if superviseur_ids:
                 demandeur = await db.users.find_one({"id": demande_data["demandeur_id"]})
+                demandeur_nom = f"{demandeur.get('prenom', '')} {demandeur.get('nom', '')}" if demandeur else "Un employé"
+                
+                # Push notification
                 await send_push_notification_to_users(
                     user_ids=superviseur_ids,
                     title="❌ Aucun remplaçant trouvé",
-                    body=f"Aucun remplaçant disponible pour {demandeur.get('prenom', '')} {demandeur.get('nom', '')} le {demande_data['date']}",
+                    body=f"Aucun remplaçant disponible pour {demandeur_nom} le {demande_data['date']}",
                     data={
                         "type": "remplacement_expiree",
                         "demande_id": demande_id
                     }
                 )
+                
+                # Notification in-app + email pour chaque superviseur
+                for sup in superviseurs:
+                    await creer_notification(
+                        tenant_id=tenant_id,
+                        destinataire_id=sup["id"],
+                        type="remplacement_expiree",
+                        titre="❌ Aucun remplaçant trouvé",
+                        message=f"Aucun remplaçant disponible pour {demandeur_nom} le {demande_data['date']}. Une intervention manuelle est requise.",
+                        lien="/remplacements",
+                        data={"demande_id": demande_id},
+                        envoyer_email=True  # Email aux superviseurs quand demande expirée
+                    )
             
             # Notifier le demandeur
             demandeur_id = demande_data.get("demandeur_id")
