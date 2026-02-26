@@ -204,6 +204,37 @@ async def trouver_remplacants_potentiels(
         duree_garde = type_garde_data.get("duree_heures", 8)
         est_garde_externe = type_garde_data.get("est_garde_externe", False)
         officier_obligatoire = type_garde_data.get("officier_obligatoire", False)
+        heure_debut_garde = type_garde_data.get("heure_debut", "00:00")
+        heure_fin_garde = type_garde_data.get("heure_fin", "23:59")
+        
+        # Fonction pour vérifier si deux plages horaires se chevauchent
+        def plages_se_chevauchent(debut1: str, fin1: str, debut2: str, fin2: str) -> bool:
+            """
+            Vérifie si deux plages horaires se chevauchent.
+            Format des heures: "HH:MM"
+            Gère les gardes qui passent minuit (fin < début)
+            """
+            def heure_to_minutes(h: str) -> int:
+                try:
+                    parts = h.split(":")
+                    return int(parts[0]) * 60 + int(parts[1])
+                except:
+                    return 0
+            
+            d1, f1 = heure_to_minutes(debut1), heure_to_minutes(fin1)
+            d2, f2 = heure_to_minutes(debut2), heure_to_minutes(fin2)
+            
+            # Gestion des gardes qui passent minuit
+            # Si fin < début, c'est une garde de nuit (ex: 22:00 - 06:00)
+            if f1 < d1:
+                f1 += 24 * 60  # Ajouter 24h
+            if f2 < d2:
+                f2 += 24 * 60
+            
+            # Deux plages se chevauchent si le début de l'une est avant la fin de l'autre
+            return d1 < f2 and d2 < f1
+        
+        logger.info(f"🕐 Type de garde demandé: {type_garde_data.get('nom')} ({heure_debut_garde} - {heure_fin_garde})")
         
         # ==================== RÉCUPÉRATION DES GRADES ====================
         grades_list = await db.grades.find({"tenant_id": tenant_id}).to_list(100)
