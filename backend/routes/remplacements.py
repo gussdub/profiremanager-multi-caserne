@@ -431,14 +431,36 @@ async def trouver_remplacants_potentiels(
                     officier_tag = "OFFICIER" if user_est_officier else "ÉLIGIBLE"
                     logger.info(f"✅ {user_name} - Règle officier OK [{officier_tag}]")
             
-            # ========== N1: FILTRE ASSIGNATION EN CONFLIT ==========
-            assignation_existante = await db.assignations.find_one({
+            # ========== N1: FILTRE ASSIGNATION EN CONFLIT (avec chevauchement horaire) ==========
+            # On vérifie si le candidat a une assignation qui CHEVAUCHE les horaires de la garde demandée
+            assignations_ce_jour = await db.assignations.find({
                 "user_id": user_id,
                 "tenant_id": tenant_id,
                 "date": date_garde
-            })
-            if assignation_existante:
-                logger.info(f"❌ {user_name} - N1: Déjà assigné ce jour ({date_garde})")
+            }).to_list(10)
+            
+            conflit_horaire = False
+            garde_en_conflit = None
+            for assignation in assignations_ce_jour:
+                # Récupérer le type de garde de cette assignation
+                type_garde_assignation = await db.types_garde.find_one({
+                    "id": assignation.get("type_garde_id"),
+                    "tenant_id": tenant_id
+                })
+                if type_garde_assignation:
+                    heure_debut_existante = type_garde_assignation.get("heure_debut", "00:00")
+                    heure_fin_existante = type_garde_assignation.get("heure_fin", "23:59")
+                    
+                    # Vérifier si les horaires se chevauchent
+                    if plages_se_chevauchent(heure_debut_garde, heure_fin_garde, heure_debut_existante, heure_fin_existante):
+                        conflit_horaire = True
+                        garde_en_conflit = f"{type_garde_assignation.get('nom', 'Inconnu')} ({heure_debut_existante}-{heure_fin_existante})"
+                        break
+                    else:
+                        logger.info(f"ℹ️ {user_name} - Assigné à {type_garde_assignation.get('nom')} ({heure_debut_existante}-{heure_fin_existante}) mais PAS de chevauchement avec {heure_debut_garde}-{heure_fin_garde}")
+            
+            if conflit_horaire:
+                logger.info(f"❌ {user_name} - N1: Conflit horaire avec {garde_en_conflit}")
                 continue
             
             # ========== CALCULS COMMUNS ==========
