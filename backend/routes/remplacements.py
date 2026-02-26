@@ -2656,16 +2656,28 @@ async def debug_recherche_remplacant(
                 resultat["eligible"] = False
                 resultat["raisons_exclusion"].append(f"Règle officier: Le demandeur est le seul officier, le remplaçant doit être officier ou éligible (grade={user_grade})")
         
-        # Check 5: Déjà assigné
-        assignation = await db.assignations.find_one({
+        # Check 5: Conflit horaire (assignation existante qui chevauche)
+        assignations_ce_jour = await db.assignations.find({
             "user_id": user_id,
             "tenant_id": tenant.id,
             "date": date_garde
-        })
-        if assignation:
-            resultat["eligible"] = False
+        }).to_list(10)
+        
+        for assignation in assignations_ce_jour:
             type_garde_assignation = await db.types_garde.find_one({"id": assignation.get("type_garde_id")})
-            resultat["raisons_exclusion"].append(f"Déjà assigné ce jour: {type_garde_assignation.get('nom', 'Inconnu') if type_garde_assignation else 'Inconnu'}")
+            if type_garde_assignation:
+                heure_debut_existante = type_garde_assignation.get("heure_debut", "00:00")
+                heure_fin_existante = type_garde_assignation.get("heure_fin", "23:59")
+                nom_garde_existante = type_garde_assignation.get("nom", "Inconnu")
+                
+                if plages_se_chevauchent(heure_debut_garde, heure_fin_garde, heure_debut_existante, heure_fin_existante):
+                    resultat["eligible"] = False
+                    resultat["raisons_exclusion"].append(f"Conflit horaire: Déjà assigné à {nom_garde_existante} ({heure_debut_existante}-{heure_fin_existante}) qui chevauche {heure_debut_garde}-{heure_fin_garde}")
+                else:
+                    # Info: assigné mais pas de chevauchement
+                    if "assignations_sans_conflit" not in resultat:
+                        resultat["assignations_sans_conflit"] = []
+                    resultat["assignations_sans_conflit"].append(f"{nom_garde_existante} ({heure_debut_existante}-{heure_fin_existante})")
         
         # Check 6: Disponibilité déclarée
         dispo = await db.disponibilites.find_one({
