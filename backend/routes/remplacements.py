@@ -2528,6 +2528,27 @@ async def debug_recherche_remplacant(
     type_garde = await db.types_garde.find_one({"id": type_garde_id, "tenant_id": tenant.id})
     competences_requises = type_garde.get("competences_requises", []) if type_garde else []
     officier_obligatoire = type_garde.get("officier_obligatoire", False) if type_garde else False
+    heure_debut_garde = type_garde.get("heure_debut", "00:00") if type_garde else "00:00"
+    heure_fin_garde = type_garde.get("heure_fin", "23:59") if type_garde else "23:59"
+    
+    # Fonction pour vérifier si deux plages horaires se chevauchent
+    def plages_se_chevauchent(debut1: str, fin1: str, debut2: str, fin2: str) -> bool:
+        def heure_to_minutes(h: str) -> int:
+            try:
+                parts = h.split(":")
+                return int(parts[0]) * 60 + int(parts[1])
+            except:
+                return 0
+        
+        d1, f1 = heure_to_minutes(debut1), heure_to_minutes(fin1)
+        d2, f2 = heure_to_minutes(debut2), heure_to_minutes(fin2)
+        
+        if f1 < d1:
+            f1 += 24 * 60
+        if f2 < d2:
+            f2 += 24 * 60
+        
+        return d1 < f2 and d2 < f1
     
     # Récupérer les grades pour déterminer qui est officier
     grades_list = await db.grades.find({"tenant_id": tenant.id}).to_list(100)
