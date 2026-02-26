@@ -537,6 +537,23 @@ const SuiviRemplacementModal = ({ demande, tenantSlug, onClose, users = [] }) =>
                     </div>
                   )}
 
+                  {/* Info garde demandée */}
+                  {logiqueData.demande && (
+                    <div style={{
+                      background: '#EFF6FF',
+                      borderRadius: '10px',
+                      padding: '12px',
+                      marginBottom: '16px',
+                      border: '1px solid #3B82F6',
+                      fontSize: '0.85rem'
+                    }}>
+                      <strong style={{ color: '#1E40AF' }}>Garde demandée:</strong> {logiqueData.demande.type_garde} 
+                      <span style={{ color: '#3B82F6', fontWeight: '600', marginLeft: '8px' }}>
+                        ({logiqueData.demande.horaires})
+                      </span>
+                    </div>
+                  )}
+
                   {/* Résumé */}
                   <div style={{
                     display: 'grid',
