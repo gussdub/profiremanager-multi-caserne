@@ -1357,26 +1357,100 @@ const Planning = () => {
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       
-      // Créer un iframe caché pour déclencher l'impression
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.src = url;
-      document.body.appendChild(iframe);
+      // Détecter si on est sur mobile (iOS, Android) ou desktop
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      const isCapacitor = window.Capacitor !== undefined;
       
-      // Attendre que le PDF soit chargé, puis déclencher l'impression
-      iframe.onload = () => {
-        try {
-          iframe.contentWindow.print();
-          setTimeout(() => {
+      if (isMobile || isCapacitor) {
+        // Sur mobile: ouvrir le PDF dans un nouvel onglet (permet de télécharger/partager)
+        // Ou utiliser Capacitor Share si disponible
+        if (isCapacitor && window.Capacitor.Plugins?.Share) {
+          try {
+            // Convertir blob en base64 pour Capacitor
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+              const base64Data = reader.result.split(',')[1];
+              const fileName = `planning_${periode}.pdf`;
+              
+              // Utiliser FileSystem pour sauvegarder temporairement
+              if (window.Capacitor.Plugins?.Filesystem) {
+                const { Filesystem, Directory } = window.Capacitor.Plugins;
+                await Filesystem.writeFile({
+                  path: fileName,
+                  data: base64Data,
+                  directory: Directory.Cache
+                });
+                
+                const fileUri = await Filesystem.getUri({
+                  path: fileName,
+                  directory: Directory.Cache
+                });
+                
+                await window.Capacitor.Plugins.Share.share({
+                  title: 'Planning',
+                  url: fileUri.uri,
+                  dialogTitle: 'Partager ou imprimer le planning'
+                });
+              } else {
+                // Fallback: ouvrir dans nouvel onglet
+                window.open(url, '_blank');
+              }
+            };
+            reader.readAsDataURL(blob);
+          } catch (shareError) {
+            console.error('Erreur partage Capacitor:', shareError);
+            // Fallback: ouvrir dans nouvel onglet
+            window.open(url, '_blank');
+          }
+        } else {
+          // Pas de Capacitor ou pas de Share plugin: ouvrir dans nouvel onglet
+          // Sur iOS Safari, ça permet d'utiliser le bouton partage natif
+          const newWindow = window.open(url, '_blank');
+          if (!newWindow) {
+            // Si popup bloquée, créer un lien de téléchargement
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `planning_${periode}.pdf`;
+            a.click();
+          }
+        }
+        
+        // Cleanup après un délai
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+        }, 5000);
+        
+      } else {
+        // Sur desktop: utiliser iframe pour impression directe
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = url;
+        document.body.appendChild(iframe);
+        
+        // Attendre que le PDF soit chargé, puis déclencher l'impression
+        iframe.onload = () => {
+          try {
+            iframe.contentWindow.print();
+            setTimeout(() => {
+              document.body.removeChild(iframe);
+              window.URL.revokeObjectURL(url);
+            }, 1000);
+          } catch (e) {
+            console.error('Erreur impression:', e);
+            // Fallback: ouvrir dans nouvel onglet
+            window.open(url, '_blank');
             document.body.removeChild(iframe);
             window.URL.revokeObjectURL(url);
-          }, 1000);
-        } catch (e) {
-          console.error('Erreur impression:', e);
+          }
+        };
+        
+        iframe.onerror = () => {
+          console.error('Erreur chargement iframe');
+          window.open(url, '_blank');
           document.body.removeChild(iframe);
           window.URL.revokeObjectURL(url);
-        }
-      };
+        };
+      }
       
     } catch (error) {
       console.error('Erreur export PDF planning:', error);
