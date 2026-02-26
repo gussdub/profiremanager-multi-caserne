@@ -1725,7 +1725,8 @@ async def create_demande_remplacement(tenant_slug: str, demande: DemandeRemplace
                 titre=f"{'🚨 ' if priorite == 'urgent' else ''}Recherche de remplacement en cours",
                 message=f"{current_user.prenom} {current_user.nom} cherche un remplaçant pour le {demande.date}",
                 lien="/remplacements",
-                data={"demande_id": demande_obj.id}
+                data={"demande_id": demande_obj.id},
+                envoyer_email=False  # Pas d'email aux superviseurs, juste push
             )
             superviseur_ids.append(user["id"])
         
