@@ -2711,6 +2711,7 @@ async def debug_recherche_remplacant(
             "id": demande_id,
             "date": date_garde,
             "type_garde": type_garde.get("nom") if type_garde else "Inconnu",
+            "horaires": f"{heure_debut_garde} - {heure_fin_garde}",
             "competences_requises": competences_requises,
             "demandeur": f"{demandeur.get('prenom', '')} {demandeur.get('nom', '')}" if demandeur else "Inconnu",
             "demandeur_grade": demandeur_grade,
