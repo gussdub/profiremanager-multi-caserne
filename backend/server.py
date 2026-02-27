@@ -1955,6 +1955,68 @@ async def job_verifier_timeouts_remplacements():
             logging.error(f"❌ Erreur dans le job de vérification des timeouts: {e}", exc_info=True)
             await asyncio.sleep(60)  # Attendre avant de réessayer même en cas d'erreur
 
+
+async def job_archivage_automatique_remplacements():
+    """
+    Job quotidien qui archive/supprime les anciennes demandes de remplacement
+    S'exécute une fois par jour (toutes les 24h)
+    """
+    from datetime import datetime, timezone, timedelta
+    
+    # Attendre 5 minutes au démarrage pour laisser l'app se stabiliser
+    await asyncio.sleep(300)
+    
+    while True:
+        try:
+            logging.info("🗑️ Début du job d'archivage automatique des remplacements...")
+            
+            # Récupérer tous les tenants
+            tenants = await db.tenants.find({}, {"_id": 0}).to_list(100)
+            total_supprimees = 0
+            
+            for tenant in tenants:
+                tenant_id = tenant.get("id")
+                if not tenant_id:
+                    continue
+                
+                # Récupérer les paramètres de remplacement du tenant
+                parametres = await db.parametres_remplacements.find_one({"tenant_id": tenant_id})
+                
+                if not parametres:
+                    continue
+                
+                archivage_actif = parametres.get("archivage_auto_actif", True)
+                delai_jours = parametres.get("delai_archivage_jours", 365)
+                
+                if not archivage_actif or delai_jours <= 0:
+                    continue
+                
+                # Calculer la date limite
+                date_limite = datetime.now(timezone.utc) - timedelta(days=delai_jours)
+                
+                # Supprimer les demandes terminées plus anciennes que le délai
+                result = await db.demandes_remplacement.delete_many({
+                    "tenant_id": tenant_id,
+                    "statut": {"$in": ["accepte", "expiree", "annulee", "refusee", "approuve_manuellement"]},
+                    "created_at": {"$lt": date_limite.isoformat()}
+                })
+                
+                if result.deleted_count > 0:
+                    logging.info(f"🗑️ Tenant {tenant.get('nom', tenant_id)}: {result.deleted_count} demande(s) archivée(s)")
+                    total_supprimees += result.deleted_count
+            
+            if total_supprimees > 0:
+                logging.info(f"✅ Archivage automatique terminé: {total_supprimees} demande(s) supprimée(s)")
+            else:
+                logging.info("✅ Archivage automatique terminé: aucune demande à supprimer")
+            
+            # Attendre 24 heures avant la prochaine exécution
+            await asyncio.sleep(86400)
+            
+        except Exception as e:
+            logging.error(f"❌ Erreur dans le job d'archivage automatique: {e}", exc_info=True)
+            await asyncio.sleep(3600)  # Attendre 1h avant de réessayer en cas d'erreur
+
 # JWT and Password configuration
 SECRET_KEY = os.environ.get("JWT_SECRET", "your-secret-key-here")
 ALGORITHM = "HS256"
