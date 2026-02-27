@@ -286,6 +286,50 @@ const SuiviRemplacementModal = ({ demande, tenantSlug, onClose, users = [] }) =>
                 </div>
               </div>
 
+              {/* Info annulation/relance */}
+              {(suivi?.annule_par_nom || suivi?.relance_par_nom) && (
+                <div style={{
+                  background: suivi?.annule_par_nom && suivi?.statut === 'annulee' ? '#FEF2F2' : '#F0FDF4',
+                  borderRadius: '10px',
+                  padding: '14px',
+                  marginBottom: '20px',
+                  border: suivi?.annule_par_nom && suivi?.statut === 'annulee' ? '1px solid #FECACA' : '1px solid #BBF7D0'
+                }}>
+                  {suivi?.annule_par_nom && suivi?.statut === 'annulee' && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#DC2626' }}>
+                      <span style={{ fontSize: '1.2rem' }}>⛔</span>
+                      <div>
+                        <strong>Annulée par {suivi.annule_par_nom}</strong>
+                        {suivi.date_annulation && (
+                          <div style={{ fontSize: '0.8rem', color: '#9CA3AF' }}>
+                            le {new Date(suivi.date_annulation).toLocaleString('fr-FR')}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {suivi?.relance_par_nom && (
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '8px', 
+                      color: '#059669',
+                      marginTop: suivi?.annule_par_nom && suivi?.statut === 'annulee' ? '10px' : 0
+                    }}>
+                      <span style={{ fontSize: '1.2rem' }}>🔄</span>
+                      <div>
+                        <strong>Relancée par {suivi.relance_par_nom}</strong>
+                        {suivi.date_relance && (
+                          <div style={{ fontSize: '0.8rem', color: '#9CA3AF' }}>
+                            le {new Date(suivi.date_relance).toLocaleString('fr-FR')}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Timeline des contacts */}
               <h3 style={{ 
                 fontSize: '1rem', 
