@@ -1490,28 +1490,36 @@ async def accepter_remplacement(demande_id: str, remplacant_id: str, tenant_id: 
             logger.warning(f"⚠️ Aucune assignation trouvée pour le demandeur {demande_data['demandeur_id']} le {demande_data['date']}")
         
         demandeur = await db.users.find_one({"id": demande_data["demandeur_id"]})
-        await send_push_notification_to_users(
-            user_ids=[demande_data["demandeur_id"]],
-            title="✅ Remplacement trouvé!",
-            body=f"{remplacant.get('prenom', '')} {remplacant.get('nom', '')} a accepté de vous remplacer le {demande_data['date']}",
-            data={
-                "type": "remplacement_accepte",
-                "demande_id": demande_id,
-                "remplacant_id": remplacant_id
-            }
-        )
         
-        await db.notifications.insert_one({
-            "id": str(uuid.uuid4()),
-            "tenant_id": tenant_id,
-            "user_id": demande_data["demandeur_id"],
-            "type": "remplacement_accepte",
-            "titre": "✅ Remplacement trouvé!",
-            "message": f"{remplacant.get('prenom', '')} {remplacant.get('nom', '')} a accepté de vous remplacer le {demande_data['date']}.",
-            "lu": False,
-            "data": {"demande_id": demande_id, "remplacant_id": remplacant_id},
-            "created_at": datetime.now(timezone.utc).isoformat()
-        })
+        # Notifications au demandeur (non bloquantes)
+        try:
+            await send_push_notification_to_users(
+                user_ids=[demande_data["demandeur_id"]],
+                title="✅ Remplacement trouvé!",
+                body=f"{remplacant.get('prenom', '')} {remplacant.get('nom', '')} a accepté de vous remplacer le {demande_data['date']}",
+                data={
+                    "type": "remplacement_accepte",
+                    "demande_id": demande_id,
+                    "remplacant_id": remplacant_id
+                }
+            )
+        except Exception as notif_error:
+            logger.warning(f"⚠️ Erreur notification push demandeur: {notif_error}")
+        
+        try:
+            await db.notifications.insert_one({
+                "id": str(uuid.uuid4()),
+                "tenant_id": tenant_id,
+                "user_id": demande_data["demandeur_id"],
+                "type": "remplacement_accepte",
+                "titre": "✅ Remplacement trouvé!",
+                "message": f"{remplacant.get('prenom', '')} {remplacant.get('nom', '')} a accepté de vous remplacer le {demande_data['date']}.",
+                "lu": False,
+                "data": {"demande_id": demande_id, "remplacant_id": remplacant_id},
+                "created_at": datetime.now(timezone.utc).isoformat()
+            })
+        except Exception as notif_error:
+            logger.warning(f"⚠️ Erreur insertion notification demandeur: {notif_error}")
         
         # Envoyer un email au demandeur pour l'informer que son remplacement a été trouvé
         try:
