@@ -114,6 +114,9 @@ class ParametresRemplacements(BaseModel):
     jours_periode_personnalisee: int = 7
     activer_regroupement_heures: bool = False
     duree_max_regroupement: int = 24
+    # Archivage automatique
+    delai_archivage_jours: int = 365  # 1 an par défaut (0 = désactivé)
+    archivage_auto_actif: bool = True
 
 
 # ==================== FONCTIONS HELPER ====================
