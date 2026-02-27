@@ -2013,6 +2013,13 @@ async def create_demande_remplacement(tenant_slug: str, demande: DemandeRemplace
             user_nom=f"{current_user.prenom} {current_user.nom}"
         ))
         
+        # Broadcaster la mise à jour pour actualiser les pages des autres utilisateurs
+        asyncio.create_task(broadcast_remplacement_update(tenant_slug, "nouvelle_demande", {
+            "demande_id": demande_obj.id,
+            "demandeur_nom": f"{current_user.prenom} {current_user.nom}",
+            "date": demande.date
+        }))
+        
         cleaned_demande = clean_mongo_doc(demande_obj.dict())
         return DemandeRemplacement(**cleaned_demande)
         
