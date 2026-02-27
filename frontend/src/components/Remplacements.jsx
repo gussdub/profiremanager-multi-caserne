@@ -323,6 +323,48 @@ const Remplacements = () => {
     }
   };
 
+  // Handler pour relancer une demande expirée/annulée
+  const handleRelancerDemande = async (demandeId) => {
+    if (window.confirm("Voulez-vous relancer cette demande? La recherche de remplaçant repartira de zéro.")) {
+      try {
+        await apiPut(tenantSlug, `/remplacements/${demandeId}/relancer`, {});
+        toast({
+          title: "🔄 Demande relancée",
+          description: "La recherche de remplaçant a redémarré.",
+          variant: "success"
+        });
+        fetchData();
+      } catch (error) {
+        toast({
+          title: "Erreur",
+          description: error.message || "Impossible de relancer la demande",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
+  // Handler pour supprimer une demande (admin uniquement)
+  const handleSupprimerDemande = async (demandeId) => {
+    if (window.confirm("Êtes-vous sûr de vouloir supprimer cette demande? Cette action est irréversible.")) {
+      try {
+        await apiDelete(tenantSlug, `/remplacements/${demandeId}`);
+        toast({
+          title: "🗑️ Demande supprimée",
+          description: "La demande a été supprimée.",
+          variant: "success"
+        });
+        fetchData();
+      } catch (error) {
+        toast({
+          title: "Erreur",
+          description: error.message || "Impossible de supprimer la demande",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
   const getStatutColor = (statut) => {
     switch (statut) {
       case 'en_cours': case 'en_attente': return '#F59E0B';
