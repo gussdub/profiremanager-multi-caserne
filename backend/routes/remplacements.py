@@ -2702,6 +2702,11 @@ async def supprimer_demande_remplacement(
     
     logger.info(f"🗑️ Demande {demande_id} supprimée par {current_user.prenom} {current_user.nom}")
     
+    # Broadcaster la mise à jour pour actualiser les pages des autres utilisateurs
+    asyncio.create_task(broadcast_remplacement_update(tenant_slug, "supprimee", {
+        "demande_id": demande_id
+    }))
+    
     return {
         "message": "Demande supprimée avec succès",
         "demande_id": demande_id
