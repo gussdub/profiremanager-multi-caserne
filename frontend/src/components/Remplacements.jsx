@@ -1037,6 +1037,12 @@ const Remplacements = () => {
                           Annulée par: {demande.annule_par_nom}
                         </div>
                       )}
+                      {/* Afficher qui a approuvé manuellement si applicable */}
+                      {demande.statut === 'approuve_manuellement' && demande.approuve_par_nom && (
+                        <div style={{ marginTop: '6px', fontSize: '12px', color: '#059669' }}>
+                          Approuvée par: {demande.approuve_par_nom}
+                        </div>
+                      )}
                       {/* Afficher qui a relancé si applicable */}
                       {demande.relance_par_nom && (
                         <div style={{ marginTop: '6px', fontSize: '12px', color: '#059669' }}>
