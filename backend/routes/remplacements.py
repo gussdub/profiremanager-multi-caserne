@@ -2411,6 +2411,12 @@ async def get_suivi_remplacement(
         if relance_par:
             relance_par_nom = f"{relance_par.get('prenom', '')} {relance_par.get('nom', '')}"
     
+    approuve_par_nom = None
+    if demande.get("approuve_par_id"):
+        approuve_par = await db.users.find_one({"id": demande["approuve_par_id"]})
+        if approuve_par:
+            approuve_par_nom = f"{approuve_par.get('prenom', '')} {approuve_par.get('nom', '')}"
+    
     suivi = {
         "demande_id": demande_id,
         "statut": demande.get("statut"),
@@ -2435,11 +2441,13 @@ async def get_suivi_remplacement(
             "en_attente": nb_en_attente,
             "sans_reponse": nb_tentatives - nb_acceptes - nb_refuses - nb_en_attente
         },
-        # Informations d'annulation/relance
+        # Informations d'annulation/relance/approbation
         "annule_par_nom": annule_par_nom,
         "date_annulation": demande.get("date_annulation"),
         "relance_par_nom": relance_par_nom,
         "date_relance": demande.get("date_relance"),
+        "approuve_par_nom": approuve_par_nom,
+        "date_approbation": demande.get("date_approbation"),
         # Informations de pause silencieuse
         "en_pause_silencieuse": demande.get("en_pause_silencieuse", False),
         "reprise_contacts_prevue": demande.get("reprise_contacts_prevue")
