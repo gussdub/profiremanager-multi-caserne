@@ -1573,15 +1573,18 @@ async def accepter_remplacement(demande_id: str, remplacant_id: str, tenant_id: 
         ]
         
         if autres_remplacants_ids:
-            await send_push_notification_to_users(
-                user_ids=autres_remplacants_ids,
-                title="Remplacement pourvu",
-                body=f"Le remplacement du {demande_data['date']} a été pourvu par un autre pompier",
-                data={
-                    "type": "remplacement_pourvu",
-                    "demande_id": demande_id
-                }
-            )
+            try:
+                await send_push_notification_to_users(
+                    user_ids=autres_remplacants_ids,
+                    title="Remplacement pourvu",
+                    body=f"Le remplacement du {demande_data['date']} a été pourvu par un autre pompier",
+                    data={
+                        "type": "remplacement_pourvu",
+                        "demande_id": demande_id
+                    }
+                )
+            except Exception as notif_error:
+                logger.warning(f"⚠️ Erreur notification autres remplaçants: {notif_error}")
         
         type_garde = await db.types_garde.find_one({"id": demande_data["type_garde_id"], "tenant_id": tenant_id})
         garde_nom = type_garde['nom'] if type_garde else 'garde'
