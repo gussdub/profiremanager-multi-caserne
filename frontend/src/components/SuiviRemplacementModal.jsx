@@ -327,6 +327,25 @@ const SuiviRemplacementModal = ({ demande, tenantSlug, onClose, users = [] }) =>
                       </div>
                     </div>
                   )}
+                  {suivi?.approuve_par_nom && suivi?.statut === 'approuve_manuellement' && (
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '8px', 
+                      color: '#059669',
+                      marginTop: '10px'
+                    }}>
+                      <span style={{ fontSize: '1.2rem' }}>✅</span>
+                      <div>
+                        <strong>Approuvée par {suivi.approuve_par_nom}</strong>
+                        {suivi.date_approbation && (
+                          <div style={{ fontSize: '0.8rem', color: '#9CA3AF' }}>
+                            le {new Date(suivi.date_approbation).toLocaleString('fr-FR')}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
