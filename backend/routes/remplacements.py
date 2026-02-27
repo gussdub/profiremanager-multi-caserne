@@ -1798,18 +1798,94 @@ async def refuser_remplacement(demande_id: str, remplacant_id: str, tenant_id: s
 
 
 async def verifier_et_traiter_timeouts():
-    """Fonction appelée périodiquement pour vérifier les demandes en timeout"""
+    """Fonction appelée périodiquement pour vérifier les demandes en timeout et les pauses silencieuses"""
     try:
         maintenant = datetime.now(timezone.utc)
         
+        # 1. Vérifier les demandes en pause silencieuse qui doivent reprendre
+        demandes_en_pause = await db.demandes_remplacement.find({
+            "statut": {"$in": ["en_cours", "en_attente"]},
+            "en_pause_silencieuse": True,
+            "reprise_contacts_prevue": {"$lte": maintenant.isoformat()}
+        }).to_list(length=None)
+        
+        for demande in demandes_en_pause:
+            tenant_id = demande["tenant_id"]
+            
+            # Vérifier si on est toujours dans les heures silencieuses
+            parametres = await db.parametres_remplacements.find_one({"tenant_id": tenant_id})
+            heures_silencieuses_actif = parametres.get("heures_silencieuses_actif", True) if parametres else True
+            heure_debut_silence = parametres.get("heure_debut_silence", "21:00") if parametres else "21:00"
+            heure_fin_silence = parametres.get("heure_fin_silence", "07:00") if parametres else "07:00"
+            
+            if heures_silencieuses_actif and est_dans_heures_silencieuses(heure_debut_silence, heure_fin_silence):
+                # Toujours en heures silencieuses, reporter
+                prochaine_reprise = calculer_prochaine_heure_active(heure_fin_silence)
+                await db.demandes_remplacement.update_one(
+                    {"id": demande["id"]},
+                    {"$set": {"reprise_contacts_prevue": prochaine_reprise.isoformat()}}
+                )
+                continue
+            
+            # Sortie des heures silencieuses - reprendre les contacts
+            logger.info(f"☀️ Fin des heures silencieuses, reprise des contacts pour demande {demande['id']}")
+            
+            await db.demandes_remplacement.update_one(
+                {"id": demande["id"]},
+                {
+                    "$set": {
+                        "en_pause_silencieuse": False,
+                        "updated_at": maintenant
+                    },
+                    "$unset": {"reprise_contacts_prevue": ""}
+                }
+            )
+            
+            # Relancer la recherche
+            await lancer_recherche_remplacant(demande["id"], tenant_id)
+        
+        if demandes_en_pause:
+            logger.info(f"☀️ {len(demandes_en_pause)} demande(s) reprises après pause silencieuse")
+        
+        # 2. Vérifier les demandes en timeout (processus existant)
         demandes_cursor = db.demandes_remplacement.find({
             "statut": "en_cours",
+            "en_pause_silencieuse": {"$ne": True},  # Exclure les demandes en pause
             "date_prochaine_tentative": {"$lte": maintenant}
         })
         
         demandes_timeout = await demandes_cursor.to_list(length=None)
         
         for demande in demandes_timeout:
+            tenant_id = demande["tenant_id"]
+            priorite = demande.get("priorite", "normal")
+            
+            # Vérifier si on doit respecter les heures silencieuses
+            parametres = await db.parametres_remplacements.find_one({"tenant_id": tenant_id})
+            heures_silencieuses_actif = parametres.get("heures_silencieuses_actif", True) if parametres else True
+            heure_debut_silence = parametres.get("heure_debut_silence", "21:00") if parametres else "21:00"
+            heure_fin_silence = parametres.get("heure_fin_silence", "07:00") if parametres else "07:00"
+            
+            # Les demandes urgentes/hautes ignorent les heures silencieuses
+            if priorite not in ["urgent", "haute"] and heures_silencieuses_actif:
+                if est_dans_heures_silencieuses(heure_debut_silence, heure_fin_silence):
+                    # Mettre en pause jusqu'au matin
+                    prochaine_reprise = calculer_prochaine_heure_active(heure_fin_silence)
+                    
+                    logger.info(f"🌙 Demande {demande['id']} mise en pause silencieuse jusqu'à {prochaine_reprise}")
+                    
+                    await db.demandes_remplacement.update_one(
+                        {"id": demande["id"]},
+                        {
+                            "$set": {
+                                "en_pause_silencieuse": True,
+                                "reprise_contacts_prevue": prochaine_reprise.isoformat(),
+                                "updated_at": maintenant
+                            }
+                        }
+                    )
+                    continue  # Ne pas traiter maintenant
+            
             logger.info(f"⏱️ Timeout atteint pour demande {demande['id']}, relance de la recherche")
             
             for remplacant_id in demande.get("remplacants_contactes_ids", []):
