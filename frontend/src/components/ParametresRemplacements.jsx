@@ -127,6 +127,49 @@ const ParametresRemplacements = ({
             </div>
           </div>
         </div>
+        
+        {/* Section Archivage */}
+        <div className="settings-row" style={{ marginTop: '24px' }}>
+          <div className="settings-column">
+            <h4 className="compact-title">🗑️ Archivage automatique</h4>
+            <p>Nettoyage automatique des anciennes demandes de remplacement terminées</p>
+            
+            <div className="setting-inputs-compact">
+              <label className="validation-rule-compact" style={{ marginBottom: '16px' }}>
+                <input
+                  type="checkbox"
+                  checked={systemSettings.archivage_auto_actif !== false}
+                  onChange={(e) => handleSettingChange('archivage_auto_actif', e.target.checked)}
+                  data-testid="toggle-archivage-auto"
+                />
+                <div className="rule-content-compact">
+                  <span className="rule-title">Activer l'archivage automatique</span>
+                  <span className="rule-description">Supprime automatiquement les demandes terminées selon le délai configuré</span>
+                </div>
+              </label>
+              
+              <div className="input-group-compact">
+                <Label>Délai avant archivage</Label>
+                <select 
+                  className="form-select"
+                  value={systemSettings.delai_archivage_jours || 365}
+                  onChange={(e) => handleSettingChange('delai_archivage_jours', parseInt(e.target.value))}
+                  data-testid="delai-archivage-select"
+                  disabled={!systemSettings.archivage_auto_actif}
+                >
+                  <option value={30}>1 mois</option>
+                  <option value={90}>3 mois</option>
+                  <option value={180}>6 mois</option>
+                  <option value={365}>1 an</option>
+                  <option value={730}>2 ans</option>
+                </select>
+                <span className="input-description">
+                  Les demandes acceptées, expirées ou annulées plus anciennes seront supprimées automatiquement
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
