@@ -2339,7 +2339,130 @@ async def refuser_demande_remplacement(
         }
 
 
-@router.get("/remplacement-action/{token}/{action}")
+@router.put("/{tenant_slug}/remplacements/{demande_id}/relancer")
+async def relancer_demande_remplacement(
+    tenant_slug: str,
+    demande_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Relancer une demande de remplacement expirée (repart de zéro)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    demande_data = await db.demandes_remplacement.find_one({"id": demande_id, "tenant_id": tenant.id})
+    if not demande_data:
+        raise HTTPException(status_code=404, detail="Demande non trouvée")
+    
+    # Vérifier que la demande est expirée ou annulée
+    if demande_data["statut"] not in ["expiree", "annulee"]:
+        raise HTTPException(status_code=400, detail="Seules les demandes expirées ou annulées peuvent être relancées")
+    
+    # Vérifier que l'utilisateur a le droit (admin, superviseur, ou demandeur original)
+    if current_user.role not in ["admin", "superviseur"] and current_user.id != demande_data.get("demandeur_id"):
+        raise HTTPException(status_code=403, detail="Vous n'êtes pas autorisé à relancer cette demande")
+    
+    # Vérifier que la date n'est pas passée
+    from datetime import datetime, timezone
+    date_garde = demande_data.get("date")
+    if date_garde:
+        try:
+            date_obj = datetime.strptime(date_garde, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            if date_obj.date() < datetime.now(timezone.utc).date():
+                raise HTTPException(status_code=400, detail="Impossible de relancer une demande pour une date passée")
+        except ValueError:
+            pass
+    
+    maintenant = datetime.now(timezone.utc)
+    
+    # Réinitialiser la demande (repartir de zéro)
+    await db.demandes_remplacement.update_one(
+        {"id": demande_id},
+        {
+            "$set": {
+                "statut": "en_cours",
+                "remplacant_id": None,
+                "remplacants_contactes_ids": [],
+                "tentatives_historique": [],  # Réinitialiser l'historique
+                "niveau_actuel": 2,  # Recommencer au niveau N2
+                "relance_par_id": current_user.id,
+                "date_relance": maintenant.isoformat(),
+                "updated_at": maintenant
+            },
+            "$unset": {
+                "annule_par_id": "",
+                "date_annulation": "",
+                "date_expiration": ""
+            }
+        }
+    )
+    
+    logger.info(f"🔄 Demande {demande_id} relancée par {current_user.prenom} {current_user.nom}")
+    
+    # Lancer la recherche de remplaçant en arrière-plan
+    asyncio.create_task(lancer_recherche_remplacant(demande_id, tenant.id))
+    
+    return {
+        "message": "Demande relancée avec succès. La recherche de remplaçant a redémarré.",
+        "demande_id": demande_id
+    }
+
+
+@router.delete("/{tenant_slug}/remplacements/{demande_id}")
+async def supprimer_demande_remplacement(
+    tenant_slug: str,
+    demande_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer une demande de remplacement (admin uniquement)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Admin uniquement
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent supprimer des demandes")
+    
+    demande_data = await db.demandes_remplacement.find_one({"id": demande_id, "tenant_id": tenant.id})
+    if not demande_data:
+        raise HTTPException(status_code=404, detail="Demande non trouvée")
+    
+    # Supprimer la demande
+    await db.demandes_remplacement.delete_one({"id": demande_id, "tenant_id": tenant.id})
+    
+    logger.info(f"🗑️ Demande {demande_id} supprimée par {current_user.prenom} {current_user.nom}")
+    
+    return {
+        "message": "Demande supprimée avec succès",
+        "demande_id": demande_id
+    }
+
+
+@router.post("/{tenant_slug}/remplacements/nettoyer")
+async def nettoyer_anciennes_demandes(
+    tenant_slug: str,
+    delai_jours: int = 365,
+    current_user: User = Depends(get_current_user)
+):
+    """Nettoyer les anciennes demandes terminées (admin uniquement)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Admin uniquement
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent nettoyer les demandes")
+    
+    from datetime import datetime, timezone, timedelta
+    date_limite = datetime.now(timezone.utc) - timedelta(days=delai_jours)
+    
+    # Supprimer les demandes terminées (accepte, expiree, annulee, refusee) plus anciennes que le délai
+    result = await db.demandes_remplacement.delete_many({
+        "tenant_id": tenant.id,
+        "statut": {"$in": ["accepte", "expiree", "annulee", "refusee", "approuve_manuellement"]},
+        "created_at": {"$lt": date_limite.isoformat()}
+    })
+    
+    logger.info(f"🗑️ {result.deleted_count} demande(s) nettoyée(s) par {current_user.prenom} {current_user.nom}")
+    
+    return {
+        "message": f"{result.deleted_count} demande(s) supprimée(s)",
+        "deleted_count": result.deleted_count
+    }
 async def action_remplacement_via_email(token: str, action: str):
     """Traite une action de remplacement via le lien email"""
     frontend_url = os.environ.get('FRONTEND_URL', 'https://www.profiremanager.ca')
