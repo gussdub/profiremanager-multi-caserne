@@ -186,12 +186,26 @@ const Remplacements = () => {
     console.log('[Remplacements] Mise à jour WebSocket:', data);
     fetchData();
     
-    if (data.type === 'remplacement_update' && data.action === 'accepte') {
-      toast({
-        title: "✅ Remplacement accepté",
-        description: `${data.data?.remplacant_nom || 'Un remplaçant'} a accepté une demande`,
-        duration: 5000
-      });
+    // Notifications toast selon l'action
+    if (data.type === 'remplacement_update') {
+      const toastMessages = {
+        'accepte': { title: "✅ Remplacement accepté", desc: `${data.data?.remplacant_nom || 'Un remplaçant'} a accepté une demande` },
+        'nouvelle_demande': { title: "📋 Nouvelle demande", desc: `${data.data?.demandeur_nom || 'Quelqu\'un'} cherche un remplaçant` },
+        'approuve_manuellement': { title: "✅ Demande approuvée", desc: `Approuvée par ${data.data?.approuve_par_nom || 'un superviseur'}` },
+        'annulee': { title: "❌ Demande annulée", desc: `Annulée par ${data.data?.annule_par_nom || 'un superviseur'}` },
+        'relancee': { title: "🔄 Demande relancée", desc: `Relancée par ${data.data?.relance_par_nom || 'un utilisateur'}` },
+        'supprimee': { title: "🗑️ Demande supprimée", desc: "Une demande a été supprimée" },
+        'expiree': { title: "⏱️ Demande expirée", desc: "Aucun remplaçant trouvé" }
+      };
+      
+      const msg = toastMessages[data.action];
+      if (msg) {
+        toast({
+          title: msg.title,
+          description: msg.desc,
+          duration: 5000
+        });
+      }
     }
   }, [fetchData, toast]);
 
