@@ -2587,6 +2587,13 @@ async def refuser_demande_remplacement(
                 "created_at": maintenant.isoformat()
             })
         
+        # Broadcaster la mise à jour pour actualiser les pages des autres utilisateurs
+        asyncio.create_task(broadcast_remplacement_update(tenant_slug, "annulee", {
+            "demande_id": demande_id,
+            "annule_par_nom": f"{current_user.prenom} {current_user.nom}",
+            "date": demande_data.get("date")
+        }))
+        
         return {
             "message": "Demande annulée avec succès",
             "demande_id": demande_id
