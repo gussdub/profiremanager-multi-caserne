@@ -126,6 +126,10 @@ class ParametresRemplacements(BaseModel):
     # Archivage automatique
     delai_archivage_jours: int = 365  # 1 an par défaut (0 = désactivé)
     archivage_auto_actif: bool = True
+    # Heures silencieuses (pause nocturne)
+    heures_silencieuses_actif: bool = True
+    heure_debut_silence: str = "21:00"  # Format HH:MM
+    heure_fin_silence: str = "07:00"    # Format HH:MM
 
 
 # ==================== FONCTIONS HELPER ====================
