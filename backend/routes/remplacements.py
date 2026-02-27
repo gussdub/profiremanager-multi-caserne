@@ -1663,7 +1663,8 @@ async def refuser_remplacement(demande_id: str, remplacant_id: str, tenant_id: s
         demande_updated = await db.demandes_remplacement.find_one({"id": demande_id})
         if not demande_updated.get("remplacants_contactes_ids"):
             logger.info(f"🔄 Tous les remplaçants ont refusé, relance de la recherche pour demande {demande_id}")
-            await lancer_recherche_remplacant(demande_id, tenant_id)
+            # Relancer la recherche en arrière-plan pour ne pas bloquer la réponse
+            asyncio.create_task(lancer_recherche_remplacant(demande_id, tenant_id))
         
         logger.info(f"❌ Remplacement refusé par remplaçant {remplacant_id} pour demande {demande_id}")
         return True
