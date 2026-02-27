@@ -170,6 +170,77 @@ const ParametresRemplacements = ({
             </div>
           </div>
         </div>
+        
+        {/* Section Heures Silencieuses */}
+        <div className="settings-row" style={{ marginTop: '24px' }}>
+          <div className="settings-column">
+            <h4 className="compact-title">🌙 Heures silencieuses</h4>
+            <p>Pause des contacts pour les demandes de priorité Normale et Faible</p>
+            
+            <div className="setting-inputs-compact">
+              <label className="validation-rule-compact" style={{ marginBottom: '16px' }}>
+                <input
+                  type="checkbox"
+                  checked={systemSettings.heures_silencieuses_actif !== false}
+                  onChange={(e) => handleSettingChange('heures_silencieuses_actif', e.target.checked)}
+                  data-testid="toggle-heures-silencieuses"
+                />
+                <div className="rule-content-compact">
+                  <span className="rule-title">Activer les heures silencieuses</span>
+                  <span className="rule-description">Ne pas contacter les remplaçants pendant la nuit (priorité Normale/Faible uniquement)</span>
+                </div>
+              </label>
+              
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <div className="input-group-compact" style={{ flex: 1, minWidth: '140px' }}>
+                  <Label>Pause de</Label>
+                  <select 
+                    className="form-select"
+                    value={systemSettings.heure_debut_silence || "21:00"}
+                    onChange={(e) => handleSettingChange('heure_debut_silence', e.target.value)}
+                    data-testid="heure-debut-silence"
+                    disabled={!systemSettings.heures_silencieuses_actif}
+                  >
+                    <option value="19:00">19:00</option>
+                    <option value="20:00">20:00</option>
+                    <option value="21:00">21:00</option>
+                    <option value="22:00">22:00</option>
+                    <option value="23:00">23:00</option>
+                  </select>
+                </div>
+                
+                <div className="input-group-compact" style={{ flex: 1, minWidth: '140px' }}>
+                  <Label>à</Label>
+                  <select 
+                    className="form-select"
+                    value={systemSettings.heure_fin_silence || "07:00"}
+                    onChange={(e) => handleSettingChange('heure_fin_silence', e.target.value)}
+                    data-testid="heure-fin-silence"
+                    disabled={!systemSettings.heures_silencieuses_actif}
+                  >
+                    <option value="05:00">05:00</option>
+                    <option value="06:00">06:00</option>
+                    <option value="07:00">07:00</option>
+                    <option value="08:00">08:00</option>
+                    <option value="09:00">09:00</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div style={{ 
+                marginTop: '12px', 
+                padding: '10px 14px', 
+                background: '#FEF3C7', 
+                borderRadius: '8px',
+                border: '1px solid #FCD34D',
+                fontSize: '0.85rem',
+                color: '#92400E'
+              }}>
+                <strong>ℹ️ Note:</strong> Les demandes Urgentes et Hautes ne sont pas affectées par les heures silencieuses et seront traitées immédiatement.
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
