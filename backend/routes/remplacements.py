@@ -2085,6 +2085,18 @@ async def get_demandes_remplacement(tenant_slug: str, current_user: User = Depen
             if remplacant:
                 cleaned["remplacant_nom"] = f"{remplacant.get('prenom', '')} {remplacant.get('nom', '')}".strip()
         
+        # Récupérer le nom de la personne qui a annulé
+        if cleaned.get("annule_par_id") and not cleaned.get("annule_par_nom"):
+            annule_par = await db.users.find_one({"id": cleaned["annule_par_id"]}, {"prenom": 1, "nom": 1})
+            if annule_par:
+                cleaned["annule_par_nom"] = f"{annule_par.get('prenom', '')} {annule_par.get('nom', '')}".strip()
+        
+        # Récupérer le nom de la personne qui a relancé
+        if cleaned.get("relance_par_id") and not cleaned.get("relance_par_nom"):
+            relance_par = await db.users.find_one({"id": cleaned["relance_par_id"]}, {"prenom": 1, "nom": 1})
+            if relance_par:
+                cleaned["relance_par_nom"] = f"{relance_par.get('prenom', '')} {relance_par.get('nom', '')}".strip()
+        
         enriched_demandes.append(DemandeRemplacement(**cleaned))
     
     return enriched_demandes
