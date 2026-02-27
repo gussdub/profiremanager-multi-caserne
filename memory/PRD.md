@@ -24,6 +24,19 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 
 ## Recent Fixes (February 2026)
 
+### NEW - Module Remplacement Amélioré (27 Feb 2026)
+- **Affichage "Annulée par":** Les demandes annulées affichent maintenant le nom de la personne qui a annulé (visible sur la carte et dans le Suivi)
+- **Bouton "Relancer":** Les demandes expirées ou annulées peuvent être relancées (visible pour tous). Repart de zéro avec une nouvelle recherche
+- **Bouton "Supprimer":** Admin peut supprimer une demande spécifique (croix rouge)
+- **Archivage automatique:** 
+  - Configuration dans Paramètres > Remplacement (délai: 1 mois à 2 ans)
+  - Job quotidien qui nettoie les anciennes demandes terminées
+  - Endpoint de nettoyage manuel disponible pour admin
+- **Endpoints ajoutés:**
+  - `PUT /{tenant}/remplacements/{id}/relancer` - Relancer une demande
+  - `DELETE /{tenant}/remplacements/{id}` - Supprimer une demande
+  - `POST /{tenant}/remplacements/nettoyer` - Nettoyage manuel
+
 ### NEW - Règle Officier pour Remplacements (25 Feb 2026)
 - **Fonctionnalité**: Implémentation de la "règle officier" dans la recherche de remplaçants
 - **Logique**:
