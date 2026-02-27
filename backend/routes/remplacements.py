@@ -2180,6 +2180,19 @@ async def get_suivi_remplacement(
     
     type_garde = await db.types_garde.find_one({"id": demande.get("type_garde_id"), "tenant_id": tenant.id})
     
+    # Récupérer les informations sur l'annulation/relance si présentes
+    annule_par_nom = None
+    if demande.get("annule_par_id"):
+        annule_par = await db.users.find_one({"id": demande["annule_par_id"]})
+        if annule_par:
+            annule_par_nom = f"{annule_par.get('prenom', '')} {annule_par.get('nom', '')}"
+    
+    relance_par_nom = None
+    if demande.get("relance_par_id"):
+        relance_par = await db.users.find_one({"id": demande["relance_par_id"]})
+        if relance_par:
+            relance_par_nom = f"{relance_par.get('prenom', '')} {relance_par.get('nom', '')}"
+    
     suivi = {
         "demande_id": demande_id,
         "statut": demande.get("statut"),
@@ -2203,7 +2216,12 @@ async def get_suivi_remplacement(
             "refuses": nb_refuses,
             "en_attente": nb_en_attente,
             "sans_reponse": nb_tentatives - nb_acceptes - nb_refuses - nb_en_attente
-        }
+        },
+        # Informations d'annulation/relance
+        "annule_par_nom": annule_par_nom,
+        "date_annulation": demande.get("date_annulation"),
+        "relance_par_nom": relance_par_nom,
+        "date_relance": demande.get("date_relance")
     }
     
     logger.info(f"📋 Suivi demande {demande_id}: {nb_tentatives} tentatives, statut={demande.get('statut')}")
