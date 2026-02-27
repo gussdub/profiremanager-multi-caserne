@@ -1290,6 +1290,9 @@ async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
             delai_attente_minutes = 120  # 2 heures par défaut
             nombre_simultane = 1
             max_contacts = 5
+            heures_silencieuses_actif = True
+            heure_debut_silence = "21:00"
+            heure_fin_silence = "07:00"
             logger.info(f"⚙️ Paramètres remplacements: Aucun trouvé, utilisation des valeurs par défaut")
         else:
             mode_notification = parametres_data.get("mode_notification", "un_par_un")
@@ -1297,7 +1300,33 @@ async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
             delai_attente_minutes = parametres_data.get("delai_attente_minutes") or (parametres_data.get("delai_attente_heures", 2) * 60)
             nombre_simultane = parametres_data.get("nombre_simultane", 3)
             max_contacts = parametres_data.get("max_contacts", 5)
+            heures_silencieuses_actif = parametres_data.get("heures_silencieuses_actif", True)
+            heure_debut_silence = parametres_data.get("heure_debut_silence", "21:00")
+            heure_fin_silence = parametres_data.get("heure_fin_silence", "07:00")
             logger.info(f"⚙️ Paramètres remplacements chargés: délai={delai_attente_minutes}min, mode={mode_notification}, max_contacts={max_contacts}")
+        
+        # Vérifier les heures silencieuses pour les demandes non-urgentes
+        priorite = demande_data.get("priorite", "normal")
+        
+        # Les demandes Urgentes et Hautes ignorent les heures silencieuses
+        if priorite not in ["urgent", "haute"] and heures_silencieuses_actif:
+            if est_dans_heures_silencieuses(heure_debut_silence, heure_fin_silence):
+                # On est dans les heures de pause - reporter au lendemain matin
+                prochaine_reprise = calculer_prochaine_heure_active(heure_fin_silence)
+                
+                logger.info(f"🌙 Heures silencieuses actives ({heure_debut_silence}-{heure_fin_silence}). Demande {demande_id} (priorité: {priorite}) mise en pause jusqu'à {prochaine_reprise}")
+                
+                await db.demandes_remplacement.update_one(
+                    {"id": demande_id},
+                    {
+                        "$set": {
+                            "en_pause_silencieuse": True,
+                            "reprise_contacts_prevue": prochaine_reprise.isoformat(),
+                            "updated_at": datetime.now(timezone.utc)
+                        }
+                    }
+                )
+                return  # Ne pas continuer - la demande sera reprise par le job de timeout
         
         exclus_ids = [t.get("user_id") for t in demande_data.get("tentatives_historique", [])]
         
