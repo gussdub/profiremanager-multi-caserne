@@ -24,6 +24,17 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 
 ## Recent Fixes (February 2026)
 
+### NEW - Heures Silencieuses pour Remplacements (27 Feb 2026)
+- **Fonctionnalité:** Pause des contacts pendant la nuit pour les demandes de priorité Normale/Faible
+- **Configuration:** Paramètres > Remplacement > Heures silencieuses (ex: 21:00 - 07:00)
+- **Comportement:**
+  - Demandes **Urgentes/Hautes**: Contacts 24/7 (pas de pause)
+  - Demandes **Normales/Faibles**: Pause pendant les heures configurées
+  - Si demande créée pendant la pause → premier contact reporté au matin
+  - Si délai de réponse expire pendant la pause → contact suivant reporté au matin
+- **Fuseau horaire:** America/Montreal
+- **Affichage:** "🌙 En pause jusqu'à 07:00" dans le Suivi
+
 ### NEW - Module Remplacement Amélioré (27 Feb 2026)
 - **Affichage "Annulée par":** Les demandes annulées affichent maintenant le nom de la personne qui a annulé (visible sur la carte et dans le Suivi)
 - **Bouton "Relancer":** Les demandes expirées ou annulées peuvent être relancées (visible pour tous). Repart de zéro avec une nouvelle recherche
