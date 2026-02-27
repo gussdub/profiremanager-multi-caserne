@@ -86,6 +86,9 @@ class DemandeRemplacement(BaseModel):
     relance_par_id: Optional[str] = None
     relance_par_nom: Optional[str] = None
     date_relance: Optional[str] = None
+    approuve_par_id: Optional[str] = None
+    approuve_par_nom: Optional[str] = None
+    date_approbation: Optional[str] = None
 
 
 class DemandeRemplacementCreate(BaseModel):
