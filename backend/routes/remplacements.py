@@ -77,6 +77,15 @@ class DemandeRemplacement(BaseModel):
     nombre_tentatives: int = 0
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    # Champs enrichis
+    demandeur_nom: Optional[str] = None
+    remplacant_nom: Optional[str] = None
+    annule_par_id: Optional[str] = None
+    annule_par_nom: Optional[str] = None
+    date_annulation: Optional[str] = None
+    relance_par_id: Optional[str] = None
+    relance_par_nom: Optional[str] = None
+    date_relance: Optional[str] = None
 
 
 class DemandeRemplacementCreate(BaseModel):
