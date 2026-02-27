@@ -2668,6 +2668,12 @@ async def relancer_demande_remplacement(
     # Lancer la recherche de remplaçant en arrière-plan
     asyncio.create_task(lancer_recherche_remplacant(demande_id, tenant.id))
     
+    # Broadcaster la mise à jour pour actualiser les pages des autres utilisateurs
+    asyncio.create_task(broadcast_remplacement_update(tenant_slug, "relancee", {
+        "demande_id": demande_id,
+        "relance_par_nom": f"{current_user.prenom} {current_user.nom}"
+    }))
+    
     return {
         "message": "Demande relancée avec succès. La recherche de remplaçant a redémarré.",
         "demande_id": demande_id
