@@ -1031,8 +1031,21 @@ const Remplacements = () => {
                         <span>Demandé par: {demande.demandeur_nom || getUserName(demande.demandeur_id)} </span>
                         <span>Le: {new Date(demande.created_at).toLocaleDateString('fr-FR')}</span>
                       </div>
+                      {/* Afficher qui a annulé si applicable */}
+                      {demande.statut === 'annulee' && demande.annule_par_nom && (
+                        <div style={{ marginTop: '6px', fontSize: '12px', color: '#DC2626' }}>
+                          Annulée par: {demande.annule_par_nom}
+                        </div>
+                      )}
+                      {/* Afficher qui a relancé si applicable */}
+                      {demande.relance_par_nom && (
+                        <div style={{ marginTop: '6px', fontSize: '12px', color: '#059669' }}>
+                          Relancée par: {demande.relance_par_nom}
+                        </div>
+                      )}
                     </div>
                     
+                    {/* Actions pour admin/superviseur sur demandes en cours */}
                     {!['employe', 'pompier'].includes(user.role) && (demande.statut === 'en_cours' || demande.statut === 'en_attente') && (
                       <div className="demande-actions">
                         <Button 
@@ -1086,6 +1099,43 @@ const Remplacements = () => {
                         >
                           ❌
                         </Button>
+                      </div>
+                    )}
+                    
+                    {/* Bouton Relancer pour demandes expirées ou annulées */}
+                    {['expiree', 'annulee'].includes(demande.statut) && (
+                      <div className="demande-actions" style={{ marginTop: '10px' }}>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          data-testid={`relancer-replacement-${demande.id}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleRelancerDemande(demande.id);
+                          }}
+                          style={{ color: '#059669', borderColor: '#059669' }}
+                        >
+                          🔄 Relancer
+                        </Button>
+                        
+                        {/* Bouton supprimer pour admin uniquement */}
+                        {user.role === 'admin' && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            data-testid={`delete-replacement-${demande.id}`}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleSupprimerDemande(demande.id);
+                            }}
+                            style={{ color: '#DC2626' }}
+                            title="Supprimer définitivement cette demande"
+                          >
+                            🗑️
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>
