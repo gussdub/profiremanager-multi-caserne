@@ -1596,15 +1596,20 @@ async def accepter_remplacement(demande_id: str, remplacant_id: str, tenant_id: 
         
         type_garde = await db.types_garde.find_one({"id": demande_data["type_garde_id"], "tenant_id": tenant_id})
         garde_nom = type_garde['nom'] if type_garde else 'garde'
-        await creer_activite(
-            tenant_id=tenant_id,
-            type_activite="remplacement_accepte",
-            description=f"✅ {remplacant.get('prenom', '')} {remplacant.get('nom', '')} a accepté de remplacer {demandeur.get('prenom', '')} {demandeur.get('nom', '')} pour la {garde_nom} du {demande_data['date']}",
-            user_id=remplacant_id,
-            user_nom=f"{remplacant.get('prenom', '')} {remplacant.get('nom', '')}"
-        )
         
-        # Broadcaster la mise à jour à tous les clients
+        # Créer l'activité (non bloquant)
+        try:
+            await creer_activite(
+                tenant_id=tenant_id,
+                type_activite="remplacement_accepte",
+                description=f"✅ {remplacant.get('prenom', '')} {remplacant.get('nom', '')} a accepté de remplacer {demandeur.get('prenom', '')} {demandeur.get('nom', '')} pour la {garde_nom} du {demande_data['date']}",
+                user_id=remplacant_id,
+                user_nom=f"{remplacant.get('prenom', '')} {remplacant.get('nom', '')}"
+            )
+        except Exception as act_error:
+            logger.warning(f"⚠️ Erreur création activité: {act_error}")
+        
+        # Broadcaster la mise à jour à tous les clients (non bloquant)
         asyncio.create_task(broadcast_remplacement_update(tenant_slug or tenant_id, "accepte", {
             "demande_id": demande_id,
             "remplacant_id": remplacant_id,
