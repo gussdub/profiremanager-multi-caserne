@@ -2516,6 +2516,13 @@ async def accepter_demande_remplacement(
                 "created_at": maintenant.isoformat()
             })
         
+        # Broadcaster la mise à jour pour actualiser les pages des autres utilisateurs
+        asyncio.create_task(broadcast_remplacement_update(tenant_slug, "approuve_manuellement", {
+            "demande_id": demande_id,
+            "approuve_par_nom": f"{current_user.prenom} {current_user.nom}",
+            "date": demande_data.get("date")
+        }))
+        
         return {
             "message": "Demande approuvée avec succès",
             "demande_id": demande_id
