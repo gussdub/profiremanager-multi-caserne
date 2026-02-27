@@ -2294,6 +2294,12 @@ async def get_demandes_remplacement(tenant_slug: str, current_user: User = Depen
             if relance_par:
                 cleaned["relance_par_nom"] = f"{relance_par.get('prenom', '')} {relance_par.get('nom', '')}".strip()
         
+        # Récupérer le nom de la personne qui a approuvé manuellement
+        if cleaned.get("approuve_par_id") and not cleaned.get("approuve_par_nom"):
+            approuve_par = await db.users.find_one({"id": cleaned["approuve_par_id"]}, {"prenom": 1, "nom": 1})
+            if approuve_par:
+                cleaned["approuve_par_nom"] = f"{approuve_par.get('prenom', '')} {approuve_par.get('nom', '')}".strip()
+        
         enriched_demandes.append(DemandeRemplacement(**cleaned))
     
     return enriched_demandes
