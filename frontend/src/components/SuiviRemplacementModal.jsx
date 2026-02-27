@@ -330,6 +330,37 @@ const SuiviRemplacementModal = ({ demande, tenantSlug, onClose, users = [] }) =>
                 </div>
               )}
 
+              {/* Info pause silencieuse */}
+              {suivi?.en_pause_silencieuse && (
+                <div style={{
+                  background: '#EDE9FE',
+                  borderRadius: '10px',
+                  padding: '14px',
+                  marginBottom: '20px',
+                  border: '1px solid #C4B5FD',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}>
+                  <span style={{ fontSize: '1.5rem' }}>🌙</span>
+                  <div>
+                    <strong style={{ color: '#5B21B6' }}>En pause (heures silencieuses)</strong>
+                    <div style={{ fontSize: '0.85rem', color: '#7C3AED' }}>
+                      Les contacts reprendront {suivi.reprise_contacts_prevue ? (
+                        <>à <strong>{new Date(suivi.reprise_contacts_prevue).toLocaleString('fr-FR', { 
+                          weekday: 'long', 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}</strong></>
+                      ) : 'au prochain créneau actif'}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#9CA3AF', marginTop: '4px' }}>
+                      Les demandes Urgentes et Hautes ne sont pas affectées
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Timeline des contacts */}
               <h3 style={{ 
                 fontSize: '1rem', 
