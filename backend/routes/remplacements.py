@@ -2430,7 +2430,10 @@ async def get_suivi_remplacement(
         "annule_par_nom": annule_par_nom,
         "date_annulation": demande.get("date_annulation"),
         "relance_par_nom": relance_par_nom,
-        "date_relance": demande.get("date_relance")
+        "date_relance": demande.get("date_relance"),
+        # Informations de pause silencieuse
+        "en_pause_silencieuse": demande.get("en_pause_silencieuse", False),
+        "reprise_contacts_prevue": demande.get("reprise_contacts_prevue")
     }
     
     logger.info(f"📋 Suivi demande {demande_id}: {nb_tentatives} tentatives, statut={demande.get('statut')}")
