@@ -412,6 +412,9 @@ async def startup_event():
     # Démarrer le job périodique pour vérifier les timeouts de remplacement
     asyncio.create_task(job_verifier_timeouts_remplacements())
     
+    # Démarrer le nettoyage automatique des anciennes demandes de remplacement
+    asyncio.create_task(job_archivage_automatique_remplacements())
+    
     # Démarrer le nettoyage périodique des tâches SSE expirées
     asyncio.create_task(cleanup_expired_tasks())
     
