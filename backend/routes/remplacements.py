@@ -1537,29 +1537,35 @@ async def accepter_remplacement(demande_id: str, remplacant_id: str, tenant_id: 
         demandeur_nom = f"{demandeur.get('prenom', '')} {demandeur.get('nom', '')}"
         
         if superviseur_ids:
-            # Push notification
-            await send_push_notification_to_users(
-                user_ids=superviseur_ids,
-                title="✅ Remplacement confirmé",
-                body=f"{remplacant_nom} remplace {demandeur_nom} le {demande_data['date']}",
-                data={
-                    "type": "remplacement_accepte",
-                    "demande_id": demande_id
-                }
-            )
-            
-            # Notification in-app + email pour chaque superviseur
-            for sup in superviseurs:
-                await creer_notification(
-                    tenant_id=tenant_id,
-                    destinataire_id=sup["id"],
-                    type="remplacement_accepte",
-                    titre="✅ Remplacement confirmé",
-                    message=f"{remplacant_nom} remplace {demandeur_nom} le {demande_data['date']}",
-                    lien="/remplacements",
-                    data={"demande_id": demande_id},
-                    envoyer_email=True  # Email aux superviseurs quand remplaçant trouvé
+            # Push notification (non bloquant)
+            try:
+                await send_push_notification_to_users(
+                    user_ids=superviseur_ids,
+                    title="✅ Remplacement confirmé",
+                    body=f"{remplacant_nom} remplace {demandeur_nom} le {demande_data['date']}",
+                    data={
+                        "type": "remplacement_accepte",
+                        "demande_id": demande_id
+                    }
                 )
+            except Exception as notif_error:
+                logger.warning(f"⚠️ Erreur notification push superviseurs: {notif_error}")
+            
+            # Notification in-app + email pour chaque superviseur (non bloquant)
+            for sup in superviseurs:
+                try:
+                    await creer_notification(
+                        tenant_id=tenant_id,
+                        destinataire_id=sup["id"],
+                        type="remplacement_accepte",
+                        titre="✅ Remplacement confirmé",
+                        message=f"{remplacant_nom} remplace {demandeur_nom} le {demande_data['date']}",
+                        lien="/remplacements",
+                        data={"demande_id": demande_id},
+                        envoyer_email=True  # Email aux superviseurs quand remplaçant trouvé
+                    )
+                except Exception as notif_error:
+                    logger.warning(f"⚠️ Erreur notification superviseur {sup.get('email', '')}: {notif_error}")
         
         autres_remplacants_ids = [
             rid for rid in demande_data.get("remplacants_contactes_ids", [])
