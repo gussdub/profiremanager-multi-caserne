@@ -2529,6 +2529,86 @@ async def refuser_demande_remplacement(
         )
 
 
+@router.put("/{tenant_slug}/remplacements/{demande_id}/arreter")
+async def arreter_demande_remplacement(
+    tenant_slug: str,
+    demande_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Arrêter le processus de remplacement (admin/superviseur uniquement)"""
+    send_push_notification_to_users = await get_send_push_notification()
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier les permissions
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Seuls les administrateurs et superviseurs peuvent arrêter le processus")
+    
+    demande_data = await db.demandes_remplacement.find_one({"id": demande_id, "tenant_id": tenant.id})
+    if not demande_data:
+        raise HTTPException(status_code=404, detail="Demande non trouvée")
+    
+    if demande_data["statut"] not in ["en_cours", "en_attente"]:
+        raise HTTPException(status_code=400, detail="Cette demande n'est plus en cours")
+    
+    maintenant = datetime.now(timezone.utc)
+    await db.demandes_remplacement.update_one(
+        {"id": demande_id},
+        {
+            "$set": {
+                "statut": "annulee",
+                "annule_par_id": current_user.id,
+                "date_annulation": maintenant.isoformat(),
+                "updated_at": maintenant
+            }
+        }
+    )
+    
+    # Notifier le demandeur
+    demandeur_id = demande_data.get("demandeur_id")
+    if demandeur_id:
+        try:
+            await send_push_notification_to_users(
+                user_ids=[demandeur_id],
+                title="🛑 Processus arrêté",
+                body=f"Le processus de remplacement du {demande_data['date']} a été arrêté par un superviseur.",
+                data={
+                    "type": "remplacement_arrete",
+                    "demande_id": demande_id
+                }
+            )
+        except Exception as e:
+            logger.warning(f"Erreur notification arrêt: {e}")
+        
+        try:
+            await db.notifications.insert_one({
+                "id": str(uuid.uuid4()),
+                "tenant_id": tenant.id,
+                "user_id": demandeur_id,
+                "type": "remplacement_arrete",
+                "titre": "🛑 Processus arrêté",
+                "message": f"Le processus de remplacement du {demande_data['date']} a été arrêté par {current_user.prenom} {current_user.nom}.",
+                "lu": False,
+                "data": {"demande_id": demande_id},
+                "created_at": maintenant.isoformat()
+            })
+        except Exception as e:
+            logger.warning(f"Erreur création notification: {e}")
+    
+    logger.info(f"🛑 Processus {demande_id} arrêté par {current_user.prenom} {current_user.nom}")
+    
+    # Broadcaster la mise à jour
+    asyncio.create_task(broadcast_remplacement_update(tenant_slug, "arrete", {
+        "demande_id": demande_id,
+        "arrete_par_nom": f"{current_user.prenom} {current_user.nom}",
+        "date": demande_data.get("date")
+    }))
+    
+    return {
+        "message": "Processus de remplacement arrêté",
+        "demande_id": demande_id
+    }
+
+
 @router.put("/{tenant_slug}/remplacements/{demande_id}/relancer")
 async def relancer_demande_remplacement(
     tenant_slug: str,
