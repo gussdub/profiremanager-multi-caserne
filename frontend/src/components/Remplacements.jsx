@@ -294,22 +294,26 @@ const Remplacements = () => {
     }
   };
 
-  const handleApprouverRemplacement = async (demandeId, action) => {
+  // Handler pour arrêter le processus (admin/superviseur uniquement)
+  const handleArreterProcessus = async (demandeId) => {
     if (['employe', 'pompier'].includes(user.role)) return;
 
+    if (!window.confirm("Voulez-vous vraiment arrêter ce processus de remplacement? Cette action est irréversible.")) {
+      return;
+    }
+
     try {
-      const endpoint = action === 'approuver' ? 'accepter' : 'refuser';
-      await apiPut(tenantSlug, `/remplacements/${demandeId}/${endpoint}`, {});
+      await apiPut(tenantSlug, `/remplacements/${demandeId}/arreter`, {});
       toast({
-        title: action === 'approuver' ? "Demande approuvée" : "Demande rejetée",
-        description: `La demande de remplacement a été ${action === 'approuver' ? 'approuvée' : 'rejetée'}`,
-        variant: "success"
+        title: "🛑 Processus arrêté",
+        description: "Le processus de remplacement a été arrêté",
+        variant: "default"
       });
       fetchData();
     } catch (error) {
       toast({
         title: "Erreur",
-        description: "Impossible de traiter la demande",
+        description: error.message || "Impossible d'arrêter le processus",
         variant: "destructive"
       });
     }
