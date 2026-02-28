@@ -195,7 +195,8 @@ const Remplacements = () => {
         'annulee': { title: "❌ Demande annulée", desc: `Annulée par ${data.data?.annule_par_nom || 'un superviseur'}` },
         'relancee': { title: "🔄 Demande relancée", desc: `Relancée par ${data.data?.relance_par_nom || 'un utilisateur'}` },
         'supprimee': { title: "🗑️ Demande supprimée", desc: "Une demande a été supprimée" },
-        'expiree': { title: "⏱️ Demande expirée", desc: "Aucun remplaçant trouvé" }
+        'expiree': { title: "⏱️ Demande expirée", desc: "Aucun remplaçant trouvé" },
+        'arrete': { title: "🛑 Processus arrêté", desc: `Arrêté par ${data.data?.arrete_par_nom || 'un superviseur'}` }
       };
       
       const msg = toastMessages[data.action];
