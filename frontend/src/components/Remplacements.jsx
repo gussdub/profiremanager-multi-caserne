@@ -1076,30 +1076,6 @@ const Remplacements = () => {
                     {!['employe', 'pompier'].includes(user.role) && (demande.statut === 'en_cours' || demande.statut === 'en_attente') && (
                       <div className="demande-actions">
                         <Button 
-                          variant="outline" 
-                          size="sm" 
-                          data-testid={`search-replacement-${demande.id}`}
-                          title="Relancer une recherche automatique de remplaçant si l'automatisation a échoué ou pour forcer une nouvelle recherche"
-                          style={{ position: 'relative' }}
-                        >
-                          🔍 Recherche auto
-                          <span style={{ 
-                            position: 'absolute', 
-                            top: '-8px', 
-                            right: '-8px', 
-                            background: '#3b82f6', 
-                            color: 'white', 
-                            borderRadius: '50%', 
-                            width: '18px', 
-                            height: '18px', 
-                            fontSize: '12px', 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'center',
-                            cursor: 'help'
-                          }} title="Relancer une recherche automatique">?</span>
-                        </Button>
-                        <Button 
                           variant="ghost" 
                           size="sm" 
                           className="danger"
