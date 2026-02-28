@@ -975,8 +975,7 @@ const Remplacements = () => {
                     Les demandes sont traitées automatiquement. Boutons disponibles :
                   </p>
                   <ul style={{ fontSize: '0.8rem', color: '#1e40af', margin: '0.25rem 0 0 1rem', lineHeight: '1.5', paddingLeft: '0.5rem' }}>
-                    <li><strong>🔍 Recherche auto</strong> - Relancer la recherche de remplaçants</li>
-                    <li><strong>🛑 Arrêter</strong> - Arrêter le processus (annule la demande)</li>
+                    <li><strong>🛑 Arrêter</strong> - Arrêter le processus en cours</li>
                     <li><strong>🔄 Relancer</strong> - Relancer une demande expirée/annulée</li>
                     <li><strong>👁️ Suivi</strong> - Voir l'historique des contacts et réponses</li>
                     <li><strong>🗑️</strong> - Supprimer définitivement (admin uniquement)</li>
