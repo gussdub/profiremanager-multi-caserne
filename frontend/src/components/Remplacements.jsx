@@ -971,12 +971,14 @@ const Remplacements = () => {
                     Actions manuelles disponibles
                   </strong>
                   <p style={{ fontSize: '0.8rem', color: '#1e40af', margin: 0, lineHeight: '1.4' }}>
-                    Les demandes sont traitées automatiquement. Utilisez les boutons pour intervenir :
+                    Les demandes sont traitées automatiquement. Boutons disponibles :
                   </p>
                   <ul style={{ fontSize: '0.8rem', color: '#1e40af', margin: '0.25rem 0 0 1rem', lineHeight: '1.5', paddingLeft: '0.5rem' }}>
-                    <li>🔍 Relancer la recherche auto</li>
-                    <li>✅ Approuver manuellement</li>
-                    <li>❌ Rejeter/Annuler</li>
+                    <li><strong>🔍 Recherche auto</strong> - Relancer la recherche de remplaçants</li>
+                    <li><strong>🛑 Arrêter</strong> - Arrêter le processus (annule la demande)</li>
+                    <li><strong>🔄 Relancer</strong> - Relancer une demande expirée/annulée</li>
+                    <li><strong>👁️ Suivi</strong> - Voir l'historique des contacts et réponses</li>
+                    <li><strong>🗑️</strong> - Supprimer définitivement (admin uniquement)</li>
                   </ul>
                 </div>
               </div>
