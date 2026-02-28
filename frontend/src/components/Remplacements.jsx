@@ -1099,29 +1099,17 @@ const Remplacements = () => {
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          data-testid={`approve-replacement-${demande.id}`}
-                          title="Approuver manuellement cette demande (si remplaçant trouvé hors système ou validation manuelle requise)"
+                          className="danger"
+                          data-testid={`arreter-replacement-${demande.id}`}
+                          title="Arrêter le processus de remplacement (annule la recherche)"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            handleApprouverRemplacement(demande.id, 'approuver');
+                            handleArreterProcessus(demande.id);
                           }}
+                          style={{ color: '#DC2626' }}
                         >
-                          ✅
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="danger" 
-                          data-testid={`reject-replacement-${demande.id}`}
-                          title="Rejeter/Annuler cette demande (si plus nécessaire ou aucun remplaçant disponible)"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleApprouverRemplacement(demande.id, 'rejeter');
-                          }}
-                        >
-                          ❌
+                          🛑 Arrêter
                         </Button>
                       </div>
                     )}
