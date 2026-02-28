@@ -2471,69 +2471,30 @@ async def accepter_demande_remplacement(
     demande_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Accepter/Approuver manuellement une demande de remplacement"""
-    send_push_notification_to_users = await get_send_push_notification()
+    """Accepter une demande de remplacement (en tant que remplaçant contacté)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     demande_data = await db.demandes_remplacement.find_one({"id": demande_id, "tenant_id": tenant.id})
     if not demande_data:
         raise HTTPException(status_code=404, detail="Demande non trouvée")
     
-    if current_user.role in ["admin", "superviseur"]:
-        maintenant = datetime.now(timezone.utc)
-        await db.demandes_remplacement.update_one(
-            {"id": demande_id},
-            {
-                "$set": {
-                    "statut": "approuve_manuellement",
-                    "approuve_par_id": current_user.id,
-                    "date_approbation": maintenant.isoformat(),
-                    "updated_at": maintenant
-                }
-            }
-        )
-        
-        demandeur_id = demande_data.get("demandeur_id")
-        if demandeur_id:
-            await send_push_notification_to_users(
-                user_ids=[demandeur_id],
-                title="✅ Demande approuvée",
-                body=f"Votre demande de remplacement du {demande_data['date']} a été approuvée par un superviseur.",
-                data={
-                    "type": "remplacement_approuve",
-                    "demande_id": demande_id
-                }
-            )
-            await db.notifications.insert_one({
-                "id": str(uuid.uuid4()),
-                "tenant_id": tenant.id,
-                "user_id": demandeur_id,
-                "type": "remplacement_approuve",
-                "titre": "✅ Demande approuvée",
-                "message": f"Votre demande de remplacement du {demande_data['date']} a été approuvée.",
-                "lu": False,
-                "data": {"demande_id": demande_id},
-                "created_at": maintenant.isoformat()
-            })
-        
-        # Broadcaster la mise à jour pour actualiser les pages des autres utilisateurs
-        asyncio.create_task(broadcast_remplacement_update(tenant_slug, "approuve_manuellement", {
-            "demande_id": demande_id,
-            "approuve_par_nom": f"{current_user.prenom} {current_user.nom}",
-            "date": demande_data.get("date")
-        }))
-        
-        return {
-            "message": "Demande approuvée avec succès",
-            "demande_id": demande_id
-        }
-    else:
+    # Vérifier si l'utilisateur est contacté comme remplaçant
+    remplacants_contactes = demande_data.get("remplacants_contactes_ids", [])
+    
+    if current_user.id in remplacants_contactes:
+        # L'utilisateur (peu importe son rôle) est contacté comme remplaçant → traiter normalement
         await accepter_remplacement(demande_id, current_user.id, tenant.id, tenant_slug)
         
         return {
             "message": "Remplacement accepté avec succès",
             "demande_id": demande_id
         }
+    else:
+        # L'utilisateur n'est pas contacté → pas autorisé à accepter
+        raise HTTPException(
+            status_code=403, 
+            detail="Vous n'êtes pas contacté comme remplaçant pour cette demande. Utilisez 'Arrêter le processus' si vous souhaitez fermer cette demande."
+        )
 
 
 @router.put("/{tenant_slug}/remplacements/{demande_id}/refuser")
