@@ -709,40 +709,58 @@ async def delete_assignation(
 async def get_mes_heures(
     tenant_slug: str,
     mois: Optional[str] = None,  # Format: YYYY-MM
+    date_debut: Optional[str] = None,  # Format: YYYY-MM-DD
+    date_fin: Optional[str] = None,  # Format: YYYY-MM-DD
     current_user: User = Depends(get_current_user)
 ):
     """
     Récupérer mes heures pour un mois donné (pour l'employé connecté)
+    Accepte soit 'mois' (YYYY-MM) soit 'date_debut/date_fin' (YYYY-MM-DD)
     """
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Si pas de mois spécifié, prendre le mois courant
-    if not mois:
-        mois = datetime.now(timezone.utc).strftime("%Y-%m")
-    
-    # Calculer les dates du mois
-    year, month = map(int, mois.split('-'))
-    date_debut = datetime(year, month, 1, tzinfo=timezone.utc)
-    if month == 12:
-        date_fin = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+    # Déterminer les dates de début et fin
+    if date_debut and date_fin:
+        # Utiliser les dates fournies directement
+        debut = datetime.strptime(date_debut, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        fin = datetime.strptime(date_fin, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        mois_str = date_debut[:7]  # YYYY-MM
+    elif mois:
+        # Utiliser le mois fourni
+        year, month = map(int, mois.split('-'))
+        debut = datetime(year, month, 1, tzinfo=timezone.utc)
+        if month == 12:
+            fin = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+        else:
+            fin = datetime(year, month + 1, 1, tzinfo=timezone.utc)
+        mois_str = mois
     else:
-        date_fin = datetime(year, month + 1, 1, tzinfo=timezone.utc)
+        # Prendre le mois courant par défaut
+        now = datetime.now(timezone.utc)
+        debut = datetime(now.year, now.month, 1, tzinfo=timezone.utc)
+        if now.month == 12:
+            fin = datetime(now.year + 1, 1, 1, tzinfo=timezone.utc)
+        else:
+            fin = datetime(now.year, now.month + 1, 1, tzinfo=timezone.utc)
+        mois_str = now.strftime("%Y-%m")
     
-    # Récupérer les assignations de l'utilisateur pour ce mois
+    # Récupérer les assignations de l'utilisateur pour cette période
     assignations = await db.assignations.find({
         "tenant_id": tenant.id,
         "user_id": current_user.id,
         "date": {
-            "$gte": date_debut.strftime("%Y-%m-%d"),
-            "$lt": date_fin.strftime("%Y-%m-%d")
+            "$gte": debut.strftime("%Y-%m-%d"),
+            "$lte": fin.strftime("%Y-%m-%d")
         }
-    }, {"_id": 0}).to_list(100)
+    }, {"_id": 0}).to_list(500)
     
     # Récupérer les types de garde pour calculer les heures
     types_garde = await get_types_garde(tenant.id)
     types_garde_dict = {t["id"]: t for t in types_garde}
     
     total_heures = 0
+    heures_internes = 0
+    heures_externes = 0
     detail_par_type = {}
     
     for assignation in assignations:
@@ -750,22 +768,31 @@ async def get_mes_heures(
         if type_garde_id in types_garde_dict:
             tg = types_garde_dict[type_garde_id]
             duree = tg.get("duree_heures", 0)
+            est_externe = tg.get("est_garde_externe", False)
+            
             total_heures += duree
+            if est_externe:
+                heures_externes += duree
+            else:
+                heures_internes += duree
             
             if type_garde_id not in detail_par_type:
                 detail_par_type[type_garde_id] = {
                     "nom": tg.get("nom", ""),
                     "couleur": tg.get("couleur", "#3B82F6"),
                     "heures": 0,
-                    "count": 0
+                    "count": 0,
+                    "est_externe": est_externe
                 }
             
             detail_par_type[type_garde_id]["heures"] += duree
             detail_par_type[type_garde_id]["count"] += 1
     
     return {
-        "mois": mois,
+        "mois": mois_str,
         "total_heures": total_heures,
+        "heures_internes": heures_internes,
+        "heures_externes": heures_externes,
         "nombre_gardes": len(assignations),
         "detail_par_type": list(detail_par_type.values()),
         "assignations": assignations

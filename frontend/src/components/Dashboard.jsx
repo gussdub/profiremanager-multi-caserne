@@ -117,7 +117,7 @@ const Dashboard = ({ setCurrentPage }) => {
           axios.get(`${API}/${tenantSlug}/users`, { headers, timeout: 10000 }).catch(() => null),
           axios.get(`${API}/${tenantSlug}/actifs/vehicules`, { headers, timeout: 10000 }).catch(() => null),
           axios.get(`${API}/${tenantSlug}/demandes-conge?statut=approuve&date_actuelle=${todayStr}`, { headers, timeout: 10000 }).catch(() => null),
-          axios.get(`${API}/${tenantSlug}/planning/assignations/${premierJourMoisCourant}`, { headers, timeout: 10000 }).catch(() => null),
+          axios.get(`${API}/${tenantSlug}/planning/assignations/${premierJourMoisCourant}?mode=mois`, { headers, timeout: 10000 }).catch(() => null),
           axios.get(`${API}/${tenantSlug}/dashboard/activites-systeme?limit=20`, { headers, timeout: 10000 }).catch(() => null),
         );
       }
@@ -194,9 +194,25 @@ const Dashboard = ({ setCurrentPage }) => {
         }
         
         if (Array.isArray(planningDataAdmin)) {
+          // Compter les assignations par jour et type de garde
+          const assignationsParJour = {};
+          planningDataAdmin.forEach(a => {
+            if (!assignationsParJour[a.date]) {
+              assignationsParJour[a.date] = 0;
+            }
+            assignationsParJour[a.date]++;
+          });
+          
+          // Nombre de jours du mois
           const joursTotal = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-          const joursCouverts = new Set(planningDataAdmin.map(a => a.date)).size;
-          setTauxCouverture(Math.min(100, Math.round((joursCouverts / joursTotal) * 100)));
+          
+          // Nombre de jours avec au moins une assignation
+          const joursAvecAssignations = Object.keys(assignationsParJour).length;
+          
+          // Calculer le taux: jours couverts / jours total
+          // Un jour est considéré "couvert" s'il a au moins une assignation
+          const taux = Math.min(100, Math.round((joursAvecAssignations / joursTotal) * 100));
+          setTauxCouverture(taux);
         }
         
         // Activités système (audit log)
