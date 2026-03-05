@@ -858,35 +858,53 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
 
   const handleDeleteDisponibilite = async (dispoId) => {
     try {
+      // Mettre à jour l'état local immédiatement pour une réponse instantanée
+      setUserDisponibilites(prev => prev.filter(d => d.id !== dispoId));
+      
+      // Mettre à jour le modal si un jour est sélectionné
+      if (selectedDayForDetail) {
+        const dateStr = selectedDayForDetail.toISOString().split('T')[0];
+        setDayDetailData(prev => ({
+          disponibilites: prev.disponibilites.filter(d => d.id !== dispoId),
+          indisponibilites: prev.indisponibilites.filter(d => d.id !== dispoId)
+        }));
+      }
+      
+      // Appeler l'API en arrière-plan
       await apiDelete(tenantSlug, `/disponibilites/${dispoId}`);
+      
       toast({
         title: "Supprimé",
         description: "Entrée supprimée avec succès",
         variant: "success"
       });
       
-      // Recharger
-      const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
-      setUserDisponibilites(dispoData);
-      
-      // Mettre à jour le modal si un jour est sélectionné
-      if (selectedDayForDetail) {
-        const dateStr = selectedDayForDetail.toISOString().split('T')[0];
-        const disponibilites = dispoData.filter(d => d.date === dateStr && d.statut === 'disponible');
-        const indisponibilites = dispoData.filter(d => d.date === dateStr && d.statut === 'indisponible');
-        setDayDetailData({ disponibilites, indisponibilites });
+      // Recharger silencieusement en arrière-plan pour synchroniser avec le serveur
+      try {
+        const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
+        setUserDisponibilites(dispoData);
+      } catch (reloadError) {
+        // Ignorer les erreurs de rechargement - la suppression a déjà été appliquée localement
+        console.log('Rechargement en arrière-plan ignoré:', reloadError);
       }
       
     } catch (error) {
       console.error('Erreur suppression:', error);
+      
+      // Recharger pour restaurer l'état correct en cas d'erreur réelle de suppression
+      try {
+        const dispoData = await apiGet(tenantSlug, `/disponibilites/${targetUser.id}`);
+        setUserDisponibilites(dispoData);
+      } catch (e) {
+        // Ignorer
+      }
+      
       const errorMessage = error?.response?.data?.detail || error?.message || "Impossible de supprimer";
       toast({
         title: "Erreur",
         description: errorMessage,
         variant: "destructive"
       });
-      // Propager l'erreur pour que le modal puisse réagir
-      throw error;
     }
   };
 
