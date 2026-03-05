@@ -173,14 +173,41 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
     if current_user.role in ["admin", "superviseur"]:
         nb_assignations_mois = len(assignations)
         
+        # Calculer précisément le taux de couverture
+        # Pour chaque type de garde, compter combien de créneaux sont requis vs couverts
         jours_mois = (fin_mois - debut_mois).days + 1
-        personnel_moyen_par_garde = sum(t.get("personnel_requis", 1) for t in types_garde) / len(types_garde) if types_garde else 1
-        total_personnel_requis_estime = len(types_garde) * jours_mois * personnel_moyen_par_garde * 0.7
         
-        couverture_planning = round((nb_assignations_mois / total_personnel_requis_estime * 100), 1) if total_personnel_requis_estime > 0 else 0
-        couverture_planning = min(couverture_planning, 100.0)
+        # Obtenir les jours du mois où chaque type de garde s'applique
+        total_creneaux_requis = 0
+        total_creneaux_couverts = 0
         
-        postes_a_pourvoir = max(0, int(total_personnel_requis_estime - nb_assignations_mois))
+        for tg in types_garde:
+            type_garde_id = tg.get("id")
+            personnel_requis = tg.get("personnel_requis", 1)
+            jours_semaine_actifs = tg.get("jours_semaine", [0, 1, 2, 3, 4, 5, 6])  # Tous les jours par défaut
+            
+            # Compter les jours actifs pour ce type de garde dans le mois
+            current_date = debut_mois
+            while current_date <= fin_mois:
+                jour_semaine = current_date.weekday()
+                if jour_semaine in jours_semaine_actifs or not jours_semaine_actifs:
+                    # Ce jour nécessite ce type de garde
+                    total_creneaux_requis += personnel_requis
+                    
+                    # Compter combien d'assignations couvrent ce créneau
+                    date_str = current_date.strftime("%Y-%m-%d")
+                    nb_assignes = sum(1 for a in assignations if a.get("type_garde_id") == type_garde_id and a.get("date") == date_str)
+                    total_creneaux_couverts += min(nb_assignes, personnel_requis)
+                
+                current_date += timedelta(days=1)
+        
+        # Calculer le taux de couverture réel
+        if total_creneaux_requis > 0:
+            couverture_planning = round((total_creneaux_couverts / total_creneaux_requis) * 100, 1)
+        else:
+            couverture_planning = 100.0
+        
+        postes_a_pourvoir = max(0, total_creneaux_requis - total_creneaux_couverts)
         demandes_en_attente = len([d for d in demandes_remplacement if d.get("statut") == "en_attente"])
         
         nb_formations_mois = await db.formations.count_documents({
@@ -199,7 +226,9 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
         stats_mois = {
             "total_assignations": nb_assignations_mois,
             "total_personnel_actif": nb_personnel_actif,
-            "formations_ce_mois": nb_formations_mois
+            "formations_ce_mois": nb_formations_mois,
+            "total_creneaux_requis": total_creneaux_requis,
+            "total_creneaux_couverts": total_creneaux_couverts
         }
         
         section_generale = {
@@ -615,6 +644,139 @@ async def get_alertes_equipements_dashboard(
             "delai_expiration": delai_expiration,
             "delai_fin_vie": delai_fin_vie,
             "delai_epi": delai_epi
+        }
+    }
+
+
+@router.get("/{tenant_slug}/dashboard/couverture-precise")
+async def get_couverture_precise(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Calcule le taux de couverture précis du planning pour le mois en cours et le mois suivant.
+    
+    Logique (alignée avec Planning.jsx):
+    - Pour chaque type de garde, on vérifie s'il s'applique au jour via jours_application
+    - On compte: personnel_requis × jours applicables = créneaux requis
+    - On compte les assignations effectives
+    - Le taux = créneaux couverts / créneaux requis × 100
+    
+    Statuts:
+    - Vert (complete): assignations >= personnel_requis
+    - Orange (partielle): 0 < assignations < personnel_requis  
+    - Rouge (vacante): assignations = 0
+    """
+    if current_user.role not in ["admin", "superviseur", "production"]:
+        return {"taux_couverture": 0, "message": "Accès réservé aux administrateurs"}
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Mapping des jours: Python weekday() -> nom anglais utilisé dans jours_application
+    JOURS_MAPPING = {
+        0: "monday",
+        1: "tuesday", 
+        2: "wednesday",
+        3: "thursday",
+        4: "friday",
+        5: "saturday",
+        6: "sunday"
+    }
+    
+    def calculer_couverture_mois(debut_mois, fin_mois, types_garde, assignations):
+        """Calcule la couverture pour une période donnée"""
+        total_creneaux_requis = 0
+        total_creneaux_couverts = 0
+        
+        for tg in types_garde:
+            type_garde_id = tg.get("id")
+            personnel_requis = tg.get("personnel_requis", 1)
+            jours_application = tg.get("jours_application", [])  # Ex: ["monday", "tuesday", ...]
+            
+            # Compter les jours actifs pour ce type de garde dans le mois
+            current_date = debut_mois
+            while current_date <= fin_mois:
+                jour_semaine = current_date.weekday()
+                jour_nom = JOURS_MAPPING.get(jour_semaine)
+                
+                # Si pas de jours_application définis, la garde s'applique tous les jours
+                is_applicable = (not jours_application) or (jour_nom in jours_application)
+                
+                if is_applicable:
+                    # Ce jour nécessite ce type de garde
+                    total_creneaux_requis += personnel_requis
+                    
+                    # Compter combien d'assignations couvrent ce créneau
+                    date_str = current_date.strftime("%Y-%m-%d")
+                    nb_assignes = sum(1 for a in assignations 
+                                     if a.get("type_garde_id") == type_garde_id 
+                                     and a.get("date", "").startswith(date_str))
+                    total_creneaux_couverts += min(nb_assignes, personnel_requis)
+                
+                current_date += timedelta(days=1)
+        
+        # Calculer le taux
+        if total_creneaux_requis > 0:
+            taux = round((total_creneaux_couverts / total_creneaux_requis) * 100, 1)
+        else:
+            taux = 100.0
+        
+        postes_a_pourvoir = max(0, total_creneaux_requis - total_creneaux_couverts)
+        
+        return {
+            "taux": taux,
+            "creneaux_requis": total_creneaux_requis,
+            "creneaux_couverts": total_creneaux_couverts,
+            "postes_a_pourvoir": postes_a_pourvoir
+        }
+    
+    # Dates du mois en cours
+    today = datetime.now(timezone.utc)
+    debut_mois_courant = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    fin_mois_courant = (debut_mois_courant + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+    
+    # Dates du mois suivant
+    debut_mois_suivant = (fin_mois_courant + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    fin_mois_suivant = (debut_mois_suivant + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+    
+    # Récupérer les types de garde
+    types_garde = await db.types_garde.find({"tenant_id": tenant.id}).to_list(1000)
+    
+    # Récupérer les assignations pour les 2 mois
+    assignations = await db.assignations.find({
+        "tenant_id": tenant.id,
+        "date": {
+            "$gte": debut_mois_courant.strftime("%Y-%m-%d"),
+            "$lte": fin_mois_suivant.strftime("%Y-%m-%d")
+        }
+    }).to_list(20000)
+    
+    # Calculer pour le mois en cours
+    mois_courant = calculer_couverture_mois(debut_mois_courant, fin_mois_courant, types_garde, assignations)
+    
+    # Calculer pour le mois suivant
+    mois_suivant = calculer_couverture_mois(debut_mois_suivant, fin_mois_suivant, types_garde, assignations)
+    
+    return {
+        "taux_couverture": mois_courant["taux"],
+        "total_creneaux_requis": mois_courant["creneaux_requis"],
+        "total_creneaux_couverts": mois_courant["creneaux_couverts"],
+        "postes_a_pourvoir": mois_courant["postes_a_pourvoir"],
+        "periode": {
+            "debut": debut_mois_courant.strftime("%Y-%m-%d"),
+            "fin": fin_mois_courant.strftime("%Y-%m-%d"),
+            "label": debut_mois_courant.strftime("%B %Y")
+        },
+        "mois_suivant": {
+            "taux_couverture": mois_suivant["taux"],
+            "total_creneaux_requis": mois_suivant["creneaux_requis"],
+            "total_creneaux_couverts": mois_suivant["creneaux_couverts"],
+            "postes_a_pourvoir": mois_suivant["postes_a_pourvoir"],
+            "periode": {
+                "debut": debut_mois_suivant.strftime("%Y-%m-%d"),
+                "fin": fin_mois_suivant.strftime("%Y-%m-%d"),
+                "label": debut_mois_suivant.strftime("%B %Y")
+            }
         }
     }
 

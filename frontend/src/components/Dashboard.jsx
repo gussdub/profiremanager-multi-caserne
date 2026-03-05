@@ -29,6 +29,7 @@ const Dashboard = ({ setCurrentPage }) => {
   
   // États pour les données admin
   const [tauxCouverture, setTauxCouverture] = useState(0);
+  const [couvertureMoisSuivant, setCouvertureMoisSuivant] = useState(null);
   const [personnesAbsentes, setPersonnesAbsentes] = useState([]);
   const [activitesRecentes, setActivitesRecentes] = useState([]);
   const [statsGenerales, setStatsGenerales] = useState({
@@ -193,26 +194,23 @@ const Dashboard = ({ setCurrentPage }) => {
           );
         }
         
-        if (Array.isArray(planningDataAdmin)) {
-          // Compter les assignations par jour et type de garde
-          const assignationsParJour = {};
-          planningDataAdmin.forEach(a => {
-            if (!assignationsParJour[a.date]) {
-              assignationsParJour[a.date] = 0;
-            }
-            assignationsParJour[a.date]++;
-          });
-          
-          // Nombre de jours du mois
-          const joursTotal = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-          
-          // Nombre de jours avec au moins une assignation
-          const joursAvecAssignations = Object.keys(assignationsParJour).length;
-          
-          // Calculer le taux: jours couverts / jours total
-          // Un jour est considéré "couvert" s'il a au moins une assignation
-          const taux = Math.min(100, Math.round((joursAvecAssignations / joursTotal) * 100));
-          setTauxCouverture(taux);
+        // Le taux de couverture est maintenant calculé via un endpoint dédié (voir plus bas)
+        
+        // Charger le taux de couverture précis (mois courant + mois suivant)
+        try {
+          const couvertureResponse = await axios.get(
+            `${API}/${tenantSlug}/dashboard/couverture-precise`,
+            { headers, timeout: 10000 }
+          );
+          if (couvertureResponse?.data?.taux_couverture !== undefined) {
+            setTauxCouverture(couvertureResponse.data.taux_couverture);
+          }
+          if (couvertureResponse?.data?.mois_suivant) {
+            setCouvertureMoisSuivant(couvertureResponse.data.mois_suivant);
+          }
+        } catch (err) {
+          console.log('Couverture précise non disponible:', err.message);
+          // Fallback: garder le taux à 0
         }
         
         // Activités système (audit log)
@@ -540,6 +538,7 @@ const Dashboard = ({ setCurrentPage }) => {
         <AdminSection 
           statsGenerales={statsGenerales}
           tauxCouverture={tauxCouverture}
+          couvertureMoisSuivant={couvertureMoisSuivant}
           personnesAbsentes={personnesAbsentes}
           activitesRecentes={activitesRecentes}
           formatDate={formatDate}

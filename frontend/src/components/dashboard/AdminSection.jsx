@@ -5,23 +5,44 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { ActivitesRecentesCard } from './ActivitesRecentes';
 
-const KPICard = ({ value, label, icon, gradient }) => (
+const KPICard = ({ value, label, icon, gradient, subtitle }) => (
   <Card style={{ background: gradient }}>
     <CardContent style={{ padding: '1.25rem', color: 'white' }}>
       <div style={{ fontSize: '2rem', fontWeight: '700' }}>{value}</div>
       <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>{icon} {label}</div>
+      {subtitle && (
+        <div style={{ fontSize: '0.75rem', opacity: 0.7, marginTop: '0.25rem' }}>{subtitle}</div>
+      )}
     </CardContent>
   </Card>
 );
 
-export const AdminKPIGrid = ({ stats, tauxCouverture, personnesAbsentes }) => (
-  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-    <KPICard value={stats.personnel} label="Personnel actif" icon="👥" gradient="linear-gradient(135deg, #3b82f6, #1d4ed8)" />
-    <KPICard value={`${tauxCouverture}%`} label="Couverture planning" icon="📅" gradient="linear-gradient(135deg, #10b981, #059669)" />
-    <KPICard value={personnesAbsentes.length} label="Absents" icon="🏥" gradient="linear-gradient(135deg, #f59e0b, #d97706)" />
-    <KPICard value={stats.vehicules} label="Véhicules" icon="🚒" gradient="linear-gradient(135deg, #8b5cf6, #7c3aed)" />
-  </div>
-);
+export const AdminKPIGrid = ({ stats, tauxCouverture, couvertureMoisSuivant, personnesAbsentes }) => {
+  // Formater le label du mois suivant
+  let moisSuivantLabel = null;
+  if (couvertureMoisSuivant?.periode?.label) {
+    // Capitaliser la première lettre
+    const label = couvertureMoisSuivant.periode.label;
+    moisSuivantLabel = label.charAt(0).toUpperCase() + label.slice(1);
+  }
+  
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+      <KPICard value={stats.personnel} label="Personnel actif" icon="👥" gradient="linear-gradient(135deg, #3b82f6, #1d4ed8)" />
+      <KPICard 
+        value={`${tauxCouverture}%`} 
+        label="Couverture planning" 
+        icon="📅" 
+        gradient={tauxCouverture >= 90 ? "linear-gradient(135deg, #10b981, #059669)" : 
+                  tauxCouverture >= 70 ? "linear-gradient(135deg, #f59e0b, #d97706)" :
+                  "linear-gradient(135deg, #ef4444, #dc2626)"}
+        subtitle={couvertureMoisSuivant ? `${moisSuivantLabel}: ${couvertureMoisSuivant.taux_couverture}%` : null}
+      />
+      <KPICard value={personnesAbsentes.length} label="Absents" icon="🏥" gradient="linear-gradient(135deg, #f59e0b, #d97706)" />
+      <KPICard value={stats.vehicules} label="Véhicules" icon="🚒" gradient="linear-gradient(135deg, #8b5cf6, #7c3aed)" />
+    </div>
+  );
+};
 
 export const PersonnesAbsentesCard = ({ absences, formatDate }) => (
   <Card>
@@ -70,12 +91,12 @@ export const PersonnesAbsentesCard = ({ absences, formatDate }) => (
   </Card>
 );
 
-export const AdminSection = ({ statsGenerales, tauxCouverture, personnesAbsentes, activitesRecentes, formatDate }) => (
+export const AdminSection = ({ statsGenerales, tauxCouverture, couvertureMoisSuivant, personnesAbsentes, activitesRecentes, formatDate }) => (
   <div>
     <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#374151', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
       🏢 Vue Générale du Service
     </h2>
-    <AdminKPIGrid stats={statsGenerales} tauxCouverture={tauxCouverture} personnesAbsentes={personnesAbsentes} />
+    <AdminKPIGrid stats={statsGenerales} tauxCouverture={tauxCouverture} couvertureMoisSuivant={couvertureMoisSuivant} personnesAbsentes={personnesAbsentes} />
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1rem' }}>
       <PersonnesAbsentesCard absences={personnesAbsentes} formatDate={formatDate} />
       <ActivitesRecentesCard activites={activitesRecentes} maxItems={5} />
