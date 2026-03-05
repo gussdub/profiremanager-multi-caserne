@@ -806,6 +806,7 @@ def calculer_prochaine_date(derniere_date: str, frequence: str) -> str:
             "quotidienne": timedelta(days=1),
             "hebdomadaire": timedelta(weeks=1),
             "mensuelle": timedelta(days=30),
+            "bimestrielle": timedelta(days=60),  # Tous les 2 mois
             "trimestrielle": timedelta(days=90),
             "semestrielle": timedelta(days=180),
             "bi-annuelle": timedelta(days=180),  # Tous les 6 mois

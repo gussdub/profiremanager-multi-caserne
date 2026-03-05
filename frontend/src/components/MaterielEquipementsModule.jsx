@@ -1578,6 +1578,8 @@ const EquipementModal = ({ mode, equipement, categories, tenantSlug, onClose, on
     { value: 'journaliere', label: 'Journalière' },
     { value: 'hebdomadaire', label: 'Hebdomadaire' },
     { value: 'mensuelle', label: 'Mensuelle' },
+    { value: 'bimestrielle', label: 'Aux 2 mois' },
+    { value: 'trimestrielle', label: 'Trimestrielle (3 mois)' },
     { value: 'bi_annuelle', label: 'Bi-annuelle (6 mois)' },
     { value: 'annuelle', label: 'Annuelle' },
     { value: '2ans', label: '2 ans' },
