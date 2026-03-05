@@ -683,6 +683,17 @@ async def get_couverture_precise(
         6: "sunday"
     }
     
+    # Noms des mois en français
+    MOIS_FR = {
+        1: "Janvier", 2: "Février", 3: "Mars", 4: "Avril",
+        5: "Mai", 6: "Juin", 7: "Juillet", 8: "Août",
+        9: "Septembre", 10: "Octobre", 11: "Novembre", 12: "Décembre"
+    }
+    
+    def get_mois_label_fr(date_obj):
+        """Retourne le label du mois en français (ex: 'Avril 2026')"""
+        return f"{MOIS_FR[date_obj.month]} {date_obj.year}"
+    
     def calculer_couverture_mois(debut_mois, fin_mois, types_garde, assignations):
         """Calcule la couverture pour une période donnée"""
         total_creneaux_requis = 0
@@ -765,7 +776,7 @@ async def get_couverture_precise(
         "periode": {
             "debut": debut_mois_courant.strftime("%Y-%m-%d"),
             "fin": fin_mois_courant.strftime("%Y-%m-%d"),
-            "label": debut_mois_courant.strftime("%B %Y")
+            "label": get_mois_label_fr(debut_mois_courant)
         },
         "mois_suivant": {
             "taux_couverture": mois_suivant["taux"],
@@ -775,7 +786,7 @@ async def get_couverture_precise(
             "periode": {
                 "debut": debut_mois_suivant.strftime("%Y-%m-%d"),
                 "fin": fin_mois_suivant.strftime("%Y-%m-%d"),
-                "label": debut_mois_suivant.strftime("%B %Y")
+                "label": get_mois_label_fr(debut_mois_suivant)
             }
         }
     }
