@@ -28,7 +28,6 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="www.profiremanager.ca" />
-                <data android:scheme="https" android:host="profiremanager.ca" />
             </intent-filter>
 
             <!-- Custom URL scheme fallback -->
