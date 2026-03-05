@@ -1352,14 +1352,18 @@ async def delete_disponibilite(tenant_slug: str, disponibilite_id: str, current_
     # Créer une activité (seulement si l'utilisateur supprime ses propres disponibilités)
     if disponibilite["user_id"] == current_user.id:
         statut_text = "disponibilité" if disponibilite["statut"] == "disponible" else "indisponibilité"
-        await creer_activite(
-            tenant_id=tenant.id,
-            type_activite="disponibilite_suppression",
-            description=f"🗑️ {current_user.prenom} {current_user.nom} a supprimé une {statut_text} du {disponibilite['date']}",
-            user_id=current_user.id,
-            user_nom=f"{current_user.prenom} {current_user.nom}",
-            data={"concerne_user_id": current_user.id}
-        )
+        try:
+            await creer_activite(
+                tenant_id=tenant.id,
+                type_activite="disponibilite_suppression",
+                description=f"🗑️ {current_user.prenom} {current_user.nom} a supprimé une {statut_text} du {disponibilite['date']}",
+                user_id=current_user.id,
+                user_nom=f"{current_user.prenom} {current_user.nom}",
+                metadata={"concerne_user_id": current_user.id}
+            )
+        except Exception as e:
+            # Ne pas bloquer la suppression si l'activité échoue
+            logging.warning(f"Erreur création activité suppression dispo: {e}")
     
     return {"message": "Disponibilité supprimée avec succès"}
 
