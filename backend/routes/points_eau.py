@@ -444,11 +444,11 @@ async def delete_point_eau(
     point_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Supprimer un point d'eau (Admin uniquement)"""
+    """Supprimer un point d'eau (Admin/Superviseur)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role != 'admin':
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin requis")
+    if current_user.role not in ['admin', 'superviseur']:
+        raise HTTPException(status_code=403, detail="Permission refusée - Admin ou Superviseur requis")
     
     result = await db.points_eau.delete_one({
         "id": point_id,
@@ -560,9 +560,9 @@ async def delete_inspection(
     inspection_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Supprimer une inspection (admin uniquement)"""
-    if current_user.role not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent supprimer des inspections")
+    """Supprimer une inspection (admin/superviseur)"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Seuls les administrateurs et superviseurs peuvent supprimer des inspections")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     

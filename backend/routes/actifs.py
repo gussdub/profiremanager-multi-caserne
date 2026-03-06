@@ -2457,8 +2457,8 @@ async def supprimer_reparation_vehicule(
     current_user: User = Depends(get_current_user)
 ):
     """Supprimer une réparation/entretien"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès réservé aux admins")
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès réservé aux admins et superviseurs")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if current_user.tenant_id != tenant.id:

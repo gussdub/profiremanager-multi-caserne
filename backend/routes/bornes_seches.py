@@ -238,11 +238,11 @@ async def delete_template_borne_seche(
     template_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Supprimer un template de borne sèche (Admin uniquement)"""
+    """Supprimer un template de borne sèche (Admin/Superviseur)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role != 'admin':
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin requis")
+    if current_user.role not in ['admin', 'superviseur']:
+        raise HTTPException(status_code=403, detail="Permission refusée - Admin ou Superviseur requis")
     
     # Vérifier si des inspections utilisent ce template
     inspections_count = await db.inspections_bornes_seches.count_documents({
@@ -514,9 +514,9 @@ async def delete_modele_inspection_borne_seche(
     modele_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Supprimer un modèle d'inspection (Admin uniquement)"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    """Supprimer un modèle d'inspection (Admin/Superviseur)"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin ou Superviseur requis")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     

@@ -731,9 +731,9 @@ async def create_type_epi(
     type_data: TypeEPICreate, 
     current_user: User = Depends(get_current_user)
 ):
-    """Crée un nouveau type d'EPI (Admin uniquement)"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé - Admin requis")
+    """Crée un nouveau type d'EPI (Admin/Superviseur)"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin ou Superviseur requis")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -780,9 +780,9 @@ async def update_type_epi(
     type_data: TypeEPIUpdate,
     current_user: User = Depends(get_current_user)
 ):
-    """Modifie un type d'EPI (Admin uniquement)"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé - Admin requis")
+    """Modifie un type d'EPI (Admin/Superviseur)"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin ou Superviseur requis")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -837,9 +837,9 @@ async def delete_type_epi(
     type_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Supprime un type d'EPI (Admin uniquement, types non-défaut uniquement)"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé - Admin requis")
+    """Supprime un type d'EPI (Admin/Superviseur, types non-défaut uniquement)"""
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Accès refusé - Admin ou Superviseur requis")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -2814,8 +2814,8 @@ async def fix_epi_types(
     - Crée les types manquants automatiquement
     - Met à jour les EPI pour utiliser type_epi_id
     """
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Admin requis")
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Admin ou Superviseur requis")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -2999,10 +2999,10 @@ async def supprimer_tous_les_epis(
     """
     logger.info(f"[SUPPRIMER-TOUS] Demande de suppression de tous les EPI pour {tenant_slug} par {current_user.email}")
     
-    # Vérification admin
-    if current_user.role != "admin":
-        logger.warning(f"[SUPPRIMER-TOUS] Refusé - utilisateur non admin: {current_user.email}")
-        raise HTTPException(status_code=403, detail="Seul un administrateur peut supprimer tous les EPI")
+    # Vérification admin/superviseur
+    if current_user.role not in ["admin", "superviseur"]:
+        logger.warning(f"[SUPPRIMER-TOUS] Refusé - utilisateur non admin/superviseur: {current_user.email}")
+        raise HTTPException(status_code=403, detail="Seul un administrateur ou superviseur peut supprimer tous les EPI")
     
     # Récupérer le tenant
     tenant = await get_tenant_from_slug(tenant_slug)

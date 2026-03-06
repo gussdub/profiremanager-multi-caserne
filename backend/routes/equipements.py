@@ -266,11 +266,11 @@ async def create_categorie_equipement(
     categorie: CategorieEquipementCreate,
     current_user: User = Depends(get_current_user)
 ):
-    """Créer une nouvelle catégorie d'équipement (admin uniquement)"""
+    """Créer une nouvelle catégorie d'équipement (admin/superviseur)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role != 'admin':
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin requis")
+    if current_user.role not in ['admin', 'superviseur']:
+        raise HTTPException(status_code=403, detail="Permission refusée - Admin ou Superviseur requis")
     
     existing = await db.categories_equipements.find_one({
         "tenant_id": tenant.id,
@@ -297,11 +297,11 @@ async def update_categorie_equipement(
     categorie: CategorieEquipementUpdate,
     current_user: User = Depends(get_current_user)
 ):
-    """Modifier une catégorie d'équipement (admin uniquement)"""
+    """Modifier une catégorie d'équipement (admin/superviseur)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role != 'admin':
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin requis")
+    if current_user.role not in ['admin', 'superviseur']:
+        raise HTTPException(status_code=403, detail="Permission refusée - Admin ou Superviseur requis")
     
     existing = await db.categories_equipements.find_one({
         "id": categorie_id,
@@ -339,11 +339,11 @@ async def delete_categorie_equipement(
     categorie_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Supprimer une catégorie d'équipement (admin uniquement)"""
+    """Supprimer une catégorie d'équipement (admin/superviseur)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role != 'admin':
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin requis")
+    if current_user.role not in ['admin', 'superviseur']:
+        raise HTTPException(status_code=403, detail="Permission refusée - Admin ou Superviseur requis")
     
     existing = await db.categories_equipements.find_one({
         "id": categorie_id,
@@ -630,8 +630,8 @@ async def update_parametres_equipements(
     """Modifier les paramètres du module équipements"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role != 'admin':
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin requis")
+    if current_user.role not in ['admin', 'superviseur']:
+        raise HTTPException(status_code=403, detail="Permission refusée - Admin ou Superviseur requis")
     
     tenant_doc = await db.tenants.find_one({"id": tenant.id})
     current_params = tenant_doc.get('parametres', {})
