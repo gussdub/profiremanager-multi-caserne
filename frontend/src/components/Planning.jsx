@@ -123,6 +123,7 @@ const Planning = () => {
       dateFin: `${lastDayNextMonth.getFullYear()}-${String(lastDayNextMonth.getMonth() + 1).padStart(2, '0')}-${String(lastDayNextMonth.getDate()).padStart(2, '0')}`
     };
   });
+  const [selectedExportPeriod, setSelectedExportPeriod] = useState('mois_suivant');
   
   const { toast } = useToast();
   const { confirm } = useConfirmDialog();
@@ -1618,6 +1619,7 @@ const Planning = () => {
         return;
     }
     
+    setSelectedExportPeriod(periodType);
     setExportCalendarConfig({ dateDebut, dateFin });
   };
 
@@ -3871,7 +3873,14 @@ const Planning = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => setExportPeriod('mois_courant')}
-                    style={{ fontSize: '0.85rem' }}
+                    style={{ 
+                      fontSize: '0.85rem',
+                      ...(selectedExportPeriod === 'mois_courant' && {
+                        background: '#ECFDF5',
+                        borderColor: '#10B981',
+                        color: '#059669'
+                      })
+                    }}
                   >
                     Mois en cours
                   </Button>
@@ -3881,9 +3890,11 @@ const Planning = () => {
                     onClick={() => setExportPeriod('mois_suivant')}
                     style={{ 
                       fontSize: '0.85rem',
-                      background: '#ECFDF5',
-                      borderColor: '#10B981',
-                      color: '#059669'
+                      ...(selectedExportPeriod === 'mois_suivant' && {
+                        background: '#ECFDF5',
+                        borderColor: '#10B981',
+                        color: '#059669'
+                      })
                     }}
                   >
                     Mois suivant (M+1)
@@ -3892,7 +3903,14 @@ const Planning = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => setExportPeriod('3_mois')}
-                    style={{ fontSize: '0.85rem' }}
+                    style={{ 
+                      fontSize: '0.85rem',
+                      ...(selectedExportPeriod === '3_mois' && {
+                        background: '#ECFDF5',
+                        borderColor: '#10B981',
+                        color: '#059669'
+                      })
+                    }}
                   >
                     3 prochains mois
                   </Button>
