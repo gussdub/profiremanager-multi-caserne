@@ -628,13 +628,14 @@ async def creer_notification(
     lien: Optional[str] = None,
     data: Optional[Dict[str, Any]] = None,
     envoyer_email: bool = True,
+    envoyer_push: bool = True,  # Nouveau: envoyer push notification iOS/Android
     destinataires_multiples: Optional[List[str]] = None,
     # Rétrocompatibilité avec l'ancien format
     destinataire_id: str = None,
     type: str = None
 ):
     """
-    Crée une notification dans la base de données et envoie un email si activé.
+    Crée une notification dans la base de données et envoie un email + push si activé.
     Respecte les préférences de notification de l'utilisateur.
     
     Args:
@@ -646,9 +647,16 @@ async def creer_notification(
         lien: Lien vers la page concernée
         data: Données supplémentaires
         envoyer_email: Si True, envoie aussi un email (selon préférences)
+        envoyer_push: Si True, envoie aussi une notification push iOS/Android
         destinataires_multiples: Liste d'IDs pour notifier plusieurs personnes
     """
     from services.email_service import send_notification_email
+    
+    # Import de la fonction push notification
+    try:
+        from routes.notifications import send_push_notification_to_users
+    except ImportError:
+        send_push_notification_to_users = None
     
     # Rétrocompatibilité
     actual_user_id = user_id or destinataire_id
@@ -661,6 +669,11 @@ async def creer_notification(
     destinataires = destinataires_multiples if destinataires_multiples else [actual_user_id]
     notifications_creees = []
     
+    # Récupérer le tenant pour le slug (pour les push)
+    tenant = await db.tenants.find_one({"id": tenant_id})
+    tenant_slug = tenant.get("slug", "") if tenant else ""
+    tenant_nom = tenant.get("nom", "ProFireManager") if tenant else "ProFireManager"
+    
     for dest_id in destinataires:
         if not dest_id:
             continue
@@ -672,6 +685,7 @@ async def creer_notification(
         
         preferences = user.get("preferences_notifications", {})
         email_actif = preferences.get("email_actif", True)
+        push_actif = preferences.get("push_actif", True)  # Push actif par défaut
         
         # Créer la notification interne (toujours)
         notification = Notification(
@@ -689,11 +703,6 @@ async def creer_notification(
         # Envoyer email si activé dans les préférences
         if envoyer_email and email_actif and user.get("email"):
             try:
-                # Récupérer le tenant pour le branding et le slug
-                tenant = await db.tenants.find_one({"id": tenant_id})
-                tenant_nom = tenant.get("nom", "ProFireManager") if tenant else "ProFireManager"
-                tenant_slug = tenant.get("slug", "") if tenant else ""
-                
                 await send_notification_email(
                     to_email=user["email"],
                     subject=f"[{tenant_nom}] {titre}",
@@ -707,6 +716,38 @@ async def creer_notification(
                 await asyncio.sleep(0.6)
             except Exception as e:
                 logger.warning(f"Erreur envoi email notification à {user.get('email')}: {e}")
+    
+    # Envoyer push notification iOS/Android à tous les destinataires (une seule fois, pas par utilisateur)
+    if envoyer_push and send_push_notification_to_users and destinataires:
+        # Filtrer les destinataires qui ont le push actif
+        destinataires_push = []
+        for dest_id in destinataires:
+            user = await db.users.find_one({"id": dest_id, "tenant_id": tenant_id})
+            if user:
+                preferences = user.get("preferences_notifications", {})
+                if preferences.get("push_actif", True):  # Push actif par défaut
+                    destinataires_push.append(dest_id)
+        
+        if destinataires_push:
+            try:
+                push_data = {
+                    "type": actual_type or "notification",
+                    "lien": lien or "",
+                    "tenant": tenant_slug
+                }
+                if data:
+                    push_data.update({k: str(v) for k, v in data.items() if v is not None})
+                
+                await send_push_notification_to_users(
+                    user_ids=destinataires_push,
+                    title=titre,
+                    body=message,
+                    data=push_data,
+                    tenant_slug=tenant_slug
+                )
+                logger.info(f"📱 Push notification envoyée à {len(destinataires_push)} utilisateur(s)")
+            except Exception as e:
+                logger.warning(f"Erreur envoi push notification: {e}")
     
     return notifications_creees[0] if len(notifications_creees) == 1 else notifications_creees
 

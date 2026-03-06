@@ -16,6 +16,12 @@ from routes.dependencies import (
 )
 from services.email_service import send_notification_email
 
+# Import pour les push notifications
+try:
+    from routes.notifications import send_push_notification_to_users
+except ImportError:
+    send_push_notification_to_users = None
+
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
@@ -139,6 +145,26 @@ async def publier_message(
                 logger.error(f"Erreur envoi email à {user_email}: {e}")
     
     logger.info(f"Message broadcast publié: {notifications_creees} notifications, {emails_envoyes} emails")
+    
+    # Envoyer push notifications à tous les destinataires
+    if send_push_notification_to_users and user_ids:
+        try:
+            push_data = {
+                "type": "broadcast",
+                "broadcast_id": message_id,
+                "priorite": message.priorite,
+                "tenant": tenant_slug
+            }
+            await send_push_notification_to_users(
+                user_ids=user_ids,
+                title=priorite_labels.get(message.priorite, "Nouveau message"),
+                body=message.contenu[:100] + "..." if len(message.contenu) > 100 else message.contenu,
+                data=push_data,
+                tenant_slug=tenant_slug
+            )
+            logger.info(f"📱 Push notifications broadcast envoyées à {len(user_ids)} utilisateurs")
+        except Exception as e:
+            logger.warning(f"Erreur envoi push broadcast: {e}")
     
     return {
         "success": True,

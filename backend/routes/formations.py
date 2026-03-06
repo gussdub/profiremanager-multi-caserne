@@ -186,7 +186,13 @@ async def creer_notification_formation(
     message: str,
     lien: str = None
 ):
-    """Helper pour créer une notification liée aux formations"""
+    """Helper pour créer une notification liée aux formations avec push"""
+    # Import pour les push notifications
+    try:
+        from routes.notifications import send_push_notification_to_users
+    except ImportError:
+        send_push_notification_to_users = None
+    
     notification = {
         "id": str(uuid.uuid4()),
         "tenant_id": tenant_id,
@@ -199,6 +205,28 @@ async def creer_notification_formation(
         "created_at": datetime.now(timezone.utc)
     }
     await db.notifications.insert_one(notification)
+    
+    # Envoyer push notification
+    if send_push_notification_to_users:
+        try:
+            tenant = await db.tenants.find_one({"id": tenant_id})
+            tenant_slug = tenant.get("slug", "") if tenant else ""
+            
+            push_data = {
+                "type": type_notif,
+                "lien": lien or "",
+                "tenant": tenant_slug
+            }
+            await send_push_notification_to_users(
+                user_ids=[destinataire_id],
+                title=titre,
+                body=message,
+                data=push_data,
+                tenant_slug=tenant_slug
+            )
+        except Exception as e:
+            logger.warning(f"Erreur envoi push notification formation: {e}")
+    
     return notification
 
 
