@@ -58,17 +58,94 @@ const ParametresRemplacements = ({
 
               {(systemSettings.mode_notification === 'sequentiel' || systemSettings.mode_notification === 'groupe_sequentiel') && (
                 <div className="input-group-compact">
-                  <Label>Délai d'attente (minutes)</Label>
-                  <Input
-                    type="number"
-                    min="5"
-                    max="4320"
-                    step="5"
-                    value={systemSettings.delai_attente_minutes || 1440}
-                    onChange={(e) => handleSettingChange('delai_attente_minutes', parseInt(e.target.value))}
-                    data-testid="delai-attente-input"
-                  />
-                  <small>Temps d'attente avant de passer au suivant (en cas de non-réponse). Par défaut: 24h (1440 min)</small>
+                  <Label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block' }}>
+                    ⏱️ Délais d'attente par priorité (minutes)
+                  </Label>
+                  <small style={{ display: 'block', marginBottom: '0.75rem', color: '#6b7280' }}>
+                    Temps d'attente avant de passer au suivant/groupe suivant selon la priorité de la demande
+                  </small>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div style={{ 
+                      padding: '0.75rem', 
+                      background: '#fef2f2', 
+                      borderRadius: '8px',
+                      border: '1px solid #fecaca'
+                    }}>
+                      <Label style={{ fontSize: '0.85rem', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        🚨 Urgente
+                      </Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        max="60"
+                        step="1"
+                        value={systemSettings.delai_attente_urgente || 5}
+                        onChange={(e) => handleSettingChange('delai_attente_urgente', parseInt(e.target.value))}
+                        style={{ marginTop: '0.25rem' }}
+                      />
+                    </div>
+                    
+                    <div style={{ 
+                      padding: '0.75rem', 
+                      background: '#fff7ed', 
+                      borderRadius: '8px',
+                      border: '1px solid #fed7aa'
+                    }}>
+                      <Label style={{ fontSize: '0.85rem', color: '#ea580c', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        🔥 Haute
+                      </Label>
+                      <Input
+                        type="number"
+                        min="5"
+                        max="120"
+                        step="5"
+                        value={systemSettings.delai_attente_haute || 15}
+                        onChange={(e) => handleSettingChange('delai_attente_haute', parseInt(e.target.value))}
+                        style={{ marginTop: '0.25rem' }}
+                      />
+                    </div>
+                    
+                    <div style={{ 
+                      padding: '0.75rem', 
+                      background: '#eff6ff', 
+                      borderRadius: '8px',
+                      border: '1px solid #bfdbfe'
+                    }}>
+                      <Label style={{ fontSize: '0.85rem', color: '#2563eb', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        📋 Normale
+                      </Label>
+                      <Input
+                        type="number"
+                        min="15"
+                        max="1440"
+                        step="15"
+                        value={systemSettings.delai_attente_normale || 60}
+                        onChange={(e) => handleSettingChange('delai_attente_normale', parseInt(e.target.value))}
+                        style={{ marginTop: '0.25rem' }}
+                      />
+                    </div>
+                    
+                    <div style={{ 
+                      padding: '0.75rem', 
+                      background: '#f9fafb', 
+                      borderRadius: '8px',
+                      border: '1px solid #e5e7eb'
+                    }}>
+                      <Label style={{ fontSize: '0.85rem', color: '#6b7280', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        📝 Faible
+                      </Label>
+                      <Input
+                        type="number"
+                        min="30"
+                        max="4320"
+                        step="30"
+                        value={systemSettings.delai_attente_faible || 120}
+                        onChange={(e) => handleSettingChange('delai_attente_faible', parseInt(e.target.value))}
+                        style={{ marginTop: '0.25rem' }}
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
 

@@ -116,7 +116,12 @@ class ParametresRemplacements(BaseModel):
     mode_notification: str = "simultane"  # simultane, sequentiel, groupe_sequentiel
     taille_groupe: int = 3
     delai_attente_heures: int = 24  # Gardé pour compatibilité
-    delai_attente_minutes: int = 1440  # Nouveau: en minutes
+    delai_attente_minutes: int = 1440  # Ancien champ unique (gardé pour compatibilité)
+    # Nouveaux délais par niveau de priorité (en minutes)
+    delai_attente_urgente: int = 5      # Priorité Urgente: 5 min par défaut
+    delai_attente_haute: int = 15       # Priorité Haute: 15 min par défaut
+    delai_attente_normale: int = 60     # Priorité Normale: 60 min par défaut
+    delai_attente_faible: int = 120     # Priorité Faible: 120 min par défaut
     max_contacts: int = 5
     priorite_grade: bool = True
     priorite_competences: bool = True
@@ -1290,7 +1295,13 @@ async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
         parametres_data = await db.parametres_remplacements.find_one({"tenant_id": tenant_id})
         if not parametres_data:
             mode_notification = "un_par_un"
-            delai_attente_minutes = 120  # 2 heures par défaut
+            # Délais par défaut selon la priorité
+            delais_par_priorite = {
+                "urgent": 5,
+                "haute": 15,
+                "normal": 60,
+                "faible": 120
+            }
             nombre_simultane = 1
             max_contacts = 5
             heures_silencieuses_actif = True
@@ -1299,17 +1310,29 @@ async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
             logger.info(f"⚙️ Paramètres remplacements: Aucun trouvé, utilisation des valeurs par défaut")
         else:
             mode_notification = parametres_data.get("mode_notification", "un_par_un")
-            # Utiliser delai_attente_minutes si disponible, sinon convertir delai_attente_heures
-            delai_attente_minutes = parametres_data.get("delai_attente_minutes") or (parametres_data.get("delai_attente_heures", 2) * 60)
+            # Nouveaux délais par priorité (avec fallback sur l'ancien délai unique)
+            delai_fallback = parametres_data.get("delai_attente_minutes") or (parametres_data.get("delai_attente_heures", 2) * 60)
+            delais_par_priorite = {
+                "urgent": parametres_data.get("delai_attente_urgente", 5),
+                "haute": parametres_data.get("delai_attente_haute", 15),
+                "normal": parametres_data.get("delai_attente_normale", delai_fallback),
+                "faible": parametres_data.get("delai_attente_faible", 120)
+            }
             nombre_simultane = parametres_data.get("nombre_simultane", 3)
             max_contacts = parametres_data.get("max_contacts", 5)
             heures_silencieuses_actif = parametres_data.get("heures_silencieuses_actif", True)
             heure_debut_silence = parametres_data.get("heure_debut_silence", "21:00")
             heure_fin_silence = parametres_data.get("heure_fin_silence", "07:00")
-            logger.info(f"⚙️ Paramètres remplacements chargés: délai={delai_attente_minutes}min, mode={mode_notification}, max_contacts={max_contacts}")
+            logger.info(f"⚙️ Paramètres remplacements chargés: délais={delais_par_priorite}, mode={mode_notification}, max_contacts={max_contacts}")
         
         # Vérifier les heures silencieuses pour les demandes non-urgentes
         priorite = demande_data.get("priorite", "normal")
+        
+        # Sélectionner le délai d'attente selon la priorité de la demande
+        delai_attente_minutes = delais_par_priorite.get(priorite, delais_par_priorite.get("normal", 60))
+        logger.info(f"⏱️ Délai d'attente pour priorité '{priorite}': {delai_attente_minutes} minutes")
+        
+        # Les demandes Urgentes et Hautes ignorent les heures silencieuses
         
         # Les demandes Urgentes et Hautes ignorent les heures silencieuses
         if priorite not in ["urgent", "haute"] and heures_silencieuses_actif:
