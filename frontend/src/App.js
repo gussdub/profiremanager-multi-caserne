@@ -16,6 +16,7 @@ import RemplacementChoix from './components/RemplacementChoix';
 import { useTenant } from "./contexts/TenantContext";
 import { useAuth, AuthProvider } from "./contexts/AuthContext";
 import { getTenantToken, buildApiUrl } from "./utils/api";
+import { useInactivityLogout } from "./hooks/useInactivityLogout";
 const SecteursMap = lazy(() => import("./components/SecteursMap"));
 import { apiGet, apiPost, apiPut, apiPatch, apiDelete, apiCall } from "./utils/api";
 import PushNotificationService from "./services/pushNotifications";
@@ -258,6 +259,9 @@ window.setTenantItem = (key, value) => {
 
 // Main Application Layout
 const AppLayout = () => {
+  // Hook pour déconnexion automatique après 10 min d'inactivité (web uniquement)
+  useInactivityLogout();
+  
   // Persister la page active dans localStorage pour conserver après refresh
   const [currentPage, setCurrentPage] = useState(() => {
     const savedPage = localStorage.getItem('currentPage');
