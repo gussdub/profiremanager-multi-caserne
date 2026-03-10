@@ -196,11 +196,19 @@ const ModuleEPI = ({ user }) => {
       try {
         const data = await apiGet(tenantSlug, '/types-epi');
         if (data && data.length > 0) {
-          // Mapper les données en gardant l'ID réel pour le matching
+          // Mapper les données en gardant tous les champs nécessaires
           setTypesEPI(data.map(t => ({
             id: t.id,  // Utiliser l'ID réel (UUID)
             nom: t.nom,
-            icone: t.icone
+            icone: t.icone,
+            // Formulaires d'inspection (depuis le type)
+            formulaire_apres_usage_id: t.formulaire_apres_usage_id || null,
+            formulaire_routine_id: t.formulaire_routine_id || null,
+            formulaire_avancee_id: t.formulaire_avancee_id || null,
+            // Fréquences d'inspection
+            frequence_apres_usage: t.frequence_apres_usage || 'apres_usage',
+            frequence_routine: t.frequence_routine || 'mensuelle',
+            frequence_avancee: t.frequence_avancee || 'annuelle'
           })));
         }
       } catch (error) {
@@ -1028,6 +1036,22 @@ const ModuleEPI = ({ user }) => {
     // Chercher par ID d'abord, puis par nom
     const found = typesEPI.find(t => t.id === typeIdOrName) || typesEPI.find(t => t.nom === typeIdOrName);
     return found?.nom || typeIdOrName || 'Type inconnu';
+  };
+  
+  // Helper pour obtenir les formulaires d'inspection d'un EPI via son Type
+  const getEPIFormulaires = (epi) => {
+    const typeId = epi?.type_epi_id || epi?.type_epi || '';
+    const typeEPI = typesEPI.find(t => t.id === typeId) || typesEPI.find(t => t.nom === typeId);
+    if (!typeEPI) return { apresUsage: null, routine: null, avancee: null };
+    
+    return {
+      apresUsage: typeEPI.formulaire_apres_usage_id || null,
+      routine: typeEPI.formulaire_routine_id || null,
+      avancee: typeEPI.formulaire_avancee_id || null,
+      frequenceApresUsage: typeEPI.frequence_apres_usage || 'apres_usage',
+      frequenceRoutine: typeEPI.frequence_routine || 'mensuelle',
+      frequenceAvancee: typeEPI.frequence_avancee || 'annuelle'
+    };
   };
   
   // Helper pour obtenir le type d'un EPI (priorité à type_epi_id)
@@ -2518,50 +2542,98 @@ const ModuleEPI = ({ user }) => {
                 <div style={{display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem'}}>
                   <h3 style={{ margin: 0, fontSize: '1rem' }}>📋 Historique des inspections ({inspections.length})</h3>
                   <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    {selectedEPI?.formulaire_avancee_id ? (
-                      <Button 
-                        size="sm"
-                        onClick={() => {
-                          const formulaireId = selectedEPI.formulaire_avancee_id;
-                          console.log('[DEBUG] Bouton cliqué, formulaireId:', formulaireId);
-                          console.log('[DEBUG] selectedEPI:', selectedEPI?.id);
-                          const loadAndOpenInspection = async () => {
-                            try {
-                              console.log('[DEBUG] Chargement du formulaire...');
-                              const formulaire = await apiGet(tenantSlug, `/formulaires-inspection/${formulaireId}`);
-                              console.log('[DEBUG] Formulaire reçu:', formulaire?.id, formulaire?.nom);
-                              if (formulaire && formulaire.id) {
-                                console.log('[DEBUG] Ouverture du modal...');
-                                setSelectedFormulaireEPI(formulaire);
-                                setShowUnifiedInspectionModal(true);
-                                console.log('[DEBUG] États mis à jour');
-                              } else {
-                                console.log('[DEBUG] Formulaire non trouvé');
-                                toast({
-                                  title: "Erreur",
-                                  description: "Formulaire non trouvé",
-                                  variant: "destructive"
-                                });
-                              }
-                            } catch (error) {
-                              console.error('[DEBUG] Erreur:', error);
-                              toast({
-                                title: "Erreur",
-                                description: "Impossible de charger le formulaire d'inspection",
-                                variant: "destructive"
-                              });
-                            }
-                          };
-                          loadAndOpenInspection();
-                        }}
-                      >
-                        ➕ Inspection avancée annuelle
-                      </Button>
-                    ) : (
-                      <p style={{ color: '#6b7280', fontSize: '0.875rem', fontStyle: 'italic' }}>
-                        Aucun formulaire d'inspection avancée assigné à cet EPI
-                      </p>
-                    )}
+                    {/* Boutons d'inspection basés sur le Type d'EPI */}
+                    {(() => {
+                      const formulaires = getEPIFormulaires(selectedEPI);
+                      return (
+                        <>
+                          {/* Bouton Après usage */}
+                          {formulaires.apresUsage && (
+                            <Button 
+                              size="sm"
+                              style={{ background: '#f97316', color: 'white' }}
+                              onClick={() => {
+                                const loadAndOpenInspection = async () => {
+                                  try {
+                                    const formulaire = await apiGet(tenantSlug, `/formulaires-inspection/${formulaires.apresUsage}`);
+                                    if (formulaire && formulaire.id) {
+                                      setSelectedFormulaireEPI(formulaire);
+                                      setShowUnifiedInspectionModal(true);
+                                    } else {
+                                      toast({ title: "Erreur", description: "Formulaire non trouvé", variant: "destructive" });
+                                    }
+                                  } catch (error) {
+                                    toast({ title: "Erreur", description: "Impossible de charger le formulaire", variant: "destructive" });
+                                  }
+                                };
+                                loadAndOpenInspection();
+                              }}
+                            >
+                              🔍 Après usage
+                            </Button>
+                          )}
+                          
+                          {/* Bouton Routine */}
+                          {formulaires.routine && (
+                            <Button 
+                              size="sm"
+                              style={{ background: '#3b82f6', color: 'white' }}
+                              onClick={() => {
+                                const loadAndOpenInspection = async () => {
+                                  try {
+                                    const formulaire = await apiGet(tenantSlug, `/formulaires-inspection/${formulaires.routine}`);
+                                    if (formulaire && formulaire.id) {
+                                      setSelectedFormulaireEPI(formulaire);
+                                      setShowUnifiedInspectionModal(true);
+                                    } else {
+                                      toast({ title: "Erreur", description: "Formulaire non trouvé", variant: "destructive" });
+                                    }
+                                  } catch (error) {
+                                    toast({ title: "Erreur", description: "Impossible de charger le formulaire", variant: "destructive" });
+                                  }
+                                };
+                                loadAndOpenInspection();
+                              }}
+                            >
+                              📅 Routine
+                            </Button>
+                          )}
+                          
+                          {/* Bouton Avancée (admin/superviseur seulement) */}
+                          {formulaires.avancee && ['admin', 'superviseur'].includes(user?.role) && (
+                            <Button 
+                              size="sm"
+                              style={{ background: '#7c3aed', color: 'white' }}
+                              onClick={() => {
+                                const loadAndOpenInspection = async () => {
+                                  try {
+                                    const formulaire = await apiGet(tenantSlug, `/formulaires-inspection/${formulaires.avancee}`);
+                                    if (formulaire && formulaire.id) {
+                                      setSelectedFormulaireEPI(formulaire);
+                                      setShowUnifiedInspectionModal(true);
+                                    } else {
+                                      toast({ title: "Erreur", description: "Formulaire non trouvé", variant: "destructive" });
+                                    }
+                                  } catch (error) {
+                                    toast({ title: "Erreur", description: "Impossible de charger le formulaire", variant: "destructive" });
+                                  }
+                                };
+                                loadAndOpenInspection();
+                              }}
+                            >
+                              🔧 Avancée
+                            </Button>
+                          )}
+                          
+                          {/* Message si aucun formulaire configuré */}
+                          {!formulaires.apresUsage && !formulaires.routine && !formulaires.avancee && (
+                            <p style={{ color: '#6b7280', fontSize: '0.875rem', fontStyle: 'italic' }}>
+                              Aucun formulaire d'inspection configuré pour ce type d'EPI
+                            </p>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
                 

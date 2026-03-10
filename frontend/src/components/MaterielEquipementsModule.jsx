@@ -1291,6 +1291,10 @@ const CategorieModal = ({ mode, categorie, tenantSlug, onClose, onSuccess }) => 
     formulaire_apres_usage_id: categorie?.formulaire_apres_usage_id || '',
     formulaire_routine_id: categorie?.formulaire_routine_id || '',
     formulaire_avancee_id: categorie?.formulaire_avancee_id || '',
+    // Fréquences d'inspection par type
+    frequence_apres_usage: categorie?.frequence_apres_usage || 'apres_usage',
+    frequence_routine: categorie?.frequence_routine || 'mensuelle',
+    frequence_avancee: categorie?.frequence_avancee || 'annuelle',
     // Support pour sélection multiple - tableau d'IDs et d'emails
     personnes_ressources: categorie?.personnes_ressources || [],
     // Garder les anciens champs pour compatibilité
@@ -1321,6 +1325,21 @@ const CategorieModal = ({ mode, categorie, tenantSlug, onClose, onSuccess }) => 
     };
     loadUsers();
   }, [tenantSlug]);
+
+  // Options de fréquence d'inspection
+  const frequencesInspection = [
+    { value: '', label: 'Aucune' },
+    { value: 'journaliere', label: 'Journalière' },
+    { value: 'hebdomadaire', label: 'Hebdomadaire' },
+    { value: 'mensuelle', label: 'Mensuelle' },
+    { value: 'bimestrielle', label: 'Aux 2 mois' },
+    { value: 'trimestrielle', label: 'Trimestrielle (3 mois)' },
+    { value: 'bi_annuelle', label: 'Bi-annuelle (6 mois)' },
+    { value: 'annuelle', label: 'Annuelle' },
+    { value: '2ans', label: '2 ans' },
+    { value: '5ans', label: '5 ans' },
+    { value: 'apres_usage', label: 'Après usage' }
+  ];
 
   // Charger les formulaires d'inspection disponibles
   useEffect(() => {
@@ -1459,76 +1478,145 @@ const CategorieModal = ({ mode, categorie, tenantSlug, onClose, onSuccess }) => 
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {/* Après utilisation */}
-              <div>
-                <Label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.25rem' }}>
-                  🔍 Après utilisation
-                </Label>
-                <select
-                  value={formData.formulaire_apres_usage_id || ''}
-                  onChange={(e) => setFormData({ ...formData, formulaire_apres_usage_id: e.target.value })}
-                  style={{ 
-                    width: '100%', 
-                    padding: '0.5rem', 
-                    borderRadius: '6px', 
-                    border: '1px solid #93C5FD', 
-                    fontSize: '0.875rem', 
-                    backgroundColor: 'white' 
-                  }}
-                >
-                  <option value="">Aucun formulaire</option>
-                  {formulairesDisponibles.map(f => (
-                    <option key={f.id} value={f.id}>📋 {f.nom}</option>
-                  ))}
-                </select>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                <div>
+                  <Label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.25rem' }}>
+                    🔍 Après utilisation
+                  </Label>
+                  <select
+                    value={formData.formulaire_apres_usage_id || ''}
+                    onChange={(e) => setFormData({ ...formData, formulaire_apres_usage_id: e.target.value })}
+                    style={{ 
+                      width: '100%', 
+                      padding: '0.5rem', 
+                      borderRadius: '6px', 
+                      border: '1px solid #93C5FD', 
+                      fontSize: '0.875rem', 
+                      backgroundColor: 'white' 
+                    }}
+                  >
+                    <option value="">Aucun formulaire</option>
+                    {formulairesDisponibles.map(f => (
+                      <option key={f.id} value={f.id}>📋 {f.nom}</option>
+                    ))}
+                  </select>
+                </div>
+                {formData.formulaire_apres_usage_id && (
+                  <div>
+                    <Label style={{ fontSize: '0.8rem', marginBottom: '0.25rem' }}>Fréquence</Label>
+                    <select
+                      value={formData.frequence_apres_usage || 'apres_usage'}
+                      onChange={(e) => setFormData({ ...formData, frequence_apres_usage: e.target.value })}
+                      style={{ 
+                        width: '100%', 
+                        padding: '0.5rem', 
+                        borderRadius: '6px', 
+                        border: '1px solid #93C5FD', 
+                        fontSize: '0.875rem', 
+                        backgroundColor: 'white' 
+                      }}
+                    >
+                      {frequencesInspection.filter(f => f.value).map(f => (
+                        <option key={f.value} value={f.value}>{f.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
               
               {/* Routine mensuelle */}
-              <div>
-                <Label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.25rem' }}>
-                  📅 Routine mensuelle
-                </Label>
-                <select
-                  value={formData.formulaire_routine_id || ''}
-                  onChange={(e) => setFormData({ ...formData, formulaire_routine_id: e.target.value })}
-                  style={{ 
-                    width: '100%', 
-                    padding: '0.5rem', 
-                    borderRadius: '6px', 
-                    border: '1px solid #93C5FD', 
-                    fontSize: '0.875rem', 
-                    backgroundColor: 'white' 
-                  }}
-                >
-                  <option value="">Aucun formulaire</option>
-                  {formulairesDisponibles.map(f => (
-                    <option key={f.id} value={f.id}>📋 {f.nom}</option>
-                  ))}
-                </select>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                <div>
+                  <Label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.25rem' }}>
+                    📅 Routine
+                  </Label>
+                  <select
+                    value={formData.formulaire_routine_id || ''}
+                    onChange={(e) => setFormData({ ...formData, formulaire_routine_id: e.target.value })}
+                    style={{ 
+                      width: '100%', 
+                      padding: '0.5rem', 
+                      borderRadius: '6px', 
+                      border: '1px solid #93C5FD', 
+                      fontSize: '0.875rem', 
+                      backgroundColor: 'white' 
+                    }}
+                  >
+                    <option value="">Aucun formulaire</option>
+                    {formulairesDisponibles.map(f => (
+                      <option key={f.id} value={f.id}>📋 {f.nom}</option>
+                    ))}
+                  </select>
+                </div>
+                {formData.formulaire_routine_id && (
+                  <div>
+                    <Label style={{ fontSize: '0.8rem', marginBottom: '0.25rem' }}>Fréquence</Label>
+                    <select
+                      value={formData.frequence_routine || 'mensuelle'}
+                      onChange={(e) => setFormData({ ...formData, frequence_routine: e.target.value })}
+                      style={{ 
+                        width: '100%', 
+                        padding: '0.5rem', 
+                        borderRadius: '6px', 
+                        border: '1px solid #93C5FD', 
+                        fontSize: '0.875rem', 
+                        backgroundColor: 'white' 
+                      }}
+                    >
+                      {frequencesInspection.filter(f => f.value).map(f => (
+                        <option key={f.value} value={f.value}>{f.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
               
               {/* Avancée annuelle */}
-              <div>
-                <Label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.25rem' }}>
-                  🔧 Avancée annuelle
-                  <span style={{ fontSize: '0.65rem', color: '#6B7280', fontWeight: 'normal' }}>(admin/superviseur seulement)</span>
-                </Label>
-                <select
-                  value={formData.formulaire_avancee_id || ''}
-                  onChange={(e) => setFormData({ ...formData, formulaire_avancee_id: e.target.value })}
-                  style={{ 
-                    width: '100%', 
-                    padding: '0.5rem', 
-                    borderRadius: '6px', 
-                    border: '1px solid #93C5FD', 
-                    fontSize: '0.875rem', 
-                    backgroundColor: 'white' 
-                  }}
-                >
-                  <option value="">Aucun formulaire</option>
-                  {formulairesDisponibles.map(f => (
-                    <option key={f.id} value={f.id}>📋 {f.nom}</option>
-                  ))}
-                </select>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                <div>
+                  <Label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.25rem' }}>
+                    🔧 Avancée
+                    <span style={{ fontSize: '0.65rem', color: '#6B7280', fontWeight: 'normal' }}>(admin/superviseur)</span>
+                  </Label>
+                  <select
+                    value={formData.formulaire_avancee_id || ''}
+                    onChange={(e) => setFormData({ ...formData, formulaire_avancee_id: e.target.value })}
+                    style={{ 
+                      width: '100%', 
+                      padding: '0.5rem', 
+                      borderRadius: '6px', 
+                      border: '1px solid #93C5FD', 
+                      fontSize: '0.875rem', 
+                      backgroundColor: 'white' 
+                    }}
+                  >
+                    <option value="">Aucun formulaire</option>
+                    {formulairesDisponibles.map(f => (
+                      <option key={f.id} value={f.id}>📋 {f.nom}</option>
+                    ))}
+                  </select>
+                </div>
+                {formData.formulaire_avancee_id && (
+                  <div>
+                    <Label style={{ fontSize: '0.8rem', marginBottom: '0.25rem' }}>Fréquence</Label>
+                    <select
+                      value={formData.frequence_avancee || 'annuelle'}
+                      onChange={(e) => setFormData({ ...formData, frequence_avancee: e.target.value })}
+                      style={{ 
+                        width: '100%', 
+                        padding: '0.5rem', 
+                        borderRadius: '6px', 
+                        border: '1px solid #93C5FD', 
+                        fontSize: '0.875rem', 
+                        backgroundColor: 'white' 
+                      }}
+                    >
+                      {frequencesInspection.filter(f => f.value).map(f => (
+                        <option key={f.value} value={f.value}>{f.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
             </div>
           </div>

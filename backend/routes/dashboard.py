@@ -814,6 +814,8 @@ def calculer_prochaine_date(derniere_date: str, frequence: str) -> str:
             "annuelle": timedelta(days=365),
             "2ans": timedelta(days=730),
             "2_ans": timedelta(days=730),
+            "5ans": timedelta(days=1825),  # 5 ans
+            "5_ans": timedelta(days=1825),
             "apres_usage": None,  # Pas de calcul automatique
         }
         

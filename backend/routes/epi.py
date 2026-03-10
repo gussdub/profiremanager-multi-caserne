@@ -404,6 +404,10 @@ class TypeEPICreate(BaseModel):
     formulaire_apres_usage_id: Optional[str] = None
     formulaire_routine_id: Optional[str] = None
     formulaire_avancee_id: Optional[str] = None
+    # Fréquences d'inspection par type
+    frequence_apres_usage: str = "apres_usage"
+    frequence_routine: str = "mensuelle"
+    frequence_avancee: str = "annuelle"
 
 class TypeEPIUpdate(BaseModel):
     nom: Optional[str] = None
@@ -415,6 +419,10 @@ class TypeEPIUpdate(BaseModel):
     formulaire_apres_usage_id: Optional[str] = None
     formulaire_routine_id: Optional[str] = None
     formulaire_avancee_id: Optional[str] = None
+    # Fréquences d'inspection par type
+    frequence_apres_usage: Optional[str] = None
+    frequence_routine: Optional[str] = None
+    frequence_avancee: Optional[str] = None
 
 class EPICreate(BaseModel):
     tenant_id: Optional[str] = None
@@ -765,6 +773,10 @@ async def create_type_epi(
         "formulaire_apres_usage_id": type_data.formulaire_apres_usage_id,
         "formulaire_routine_id": type_data.formulaire_routine_id,
         "formulaire_avancee_id": type_data.formulaire_avancee_id,
+        # Fréquences d'inspection
+        "frequence_apres_usage": type_data.frequence_apres_usage or "apres_usage",
+        "frequence_routine": type_data.frequence_routine or "mensuelle",
+        "frequence_avancee": type_data.frequence_avancee or "annuelle",
         "created_at": datetime.now(timezone.utc)
     }
     
@@ -821,6 +833,14 @@ async def update_type_epi(
         update_data["formulaire_routine_id"] = type_data.formulaire_routine_id or None
     if type_data.formulaire_avancee_id is not None:
         update_data["formulaire_avancee_id"] = type_data.formulaire_avancee_id or None
+    
+    # Fréquences d'inspection
+    if type_data.frequence_apres_usage is not None:
+        update_data["frequence_apres_usage"] = type_data.frequence_apres_usage
+    if type_data.frequence_routine is not None:
+        update_data["frequence_routine"] = type_data.frequence_routine
+    if type_data.frequence_avancee is not None:
+        update_data["frequence_avancee"] = type_data.frequence_avancee
     
     if update_data:
         await db.types_epi.update_one(

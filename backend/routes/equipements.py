@@ -91,6 +91,10 @@ class CategorieEquipementCreate(BaseModel):
     formulaire_apres_usage_id: str = ""
     formulaire_routine_id: str = ""
     formulaire_avancee_id: str = ""
+    # Fréquences d'inspection par type
+    frequence_apres_usage: str = "apres_usage"
+    frequence_routine: str = "mensuelle"
+    frequence_avancee: str = "annuelle"
 
 
 class CategorieEquipementUpdate(BaseModel):
@@ -109,6 +113,10 @@ class CategorieEquipementUpdate(BaseModel):
     formulaire_apres_usage_id: Optional[str] = None
     formulaire_routine_id: Optional[str] = None
     formulaire_avancee_id: Optional[str] = None
+    # Fréquences d'inspection par type
+    frequence_apres_usage: Optional[str] = None
+    frequence_routine: Optional[str] = None
+    frequence_avancee: Optional[str] = None
 
 
 class HistoriqueMaintenanceCreate(BaseModel):
