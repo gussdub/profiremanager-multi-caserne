@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Upload, Download, CheckCircle, XCircle, AlertCircle, MapPin, FileText, Globe } from 'lucide-react';
+import { Upload, Download, CheckCircle, XCircle, AlertCircle, MapPin, FileText, Globe, Droplet } from 'lucide-react';
 import { apiGet, apiPost } from '../utils/api';
 import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
@@ -505,7 +505,7 @@ const ImportHydrants = ({ tenantSlug, onImportComplete, onClose }) => {
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Droplets className="h-5 w-5 text-blue-600" />
+          <Droplet className="h-5 w-5 text-blue-600" />
           Import Points d'eau (Hydrants)
         </CardTitle>
         <CardDescription>
