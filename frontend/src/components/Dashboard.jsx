@@ -137,7 +137,7 @@ const Dashboard = ({ setCurrentPage }) => {
       
       const formationsAVenir = toutesFormations
         .filter(f => (f.date_debut || f.date) >= todayStr)
-        .filter(f => f.inscrits?.includes(user.id) || f.participants?.some(p => p.user_id === user.id))
+        .filter(f => f.user_inscrit || f.inscrits?.includes(user.id) || f.participants?.some(p => p.user_id === user.id))
         .sort((a, b) => (a.date_debut || a.date).localeCompare(b.date_debut || b.date))
         .slice(0, 3);
       setFormationsInscrites(formationsAVenir);
