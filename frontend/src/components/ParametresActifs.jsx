@@ -1090,7 +1090,7 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     {/* Après utilisation */}
-                    <div style={{ display: 'flex', gap: '12px' }}>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                       <div style={{ flex: 1 }}>
                         <Label style={{ fontSize: '12px', display: 'block', marginBottom: '6px' }}>
                           🔍 Après utilisation
@@ -1142,7 +1142,7 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                     </div>
                     
                     {/* Routine */}
-                    <div style={{ display: 'flex', gap: '12px' }}>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                       <div style={{ flex: 1 }}>
                         <Label style={{ fontSize: '12px', display: 'block', marginBottom: '6px' }}>
                           📅 Routine
@@ -1194,7 +1194,7 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                     </div>
                     
                     {/* Avancée */}
-                    <div style={{ display: 'flex', gap: '12px' }}>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                       <div style={{ flex: 1 }}>
                         <Label style={{ fontSize: '12px', display: 'block', marginBottom: '6px' }}>
                           🔧 Avancée <span style={{ fontSize: '10px', color: '#6b7280' }}>(admin/superviseur)</span>
