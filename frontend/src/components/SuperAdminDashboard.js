@@ -71,7 +71,7 @@ const SuperAdminDashboard = ({ onLogout }) => {
     actif: true,
     description: ''
   });
-  // États SFTP Premier Répondant
+  // États SFTP Alerte Santé
   const [showSftpPrConfigModal, setShowSftpPrConfigModal] = useState(false);
   const [showSftpPrPassword, setShowSftpPrPassword] = useState(false);
   const [sftpPrConfig, setSftpPrConfig] = useState(null);
@@ -1038,7 +1038,7 @@ const SuperAdminDashboard = ({ onLogout }) => {
       
       toast({
         title: "Succès",
-        description: "Configuration SFTP Premier Répondant enregistrée"
+        description: "Configuration SFTP Alerte Santé enregistrée"
       });
       
       await fetchSftpPrConfig(selectedTenant.slug);
@@ -1132,7 +1132,7 @@ const SuperAdminDashboard = ({ onLogout }) => {
       
       toast({
         title: "Succès",
-        description: "Surveillance SFTP Premier Répondant démarrée"
+        description: "Surveillance SFTP Alerte Santé démarrée"
       });
       
       await fetchSftpPrConfig(selectedTenant.slug);
@@ -1164,7 +1164,7 @@ const SuperAdminDashboard = ({ onLogout }) => {
       
       toast({
         title: "Succès",
-        description: "Surveillance SFTP Premier Répondant arrêtée"
+        description: "Surveillance SFTP Alerte Santé arrêtée"
       });
       
       await fetchSftpPrConfig(selectedTenant.slug);
@@ -1180,8 +1180,8 @@ const SuperAdminDashboard = ({ onLogout }) => {
 
   const handleDeleteSftpPrConfig = async () => {
     const confirmed = await confirm({
-      title: 'Supprimer la configuration SFTP Premier Répondant',
-      message: 'Êtes-vous sûr de vouloir supprimer la configuration SFTP Premier Répondant ?',
+      title: 'Supprimer la configuration SFTP Alerte Santé',
+      message: 'Êtes-vous sûr de vouloir supprimer la configuration SFTP Alerte Santé ?',
       variant: 'danger',
       confirmText: 'Supprimer'
     });
@@ -1204,7 +1204,7 @@ const SuperAdminDashboard = ({ onLogout }) => {
       
       toast({
         title: "Succès",
-        description: "Configuration SFTP Premier Répondant supprimée"
+        description: "Configuration SFTP Alerte Santé supprimée"
       });
       
       setSftpPrConfig(null);
@@ -2356,7 +2356,7 @@ const SuperAdminDashboard = ({ onLogout }) => {
               </div>
 
               <div>
-                <Label>🚑 Centrale Premier Répondant</Label>
+                <Label>🚑 Centrale Alerte Santé</Label>
                 <select
                   value={newTenant.centrale_pr_id || ''}
                   onChange={(e) => setNewTenant({ ...newTenant, centrale_pr_id: e.target.value })}
@@ -2367,7 +2367,7 @@ const SuperAdminDashboard = ({ onLogout }) => {
                     <option key={c.id} value={c.id}>{c.code} - {c.nom}</option>
                   ))}
                 </select>
-                <small style={{ color: '#64748b' }}>Centrale associée pour l'import des cartes d'appel Premier Répondant</small>
+                <small style={{ color: '#64748b' }}>Centrale associée pour l'import des cartes d'appel Alerte Santé</small>
               </div>
 
               <div style={{ 
@@ -2572,7 +2572,7 @@ const SuperAdminDashboard = ({ onLogout }) => {
                 </Button>
               </div>
 
-              {/* Section Configuration SFTP Premier Répondant */}
+              {/* Section Configuration SFTP Alerte Santé */}
               <div style={{ 
                 padding: '20px', 
                 background: '#fef3c7', 
@@ -2582,10 +2582,10 @@ const SuperAdminDashboard = ({ onLogout }) => {
               }}>
                 <div style={{ marginBottom: '15px' }}>
                   <Label style={{ fontSize: '16px', fontWeight: 'bold', color: '#b45309' }}>
-                    🚑 Configuration SFTP - Cartes d'appel Premier Répondant
+                    🚑 Configuration SFTP - Cartes d'appel Alerte Santé
                   </Label>
                   <p style={{ fontSize: '13px', color: '#b45309', margin: '5px 0 0 0' }}>
-                    Configurez la connexion au serveur SFTP pour importer automatiquement les cartes d'appel des premiers répondants
+                    Configurez la connexion au serveur SFTP pour importer automatiquement les cartes d'appel des Alerte Santé
                   </p>
                 </div>
                 
@@ -2824,7 +2824,7 @@ const SuperAdminDashboard = ({ onLogout }) => {
         </div>
       )}
 
-      {/* Modal Configuration SFTP Premier Répondant */}
+      {/* Modal Configuration SFTP Alerte Santé */}
       {showSftpPrConfigModal && selectedTenant && (
         <div className="modal-overlay" style={{
           position: 'fixed',
@@ -2848,10 +2848,10 @@ const SuperAdminDashboard = ({ onLogout }) => {
             overflow: 'auto'
           }}>
             <h2 style={{ marginBottom: '10px', fontSize: '24px', fontWeight: 'bold' }}>
-              🚑 Configuration SFTP - Cartes d'appel Premier Répondant
+              🚑 Configuration SFTP - Cartes d'appel Alerte Santé
             </h2>
             <p style={{ marginBottom: '20px', color: '#666', fontSize: '14px' }}>
-              Configurer l'accès SFTP pour les cartes Premier Répondant de <strong>{selectedTenant.nom}</strong>
+              Configurer l'accès SFTP pour les cartes Alerte Santé de <strong>{selectedTenant.nom}</strong>
             </p>
 
             {sftpPrLoading ? (
@@ -2959,7 +2959,7 @@ const SuperAdminDashboard = ({ onLogout }) => {
                     onChange={(e) => setSftpPrFormData({ ...sftpPrFormData, remote_path: e.target.value })}
                     placeholder="/cartes_appel/premier_repondant"
                   />
-                  <small style={{ color: '#666' }}>Répertoire où sont déposées les cartes d'appel Premier Répondant XML</small>
+                  <small style={{ color: '#666' }}>Répertoire où sont déposées les cartes d'appel Alerte Santé XML</small>
                 </div>
 
                 <div>

@@ -533,8 +533,6 @@ class SFTPService:
         """
         Traite les fichiers d'une intervention avec un type de carte spécifique
         """
-        from services.cauca_parser import parse_cauca_intervention
-        
         # Télécharger tous les fichiers
         files_content = {}
         for filename in filenames:
@@ -548,16 +546,25 @@ class SFTPService:
             logger.warning(f"Aucun contenu valide pour la carte {card_number}")
             return None
         
-        # Parser l'intervention
+        # Parser l'intervention selon le type de carte
         try:
-            intervention_data = parse_cauca_intervention(files_content)
+            if type_carte == "alerte_sante":
+                from services.alerte_sante_parser import parse_pr_intervention
+                intervention_data = parse_pr_intervention(files_content)
+            else:
+                from services.cauca_parser import parse_cauca_intervention
+                intervention_data = parse_cauca_intervention(files_content)
         except Exception as e:
-            logger.error(f"Erreur parsing carte {card_number}: {e}")
+            logger.error(f"Erreur parsing carte {type_carte} {card_number}: {e}")
+            return None
+        
+        if not intervention_data:
+            logger.warning(f"Pas de données parsées pour la carte {card_number}")
             return None
         
         # Ajouter les métadonnées avec le type de carte
         intervention_data["tenant_id"] = tenant_id
-        intervention_data["status"] = "new"
+        intervention_data["status"] = intervention_data.get("status", "new")
         intervention_data["created_at"] = datetime.now(timezone.utc)
         intervention_data["source"] = "sftp_auto"
         intervention_data["type_carte"] = type_carte  # 'incendie' ou 'premier_repondant'

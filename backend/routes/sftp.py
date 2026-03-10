@@ -406,7 +406,7 @@ async def get_sftp_pr_config(
     tenant_slug: str,
     admin: SuperAdmin = Depends(get_super_admin)
 ):
-    """Récupérer la configuration SFTP Premier Répondant du tenant (Super-admin uniquement)"""
+    """Récupérer la configuration SFTP Alerte Santé du tenant (Super-admin uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     config = await db.sftp_configs_pr.find_one(
@@ -431,7 +431,7 @@ async def create_sftp_pr_config(
     config_data: SFTPConfigCreate,
     admin: SuperAdmin = Depends(get_super_admin)
 ):
-    """Créer ou mettre à jour la configuration SFTP Premier Répondant (Super-admin uniquement)"""
+    """Créer ou mettre à jour la configuration SFTP Alerte Santé (Super-admin uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     # Vérifier si une config existe déjà
@@ -448,7 +448,7 @@ async def create_sftp_pr_config(
             {"$set": update_data}
         )
         
-        return {"message": "Configuration SFTP Premier Répondant mise à jour", "id": existing["id"]}
+        return {"message": "Configuration SFTP Alerte Santé mise à jour", "id": existing["id"]}
     else:
         if not config_data.password:
             raise HTTPException(status_code=400, detail="Le mot de passe est obligatoire pour une nouvelle configuration")
@@ -460,7 +460,7 @@ async def create_sftp_pr_config(
         
         await db.sftp_configs_pr.insert_one(config.dict())
         
-        return {"message": "Configuration SFTP Premier Répondant créée", "id": config.id}
+        return {"message": "Configuration SFTP Alerte Santé créée", "id": config.id}
 
 
 @router.put("/{tenant_slug}/sftp-pr/config")
@@ -469,12 +469,12 @@ async def update_sftp_pr_config(
     config_data: SFTPConfigUpdate,
     admin: SuperAdmin = Depends(get_super_admin)
 ):
-    """Mettre à jour la configuration SFTP Premier Répondant (Super-admin uniquement)"""
+    """Mettre à jour la configuration SFTP Alerte Santé (Super-admin uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     existing = await db.sftp_configs_pr.find_one({"tenant_id": tenant.id})
     if not existing:
-        raise HTTPException(status_code=404, detail="Configuration SFTP Premier Répondant non trouvée")
+        raise HTTPException(status_code=404, detail="Configuration SFTP Alerte Santé non trouvée")
     
     update_data = {}
     for k, v in config_data.dict().items():
@@ -494,7 +494,7 @@ async def update_sftp_pr_config(
         {"$set": update_data}
     )
     
-    return {"message": "Configuration SFTP Premier Répondant mise à jour"}
+    return {"message": "Configuration SFTP Alerte Santé mise à jour"}
 
 
 @router.delete("/{tenant_slug}/sftp-pr/config")
@@ -502,7 +502,7 @@ async def delete_sftp_pr_config(
     tenant_slug: str,
     admin: SuperAdmin = Depends(get_super_admin)
 ):
-    """Supprimer la configuration SFTP Premier Répondant (Super-admin uniquement)"""
+    """Supprimer la configuration SFTP Alerte Santé (Super-admin uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     # Arrêter le polling s'il est actif
@@ -516,7 +516,7 @@ async def delete_sftp_pr_config(
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Configuration non trouvée")
     
-    return {"message": "Configuration SFTP Premier Répondant supprimée"}
+    return {"message": "Configuration SFTP Alerte Santé supprimée"}
 
 
 @router.post("/{tenant_slug}/sftp-pr/test")
@@ -525,7 +525,7 @@ async def test_sftp_pr_connection(
     config_data: SFTPConfigCreate,
     admin: SuperAdmin = Depends(get_super_admin)
 ):
-    """Tester la connexion SFTP Premier Répondant"""
+    """Tester la connexion SFTP Alerte Santé"""
     import paramiko
     
     tenant = await get_tenant_from_slug(tenant_slug)
@@ -566,15 +566,15 @@ async def start_sftp_pr_polling(
     tenant_slug: str,
     admin: SuperAdmin = Depends(get_super_admin)
 ):
-    """Démarrer le polling SFTP Premier Répondant pour un tenant"""
+    """Démarrer le polling SFTP Alerte Santé pour un tenant"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     config = await db.sftp_configs_pr.find_one({"tenant_id": tenant.id})
     if not config:
-        raise HTTPException(status_code=404, detail="Configuration SFTP Premier Répondant non trouvée")
+        raise HTTPException(status_code=404, detail="Configuration SFTP Alerte Santé non trouvée")
     
     if not config.get("actif"):
-        raise HTTPException(status_code=400, detail="Configuration SFTP Premier Répondant non active")
+        raise HTTPException(status_code=400, detail="Configuration SFTP Alerte Santé non active")
     
     sftp_service = get_sftp_service()
     polling_key = f"{tenant.id}_pr"
@@ -585,11 +585,11 @@ async def start_sftp_pr_polling(
     await sftp_service.start_polling_for_tenant(
         tenant_id=tenant.id,
         config=config,
-        type_carte="premier_repondant",
+        type_carte="alerte_sante",
         polling_key=polling_key
     )
     
-    return {"message": "Polling Premier Répondant démarré", "status": "started"}
+    return {"message": "Polling Alerte Santé démarré", "status": "started"}
 
 
 @router.post("/{tenant_slug}/sftp-pr/stop")
@@ -597,7 +597,7 @@ async def stop_sftp_pr_polling(
     tenant_slug: str,
     admin: SuperAdmin = Depends(get_super_admin)
 ):
-    """Arrêter le polling SFTP Premier Répondant"""
+    """Arrêter le polling SFTP Alerte Santé"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     sftp_service = get_sftp_service()
@@ -608,7 +608,7 @@ async def stop_sftp_pr_polling(
     
     await sftp_service.stop_polling(polling_key)
     
-    return {"message": "Polling Premier Répondant arrêté", "status": "stopped"}
+    return {"message": "Polling Alerte Santé arrêté", "status": "stopped"}
 
 
 @router.get("/{tenant_slug}/sftp-pr/status")
@@ -616,7 +616,7 @@ async def get_sftp_pr_status(
     tenant_slug: str,
     admin: SuperAdmin = Depends(get_super_admin)
 ):
-    """Obtenir le statut du polling SFTP Premier Répondant"""
+    """Obtenir le statut du polling SFTP Alerte Santé"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     config = await db.sftp_configs_pr.find_one(
