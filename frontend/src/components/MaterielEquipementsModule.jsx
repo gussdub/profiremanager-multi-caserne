@@ -1478,9 +1478,9 @@ const CategorieModal = ({ mode, categorie, tenantSlug, onClose, onSuccess }) => 
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {/* Après utilisation */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                <div>
-                  <Label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.25rem' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1 }}>
+                  <Label style={{ fontSize: '0.8rem', display: 'block', marginBottom: '0.25rem' }}>
                     🔍 Après utilisation
                   </Label>
                   <select
@@ -1492,7 +1492,9 @@ const CategorieModal = ({ mode, categorie, tenantSlug, onClose, onSuccess }) => 
                       borderRadius: '6px', 
                       border: '1px solid #93C5FD', 
                       fontSize: '0.875rem', 
-                      backgroundColor: 'white' 
+                      backgroundColor: 'white',
+                      height: '38px',
+                      boxSizing: 'border-box'
                     }}
                   >
                     <option value="">Aucun formulaire</option>
@@ -1501,33 +1503,34 @@ const CategorieModal = ({ mode, categorie, tenantSlug, onClose, onSuccess }) => 
                     ))}
                   </select>
                 </div>
-                {formData.formulaire_apres_usage_id && (
-                  <div>
-                    <Label style={{ fontSize: '0.8rem', marginBottom: '0.25rem' }}>Fréquence</Label>
-                    <select
-                      value={formData.frequence_apres_usage || 'apres_usage'}
-                      onChange={(e) => setFormData({ ...formData, frequence_apres_usage: e.target.value })}
-                      style={{ 
-                        width: '100%', 
-                        padding: '0.5rem', 
-                        borderRadius: '6px', 
-                        border: '1px solid #93C5FD', 
-                        fontSize: '0.875rem', 
-                        backgroundColor: 'white' 
-                      }}
-                    >
-                      {frequencesInspection.filter(f => f.value).map(f => (
-                        <option key={f.value} value={f.value}>{f.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+                <div style={{ flex: 1, opacity: formData.formulaire_apres_usage_id ? 1 : 0 }}>
+                  <Label style={{ fontSize: '0.8rem', display: 'block', marginBottom: '0.25rem' }}>Fréquence</Label>
+                  <select
+                    value={formData.frequence_apres_usage || 'apres_usage'}
+                    onChange={(e) => setFormData({ ...formData, frequence_apres_usage: e.target.value })}
+                    disabled={!formData.formulaire_apres_usage_id}
+                    style={{ 
+                      width: '100%', 
+                      padding: '0.5rem', 
+                      borderRadius: '6px', 
+                      border: '1px solid #93C5FD', 
+                      fontSize: '0.875rem', 
+                      backgroundColor: 'white',
+                      height: '38px',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    {frequencesInspection.filter(f => f.value).map(f => (
+                      <option key={f.value} value={f.value}>{f.label}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
               
               {/* Routine mensuelle */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                <div>
-                  <Label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.25rem' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1 }}>
+                  <Label style={{ fontSize: '0.8rem', display: 'block', marginBottom: '0.25rem' }}>
                     📅 Routine
                   </Label>
                   <select
@@ -1539,7 +1542,9 @@ const CategorieModal = ({ mode, categorie, tenantSlug, onClose, onSuccess }) => 
                       borderRadius: '6px', 
                       border: '1px solid #93C5FD', 
                       fontSize: '0.875rem', 
-                      backgroundColor: 'white' 
+                      backgroundColor: 'white',
+                      height: '38px',
+                      boxSizing: 'border-box'
                     }}
                   >
                     <option value="">Aucun formulaire</option>
@@ -1548,35 +1553,36 @@ const CategorieModal = ({ mode, categorie, tenantSlug, onClose, onSuccess }) => 
                     ))}
                   </select>
                 </div>
-                {formData.formulaire_routine_id && (
-                  <div>
-                    <Label style={{ fontSize: '0.8rem', marginBottom: '0.25rem' }}>Fréquence</Label>
-                    <select
-                      value={formData.frequence_routine || 'mensuelle'}
-                      onChange={(e) => setFormData({ ...formData, frequence_routine: e.target.value })}
-                      style={{ 
-                        width: '100%', 
-                        padding: '0.5rem', 
-                        borderRadius: '6px', 
-                        border: '1px solid #93C5FD', 
-                        fontSize: '0.875rem', 
-                        backgroundColor: 'white' 
-                      }}
-                    >
-                      {frequencesInspection.filter(f => f.value).map(f => (
-                        <option key={f.value} value={f.value}>{f.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+                <div style={{ flex: 1, opacity: formData.formulaire_routine_id ? 1 : 0 }}>
+                  <Label style={{ fontSize: '0.8rem', display: 'block', marginBottom: '0.25rem' }}>Fréquence</Label>
+                  <select
+                    value={formData.frequence_routine || 'mensuelle'}
+                    onChange={(e) => setFormData({ ...formData, frequence_routine: e.target.value })}
+                    disabled={!formData.formulaire_routine_id}
+                    style={{ 
+                      width: '100%', 
+                      padding: '0.5rem', 
+                      borderRadius: '6px', 
+                      border: '1px solid #93C5FD', 
+                      fontSize: '0.875rem', 
+                      backgroundColor: 'white',
+                      height: '38px',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    {frequencesInspection.filter(f => f.value).map(f => (
+                      <option key={f.value} value={f.value}>{f.label}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
               
               {/* Avancée annuelle */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                <div>
-                  <Label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.25rem' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1 }}>
+                  <Label style={{ fontSize: '0.8rem', display: 'block', marginBottom: '0.25rem' }}>
                     🔧 Avancée
-                    <span style={{ fontSize: '0.65rem', color: '#6B7280', fontWeight: 'normal' }}>(admin/superviseur)</span>
+                    <span style={{ fontSize: '0.65rem', color: '#6B7280', fontWeight: 'normal', marginLeft: '4px' }}>(admin/superviseur)</span>
                   </Label>
                   <select
                     value={formData.formulaire_avancee_id || ''}
@@ -1587,7 +1593,9 @@ const CategorieModal = ({ mode, categorie, tenantSlug, onClose, onSuccess }) => 
                       borderRadius: '6px', 
                       border: '1px solid #93C5FD', 
                       fontSize: '0.875rem', 
-                      backgroundColor: 'white' 
+                      backgroundColor: 'white',
+                      height: '38px',
+                      boxSizing: 'border-box'
                     }}
                   >
                     <option value="">Aucun formulaire</option>
@@ -1596,27 +1604,28 @@ const CategorieModal = ({ mode, categorie, tenantSlug, onClose, onSuccess }) => 
                     ))}
                   </select>
                 </div>
-                {formData.formulaire_avancee_id && (
-                  <div>
-                    <Label style={{ fontSize: '0.8rem', marginBottom: '0.25rem' }}>Fréquence</Label>
-                    <select
-                      value={formData.frequence_avancee || 'annuelle'}
-                      onChange={(e) => setFormData({ ...formData, frequence_avancee: e.target.value })}
-                      style={{ 
-                        width: '100%', 
-                        padding: '0.5rem', 
-                        borderRadius: '6px', 
-                        border: '1px solid #93C5FD', 
-                        fontSize: '0.875rem', 
-                        backgroundColor: 'white' 
-                      }}
-                    >
-                      {frequencesInspection.filter(f => f.value).map(f => (
-                        <option key={f.value} value={f.value}>{f.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+                <div style={{ flex: 1, opacity: formData.formulaire_avancee_id ? 1 : 0 }}>
+                  <Label style={{ fontSize: '0.8rem', display: 'block', marginBottom: '0.25rem' }}>Fréquence</Label>
+                  <select
+                    value={formData.frequence_avancee || 'annuelle'}
+                    onChange={(e) => setFormData({ ...formData, frequence_avancee: e.target.value })}
+                    disabled={!formData.formulaire_avancee_id}
+                    style={{ 
+                      width: '100%', 
+                      padding: '0.5rem', 
+                      borderRadius: '6px', 
+                      border: '1px solid #93C5FD', 
+                      fontSize: '0.875rem', 
+                      backgroundColor: 'white',
+                      height: '38px',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    {frequencesInspection.filter(f => f.value).map(f => (
+                      <option key={f.value} value={f.value}>{f.label}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
           </div>
