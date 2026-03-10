@@ -35,6 +35,8 @@ const MaterielEquipementsModule = ({ user }) => {
   const [selectedEquipement, setSelectedEquipement] = useState(null);
   const [selectedEquipementAPRIA, setSelectedEquipementAPRIA] = useState(null);
   const [selectedEquipementInspection, setSelectedEquipementInspection] = useState(null);
+  const [selectedInspectionType, setSelectedInspectionType] = useState(null); // 'apres_usage', 'mensuelle', 'annuelle'
+  const [selectedFormulaireId, setSelectedFormulaireId] = useState(null);
   const [modalMode, setModalMode] = useState('create');
   
   // Filtres
@@ -71,9 +73,30 @@ const MaterielEquipementsModule = ({ user }) => {
     return false;
   };
 
-  // Vérifier si un équipement a un formulaire d'inspection assigné
+  // Vérifier si un équipement a un formulaire d'inspection assigné (via sa catégorie)
   const hasInspectionForm = (equipement) => {
-    return !!equipement.modele_inspection_id;
+    // Chercher la catégorie de l'équipement
+    const categorie = categories.find(c => c.id === equipement.categorie_id);
+    if (!categorie) return false;
+    
+    // Vérifier si au moins un formulaire est assigné à la catégorie
+    return !!(
+      categorie.formulaire_apres_usage_id ||
+      categorie.formulaire_routine_id ||
+      categorie.formulaire_avancee_id
+    );
+  };
+  
+  // Obtenir les formulaires d'inspection d'un équipement via sa catégorie
+  const getEquipementFormulaires = (equipement) => {
+    const categorie = categories.find(c => c.id === equipement.categorie_id);
+    if (!categorie) return { apresUsage: null, routine: null, avancee: null };
+    
+    return {
+      apresUsage: categorie.formulaire_apres_usage_id || null,
+      routine: categorie.formulaire_routine_id || null,
+      avancee: categorie.formulaire_avancee_id || null
+    };
   };
 
   // Vérifier si un équipement est inspectable (APRIA ou a un formulaire assigné)
@@ -401,8 +424,10 @@ const MaterielEquipementsModule = ({ user }) => {
             setSelectedEquipementAPRIA(equip);
             setShowHistoriqueAPRIAModal(true);
           }}
-          onInspectionEquipement={(equip) => {
+          onInspectionEquipement={(equip, typeInspection, formulaireId) => {
             setSelectedEquipementInspection(equip);
+            setSelectedInspectionType(typeInspection);
+            setSelectedFormulaireId(formulaireId);
             setShowInspectionEquipementModal(true);
           }}
           onHistoriqueEquipement={(equip) => {
@@ -411,6 +436,7 @@ const MaterielEquipementsModule = ({ user }) => {
           }}
           isAPRIA={isAPRIA}
           hasInspectionForm={hasInspectionForm}
+          getEquipementFormulaires={getEquipementFormulaires}
           isEmploye={isEmploye}
           user={user}
         />
@@ -496,20 +522,26 @@ const MaterielEquipementsModule = ({ user }) => {
         />
       )}
 
-      {/* Modal Inspection Équipement (formulaire assigné) */}
+      {/* Modal Inspection Équipement (formulaire assigné via catégorie) */}
       {showInspectionEquipementModal && selectedEquipementInspection && (
         <InspectionEquipementWrapper
           isOpen={showInspectionEquipementModal}
           onClose={() => {
             setShowInspectionEquipementModal(false);
             setSelectedEquipementInspection(null);
+            setSelectedInspectionType(null);
+            setSelectedFormulaireId(null);
           }}
           tenantSlug={tenantSlug}
           user={user}
           equipement={selectedEquipementInspection}
+          typeInspection={selectedInspectionType}
+          formulaireId={selectedFormulaireId}
           onSuccess={() => {
             setShowInspectionEquipementModal(false);
             setSelectedEquipementInspection(null);
+            setSelectedInspectionType(null);
+            setSelectedFormulaireId(null);
             fetchData();
           }}
         />
@@ -619,6 +651,7 @@ const EquipementsTab = ({
   onHistoriqueEquipement,
   isAPRIA,
   hasInspectionForm,
+  getEquipementFormulaires,
   isEmploye,
   user
 }) => {
@@ -807,10 +840,11 @@ const EquipementsTab = ({
               onMaintenance={() => onMaintenance(equip)}
               onInspectionAPRIA={() => onInspectionAPRIA && onInspectionAPRIA(equip)}
               onHistoriqueAPRIA={() => onHistoriqueAPRIA && onHistoriqueAPRIA(equip)}
-              onInspectionEquipement={() => onInspectionEquipement && onInspectionEquipement(equip)}
+              onInspectionEquipement={onInspectionEquipement}
               onHistoriqueEquipement={() => onHistoriqueEquipement && onHistoriqueEquipement(equip)}
               isAPRIA={isAPRIA && isAPRIA(equip)}
               hasInspectionForm={hasInspectionForm && hasInspectionForm(equip)}
+              formulaires={getEquipementFormulaires && getEquipementFormulaires(equip)}
               canEdit={user?.role === 'admin' || user?.role === 'superviseur'}
               canDelete={user?.role === 'admin'}
               isEmploye={isEmploye}
@@ -823,8 +857,13 @@ const EquipementsTab = ({
 };
 
 // ===== Carte Équipement =====
-const EquipementCard = ({ equipement, onEdit, onDelete, onMaintenance, onInspectionAPRIA, onHistoriqueAPRIA, onInspectionEquipement, onHistoriqueEquipement, isAPRIA, hasInspectionForm, canEdit, canDelete, isEmploye }) => {
+const EquipementCard = ({ equipement, onEdit, onDelete, onMaintenance, onInspectionAPRIA, onHistoriqueAPRIA, onInspectionEquipement, onHistoriqueEquipement, isAPRIA, hasInspectionForm, formulaires, canEdit, canDelete, isEmploye }) => {
   const [expanded, setExpanded] = useState(false);
+  
+  // Déterminer quels boutons d'inspection afficher
+  const showApresUsage = formulaires?.apresUsage;
+  const showRoutine = formulaires?.routine;
+  const showAvancee = formulaires?.avancee && !isEmploye; // Avancée seulement pour admin/superviseur
   
   return (
     <div style={{
@@ -890,16 +929,43 @@ const EquipementCard = ({ equipement, onEdit, onDelete, onMaintenance, onInspect
             </>
           )}
           
-          {/* Boutons Inspection équipement avec formulaire assigné - accessibles à tous */}
+          {/* Boutons Inspection équipement basés sur la catégorie */}
           {hasInspectionForm && !isAPRIA && (
             <>
-              <button
-                onClick={(e) => { e.stopPropagation(); onInspectionEquipement && onInspectionEquipement(); }}
-                style={{ padding: '0.5rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer' }}
-                title="Inspecter"
-              >
-                📝
-              </button>
+              {/* Après usage - orange */}
+              {showApresUsage && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onInspectionEquipement && onInspectionEquipement(equipement, 'apres_usage', formulaires.apresUsage); }}
+                  style={{ padding: '0.5rem 0.75rem', background: '#f97316', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                  title="Inspection après usage"
+                >
+                  🔍 Après usage
+                </button>
+              )}
+              
+              {/* Mensuelle - bleu */}
+              {showRoutine && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onInspectionEquipement && onInspectionEquipement(equipement, 'mensuelle', formulaires.routine); }}
+                  style={{ padding: '0.5rem 0.75rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                  title="Inspection mensuelle"
+                >
+                  📅 Mensuelle
+                </button>
+              )}
+              
+              {/* Avancée/Annuelle - violet (admin/superviseur seulement) */}
+              {showAvancee && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onInspectionEquipement && onInspectionEquipement(equipement, 'annuelle', formulaires.avancee); }}
+                  style={{ padding: '0.5rem 0.75rem', background: '#7c3aed', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                  title="Inspection avancée annuelle"
+                >
+                  🔧 Annuelle
+                </button>
+              )}
+              
+              {/* Historique */}
               <button
                 onClick={(e) => { e.stopPropagation(); onHistoriqueEquipement && onHistoriqueEquipement(); }}
                 style={{ padding: '0.5rem', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer' }}
@@ -1192,6 +1258,10 @@ const CategorieModal = ({ mode, categorie, tenantSlug, onClose, onSuccess }) => 
     couleur: categorie?.couleur || '#6366f1',
     icone: categorie?.icone || '📦',
     permet_assignation_employe: categorie?.permet_assignation_employe || false,
+    // Formulaires d'inspection par fréquence (comme les Types d'EPI)
+    formulaire_apres_usage_id: categorie?.formulaire_apres_usage_id || '',
+    formulaire_routine_id: categorie?.formulaire_routine_id || '',
+    formulaire_avancee_id: categorie?.formulaire_avancee_id || '',
     // Support pour sélection multiple - tableau d'IDs et d'emails
     personnes_ressources: categorie?.personnes_ressources || [],
     // Garder les anciens champs pour compatibilité
@@ -1200,6 +1270,7 @@ const CategorieModal = ({ mode, categorie, tenantSlug, onClose, onSuccess }) => 
   });
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([]);
+  const [formulairesDisponibles, setFormulairesDisponibles] = useState([]);
 
   // Charger la liste de TOUS les utilisateurs
   useEffect(() => {
@@ -1220,6 +1291,24 @@ const CategorieModal = ({ mode, categorie, tenantSlug, onClose, onSuccess }) => 
       }
     };
     loadUsers();
+  }, [tenantSlug]);
+
+  // Charger les formulaires d'inspection disponibles
+  useEffect(() => {
+    const loadFormulaires = async () => {
+      try {
+        const allFormulaires = await apiGet(tenantSlug, '/formulaires-inspection');
+        // Filtrer les formulaires actifs qui peuvent s'appliquer aux équipements
+        const filtered = (allFormulaires || []).filter(f => 
+          f.est_actif !== false && 
+          (f.categorie_ids?.includes('equipement') || !f.categorie_ids?.length)
+        );
+        setFormulairesDisponibles(filtered);
+      } catch (err) {
+        console.error('Erreur chargement formulaires:', err);
+      }
+    };
+    loadFormulaires();
   }, [tenantSlug]);
 
   // Initialiser personnes_ressources depuis l'ancien format si nécessaire
@@ -1322,6 +1411,97 @@ const CategorieModal = ({ mode, categorie, tenantSlug, onClose, onSuccess }) => 
               onChange={(e) => setFormData({ ...formData, norme_reference: e.target.value })}
               placeholder="Ex: NFPA 1962"
             />
+          </div>
+          
+          {/* Formulaires d'inspection par fréquence (comme les Types d'EPI) */}
+          <div style={{ 
+            marginTop: '0.5rem',
+            padding: '1rem',
+            backgroundColor: '#EFF6FF',
+            borderRadius: '8px',
+            border: '1px solid #93C5FD'
+          }}>
+            <Label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: '#1E40AF', fontWeight: '600' }}>
+              📋 Formulaires d'inspection (optionnel)
+            </Label>
+            <p style={{ fontSize: '0.75rem', color: '#3B82F6', marginBottom: '0.75rem' }}>
+              Assignez des formulaires pour activer les boutons d'inspection correspondants.
+            </p>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {/* Après utilisation */}
+              <div>
+                <Label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.25rem' }}>
+                  🔍 Après utilisation
+                </Label>
+                <select
+                  value={formData.formulaire_apres_usage_id || ''}
+                  onChange={(e) => setFormData({ ...formData, formulaire_apres_usage_id: e.target.value })}
+                  style={{ 
+                    width: '100%', 
+                    padding: '0.5rem', 
+                    borderRadius: '6px', 
+                    border: '1px solid #93C5FD', 
+                    fontSize: '0.875rem', 
+                    backgroundColor: 'white' 
+                  }}
+                >
+                  <option value="">Aucun formulaire</option>
+                  {formulairesDisponibles.map(f => (
+                    <option key={f.id} value={f.id}>📋 {f.nom}</option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* Routine mensuelle */}
+              <div>
+                <Label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.25rem' }}>
+                  📅 Routine mensuelle
+                </Label>
+                <select
+                  value={formData.formulaire_routine_id || ''}
+                  onChange={(e) => setFormData({ ...formData, formulaire_routine_id: e.target.value })}
+                  style={{ 
+                    width: '100%', 
+                    padding: '0.5rem', 
+                    borderRadius: '6px', 
+                    border: '1px solid #93C5FD', 
+                    fontSize: '0.875rem', 
+                    backgroundColor: 'white' 
+                  }}
+                >
+                  <option value="">Aucun formulaire</option>
+                  {formulairesDisponibles.map(f => (
+                    <option key={f.id} value={f.id}>📋 {f.nom}</option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* Avancée annuelle */}
+              <div>
+                <Label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.25rem' }}>
+                  🔧 Avancée annuelle
+                  <span style={{ fontSize: '0.65rem', color: '#6B7280', fontWeight: 'normal' }}>(admin/superviseur seulement)</span>
+                </Label>
+                <select
+                  value={formData.formulaire_avancee_id || ''}
+                  onChange={(e) => setFormData({ ...formData, formulaire_avancee_id: e.target.value })}
+                  style={{ 
+                    width: '100%', 
+                    padding: '0.5rem', 
+                    borderRadius: '6px', 
+                    border: '1px solid #93C5FD', 
+                    fontSize: '0.875rem', 
+                    backgroundColor: 'white' 
+                  }}
+                >
+                  <option value="">Aucun formulaire</option>
+                  {formulairesDisponibles.map(f => (
+                    <option key={f.id} value={f.id}>📋 {f.nom}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
           
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -1981,24 +2161,13 @@ const EquipementModal = ({ mode, equipement, categories, tenantSlug, onClose, on
             </div>
           )}
           
-          {/* Formulaire d'inspection assigné (optionnel) */}
-          <div style={{ background: '#EFF6FF', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #BFDBFE' }}>
-            <Label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: '#1E40AF' }}>
-              📝 Formulaire d'inspection (optionnel)
-            </Label>
-            <p style={{ fontSize: '0.75rem', color: '#3B82F6', marginBottom: '0.75rem' }}>
-              Si un formulaire est assigné, un bouton "Inspecter" apparaîtra pour cet équipement.
+          {/* Info: Formulaires gérés par catégorie */}
+          <div style={{ background: '#F0FDF4', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #86EFAC' }}>
+            <p style={{ fontSize: '0.8rem', color: '#166534', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span>ℹ️</span>
+              Les formulaires d'inspection sont gérés au niveau de la <strong>catégorie</strong>. 
+              Modifiez la catégorie pour configurer les inspections.
             </p>
-            <select
-              value={formData.modele_inspection_id}
-              onChange={(e) => setFormData({ ...formData, modele_inspection_id: e.target.value })}
-              style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #93C5FD', fontSize: '0.875rem', backgroundColor: 'white' }}
-            >
-              <option value="">Aucun formulaire (pas d'inspection)</option>
-              {formulaires.map(f => (
-                <option key={f.id} value={f.id}>📋 {f.nom}</option>
-              ))}
-            </select>
           </div>
           
           <div>

@@ -5,30 +5,42 @@ import InspectionUnifieeModal from './InspectionUnifieeModal';
 /**
  * Composant wrapper pour InspectionUnifieeModal qui charge le formulaire depuis son ID
  * et adapte les props pour les équipements génériques
+ * 
+ * Supporte:
+ * - formulaireId passé directement (nouveau: depuis la catégorie)
+ * - equipement.modele_inspection_id (ancien: assignation individuelle - fallback)
  */
 const InspectionEquipementWrapper = ({ 
   isOpen, 
   onClose, 
   tenantSlug, 
   user, 
-  equipement,  // L'équipement avec modele_inspection_id
+  equipement,  // L'équipement
+  formulaireId,  // ID du formulaire passé directement (prioritaire)
+  typeInspection,  // Type: 'apres_usage', 'mensuelle', 'annuelle'
   onSuccess 
 }) => {
   const [formulaire, setFormulaire] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Déterminer l'ID du formulaire à utiliser (passé en prop ou depuis l'équipement)
+  const effectiveFormulaireId = formulaireId || equipement?.modele_inspection_id;
+
   useEffect(() => {
-    if (isOpen && equipement?.modele_inspection_id) {
+    if (isOpen && effectiveFormulaireId) {
       loadFormulaire();
+    } else if (isOpen && !effectiveFormulaireId) {
+      setError('Aucun formulaire d\'inspection configuré pour cette catégorie.');
+      setLoading(false);
     }
-  }, [isOpen, equipement?.modele_inspection_id]);
+  }, [isOpen, effectiveFormulaireId]);
 
   const loadFormulaire = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await apiGet(tenantSlug, `/formulaires-inspection/${equipement.modele_inspection_id}`);
+      const data = await apiGet(tenantSlug, `/formulaires-inspection/${effectiveFormulaireId}`);
       setFormulaire(data);
     } catch (err) {
       console.error('Erreur chargement formulaire:', err);
@@ -116,7 +128,8 @@ const InspectionEquipementWrapper = ({
         nom: equipement.nom,
         code_unique: equipement.code_unique,
         categorie_nom: equipement.categorie_nom,
-        asset_type: 'equipement'
+        asset_type: 'equipement',
+        type_inspection: typeInspection // 'apres_usage', 'mensuelle', 'annuelle'
       }}
       formulaire={formulaire}
       onInspectionCreated={onSuccess}

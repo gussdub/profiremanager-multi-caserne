@@ -87,6 +87,10 @@ class CategorieEquipementCreate(BaseModel):
     personnes_ressources: List[dict] = []
     personne_ressource_id: str = ""
     personne_ressource_email: str = ""
+    # Formulaires d'inspection par fréquence (comme les Types d'EPI)
+    formulaire_apres_usage_id: str = ""
+    formulaire_routine_id: str = ""
+    formulaire_avancee_id: str = ""
 
 
 class CategorieEquipementUpdate(BaseModel):
@@ -101,6 +105,10 @@ class CategorieEquipementUpdate(BaseModel):
     personnes_ressources: Optional[List[dict]] = None
     personne_ressource_id: Optional[str] = None
     personne_ressource_email: Optional[str] = None
+    # Formulaires d'inspection par fréquence
+    formulaire_apres_usage_id: Optional[str] = None
+    formulaire_routine_id: Optional[str] = None
+    formulaire_avancee_id: Optional[str] = None
 
 
 class HistoriqueMaintenanceCreate(BaseModel):
