@@ -396,3 +396,240 @@ async def websocket_interventions(
         logger.info(f"WebSocket déconnecté: {user_id}")
     finally:
         await ws_manager.disconnect(tenant.id, user_id)
+
+
+
+# ==================== ROUTES CONFIGURATION SFTP PREMIER RÉPONDANT ====================
+
+@router.get("/{tenant_slug}/sftp-pr/config")
+async def get_sftp_pr_config(
+    tenant_slug: str,
+    admin: SuperAdmin = Depends(get_super_admin)
+):
+    """Récupérer la configuration SFTP Premier Répondant du tenant (Super-admin uniquement)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    config = await db.sftp_configs_pr.find_one(
+        {"tenant_id": tenant.id},
+        {"_id": 0}
+    )
+    
+    if not config:
+        return None
+    
+    # Ajouter le statut du polling
+    sftp_service = get_sftp_service()
+    polling_key = f"{tenant.id}_pr"
+    config["polling_active"] = polling_key in sftp_service.polling_tasks
+    
+    return config
+
+
+@router.post("/{tenant_slug}/sftp-pr/config")
+async def create_sftp_pr_config(
+    tenant_slug: str,
+    config_data: SFTPConfigCreate,
+    admin: SuperAdmin = Depends(get_super_admin)
+):
+    """Créer ou mettre à jour la configuration SFTP Premier Répondant (Super-admin uniquement)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier si une config existe déjà
+    existing = await db.sftp_configs_pr.find_one({"tenant_id": tenant.id})
+    
+    if existing:
+        update_data = config_data.dict()
+        if not update_data.get("password"):
+            del update_data["password"]
+        update_data["updated_at"] = datetime.now(timezone.utc)
+        
+        await db.sftp_configs_pr.update_one(
+            {"tenant_id": tenant.id},
+            {"$set": update_data}
+        )
+        
+        return {"message": "Configuration SFTP Premier Répondant mise à jour", "id": existing["id"]}
+    else:
+        if not config_data.password:
+            raise HTTPException(status_code=400, detail="Le mot de passe est obligatoire pour une nouvelle configuration")
+        
+        config = SFTPConfig(
+            tenant_id=tenant.id,
+            **config_data.dict()
+        )
+        
+        await db.sftp_configs_pr.insert_one(config.dict())
+        
+        return {"message": "Configuration SFTP Premier Répondant créée", "id": config.id}
+
+
+@router.put("/{tenant_slug}/sftp-pr/config")
+async def update_sftp_pr_config(
+    tenant_slug: str,
+    config_data: SFTPConfigUpdate,
+    admin: SuperAdmin = Depends(get_super_admin)
+):
+    """Mettre à jour la configuration SFTP Premier Répondant (Super-admin uniquement)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    existing = await db.sftp_configs_pr.find_one({"tenant_id": tenant.id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Configuration SFTP Premier Répondant non trouvée")
+    
+    update_data = {}
+    for k, v in config_data.dict().items():
+        if v is None:
+            continue
+        if k == "password" and not v:
+            continue
+        update_data[k] = v
+    
+    if not update_data:
+        return {"message": "Aucune modification"}
+    
+    update_data["updated_at"] = datetime.now(timezone.utc)
+    
+    await db.sftp_configs_pr.update_one(
+        {"tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    return {"message": "Configuration SFTP Premier Répondant mise à jour"}
+
+
+@router.delete("/{tenant_slug}/sftp-pr/config")
+async def delete_sftp_pr_config(
+    tenant_slug: str,
+    admin: SuperAdmin = Depends(get_super_admin)
+):
+    """Supprimer la configuration SFTP Premier Répondant (Super-admin uniquement)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Arrêter le polling s'il est actif
+    sftp_service = get_sftp_service()
+    polling_key = f"{tenant.id}_pr"
+    if polling_key in sftp_service.polling_tasks:
+        await sftp_service.stop_polling(polling_key)
+    
+    result = await db.sftp_configs_pr.delete_one({"tenant_id": tenant.id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Configuration non trouvée")
+    
+    return {"message": "Configuration SFTP Premier Répondant supprimée"}
+
+
+@router.post("/{tenant_slug}/sftp-pr/test")
+async def test_sftp_pr_connection(
+    tenant_slug: str,
+    config_data: SFTPConfigCreate,
+    admin: SuperAdmin = Depends(get_super_admin)
+):
+    """Tester la connexion SFTP Premier Répondant"""
+    import paramiko
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Si pas de mot de passe fourni, utiliser celui de la config existante
+    password = config_data.password
+    if not password:
+        existing = await db.sftp_configs_pr.find_one({"tenant_id": tenant.id})
+        if existing:
+            password = existing.get("password")
+        else:
+            raise HTTPException(status_code=400, detail="Mot de passe requis pour tester")
+    
+    try:
+        transport = paramiko.Transport((config_data.host, config_data.port))
+        transport.connect(username=config_data.username, password=password)
+        sftp = paramiko.SFTPClient.from_transport(transport)
+        
+        # Tester l'accès au répertoire
+        files = sftp.listdir(config_data.remote_path)
+        
+        sftp.close()
+        transport.close()
+        
+        return {
+            "success": True,
+            "message": f"Connexion réussie ! {len(files)} fichier(s) trouvé(s)",
+            "files_count": len(files)
+        }
+    except paramiko.AuthenticationException:
+        return {"success": False, "message": "Échec d'authentification - vérifiez les identifiants"}
+    except Exception as e:
+        return {"success": False, "message": f"Erreur de connexion: {str(e)}"}
+
+
+@router.post("/{tenant_slug}/sftp-pr/start")
+async def start_sftp_pr_polling(
+    tenant_slug: str,
+    admin: SuperAdmin = Depends(get_super_admin)
+):
+    """Démarrer le polling SFTP Premier Répondant pour un tenant"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    config = await db.sftp_configs_pr.find_one({"tenant_id": tenant.id})
+    if not config:
+        raise HTTPException(status_code=404, detail="Configuration SFTP Premier Répondant non trouvée")
+    
+    if not config.get("actif"):
+        raise HTTPException(status_code=400, detail="Configuration SFTP Premier Répondant non active")
+    
+    sftp_service = get_sftp_service()
+    polling_key = f"{tenant.id}_pr"
+    
+    if polling_key in sftp_service.polling_tasks:
+        return {"message": "Polling déjà actif", "status": "running"}
+    
+    await sftp_service.start_polling_for_tenant(
+        tenant_id=tenant.id,
+        config=config,
+        type_carte="premier_repondant",
+        polling_key=polling_key
+    )
+    
+    return {"message": "Polling Premier Répondant démarré", "status": "started"}
+
+
+@router.post("/{tenant_slug}/sftp-pr/stop")
+async def stop_sftp_pr_polling(
+    tenant_slug: str,
+    admin: SuperAdmin = Depends(get_super_admin)
+):
+    """Arrêter le polling SFTP Premier Répondant"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    sftp_service = get_sftp_service()
+    polling_key = f"{tenant.id}_pr"
+    
+    if polling_key not in sftp_service.polling_tasks:
+        return {"message": "Polling non actif", "status": "stopped"}
+    
+    await sftp_service.stop_polling(polling_key)
+    
+    return {"message": "Polling Premier Répondant arrêté", "status": "stopped"}
+
+
+@router.get("/{tenant_slug}/sftp-pr/status")
+async def get_sftp_pr_status(
+    tenant_slug: str,
+    admin: SuperAdmin = Depends(get_super_admin)
+):
+    """Obtenir le statut du polling SFTP Premier Répondant"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    config = await db.sftp_configs_pr.find_one(
+        {"tenant_id": tenant.id},
+        {"_id": 0, "password": 0}
+    )
+    
+    sftp_service = get_sftp_service()
+    polling_key = f"{tenant.id}_pr"
+    is_polling = polling_key in sftp_service.polling_tasks
+    
+    return {
+        "configured": config is not None,
+        "polling_active": is_polling,
+        "config": config
+    }

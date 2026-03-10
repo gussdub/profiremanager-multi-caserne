@@ -71,6 +71,22 @@ const SuperAdminDashboard = ({ onLogout }) => {
     actif: true,
     description: ''
   });
+  // États SFTP Premier Répondant
+  const [showSftpPrConfigModal, setShowSftpPrConfigModal] = useState(false);
+  const [showSftpPrPassword, setShowSftpPrPassword] = useState(false);
+  const [sftpPrConfig, setSftpPrConfig] = useState(null);
+  const [sftpPrLoading, setSftpPrLoading] = useState(false);
+  const [sftpPrTesting, setSftpPrTesting] = useState(false);
+  const [sftpPrFormData, setSftpPrFormData] = useState({
+    host: '',
+    port: 22,
+    username: '',
+    password: '',
+    remote_path: '/',
+    polling_interval: 30,
+    actif: true,
+    description: ''
+  });
   const [timeRemaining, setTimeRemaining] = useState(0);
   // États pour le journal d'audit
   const [auditLogs, setAuditLogs] = useState([]);
@@ -92,7 +108,8 @@ const SuperAdminDashboard = ({ onLogout }) => {
     module_prevention_active: false,
     is_gratuit: false,
     is_active: true,
-    centrale_911_id: ''
+    centrale_911_id: '',
+    centrale_pr_id: ''
   });
   const [billingOverview, setBillingOverview] = useState(null);
   const [newAdmin, setNewAdmin] = useState({
@@ -451,7 +468,8 @@ const SuperAdminDashboard = ({ onLogout }) => {
       is_active: tenant.actif !== undefined ? tenant.actif : (tenant.is_active !== undefined ? tenant.is_active : true),
       is_gratuit: tenant.is_gratuit || false,
       module_prevention_active: tenant.parametres?.module_prevention_active || false,
-      centrale_911_id: tenant.centrale_911_id || ''
+      centrale_911_id: tenant.centrale_911_id || '',
+      centrale_pr_id: tenant.centrale_pr_id || ''
     });
     setShowEditModal(true);
   };
@@ -483,6 +501,7 @@ const SuperAdminDashboard = ({ onLogout }) => {
           actif: newTenant.is_active,
           is_gratuit: newTenant.is_gratuit,
           centrale_911_id: newTenant.centrale_911_id || null,
+          centrale_pr_id: newTenant.centrale_pr_id || null,
           parametres: {
             module_prevention_active: newTenant.module_prevention_active
           }
@@ -921,6 +940,275 @@ const SuperAdminDashboard = ({ onLogout }) => {
       
       setSftpConfig(null);
       setSftpFormData({
+        host: '',
+        port: 22,
+        username: '',
+        password: '',
+        remote_path: '/',
+        polling_interval: 30,
+        actif: true,
+        description: ''
+      });
+      
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  // ==================== FONCTIONS SFTP PREMIER RÉPONDANT ====================
+  
+  const fetchSftpPrConfig = async (tenantSlug) => {
+    try {
+      setSftpPrLoading(true);
+      const token = getToken();
+      const response = await fetch(`${API}/${tenantSlug}/sftp-pr/config`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data) {
+          setSftpPrConfig(data);
+          setSftpPrFormData({
+            host: data.host || '',
+            port: data.port || 22,
+            username: data.username || '',
+            password: data.password || '',
+            remote_path: data.remote_path || '/',
+            polling_interval: data.polling_interval || 30,
+            actif: data.actif !== false,
+            description: data.description || ''
+          });
+        }
+      }
+    } catch (error) {
+      console.log('Pas de configuration SFTP PR');
+    } finally {
+      setSftpPrLoading(false);
+    }
+  };
+
+  const handleSaveSftpPrConfig = async () => {
+    if (!sftpPrFormData.host || !sftpPrFormData.username) {
+      toast({
+        title: "Erreur",
+        description: "L'hôte et le nom d'utilisateur sont requis",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const dataToSend = { ...sftpPrFormData };
+    if (!dataToSend.password && sftpPrConfig) {
+      delete dataToSend.password;
+    } else if (!dataToSend.password && !sftpPrConfig) {
+      toast({
+        title: "Erreur",
+        description: "Le mot de passe est requis pour une nouvelle configuration",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      setSftpPrLoading(true);
+      const token = getToken();
+      const method = sftpPrConfig ? 'PUT' : 'POST';
+      
+      const response = await fetch(`${API}/${selectedTenant.slug}/sftp-pr/config`, {
+        method: method,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(dataToSend)
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Erreur lors de la sauvegarde');
+      }
+      
+      toast({
+        title: "Succès",
+        description: "Configuration SFTP Premier Répondant enregistrée"
+      });
+      
+      await fetchSftpPrConfig(selectedTenant.slug);
+      
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setSftpPrLoading(false);
+    }
+  };
+
+  const handleTestSftpPr = async () => {
+    const testData = { ...sftpPrFormData };
+    
+    if (!testData.host || !testData.username) {
+      toast({
+        title: "Erreur",
+        description: "L'hôte et le nom d'utilisateur sont requis pour tester",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!testData.password && !sftpPrConfig) {
+      toast({
+        title: "Erreur",
+        description: "Le mot de passe est requis pour tester une nouvelle configuration",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      setSftpPrTesting(true);
+      const token = getToken();
+      const body = testData.password ? testData : null;
+      
+      const response = await fetch(`${API}/${selectedTenant.slug}/sftp-pr/test`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: body ? JSON.stringify(body) : null
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        toast({
+          title: "✅ Connexion réussie",
+          description: result.message
+        });
+      } else {
+        toast({
+          title: "❌ Échec de connexion",
+          description: result.message,
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setSftpPrTesting(false);
+    }
+  };
+
+  const handleStartSftpPrPolling = async () => {
+    try {
+      const token = getToken();
+      const response = await fetch(`${API}/${selectedTenant.slug}/sftp-pr/start`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Erreur');
+      }
+      
+      toast({
+        title: "Succès",
+        description: "Surveillance SFTP Premier Répondant démarrée"
+      });
+      
+      await fetchSftpPrConfig(selectedTenant.slug);
+      
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleStopSftpPrPolling = async () => {
+    try {
+      const token = getToken();
+      const response = await fetch(`${API}/${selectedTenant.slug}/sftp-pr/stop`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Erreur');
+      }
+      
+      toast({
+        title: "Succès",
+        description: "Surveillance SFTP Premier Répondant arrêtée"
+      });
+      
+      await fetchSftpPrConfig(selectedTenant.slug);
+      
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteSftpPrConfig = async () => {
+    const confirmed = await confirm({
+      title: 'Supprimer la configuration SFTP Premier Répondant',
+      message: 'Êtes-vous sûr de vouloir supprimer la configuration SFTP Premier Répondant ?',
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+    if (!confirmed) return;
+    
+    try {
+      const token = getToken();
+      const response = await fetch(`${API}/${selectedTenant.slug}/sftp-pr/config`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Erreur');
+      }
+      
+      toast({
+        title: "Succès",
+        description: "Configuration SFTP Premier Répondant supprimée"
+      });
+      
+      setSftpPrConfig(null);
+      setSftpPrFormData({
         host: '',
         port: 22,
         username: '',
@@ -2064,7 +2352,22 @@ const SuperAdminDashboard = ({ onLogout }) => {
                     <option key={c.id} value={c.id}>{c.code} - {c.nom}</option>
                   ))}
                 </select>
-                <small style={{ color: '#64748b' }}>Centrale 911 associée pour l'import des interventions</small>
+                <small style={{ color: '#64748b' }}>Centrale 911 associée pour l'import des interventions incendie</small>
+              </div>
+
+              <div>
+                <Label>🚑 Centrale Premier Répondant</Label>
+                <select
+                  value={newTenant.centrale_pr_id || ''}
+                  onChange={(e) => setNewTenant({ ...newTenant, centrale_pr_id: e.target.value })}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '14px' }}
+                >
+                  <option value="">-- Aucune centrale --</option>
+                  {centrales.map(c => (
+                    <option key={c.id} value={c.id}>{c.code} - {c.nom}</option>
+                  ))}
+                </select>
+                <small style={{ color: '#64748b' }}>Centrale associée pour l'import des cartes d'appel Premier Répondant</small>
               </div>
 
               <div style={{ 
@@ -2266,6 +2569,35 @@ const SuperAdminDashboard = ({ onLogout }) => {
                   style={{ backgroundColor: 'white' }}
                 >
                   ⚙️ Configurer le SFTP
+                </Button>
+              </div>
+
+              {/* Section Configuration SFTP Premier Répondant */}
+              <div style={{ 
+                padding: '20px', 
+                background: '#fef3c7', 
+                borderRadius: '8px',
+                border: '1px solid #f59e0b',
+                marginTop: '10px'
+              }}>
+                <div style={{ marginBottom: '15px' }}>
+                  <Label style={{ fontSize: '16px', fontWeight: 'bold', color: '#b45309' }}>
+                    🚑 Configuration SFTP - Cartes d'appel Premier Répondant
+                  </Label>
+                  <p style={{ fontSize: '13px', color: '#b45309', margin: '5px 0 0 0' }}>
+                    Configurez la connexion au serveur SFTP pour importer automatiquement les cartes d'appel des premiers répondants
+                  </p>
+                </div>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowSftpPrConfigModal(true);
+                    fetchSftpPrConfig(selectedTenant.slug);
+                  }}
+                  style={{ backgroundColor: 'white' }}
+                >
+                  ⚙️ Configurer le SFTP PR
                 </Button>
               </div>
             </div>
@@ -2485,6 +2817,213 @@ const SuperAdminDashboard = ({ onLogout }) => {
                 </Button>
                 <Button onClick={handleSaveSftpConfig} disabled={sftpLoading}>
                   {sftpLoading ? 'Enregistrement...' : 'Enregistrer'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Configuration SFTP Premier Répondant */}
+      {showSftpPrConfigModal && selectedTenant && (
+        <div className="modal-overlay" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 100001
+        }}>
+          <div className="modal-content" style={{
+            backgroundColor: 'white',
+            padding: '30px',
+            borderRadius: '10px',
+            maxWidth: '700px',
+            width: '90%',
+            maxHeight: '90vh',
+            overflow: 'auto'
+          }}>
+            <h2 style={{ marginBottom: '10px', fontSize: '24px', fontWeight: 'bold' }}>
+              🚑 Configuration SFTP - Cartes d'appel Premier Répondant
+            </h2>
+            <p style={{ marginBottom: '20px', color: '#666', fontSize: '14px' }}>
+              Configurer l'accès SFTP pour les cartes Premier Répondant de <strong>{selectedTenant.nom}</strong>
+            </p>
+
+            {sftpPrLoading ? (
+              <div style={{ textAlign: 'center', padding: '2rem' }}>
+                <p>Chargement...</p>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gap: '15px' }}>
+                {/* Statut actuel */}
+                {sftpPrConfig && (
+                  <div style={{ 
+                    padding: '15px', 
+                    borderRadius: '8px', 
+                    backgroundColor: sftpPrConfig.polling_active ? '#dcfce7' : '#fef3c7',
+                    border: `1px solid ${sftpPrConfig.polling_active ? '#86efac' : '#fcd34d'}`,
+                    marginBottom: '10px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div>
+                        <strong>{sftpPrConfig.polling_active ? '✅ Surveillance active' : '⏸️ Surveillance inactive'}</strong>
+                        {sftpPrConfig.last_check && (
+                          <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                            Dernière vérification: {new Date(sftpPrConfig.last_check).toLocaleString('fr-FR')}
+                          </p>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        {sftpPrConfig.polling_active ? (
+                          <Button variant="outline" size="sm" onClick={handleStopSftpPrPolling}>
+                            ⏹️ Arrêter
+                          </Button>
+                        ) : (
+                          <Button size="sm" onClick={handleStartSftpPrPolling}>
+                            ▶️ Démarrer
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px', gap: '15px' }}>
+                  <div>
+                    <Label>Serveur SFTP *</Label>
+                    <Input
+                      value={sftpPrFormData.host}
+                      onChange={(e) => setSftpPrFormData({ ...sftpPrFormData, host: e.target.value })}
+                      placeholder="sftp.centrale911.ca"
+                    />
+                  </div>
+                  <div>
+                    <Label>Port</Label>
+                    <Input
+                      type="number"
+                      value={sftpPrFormData.port}
+                      onChange={(e) => setSftpPrFormData({ ...sftpPrFormData, port: parseInt(e.target.value) || 22 })}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label>Nom d'utilisateur *</Label>
+                  <Input
+                    value={sftpPrFormData.username}
+                    onChange={(e) => setSftpPrFormData({ ...sftpPrFormData, username: e.target.value })}
+                    placeholder="user_sftp"
+                  />
+                </div>
+
+                <div>
+                  <Label>Mot de passe {sftpPrConfig ? '(laisser vide pour conserver)' : '*'}</Label>
+                  <div style={{ position: 'relative' }}>
+                    <Input
+                      type={showSftpPrPassword ? 'text' : 'password'}
+                      value={sftpPrFormData.password}
+                      onChange={(e) => setSftpPrFormData({ ...sftpPrFormData, password: e.target.value })}
+                      placeholder={sftpPrConfig ? '••••••••' : 'Mot de passe'}
+                      style={{ paddingRight: '40px' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowSftpPrPassword(!showSftpPrPassword)}
+                      style={{
+                        position: 'absolute',
+                        right: '10px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '18px',
+                        padding: '0'
+                      }}
+                      title={showSftpPrPassword ? 'Masquer' : 'Afficher'}
+                    >
+                      {showSftpPrPassword ? '🙈' : '👁️'}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <Label>Chemin du répertoire</Label>
+                  <Input
+                    value={sftpPrFormData.remote_path}
+                    onChange={(e) => setSftpPrFormData({ ...sftpPrFormData, remote_path: e.target.value })}
+                    placeholder="/cartes_appel/premier_repondant"
+                  />
+                  <small style={{ color: '#666' }}>Répertoire où sont déposées les cartes d'appel Premier Répondant XML</small>
+                </div>
+
+                <div>
+                  <Label>Intervalle de vérification (secondes)</Label>
+                  <Input
+                    type="number"
+                    min="10"
+                    max="300"
+                    value={sftpPrFormData.polling_interval}
+                    onChange={(e) => setSftpPrFormData({ ...sftpPrFormData, polling_interval: parseInt(e.target.value) || 30 })}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <input
+                    type="checkbox"
+                    id="sftp_pr_actif"
+                    checked={sftpPrFormData.actif}
+                    onChange={(e) => setSftpPrFormData({ ...sftpPrFormData, actif: e.target.checked })}
+                  />
+                  <Label htmlFor="sftp_pr_actif" style={{ marginBottom: 0 }}>Configuration active</Label>
+                </div>
+
+                <div>
+                  <Label>Description (optionnel)</Label>
+                  <Input
+                    value={sftpPrFormData.description}
+                    onChange={(e) => setSftpPrFormData({ ...sftpPrFormData, description: e.target.value })}
+                    placeholder="CAUCA PR - Chaudière-Appalaches"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '25px', justifyContent: 'space-between' }}>
+              <div>
+                {sftpPrConfig && (
+                  <Button variant="destructive" onClick={handleDeleteSftpPrConfig}>
+                    🗑️ Supprimer
+                  </Button>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <Button variant="outline" onClick={handleTestSftpPr} disabled={sftpPrTesting}>
+                  {sftpPrTesting ? '⏳ Test...' : '🔌 Tester'}
+                </Button>
+                <Button variant="outline" onClick={() => {
+                  setShowSftpPrConfigModal(false);
+                  setSftpPrConfig(null);
+                  setSftpPrFormData({
+                    host: '',
+                    port: 22,
+                    username: '',
+                    password: '',
+                    remote_path: '/',
+                    polling_interval: 30,
+                    actif: true,
+                    description: ''
+                  });
+                }}>
+                  Fermer
+                </Button>
+                <Button onClick={handleSaveSftpPrConfig} disabled={sftpPrLoading}>
+                  {sftpPrLoading ? 'Enregistrement...' : 'Enregistrer'}
                 </Button>
               </div>
             </div>

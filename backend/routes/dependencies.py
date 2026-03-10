@@ -336,6 +336,7 @@ class TenantCreate(BaseModel):
     email_contact: str = ""
     date_creation: Optional[str] = None
     centrale_911_id: Optional[str] = None
+    centrale_pr_id: Optional[str] = None
 
 
 class SuperAdminLogin(BaseModel):

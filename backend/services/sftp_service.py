@@ -412,6 +412,187 @@ class SFTPService:
         task = asyncio.create_task(poll_loop())
         self.polling_tasks[tenant_id] = task
     
+    async def start_polling_for_tenant(
+        self, 
+        tenant_id: str, 
+        config: Dict, 
+        type_carte: str = "incendie",
+        polling_key: str = None
+    ):
+        """
+        Démarre le polling SFTP pour un tenant avec une configuration spécifique
+        
+        Args:
+            tenant_id: ID du tenant
+            config: Configuration SFTP
+            type_carte: Type de carte d'appel ('incendie' ou 'premier_repondant')
+            polling_key: Clé unique pour ce polling (par défaut: tenant_id)
+        """
+        polling_key = polling_key or tenant_id
+        interval = max(60, config.get("polling_interval", 300))
+        
+        async def poll_loop():
+            logger.info(f"Démarrage polling SFTP {type_carte} pour tenant {tenant_id} (intervalle: {interval}s)")
+            while True:
+                try:
+                    new_interventions = await self.check_sftp_for_tenant_with_config(
+                        tenant_id, config, type_carte
+                    )
+                    if new_interventions:
+                        logger.info(f"[{tenant_id}/{type_carte}] {len(new_interventions)} nouvelle(s) intervention(s) importée(s)")
+                except Exception as e:
+                    logger.error(f"Erreur polling SFTP {type_carte} {tenant_id}: {e}")
+                
+                await asyncio.sleep(interval)
+        
+        # Arrêter le polling existant si présent
+        if polling_key in self.polling_tasks:
+            self.polling_tasks[polling_key].cancel()
+        
+        # Démarrer le nouveau polling
+        task = asyncio.create_task(poll_loop())
+        self.polling_tasks[polling_key] = task
+    
+    async def check_sftp_for_tenant_with_config(
+        self, 
+        tenant_id: str, 
+        config: Dict,
+        type_carte: str = "incendie"
+    ) -> List[Dict]:
+        """
+        Vérifie le SFTP d'un tenant avec une configuration spécifique et traite les nouveaux fichiers
+        """
+        sftp = None
+        transport = None
+        
+        try:
+            # Connexion SFTP
+            sftp, transport = self.connect_sftp(config)
+            remote_path = config.get("remote_path", "/")
+            
+            # Lister les fichiers XML
+            xml_files = self.list_xml_files(sftp, remote_path)
+            if not xml_files:
+                return []
+            
+            # Grouper par intervention
+            groups = self.group_files_by_intervention(xml_files)
+            
+            # Traiter chaque intervention
+            new_interventions = []
+            for card_number, filenames in groups.items():
+                # Vérifier si on a au moins le fichier Details
+                has_details = any(self.identify_file_type(f) == "details" for f in filenames)
+                if not has_details:
+                    logger.warning(f"Pas de fichier Details pour carte {card_number}, attente...")
+                    continue
+                
+                intervention = await self.process_intervention_files_with_type(
+                    tenant_id, sftp, remote_path, card_number, filenames, type_carte
+                )
+                if intervention:
+                    new_interventions.append(intervention)
+            
+            # Notifier via WebSocket
+            if new_interventions and self.websocket_manager:
+                for intervention in new_interventions:
+                    await self.websocket_manager.broadcast_to_tenant(
+                        tenant_id,
+                        {
+                            "type": "new_intervention",
+                            "data": {
+                                "id": intervention.get("id"),
+                                "external_call_id": intervention.get("external_call_id"),
+                                "address": intervention.get("address_full"),
+                                "type_intervention": intervention.get("type_intervention"),
+                                "type_carte": type_carte,
+                                "time_received": intervention.get("xml_time_call_received").isoformat() if intervention.get("xml_time_call_received") else None,
+                                "action": intervention.get("_action", "created")
+                            }
+                        }
+                    )
+            
+            return new_interventions
+            
+        except Exception as e:
+            logger.error(f"Erreur SFTP pour tenant {tenant_id}: {e}")
+            return []
+        
+        finally:
+            self.close_sftp_connection(sftp, transport)
+    
+    async def process_intervention_files_with_type(
+        self, 
+        tenant_id: str, 
+        sftp: paramiko.SFTPClient, 
+        remote_path: str,
+        card_number: str, 
+        filenames: List[str],
+        type_carte: str = "incendie"
+    ) -> Optional[Dict]:
+        """
+        Traite les fichiers d'une intervention avec un type de carte spécifique
+        """
+        from services.cauca_parser import parse_cauca_intervention
+        
+        # Télécharger tous les fichiers
+        files_content = {}
+        for filename in filenames:
+            file_type = self.identify_file_type(filename)
+            if file_type:
+                content = self.download_file(sftp, remote_path, filename)
+                if content:
+                    files_content[file_type] = content
+        
+        if not files_content:
+            logger.warning(f"Aucun contenu valide pour la carte {card_number}")
+            return None
+        
+        # Parser l'intervention
+        try:
+            intervention_data = parse_cauca_intervention(files_content)
+        except Exception as e:
+            logger.error(f"Erreur parsing carte {card_number}: {e}")
+            return None
+        
+        # Ajouter les métadonnées avec le type de carte
+        intervention_data["tenant_id"] = tenant_id
+        intervention_data["status"] = "new"
+        intervention_data["created_at"] = datetime.now(timezone.utc)
+        intervention_data["source"] = "sftp_auto"
+        intervention_data["type_carte"] = type_carte  # 'incendie' ou 'premier_repondant'
+        intervention_data["sftp_files"] = filenames
+        intervention_data["sftp_remote_path"] = remote_path
+        
+        # Vérifier si l'intervention existe déjà
+        external_id = intervention_data.get("external_call_id") or card_number
+        existing = await self.db.interventions.find_one({
+            "tenant_id": tenant_id,
+            "external_call_id": external_id,
+            "type_carte": type_carte
+        })
+        
+        if existing:
+            intervention_data["updated_at"] = datetime.now(timezone.utc)
+            await self.db.interventions.update_one(
+                {"id": existing["id"]},
+                {"$set": intervention_data}
+            )
+            intervention_data["id"] = existing["id"]
+            intervention_data["_action"] = "updated"
+            logger.info(f"Intervention {type_carte} mise à jour: {external_id}")
+        else:
+            intervention_data["external_call_id"] = external_id
+            await self.db.interventions.insert_one(intervention_data)
+            intervention_data["_action"] = "created"
+            logger.info(f"Nouvelle intervention {type_carte} créée: {external_id}")
+        
+        # Supprimer les fichiers du SFTP
+        for filename in filenames:
+            self.delete_file(sftp, remote_path, filename)
+        
+        return intervention_data
+    
     async def stop_polling(self, tenant_id: str):
         """Arrête le polling SFTP pour un tenant"""
         if tenant_id in self.polling_tasks:
