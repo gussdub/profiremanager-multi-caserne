@@ -1088,20 +1088,13 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                     Assignez des formulaires pour activer les boutons d&apos;inspection correspondants.
                   </p>
                   
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     {/* Après utilisation */}
-                    <div>
-                      <div style={{ display: 'grid', gridTemplateColumns: newTypeEPI.formulaire_apres_usage_id ? '1fr 1fr' : '1fr', gap: '8px', marginBottom: '4px' }}>
-                        <Label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div>
+                        <Label style={{ fontSize: '12px', display: 'block', marginBottom: '6px' }}>
                           🔍 Après utilisation
                         </Label>
-                        {newTypeEPI.formulaire_apres_usage_id && (
-                          <Label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            ⏱️ Fréquence
-                          </Label>
-                        )}
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: newTypeEPI.formulaire_apres_usage_id ? '1fr 1fr' : '1fr', gap: '8px' }}>
                         <select
                           value={newTypeEPI.formulaire_apres_usage_id || ''}
                           onChange={e => setNewTypeEPI({...newTypeEPI, formulaire_apres_usage_id: e.target.value})}
@@ -1111,7 +1104,8 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                             borderRadius: '6px', 
                             border: '1px solid #93C5FD', 
                             fontSize: '13px', 
-                            backgroundColor: 'white' 
+                            backgroundColor: 'white',
+                            height: '38px'
                           }}
                         >
                           <option value="">Aucun formulaire</option>
@@ -1119,40 +1113,37 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                             <option key={f.id} value={f.id}>📋 {f.nom}</option>
                           ))}
                         </select>
-                        {newTypeEPI.formulaire_apres_usage_id && (
-                          <select
-                            value={newTypeEPI.frequence_apres_usage || 'apres_usage'}
-                            onChange={e => setNewTypeEPI({...newTypeEPI, frequence_apres_usage: e.target.value})}
-                            style={{ 
-                              width: '100%', 
-                              padding: '8px', 
-                              borderRadius: '6px', 
-                              border: '1px solid #93C5FD', 
-                              fontSize: '13px', 
-                              backgroundColor: 'white' 
-                            }}
-                          >
-                            {frequencesInspection.map(f => (
-                              <option key={f.value} value={f.value}>{f.label}</option>
-                            ))}
-                          </select>
-                        )}
+                      </div>
+                      <div style={{ visibility: newTypeEPI.formulaire_apres_usage_id ? 'visible' : 'hidden' }}>
+                        <Label style={{ fontSize: '12px', display: 'block', marginBottom: '6px' }}>
+                          ⏱️ Fréquence
+                        </Label>
+                        <select
+                          value={newTypeEPI.frequence_apres_usage || 'apres_usage'}
+                          onChange={e => setNewTypeEPI({...newTypeEPI, frequence_apres_usage: e.target.value})}
+                          style={{ 
+                            width: '100%', 
+                            padding: '8px', 
+                            borderRadius: '6px', 
+                            border: '1px solid #93C5FD', 
+                            fontSize: '13px', 
+                            backgroundColor: 'white',
+                            height: '38px'
+                          }}
+                        >
+                          {frequencesInspection.map(f => (
+                            <option key={f.value} value={f.value}>{f.label}</option>
+                          ))}
+                        </select>
                       </div>
                     </div>
                     
                     {/* Routine */}
-                    <div>
-                      <div style={{ display: 'grid', gridTemplateColumns: newTypeEPI.formulaire_routine_id ? '1fr 1fr' : '1fr', gap: '8px', marginBottom: '4px' }}>
-                        <Label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div>
+                        <Label style={{ fontSize: '12px', display: 'block', marginBottom: '6px' }}>
                           📅 Routine
                         </Label>
-                        {newTypeEPI.formulaire_routine_id && (
-                          <Label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            ⏱️ Fréquence
-                          </Label>
-                        )}
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: newTypeEPI.formulaire_routine_id ? '1fr 1fr' : '1fr', gap: '8px' }}>
                         <select
                           value={newTypeEPI.formulaire_routine_id || ''}
                           onChange={e => setNewTypeEPI({...newTypeEPI, formulaire_routine_id: e.target.value})}
@@ -1162,7 +1153,8 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                             borderRadius: '6px', 
                             border: '1px solid #93C5FD', 
                             fontSize: '13px', 
-                            backgroundColor: 'white' 
+                            backgroundColor: 'white',
+                            height: '38px'
                           }}
                         >
                           <option value="">Aucun formulaire</option>
@@ -1170,40 +1162,37 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                             <option key={f.id} value={f.id}>📋 {f.nom}</option>
                           ))}
                         </select>
-                        {newTypeEPI.formulaire_routine_id && (
-                          <select
-                            value={newTypeEPI.frequence_routine || 'mensuelle'}
-                            onChange={e => setNewTypeEPI({...newTypeEPI, frequence_routine: e.target.value})}
-                            style={{ 
-                              width: '100%', 
-                              padding: '8px', 
-                              borderRadius: '6px', 
-                              border: '1px solid #93C5FD', 
-                              fontSize: '13px', 
-                              backgroundColor: 'white' 
-                            }}
-                          >
-                            {frequencesInspection.map(f => (
-                              <option key={f.value} value={f.value}>{f.label}</option>
-                            ))}
-                          </select>
-                        )}
+                      </div>
+                      <div style={{ visibility: newTypeEPI.formulaire_routine_id ? 'visible' : 'hidden' }}>
+                        <Label style={{ fontSize: '12px', display: 'block', marginBottom: '6px' }}>
+                          ⏱️ Fréquence
+                        </Label>
+                        <select
+                          value={newTypeEPI.frequence_routine || 'mensuelle'}
+                          onChange={e => setNewTypeEPI({...newTypeEPI, frequence_routine: e.target.value})}
+                          style={{ 
+                            width: '100%', 
+                            padding: '8px', 
+                            borderRadius: '6px', 
+                            border: '1px solid #93C5FD', 
+                            fontSize: '13px', 
+                            backgroundColor: 'white',
+                            height: '38px'
+                          }}
+                        >
+                          {frequencesInspection.map(f => (
+                            <option key={f.value} value={f.value}>{f.label}</option>
+                          ))}
+                        </select>
                       </div>
                     </div>
                     
                     {/* Avancée */}
-                    <div>
-                      <div style={{ display: 'grid', gridTemplateColumns: newTypeEPI.formulaire_avancee_id ? '1fr 1fr' : '1fr', gap: '8px', marginBottom: '4px' }}>
-                        <Label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          🔧 Avancée <span style={{ fontSize: '10px', color: '#6b7280', fontWeight: 'normal' }}>(admin/superviseur)</span>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div>
+                        <Label style={{ fontSize: '12px', display: 'block', marginBottom: '6px' }}>
+                          🔧 Avancée <span style={{ fontSize: '10px', color: '#6b7280' }}>(admin/superviseur)</span>
                         </Label>
-                        {newTypeEPI.formulaire_avancee_id && (
-                          <Label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            ⏱️ Fréquence
-                          </Label>
-                        )}
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: newTypeEPI.formulaire_avancee_id ? '1fr 1fr' : '1fr', gap: '8px' }}>
                         <select
                           value={newTypeEPI.formulaire_avancee_id || ''}
                           onChange={e => setNewTypeEPI({...newTypeEPI, formulaire_avancee_id: e.target.value})}
@@ -1213,7 +1202,8 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                             borderRadius: '6px', 
                             border: '1px solid #93C5FD', 
                             fontSize: '13px', 
-                            backgroundColor: 'white' 
+                            backgroundColor: 'white',
+                            height: '38px'
                           }}
                         >
                           <option value="">Aucun formulaire</option>
@@ -1221,24 +1211,28 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                             <option key={f.id} value={f.id}>📋 {f.nom}</option>
                           ))}
                         </select>
-                        {newTypeEPI.formulaire_avancee_id && (
-                          <select
-                            value={newTypeEPI.frequence_avancee || 'annuelle'}
-                            onChange={e => setNewTypeEPI({...newTypeEPI, frequence_avancee: e.target.value})}
-                            style={{ 
-                              width: '100%', 
-                              padding: '8px', 
-                              borderRadius: '6px', 
-                              border: '1px solid #93C5FD', 
-                              fontSize: '13px', 
-                              backgroundColor: 'white' 
-                            }}
-                          >
-                            {frequencesInspection.map(f => (
-                              <option key={f.value} value={f.value}>{f.label}</option>
-                            ))}
-                          </select>
-                        )}
+                      </div>
+                      <div style={{ visibility: newTypeEPI.formulaire_avancee_id ? 'visible' : 'hidden' }}>
+                        <Label style={{ fontSize: '12px', display: 'block', marginBottom: '6px' }}>
+                          ⏱️ Fréquence
+                        </Label>
+                        <select
+                          value={newTypeEPI.frequence_avancee || 'annuelle'}
+                          onChange={e => setNewTypeEPI({...newTypeEPI, frequence_avancee: e.target.value})}
+                          style={{ 
+                            width: '100%', 
+                            padding: '8px', 
+                            borderRadius: '6px', 
+                            border: '1px solid #93C5FD', 
+                            fontSize: '13px', 
+                            backgroundColor: 'white',
+                            height: '38px'
+                          }}
+                        >
+                          {frequencesInspection.map(f => (
+                            <option key={f.value} value={f.value}>{f.label}</option>
+                          ))}
+                        </select>
                       </div>
                     </div>
                   </div>
