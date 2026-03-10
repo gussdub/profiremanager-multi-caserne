@@ -1413,6 +1413,16 @@ const BatimentForm = ({
                       onFocus={() => {
                         if (suggestions.length > 0) setShowSuggestions(true);
                       }}
+                      onBlur={(e) => {
+                        // Fermer après un délai pour permettre le clic sur une suggestion
+                        setTimeout(() => setShowSuggestions(false), 200);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') {
+                          setShowSuggestions(false);
+                          e.target.blur();
+                        }
+                      }}
                       placeholder="Commencez à taper votre adresse..."
                       disabled={!isEditing || !canEditAll}
                       style={{
@@ -1439,7 +1449,7 @@ const BatimentForm = ({
                     )}
                     
                     {/* Suggestions dropdown */}
-                    {isEditing && canEditAll && showSuggestions && suggestions.length > 0 && (
+                    {isEditing && canEditAll && showSuggestions && (
                       <div style={{
                         position: 'absolute',
                         top: '100%',
@@ -1454,24 +1464,61 @@ const BatimentForm = ({
                         maxHeight: '300px',
                         overflowY: 'auto'
                       }}>
-                        {suggestions.map((suggestion, index) => (
-                          <div
-                            key={index}
-                            onClick={() => handleAddressSelect(suggestion)}
+                        {/* Bouton fermer */}
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '0.5rem 0.75rem',
+                          borderBottom: '1px solid #e5e7eb',
+                          backgroundColor: '#f9fafb'
+                        }}>
+                          <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                            {suggestions.length > 0 ? `${suggestions.length} suggestion(s)` : 'Aucune suggestion'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setShowSuggestions(false)}
                             style={{
-                              padding: '0.75rem',
+                              background: 'none',
+                              border: 'none',
                               cursor: 'pointer',
-                              borderBottom: index < suggestions.length - 1 ? '1px solid #f3f4f6' : 'none',
-                              transition: 'background-color 0.2s'
+                              fontSize: '1rem',
+                              color: '#9ca3af',
+                              padding: '0.25rem'
                             }}
-                            onMouseEnter={(e) => e.target.style.backgroundColor = '#f9fafb'}
-                            onMouseLeave={(e) => e.target.style.backgroundColor = 'white'}
                           >
-                            <div style={{ fontSize: '0.875rem', fontWeight: '500', color: '#1f2937' }}>
-                              {suggestion.title}
+                            ✕
+                          </button>
+                        </div>
+                        
+                        {suggestions.length > 0 ? (
+                          suggestions.map((suggestion, index) => (
+                            <div
+                              key={index}
+                              onClick={() => handleAddressSelect(suggestion)}
+                              style={{
+                                padding: '0.75rem',
+                                cursor: 'pointer',
+                                borderBottom: index < suggestions.length - 1 ? '1px solid #f3f4f6' : 'none',
+                                transition: 'background-color 0.2s'
+                              }}
+                              onMouseEnter={(e) => e.target.style.backgroundColor = '#f9fafb'}
+                              onMouseLeave={(e) => e.target.style.backgroundColor = 'white'}
+                            >
+                              <div style={{ fontSize: '0.875rem', fontWeight: '500', color: '#1f2937' }}>
+                                {suggestion.title}
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div style={{ padding: '1rem', textAlign: 'center', color: '#6b7280' }}>
+                            <div style={{ fontSize: '0.875rem' }}>Adresse non trouvée</div>
+                            <div style={{ fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                              Vous pouvez saisir l'adresse manuellement
                             </div>
                           </div>
-                        ))}
+                        )}
                       </div>
                     )}
                   </div>
