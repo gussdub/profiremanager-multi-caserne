@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Cartes>
+   <Carte>
+      <no_carte>260201-116</no_carte>
+      <No_CarteMere>260201-116</No_CarteMere>
+      <hr_appel>2026-02-01 09:52:08</hr_appel>
+      <pec_adr_info>671 CHEMIN MAPLE</pec_adr_info>
+      <pec_vil_info>SUTTON</pec_vil_info>
+      <no_civique_de>   671</no_civique_de>
+      <no_appartement_de></no_appartement_de>
+      <Loc_Adr_de>SKI SUTTON</Loc_Adr_de>
+      <tel_de>4505385007</tel_de>
+      <Ext_tel_de></Ext_tel_de>
+      <code_eta_de></code_eta_de>
+      <Code_Eta_MSSS_PEC></Code_Eta_MSSS_PEC>
+      <CodeGeoPEC>46058</CodeGeoPEC>
+      <ZonePEC>683</ZonePEC>
+      <dest_adr_info>C.H. BROME-MISSISQUOI-PERKINS(chbmp640)</dest_adr_info>
+      <dest_vil_info>COWANSVILLE</dest_vil_info>
+      <no_civique_a></no_civique_a>
+      <no_appartement_a></no_appartement_a>
+      <Loc_Adr_a></Loc_Adr_a>
+      <code_eta_a>51229185</code_eta_a>
+      <Code_Eta_MSSS_DEST>51229185</Code_Eta_MSSS_DEST>
+      <CodeGeoDest>46080</CodeGeoDest>
+      <ZoneDest>683</ZoneDest>
+      <pec_trans_info>CHEMIN REAL</pec_trans_info>
+      <conscient>O</conscient>
+      <respire>O</respire>
+      <age>10</age>
+      <Unite_Age>A</Unite_Age>
+      <sexe>M</sexe>
+      <nature>30-D-5</nature>
+      <priorite>1</priorite>
+      <raison>COLLISION AVEC ARBRE// TRAUMA VISAGE, CONFUS</raison>
+      <nb_blesses>1</nb_blesses>
+      <Info_MPDS>10 an(s), Homme, Conscient, Respire.
+Blessures Traumatiques (Spécifiques)
+Affirmation de l'appelant: COLLISION AVEC ARBRE// TRAUMA VISAGE, CONFUS
+1. Ça vient d'arriver (il y a moins de 6 heures).
+2. Il y a un saignement GRAVE.
+3. Il est complètement réveillé (réagit normalement).
+4. Il s'agit d'un incident avec un impact à HAUTE VÉLOCITÉ/trauma OBJET LOURD.
+</Info_MPDS>
+      <hr_avisrepartiteur>2026-02-01 09:53:17</hr_avisrepartiteur>
+      <raison_annul></raison_annul>
+      <Raison_AnnulTxt></Raison_AnnulTxt>
+      <Donnee911>
+         <Cad_position>IP</Cad_position>
+         <Call_sequence>1829</Call_sequence>
+         <Time_of_call>09:51:42</Time_of_call>
+         <Date_of_call>02-01</Date_of_call>
+         <Message_type>I</Message_type>
+         <Area_code>450</Area_code>
+         <Telephone_number>211-0187</Telephone_number>
+         <Data_type></Data_type>
+         <Service_Class>WL2</Service_Class>
+         <Municipality_code>FRB</Municipality_code>
+         <Name>(CHEMIN DE ST ARMAND, FRELIGHSBURG)BELTE F1105</Name>
+         <House_number>401</House_number>
+         <Street_Name>CELLULAIRE</Street_Name>
+         <Location_Suffix>RU</Location_Suffix>
+         <Street_Orientation></Street_Orientation>
+         <Location_type></Location_type>
+         <Location_number></Location_number>
+         <Additional_location_information>LAT:45 03 36.389N LONG:72 39 48.208W UNC:3035 CONF:90</Additional_location_information>
+         <Service_Community>FRELIGHSBURG</Service_Community>
+         <Service_Municipality>FRELIGHSBURG</Service_Municipality>
+         <Postal_code>NA</Postal_code>
+         <Carrier_Company>BELL MOB LTE</Carrier_Company>
+         <Call_back_number>4505385007</Call_back_number>
+         <Province>QC</Province>
+         <DateMaj>2026-02-01 00:00:00</DateMaj>
+         <HeureMaj>2026-02-01 09:51:42</HeureMaj>
+      </Donnee911>
+      <RessourceAmbulancieres>
+         <RessourceAmbulanciere>
+            <NoSequentielAffectation>1</NoSequentielAffectation>
+            <no_equipe>8303</no_equipe>
+            <vehicule_no>6433</vehicule_no>
+            <mat_empl_1>M1096</mat_empl_1>
+            <mat_empl_2>N0352</mat_empl_2>
+            <hr_emis>2026-02-01 09:59:54</hr_emis>
+            <hr_ConfirmTA1>2026-02-01 09:59:59</hr_ConfirmTA1>
+            <hr_ConfirmTA2>2026-02-01 09:59:59</hr_ConfirmTA2>
+            <hr_enrou>2026-02-01 10:00:24</hr_enrou>
+            <hr_lieux>2026-02-01 10:23:03</hr_lieux>
+            <hr_AupresPatient></hr_AupresPatient>
+            <hr_vers_des>2026-02-01 10:37:25</hr_vers_des>
+            <hr_a_des>2026-02-01 11:01:12</hr_a_des>
+            <hr_libre>2026-02-01 11:32:38</hr_libre>
+            <hr_FinAffectation>2026-02-01 11:32:38</hr_FinAffectation>
+            <hr_vers_zone>2026-02-01 11:37:18</hr_vers_zone>
+            <hr_a_zone>2026-02-01 11:47:36</hr_a_zone>
+            <hr_retour>2026-02-01 11:47:42</hr_retour>
+            <Hr_dispatch>2026-02-01 09:53:17</Hr_dispatch>
+            <Secteur_veh>COWANS</Secteur_veh>
+            <Raison_FinAffectation>13</Raison_FinAffectation>
+            <Raison_FinAffectationTxt>Fin normal</Raison_FinAffectationTxt>
+         </RessourceAmbulanciere>
+      </RessourceAmbulancieres>
+      <RessourcePRs>
+         <RessourcePR>
+            <NoSequentielAffectation>1</NoSequentielAffectation>
+            <no_equipe>999</no_equipe>
+            <vehicule_no>999</vehicule_no>
+            <hr_emis>2026-02-01 09:53:17</hr_emis>
+            <hr_enrou></hr_enrou>
+            <hr_lieux></hr_lieux>
+            <hr_AupresPatient></hr_AupresPatient>
+            <hr_vers_des></hr_vers_des>
+            <hr_a_des></hr_a_des>
+            <hr_libre>2026-02-01 10:22:07</hr_libre>
+            <hr_FinAffectation>2026-02-01 10:22:07</hr_FinAffectation>
+            <hr_vers_zone>2026-02-01 10:22:09</hr_vers_zone>
+            <hr_a_zone>2026-02-01 10:22:09</hr_a_zone>
+            <hr_retour>2026-02-01 10:22:09</hr_retour>
+            <sta_car>T</sta_car>
+            <Raison_FinAffectation></Raison_FinAffectation>
+         </RessourcePR>
+      </RessourcePRs>
+   </Carte>
+   <Carte>
+      <no_carte>260201-191</no_carte>
+      <No_CarteMere>260201-191</No_CarteMere>
+      <hr_appel>2026-02-01 12:22:39</hr_appel>
+      <pec_adr_info>671 RUE MAPLE</pec_adr_info>
+      <pec_vil_info>SUTTON</pec_vil_info>
+      <no_civique_de>   671</no_civique_de>
+      <no_appartement_de></no_appartement_de>
+      <Loc_Adr_de>CLINIQUE</Loc_Adr_de>
+      <tel_de>4505385007</tel_de>
+      <Ext_tel_de></Ext_tel_de>
+      <code_eta_de></code_eta_de>
+      <Code_Eta_MSSS_PEC></Code_Eta_MSSS_PEC>
+      <CodeGeoPEC>46058</CodeGeoPEC>
+      <ZonePEC>683</ZonePEC>
+      <dest_adr_info>C.H. BROME-MISSISQUOI-PERKINS(chbmp640)</dest_adr_info>
+      <dest_vil_info>COWANSVILLE</dest_vil_info>
+      <no_civique_a></no_civique_a>
+      <no_appartement_a></no_appartement_a>
+      <Loc_Adr_a></Loc_Adr_a>
+      <code_eta_a>51229185</code_eta_a>
+      <Code_Eta_MSSS_DEST>51229185</Code_Eta_MSSS_DEST>
+      <CodeGeoDest>46080</CodeGeoDest>
+      <ZoneDest>683</ZoneDest>
+      <pec_trans_info>CHEMIN REAL</pec_trans_info>
+      <conscient>O</conscient>
+      <respire>O</respire>
+      <age>17</age>
+      <Unite_Age>A</Unite_Age>
+      <sexe>M</sexe>
+      <nature>30-D-4</nature>
+      <priorite>1</priorite>
+      <raison>chute dans pente de ski - m17 - respire peniblement - cliquement dans poitrine</raison>
+      <nb_blesses>1</nb_blesses>
+      <Info_MPDS>17 an(s), Homme, Conscient, Respire.
+Blessures Traumatiques (Spécifiques)
+Affirmation de l'appelant: chute dans pente de ski - m17 - respire peniblement - cliquement dans poitrine
+1. Ça vient d'arriver (il y a moins de 6 heures).
+2. Il n'y a pas de saignement maintenant.
+3. Il est complètement réveillé (réagit normalement).
+4. La blessure est au thorax.
+5. Il a de la difficulté à respirer.
+</Info_MPDS>
+      <hr_avisrepartiteur>2026-02-01 12:25:02</hr_avisrepartiteur>
+      <raison_annul></raison_annul>
+      <Raison_AnnulTxt></Raison_AnnulTxt>
+      <Donnee911>
+         <Cad_position>IP</Cad_position>
+         <Call_sequence>1958</Call_sequence>
+         <Time_of_call>12:22:29</Time_of_call>
+         <Date_of_call>02-01</Date_of_call>
+         <Message_type>I</Message_type>
+         <Area_code>450</Area_code>
+         <Telephone_number>211-0188</Telephone_number>
+         <Data_type></Data_type>
+         <Service_Class>WL2</Service_Class>
+         <Municipality_code>SUV</Municipality_code>
+         <Name>(LOTISSEMENT NO 25-1 CANTON DE SUTTON)BELTE F1109</Name>
+         <House_number>401</House_number>
+         <Street_Name>CELLULAIRE</Street_Name>
+         <Location_Suffix>RU</Location_Suffix>
+         <Street_Orientation></Street_Orientation>
+         <Location_type></Location_type>
+         <Location_number></Location_number>
+         <Additional_location_information>LAT:45 05 15.882N LONG:72 33 07.988W UNC:202 CONF:90</Additional_location_information>
+         <Service_Community>SUTTON</Service_Community>
+         <Service_Municipality>ABERCORN</Service_Municipality>
+         <Postal_code>NA</Postal_code>
+         <Carrier_Company>BELL MOB LTE</Carrier_Company>
+         <Call_back_number>4505385007</Call_back_number>
+         <Province>QC</Province>
+         <DateMaj>2026-02-01 00:00:00</DateMaj>
+         <HeureMaj>2026-02-01 12:22:29</HeureMaj>
+      </Donnee911>
+      <RessourceAmbulancieres>
+         <RessourceAmbulanciere>
+            <NoSequentielAffectation>1</NoSequentielAffectation>
+            <no_equipe>8300</no_equipe>
+            <vehicule_no>6434</vehicule_no>
+            <mat_empl_1>D1179</mat_empl_1>
+            <mat_empl_2>M0703</mat_empl_2>
+            <hr_emis>2026-02-01 12:25:28</hr_emis>
+            <hr_ConfirmTA1>2026-02-01 12:25:41</hr_ConfirmTA1>
+            <hr_ConfirmTA2>2026-02-01 12:25:39</hr_ConfirmTA2>
+            <hr_enrou>2026-02-01 12:26:14</hr_enrou>
+            <hr_lieux>2026-02-01 12:47:13</hr_lieux>
+            <hr_AupresPatient></hr_AupresPatient>
+            <hr_vers_des>2026-02-01 13:02:49</hr_vers_des>
+            <hr_a_des>2026-02-01 13:21:33</hr_a_des>
+            <hr_libre>2026-02-01 13:40:19</hr_libre>
+            <hr_FinAffectation>2026-02-01 13:40:19</hr_FinAffectation>
+            <hr_vers_zone>2026-02-01 13:40:54</hr_vers_zone>
+            <hr_a_zone>2026-02-01 13:41:01</hr_a_zone>
+            <hr_retour>2026-02-01 14:22:18</hr_retour>
+            <Hr_dispatch>2026-02-01 12:25:02</Hr_dispatch>
+            <Secteur_veh>COWANS</Secteur_veh>
+            <Raison_FinAffectation>13</Raison_FinAffectation>
+            <Raison_FinAffectationTxt>Fin normal</Raison_FinAffectationTxt>
+         </RessourceAmbulanciere>
+      </RessourceAmbulancieres>
+      <RessourcePRs>
+         <RessourcePR>
+            <NoSequentielAffectation>1</NoSequentielAffectation>
+            <no_equipe>999</no_equipe>
+            <vehicule_no>999</vehicule_no>
+            <hr_emis>2026-02-01 12:25:35</hr_emis>
+            <hr_enrou></hr_enrou>
+            <hr_lieux></hr_lieux>
+            <hr_AupresPatient></hr_AupresPatient>
+            <hr_vers_des></hr_vers_des>
+            <hr_a_des></hr_a_des>
+            <hr_libre>2026-02-01 12:25:41</hr_libre>
+            <hr_FinAffectation>2026-02-01 12:25:41</hr_FinAffectation>
+            <hr_vers_zone>2026-02-01 12:25:43</hr_vers_zone>
+            <hr_a_zone>2026-02-01 12:25:43</hr_a_zone>
+            <hr_retour>2026-02-01 12:25:43</hr_retour>
+            <sta_car>T</sta_car>
+            <Raison_FinAffectation></Raison_FinAffectation>
+         </RessourcePR>
+      </RessourcePRs>
+   </Carte>
+   <Carte>
+      <no_carte>260202-414</no_carte>
+      <No_CarteMere>260202-414</No_CarteMere>
+      <hr_appel>2026-02-02 16:32:24</hr_appel>
+      <pec_adr_info>96 CHEMIN BELVEDERE</pec_adr_info>
+      <pec_vil_info>SUTTON</pec_vil_info>
+      <no_civique_de>    96</no_civique_de>
+      <no_appartement_de></no_appartement_de>
+      <Loc_Adr_de>10-35 en dir</Loc_Adr_de>
+      <tel_de>4388885308</tel_de>
+      <Ext_tel_de></Ext_tel_de>
+      <code_eta_de></code_eta_de>
+      <Code_Eta_MSSS_PEC></Code_Eta_MSSS_PEC>
+      <CodeGeoPEC>46058</CodeGeoPEC>
+      <ZonePEC>683</ZonePEC>
+      <dest_adr_info>C.H. BROME-MISSISQUOI-PERKINS(chbmp640)</dest_adr_info>
+      <dest_vil_info>COWANSVILLE</dest_vil_info>
+      <no_civique_a></no_civique_a>
+      <no_appartement_a></no_appartement_a>
+      <Loc_Adr_a></Loc_Adr_a>
+      <code_eta_a>51229185</code_eta_a>
+      <Code_Eta_MSSS_DEST>51229185</Code_Eta_MSSS_DEST>
+      <CodeGeoDest>46080</CodeGeoDest>
+      <ZoneDest>683</ZoneDest>
+      <pec_trans_info>RUE MOUNTAIN</pec_trans_info>
+      <conscient>N</conscient>
+      <respire>O</respire>
+      <age>32</age>
+      <Unite_Age>A</Unite_Age>
+      <sexe>F</sexe>
+      <nature>25-D-2</nature>
+      <priorite>1</priorite>
+      <raison>NE SE RÉVEILLE PAS // RESPIRE // ATCD TDS // MARQUE DANS LE COU // POSSIBLE STRANGULATION?</raison>
+      <nb_blesses>1</nb_blesses>
+      <Info_MPDS>32 an(s), Femme, Inconsciente, Respire.
+Problème psychiatrique / Troubles de santé mentale / Tentative de suicide / Comportement anormal
+Affirmation de l'appelant: NE SE RÉVEILLE PAS // RESPIRE // ATCD TDS // MARQUE DANS LE COU // POSSIBLE STRANGULATION?
+1. Il s'agit d'une tentative de suicide par strangulation.
+</Info_MPDS>
+      <hr_avisrepartiteur>2026-02-02 16:33:58</hr_avisrepartiteur>
+      <raison_annul></raison_annul>
+      <Raison_AnnulTxt></Raison_AnnulTxt>
+      <Donnee911>
+         <Cad_position>IP</Cad_position>
+         <Call_sequence>3033</Call_sequence>
+         <Time_of_call>16:32:16</Time_of_call>
+         <Date_of_call>02-02</Date_of_call>
+         <Message_type>I</Message_type>
+         <Area_code>579</Area_code>
+         <Telephone_number>211-4058</Telephone_number>
+         <Data_type></Data_type>
+         <Service_Class>WL2</Service_Class>
+         <Municipality_code>SUV</Municipality_code>
+         <Name>(199, CHEMIN O'DONOUGHUE, SUTTON, QC) 26247436 VL WSP</Name>
+         <House_number>401</House_number>
+         <Street_Name>CELLULAIRE</Street_Name>
+         <Location_Suffix>RU</Location_Suffix>
+         <Street_Orientation></Street_Orientation>
+         <Location_type></Location_type>
+         <Location_number></Location_number>
+         <Additional_location_information>LAT:45 05 09.859N LONG:72 36 39.028W UNC:135 CONF:90</Additional_location_information>
+         <Service_Community>SUTTON</Service_Community>
+         <Service_Municipality>SUTTON</Service_Municipality>
+         <Postal_code>NA</Postal_code>
+         <Carrier_Company>VIDEOTRON WSP</Carrier_Company>
+         <Call_back_number>4388885308</Call_back_number>
+         <Province>QC</Province>
+         <DateMaj>2026-02-02 00:00:00</DateMaj>
+         <HeureMaj>2026-02-02 16:32:16</HeureMaj>
+      </Donnee911>
+      <RessourceAmbulancieres>
+         <RessourceAmbulanciere>
+            <NoSequentielAffectation>1</NoSequentielAffectation>
+            <no_equipe>8324</no_equipe>
+            <vehicule_no>6433</vehicule_no>
+            <mat_empl_1>N0352</mat_empl_1>
+            <mat_empl_2>L2074</mat_empl_2>
+            <hr_emis>2026-02-02 16:34:32</hr_emis>
+            <hr_ConfirmTA1>2026-02-02 16:34:42</hr_ConfirmTA1>
+            <hr_ConfirmTA2>2026-02-02 16:34:44</hr_ConfirmTA2>
+            <hr_enrou>2026-02-02 16:35:08</hr_enrou>
+            <hr_lieux>2026-02-02 16:55:11</hr_lieux>
+            <hr_AupresPatient></hr_AupresPatient>
+            <hr_vers_des>2026-02-02 17:22:47</hr_vers_des>
+            <hr_a_des>2026-02-02 17:43:21</hr_a_des>
+            <hr_libre>2026-02-02 18:22:20</hr_libre>
+            <hr_FinAffectation>2026-02-02 18:22:20</hr_FinAffectation>
+            <hr_vers_zone>2026-02-02 18:26:55</hr_vers_zone>
+            <hr_a_zone>2026-02-02 18:35:15</hr_a_zone>
+            <hr_retour>2026-02-02 18:35:15</hr_retour>
+            <Hr_dispatch>2026-02-02 16:33:58</Hr_dispatch>
+            <Secteur_veh>COWANS</Secteur_veh>
+            <Raison_FinAffectation>13</Raison_FinAffectation>
+            <Raison_FinAffectationTxt>Fin normal</Raison_FinAffectationTxt>
+         </RessourceAmbulanciere>
+      </RessourceAmbulancieres>
+      <RessourcePRs>
+         <RessourcePR>
+            <NoSequentielAffectation>1</NoSequentielAffectation>
+            <no_equipe>999</no_equipe>
+            <vehicule_no>999</vehicule_no>
+            <hr_emis>2026-02-02 16:33:59</hr_emis>
+            <hr_enrou>2026-02-02 16:37:18</hr_enrou>
+            <hr_lieux>2026-02-02 16:40:02</hr_lieux>
+            <hr_AupresPatient></hr_AupresPatient>
+            <hr_vers_des></hr_vers_des>
+            <hr_a_des></hr_a_des>
+            <hr_libre>2026-02-02 17:24:12</hr_libre>
+            <hr_FinAffectation>2026-02-02 17:24:12</hr_FinAffectation>
+            <hr_vers_zone>2026-02-02 17:24:12</hr_vers_zone>
+            <hr_a_zone>2026-02-02 17:24:12</hr_a_zone>
+            <hr_retour>2026-02-02 17:24:12</hr_retour>
+            <sta_car>T</sta_car>
+            <Raison_FinAffectation></Raison_FinAffectation>
+         </RessourcePR>
+      </RessourcePRs>
+   </Carte>
+</Cartes>
