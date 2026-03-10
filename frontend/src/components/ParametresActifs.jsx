@@ -1090,7 +1090,7 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {/* Après utilisation */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', alignItems: 'end' }}>
                       <div>
                         <Label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
                           🔍 Après utilisation
@@ -1139,7 +1139,7 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                     </div>
                     
                     {/* Routine */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', alignItems: 'end' }}>
                       <div>
                         <Label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
                           📅 Routine
@@ -1188,10 +1188,10 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                     </div>
                     
                     {/* Avancée */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', alignItems: 'end' }}>
                       <div>
                         <Label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
-                          🔧 Avancée
+                          🔧 Avancée <span style={{ fontSize: '10px', color: '#6b7280', fontWeight: 'normal' }}>(admin/superviseur)</span>
                         </Label>
                         <select
                           value={newTypeEPI.formulaire_avancee_id || ''}
