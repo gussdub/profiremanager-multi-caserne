@@ -1090,8 +1090,8 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     {/* Après utilisation */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                      <div>
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      <div style={{ flex: 1 }}>
                         <Label style={{ fontSize: '12px', display: 'block', marginBottom: '6px' }}>
                           🔍 Après utilisation
                         </Label>
@@ -1105,7 +1105,8 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                             border: '1px solid #93C5FD', 
                             fontSize: '13px', 
                             backgroundColor: 'white',
-                            height: '38px'
+                            height: '38px',
+                            boxSizing: 'border-box'
                           }}
                         >
                           <option value="">Aucun formulaire</option>
@@ -1114,13 +1115,14 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                           ))}
                         </select>
                       </div>
-                      <div style={{ visibility: newTypeEPI.formulaire_apres_usage_id ? 'visible' : 'hidden' }}>
+                      <div style={{ flex: 1, opacity: newTypeEPI.formulaire_apres_usage_id ? 1 : 0 }}>
                         <Label style={{ fontSize: '12px', display: 'block', marginBottom: '6px' }}>
                           ⏱️ Fréquence
                         </Label>
                         <select
                           value={newTypeEPI.frequence_apres_usage || 'apres_usage'}
                           onChange={e => setNewTypeEPI({...newTypeEPI, frequence_apres_usage: e.target.value})}
+                          disabled={!newTypeEPI.formulaire_apres_usage_id}
                           style={{ 
                             width: '100%', 
                             padding: '8px', 
@@ -1128,7 +1130,8 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                             border: '1px solid #93C5FD', 
                             fontSize: '13px', 
                             backgroundColor: 'white',
-                            height: '38px'
+                            height: '38px',
+                            boxSizing: 'border-box'
                           }}
                         >
                           {frequencesInspection.map(f => (
@@ -1139,8 +1142,8 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                     </div>
                     
                     {/* Routine */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                      <div>
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      <div style={{ flex: 1 }}>
                         <Label style={{ fontSize: '12px', display: 'block', marginBottom: '6px' }}>
                           📅 Routine
                         </Label>
@@ -1154,7 +1157,8 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                             border: '1px solid #93C5FD', 
                             fontSize: '13px', 
                             backgroundColor: 'white',
-                            height: '38px'
+                            height: '38px',
+                            boxSizing: 'border-box'
                           }}
                         >
                           <option value="">Aucun formulaire</option>
@@ -1163,13 +1167,14 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                           ))}
                         </select>
                       </div>
-                      <div style={{ visibility: newTypeEPI.formulaire_routine_id ? 'visible' : 'hidden' }}>
+                      <div style={{ flex: 1, opacity: newTypeEPI.formulaire_routine_id ? 1 : 0 }}>
                         <Label style={{ fontSize: '12px', display: 'block', marginBottom: '6px' }}>
                           ⏱️ Fréquence
                         </Label>
                         <select
                           value={newTypeEPI.frequence_routine || 'mensuelle'}
                           onChange={e => setNewTypeEPI({...newTypeEPI, frequence_routine: e.target.value})}
+                          disabled={!newTypeEPI.formulaire_routine_id}
                           style={{ 
                             width: '100%', 
                             padding: '8px', 
@@ -1177,7 +1182,8 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                             border: '1px solid #93C5FD', 
                             fontSize: '13px', 
                             backgroundColor: 'white',
-                            height: '38px'
+                            height: '38px',
+                            boxSizing: 'border-box'
                           }}
                         >
                           {frequencesInspection.map(f => (
@@ -1188,8 +1194,8 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                     </div>
                     
                     {/* Avancée */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                      <div>
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      <div style={{ flex: 1 }}>
                         <Label style={{ fontSize: '12px', display: 'block', marginBottom: '6px' }}>
                           🔧 Avancée <span style={{ fontSize: '10px', color: '#6b7280' }}>(admin/superviseur)</span>
                         </Label>
@@ -1203,7 +1209,8 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                             border: '1px solid #93C5FD', 
                             fontSize: '13px', 
                             backgroundColor: 'white',
-                            height: '38px'
+                            height: '38px',
+                            boxSizing: 'border-box'
                           }}
                         >
                           <option value="">Aucun formulaire</option>
@@ -1212,13 +1219,14 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                           ))}
                         </select>
                       </div>
-                      <div style={{ visibility: newTypeEPI.formulaire_avancee_id ? 'visible' : 'hidden' }}>
+                      <div style={{ flex: 1, opacity: newTypeEPI.formulaire_avancee_id ? 1 : 0 }}>
                         <Label style={{ fontSize: '12px', display: 'block', marginBottom: '6px' }}>
                           ⏱️ Fréquence
                         </Label>
                         <select
                           value={newTypeEPI.frequence_avancee || 'annuelle'}
                           onChange={e => setNewTypeEPI({...newTypeEPI, frequence_avancee: e.target.value})}
+                          disabled={!newTypeEPI.formulaire_avancee_id}
                           style={{ 
                             width: '100%', 
                             padding: '8px', 
@@ -1226,7 +1234,8 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                             border: '1px solid #93C5FD', 
                             fontSize: '13px', 
                             backgroundColor: 'white',
-                            height: '38px'
+                            height: '38px',
+                            boxSizing: 'border-box'
                           }}
                         >
                           {frequencesInspection.map(f => (
