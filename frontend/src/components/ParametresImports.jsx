@@ -4,7 +4,7 @@ import ImportCSVEquipements from "./ImportCSVEquipements.jsx";
 import ImportCSVPersonnel from "./ImportCSVPersonnel.jsx";
 import ImportCSVRapports from "./ImportCSVRapports.jsx";
 import ImportCSVDisponibilites from "./ImportCSVDisponibilites.jsx";
-import ImportInspectionsBornes from "./ImportInspectionsBornes.jsx";
+import ImportHydrants from "./ImportHydrants.jsx";
 import { 
   Shield, 
   Wrench, 
@@ -19,13 +19,13 @@ import {
  * Design avec onglets style cartes (comme Gestion des Actifs)
  */
 const ParametresImports = ({ tenantSlug, toast }) => {
-  const [activeTab, setActiveTab] = useState('bornes');
+  const [activeTab, setActiveTab] = useState('hydrants');
 
   // Configuration des onglets d'import
   const importTabs = [
     {
-      id: 'bornes',
-      label: 'Inspections Bornes',
+      id: 'hydrants',
+      label: 'Hydrants',
       icon: Droplets
     },
     {
@@ -58,15 +58,15 @@ const ParametresImports = ({ tenantSlug, toast }) => {
   // Rendu du contenu selon l'onglet actif
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'bornes':
+      case 'hydrants':
         return (
-          <ImportInspectionsBornes 
+          <ImportHydrants 
             tenantSlug={tenantSlug}
             onImportComplete={(results) => {
               toast({
                 title: "Import terminé",
-                description: `${results.imported_count} inspection(s) importée(s) pour ${results.borne?.nom || 'la borne'}`,
-                variant: results.errors_count > 0 ? "warning" : "success"
+                description: `${results.created || 0} point(s) d'eau créé(s), ${results.updated || 0} mis à jour, ${results.skipped || 0} ignoré(s)`,
+                variant: results.errors?.length > 0 ? "warning" : "success"
               });
             }}
           />

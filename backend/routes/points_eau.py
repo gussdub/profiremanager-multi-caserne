@@ -596,3 +596,147 @@ async def get_dates_tests_bornes_seches(
     dates_tests = parametres.get('dates_tests_bornes_seches', [])
     
     return {"dates": dates_tests}
+
+
+# ==================== IMPORT EN MASSE ====================
+
+class PointEauImportItem(BaseModel):
+    nom: str
+    latitude: float
+    longitude: float
+    type: str
+    adresse: Optional[str] = ""
+    description: Optional[str] = ""
+    capacite: Optional[str] = None
+    debit: Optional[str] = None
+    remarques: Optional[str] = ""
+    _action: Optional[str] = "create"  # 'create', 'update', 'skip'
+    _existingId: Optional[str] = None
+
+class PointsEauImportRequest(BaseModel):
+    points: List[PointEauImportItem]
+
+
+@router.post("/{tenant_slug}/points-eau/import")
+async def import_points_eau(
+    tenant_slug: str,
+    request: PointsEauImportRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Import en masse de points d'eau depuis CSV, Excel, KML ou KMZ
+    
+    Gère les actions:
+    - create: créer un nouveau point
+    - update: mettre à jour un point existant
+    - skip: ignorer (doublon)
+    """
+    if current_user.role not in ['admin', 'superviseur']:
+        raise HTTPException(status_code=403, detail="Permission refusée - Admin ou Superviseur requis")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    results = {
+        "created": 0,
+        "updated": 0,
+        "skipped": 0,
+        "errors": []
+    }
+    
+    for idx, point_data in enumerate(request.points):
+        try:
+            action = point_data._action if hasattr(point_data, '_action') else "create"
+            existing_id = point_data._existingId if hasattr(point_data, '_existingId') else None
+            
+            # Extraire les données du point (exclure les champs internes)
+            point_dict = point_data.dict(exclude={'_action', '_existingId'})
+            
+            # Nettoyer les valeurs None
+            point_dict = {k: v for k, v in point_dict.items() if v is not None}
+            
+            if action == "skip":
+                results["skipped"] += 1
+                continue
+            
+            if action == "update" and existing_id:
+                # Mettre à jour le point existant
+                update_data = {
+                    "nom": point_dict.get("nom"),
+                    "type": point_dict.get("type"),
+                    "adresse": point_dict.get("adresse", ""),
+                    "description": point_dict.get("description", ""),
+                    "remarques": point_dict.get("remarques", ""),
+                    "coordonnees": {
+                        "lat": point_dict.get("latitude"),
+                        "lng": point_dict.get("longitude")
+                    },
+                    "latitude": point_dict.get("latitude"),
+                    "longitude": point_dict.get("longitude"),
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }
+                
+                # Ajouter capacité et débit si présents
+                if point_dict.get("capacite"):
+                    try:
+                        update_data["capacite"] = int(point_dict["capacite"])
+                    except:
+                        pass
+                if point_dict.get("debit"):
+                    try:
+                        update_data["debit"] = int(point_dict["debit"])
+                    except:
+                        pass
+                
+                await db.points_eau.update_one(
+                    {"id": existing_id, "tenant_id": tenant.id},
+                    {"$set": update_data}
+                )
+                results["updated"] += 1
+                
+            else:
+                # Créer un nouveau point
+                new_point = {
+                    "id": str(uuid.uuid4()),
+                    "tenant_id": tenant.id,
+                    "nom": point_dict.get("nom", f"Point {idx + 1}"),
+                    "numero_identification": point_dict.get("nom", ""),
+                    "type": point_dict.get("type", "autre"),
+                    "adresse": point_dict.get("adresse", ""),
+                    "description": point_dict.get("description", ""),
+                    "remarques": point_dict.get("remarques", ""),
+                    "coordonnees": {
+                        "lat": point_dict.get("latitude"),
+                        "lng": point_dict.get("longitude")
+                    },
+                    "latitude": point_dict.get("latitude"),
+                    "longitude": point_dict.get("longitude"),
+                    "statut": "en_service",
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "created_by": current_user.id
+                }
+                
+                # Ajouter capacité et débit si présents
+                if point_dict.get("capacite"):
+                    try:
+                        new_point["capacite"] = int(point_dict["capacite"])
+                    except:
+                        pass
+                if point_dict.get("debit"):
+                    try:
+                        new_point["debit"] = int(point_dict["debit"])
+                    except:
+                        pass
+                
+                await db.points_eau.insert_one(new_point)
+                results["created"] += 1
+                
+        except Exception as e:
+            logger.error(f"Erreur import point {idx + 1}: {e}")
+            results["errors"].append({
+                "ligne": idx + 1,
+                "erreur": str(e)
+            })
+    
+    logger.info(f"Import points d'eau terminé: {results['created']} créés, {results['updated']} mis à jour, {results['skipped']} ignorés, {len(results['errors'])} erreurs")
+    
+    return results
