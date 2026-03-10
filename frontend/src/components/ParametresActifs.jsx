@@ -1090,11 +1090,18 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {/* Après utilisation */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', alignItems: 'end' }}>
-                      <div>
-                        <Label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                    <div>
+                      <div style={{ display: 'grid', gridTemplateColumns: newTypeEPI.formulaire_apres_usage_id ? '1fr 1fr' : '1fr', gap: '8px', marginBottom: '4px' }}>
+                        <Label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           🔍 Après utilisation
                         </Label>
+                        {newTypeEPI.formulaire_apres_usage_id && (
+                          <Label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            ⏱️ Fréquence
+                          </Label>
+                        )}
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: newTypeEPI.formulaire_apres_usage_id ? '1fr 1fr' : '1fr', gap: '8px' }}>
                         <select
                           value={newTypeEPI.formulaire_apres_usage_id || ''}
                           onChange={e => setNewTypeEPI({...newTypeEPI, formulaire_apres_usage_id: e.target.value})}
@@ -1112,12 +1119,7 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                             <option key={f.id} value={f.id}>📋 {f.nom}</option>
                           ))}
                         </select>
-                      </div>
-                      {newTypeEPI.formulaire_apres_usage_id && (
-                        <div>
-                          <Label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
-                            ⏱️ Fréquence
-                          </Label>
+                        {newTypeEPI.formulaire_apres_usage_id && (
                           <select
                             value={newTypeEPI.frequence_apres_usage || 'apres_usage'}
                             onChange={e => setNewTypeEPI({...newTypeEPI, frequence_apres_usage: e.target.value})}
@@ -1134,16 +1136,23 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                               <option key={f.value} value={f.value}>{f.label}</option>
                             ))}
                           </select>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                     
                     {/* Routine */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', alignItems: 'end' }}>
-                      <div>
-                        <Label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                    <div>
+                      <div style={{ display: 'grid', gridTemplateColumns: newTypeEPI.formulaire_routine_id ? '1fr 1fr' : '1fr', gap: '8px', marginBottom: '4px' }}>
+                        <Label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           📅 Routine
                         </Label>
+                        {newTypeEPI.formulaire_routine_id && (
+                          <Label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            ⏱️ Fréquence
+                          </Label>
+                        )}
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: newTypeEPI.formulaire_routine_id ? '1fr 1fr' : '1fr', gap: '8px' }}>
                         <select
                           value={newTypeEPI.formulaire_routine_id || ''}
                           onChange={e => setNewTypeEPI({...newTypeEPI, formulaire_routine_id: e.target.value})}
@@ -1161,12 +1170,7 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                             <option key={f.id} value={f.id}>📋 {f.nom}</option>
                           ))}
                         </select>
-                      </div>
-                      {newTypeEPI.formulaire_routine_id && (
-                        <div>
-                          <Label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
-                            ⏱️ Fréquence
-                          </Label>
+                        {newTypeEPI.formulaire_routine_id && (
                           <select
                             value={newTypeEPI.frequence_routine || 'mensuelle'}
                             onChange={e => setNewTypeEPI({...newTypeEPI, frequence_routine: e.target.value})}
@@ -1183,16 +1187,23 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                               <option key={f.value} value={f.value}>{f.label}</option>
                             ))}
                           </select>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                     
                     {/* Avancée */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', alignItems: 'end' }}>
-                      <div>
-                        <Label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                    <div>
+                      <div style={{ display: 'grid', gridTemplateColumns: newTypeEPI.formulaire_avancee_id ? '1fr 1fr' : '1fr', gap: '8px', marginBottom: '4px' }}>
+                        <Label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           🔧 Avancée <span style={{ fontSize: '10px', color: '#6b7280', fontWeight: 'normal' }}>(admin/superviseur)</span>
                         </Label>
+                        {newTypeEPI.formulaire_avancee_id && (
+                          <Label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            ⏱️ Fréquence
+                          </Label>
+                        )}
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: newTypeEPI.formulaire_avancee_id ? '1fr 1fr' : '1fr', gap: '8px' }}>
                         <select
                           value={newTypeEPI.formulaire_avancee_id || ''}
                           onChange={e => setNewTypeEPI({...newTypeEPI, formulaire_avancee_id: e.target.value})}
@@ -1210,12 +1221,7 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                             <option key={f.id} value={f.id}>📋 {f.nom}</option>
                           ))}
                         </select>
-                      </div>
-                      {newTypeEPI.formulaire_avancee_id && (
-                        <div>
-                          <Label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
-                            ⏱️ Fréquence
-                          </Label>
+                        {newTypeEPI.formulaire_avancee_id && (
                           <select
                             value={newTypeEPI.frequence_avancee || 'annuelle'}
                             onChange={e => setNewTypeEPI({...newTypeEPI, frequence_avancee: e.target.value})}
@@ -1232,8 +1238,8 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                               <option key={f.value} value={f.value}>{f.label}</option>
                             ))}
                           </select>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
