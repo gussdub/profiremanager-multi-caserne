@@ -1115,7 +1115,9 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                       </div>
                       {newTypeEPI.formulaire_apres_usage_id && (
                         <div>
-                          <Label style={{ fontSize: '12px', marginBottom: '4px' }}>Fréquence</Label>
+                          <Label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                            ⏱️ Fréquence
+                          </Label>
                           <select
                             value={newTypeEPI.frequence_apres_usage || 'apres_usage'}
                             onChange={e => setNewTypeEPI({...newTypeEPI, frequence_apres_usage: e.target.value})}
@@ -1162,7 +1164,9 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                       </div>
                       {newTypeEPI.formulaire_routine_id && (
                         <div>
-                          <Label style={{ fontSize: '12px', marginBottom: '4px' }}>Fréquence</Label>
+                          <Label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                            ⏱️ Fréquence
+                          </Label>
                           <select
                             value={newTypeEPI.frequence_routine || 'mensuelle'}
                             onChange={e => setNewTypeEPI({...newTypeEPI, frequence_routine: e.target.value})}
@@ -1209,7 +1213,9 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                       </div>
                       {newTypeEPI.formulaire_avancee_id && (
                         <div>
-                          <Label style={{ fontSize: '12px', marginBottom: '4px' }}>Fréquence</Label>
+                          <Label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                            ⏱️ Fréquence
+                          </Label>
                           <select
                             value={newTypeEPI.frequence_avancee || 'annuelle'}
                             onChange={e => setNewTypeEPI({...newTypeEPI, frequence_avancee: e.target.value})}
