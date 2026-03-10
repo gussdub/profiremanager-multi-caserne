@@ -949,7 +949,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
         )}
 
         {/* Navigation - Scrollable horizontalement sur mobile */}
-        <div className="bg-gray-100 border-b border-gray-300 overflow-x-auto sticky top-0 z-10" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div className="bg-gray-100 border-b border-gray-300 overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch', flexShrink: 0 }}>
           <div className="flex gap-1 p-2" style={{ minWidth: 'max-content' }}>
             {visibleSections.map(section => (
               <button
