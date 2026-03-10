@@ -194,10 +194,20 @@ const PointEauModal = ({
         // Fallback: essayer de charger tous les formulaires actifs
         try {
           const allFormulaires = await apiGet(tenantSlug, '/formulaires-inspection');
-          // Filtrer côté client les formulaires avec catégorie point_eau
-          const pointEauFormulaires = (allFormulaires || []).filter(f => 
-            f.est_actif && f.categorie_ids?.includes('point_eau')
-          );
+          // Filtrer côté client les formulaires pour points d'eau
+          const pointEauFormulaires = (allFormulaires || []).filter(f => {
+            if (!f.est_actif) return false;
+            
+            // Formulaires avec catégorie point_eau
+            if (f.categorie_ids?.includes('point_eau')) return true;
+            
+            // Formulaires de type inventaire génériques pour points d'eau
+            if (f.type === 'inventaire' && f.nom?.toLowerCase().includes('point') && f.nom?.toLowerCase().includes('eau')) {
+              return true;
+            }
+            
+            return false;
+          });
           setModelesInspection(pointEauFormulaires);
         } catch (e) {
           console.error('Erreur fallback formulaires:', e);

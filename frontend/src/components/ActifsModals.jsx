@@ -107,17 +107,34 @@ const VehiculeForm = ({ formData, handleChange, setFormData }) => {
   const [formulairesDisponibles, setFormulairesDisponibles] = useState([]);
   const [loadingFormulaires, setLoadingFormulaires] = useState(false);
 
-  // Charger les formulaires d'inspection avec la catégorie "vehicule"
+  // Charger les formulaires d'inspection/inventaire pour les véhicules
   useEffect(() => {
     const fetchFormulaires = async () => {
       if (!tenantSlug) return;
       try {
         setLoadingFormulaires(true);
         const allFormulaires = await apiGet(tenantSlug, '/formulaires-inspection');
-        // Filtrer les formulaires ayant la catégorie "vehicule"
-        const vehiculeFormulaires = (allFormulaires || []).filter(f => 
-          f.est_actif !== false && f.categorie_ids?.includes('vehicule')
-        );
+        // Filtrer les formulaires:
+        // 1. Ayant la catégorie "vehicule" (pour type inspection)
+        // 2. OU ayant ce véhicule dans vehicule_ids (pour type inventaire)
+        // 3. OU ayant le type "inventaire" et des vehicule_ids définis
+        const vehiculeFormulaires = (allFormulaires || []).filter(f => {
+          if (f.est_actif === false) return false;
+          
+          // Formulaires avec catégorie "vehicule"
+          if (f.categorie_ids?.includes('vehicule')) return true;
+          
+          // Formulaires de type inventaire assignés à des véhicules
+          if (f.type === 'inventaire' && f.vehicule_ids?.length > 0) {
+            // Si on a l'ID du véhicule courant, filtrer plus précisément
+            if (formData?.id) {
+              return f.vehicule_ids.includes(formData.id);
+            }
+            return true; // Sinon montrer tous les formulaires d'inventaire véhicule
+          }
+          
+          return false;
+        });
         setFormulairesDisponibles(vehiculeFormulaires);
       } catch (error) {
         console.error('Erreur chargement formulaires:', error);
@@ -126,7 +143,7 @@ const VehiculeForm = ({ formData, handleChange, setFormData }) => {
       }
     };
     fetchFormulaires();
-  }, [tenantSlug]);
+  }, [tenantSlug, formData?.id]);
 
   const handleFormulaireChange = (e) => {
     const value = e.target.value;
@@ -402,7 +419,7 @@ const VehiculeForm = ({ formData, handleChange, setFormData }) => {
         )}
         {!loadingFormulaires && formulairesDisponibles.length === 0 && (
           <p style={{ margin: '8px 0 0', fontSize: '0.75rem', color: '#dc2626' }}>
-            ⚠️ Aucun formulaire avec la catégorie "Véhicules" n'a été trouvé. Créez-en un dans Paramètres → Formulaires.
+            ⚠️ Aucun formulaire trouvé. Créez-en un dans Paramètres → Formulaires (type "Inventaire" et assignez-le à ce véhicule).
           </p>
         )}
         {formulairesDisponibles.length > 0 && (

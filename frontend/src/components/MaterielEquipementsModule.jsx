@@ -1598,11 +1598,20 @@ const EquipementModal = ({ mode, equipement, categories, tenantSlug, onClose, on
         setVehicules(vehiculesData || []);
         setEmployes(employesData || []);
         // Filtrer les formulaires actifs qui ont la catégorie "equipement"
-        // Ne PAS inclure les formulaires de type EPI ou autres catégories
-        const formulairesEquipement = (formulairesData || []).filter(f => 
-          f.est_actif !== false && 
-          f.categorie_ids?.includes('equipement')
-        );
+        // OU qui sont de type inventaire assignés à des équipements
+        const formulairesEquipement = (formulairesData || []).filter(f => {
+          if (f.est_actif === false) return false;
+          
+          // Formulaires avec catégorie "equipement"
+          if (f.categorie_ids?.includes('equipement')) return true;
+          
+          // Formulaires de type inventaire (sans catégorie mais pour équipements)
+          if (f.type === 'inventaire' && !f.categorie_ids?.length && !f.vehicule_ids?.length) {
+            return true; // Formulaires d'inventaire génériques
+          }
+          
+          return false;
+        });
         setFormulaires(formulairesEquipement);
       } catch (err) {
         console.error('Erreur chargement données:', err);

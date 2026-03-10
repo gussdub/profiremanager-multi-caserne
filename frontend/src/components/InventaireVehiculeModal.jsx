@@ -70,11 +70,23 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
         }
       }
       
-      // PRIORITÉ 2: Filtrer les formulaires avec la catégorie "vehicule" qui sont actifs
-      const vehiculeFormulaires = (allFormulaires || []).filter(f => 
-        f.est_actif !== false &&
-        f.categorie_ids?.includes('vehicule')
-      );
+      // PRIORITÉ 2: Filtrer les formulaires pour véhicules
+      const vehiculeFormulaires = (allFormulaires || []).filter(f => {
+        if (f.est_actif === false) return false;
+        
+        // Formulaires avec catégorie "vehicule"
+        if (f.categorie_ids?.includes('vehicule')) return true;
+        
+        // Formulaires de type inventaire assignés à ce véhicule spécifique
+        if (f.type === 'inventaire' && f.vehicule_ids?.length > 0) {
+          if (vehiculeId) {
+            return f.vehicule_ids.includes(vehiculeId);
+          }
+          return true;
+        }
+        
+        return false;
+      });
       
       console.log('Formulaires véhicule filtrés:', vehiculeFormulaires.length);
       
