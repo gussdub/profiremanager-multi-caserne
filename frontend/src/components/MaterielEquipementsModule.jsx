@@ -911,29 +911,33 @@ const EquipementCard = ({ equipement, onEdit, onDelete, onMaintenance, onInspect
         </div>
         
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          {/* Boutons APRIA - mêmes boutons que les autres équipements */}
+          {/* Boutons APRIA - affichés seulement si formulaires configurés */}
           {isAPRIA && (
             <>
-              {/* Après usage - orange */}
-              <button
-                onClick={(e) => { e.stopPropagation(); onInspectionAPRIA && onInspectionAPRIA('apres_usage'); }}
-                style={{ padding: '0.5rem 0.75rem', background: '#f97316', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
-                title="Inspection après usage"
-              >
-                🔍 Après usage
-              </button>
+              {/* Après usage - orange - seulement si formulaire configuré */}
+              {formulaires?.apresUsage && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onInspectionAPRIA && onInspectionAPRIA('apres_usage'); }}
+                  style={{ padding: '0.5rem 0.75rem', background: '#f97316', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                  title="Inspection après usage"
+                >
+                  🔍 Après usage
+                </button>
+              )}
               
-              {/* Mensuelle - bleu */}
-              <button
-                onClick={(e) => { e.stopPropagation(); onInspectionAPRIA && onInspectionAPRIA('mensuelle'); }}
-                style={{ padding: '0.5rem 0.75rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
-                title="Inspection mensuelle"
-              >
-                📅 Mensuelle
-              </button>
+              {/* Mensuelle - bleu - seulement si formulaire configuré */}
+              {formulaires?.routine && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onInspectionAPRIA && onInspectionAPRIA('mensuelle'); }}
+                  style={{ padding: '0.5rem 0.75rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                  title="Inspection mensuelle"
+                >
+                  📅 Mensuelle
+                </button>
+              )}
               
-              {/* Annuelle - violet (admin/superviseur seulement) */}
-              {!isEmploye && (
+              {/* Annuelle - violet (admin/superviseur seulement) - seulement si formulaire configuré */}
+              {formulaires?.avancee && !isEmploye && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onInspectionAPRIA && onInspectionAPRIA('annuelle'); }}
                   style={{ padding: '0.5rem 0.75rem', background: '#7c3aed', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
@@ -943,7 +947,7 @@ const EquipementCard = ({ equipement, onEdit, onDelete, onMaintenance, onInspect
                 </button>
               )}
               
-              {/* Historique */}
+              {/* Historique - toujours visible pour APRIA */}
               <button
                 onClick={(e) => { e.stopPropagation(); onHistoriqueAPRIA && onHistoriqueAPRIA(); }}
                 style={{ padding: '0.5rem', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer' }}
