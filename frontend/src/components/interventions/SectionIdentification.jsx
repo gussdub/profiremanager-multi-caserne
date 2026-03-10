@@ -169,6 +169,88 @@ const SectionIdentification = ({ formData, setFormData, editMode, formatDateTime
         </CardContent>
       </Card>
 
+      {/* Section Patient - Alerte Santé seulement */}
+      {formData.type_carte === 'alerte_sante' && (
+        <Card>
+          <CardHeader className="bg-teal-50">
+            <CardTitle className="text-lg text-teal-800">👤 Informations Patient</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <label className="text-sm text-gray-500">Âge</label>
+                <p className="font-medium">
+                  {formData.patient_age || '-'} {formData.patient_age_unite === 'M' ? 'mois' : 'ans'}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">Sexe</label>
+                <p className="font-medium">
+                  {formData.patient_sexe === 'M' ? 'Masculin' : 
+                   formData.patient_sexe === 'F' ? 'Féminin' : 
+                   formData.patient_sexe || '-'}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">Conscient</label>
+                <p className={`font-medium ${formData.patient_conscient === false ? 'text-red-600' : 'text-green-600'}`}>
+                  {formData.patient_conscient === true ? '✅ Oui' : 
+                   formData.patient_conscient === false ? '⚠️ Non' : '-'}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">Respire</label>
+                <p className={`font-medium ${formData.patient_respire === false ? 'text-red-600' : 'text-green-600'}`}>
+                  {formData.patient_respire === true ? '✅ Oui' : 
+                   formData.patient_respire === false ? '⚠️ Non' : '-'}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">Code Nature (MPDS)</label>
+                <p className="font-mono font-medium">{formData.nature || '-'}</p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">Priorité</label>
+                <p className={`font-medium ${
+                  formData.priorite === 1 ? 'text-red-600' : 
+                  formData.priorite === 2 ? 'text-orange-600' : 
+                  'text-gray-700'
+                }`}>
+                  {formData.priorite ? `P${formData.priorite}` : '-'}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">Nb Blessés</label>
+                <p className="font-medium">{formData.nb_blesses || '1'}</p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">Raison</label>
+                <p className="font-medium text-sm">{formData.raison || '-'}</p>
+              </div>
+            </div>
+            
+            {/* Info MPDS détaillée */}
+            {formData.info_mpds && (
+              <div className="mt-4 pt-4 border-t">
+                <label className="text-sm text-gray-500">Détails MPDS</label>
+                <p className="text-sm bg-gray-50 p-3 rounded mt-1 whitespace-pre-wrap">{formData.info_mpds}</p>
+              </div>
+            )}
+            
+            {/* Destination (hôpital) */}
+            {(formData.destination_address || formData.destination_city) && (
+              <div className="mt-4 pt-4 border-t">
+                <label className="text-sm text-gray-500">🏥 Destination</label>
+                <p className="font-medium">
+                  {[formData.destination_address, formData.destination_city].filter(Boolean).join(', ')}
+                  {formData.destination_code_eta && ` (Code: ${formData.destination_code_eta})`}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Chronologie */}
       <Card>
         <CardHeader className="bg-gray-50">

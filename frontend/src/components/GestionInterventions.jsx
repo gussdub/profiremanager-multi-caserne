@@ -217,6 +217,7 @@ const TabRapports = ({ user, tenantSlug, toast, readOnly = false, isSuperAdmin =
   const [loading, setLoading] = useState(true);
   const [selectedIntervention, setSelectedIntervention] = useState(null);
   const [deleting, setDeleting] = useState(null);
+  const [filtreTypeCarte, setFiltreTypeCarte] = useState('tous'); // 'tous', 'incendie', 'alerte_sante'
 
   const API = `${BACKEND_URL}/api/${tenantSlug}`;
 
@@ -239,6 +240,23 @@ const TabRapports = ({ user, tenantSlug, toast, readOnly = false, isSuperAdmin =
       setLoading(false);
     }
   }, [API]);
+  
+  // Filtrer les interventions selon le type de carte
+  const filterByType = (interventions) => {
+    if (filtreTypeCarte === 'tous') return interventions;
+    return interventions.filter(i => {
+      if (filtreTypeCarte === 'alerte_sante') return i.type_carte === 'alerte_sante';
+      // Pour incendie, on prend tout ce qui n'est pas alerte_sante (y compris null/undefined pour rétrocompat)
+      return i.type_carte !== 'alerte_sante';
+    });
+  };
+  
+  // Compter par type
+  const countByType = (interventions, type) => {
+    if (type === 'tous') return interventions.length;
+    if (type === 'alerte_sante') return interventions.filter(i => i.type_carte === 'alerte_sante').length;
+    return interventions.filter(i => i.type_carte !== 'alerte_sante').length;
+  };
 
   // Fonction de suppression (superadmin uniquement)
   const handleDeleteIntervention = async (intervention, e) => {
@@ -334,23 +352,60 @@ const TabRapports = ({ user, tenantSlug, toast, readOnly = false, isSuperAdmin =
 
   return (
     <div>
-      {/* En-tête avec compteurs */}
+      {/* En-tête avec compteurs et filtre */}
       <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
         <div className="flex gap-4 flex-wrap">
           <div className="bg-blue-50 px-4 py-2 rounded-lg">
             <span className="text-blue-800 font-medium">
-              📥 Nouveaux: {dashboard.counts.new || 0}
+              📥 Nouveaux: {countByType(dashboard.new, filtreTypeCarte)}
             </span>
           </div>
           <div className="bg-yellow-50 px-4 py-2 rounded-lg">
             <span className="text-yellow-800 font-medium">
-              ✏️ Brouillons: {(dashboard.counts.draft || 0) + (dashboard.counts.revision || 0)}
+              ✏️ Brouillons: {countByType(dashboard.drafts, filtreTypeCarte)}
             </span>
           </div>
           <div className="bg-purple-50 px-4 py-2 rounded-lg">
             <span className="text-purple-800 font-medium">
-              🔍 À valider: {dashboard.counts.review || 0}
+              🔍 À valider: {countByType(dashboard.review, filtreTypeCarte)}
             </span>
+          </div>
+        </div>
+        
+        {/* Filtre par type de carte */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-600">Filtrer:</span>
+          <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+            <button
+              onClick={() => setFiltreTypeCarte('tous')}
+              className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                filtreTypeCarte === 'tous'
+                  ? 'bg-gray-700 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              Tous
+            </button>
+            <button
+              onClick={() => setFiltreTypeCarte('incendie')}
+              className={`px-3 py-1.5 text-sm font-medium transition-colors border-l border-gray-300 ${
+                filtreTypeCarte === 'incendie'
+                  ? 'bg-red-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-red-50'
+              }`}
+            >
+              🚒 Incendie
+            </button>
+            <button
+              onClick={() => setFiltreTypeCarte('alerte_sante')}
+              className={`px-3 py-1.5 text-sm font-medium transition-colors border-l border-gray-300 ${
+                filtreTypeCarte === 'alerte_sante'
+                  ? 'bg-teal-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-teal-50'
+              }`}
+            >
+              🚑 Alerte Santé
+            </button>
           </div>
         </div>
       </div>
@@ -361,14 +416,14 @@ const TabRapports = ({ user, tenantSlug, toast, readOnly = false, isSuperAdmin =
         <Card>
           <CardHeader className="bg-blue-50">
             <CardTitle className="text-blue-800 text-lg">
-              📥 File d'attente ({dashboard.new.length})
+              📥 File d'attente ({filterByType(dashboard.new).length})
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 space-y-3 max-h-[500px] overflow-y-auto">
-            {dashboard.new.length === 0 ? (
+            {filterByType(dashboard.new).length === 0 ? (
               <p className="text-gray-500 text-center py-4">Aucune intervention en attente</p>
             ) : (
-              dashboard.new.map(intervention => (
+              filterByType(dashboard.new).map(intervention => (
                 <InterventionCard 
                   key={intervention.id} 
                   intervention={intervention}
@@ -388,14 +443,14 @@ const TabRapports = ({ user, tenantSlug, toast, readOnly = false, isSuperAdmin =
         <Card>
           <CardHeader className="bg-yellow-50">
             <CardTitle className="text-yellow-800 text-lg">
-              ✏️ Brouillons ({dashboard.drafts.length})
+              ✏️ Brouillons ({filterByType(dashboard.drafts).length})
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 space-y-3 max-h-[500px] overflow-y-auto">
-            {dashboard.drafts.length === 0 ? (
+            {filterByType(dashboard.drafts).length === 0 ? (
               <p className="text-gray-500 text-center py-4">Aucun brouillon</p>
             ) : (
-              dashboard.drafts.map(intervention => (
+              filterByType(dashboard.drafts).map(intervention => (
                 <InterventionCard 
                   key={intervention.id} 
                   intervention={intervention}
@@ -415,14 +470,14 @@ const TabRapports = ({ user, tenantSlug, toast, readOnly = false, isSuperAdmin =
         <Card>
           <CardHeader className="bg-purple-50">
             <CardTitle className="text-purple-800 text-lg">
-              🔍 À valider ({dashboard.review.length})
+              🔍 À valider ({filterByType(dashboard.review).length})
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 space-y-3 max-h-[500px] overflow-y-auto">
-            {dashboard.review.length === 0 ? (
+            {filterByType(dashboard.review).length === 0 ? (
               <p className="text-gray-500 text-center py-4">Aucune intervention à valider</p>
             ) : (
-              dashboard.review.map(intervention => (
+              filterByType(dashboard.review).map(intervention => (
                 <InterventionCard 
                   key={intervention.id} 
                   intervention={intervention}
@@ -462,16 +517,29 @@ const TabRapports = ({ user, tenantSlug, toast, readOnly = false, isSuperAdmin =
 // ==================== CARTE INTERVENTION ====================
 
 const InterventionCard = ({ intervention, formatDate, getStatusBadge, onSelect, isSuperAdmin = false, onDelete, deleting = false }) => {
+  // Différenciation visuelle selon le type de carte
+  const isAlerteSante = intervention.type_carte === 'alerte_sante';
+  const cardStyle = isAlerteSante 
+    ? { borderLeft: '4px solid #0891b2', backgroundColor: '#f0fdff' } // Teal/cyan pour Alerte Santé
+    : { borderLeft: '4px solid #dc2626', backgroundColor: '#fff' }; // Rouge pour Incendie
+  
+  const typeIcon = isAlerteSante ? '🚑' : '🚒';
+  const typeLabel = isAlerteSante ? 'Alerte Santé' : 'Incendie';
+  
   return (
     <div 
-      className="bg-white border border-gray-200 rounded-lg p-3 cursor-pointer hover:shadow-md transition-shadow"
+      className="border border-gray-200 rounded-lg p-3 cursor-pointer hover:shadow-md transition-shadow"
+      style={cardStyle}
       onClick={onSelect}
       data-testid={`intervention-card-${intervention.id}`}
     >
       <div className="flex justify-between items-start mb-2">
-        <span className="font-mono text-sm text-gray-500">
-          #{intervention.external_call_id}
-        </span>
+        <div className="flex items-center gap-2">
+          <span title={typeLabel}>{typeIcon}</span>
+          <span className="font-mono text-sm text-gray-500">
+            #{intervention.external_call_id}
+          </span>
+        </div>
         <div className="flex items-center gap-2">
           {getStatusBadge(intervention.status)}
           {isSuperAdmin && (
@@ -490,6 +558,14 @@ const InterventionCard = ({ intervention, formatDate, getStatusBadge, onSelect, 
       <div className="text-sm font-medium text-gray-900 mb-1">
         {intervention.type_intervention || 'Type non défini'}
       </div>
+      
+      {/* Afficher info patient pour Alerte Santé */}
+      {isAlerteSante && intervention.patient_age && (
+        <div className="text-xs text-teal-700 mb-1">
+          👤 Patient: {intervention.patient_age} ans, {intervention.patient_sexe === 'M' ? 'Homme' : intervention.patient_sexe === 'F' ? 'Femme' : intervention.patient_sexe}
+          {intervention.patient_conscient === false && ' • ⚠️ Inconscient'}
+        </div>
+      )}
       
       <div className="text-sm text-gray-600 mb-2">
         📍 {intervention.address_full || intervention.address_street || 'Adresse non disponible'}
@@ -674,19 +750,26 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
   // Déterminer si c'est un incendie (pour afficher les champs DSI)
   // Inclut les alarmes incendie pour permettre de remplir les DSI si nécessaire
   const isFireIncident = () => {
+    // Les cartes Alerte Santé ne sont jamais des incendies
+    if (formData.type_carte === 'alerte_sante') return false;
     const nature = (formData.type_intervention || '').toLowerCase();
     // Afficher DSI pour tout ce qui contient "incendie" (y compris alarmes)
     return nature.includes('incendie');
   };
   
+  // Détecter si c'est une carte Alerte Santé
+  const isAlerteSante = () => formData.type_carte === 'alerte_sante';
+  
   // Vrai incendie (pas une alarme) - pour la validation obligatoire
   const isRealFire = () => {
+    if (formData.type_carte === 'alerte_sante') return false;
     const nature = (formData.type_intervention || '').toLowerCase();
     return nature.includes('incendie') && !nature.includes('alarme');
   };
 
   // Déterminer si ça touche un bâtiment
   const isBuildingFire = () => {
+    if (formData.type_carte === 'alerte_sante') return false;
     const nature = (formData.type_intervention || '').toLowerCase();
     return nature.includes('bâtiment') || nature.includes('batiment') || 
            nature.includes('structure') || nature.includes('résidentiel');
@@ -914,16 +997,24 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
   return createPortal(
     <div className="modal-overlay" style={{ zIndex: 100000 }}>
       <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[95vh] flex flex-col">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-4">
+        {/* Header - Couleur adaptée selon le type de carte */}
+        <div className={`text-white p-4 ${isAlerteSante() ? 'bg-gradient-to-r from-teal-600 to-teal-700' : 'bg-gradient-to-r from-red-600 to-red-700'}`}>
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-xl font-bold">
-                Intervention #{formData.external_call_id}
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                {isAlerteSante() ? '🚑' : '🚒'} Intervention #{formData.external_call_id}
               </h2>
-              <p className="text-red-100">
+              <p className={isAlerteSante() ? 'text-teal-100' : 'text-red-100'}>
                 {formData.type_intervention || 'Type non défini'} - {formData.address_full || 'Adresse non disponible'}
               </p>
+              {isAlerteSante() && formData.patient_age && (
+                <p className="text-teal-100 text-sm mt-1">
+                  👤 Patient: {formData.patient_age} {formData.patient_age_unite === 'M' ? 'mois' : 'ans'}, 
+                  {formData.patient_sexe === 'M' ? ' Homme' : formData.patient_sexe === 'F' ? ' Femme' : ` ${formData.patient_sexe}`}
+                  {formData.patient_conscient === false && ' • ⚠️ Inconscient'}
+                  {formData.patient_respire === false && ' • ⚠️ Ne respire pas'}
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-3">
               {isLocked && (
@@ -931,7 +1022,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
                   ✅ Signé
                 </span>
               )}
-              <button onClick={onClose} className="text-white hover:text-red-200 text-2xl">&times;</button>
+              <button onClick={onClose} className={`hover:opacity-80 text-2xl ${isAlerteSante() ? 'text-white hover:text-teal-200' : 'text-white hover:text-red-200'}`}>&times;</button>
             </div>
           </div>
         </div>
@@ -957,7 +1048,9 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
                 onClick={() => setActiveSection(section.id)}
                 className={`px-3 py-2 rounded-lg font-medium transition-all text-xs border whitespace-nowrap ${
                   activeSection === section.id
-                    ? 'bg-red-600 text-white border-red-700 shadow-lg'
+                    ? isAlerteSante() 
+                      ? 'bg-teal-600 text-white border-teal-700 shadow-lg'
+                      : 'bg-red-600 text-white border-red-700 shadow-lg'
                     : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
                 }`}
               >

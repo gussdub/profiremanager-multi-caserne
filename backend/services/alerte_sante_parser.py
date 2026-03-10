@@ -202,6 +202,9 @@ def parse_carte_pr(carte_el: ET.Element) -> Dict[str, Any]:
     
     # Calculer les temps de réponse PR si disponibles
     temps_reponse_pr = None
+    # Extraire les temps de la première ressource PR pour la chronologie
+    first_pr = ressources_pr[0] if ressources_pr else {}
+    
     if ressources_pr and hr_appel:
         for res in ressources_pr:
             if res.get("hr_lieux"):
@@ -254,9 +257,16 @@ def parse_carte_pr(carte_el: ET.Element) -> Dict[str, Any]:
         # Type d'intervention dérivé de la nature
         "type_intervention": get_type_intervention_from_nature(nature),
         
-        # Chronologie
+        # Chronologie - utiliser les temps de la première ressource PR
         "xml_time_call_received": hr_appel,
-        "xml_time_dispatch": hr_avis_repartiteur,
+        "xml_time_dispatch": hr_avis_repartiteur or first_pr.get("hr_emis"),
+        "xml_time_en_route": first_pr.get("hr_enrou"),
+        "xml_time_arrival_1st": first_pr.get("hr_lieux"),
+        "xml_time_aupres_patient": first_pr.get("hr_aupres_patient"),
+        "xml_time_vers_destination": first_pr.get("hr_vers_des"),
+        "xml_time_a_destination": first_pr.get("hr_a_des"),
+        "xml_time_1022": first_pr.get("hr_libre"),
+        "xml_time_terminated": first_pr.get("hr_fin_affectation"),
         
         # Annulation
         "raison_annulation": raison_annul,
