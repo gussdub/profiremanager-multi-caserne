@@ -61,9 +61,9 @@ class ParametresPaie(BaseModel):
     # CAUCA = appels pompiers (incendie, alarme, désincarcération, etc.)
     activer_cauca: bool = True  # Activer les appels CAUCA
     minimum_heures_cauca: float = 3.0  # Minimum payé pour appels CAUCA
-    # Urgence Santé = appels premiers répondants (PR)
-    activer_urgence_sante: bool = False  # Activer les appels Urgence Santé (PR) - désactivé par défaut
-    minimum_heures_urgence_sante: float = 2.0  # Minimum payé pour appels Urgence Santé
+    # Premier répondant = appels Alerte Santé (PR)
+    activer_premier_repondant: bool = False  # Activer les appels Premier répondant - désactivé par défaut
+    minimum_heures_premier_repondant: float = 2.0  # Minimum payé pour appels Premier répondant
     # Utiliser les minimums par source au lieu du minimum global
     utiliser_minimum_par_source: bool = True
     
@@ -865,14 +865,19 @@ async def calculer_feuille_temps(
                 taux = params_paie.get("rappel_taux", 1.0)
                 
                 # Déterminer le minimum selon la source de l'appel
-                source_appel = intervention.get("source_appel", "cauca")
+                # Utiliser type_carte si disponible, sinon source_appel legacy
+                type_carte = intervention.get("type_carte")
+                if type_carte == "alerte_sante":
+                    source_appel = "premier_repondant"
+                else:
+                    source_appel = intervention.get("source_appel", "cauca")
                 
                 # Vérifier si la source est activée et déterminer le minimum
-                if source_appel == "urgence_sante":
-                    if params_paie.get("activer_urgence_sante", False):
-                        minimum = params_paie.get("minimum_heures_urgence_sante", 2.0)
+                if source_appel == "premier_repondant":
+                    if params_paie.get("activer_premier_repondant", False):
+                        minimum = params_paie.get("minimum_heures_premier_repondant", 2.0)
                     else:
-                        # Urgence Santé pas activé, utiliser le minimum CAUCA par défaut
+                        # Premier répondant pas activé, utiliser le minimum CAUCA par défaut
                         minimum = params_paie.get("minimum_heures_cauca", 3.0)
                 else:
                     # CAUCA (pompiers) - toujours activé par défaut
@@ -890,7 +895,7 @@ async def calculer_feuille_temps(
                 totaux["montant_brut"] += montant
                 
                 # Description avec info sur la source
-                source_label = "PR" if source_appel == "urgence_sante" else "CAUCA"
+                source_label = "PR" if source_appel == "premier_repondant" else "CAUCA"
                 description = f"Intervention #{intervention.get('external_call_id')} [{source_label}] - {intervention.get('type_intervention', 'N/A')}"
                 if utilise_fonction_superieure:
                     description += f" (Fonction supérieure +{int(prime_fonction_superieure_pct*100)}%)"

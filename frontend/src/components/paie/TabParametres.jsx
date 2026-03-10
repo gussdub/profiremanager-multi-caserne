@@ -133,35 +133,35 @@ const TabParametres = ({ context }) => {
             )}
           </div>
 
-          {/* Urgence Santé / PR */}
+          {/* Premier répondant / Alerte Santé */}
           <div style={{ 
-            background: parametres?.activer_urgence_sante ? '#eff6ff' : '#f8fafc', 
+            background: parametres?.activer_premier_repondant ? '#f0fdfa' : '#f8fafc', 
             padding: '16px', 
             borderRadius: '8px',
-            border: parametres?.activer_urgence_sante ? '2px solid #3b82f6' : '2px solid #e2e8f0',
-            opacity: parametres?.activer_urgence_sante ? 1 : 0.7
+            border: parametres?.activer_premier_repondant ? '2px solid #14b8a6' : '2px solid #e2e8f0',
+            opacity: parametres?.activer_premier_repondant ? 1 : 0.7
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '1.25rem' }}>🏥</span>
+                <span style={{ fontSize: '1.25rem' }}>🚑</span>
                 <div>
-                  <div style={{ fontWeight: '600', color: parametres?.activer_urgence_sante ? '#2563eb' : '#64748b' }}>Appels Urgence Santé</div>
+                  <div style={{ fontWeight: '600', color: parametres?.activer_premier_repondant ? '#0d9488' : '#64748b' }}>Appel Premier répondant</div>
                   <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                    Premiers répondants (PR)
+                    Alerte Santé / PR
                   </div>
                 </div>
               </div>
               <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
                 <input
                   type="checkbox"
-                  checked={parametres?.activer_urgence_sante || false}
-                  onChange={(e) => setParametres({...parametres, activer_urgence_sante: e.target.checked})}
-                  style={{ width: '18px', height: '18px', accentColor: '#3b82f6' }}
+                  checked={parametres?.activer_premier_repondant || false}
+                  onChange={(e) => setParametres({...parametres, activer_premier_repondant: e.target.checked})}
+                  style={{ width: '18px', height: '18px', accentColor: '#14b8a6' }}
                 />
                 <span style={{ fontSize: '0.875rem', fontWeight: '500' }}>Actif</span>
               </label>
             </div>
-            {parametres?.activer_urgence_sante && (
+            {parametres?.activer_premier_repondant && (
               <div>
                 <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
                   Heures minimum payées
@@ -169,21 +169,21 @@ const TabParametres = ({ context }) => {
                 <input
                   type="text"
                   inputMode="decimal"
-                  value={parametres?.minimum_heures_urgence_sante_text !== undefined ? parametres.minimum_heures_urgence_sante_text : (parametres?.minimum_heures_urgence_sante || '2')}
+                  value={parametres?.minimum_heures_premier_repondant_text !== undefined ? parametres.minimum_heures_premier_repondant_text : (parametres?.minimum_heures_premier_repondant || '2')}
                   onChange={(e) => {
                     const textValue = e.target.value;
                     const numValue = parseFloat(textValue.replace(',', '.'));
                     setParametres({
                       ...parametres, 
-                      minimum_heures_urgence_sante_text: textValue,
-                      minimum_heures_urgence_sante: isNaN(numValue) ? 2 : numValue
+                      minimum_heures_premier_repondant_text: textValue,
+                      minimum_heures_premier_repondant: isNaN(numValue) ? 2 : numValue
                     });
                   }}
                   placeholder="2"
                   style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db' }}
                 />
                 <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                  Dossier SFTP: intervention_urgence_sante
+                  Type de carte: alerte_sante
                 </span>
               </div>
             )}
