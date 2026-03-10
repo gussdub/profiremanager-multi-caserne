@@ -34,6 +34,7 @@ const MaterielEquipementsModule = ({ user }) => {
   const [selectedCategorie, setSelectedCategorie] = useState(null);
   const [selectedEquipement, setSelectedEquipement] = useState(null);
   const [selectedEquipementAPRIA, setSelectedEquipementAPRIA] = useState(null);
+  const [selectedInspectionTypeAPRIA, setSelectedInspectionTypeAPRIA] = useState('mensuelle');
   const [selectedEquipementInspection, setSelectedEquipementInspection] = useState(null);
   const [selectedInspectionType, setSelectedInspectionType] = useState(null); // 'apres_usage', 'mensuelle', 'annuelle'
   const [selectedFormulaireId, setSelectedFormulaireId] = useState(null);
@@ -416,8 +417,9 @@ const MaterielEquipementsModule = ({ user }) => {
           onEditEquipement={openEditEquipement}
           onDeleteEquipement={handleDeleteEquipement}
           onMaintenance={openMaintenance}
-          onInspectionAPRIA={(equip) => {
+          onInspectionAPRIA={(equip, typeInspection) => {
             setSelectedEquipementAPRIA(equip);
+            setSelectedInspectionTypeAPRIA(typeInspection || 'mensuelle');
             setShowInspectionAPRIAModal(true);
           }}
           onHistoriqueAPRIA={(equip) => {
@@ -909,16 +911,39 @@ const EquipementCard = ({ equipement, onEdit, onDelete, onMaintenance, onInspect
         </div>
         
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          {/* Boutons APRIA - accessibles à tous */}
+          {/* Boutons APRIA - mêmes boutons que les autres équipements */}
           {isAPRIA && (
             <>
+              {/* Après usage - orange */}
               <button
-                onClick={(e) => { e.stopPropagation(); onInspectionAPRIA && onInspectionAPRIA(); }}
-                style={{ padding: '0.5rem', background: '#f97316', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer' }}
-                title="Inspecter APRIA"
+                onClick={(e) => { e.stopPropagation(); onInspectionAPRIA && onInspectionAPRIA('apres_usage'); }}
+                style={{ padding: '0.5rem 0.75rem', background: '#f97316', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                title="Inspection après usage"
               >
-                📝
+                🔍 Après usage
               </button>
+              
+              {/* Mensuelle - bleu */}
+              <button
+                onClick={(e) => { e.stopPropagation(); onInspectionAPRIA && onInspectionAPRIA('mensuelle'); }}
+                style={{ padding: '0.5rem 0.75rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                title="Inspection mensuelle"
+              >
+                📅 Mensuelle
+              </button>
+              
+              {/* Annuelle - violet (admin/superviseur seulement) */}
+              {!isEmploye && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onInspectionAPRIA && onInspectionAPRIA('annuelle'); }}
+                  style={{ padding: '0.5rem 0.75rem', background: '#7c3aed', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                  title="Inspection avancée annuelle"
+                >
+                  🔧 Annuelle
+                </button>
+              )}
+              
+              {/* Historique */}
               <button
                 onClick={(e) => { e.stopPropagation(); onHistoriqueAPRIA && onHistoriqueAPRIA(); }}
                 style={{ padding: '0.5rem', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer' }}
@@ -2163,10 +2188,8 @@ const EquipementModal = ({ mode, equipement, categories, tenantSlug, onClose, on
           
           {/* Info: Formulaires gérés par catégorie */}
           <div style={{ background: '#F0FDF4', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #86EFAC' }}>
-            <p style={{ fontSize: '0.8rem', color: '#166534', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span>ℹ️</span>
-              Les formulaires d'inspection sont gérés au niveau de la <strong>catégorie</strong>. 
-              Modifiez la catégorie pour configurer les inspections.
+            <p style={{ fontSize: '0.8rem', color: '#166534', margin: 0 }}>
+              ℹ️ Les formulaires d'inspection sont gérés au niveau de la <strong>catégorie</strong>. Modifiez la catégorie pour configurer les inspections.
             </p>
           </div>
           
