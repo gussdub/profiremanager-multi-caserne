@@ -475,23 +475,37 @@ class SFTPService:
             if not xml_files:
                 return []
             
-            # Grouper par intervention
-            groups = self.group_files_by_intervention(xml_files)
-            
-            # Traiter chaque intervention
             new_interventions = []
-            for card_number, filenames in groups.items():
-                # Vérifier si on a au moins le fichier Details
-                has_details = any(self.identify_file_type(f) == "details" for f in filenames)
-                if not has_details:
-                    logger.warning(f"Pas de fichier Details pour carte {card_number}, attente...")
-                    continue
+            
+            # Pour Alerte Santé, traiter chaque fichier XML individuellement
+            # (format: un fichier = une ou plusieurs cartes)
+            if type_carte == "alerte_sante":
+                for filename in xml_files:
+                    logger.info(f"[{tenant_id}/alerte_sante] Traitement du fichier: {filename}")
+                    intervention = await self.process_alerte_sante_file(
+                        tenant_id, sftp, remote_path, filename
+                    )
+                    if intervention:
+                        if isinstance(intervention, list):
+                            new_interventions.extend(intervention)
+                        else:
+                            new_interventions.append(intervention)
+            else:
+                # Pour CAUCA (incendie), grouper par intervention (ancien comportement)
+                groups = self.group_files_by_intervention(xml_files)
                 
-                intervention = await self.process_intervention_files_with_type(
-                    tenant_id, sftp, remote_path, card_number, filenames, type_carte
-                )
-                if intervention:
-                    new_interventions.append(intervention)
+                for card_number, filenames in groups.items():
+                    # Vérifier si on a au moins le fichier Details
+                    has_details = any(self.identify_file_type(f) == "details" for f in filenames)
+                    if not has_details:
+                        logger.warning(f"Pas de fichier Details pour carte {card_number}, attente...")
+                        continue
+                    
+                    intervention = await self.process_intervention_files_with_type(
+                        tenant_id, sftp, remote_path, card_number, filenames, type_carte
+                    )
+                    if intervention:
+                        new_interventions.append(intervention)
             
             # Notifier via WebSocket
             if new_interventions and self.websocket_manager:
@@ -520,6 +534,86 @@ class SFTPService:
         
         finally:
             self.close_sftp_connection(sftp, transport)
+    
+    async def process_alerte_sante_file(
+        self,
+        tenant_id: str,
+        sftp: paramiko.SFTPClient,
+        remote_path: str,
+        filename: str
+    ) -> List[Dict]:
+        """
+        Traite un fichier XML Alerte Santé (peut contenir plusieurs cartes)
+        """
+        from services.alerte_sante_parser import parse_pr_xml_file
+        
+        try:
+            # Télécharger le fichier
+            content = self.download_file(sftp, remote_path, filename)
+            if not content:
+                logger.warning(f"Fichier vide ou non téléchargé: {filename}")
+                return []
+            
+            # Parser toutes les cartes du fichier
+            cartes = parse_pr_xml_file(content)
+            if not cartes:
+                logger.warning(f"Aucune carte parsée dans {filename}")
+                return []
+            
+            logger.info(f"[alerte_sante] {len(cartes)} carte(s) trouvée(s) dans {filename}")
+            
+            saved_interventions = []
+            
+            for carte in cartes:
+                # Ajouter les métadonnées
+                carte["tenant_id"] = tenant_id
+                carte["status"] = carte.get("status", "new")
+                carte["created_at"] = datetime.now(timezone.utc)
+                carte["source"] = "sftp_auto"
+                carte["type_carte"] = "alerte_sante"
+                carte["sftp_files"] = [filename]
+                carte["sftp_remote_path"] = remote_path
+                
+                external_id = carte.get("external_call_id")
+                if not external_id:
+                    logger.warning(f"Carte sans external_call_id dans {filename}, ignorée")
+                    continue
+                
+                # Vérifier si l'intervention existe déjà
+                existing = await self.db.interventions.find_one({
+                    "tenant_id": tenant_id,
+                    "external_call_id": external_id,
+                    "type_carte": "alerte_sante"
+                })
+                
+                if existing:
+                    carte["updated_at"] = datetime.now(timezone.utc)
+                    await self.db.interventions.update_one(
+                        {"id": existing["id"]},
+                        {"$set": carte}
+                    )
+                    carte["id"] = existing["id"]
+                    carte["_action"] = "updated"
+                    logger.info(f"Carte Alerte Santé mise à jour: {external_id}")
+                else:
+                    await self.db.interventions.insert_one(carte)
+                    carte["_action"] = "created"
+                    logger.info(f"Nouvelle carte Alerte Santé créée: {external_id}")
+                
+                saved_interventions.append(carte)
+            
+            # Supprimer le fichier du SFTP après traitement
+            if saved_interventions:
+                self.delete_file(sftp, remote_path, filename)
+                logger.info(f"Fichier supprimé du SFTP: {filename}")
+            
+            return saved_interventions
+            
+        except Exception as e:
+            logger.error(f"Erreur traitement fichier Alerte Santé {filename}: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
     
     async def process_intervention_files_with_type(
         self, 
