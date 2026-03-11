@@ -1647,6 +1647,17 @@ const TabHistorique = ({ user, tenantSlug, toast, confirm, readOnly = false, set
     });
     fetchInterventions();
   }, [filters]);
+  
+  // WebSocket pour nouvelles interventions (SFTP polling)
+  useWebSocketUpdate('new_intervention', (data) => {
+    console.log('[GestionInterventions] WebSocket: new_intervention reçu', data);
+    const isAlerteSante = data?.type_carte === 'alerte_sante';
+    toast({
+      title: isAlerteSante ? "🚑 Nouvelle carte Alerte Santé" : "🚒 Nouvelle carte d'appel",
+      description: `#${data?.external_call_id || 'N/A'} - ${data?.address || 'Adresse non disponible'}`,
+    });
+    fetchInterventions();
+  }, []);
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
