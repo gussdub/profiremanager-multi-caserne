@@ -19,6 +19,7 @@ const ParametresFacturation = lazy(() => import("./ParametresFacturation.jsx"));
 const ParametresHorairesPersonnalises = lazy(() => import("./ParametresHorairesPersonnalises.jsx"));
 const EmailsHistory = lazy(() => import("./EmailsHistory.jsx"));
 const ParametresSecteurs = lazy(() => import("./ParametresSecteurs.jsx"));
+const GestionTypesAcces = lazy(() => import("./parametres/GestionTypesAcces.jsx"));
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -85,6 +86,180 @@ const RotationEquipesTab = ({ tenantSlug, toast }) => {
           <ParametresEquipesGarde tenantSlug={tenantSlug} toast={toast} />
         )}
       </Suspense>
+    </div>
+  );
+};
+
+/**
+ * Composant combiné pour Comptes et Types d'accès
+ */
+const ComptesEtAccesTab = ({ users, tenantSlug, toast, setShowCreateUserModal, handleEditAccess, handleRevokeUser }) => {
+  const [subTab, setSubTab] = useState('utilisateurs'); // 'utilisateurs' ou 'types-acces'
+  
+  return (
+    <div className="comptes-tab">
+      <div className="tab-header">
+        <div>
+          <h2>Comptes et Accès</h2>
+          <p>Gestion des utilisateurs et des types d'accès personnalisés</p>
+        </div>
+        {subTab === 'utilisateurs' && (
+          <Button 
+            variant="default" 
+            onClick={() => setShowCreateUserModal(true)}
+            data-testid="create-user-account-btn"
+          >
+            + Nouveau Compte
+          </Button>
+        )}
+      </div>
+
+      {/* Sous-navigation */}
+      <div style={{ 
+        display: 'flex', 
+        gap: '8px', 
+        marginBottom: '20px',
+        borderBottom: '2px solid #e5e7eb',
+        paddingBottom: '12px'
+      }}>
+        <button
+          onClick={() => setSubTab('utilisateurs')}
+          style={{
+            padding: '10px 20px',
+            borderRadius: '8px 8px 0 0',
+            border: 'none',
+            background: subTab === 'utilisateurs' ? '#dc2626' : '#f3f4f6',
+            color: subTab === 'utilisateurs' ? 'white' : '#374151',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+        >
+          👥 Utilisateurs
+        </button>
+        <button
+          onClick={() => setSubTab('types-acces')}
+          style={{
+            padding: '10px 20px',
+            borderRadius: '8px 8px 0 0',
+            border: 'none',
+            background: subTab === 'types-acces' ? '#dc2626' : '#f3f4f6',
+            color: subTab === 'types-acces' ? 'white' : '#374151',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+        >
+          🔐 Types d'accès
+        </button>
+      </div>
+
+      {/* Contenu selon le sous-onglet */}
+      {subTab === 'utilisateurs' && (
+        <>
+          <div className="accounts-stats">
+            <div className="account-stat">
+              <span className="stat-number">{users.filter(u => u.role === 'admin').length}</span>
+              <span className="stat-label">Administrateurs</span>
+            </div>
+            <div className="account-stat">
+              <span className="stat-number">{users.filter(u => u.role === 'superviseur').length}</span>
+              <span className="stat-label">Superviseurs</span>
+            </div>
+            <div className="account-stat">
+              <span className="stat-number">{users.filter(u => u.role === 'employe').length}</span>
+              <span className="stat-label">Employés</span>
+            </div>
+          </div>
+
+          {/* Liste des utilisateurs existants */}
+          <div className="existing-users-section">
+            <h3>Utilisateurs existants</h3>
+            <div className="users-list">
+              {users.map(u => (
+                <div key={u.id} className="user-access-card" data-testid={`user-access-${u.id}`}>
+                  <div className="user-access-info">
+                    <div className="user-avatar">
+                      <span className="avatar-icon">👤</span>
+                    </div>
+                    <div className="user-details">
+                      <h4>{u.prenom} {u.nom}</h4>
+                      <p className="user-email">{u.email}</p>
+                      <div className="user-badges">
+                        <span className={`role-badge ${u.role}`}>
+                          {u.role === 'admin' ? '👑 Administrateur' : 
+                           u.role === 'superviseur' ? '🎖️ Superviseur' : 
+                           '👤 Employé'}
+                        </span>
+                        <span className="grade-badge">{u.grade}</span>
+                        <span className="employment-badge">{u.type_emploi === 'temps_plein' ? 'Temps plein' : 'Temps partiel'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="user-access-actions">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleEditAccess(u)}
+                      data-testid={`modify-access-${u.id}`}
+                    >
+                      ✏️ Modifier accès
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="danger" 
+                      onClick={() => handleRevokeUser(u.id, `${u.prenom} ${u.nom}`)}
+                      data-testid={`revoke-access-${u.id}`}
+                    >
+                      🚫 Révoquer
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="role-descriptions">
+            <div className="role-card admin">
+              <h3>👑 Administrateur</h3>
+              <ul>
+                <li>Accès complet à tous les modules</li>
+                <li>Gestion du personnel et comptes</li>
+                <li>Configuration système</li>
+              </ul>
+            </div>
+            <div className="role-card superviseur">
+              <h3>🎖️ Superviseur</h3>
+              <ul>
+                <li>Gestion du personnel</li>
+                <li>Validation du planning</li>
+                <li>Approbation des remplacements</li>
+              </ul>
+            </div>
+            <div className="role-card employe">
+              <h3>👤 Employé</h3>
+              <ul>
+                <li>Consultation du planning</li>
+                <li>Demandes de remplacement</li>
+                <li>Gestion des disponibilités</li>
+              </ul>
+            </div>
+          </div>
+        </>
+      )}
+
+      {subTab === 'types-acces' && (
+        <Suspense fallback={<div style={{ padding: '40px', textAlign: 'center' }}>Chargement...</div>}>
+          <GestionTypesAcces tenantSlug={tenantSlug} toast={toast} />
+        </Suspense>
+      )}
     </div>
   );
 };
@@ -1222,7 +1397,7 @@ const Parametres = ({ user, tenantSlug }) => {
           { id: 'grades', icon: '🎖️', title: 'Grades', desc: 'Hiérarchie' },
           { id: 'attribution', icon: '📅', title: 'Horaire', desc: 'Attribution auto' },
           { id: 'rotation-equipes', icon: '🔄', title: 'Rotation', desc: 'Équipes & horaires' },
-          { id: 'comptes', icon: '🔐', title: 'Comptes', desc: 'Utilisateurs' },
+          { id: 'comptes', icon: '🔐', title: 'Comptes et Accès', desc: 'Utilisateurs et permissions' },
           { id: 'remplacements', icon: '🔁', title: 'Remplacements', desc: 'Règles' },
           { id: 'disponibilites', icon: '📅', title: 'Disponibilités', desc: 'Configuration' },
           { id: 'formations', icon: '📚', title: 'Formations', desc: 'NFPA 1500' },
@@ -1702,111 +1877,14 @@ const Parametres = ({ user, tenantSlug }) => {
         )}
 
         {activeTab === 'comptes' && (
-          <div className="comptes-tab">
-            <div className="tab-header">
-              <div>
-                <h2>Comptes d'Accès</h2>
-                <p>Gestion des utilisateurs et permissions</p>
-              </div>
-              <Button 
-                variant="default" 
-                onClick={() => setShowCreateUserModal(true)}
-                data-testid="create-user-account-btn"
-              >
-                + Nouveau Compte
-              </Button>
-            </div>
-            
-            <div className="accounts-stats">
-              <div className="account-stat">
-                <span className="stat-number">{users.filter(u => u.role === 'admin').length}</span>
-                <span className="stat-label">Administrateurs</span>
-              </div>
-              <div className="account-stat">
-                <span className="stat-number">{users.filter(u => u.role === 'superviseur').length}</span>
-                <span className="stat-label">Superviseurs</span>
-              </div>
-              <div className="account-stat">
-                <span className="stat-number">{users.filter(u => u.role === 'employe').length}</span>
-                <span className="stat-label">Employés</span>
-              </div>
-            </div>
-
-            {/* Liste des utilisateurs existants */}
-            <div className="existing-users-section">
-              <h3>Utilisateurs existants</h3>
-              <div className="users-list">
-                {users.map(user => (
-                  <div key={user.id} className="user-access-card" data-testid={`user-access-${user.id}`}>
-                    <div className="user-access-info">
-                      <div className="user-avatar">
-                        <span className="avatar-icon">👤</span>
-                      </div>
-                      <div className="user-details">
-                        <h4>{user.prenom} {user.nom}</h4>
-                        <p className="user-email">{user.email}</p>
-                        <div className="user-badges">
-                          <span className={`role-badge ${user.role}`}>
-                            {user.role === 'admin' ? '👑 Administrateur' : 
-                             user.role === 'superviseur' ? '🎖️ Superviseur' : 
-                             '👤 Employé'}
-                          </span>
-                          <span className="grade-badge">{user.grade}</span>
-                          <span className="employment-badge">{user.type_emploi === 'temps_plein' ? 'Temps plein' : 'Temps partiel'}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="user-access-actions">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => handleEditAccess(user)}
-                        data-testid={`modify-access-${user.id}`}
-                      >
-                        ✏️ Modifier accès
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="danger" 
-                        onClick={() => handleRevokeUser(user.id, `${user.prenom} ${user.nom}`)}
-                        data-testid={`revoke-access-${user.id}`}
-                      >
-                        🚫 Révoquer
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="role-descriptions">
-              <div className="role-card admin">
-                <h3>👑 Administrateur</h3>
-                <ul>
-                  <li>Accès complet à tous les modules</li>
-                  <li>Gestion du personnel et comptes</li>
-                  <li>Configuration système</li>
-                </ul>
-              </div>
-              <div className="role-card superviseur">
-                <h3>🎖️ Superviseur</h3>
-                <ul>
-                  <li>Gestion du personnel</li>
-                  <li>Validation du planning</li>
-                  <li>Approbation des remplacements</li>
-                </ul>
-              </div>
-              <div className="role-card employe">
-                <h3>👤 Employé</h3>
-                <ul>
-                  <li>Consultation du planning</li>
-                  <li>Demandes de remplacement</li>
-                  <li>Gestion des disponibilités</li>
-                </ul>
-              </div>
-            </div>
-          </div>
+          <ComptesEtAccesTab 
+            users={users}
+            tenantSlug={tenantSlug}
+            toast={toast}
+            setShowCreateUserModal={setShowCreateUserModal}
+            handleEditAccess={handleEditAccess}
+            handleRevokeUser={handleRevokeUser}
+          />
         )}
 
         {activeTab === 'rotation-equipes' && (
