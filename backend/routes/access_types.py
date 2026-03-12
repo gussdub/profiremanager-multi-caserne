@@ -312,21 +312,80 @@ class AccessTypeUpdate(BaseModel):
 
 # ==================== ENDPOINTS ====================
 
+def get_active_modules_for_tenant(tenant) -> dict:
+    """
+    Filtre les modules selon ce qui est activé pour le tenant.
+    Retourne uniquement les modules actifs.
+    """
+    parametres = tenant.parametres if hasattr(tenant, 'parametres') else tenant.get('parametres', {}) or {}
+    
+    # Modules toujours disponibles (core)
+    always_active = ['dashboard', 'personnel', 'planning', 'disponibilites', 'mesepi', 'monprofil', 'parametres']
+    
+    # Mapping des flags de paramètres vers les modules
+    module_flags = {
+        'interventions': parametres.get('module_interventions_active', True),  # Par défaut actif
+        'paie': parametres.get('module_paie_active', True),  # Par défaut actif
+        'remplacements': parametres.get('module_remplacements_active', True),  # Par défaut actif
+        'formations': parametres.get('module_formations_active', True),  # Par défaut actif
+        'actifs': parametres.get('module_actifs_active', True),  # Par défaut actif
+        'prevention': parametres.get('module_prevention_active', False),  # Par défaut inactif
+        'rapports': parametres.get('module_rapports_active', True),  # Par défaut actif
+    }
+    
+    # Construire la liste des modules actifs
+    active_modules = {}
+    for module_id, module_config in MODULES_STRUCTURE.items():
+        if module_id in always_active:
+            active_modules[module_id] = module_config
+        elif module_id in module_flags and module_flags[module_id]:
+            active_modules[module_id] = module_config
+    
+    return active_modules
+
+
+def filter_permissions_for_tenant(permissions: dict, active_modules: dict) -> dict:
+    """
+    Filtre les permissions pour ne garder que les modules actifs du tenant.
+    """
+    if permissions.get("is_full_access"):
+        return permissions
+    
+    filtered = {"modules": {}}
+    for module_id, module_perms in permissions.get("modules", {}).items():
+        if module_id in active_modules:
+            filtered["modules"][module_id] = module_perms
+    
+    return filtered
+
+
 @router.get("/{tenant_slug}/access-types/modules-structure")
 async def get_modules_structure(
     tenant_slug: str,
     current_user: User = Depends(get_current_user)
 ):
     """
-    Retourne la structure complète des modules et leurs permissions possibles.
+    Retourne la structure des modules actifs pour ce tenant et leurs permissions possibles.
     Utilisé par le frontend pour construire l'interface de configuration.
     """
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
     
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # Filtrer les modules selon ce qui est activé pour le tenant
+    active_modules = get_active_modules_for_tenant(tenant)
+    
+    # Filtrer les permissions par défaut aussi
+    filtered_default_permissions = {}
+    for role_id, role_perms in DEFAULT_PERMISSIONS.items():
+        filtered_default_permissions[role_id] = filter_permissions_for_tenant(role_perms, active_modules)
+    
     return {
-        "modules": MODULES_STRUCTURE,
-        "default_permissions": DEFAULT_PERMISSIONS,
+        "modules": active_modules,
+        "default_permissions": filtered_default_permissions,
         "actions_labels": {
             "voir": "👁️ Voir",
             "creer": "➕ Créer",
