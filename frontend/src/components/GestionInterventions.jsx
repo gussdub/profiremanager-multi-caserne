@@ -970,12 +970,12 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
     { id: 'materiel', label: 'Matériel utilisé', icon: '🧰', employeeAccess: false },
     { id: 'dsi', label: 'Détails DSI', icon: '🔥', showIf: isFireIncident, employeeAccess: false },
     { id: 'protection', label: 'Protection incendie', icon: '🚨', showIf: isFireIncident, employeeAccess: false },
-    { id: 'pertes', label: 'Pertes & Victimes', icon: '💰', employeeAccess: false },
+    { id: 'pertes', label: 'Pertes & Victimes', icon: '💰', showIf: () => !isAlerteSante(), employeeAccess: false },
     { id: 'sinistre', label: 'Sinistré & Assurance', icon: '🛡️', showIf: isFireIncident, employeeAccess: false },
     { id: 'rcci', label: 'RCCI (Enquête)', icon: '🔍', showIf: isFireIncident, employeeAccess: false },
     { id: 'narratif', label: 'Narratif', icon: '📝', employeeAccess: false },
-    { id: 'remise', label: 'Remise de propriété', icon: '📋', employeeAccess: false },
-    { id: 'facturation', label: 'Facturation', icon: '🧾', showIf: () => isAdmin, employeeAccess: false },
+    { id: 'remise', label: 'Remise de propriété', icon: '📋', showIf: () => !isAlerteSante(), employeeAccess: false },
+    { id: 'facturation', label: 'Facturation', icon: '🧾', showIf: () => isAdmin && !isAlerteSante(), employeeAccess: false },
   ];
 
   // Filtrer les sections selon le rôle
