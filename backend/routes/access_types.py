@@ -276,7 +276,15 @@ DEFAULT_PERMISSIONS = {
                     "parametres": {"access": False, "actions": []}
                 }
             },
-            "prevention": {"access": False, "actions": [], "tabs": {}},
+            "prevention": {
+                "access": True,
+                "actions": ["voir", "creer", "modifier"],
+                "tabs": {
+                    "batiments": {"access": True, "actions": ["voir"]},
+                    "inspections": {"access": True, "actions": ["voir", "creer", "modifier"]},
+                    "calendrier": {"access": True, "actions": ["voir"]}
+                }
+            },
             "disponibilites": {"access": True, "actions": ["voir", "modifier"]},
             "mesepi": {"access": True, "actions": ["voir"]},
             "monprofil": {"access": True, "actions": ["voir", "modifier"]},
