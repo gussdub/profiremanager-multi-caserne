@@ -837,7 +837,55 @@ async def calculer_feuille_temps(
             
             if assignation_jour and statut_presence == "present":
                 # Était en garde interne - intervention comptée dans stats mais pas payée en plus
+                # SAUF si l'intervention se termine APRÈS la fin du quart (heures supplémentaires)
                 totaux["interventions"] += duree_heures
+                
+                # Vérifier si l'intervention dépasse la fin du quart de garde
+                type_garde_assignation = types_garde_map.get(assignation_jour.get("type_garde_id"), {})
+                heure_fin_quart = type_garde_assignation.get("heure_fin")  # Format "HH:MM"
+                
+                heures_depassement = 0
+                montant_depassement = 0
+                
+                if heure_fin_quart and end_dt:
+                    try:
+                        # Construire le datetime de fin de quart pour cette date
+                        heure_fin_parts = heure_fin_quart.split(":")
+                        fin_quart_dt = datetime(
+                            start_dt.year, start_dt.month, start_dt.day,
+                            int(heure_fin_parts[0]), int(heure_fin_parts[1])
+                        )
+                        
+                        # Gérer le cas où le quart traverse minuit
+                        heure_debut_quart = type_garde_assignation.get("heure_debut", "00:00")
+                        if heure_debut_quart and heure_fin_quart:
+                            heure_debut_parts = heure_debut_quart.split(":")
+                            debut_quart_h = int(heure_debut_parts[0])
+                            fin_quart_h = int(heure_fin_parts[0])
+                            # Si heure fin < heure début, le quart traverse minuit
+                            if fin_quart_h < debut_quart_h:
+                                fin_quart_dt += timedelta(days=1)
+                        
+                        # Normaliser end_dt pour comparaison (enlever timezone si nécessaire)
+                        end_dt_naive = end_dt.replace(tzinfo=None) if hasattr(end_dt, 'tzinfo') and end_dt.tzinfo else end_dt
+                        
+                        # Si l'intervention se termine après la fin du quart
+                        if end_dt_naive > fin_quart_dt:
+                            # Calculer le dépassement en heures
+                            delta_depassement = end_dt_naive - fin_quart_dt
+                            heures_depassement = delta_depassement.total_seconds() / 3600
+                            
+                            # Appliquer le taux des heures supplémentaires (toujours applicable pour dépassement intervention)
+                            taux_sup = params_paie.get("heures_sup_taux", 1.5)
+                            montant_depassement = heures_depassement * taux_horaire_intervention * taux_sup
+                            
+                            # Ajouter aux totaux
+                            totaux["heures_sup"] += heures_depassement
+                            totaux["heures_payees"] += heures_depassement
+                            totaux["montant_brut"] += montant_depassement
+                    except Exception as e:
+                        logger.warning(f"Erreur calcul dépassement quart: {e}")
+                
                 description = f"Intervention #{intervention.get('external_call_id')} - {intervention.get('type_intervention', 'N/A')}"
                 if utilise_fonction_superieure:
                     description += f" (Fonction supérieure +{int(prime_fonction_superieure_pct*100)}%)"
@@ -860,6 +908,28 @@ async def calculer_feuille_temps(
                     "heure_depart": heure_depart if heures_partielles else None,
                     "note": "Déjà en garde interne - comptabilisé dans statistiques"
                 })
+                
+                # Ajouter une ligne séparée pour le dépassement d'intervention (heures supplémentaires)
+                if heures_depassement > 0:
+                    taux_sup = params_paie.get("heures_sup_taux", 1.5)
+                    description_depassement = f"Dépassement intervention #{intervention.get('external_call_id')} (fin quart: {heure_fin_quart})"
+                    if utilise_fonction_superieure:
+                        description_depassement += f" (Fonction supérieure +{int(prime_fonction_superieure_pct*100)}%)"
+                    
+                    lignes.append({
+                        "date": date_intervention,
+                        "type": "depassement_intervention",
+                        "description": description_depassement,
+                        "heures_brutes": round(heures_depassement, 2),
+                        "heures_payees": round(heures_depassement, 2),
+                        "taux": taux_sup,
+                        "montant": round(montant_depassement, 2),
+                        "source_id": intervention.get("id"),
+                        "source_type": "intervention",
+                        "fonction_superieure": utilise_fonction_superieure,
+                        "heure_fin_quart": heure_fin_quart,
+                        "note": "Heures supplémentaires - intervention après fin de quart"
+                    })
             elif statut_presence in ["rappele", "present"]:
                 # Rappel ou garde externe - payé
                 taux = params_paie.get("rappel_taux", 1.0)

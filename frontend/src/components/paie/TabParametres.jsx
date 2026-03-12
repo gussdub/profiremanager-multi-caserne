@@ -264,6 +264,24 @@ const TabParametres = ({ context }) => {
         <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '16px' }}>
           Actives uniquement si cochées dans Paramètres &gt; Planning &gt; Attribution.
         </p>
+        <div style={{ 
+          background: '#fef3c7', 
+          border: '1px solid #f59e0b', 
+          borderRadius: '8px', 
+          padding: '12px', 
+          marginBottom: '16px',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '10px'
+        }}>
+          <span style={{ fontSize: '1.25rem' }}>💡</span>
+          <div style={{ fontSize: '0.875rem', color: '#92400e' }}>
+            <strong>Dépassement d&apos;intervention :</strong> Lorsqu&apos;un employé en garde interne effectue une intervention 
+            qui se termine <u>après la fin de son quart de travail</u>, le temps excédentaire est automatiquement 
+            calculé et payé en heures supplémentaires au taux multiplicateur ci-dessous, <strong>même si les heures 
+            supplémentaires ne sont pas activées dans les paramètres de planning</strong>.
+          </div>
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
           <div>
             <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
