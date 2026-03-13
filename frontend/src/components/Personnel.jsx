@@ -2964,13 +2964,23 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       <div className="form-row">
                         <div className="form-field">
                           <Label>Date de fin d'embauche</Label>
-                          <Input
-                            type="date"
+                          <input
+                            type={newUser.date_fin_embauche ? "date" : "text"}
                             value={newUser.date_fin_embauche || ''}
                             onChange={(e) => setNewUser({...newUser, date_fin_embauche: e.target.value})}
+                            onFocus={(e) => { e.target.type = 'date'; }}
+                            onBlur={(e) => { if (!e.target.value) e.target.type = 'text'; }}
+                            placeholder="AAAA-MM-JJ"
                             data-testid="edit-user-end-date-input"
                             autoComplete="off"
-                            placeholder="AAAA-MM-JJ"
+                            style={{
+                              width: '100%',
+                              padding: '8px 12px',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '6px',
+                              fontSize: '14px',
+                              background: 'white'
+                            }}
                           />
                         </div>
                         <div className="form-field">
