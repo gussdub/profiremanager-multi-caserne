@@ -149,6 +149,9 @@ const getDefaultPermissionsForRole = (role) => {
   if (role === 'superviseur') {
     return {
       modules: {
+        dashboard: { access: true, actions: ['voir'] },
+        personnel: { access: true, actions: ['voir', 'creer', 'modifier', 'supprimer'] },
+        actifs: { access: true, actions: ['voir', 'creer', 'modifier', 'supprimer'] },
         interventions: {
           access: true,
           actions: ['voir', 'creer', 'modifier', 'supprimer', 'exporter'],
@@ -159,19 +162,34 @@ const getDefaultPermissionsForRole = (role) => {
             historique: { access: true, actions: ['voir', 'exporter'] },
             parametres: { access: false, actions: [] }
           }
-        }
+        },
+        paie: { access: true, actions: ['voir', 'exporter'] },
+        planning: { access: true, actions: ['voir', 'creer', 'modifier', 'supprimer'] },
+        remplacements: { access: true, actions: ['voir', 'creer', 'modifier', 'supprimer'] },
+        formations: { access: true, actions: ['voir', 'creer', 'modifier', 'supprimer'] },
+        prevention: { access: true, actions: ['voir', 'creer', 'modifier', 'supprimer'] },
+        disponibilites: { access: true, actions: ['voir', 'creer', 'modifier', 'supprimer'] },
+        rapports: { access: false, actions: [] },
+        parametres: { access: false, actions: [] }
       }
     };
   }
   
-  // Employé par défaut
+  // Employé par défaut - accès limité
   return {
     modules: {
-      interventions: {
-        access: false,
-        actions: [],
-        tabs: {}
-      }
+      dashboard: { access: true, actions: ['voir'] },
+      personnel: { access: false, actions: [] },
+      actifs: { access: true, actions: ['voir'] },
+      interventions: { access: false, actions: [], tabs: {} },
+      paie: { access: false, actions: [] },
+      planning: { access: true, actions: ['voir'] },
+      remplacements: { access: true, actions: ['voir', 'creer'] },
+      formations: { access: true, actions: ['voir'] },
+      prevention: { access: false, actions: [] },
+      disponibilites: { access: true, actions: ['voir', 'creer', 'modifier', 'supprimer'] },
+      rapports: { access: false, actions: [] },
+      parametres: { access: false, actions: [] }
     }
   };
 };

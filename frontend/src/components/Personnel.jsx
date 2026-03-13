@@ -156,9 +156,15 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   const { tenantSlug } = useTenant();
   const { confirm } = useConfirmDialog();
   
-  // Hook de permissions pour vérifier si l'utilisateur peut voir les anciens employés
-  const { hasModuleAction } = usePermissions(tenantSlug, user);
-  const canViewFormerEmployees = hasModuleAction('personnel', 'voir_anciens') || user?.role === 'admin';
+  // Hook de permissions pour vérifier les droits RBAC
+  const { hasModuleAccess, hasModuleAction } = usePermissions(tenantSlug, user);
+  
+  // Permissions granulaires
+  const canViewPersonnel = hasModuleAccess('personnel');
+  const canCreatePersonnel = hasModuleAction('personnel', 'creer');
+  const canEditPersonnel = hasModuleAction('personnel', 'modifier');
+  const canDeletePersonnel = hasModuleAction('personnel', 'supprimer');
+  const canViewFormerEmployees = hasModuleAction('personnel', 'voir_anciens');
   
   // Filtrer les utilisateurs selon le toggle (actifs vs anciens)
   const filteredUsersByStatus = users.filter(u => {
@@ -1347,12 +1353,14 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
           <h1>👥 Gestion du Personnel</h1>
           <p>Liste complète des pompiers du service</p>
         </div>
-        <Button 
-          onClick={() => setShowCreateModal(true)}
-          data-testid="add-personnel-btn"
-        >
-          ➕ Nouveau pompier
-        </Button>
+        {canCreatePersonnel && (
+          <Button 
+            onClick={() => setShowCreateModal(true)}
+            data-testid="add-personnel-btn"
+          >
+            ➕ Nouveau pompier
+          </Button>
+        )}
       </div>
 
       {/* KPIs */}
@@ -1522,19 +1530,19 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
 
               <div className="actions-cell-modern">
                 <button onClick={() => handleViewUser(user)} title="Voir">👁️</button>
-                {!isFormer && (
+                {!isFormer && canEditPersonnel && (
                   <button onClick={() => handleEditUser(user)} title="Modifier">✏️</button>
                 )}
-                {!isFormer && (
+                {!isFormer && canDeletePersonnel && (
                   <button onClick={() => handleDeleteUser(user.id)} title="Supprimer">🗑️</button>
                 )}
                 {!isFormer && (user.type_emploi === 'temps_partiel' || user.type_emploi === 'temporaire') && (
                   <button onClick={() => handleManageDisponibilites(user)} title="Gérer dispo">📅</button>
                 )}
-                {isFormer && (
+                {isFormer && canEditPersonnel && (
                   <button 
                     onClick={() => handleReactivateEmployee(user)} 
-                    title="Réactiver (créer nouveau compte)"
+                    title="Réactiver"
                     style={{ color: '#16a34a' }}
                   >
                     🔄
@@ -1627,7 +1635,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                 <Button size="sm" variant="outline" onClick={() => handleViewUser(user)}>
                   👁️ Voir
                 </Button>
-                {!isFormer && (
+                {!isFormer && canEditPersonnel && (
                   <Button size="sm" variant="outline" onClick={() => handleEditUser(user)}>
                     ✏️ Modifier
                   </Button>
@@ -1637,7 +1645,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                     📅 Dispo
                   </Button>
                 )}
-                {isFormer && (
+                {isFormer && canEditPersonnel && (
                   <Button 
                     size="sm" 
                     variant="outline" 
@@ -2179,7 +2187,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
 
                 {/* Actions rapides */}
                 <div className="profile-actions">
-                  {!isFormerEmployee(selectedUser) ? (
+                  {!isFormerEmployee(selectedUser) && canEditPersonnel ? (
                     <Button 
                       variant="default" 
                       onClick={() => {
@@ -2190,7 +2198,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                     >
                       ✏️ Modifier ce profil
                     </Button>
-                  ) : (
+                  ) : isFormerEmployee(selectedUser) && canEditPersonnel ? (
                     <Button 
                       variant="outline" 
                       onClick={() => {
@@ -2202,7 +2210,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                     >
                       🔄 Réactiver cet employé
                     </Button>
-                  )}
+                  ) : null}
                 </div>
               </div>
             </div>

@@ -6,11 +6,15 @@ import { useAuth } from '../contexts/AuthContext';
 import { apiGet, apiPost, apiPut } from '../utils/api';
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
+import usePermissions from '../hooks/usePermissions';
 
 const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
   const { toast } = useToast();
   const { user, tenant: authTenant, logout } = useAuth();
   const { tenantSlug, switchTenant } = useTenant();
+  
+  // Hook RBAC pour les permissions granulaires
+  const { hasModuleAccess, hasModuleAction, loading: permissionsLoading } = usePermissions(tenantSlug, user);
   
   // Le tenant devrait maintenant être disponible immédiatement via authTenant
   // car il est inclus dans la réponse de login
@@ -501,44 +505,41 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
   };
 
   const menuItems = [
-    { id: 'dashboard', label: 'Tableau de bord', icon: '📊', roles: ['admin', 'superviseur', 'employe', 'pompier'] },
-    { id: 'personnel', label: 'Personnel', icon: '👥', roles: ['admin', 'superviseur'] },
-    { id: 'actifs', label: 'Gestion des Actifs', icon: '🚒', roles: ['admin', 'superviseur', 'employe', 'pompier'] },
-    { id: 'interventions', label: 'Interventions', icon: '🚨', roles: ['admin', 'superviseur', 'employe', 'pompier'] },
-    { id: 'paie', label: 'Paie', icon: '💰', roles: ['admin', 'superviseur'] },
-    { id: 'planning', label: 'Horaire', icon: '📅', roles: ['admin', 'superviseur', 'employe', 'pompier'] },
-    { id: 'remplacements', label: 'Remplacements', icon: '🔄', roles: ['admin', 'superviseur', 'employe', 'pompier'] },
-    { id: 'formations', label: 'Formations', icon: '📚', roles: ['admin', 'superviseur', 'employe', 'pompier'] },
-    { id: 'prevention', label: 'Prévention', icon: '🔥', roles: ['admin', 'superviseur', 'employe', 'pompier'] },
-    { id: 'disponibilites', label: 'Mes disponibilités', icon: '📋', roles: ['admin', 'superviseur', 'employe', 'pompier'] },
-    { id: 'mesepi', label: 'Mes EPI', icon: '🛡️', roles: ['admin', 'superviseur', 'employe', 'pompier'] },
-    { id: 'monprofil', label: 'Mon profil', icon: '👤', roles: ['admin', 'superviseur', 'employe', 'pompier'] },
-    { id: 'rapports', label: 'Rapports', icon: '📈', roles: ['admin'] },
-    { id: 'parametres', label: 'Paramètres', icon: '⚙️', roles: ['admin'] }
+    { id: 'dashboard', label: 'Tableau de bord', icon: '📊', moduleId: 'dashboard', alwaysVisible: true },
+    { id: 'personnel', label: 'Personnel', icon: '👥', moduleId: 'personnel' },
+    { id: 'actifs', label: 'Gestion des Actifs', icon: '🚒', moduleId: 'actifs' },
+    { id: 'interventions', label: 'Interventions', icon: '🚨', moduleId: 'interventions' },
+    { id: 'paie', label: 'Paie', icon: '💰', moduleId: 'paie' },
+    { id: 'planning', label: 'Horaire', icon: '📅', moduleId: 'planning' },
+    { id: 'remplacements', label: 'Remplacements', icon: '🔄', moduleId: 'remplacements' },
+    { id: 'formations', label: 'Formations', icon: '📚', moduleId: 'formations' },
+    { id: 'prevention', label: 'Prévention', icon: '🔥', moduleId: 'prevention', requiresTenantModule: true },
+    { id: 'disponibilites', label: 'Mes disponibilités', icon: '📋', moduleId: 'disponibilites', personalModule: true },
+    { id: 'mesepi', label: 'Mes EPI', icon: '🛡️', moduleId: 'mesepi', alwaysVisible: true },
+    { id: 'monprofil', label: 'Mon profil', icon: '👤', moduleId: 'monprofil', alwaysVisible: true },
+    { id: 'rapports', label: 'Rapports', icon: '📈', moduleId: 'rapports' },
+    { id: 'parametres', label: 'Paramètres', icon: '⚙️', moduleId: 'parametres' }
   ];
 
   const filteredMenuItems = menuItems.filter(item => {
-    if (!item.roles.includes(user?.role)) return false;
-    if (item.id === 'disponibilites' && !['temps_partiel', 'temporaire'].includes(user?.type_emploi) && !['admin', 'superviseur'].includes(user?.role)) return false;
+    // Modules toujours visibles (profil, mes EPI, dashboard)
+    if (item.alwaysVisible) return true;
     
-    // Module Prévention : vérifier si actif (utilise effectiveTenant pour chargement immédiat)
-    if (item.id === 'prevention') {
+    // Module personnel "Mes disponibilités" - visible pour temps partiel/temporaire ou si permission
+    if (item.personalModule && item.id === 'disponibilites') {
+      const isTempsPartiel = ['temps_partiel', 'temporaire'].includes(user?.type_emploi);
+      const hasDispoAccess = hasModuleAccess('disponibilites');
+      return isTempsPartiel || hasDispoAccess;
+    }
+    
+    // Module Prévention : vérifier si actif au niveau tenant
+    if (item.requiresTenantModule && item.id === 'prevention') {
       const isPreventionActive = effectiveTenant?.parametres?.module_prevention_active === true;
       if (!isPreventionActive) return false;
     }
     
-    // Module Interventions : 
-    // - Admin/Superviseur : accès complet
-    // - Employé : accès géré via Paramètres > Comptes > Types d'accès
-    if (item.id === 'interventions') {
-      const isAdminOrSupervisor = ['admin', 'superviseur'].includes(user?.role);
-      
-      // TODO: Intégrer la vérification des permissions via Types d'accès
-      // Pour l'instant, seuls admin/superviseur ont accès par défaut
-      if (!isAdminOrSupervisor) return false;
-    }
-    
-    return true;
+    // Vérification RBAC - le module doit être accessible
+    return hasModuleAccess(item.moduleId);
   });
 
   return (

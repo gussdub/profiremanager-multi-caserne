@@ -12,6 +12,7 @@ import { fr } from "date-fns/locale";
 import { apiGet, apiPost, apiPut, apiDelete, buildApiUrl, getTenantToken } from '../utils/api';
 import { useConfirmDialog } from './ui/ConfirmDialog';
 import { useWebSocketUpdate } from '../hooks/useWebSocketUpdate';
+import usePermissions from '../hooks/usePermissions';
 const RapportHeuresModal = lazy(() => import("./RapportHeuresModal"));
 const AuditModal = lazy(() => import("./AuditModal"));
 
@@ -20,6 +21,12 @@ const Planning = () => {
   const { tenantSlug } = useTenant();
   const backendUrl = process.env.REACT_APP_BACKEND_URL || '';
   const token = localStorage.getItem('token');
+  
+  // Hook RBAC pour les permissions
+  const { hasModuleAccess, hasModuleAction } = usePermissions(tenantSlug, user);
+  const canCreatePlanning = hasModuleAction('planning', 'creer');
+  const canEditPlanning = hasModuleAction('planning', 'modifier');
+  const canDeletePlanning = hasModuleAction('planning', 'supprimer');
   
   const [currentWeek, setCurrentWeek] = useState(() => {
     const today = new Date();
@@ -597,7 +604,7 @@ const Planning = () => {
   };
 
   const handleAttributionAuto = async () => {
-    if (['employe', 'pompier'].includes(user.role)) return;
+    if (!canCreatePlanning) return;
 
     try {
       // Activer l'overlay de chargement
@@ -885,7 +892,7 @@ const Planning = () => {
   };
 
   const handleAssignUser = async (userId, typeGardeId, date) => {
-    if (['employe', 'pompier'].includes(user.role)) return;
+    if (!canCreatePlanning) return;
 
     try {
       const response = await apiPost(tenantSlug, '/planning/assignation', {
@@ -956,7 +963,7 @@ const Planning = () => {
   };
 
   const handleAdvancedAssignment = async () => {
-    if (['employe', 'pompier'].includes(user.role)) return;
+    if (!canCreatePlanning) return;
 
     // Validation des champs requis
     if (!advancedAssignConfig.user_id || advancedAssignConfig.type_garde_ids.length === 0 || !advancedAssignConfig.date_debut) {
@@ -1232,7 +1239,7 @@ const Planning = () => {
   };
 
   const openAssignModal = (date, typeGarde) => {
-    if (['employe', 'pompier'].includes(user.role)) return;
+    if (!canCreatePlanning) return;
     setSelectedSlot({ date, typeGarde });
     setShowAssignModal(true);
   };
@@ -1921,7 +1928,7 @@ const Planning = () => {
       </div>
 
       {/* Boutons d'Assignation - Responsive Mobile/Desktop */}
-      {!['employe', 'pompier'].includes(user.role) && (
+      {canCreatePlanning && (
         <div className="planning-action-buttons" style={{
           display: 'flex', 
           flexWrap: 'wrap',
@@ -2117,7 +2124,7 @@ const Planning = () => {
                       onClick={() => {
                         if (assignedUsers.length > 0) {
                           openGardeDetails(date, typeGarde);
-                        } else if (!['employe', 'pompier'].includes(user.role)) {
+                        } else if (canCreatePlanning) {
                           openAssignModal(date, typeGarde);
                         }
                       }}
@@ -2411,7 +2418,7 @@ const Planning = () => {
       </div>
 
       {/* Assignment Modal */}
-      {showAssignModal && selectedSlot && !['employe', 'pompier'].includes(user.role) && (
+      {showAssignModal && selectedSlot && canCreatePlanning && (
         <div className="modal-overlay" onClick={() => { setShowAssignModal(false); setQuickAssignSearchQuery(''); setShowQuickAssignDropdown(false); }}>
           <div 
             className="modal-content" 
@@ -2650,7 +2657,7 @@ const Planning = () => {
                               🔍 Audit
                             </Button>
                           )}
-                          {!['employe', 'pompier'].includes(user.role) && (
+                          {canDeletePlanning && (
                             <Button 
                               variant="ghost" 
                               size="sm" 
@@ -2667,7 +2674,7 @@ const Planning = () => {
                 ) : (
                   <div className="no-personnel">
                     <p>Aucun personnel assigné à cette garde</p>
-                    {!['employe', 'pompier'].includes(user.role) && (
+                    {canCreatePlanning && (
                       <Button 
                         variant="outline" 
                         onClick={() => {
@@ -2684,25 +2691,29 @@ const Planning = () => {
               </div>
 
               <div className="garde-actions">
-                {!['employe', 'pompier'].includes(user.role) && (
+                {(canCreatePlanning || canDeletePlanning) && (
                   <>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => {
-                        setShowGardeDetailsModal(false);
-                        openAssignModal(selectedGardeDetails.date, selectedGardeDetails.typeGarde);
-                      }}
-                      data-testid="add-more-personnel-btn"
-                    >
-                      ➕ Ajouter personnel
-                    </Button>
-                    <Button 
-                      variant="destructive" 
-                      onClick={handleRemoveAllPersonnelFromGarde}
-                      data-testid="remove-all-personnel-btn"
-                    >
-                      🗑️ Supprimer tout le personnel
-                    </Button>
+                    {canCreatePlanning && (
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setShowGardeDetailsModal(false);
+                          openAssignModal(selectedGardeDetails.date, selectedGardeDetails.typeGarde);
+                        }}
+                        data-testid="add-more-personnel-btn"
+                      >
+                        ➕ Ajouter personnel
+                      </Button>
+                    )}
+                    {canDeletePlanning && (
+                      <Button 
+                        variant="destructive" 
+                        onClick={handleRemoveAllPersonnelFromGarde}
+                        data-testid="remove-all-personnel-btn"
+                      >
+                        🗑️ Supprimer tout le personnel
+                      </Button>
+                    )}
                   </>
                 )}
               </div>
@@ -2712,7 +2723,7 @@ const Planning = () => {
       )}
 
       {/* Modal d'assignation manuelle avancée avec récurrence */}
-      {showAdvancedAssignModal && !['employe', 'pompier'].includes(user.role) && (
+      {showAdvancedAssignModal && canCreatePlanning && (
         <div className="modal-overlay" onClick={() => setShowAdvancedAssignModal(false)}>
           <div className="modal-content extra-large-modal" onClick={(e) => e.stopPropagation()} data-testid="advanced-assign-modal">
             <div className="modal-header">

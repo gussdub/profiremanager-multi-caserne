@@ -13,6 +13,7 @@ import { fr } from "date-fns/locale";
 import { AlertTriangle, FileSpreadsheet, CalendarDays, Clock, CheckCircle, BarChart3, ClipboardList } from 'lucide-react';
 import { useWebSocketUpdate } from '../hooks/useWebSocketUpdate';
 import SuiviRemplacementModal from './SuiviRemplacementModal';
+import usePermissions from '../hooks/usePermissions';
 
 // Fonction pour parser une date en évitant les problèmes de timezone
 const parseDateLocal = (dateStr) => {
@@ -24,6 +25,14 @@ const parseDateLocal = (dateStr) => {
 const Remplacements = () => {
   const { user, tenant } = useAuth();
   const { tenantSlug } = useTenant();
+  
+  // Hook RBAC pour les permissions
+  const { hasModuleAccess, hasModuleAction } = usePermissions(tenantSlug, user);
+  const canCreateRemplacement = hasModuleAction('remplacements', 'creer');
+  const canEditRemplacement = hasModuleAction('remplacements', 'modifier');
+  const canDeleteRemplacement = hasModuleAction('remplacements', 'supprimer');
+  const canApproveRemplacement = hasModuleAction('remplacements', 'approuver');
+  
   const [demandes, setDemandes] = useState([]);
   const [demandesConge, setDemandesConge] = useState([]);
   const [users, setUsers] = useState([]);
@@ -276,7 +285,7 @@ const Remplacements = () => {
   };
 
   const handleApprouverConge = async (demandeId, action, commentaire = "") => {
-    if (['employe', 'pompier'].includes(user.role)) return;
+    if (!canApproveRemplacement) return;
 
     try {
       await apiPut(tenantSlug, `/demandes-conge/${demandeId}/approuver?action=${action}&commentaire=${commentaire}`, {});
@@ -295,9 +304,9 @@ const Remplacements = () => {
     }
   };
 
-  // Handler pour arrêter le processus (admin/superviseur uniquement)
+  // Handler pour arrêter le processus (via permission RBAC)
   const handleArreterProcessus = async (demandeId) => {
-    if (['employe', 'pompier'].includes(user.role)) return;
+    if (!canEditRemplacement) return;
 
     if (!window.confirm("Voulez-vous vraiment arrêter ce processus de remplacement? Cette action est irréversible.")) {
       return;
@@ -504,15 +513,15 @@ const Remplacements = () => {
 
   if (loading) return <div className="loading" data-testid="replacements-loading">Chargement...</div>;
 
-  // Déterminer si l'utilisateur est admin/superviseur
-  const isAdminOrSuperviseur = !['employe', 'pompier'].includes(user.role);
+  // Déterminer si l'utilisateur peut voir toutes les demandes (via RBAC)
+  const canViewAllDemandes = hasModuleAction('remplacements', 'voir_tous') || user?.role === 'admin';
 
-  // Filtrer les demandes selon le rôle pour les KPIs ET l'affichage
-  const mesDemandes = isAdminOrSuperviseur 
+  // Filtrer les demandes selon les permissions pour les KPIs ET l'affichage
+  const mesDemandes = canViewAllDemandes 
     ? demandes 
     : demandes.filter(d => d.demandeur_id === user.id);
   
-  const mesConges = isAdminOrSuperviseur
+  const mesConges = canViewAllDemandes
     ? demandesConge
     : demandesConge.filter(c => c.demandeur_id === user.id);
 
