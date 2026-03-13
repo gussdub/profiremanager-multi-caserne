@@ -64,7 +64,7 @@ from routes.personnalisation import router as personnalisation_router
 from routes.materiel import router as materiel_router
 from routes.bornes_seches import router as bornes_seches_router
 from routes.points_eau import router as points_eau_router
-from routes.remplacements import router as remplacements_router
+from routes.remplacements_routes import router as remplacements_router
 from routes.equipes_garde import router as equipes_garde_router
 from routes.inventaires_vehicules import router as inventaires_vehicules_router
 from routes.rondes_securite import router as rondes_securite_router
@@ -1946,7 +1946,7 @@ async def job_verifier_timeouts_remplacements():
     Job périodique qui vérifie les timeouts des demandes de remplacement
     S'exécute toutes les minutes
     """
-    from routes.remplacements import verifier_et_traiter_timeouts
+    from routes.remplacements_routes import verifier_et_traiter_timeouts
     
     while True:
         try:

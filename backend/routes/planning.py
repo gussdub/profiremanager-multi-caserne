@@ -59,7 +59,7 @@ from utils.pdf_helpers import (
 )
 
 # Import de la classe ParametresRemplacements
-from routes.remplacements import ParametresRemplacements
+from routes.remplacements.models import ParametresRemplacements
 
 router = APIRouter(tags=["Planning"])
 logger = logging.getLogger(__name__)

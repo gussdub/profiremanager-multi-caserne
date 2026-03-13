@@ -21,11 +21,12 @@ Routes publiques (actions via email):
 Paramètres remplacements:
 - GET    /{tenant_slug}/parametres/remplacements             - Récupérer les paramètres
 - PUT    /{tenant_slug}/parametres/remplacements             - Modifier les paramètres
+
+NOTE: Ce fichier est en cours de refactoring vers /routes/remplacements/
 """
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse, StreamingResponse
-from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone, timedelta
 import asyncio
@@ -46,196 +47,28 @@ from routes.dependencies import (
 # Import WebSocket pour synchronisation temps réel
 from routes.websocket import broadcast_remplacement_update
 
+# Import des modèles depuis le nouveau module
+from routes.remplacements.models import (
+    DemandeRemplacement,
+    DemandeRemplacementCreate,
+    NotificationRemplacement,
+    ParametresRemplacements,
+    TentativeRemplacement
+)
+
+# Import des utilitaires depuis le nouveau module
+from routes.remplacements.utils import (
+    calculer_priorite_demande,
+    est_dans_heures_silencieuses,
+    calculer_prochaine_heure_active,
+    formater_numero_telephone
+)
+
 router = APIRouter(tags=["Remplacements"])
 logger = logging.getLogger(__name__)
 
 
-# ==================== MODÈLES ====================
-
-class TentativeRemplacement(BaseModel):
-    """Historique des tentatives de remplacement"""
-    user_id: str
-    nom_complet: str
-    date_contact: datetime
-    statut: str  # contacted, accepted, refused, expired
-    date_reponse: Optional[datetime] = None
-
-
-class DemandeRemplacement(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    tenant_id: str
-    demandeur_id: str
-    type_garde_id: str
-    date: str  # Date de la garde à remplacer (format: YYYY-MM-DD)
-    raison: str
-    statut: str = "en_attente"  # en_attente, en_cours, accepte, expiree, annulee
-    priorite: str = "normal"  # urgent (≤24h), normal (>24h) - calculé automatiquement
-    remplacant_id: Optional[str] = None
-    tentatives_historique: List[Dict[str, Any]] = []
-    remplacants_contactes_ids: List[str] = []
-    date_prochaine_tentative: Optional[datetime] = None
-    nombre_tentatives: int = 0
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    # Champs enrichis
-    demandeur_nom: Optional[str] = None
-    remplacant_nom: Optional[str] = None
-    annule_par_id: Optional[str] = None
-    annule_par_nom: Optional[str] = None
-    date_annulation: Optional[str] = None
-    relance_par_id: Optional[str] = None
-    relance_par_nom: Optional[str] = None
-    date_relance: Optional[str] = None
-    approuve_par_id: Optional[str] = None
-    approuve_par_nom: Optional[str] = None
-    date_approbation: Optional[str] = None
-
-
-class DemandeRemplacementCreate(BaseModel):
-    type_garde_id: str
-    date: str
-    raison: str
-
-
-class NotificationRemplacement(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    tenant_id: str
-    demande_remplacement_id: str
-    destinataire_id: str
-    message: str
-    type_notification: str = "remplacement_disponible"
-    statut: str = "envoye"  # envoye, lu, accepte, refuse
-    date_envoi: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    date_reponse: Optional[datetime] = None
-    ordre_priorite: Optional[int] = None
-
-
-class ParametresRemplacements(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    tenant_id: str
-    mode_notification: str = "simultane"  # simultane, sequentiel, groupe_sequentiel
-    taille_groupe: int = 3
-    delai_attente_heures: int = 24  # Gardé pour compatibilité
-    delai_attente_minutes: int = 1440  # Ancien champ unique (gardé pour compatibilité)
-    # Nouveaux délais par niveau de priorité (en minutes)
-    delai_attente_urgente: int = 5      # Priorité Urgente: 5 min par défaut
-    delai_attente_haute: int = 15       # Priorité Haute: 15 min par défaut
-    delai_attente_normale: int = 60     # Priorité Normale: 60 min par défaut
-    delai_attente_faible: int = 120     # Priorité Faible: 120 min par défaut
-    max_contacts: int = 5
-    priorite_grade: bool = True
-    priorite_competences: bool = True
-    activer_gestion_heures_sup: bool = False
-    seuil_max_heures: int = 40
-    periode_calcul_heures: str = "semaine"
-    jours_periode_personnalisee: int = 7
-    activer_regroupement_heures: bool = False
-    duree_max_regroupement: int = 24
-    # Archivage automatique
-    delai_archivage_jours: int = 365  # 1 an par défaut (0 = désactivé)
-    archivage_auto_actif: bool = True
-    # Heures silencieuses (pause nocturne)
-    heures_silencieuses_actif: bool = True
-    heure_debut_silence: str = "21:00"  # Format HH:MM
-    heure_fin_silence: str = "07:00"    # Format HH:MM
-
-
-# ==================== FONCTIONS HELPER ====================
-
-async def calculer_priorite_demande(date_garde: str) -> str:
-    """
-    Calcule la priorité d'une demande de remplacement
-    - urgent: Si la garde est dans 24h ou moins
-    - normal: Si la garde est dans plus de 24h
-    """
-    try:
-        date_garde_obj = datetime.strptime(date_garde, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-        maintenant = datetime.now(timezone.utc)
-        delta = date_garde_obj - maintenant
-        
-        if delta.total_seconds() <= 86400:  # 24 heures en secondes
-            return "urgent"
-        return "normal"
-    except Exception as e:
-        logger.error(f"Erreur calcul priorité: {e}")
-        return "normal"
-
-
-def est_dans_heures_silencieuses(heure_debut: str, heure_fin: str) -> bool:
-    """
-    Vérifie si l'heure actuelle (fuseau Montréal) est dans la plage des heures silencieuses.
-    Gère les plages qui passent minuit (ex: 21:00 - 07:00)
-    
-    Args:
-        heure_debut: Heure de début du silence (ex: "21:00")
-        heure_fin: Heure de fin du silence (ex: "07:00")
-    
-    Returns:
-        True si on est dans les heures silencieuses
-    """
-    try:
-        import pytz
-        
-        # Obtenir l'heure actuelle à Montréal
-        montreal_tz = pytz.timezone('America/Montreal')
-        maintenant_montreal = datetime.now(montreal_tz)
-        heure_actuelle = maintenant_montreal.hour * 60 + maintenant_montreal.minute
-        
-        # Parser les heures de début et fin
-        debut_parts = heure_debut.split(":")
-        fin_parts = heure_fin.split(":")
-        debut_minutes = int(debut_parts[0]) * 60 + int(debut_parts[1])
-        fin_minutes = int(fin_parts[0]) * 60 + int(fin_parts[1])
-        
-        # Cas où la plage passe minuit (ex: 21:00 - 07:00)
-        if debut_minutes > fin_minutes:
-            # On est en silence si: heure >= début OU heure < fin
-            return heure_actuelle >= debut_minutes or heure_actuelle < fin_minutes
-        else:
-            # Cas normal (ex: 01:00 - 05:00)
-            return debut_minutes <= heure_actuelle < fin_minutes
-            
-    except Exception as e:
-        logger.error(f"Erreur vérification heures silencieuses: {e}")
-        return False
-
-
-def calculer_prochaine_heure_active(heure_fin_silence: str) -> datetime:
-    """
-    Calcule la prochaine heure où les contacts peuvent reprendre (fin des heures silencieuses).
-    Retourne un datetime en UTC.
-    """
-    try:
-        import pytz
-        
-        montreal_tz = pytz.timezone('America/Montreal')
-        maintenant_montreal = datetime.now(montreal_tz)
-        
-        # Parser l'heure de fin
-        fin_parts = heure_fin_silence.split(":")
-        heure_fin = int(fin_parts[0])
-        minute_fin = int(fin_parts[1])
-        
-        # Créer la prochaine occurrence de cette heure
-        prochaine_reprise = maintenant_montreal.replace(
-            hour=heure_fin, 
-            minute=minute_fin, 
-            second=0, 
-            microsecond=0
-        )
-        
-        # Si cette heure est déjà passée aujourd'hui, c'est demain
-        if prochaine_reprise <= maintenant_montreal:
-            prochaine_reprise += timedelta(days=1)
-        
-        # Convertir en UTC
-        return prochaine_reprise.astimezone(timezone.utc)
-        
-    except Exception as e:
-        logger.error(f"Erreur calcul prochaine heure active: {e}")
-        # Fallback: demain à 7h UTC
-        return datetime.now(timezone.utc).replace(hour=7, minute=0, second=0) + timedelta(days=1)
-
+# ==================== FONCTIONS DE RECHERCHE ====================
 
 async def trouver_remplacants_potentiels(
     tenant_id: str,
@@ -1237,39 +1070,6 @@ async def envoyer_sms_remplacement(
     except Exception as e:
         logger.error(f"❌ Erreur envoi SMS remplacement: {e}", exc_info=True)
         return False
-
-
-def formater_numero_telephone(numero: str) -> str:
-    """
-    Formate un numéro de téléphone au format E.164 (+1XXXXXXXXXX pour l'Amérique du Nord)
-    """
-    if not numero:
-        return ""
-    
-    # Nettoyer le numéro (garder uniquement les chiffres et le +)
-    numero_clean = ''.join(c for c in numero if c.isdigit() or c == '+')
-    
-    # Si déjà au format E.164
-    if numero_clean.startswith('+'):
-        return numero_clean
-    
-    # Enlever le 1 au début si présent (indicatif Amérique du Nord)
-    if numero_clean.startswith('1') and len(numero_clean) == 11:
-        numero_clean = numero_clean[1:]
-    
-    # Si 10 chiffres, ajouter +1 (Amérique du Nord - Canada/USA)
-    if len(numero_clean) == 10:
-        return f"+1{numero_clean}"
-    
-    # Si 11 chiffres commençant par 1
-    if len(numero_clean) == 11 and numero_clean.startswith('1'):
-        return f"+{numero_clean}"
-    
-    # Sinon, retourner avec + si valide
-    if len(numero_clean) >= 10:
-        return f"+{numero_clean}"
-    
-    return ""
 
 
 # Import direct de send_push_notification_to_users depuis notifications.py
