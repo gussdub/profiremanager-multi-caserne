@@ -7,6 +7,7 @@ import { useConfirmDialog } from './ui/ConfirmDialog';
 import useModalScrollLock from '../hooks/useModalScrollLock';
 import { useTenant } from '../contexts/TenantContext';
 import { useWebSocketUpdate } from '../hooks/useWebSocketUpdate';
+import usePermissions from '../hooks/usePermissions';
 import {
   DndContext,
   closestCenter,
@@ -117,7 +118,10 @@ const GestionInterventions = ({ user, tenantSlug }) => {
     loadSettings();
   }, [API, user]);
 
-  if (loading) {
+  // Utiliser le hook de permissions
+  const { canSignInterventions, canCreateInterventions, loading: permissionsLoading } = usePermissions(tenantSlug, user);
+
+  if (loading || permissionsLoading) {
     return <div className="p-6 text-center">Chargement...</div>;
   }
 
@@ -130,9 +134,12 @@ const GestionInterventions = ({ user, tenantSlug }) => {
   // Vérifier si la facturation des fausses alarmes est activée
   const faussesAlarmesActif = settings?.fausse_alarme_config?.actif || false;
   
-  // Mode lecture seule pour les employés
-  // Les permissions d'accès sont gérées via Paramètres > Comptes > Types d'accès
-  const isReadOnlyMode = isEmployee;
+  // Permission de signer (valider) les rapports
+  const canSign = canSignInterventions() || isAdminOrSupervisor;
+  
+  // Mode lecture seule pour les employés qui n'ont pas la permission créer
+  const canCreate = canCreateInterventions() || isAdminOrSupervisor;
+  const isReadOnlyMode = isEmployee && !canCreate;
 
   const tabs = [
     { id: 'rapports', label: 'Cartes d\'appel', icon: '📋' },
@@ -361,11 +368,13 @@ const TabRapports = ({ user, tenantSlug, toast, readOnly = false, isSuperAdmin =
               ✏️ Brouillons: {countByType(dashboard.drafts, filtreTypeCarte)}
             </span>
           </div>
-          <div className="bg-purple-50 px-4 py-2 rounded-lg">
-            <span className="text-purple-800 font-medium">
-              🔍 À valider: {countByType(dashboard.review, filtreTypeCarte)}
-            </span>
-          </div>
+          {canSign && (
+            <div className="bg-purple-50 px-4 py-2 rounded-lg">
+              <span className="text-purple-800 font-medium">
+                🔍 À valider: {countByType(dashboard.review, filtreTypeCarte)}
+              </span>
+            </div>
+          )}
         </div>
         
         {/* Filtre par type de carte */}
@@ -462,32 +471,34 @@ const TabRapports = ({ user, tenantSlug, toast, readOnly = false, isSuperAdmin =
           </CardContent>
         </Card>
 
-        {/* À valider */}
-        <Card>
-          <CardHeader className="bg-purple-50">
-            <CardTitle className="text-purple-800 text-lg">
-              🔍 À valider ({filterByType(dashboard.review).length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 space-y-3 max-h-[500px] overflow-y-auto">
-            {filterByType(dashboard.review).length === 0 ? (
-              <p className="text-gray-500 text-center py-4">Aucune intervention à valider</p>
-            ) : (
-              filterByType(dashboard.review).map(intervention => (
-                <InterventionCard 
-                  key={intervention.id} 
-                  intervention={intervention}
-                  formatDate={formatDate}
-                  getStatusBadge={getStatusBadge}
-                  onSelect={() => setSelectedIntervention(intervention)}
-                  isSuperAdmin={isSuperAdmin}
-                  onDelete={(e) => handleDeleteIntervention(intervention, e)}
-                  deleting={deleting === intervention.id}
-                />
-              ))
-            )}
-          </CardContent>
-        </Card>
+        {/* À valider - Visible uniquement pour ceux qui ont la permission "Signer" */}
+        {canSign && (
+          <Card>
+            <CardHeader className="bg-purple-50">
+              <CardTitle className="text-purple-800 text-lg">
+                🔍 À valider ({filterByType(dashboard.review).length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 space-y-3 max-h-[500px] overflow-y-auto">
+              {filterByType(dashboard.review).length === 0 ? (
+                <p className="text-gray-500 text-center py-4">Aucune intervention à valider</p>
+              ) : (
+                filterByType(dashboard.review).map(intervention => (
+                  <InterventionCard 
+                    key={intervention.id} 
+                    intervention={intervention}
+                    formatDate={formatDate}
+                    getStatusBadge={getStatusBadge}
+                    onSelect={() => setSelectedIntervention(intervention)}
+                    isSuperAdmin={isSuperAdmin}
+                    onDelete={(e) => handleDeleteIntervention(intervention, e)}
+                    deleting={deleting === intervention.id}
+                  />
+                ))
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Modal Détail Intervention */}

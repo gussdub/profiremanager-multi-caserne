@@ -789,6 +789,80 @@ async def get_users_with_access_type(
     return {"users": users, "count": len(users)}
 
 
+@router.get("/{tenant_slug}/users/{user_id}/permissions")
+async def get_user_permissions(
+    tenant_slug: str,
+    user_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Récupère les permissions effectives d'un utilisateur.
+    L'utilisateur peut récupérer ses propres permissions, ou un admin peut voir celles de n'importe qui.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # Vérifier l'accès : soit c'est ses propres permissions, soit c'est un admin
+    if current_user.id != user_id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès non autorisé")
+    
+    # Récupérer l'utilisateur
+    target_user = await db.users.find_one(
+        {"id": user_id, "tenant_id": tenant.id},
+        {"_id": 0, "mot_de_passe_hash": 0}
+    )
+    
+    if not target_user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    # Admin a accès complet
+    if target_user.get("role") == "admin":
+        return {
+            "user_id": user_id,
+            "role": "admin",
+            "access_type_id": None,
+            "permissions": {"is_full_access": True}
+        }
+    
+    # Vérifier si l'utilisateur a un type d'accès personnalisé
+    access_type_id = target_user.get("access_type_id")
+    
+    if access_type_id:
+        # Récupérer le type d'accès personnalisé
+        access_type = await db.access_types.find_one(
+            {"id": access_type_id, "tenant_id": tenant.id},
+            {"_id": 0}
+        )
+        if access_type:
+            # Filtrer les permissions selon les modules actifs du tenant
+            active_modules = get_active_modules_for_tenant(tenant)
+            filtered_perms = filter_permissions_for_tenant(access_type.get("permissions", {}), active_modules)
+            
+            return {
+                "user_id": user_id,
+                "role": target_user.get("role"),
+                "access_type_id": access_type_id,
+                "access_type_name": access_type.get("nom"),
+                "permissions": filtered_perms
+            }
+    
+    # Sinon, utiliser les permissions par défaut du rôle
+    role = target_user.get("role", "employe")
+    default_perms = DEFAULT_PERMISSIONS.get(role, DEFAULT_PERMISSIONS["employe"])
+    
+    # Filtrer selon les modules actifs du tenant
+    active_modules = get_active_modules_for_tenant(tenant)
+    filtered_perms = filter_permissions_for_tenant(default_perms, active_modules)
+    
+    return {
+        "user_id": user_id,
+        "role": role,
+        "access_type_id": None,
+        "permissions": filtered_perms
+    }
+
+
 # ==================== HELPER FUNCTIONS ====================
 
 def merge_permissions(base: Dict, custom: Dict) -> Dict:
