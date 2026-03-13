@@ -803,6 +803,7 @@ const GestionTypesAcces = ({ tenantSlug, toast }) => {
               >
                 <option value="employe">👤 Employé (permissions minimales)</option>
                 <option value="superviseur">🎖️ Superviseur (permissions étendues)</option>
+                <option value="admin">👑 Administrateur (toutes permissions)</option>
               </select>
               <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px' }}>
                 Le nouveau type héritera des permissions de base du rôle sélectionné.

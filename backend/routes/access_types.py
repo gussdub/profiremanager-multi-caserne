@@ -167,7 +167,95 @@ MODULES_STRUCTURE = {
 DEFAULT_PERMISSIONS = {
     "admin": {
         # Admin a accès à TOUT - cette permission ne peut pas être modifiée
-        "is_full_access": True
+        "is_full_access": True,
+        "modules": {
+            "dashboard": {"access": True, "actions": ["voir"]},
+            "personnel": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+            "interventions": {
+                "access": True, 
+                "actions": ["voir", "creer", "modifier", "supprimer", "exporter"],
+                "tabs": {
+                    "rapports": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter", "signer"]},
+                    "fausses-alarmes": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+                    "conformite-dsi": {"access": True, "actions": ["voir", "valider", "exporter"]},
+                    "historique": {"access": True, "actions": ["voir", "exporter"]},
+                    "parametres": {"access": True, "actions": ["voir", "modifier"]}
+                }
+            },
+            "paie": {
+                "access": True,
+                "actions": ["voir", "creer", "modifier", "supprimer", "exporter"],
+                "tabs": {
+                    "feuilles": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "valider", "exporter"]},
+                    "rapports": {"access": True, "actions": ["voir", "exporter"]},
+                    "jours-feries": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
+                    "parametres": {"access": True, "actions": ["voir", "modifier"]}
+                }
+            },
+            "planning": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+            "remplacements": {
+                "access": True,
+                "actions": ["voir", "creer", "modifier", "supprimer", "approuver"],
+                "tabs": {
+                    "propositions": {"access": True, "actions": ["voir", "accepter", "refuser"]},
+                    "demandes": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
+                    "conges": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "approuver"]}
+                }
+            },
+            "formations": {
+                "access": True,
+                "actions": ["voir", "creer", "modifier", "supprimer", "exporter"],
+                "tabs": {
+                    "catalogue": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
+                    "inscriptions": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
+                    "suivi": {"access": True, "actions": ["voir", "exporter"]}
+                }
+            },
+            "actifs": {
+                "access": True,
+                "actions": ["voir", "creer", "modifier", "supprimer", "exporter"],
+                "tabs": {
+                    "vehicules": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+                    "eau": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+                    "materiel": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+                    "epi": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+                    "parametres": {"access": True, "actions": ["voir", "modifier"]}
+                }
+            },
+            "prevention": {
+                "access": True,
+                "actions": ["voir", "creer", "modifier", "supprimer", "exporter"],
+                "tabs": {
+                    "batiments": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+                    "inspections": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "valider", "exporter"]},
+                    "calendrier": {"access": True, "actions": ["voir"]}
+                }
+            },
+            "disponibilites": {"access": True, "actions": ["voir", "modifier"]},
+            "mesepi": {"access": True, "actions": ["voir"]},
+            "monprofil": {"access": True, "actions": ["voir", "modifier"]},
+            "rapports": {"access": True, "actions": ["voir", "exporter"]},
+            "parametres": {
+                "access": True,
+                "actions": ["voir", "modifier"],
+                "tabs": {
+                    "types-garde": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
+                    "competences": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
+                    "grades": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
+                    "attribution": {"access": True, "actions": ["voir", "modifier"]},
+                    "rotation-equipes": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
+                    "comptes": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
+                    "remplacements": {"access": True, "actions": ["voir", "modifier"]},
+                    "disponibilites": {"access": True, "actions": ["voir", "modifier"]},
+                    "formations": {"access": True, "actions": ["voir", "modifier"]},
+                    "personnalisation": {"access": True, "actions": ["voir", "modifier"]},
+                    "secteurs": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
+                    "imports": {"access": True, "actions": ["voir", "creer"]},
+                    "facturation": {"access": True, "actions": ["voir", "modifier"]},
+                    "emails-history": {"access": True, "actions": ["voir"]}
+                }
+            }
+        }
     },
     "superviseur": {
         "modules": {
@@ -525,8 +613,8 @@ async def create_access_type(
         raise HTTPException(status_code=400, detail="Un type d'accès avec ce nom existe déjà")
     
     # Vérifier le rôle de base
-    if data.role_base not in ["employe", "superviseur"]:
-        raise HTTPException(status_code=400, detail="Le rôle de base doit être 'employe' ou 'superviseur'")
+    if data.role_base not in ["employe", "superviseur", "admin"]:
+        raise HTTPException(status_code=400, detail="Le rôle de base doit être 'employe', 'superviseur' ou 'admin'")
     
     # Créer les permissions en héritant du rôle de base
     base_permissions = DEFAULT_PERMISSIONS.get(data.role_base, DEFAULT_PERMISSIONS["employe"])
