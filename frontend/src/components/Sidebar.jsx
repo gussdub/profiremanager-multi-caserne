@@ -529,15 +529,13 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
     
     // Module Interventions : 
     // - Admin/Superviseur : accès complet
-    // - Personne ressource : accès complet (remplir rapports)
     // - Employé : accès géré via Paramètres > Comptes > Types d'accès
     if (item.id === 'interventions') {
       const isAdminOrSupervisor = ['admin', 'superviseur'].includes(user?.role);
-      const isPersonneRessource = (interventionSettings?.personnes_ressources || []).includes(user?.id);
       
       // TODO: Intégrer la vérification des permissions via Types d'accès
-      // Pour l'instant, seuls admin/superviseur et personnes ressources ont accès
-      if (!isAdminOrSupervisor && !isPersonneRessource) return false;
+      // Pour l'instant, seuls admin/superviseur ont accès par défaut
+      if (!isAdminOrSupervisor) return false;
     }
     
     return true;

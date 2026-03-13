@@ -454,8 +454,6 @@ async def get_intervention_settings(
             "alert_response_time_threshold": 480,
             "alert_on_import": True,
             "auto_archive_after_days": 365,
-            "personnes_ressources": [],
-            "validateurs": [],
             "modeles_narratif": [
                 {"id": "1", "titre": "Arrivée sur les lieux", "contenu": "À notre arrivée sur les lieux, nous avons constaté..."},
                 {"id": "2", "titre": "Intervention standard", "contenu": "L'intervention s'est déroulée sans incident. Les opérations ont consisté en..."},
@@ -476,10 +474,6 @@ async def get_intervention_settings(
         settings.pop("_id", None)
     
     # S'assurer que les champs existent toujours
-    if "personnes_ressources" not in settings:
-        settings["personnes_ressources"] = []
-    if "validateurs" not in settings:
-        settings["validateurs"] = []
     if "modeles_narratif" not in settings:
         settings["modeles_narratif"] = []
     if "fausse_alarme_config" not in settings:

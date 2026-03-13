@@ -867,29 +867,7 @@ async def get_user_responsibilities(tenant_id: str, user_id: str) -> List[dict]:
                 })
                 break
     
-    # 2. Interventions - Personnes ressources et validateurs
-    intervention_settings = await db.module_settings.find_one({
-        "tenant_id": tenant_id,
-        "module": "interventions"
-    })
-    if intervention_settings:
-        settings = intervention_settings.get("settings", {})
-        
-        if user_id in settings.get("personnes_ressources", []):
-            responsibilities.append({
-                "module": "interventions",
-                "role": "personne_ressource",
-                "details": "Validation des rapports d'intervention"
-            })
-        
-        if user_id in settings.get("validateurs", []):
-            responsibilities.append({
-                "module": "interventions",
-                "role": "validateur",
-                "details": "Signature des rapports d'intervention"
-            })
-    
-    # 3. Prévention - Préventionniste
+    # 2. Prévention - Préventionniste
     user = await db.users.find_one({"id": user_id, "tenant_id": tenant_id})
     if user and user.get("est_preventionniste"):
         responsibilities.append({

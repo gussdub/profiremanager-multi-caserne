@@ -126,15 +126,13 @@ const GestionInterventions = ({ user, tenantSlug }) => {
   const isSuperviseur = user?.role === 'superviseur';
   const isAdminOrSupervisor = isAdmin || isSuperviseur;
   const isEmployee = ['employe', 'pompier'].includes(user?.role);
-  const isDesignatedPerson = (settings?.personnes_ressources || []).includes(user?.id);
-  const isValidateur = (settings?.validateurs || []).includes(user?.id);
   
   // Vérifier si la facturation des fausses alarmes est activée
   const faussesAlarmesActif = settings?.fausse_alarme_config?.actif || false;
   
-  // Mode lecture seule pour les employés (sauf s'ils sont personnes ressources)
+  // Mode lecture seule pour les employés
   // Les permissions d'accès sont gérées via Paramètres > Comptes > Types d'accès
-  const isReadOnlyMode = isEmployee && !isDesignatedPerson;
+  const isReadOnlyMode = isEmployee;
 
   const tabs = [
     { id: 'rapports', label: 'Cartes d\'appel', icon: '📋' },
@@ -2197,22 +2195,6 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
     }
   };
 
-  const togglePersonneRessource = (userId) => {
-    const current = settings?.personnes_ressources || [];
-    const updated = current.includes(userId)
-      ? current.filter(id => id !== userId)
-      : [...current, userId];
-    setSettings({ ...settings, personnes_ressources: updated });
-  };
-
-  const toggleValidateur = (userId) => {
-    const current = settings?.validateurs || [];
-    const updated = current.includes(userId)
-      ? current.filter(id => id !== userId)
-      : [...current, userId];
-    setSettings({ ...settings, validateurs: updated });
-  };
-
   if (loading) {
     return <div className="text-center py-8">Chargement...</div>;
   }
@@ -2602,125 +2584,6 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
           >
             + Ajouter une section au template
           </Button>
-        </CardContent>
-      </Card>
-
-      {/* Validateurs de rapports */}
-      <Card>
-        <CardHeader className="bg-blue-50">
-          <CardTitle className="text-blue-800">
-            ✅ Validateurs de rapports
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-4">
-          <p className="text-gray-600 mb-4">
-            Sélectionnez les administrateurs et superviseurs autorisés à <strong>valider et signer</strong> les rapports d'intervention.
-          </p>
-
-          <div className="space-y-6">
-            {/* Administrateurs */}
-            <div>
-              <h4 className="font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <span>👑</span> Administrateurs
-              </h4>
-              <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-                {usersByRole.admin.length === 0 ? (
-                  <p className="text-gray-500 italic">Aucun administrateur</p>
-                ) : usersByRole.admin.map(u => (
-                  <label key={u.id} className="flex flex-wrap items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 rounded">
-                    <input
-                      type="checkbox"
-                      checked={(settings.validateurs || []).includes(u.id)}
-                      onChange={() => toggleValidateur(u.id)}
-                      className="w-5 h-5 rounded flex-shrink-0"
-                    />
-                    <span className="font-medium">{u.prenom} {u.nom}</span>
-                    <span className="text-gray-500 text-xs break-all">({u.email})</span>
-                    {(settings.validateurs || []).includes(u.id) && (
-                      <span className="text-green-600 text-xs whitespace-nowrap">✓ Validateur</span>
-                    )}
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Superviseurs */}
-            {usersByRole.superviseur.length > 0 && (
-              <div>
-                <h4 className="font-medium text-gray-700 mb-2 flex items-center gap-2">
-                  <span>⭐</span> Superviseurs
-                </h4>
-                <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-                  {usersByRole.superviseur.map(u => (
-                    <label key={u.id} className="flex flex-wrap items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 rounded">
-                      <input
-                        type="checkbox"
-                        checked={(settings.validateurs || []).includes(u.id)}
-                        onChange={() => toggleValidateur(u.id)}
-                        className="w-5 h-5 rounded flex-shrink-0"
-                      />
-                      <span className="font-medium">{u.prenom} {u.nom}</span>
-                      <span className="text-gray-500 text-xs break-all">({u.email})</span>
-                      {(settings.validateurs || []).includes(u.id) && (
-                        <span className="text-green-600 text-xs whitespace-nowrap">✓ Validateur</span>
-                      )}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Résumé */}
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-            <p className="text-sm text-blue-800">
-              <strong>{(settings.validateurs || []).length}</strong> validateur(s) désigné(s)
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Personnes ressources (accès au module) */}
-      <Card>
-        <CardHeader className="bg-yellow-50">
-          <CardTitle className="text-yellow-800">
-            👥 Personnes ressources (accès au module)
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-4">
-          <p className="text-gray-600 mb-4">
-            Ces employés auront accès au module Interventions pour <strong>rédiger les rapports</strong>.
-            Les administrateurs et superviseurs y ont accès automatiquement.
-          </p>
-
-          {usersByRole.employe.length > 0 ? (
-            <div className="bg-gray-50 rounded-lg p-3 space-y-2 max-h-64 overflow-y-auto">
-              {usersByRole.employe.map(u => (
-                <label key={u.id} className="flex items-center gap-3 cursor-pointer hover:bg-gray-100 p-2 rounded">
-                  <input
-                    type="checkbox"
-                    checked={(settings.personnes_ressources || []).includes(u.id)}
-                    onChange={() => togglePersonneRessource(u.id)}
-                    className="w-5 h-5 rounded"
-                  />
-                  <span className="font-medium">{u.prenom} {u.nom}</span>
-                  <span className="text-gray-500 text-sm">({u.email})</span>
-                  {(settings.personnes_ressources || []).includes(u.id) && (
-                    <span className="ml-auto text-yellow-600 text-sm">✓ Accès</span>
-                  )}
-                </label>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500 italic">Aucun employé/pompier dans le système</p>
-          )}
-
-          {/* Résumé - Ne compter que les employés sélectionnés */}
-          <div className="mt-4 p-3 bg-yellow-50 rounded-lg">
-            <p className="text-sm text-yellow-800">
-              <strong>{(settings.personnes_ressources || []).filter(id => usersByRole.employe.some(u => u.id === id)).length}</strong> personne(s) ressource(s) désignée(s)
-            </p>
-          </div>
         </CardContent>
       </Card>
 
