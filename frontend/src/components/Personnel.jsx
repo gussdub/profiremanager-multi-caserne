@@ -770,19 +770,21 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     setEndEmploymentProcessing(true);
     try {
       // Appeler l'API pour terminer l'emploi
-      const response = await apiPost(tenantSlug, `/personnel/${endEmploymentUser.id}/end-employment`, {
+      await apiPost(tenantSlug, `/personnel/${endEmploymentUser.id}/end-employment`, {
         date_fin_embauche: endEmploymentDate,
         motif_fin_emploi: endEmploymentMotif
       });
       
       toast({
         title: "Fin d'emploi confirmée",
-        description: `${endEmploymentUser.prenom} ${endEmploymentUser.nom} a été archivé. Toutes les données associées ont été supprimées.`,
+        description: `${endEmploymentUser.prenom} ${endEmploymentUser.nom} a été archivé.`,
         variant: "default"
       });
       
-      // Recharger la liste
-      await fetchUsers();
+      // Recharger la liste des utilisateurs
+      const usersData = await apiGet(tenantSlug, '/users');
+      setUsers(usersData);
+      
       setShowEndEmploymentModal(false);
       setShowEditModal(false);
       
