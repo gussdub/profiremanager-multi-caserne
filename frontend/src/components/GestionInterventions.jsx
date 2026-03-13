@@ -190,7 +190,7 @@ const GestionInterventions = ({ user, tenantSlug }) => {
 
       {/* Contenu des onglets */}
       {activeTab === 'rapports' && (
-        <TabRapports user={user} tenantSlug={tenantSlug} toast={toast} readOnly={isReadOnlyMode} isSuperAdmin={isSuperAdmin} />
+        <TabRapports user={user} tenantSlug={tenantSlug} toast={toast} readOnly={isReadOnlyMode} isSuperAdmin={isSuperAdmin} canSign={canSign} />
       )}
       {activeTab === 'fausses-alarmes' && isAdminOrSupervisor && faussesAlarmesActif && (
         <FaussesAlarmesView 
@@ -215,7 +215,7 @@ const GestionInterventions = ({ user, tenantSlug }) => {
 
 // ==================== ONGLET RAPPORTS ====================
 
-const TabRapports = ({ user, tenantSlug, toast, readOnly = false, isSuperAdmin = false }) => {
+const TabRapports = ({ user, tenantSlug, toast, readOnly = false, isSuperAdmin = false, canSign = false }) => {
   const [dashboard, setDashboard] = useState({ counts: {}, new: [], drafts: [], review: [] });
   const [loading, setLoading] = useState(true);
   const [selectedIntervention, setSelectedIntervention] = useState(null);
