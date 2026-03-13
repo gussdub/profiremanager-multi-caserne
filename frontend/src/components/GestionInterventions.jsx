@@ -129,13 +129,11 @@ const GestionInterventions = ({ user, tenantSlug }) => {
   const isDesignatedPerson = (settings?.personnes_ressources || []).includes(user?.id);
   const isValidateur = (settings?.validateurs || []).includes(user?.id);
   
-  // Paramètre permettant aux employés de consulter le module en lecture seule
-  const employeeCanAccessReadOnly = settings?.acces_employes_historique || false;
-  
   // Vérifier si la facturation des fausses alarmes est activée
   const faussesAlarmesActif = settings?.fausse_alarme_config?.actif || false;
   
   // Mode lecture seule pour les employés (sauf s'ils sont personnes ressources)
+  // Les permissions d'accès sont gérées via Paramètres > Comptes > Types d'accès
   const isReadOnlyMode = isEmployee && !isDesignatedPerson;
 
   const tabs = [
@@ -2311,27 +2309,6 @@ const TabParametres = ({ user, tenantSlug, toast }) => {
             </div>
           </div>
 
-          {/* Accès des employés */}
-          <div className="border-t pt-4 mt-4">
-            <h4 className="font-medium text-gray-700 mb-3">👥 Accès des employés</h4>
-            <label className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                checked={settings.acces_employes_historique || false}
-                onChange={(e) => setSettings({ ...settings, acces_employes_historique: e.target.checked })}
-                className="w-5 h-5"
-              />
-              <div>
-                <span className="font-medium">Permettre aux employés de consulter le module Interventions</span>
-                <p className="text-sm text-gray-500 mt-1">
-                  <strong>Si activé :</strong> Les employés (non personnes ressources) pourront voir les cartes d'appel et l'historique en <strong>lecture seule</strong> (aucune modification possible).
-                </p>
-                <p className="text-sm text-gray-500 mt-1">
-                  <strong>Si désactivé :</strong> Seuls les admins, superviseurs et personnes ressources auront accès au module.
-                </p>
-              </div>
-            </label>
-          </div>
         </CardContent>
       </Card>
 
