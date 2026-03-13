@@ -126,6 +126,18 @@ async def tenant_login(tenant_slug: str, login: LoginRequest):
     if not user.get("actif", True):
         raise HTTPException(status_code=401, detail="Compte désactivé")
     
+    # Vérifier si l'employé est un ancien (date de fin d'embauche passée)
+    date_fin_embauche = user.get("date_fin_embauche")
+    if date_fin_embauche:
+        from datetime import datetime
+        try:
+            date_fin = datetime.strptime(date_fin_embauche, "%Y-%m-%d").date()
+            today = datetime.now().date()
+            if date_fin <= today:
+                raise HTTPException(status_code=401, detail="Compte employé terminé")
+        except ValueError:
+            pass  # Si la date n'est pas valide, on ignore cette vérification
+    
     stored_hash = user.get("mot_de_passe_hash", "")
     
     if not verify_password(login.mot_de_passe, stored_hash):

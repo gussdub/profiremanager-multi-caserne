@@ -19,7 +19,8 @@ const ACTION_ICONS = {
   valider: CheckCircle,
   approuver: ThumbsUp,
   accepter: Check,
-  refuser: ThumbsDown
+  refuser: ThumbsDown,
+  voir_anciens: Users
 };
 
 const ACTION_LABELS = {
@@ -32,7 +33,8 @@ const ACTION_LABELS = {
   valider: "Valider",
   approuver: "Approuver",
   accepter: "Accepter",
-  refuser: "Refuser"
+  refuser: "Refuser",
+  voir_anciens: "Voir anciens"
 };
 
 const GestionTypesAcces = ({ tenantSlug, toast }) => {

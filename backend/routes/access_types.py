@@ -43,7 +43,7 @@ MODULES_STRUCTURE = {
         "label": "Personnel",
         "icon": "👥",
         "tabs": {},
-        "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]
+        "actions": ["voir", "creer", "modifier", "supprimer", "exporter", "voir_anciens"]
     },
     "interventions": {
         "label": "Interventions",
@@ -170,7 +170,7 @@ DEFAULT_PERMISSIONS = {
         "is_full_access": True,
         "modules": {
             "dashboard": {"access": True, "actions": ["voir"]},
-            "personnel": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+            "personnel": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter", "voir_anciens"]},
             "interventions": {
                 "access": True, 
                 "actions": ["voir", "creer", "modifier", "supprimer", "exporter"],
@@ -260,7 +260,7 @@ DEFAULT_PERMISSIONS = {
     "superviseur": {
         "modules": {
             "dashboard": {"access": True, "actions": ["voir"]},
-            "personnel": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+            "personnel": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter", "voir_anciens"]},
             "interventions": {
                 "access": True, 
                 "actions": ["voir", "creer", "modifier", "supprimer", "exporter"],
@@ -484,7 +484,8 @@ async def get_modules_structure(
             "valider": "✅ Valider",
             "approuver": "👍 Approuver",
             "accepter": "✔️ Accepter",
-            "refuser": "❌ Refuser"
+            "refuser": "❌ Refuser",
+            "voir_anciens": "📜 Voir anciens employés"
         }
     }
 

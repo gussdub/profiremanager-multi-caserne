@@ -56,6 +56,8 @@ class UserCreate(BaseModel):
     telephone: Optional[str] = None
     adresse: Optional[str] = None
     date_embauche: Optional[str] = None
+    date_fin_embauche: Optional[str] = None
+    motif_fin_emploi: Optional[str] = None
     date_naissance: Optional[str] = None
     numero_employe: Optional[str] = None
     formations: Optional[List[str]] = []
@@ -74,6 +76,8 @@ class UserUpdate(BaseModel):
     telephone: Optional[str] = None
     adresse: Optional[str] = None
     date_embauche: Optional[str] = None
+    date_fin_embauche: Optional[str] = None
+    motif_fin_emploi: Optional[str] = None
     date_naissance: Optional[str] = None
     numero_employe: Optional[str] = None
     formations: Optional[List[str]] = None

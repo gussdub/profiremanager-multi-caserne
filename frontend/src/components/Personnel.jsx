@@ -12,6 +12,26 @@ import { useAuth } from "../contexts/AuthContext";
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import { useConfirmDialog } from './ui/ConfirmDialog';
 import { useWebSocketUpdate } from '../hooks/useWebSocketUpdate';
+import usePermissions from '../hooks/usePermissions';
+
+// Motifs de fin d'emploi
+const MOTIFS_FIN_EMPLOI = [
+  { value: 'demission', label: 'Démission' },
+  { value: 'retraite', label: 'Retraite' },
+  { value: 'fin_contrat', label: 'Fin de contrat' },
+  { value: 'congediement', label: 'Congédiement' },
+  { value: 'deces', label: 'Décès' },
+  { value: 'autre', label: 'Autre' }
+];
+
+// Fonction pour vérifier si un employé est un ancien (date de fin d'embauche passée)
+const isFormerEmployee = (user) => {
+  if (!user.date_fin_embauche) return false;
+  const dateFin = new Date(user.date_fin_embauche);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return dateFin <= today;
+};
 
 // Fonction pour parser une date en évitant les problèmes de timezone
 const parseDateLocal = (dateStr) => {
@@ -97,6 +117,8 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     equipe_garde: null,
     numero_employe: '',
     date_embauche: '',
+    date_fin_embauche: '',
+    motif_fin_emploi: '',
     taux_horaire: 0,
     formations: [],
     accepte_gardes_externes: true, // True par défaut
@@ -110,10 +132,27 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     taille_masque_apria: '',
     taille_cagoule: ''
   });
+  
+  // État pour afficher les anciens employés
+  const [showFormerEmployees, setShowFormerEmployees] = useState(false);
+  
   const [equipesGardeParams, setEquipesGardeParams] = useState(null);
   const { toast } = useToast();
   const { tenantSlug } = useTenant();
   const { confirm } = useConfirmDialog();
+  
+  // Hook de permissions pour vérifier si l'utilisateur peut voir les anciens employés
+  const { hasModuleAction } = usePermissions(tenantSlug, user);
+  const canViewFormerEmployees = hasModuleAction('personnel', 'voir_anciens') || user?.role === 'admin';
+  
+  // Filtrer les utilisateurs selon le toggle (actifs vs anciens)
+  const filteredUsersByStatus = users.filter(u => {
+    const isFormer = isFormerEmployee(u);
+    if (showFormerEmployees) {
+      return isFormer; // Montrer seulement les anciens
+    }
+    return !isFormer; // Montrer seulement les actifs
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -466,6 +505,8 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       equipe_garde: user.equipe_garde || null,
       numero_employe: user.numero_employe,
       date_embauche: user.date_embauche,
+      date_fin_embauche: user.date_fin_embauche || '',
+      motif_fin_emploi: user.motif_fin_emploi || '',
       taux_horaire: user.taux_horaire || 0,
       heures_max_semaine: user.heures_max_semaine || 40,
       formations: user.formations || [],
@@ -664,8 +705,12 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
 
   // Confirmer l'export après sélection dans le modal
   const getFilteredUsers = () => {
-    if (!searchTerm) return users;
-    return users.filter(user => 
+    // D'abord filtrer par statut (actif vs ancien)
+    let baseUsers = filteredUsersByStatus;
+    
+    // Puis filtrer par recherche
+    if (!searchTerm) return baseUsers;
+    return baseUsers.filter(user => 
       `${user.prenom} ${user.nom}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.grade?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -1226,6 +1271,29 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
             />
           </div>
           
+          {/* Toggle Anciens employés - visible seulement si permission */}
+          {canViewFormerEmployees && (
+            <button
+              onClick={() => setShowFormerEmployees(!showFormerEmployees)}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '8px',
+                border: showFormerEmployees ? '2px solid #6b7280' : '1px solid #d1d5db',
+                background: showFormerEmployees ? '#f3f4f6' : 'white',
+                color: showFormerEmployees ? '#374151' : '#6b7280',
+                cursor: 'pointer',
+                fontWeight: showFormerEmployees ? '600' : '400',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s'
+              }}
+              title={showFormerEmployees ? "Voir employés actifs" : "Voir anciens employés"}
+            >
+              {showFormerEmployees ? '👥 Employés actifs' : '📜 Anciens employés'}
+            </button>
+          )}
+          
           {/* Toggle Vue */}
           <div className="view-toggle">
             <button 
@@ -1266,8 +1334,15 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
             <div>Actions</div>
           </div>
 
-          {filteredUsers.map(user => (
-            <div key={user.id} className="table-row-modern" data-testid={`user-row-${user.id}`}>
+          {filteredUsers.map(user => {
+            const isFormer = isFormerEmployee(user);
+            return (
+            <div 
+              key={user.id} 
+              className="table-row-modern" 
+              data-testid={`user-row-${user.id}`}
+              style={isFormer ? { opacity: 0.5, filter: 'grayscale(80%)' } : {}}
+            >
               <div className="user-cell-modern">
                 <div className="user-avatar-modern" style={{
                   overflow: 'hidden',
@@ -1299,7 +1374,12 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       </span>
                     )}
                   </p>
-                  <p className="user-detail-modern">Embauché le {user.date_embauche}</p>
+                  <p className="user-detail-modern">
+                    {isFormer 
+                      ? `Fin: ${user.date_fin_embauche}${user.motif_fin_emploi ? ` (${MOTIFS_FIN_EMPLOI.find(m => m.value === user.motif_fin_emploi)?.label || user.motif_fin_emploi})` : ''}`
+                      : `Embauché le ${user.date_embauche}`
+                    }
+                  </p>
                 </div>
               </div>
 
@@ -1328,13 +1408,16 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
               <div className="actions-cell-modern">
                 <button onClick={() => handleViewUser(user)} title="Voir">👁️</button>
                 <button onClick={() => handleEditUser(user)} title="Modifier">✏️</button>
-                <button onClick={() => handleDeleteUser(user.id)} title="Supprimer">🗑️</button>
-                {(user.type_emploi === 'temps_partiel' || user.type_emploi === 'temporaire') && (
+                {!isFormer && (
+                  <button onClick={() => handleDeleteUser(user.id)} title="Supprimer">🗑️</button>
+                )}
+                {!isFormer && (user.type_emploi === 'temps_partiel' || user.type_emploi === 'temporaire') && (
                   <button onClick={() => handleManageDisponibilites(user)} title="Gérer dispo">📅</button>
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
 
           {filteredUsers.length === 0 && (
             <div className="empty-state">
@@ -1347,8 +1430,15 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       {/* Vue Cartes */}
       {viewMode === 'cards' && (
         <div className="personnel-cards-grid">
-          {filteredUsers.map(user => (
-            <div key={user.id} className="personnel-card" data-testid={`user-card-${user.id}`}>
+          {filteredUsers.map(user => {
+            const isFormer = isFormerEmployee(user);
+            return (
+            <div 
+              key={user.id} 
+              className="personnel-card" 
+              data-testid={`user-card-${user.id}`}
+              style={isFormer ? { opacity: 0.5, filter: 'grayscale(80%)' } : {}}
+            >
               <div className="card-header">
                 <div className="user-avatar-card" style={{
                   overflow: 'hidden',
@@ -1383,7 +1473,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                   <p className="card-grade">{user.grade}</p>
                 </div>
                 <span className={`badge-status ${user.statut === 'Actif' ? 'actif' : 'inactif'}`}>
-                  {user.statut}
+                  {isFormer ? 'Ancien' : user.statut}
                 </span>
               </div>
 
@@ -1412,17 +1502,20 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                 <Button size="sm" variant="outline" onClick={() => handleViewUser(user)}>
                   👁️ Voir
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => handleEditUser(user)}>
-                  ✏️ Modifier
-                </Button>
-                {(user.type_emploi === 'temps_partiel' || user.type_emploi === 'temporaire') && (
+                {!isFormer && (
+                  <Button size="sm" variant="outline" onClick={() => handleEditUser(user)}>
+                    ✏️ Modifier
+                  </Button>
+                )}
+                {!isFormer && (user.type_emploi === 'temps_partiel' || user.type_emploi === 'temporaire') && (
                   <Button size="sm" variant="outline" onClick={() => handleManageDisponibilites(user)}>
                     📅 Dispo
                   </Button>
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
 
           {filteredUsers.length === 0 && (
             <div className="empty-state" style={{gridColumn: '1 / -1'}}>
@@ -2651,6 +2744,56 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         data-testid="edit-user-taux-horaire-input"
                       />
                     </div>
+                  </div>
+
+                  {/* Section Fin d'emploi */}
+                  <div style={{ 
+                    marginTop: '1rem', 
+                    padding: '1rem', 
+                    background: newUser.date_fin_embauche ? '#fef2f2' : '#f8fafc', 
+                    borderRadius: '8px',
+                    border: newUser.date_fin_embauche ? '1px solid #fecaca' : '1px solid #e2e8f0'
+                  }}>
+                    <h5 style={{ margin: '0 0 0.75rem 0', color: '#64748b', fontSize: '0.875rem' }}>
+                      📋 Fin d'emploi (optionnel)
+                    </h5>
+                    <div className="form-row">
+                      <div className="form-field">
+                        <Label>Date de fin d'embauche</Label>
+                        <Input
+                          type="date"
+                          value={newUser.date_fin_embauche || ''}
+                          onChange={(e) => setNewUser({...newUser, date_fin_embauche: e.target.value})}
+                          data-testid="edit-user-end-date-input"
+                        />
+                      </div>
+                      <div className="form-field">
+                        <Label>Motif de fin d'emploi</Label>
+                        <select
+                          value={newUser.motif_fin_emploi || ''}
+                          onChange={(e) => setNewUser({...newUser, motif_fin_emploi: e.target.value})}
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '6px',
+                            fontSize: '14px',
+                            background: 'white'
+                          }}
+                          data-testid="edit-user-motif-fin-emploi"
+                        >
+                          <option value="">-- Sélectionner --</option>
+                          {MOTIFS_FIN_EMPLOI.map(m => (
+                            <option key={m.value} value={m.value}>{m.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    {newUser.date_fin_embauche && (
+                      <p style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#dc2626' }}>
+                        ⚠️ L'employé sera considéré comme "ancien" après cette date et ne pourra plus se connecter.
+                      </p>
+                    )}
                   </div>
 
                   <div className="form-row">
