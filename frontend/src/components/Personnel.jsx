@@ -2748,7 +2748,8 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
 
                   {/* Section Fin d'emploi */}
                   <div style={{ 
-                    marginTop: '1rem', 
+                    marginTop: '1.5rem', 
+                    marginBottom: '1.5rem',
                     padding: '1rem', 
                     background: newUser.date_fin_embauche ? '#fef2f2' : '#f8fafc', 
                     borderRadius: '8px',
@@ -2764,6 +2765,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                           type="date"
                           value={newUser.date_fin_embauche || ''}
                           onChange={(e) => setNewUser({...newUser, date_fin_embauche: e.target.value})}
+                          placeholder=""
                           data-testid="edit-user-end-date-input"
                         />
                       </div>
