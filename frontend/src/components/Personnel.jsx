@@ -88,6 +88,12 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   const [endEmploymentMotif, setEndEmploymentMotif] = useState('');
   const [endEmploymentProcessing, setEndEmploymentProcessing] = useState(false);
   
+  // État pour le modal de réactivation
+  const [showReactivateModal, setShowReactivateModal] = useState(false);
+  const [reactivateUser, setReactivateUser] = useState(null);
+  const [reactivateDate, setReactivateDate] = useState('');
+  const [reactivateProcessing, setReactivateProcessing] = useState(false);
+  
   // État pour la photo de profil
   const [photoUploading, setPhotoUploading] = useState(false);
   const photoInputRef = React.useRef(null);
@@ -800,35 +806,46 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     }
   };
 
-  // Réactiver un ancien employé (créer un nouvel employé avec infos de base)
-  const handleReactivateEmployee = async (formerEmployee) => {
-    // Pré-remplir le formulaire avec les infos de base
-    setNewUser({
-      ...newUser,
-      prenom: formerEmployee.prenom,
-      nom: formerEmployee.nom,
-      email: formerEmployee.email, // L'email est libéré car l'ancien compte est supprimé
-      telephone: formerEmployee.telephone || '',
-      adresse: formerEmployee.adresse || '',
-      grade: formerEmployee.grade || '',
-      role: 'employe',
-      type_emploi: formerEmployee.type_emploi || 'temps_partiel',
-      date_embauche: new Date().toISOString().split('T')[0],
-      date_fin_embauche: '',
-      motif_fin_emploi: '',
-      numero_employe: '', // Nouveau numéro
-      taux_horaire: 0, // Nouveau taux
-      mot_de_passe: ''
-    });
+  // Réactiver un ancien employé - Ouvre le modal de réactivation
+  const handleReactivateEmployee = (formerEmployee) => {
+    setReactivateUser(formerEmployee);
+    setReactivateDate(new Date().toISOString().split('T')[0]); // Par défaut: aujourd'hui
+    setShowReactivateModal(true);
+  };
+  
+  // Confirmer la réactivation
+  const handleConfirmReactivate = async () => {
+    if (!reactivateUser || !reactivateDate) return;
     
-    setSelectedUser(null); // Mode création, pas édition
-    setShowEditModal(true);
-    
-    toast({
-      title: "Réactivation",
-      description: `Créez un nouveau compte pour ${formerEmployee.prenom} ${formerEmployee.nom}. Un nouveau numéro d'employé et mot de passe seront requis.`,
-      variant: "default"
-    });
+    setReactivateProcessing(true);
+    try {
+      await apiPost(tenantSlug, `/personnel/${reactivateUser.id}/reactivate`, {
+        nouvelle_date_embauche: reactivateDate
+      });
+      
+      toast({
+        title: "Employé réactivé",
+        description: `${reactivateUser.prenom} ${reactivateUser.nom} a été réactivé avec succès.`,
+        variant: "success"
+      });
+      
+      // Recharger la liste des utilisateurs
+      const usersData = await apiGet(tenantSlug, '/users');
+      setUsers(usersData);
+      
+      setShowReactivateModal(false);
+      setReactivateUser(null);
+      
+    } catch (error) {
+      console.error('Erreur réactivation:', error);
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || error.message || "Impossible de réactiver l'employé",
+        variant: "destructive"
+      });
+    } finally {
+      setReactivateProcessing(false);
+    }
   };
 
   const handleAddDisponibilite = async () => {
@@ -1440,7 +1457,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
               key={user.id} 
               className="table-row-modern" 
               data-testid={`user-row-${user.id}`}
-              style={isFormer ? { opacity: 0.5, filter: 'grayscale(80%)' } : {}}
             >
               <div className="user-cell-modern">
                 <div className="user-avatar-modern" style={{
@@ -1493,8 +1509,8 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
               </div>
 
               <div className="cell-modern">
-                <span className={`badge-status ${user.statut === 'Actif' ? 'actif' : 'inactif'}`}>
-                  {user.statut}
+                <span className={`badge-status ${isFormer ? 'inactif' : 'actif'}`}>
+                  {isFormer ? 'Ancien' : 'Actif'}
                 </span>
               </div>
 
@@ -1547,7 +1563,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
               key={user.id} 
               className="personnel-card" 
               data-testid={`user-card-${user.id}`}
-              style={isFormer ? { opacity: 0.5, filter: 'grayscale(80%)' } : {}}
             >
               <div className="card-header">
                 <div className="user-avatar-card" style={{
@@ -1582,7 +1597,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                   </h3>
                   <p className="card-grade">{user.grade}</p>
                 </div>
-                <span className={`badge-status ${user.statut === 'Actif' ? 'actif' : 'inactif'}`}>
+                <span className={`badge-status ${isFormer ? 'inactif' : (user.statut === 'Actif' ? 'actif' : 'inactif')}`}>
                   {isFormer ? 'Ancien' : user.statut}
                 </span>
               </div>
@@ -1980,8 +1995,8 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       <span className="employment-badge">
                         {selectedUser.type_emploi === 'temps_plein' ? 'Temps plein' : selectedUser.type_emploi === 'temporaire' ? 'Temporaire' : 'Temps partiel'}
                       </span>
-                      <span className={`status-badge ${selectedUser.statut.toLowerCase()}`}>
-                        {selectedUser.statut}
+                      <span className={`status-badge ${isFormerEmployee(selectedUser) ? 'ancien' : 'actif'}`}>
+                        {isFormerEmployee(selectedUser) ? 'Ancien' : 'Actif'}
                       </span>
                     </div>
                     <p className="employee-id">#{selectedUser.numero_employe}</p>
@@ -2102,18 +2117,92 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                   </div>
                 </div>
 
+                {/* Section Historique d'emploi - visible pour tous avec historique ou anciens */}
+                {(isFormerEmployee(selectedUser) || (selectedUser.employment_history && selectedUser.employment_history.length > 0)) && (
+                  <div className="detail-section" style={{ 
+                    marginTop: '1.5rem', 
+                    padding: '1rem', 
+                    background: '#f8fafc', 
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0'
+                  }}>
+                    <h5 style={{ margin: '0 0 1rem 0', color: '#475569' }}>📜 Historique d'emploi</h5>
+                    
+                    {/* Période actuelle si ancien employé */}
+                    {isFormerEmployee(selectedUser) && (
+                      <div style={{ 
+                        padding: '0.75rem', 
+                        background: '#fee2e2', 
+                        borderRadius: '6px', 
+                        marginBottom: '0.75rem',
+                        border: '1px solid #fca5a5'
+                      }}>
+                        <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: '600', color: '#991b1b' }}>
+                          Dernière période (fin d'emploi)
+                        </p>
+                        <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem', color: '#7f1d1d' }}>
+                          Du {selectedUser.date_embauche} au {selectedUser.date_fin_embauche}<br/>
+                          Motif: {MOTIFS_FIN_EMPLOI.find(m => m.value === selectedUser.motif_fin_emploi)?.label || selectedUser.motif_fin_emploi || 'Non spécifié'}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {/* Périodes d'emploi passées */}
+                    {selectedUser.employment_history && selectedUser.employment_history.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {selectedUser.employment_history.slice().reverse().map((period, index) => (
+                          <div key={index} style={{ 
+                            padding: '0.75rem', 
+                            background: '#f1f5f9', 
+                            borderRadius: '6px',
+                            border: '1px solid #cbd5e1'
+                          }}>
+                            <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: '500', color: '#475569' }}>
+                              Période #{selectedUser.employment_history.length - index}
+                            </p>
+                            <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem', color: '#64748b' }}>
+                              Du {period.date_embauche} au {period.date_fin_embauche}<br/>
+                              Motif: {MOTIFS_FIN_EMPLOI.find(m => m.value === period.motif_fin_emploi)?.label || period.motif_fin_emploi || 'Non spécifié'}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      !isFormerEmployee(selectedUser) && (
+                        <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>
+                          Aucun historique de période précédente
+                        </p>
+                      )
+                    )}
+                  </div>
+                )}
+
                 {/* Actions rapides */}
                 <div className="profile-actions">
-                  <Button 
-                    variant="default" 
-                    onClick={() => {
-                      setShowViewModal(false);
-                      handleEditUser(selectedUser);
-                    }}
-                    data-testid="quick-edit-user-btn"
-                  >
-                    ✏️ Modifier ce profil
-                  </Button>
+                  {!isFormerEmployee(selectedUser) ? (
+                    <Button 
+                      variant="default" 
+                      onClick={() => {
+                        setShowViewModal(false);
+                        handleEditUser(selectedUser);
+                      }}
+                      data-testid="quick-edit-user-btn"
+                    >
+                      ✏️ Modifier ce profil
+                    </Button>
+                  ) : (
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setShowViewModal(false);
+                        handleReactivateEmployee(selectedUser);
+                      }}
+                      style={{ borderColor: '#16a34a', color: '#16a34a' }}
+                      data-testid="quick-reactivate-user-btn"
+                    >
+                      🔄 Réactiver cet employé
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -3567,6 +3656,134 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                 disabled={endEmploymentProcessing}
               >
                 {endEmploymentProcessing ? 'Traitement...' : 'Confirmer'}
+              </Button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Modal de réactivation d'employé */}
+      {showReactivateModal && reactivateUser && createPortal(
+        <div 
+          style={{ 
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 99999 
+          }}
+          onClick={() => setShowReactivateModal(false)}
+        >
+          <div 
+            style={{ 
+              maxWidth: '500px',
+              width: '90%',
+              background: 'white',
+              borderRadius: '12px',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              position: 'relative'
+            }}
+            onClick={(e) => e.stopPropagation()}
+            data-testid="reactivate-employee-modal"
+          >
+            <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e5e7eb', position: 'relative' }}>
+              <h2 style={{ margin: 0, fontSize: '1.25rem' }}>🔄 Réactiver l'employé</h2>
+              <button 
+                onClick={() => setShowReactivateModal(false)}
+                style={{
+                  position: 'absolute',
+                  right: '1rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  color: '#64748b'
+                }}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div style={{ padding: '1.5rem' }}>
+              <p style={{ marginBottom: '1rem', fontSize: '1rem' }}>
+                Réactiver <strong>{reactivateUser.prenom} {reactivateUser.nom}</strong> ?
+              </p>
+              
+              {/* Historique d'emploi précédent */}
+              <div style={{ 
+                background: '#f1f5f9', 
+                padding: '1rem', 
+                borderRadius: '8px', 
+                marginBottom: '1.5rem',
+                border: '1px solid #cbd5e1'
+              }}>
+                <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.875rem', color: '#475569' }}>
+                  📋 Période d'emploi précédente (sera archivée)
+                </h4>
+                <p style={{ margin: 0, fontSize: '0.875rem', color: '#64748b' }}>
+                  <strong>Embauché le :</strong> {reactivateUser.date_embauche}<br/>
+                  <strong>Fin d'emploi :</strong> {reactivateUser.date_fin_embauche}<br/>
+                  <strong>Motif :</strong> {MOTIFS_FIN_EMPLOI.find(m => m.value === reactivateUser.motif_fin_emploi)?.label || reactivateUser.motif_fin_emploi || 'Non spécifié'}
+                </p>
+              </div>
+              
+              {/* Nouvelle date d'embauche */}
+              <div style={{ marginBottom: '1rem' }}>
+                <Label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
+                  Nouvelle date d'embauche *
+                </Label>
+                <Input
+                  type="date"
+                  value={reactivateDate}
+                  onChange={(e) => setReactivateDate(e.target.value)}
+                  data-testid="reactivate-date-input"
+                  style={{ width: '100%' }}
+                />
+                <small style={{ display: 'block', marginTop: '0.25rem', color: '#64748b', fontSize: '0.8rem' }}>
+                  Par défaut : aujourd'hui. Modifiez si l'employé a commencé avant.
+                </small>
+              </div>
+              
+              <div style={{ 
+                background: '#ecfdf5', 
+                padding: '0.75rem 1rem', 
+                borderRadius: '8px',
+                border: '1px solid #a7f3d0'
+              }}>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: '#065f46' }}>
+                  ✅ L'historique d'emploi sera conservé dans la fiche de l'employé.
+                </p>
+              </div>
+            </div>
+            
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'flex-end',
+              gap: '0.5rem',
+              padding: '1rem 1.5rem',
+              borderTop: '1px solid #e5e7eb'
+            }}>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowReactivateModal(false)}
+              >
+                Annuler
+              </Button>
+              <Button 
+                onClick={handleConfirmReactivate}
+                disabled={reactivateProcessing || !reactivateDate}
+                style={{ background: '#16a34a', borderColor: '#16a34a' }}
+                data-testid="confirm-reactivate-btn"
+              >
+                {reactivateProcessing ? 'Traitement...' : '🔄 Réactiver'}
               </Button>
             </div>
           </div>

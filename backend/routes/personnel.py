@@ -466,3 +466,90 @@ async def end_employment(
             "formations": deleted_formations.deleted_count
         }
     }
+
+
+class ReactivateEmployeeRequest(BaseModel):
+    """Modèle pour la réactivation d'un employé"""
+    nouvelle_date_embauche: str
+
+
+@router.post("/{tenant_slug}/personnel/{user_id}/reactivate")
+async def reactivate_employee(
+    tenant_slug: str,
+    user_id: str,
+    data: ReactivateEmployeeRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Réactive un ancien employé.
+    - Archive la période d'emploi précédente dans employment_history
+    - Remet l'employé en statut Actif avec la nouvelle date d'embauche
+    - Efface date_fin_embauche et motif_fin_emploi
+    """
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # Vérifier que l'utilisateur existe
+    user_to_reactivate = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
+    if not user_to_reactivate:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    # Vérifier que c'est bien un ancien employé
+    if not user_to_reactivate.get("date_fin_embauche"):
+        raise HTTPException(status_code=400, detail="Cet employé n'est pas un ancien employé")
+    
+    user_name = f"{user_to_reactivate.get('prenom')} {user_to_reactivate.get('nom')}"
+    
+    # Préparer l'entrée d'historique pour la période précédente
+    history_entry = {
+        "date_embauche": user_to_reactivate.get("date_embauche"),
+        "date_fin_embauche": user_to_reactivate.get("date_fin_embauche"),
+        "motif_fin_emploi": user_to_reactivate.get("motif_fin_emploi"),
+        "archived_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Récupérer l'historique existant ou créer un nouveau tableau
+    existing_history = user_to_reactivate.get("employment_history", [])
+    if not isinstance(existing_history, list):
+        existing_history = []
+    
+    # Ajouter la nouvelle entrée à l'historique
+    existing_history.append(history_entry)
+    
+    # Mettre à jour l'utilisateur
+    await db.users.update_one(
+        {"id": user_id, "tenant_id": tenant.id},
+        {"$set": {
+            "date_embauche": data.nouvelle_date_embauche,
+            "date_fin_embauche": None,
+            "motif_fin_emploi": None,
+            "actif": True,
+            "statut": "Actif",
+            "employment_history": existing_history,
+            "updated_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    # Créer une activité pour tracer cette action
+    await creer_activite(
+        tenant_id=tenant.id,
+        type_activite="reactivation_emploi",
+        description=f"🔄 {current_user.prenom} {current_user.nom} a réactivé {user_name}",
+        user_id=current_user.id,
+        user_nom=f"{current_user.prenom} {current_user.nom}"
+    )
+    
+    # Broadcast WebSocket
+    asyncio.create_task(broadcast_user_update(tenant_slug, "reactivate", {"user_id": user_id}))
+    
+    logging.info(f"✅ Réactivation confirmée pour {user_name} (ID: {user_id})")
+    
+    return {
+        "success": True,
+        "message": f"{user_name} a été réactivé avec succès",
+        "employment_history": existing_history
+    }
