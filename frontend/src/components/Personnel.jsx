@@ -536,6 +536,19 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       return;
     }
 
+    // Si une date de fin d'emploi est saisie et que l'employé n'est pas déjà ancien
+    if (newUser.date_fin_embauche && selectedUser && !isFormerEmployee(selectedUser)) {
+      // Ouvrir le modal de confirmation au lieu de sauvegarder directement
+      handleOpenEndEmployment(selectedUser, newUser.date_fin_embauche, newUser.motif_fin_emploi);
+      return;
+    }
+
+    // Sinon, sauvegarde normale
+    await performUpdateUser();
+  };
+
+  // Fonction de sauvegarde effective
+  const performUpdateUser = async () => {
     try {
       const userToUpdate = {
         ...newUser,
@@ -2850,22 +2863,12 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                     </div>
                   </div>
 
-                  {/* Section Fin d'emploi */}
+                  {/* Section Fin d'emploi - visible seulement pour employés actifs */}
                   {selectedUser && !isFormerEmployee(selectedUser) && (
-                    <div style={{ 
-                      marginTop: '1.5rem', 
-                      marginBottom: '1.5rem',
-                      padding: '1rem', 
-                      background: '#fef2f2', 
-                      borderRadius: '8px',
-                      border: '1px solid #fecaca'
-                    }}>
-                      <h5 style={{ margin: '0 0 0.75rem 0', color: '#dc2626', fontSize: '0.875rem', fontWeight: '600' }}>
-                        ⚠️ Mettre fin à l'emploi
+                    <div style={{ marginTop: '1.5rem', marginBottom: '1.5rem' }}>
+                      <h5 style={{ margin: '0 0 0.75rem 0', color: '#64748b', fontSize: '0.875rem' }}>
+                        📋 Fin d'emploi (optionnel)
                       </h5>
-                      <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '1rem' }}>
-                        Cette action est <strong>irréversible</strong>. L'employé sera archivé et toutes ses données actives seront supprimées.
-                      </p>
                       <div className="form-row">
                         <div className="form-field">
                           <Label>Date de fin d'embauche</Label>
@@ -2874,12 +2877,12 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                             value={newUser.date_fin_embauche || ''}
                             onChange={(e) => setNewUser({...newUser, date_fin_embauche: e.target.value})}
                             placeholder="AAAA-MM-JJ"
-                            onFocus={(e) => e.target.type = 'date'}
+                            onFocus={(e) => { e.target.type = 'date'; }}
                             onBlur={(e) => { if (!e.target.value) e.target.type = 'text'; }}
                             style={{
                               width: '100%',
                               padding: '8px 12px',
-                              border: '1px solid #fecaca',
+                              border: '1px solid #e2e8f0',
                               borderRadius: '6px',
                               fontSize: '14px',
                               background: '#fff'
@@ -2895,7 +2898,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                             style={{
                               width: '100%',
                               padding: '8px 12px',
-                              border: '1px solid #fecaca',
+                              border: '1px solid #e2e8f0',
                               borderRadius: '6px',
                               fontSize: '14px',
                               background: 'white'
@@ -2909,15 +2912,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                           </select>
                         </div>
                       </div>
-                      {newUser.date_fin_embauche && (
-                        <Button
-                          variant="destructive"
-                          onClick={() => handleOpenEndEmployment(selectedUser, newUser.date_fin_embauche, newUser.motif_fin_emploi)}
-                          style={{ marginTop: '1rem' }}
-                        >
-                          🚫 Confirmer la fin d'emploi
-                        </Button>
-                      )}
                     </div>
                   )}
                   
@@ -3497,147 +3491,51 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
         </div>
       )}
 
-      {/* Modal de confirmation de fin d'emploi (double validation) */}
+      {/* Modal de confirmation de fin d'emploi */}
       {showEndEmploymentModal && endEmploymentUser && (
         <div className="modal-overlay" style={{ zIndex: 1100 }}>
-          <div className="modal-content" style={{ maxWidth: '500px' }}>
-            <div className="modal-header" style={{ background: '#fef2f2', borderBottom: '2px solid #dc2626' }}>
-              <h2 style={{ color: '#dc2626', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                ⚠️ Fin d'emploi - {endEmploymentUser.prenom} {endEmploymentUser.nom}
-              </h2>
+          <div className="modal-content" style={{ maxWidth: '450px' }}>
+            <div className="modal-header">
+              <h2>Fin d'emploi</h2>
               <button className="modal-close" onClick={() => setShowEndEmploymentModal(false)}>×</button>
             </div>
             
             <div className="modal-body" style={{ padding: '1.5rem' }}>
-              {endEmploymentStep === 1 ? (
-                <>
-                  <div style={{ 
-                    background: '#fef3c7', 
-                    border: '1px solid #f59e0b', 
-                    borderRadius: '8px', 
-                    padding: '1rem',
-                    marginBottom: '1.5rem'
-                  }}>
-                    <p style={{ margin: 0, fontWeight: '600', color: '#92400e' }}>
-                      🚨 ATTENTION - ACTION IRRÉVERSIBLE
-                    </p>
-                  </div>
-                  
-                  <p style={{ marginBottom: '1rem' }}>
-                    Vous êtes sur le point de mettre fin à l'emploi de <strong>{endEmploymentUser.prenom} {endEmploymentUser.nom}</strong>.
-                  </p>
-                  
-                  <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                    <p style={{ margin: '0 0 0.5rem 0', fontWeight: '600' }}>Les données suivantes seront SUPPRIMÉES :</p>
-                    <ul style={{ margin: 0, paddingLeft: '1.5rem', color: '#dc2626' }}>
-                      <li>Toutes les assignations de planning (gardes)</li>
-                      <li>Toutes les demandes de remplacement</li>
-                      <li>Toutes les disponibilités</li>
-                      <li>Tous les EPI assignés</li>
-                      <li>Toutes les inscriptions aux formations</li>
-                      <li>Le compte utilisateur (connexion impossible)</li>
-                    </ul>
-                  </div>
-                  
-                  <div style={{ background: '#f0fdf4', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                    <p style={{ margin: '0 0 0.5rem 0', fontWeight: '600', color: '#16a34a' }}>Seront conservés :</p>
-                    <ul style={{ margin: 0, paddingLeft: '1.5rem', color: '#16a34a' }}>
-                      <li>La fiche employé (pour consultation historique)</li>
-                      <li>Les compétences validées</li>
-                    </ul>
-                  </div>
-                  
-                  <p style={{ 
-                    background: '#fef2f2', 
-                    padding: '0.75rem', 
-                    borderRadius: '6px', 
-                    color: '#dc2626',
-                    fontWeight: '600',
-                    textAlign: 'center'
-                  }}>
-                    Date de fin : {endEmploymentDate}<br/>
-                    Motif : {MOTIFS_FIN_EMPLOI.find(m => m.value === endEmploymentMotif)?.label || 'Non spécifié'}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <div style={{ 
-                    background: '#dc2626', 
-                    color: 'white',
-                    borderRadius: '8px', 
-                    padding: '1.5rem',
-                    textAlign: 'center',
-                    marginBottom: '1.5rem'
-                  }}>
-                    <p style={{ margin: 0, fontSize: '1.25rem', fontWeight: '700' }}>
-                      🛑 CONFIRMATION FINALE
-                    </p>
-                  </div>
-                  
-                  <p style={{ fontSize: '1.1rem', textAlign: 'center', marginBottom: '1.5rem' }}>
-                    Êtes-vous <strong>ABSOLUMENT CERTAIN</strong> de vouloir mettre fin à l'emploi de :
-                  </p>
-                  
-                  <p style={{ 
-                    fontSize: '1.5rem', 
-                    fontWeight: '700', 
-                    textAlign: 'center',
-                    padding: '1rem',
-                    background: '#f8fafc',
-                    borderRadius: '8px',
-                    marginBottom: '1.5rem'
-                  }}>
-                    {endEmploymentUser.prenom} {endEmploymentUser.nom}
-                  </p>
-                  
-                  <p style={{ 
-                    color: '#dc2626', 
-                    fontWeight: '600', 
-                    textAlign: 'center',
-                    fontSize: '0.9rem'
-                  }}>
-                    Cette action est DÉFINITIVE et ne peut pas être annulée.
-                  </p>
-                </>
-              )}
+              <p style={{ marginBottom: '1rem', fontSize: '1rem' }}>
+                Confirmer la fin d'emploi de <strong>{endEmploymentUser.prenom} {endEmploymentUser.nom}</strong> ?
+              </p>
+              
+              <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
+                <p style={{ margin: 0, fontSize: '0.9rem' }}>
+                  <strong>Date de fin :</strong> {endEmploymentDate}<br/>
+                  <strong>Motif :</strong> {MOTIFS_FIN_EMPLOI.find(m => m.value === endEmploymentMotif)?.label || 'Non spécifié'}
+                </p>
+              </div>
+              
+              <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0' }}>
+                Les données suivantes seront supprimées : assignations, remplacements, disponibilités, EPI, formations.
+              </p>
             </div>
             
             <div className="modal-footer" style={{ 
               display: 'flex', 
-              justifyContent: 'space-between',
-              background: '#f8fafc',
+              justifyContent: 'flex-end',
+              gap: '0.5rem',
               padding: '1rem 1.5rem'
             }}>
               <Button 
                 variant="outline" 
-                onClick={() => {
-                  if (endEmploymentStep === 2) {
-                    setEndEmploymentStep(1);
-                  } else {
-                    setShowEndEmploymentModal(false);
-                  }
-                }}
+                onClick={() => setShowEndEmploymentModal(false)}
               >
-                {endEmploymentStep === 2 ? '← Retour' : 'Annuler'}
+                Annuler
               </Button>
-              
-              {endEmploymentStep === 1 ? (
-                <Button 
-                  variant="destructive"
-                  onClick={() => setEndEmploymentStep(2)}
-                >
-                  Continuer →
-                </Button>
-              ) : (
-                <Button 
-                  variant="destructive"
-                  onClick={handleConfirmEndEmployment}
-                  disabled={endEmploymentProcessing}
-                  style={{ background: '#dc2626' }}
-                >
-                  {endEmploymentProcessing ? '⏳ Traitement...' : '🚫 CONFIRMER LA FIN D\'EMPLOI'}
-                </Button>
-              )}
+              <Button 
+                variant="destructive"
+                onClick={handleConfirmEndEmployment}
+                disabled={endEmploymentProcessing}
+              >
+                {endEmploymentProcessing ? 'Traitement...' : 'Confirmer'}
+              </Button>
             </div>
           </div>
         </div>
