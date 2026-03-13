@@ -22,6 +22,25 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 - Gestion des employés par tenant
 - Attribution des équipes de garde
 
+
+### NEW - Gestion du Cycle de Vie des Employés (13 Mars 2026)
+- **Fonctionnalité:** Gestion complète des anciens employés avec archivage et réactivation
+- **Fin d'emploi:**
+  - Champ "Date de fin d'embauche" vide par défaut (placeholder AAAA-MM-JJ)
+  - Modal de confirmation avant archivage
+  - Suppression automatique des données actives (planning, remplacements, disponibilités)
+- **Affichage:**
+  - Badge de statut basé sur `date_fin_embauche` (pas sur `user.statut`)
+  - Filtre "Anciens employés" pour voir les inactifs
+  - Section "Historique d'emploi" dans la fiche employé
+- **Réactivation:**
+  - Modal dédié avec date de réembauche modifiable (défaut: aujourd'hui)
+  - Conservation de l'historique des périodes d'emploi précédentes
+  - L'employé repasse automatiquement en statut "Actif"
+- **Endpoints ajoutés:**
+  - `POST /{tenant}/personnel/{user_id}/reactivate` - Réactiver un ancien employé
+
+
 ## Recent Fixes (February 2026)
 
 ### NEW - Heures Silencieuses pour Remplacements (27 Feb 2026)
