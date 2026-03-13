@@ -352,3 +352,117 @@ async def delete_user(
     logging.info(f"✅ Utilisateur supprimé: {user_id} dans tenant {tenant_slug}")
     
     return {"message": "Utilisateur supprimé avec succès"}
+
+
+
+class EndEmploymentRequest(BaseModel):
+    """Modèle pour la fin d'emploi"""
+    date_fin_embauche: str
+    motif_fin_emploi: Optional[str] = None
+
+
+@router.post("/{tenant_slug}/personnel/{user_id}/end-employment")
+async def end_employment(
+    tenant_slug: str,
+    user_id: str,
+    data: EndEmploymentRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Met fin à l'emploi d'un utilisateur.
+    - Archive l'employé (conserve la fiche pour historique)
+    - Supprime toutes les données actives (planning, remplacements, dispo, EPI, formations)
+    - Bloque la connexion
+    """
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # Vérifier que l'utilisateur existe
+    user_to_end = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
+    if not user_to_end:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    # Ne pas permettre de mettre fin à un admin
+    if user_to_end.get("role") == "admin":
+        raise HTTPException(status_code=400, detail="Impossible de mettre fin à l'emploi d'un administrateur")
+    
+    user_name = f"{user_to_end.get('prenom')} {user_to_end.get('nom')}"
+    
+    # 1. Mettre à jour la fiche employé avec la date et motif de fin
+    await db.users.update_one(
+        {"id": user_id, "tenant_id": tenant.id},
+        {"$set": {
+            "date_fin_embauche": data.date_fin_embauche,
+            "motif_fin_emploi": data.motif_fin_emploi,
+            "actif": False,
+            "statut": "Ancien"
+        }}
+    )
+    
+    # 2. Supprimer les assignations de planning (gardes)
+    deleted_assignations = await db.assignations.delete_many({
+        "tenant_id": tenant.id,
+        "user_id": user_id
+    })
+    
+    # 3. Supprimer les demandes de remplacement
+    deleted_remplacements = await db.remplacements.delete_many({
+        "tenant_id": tenant.id,
+        "$or": [
+            {"demandeur_id": user_id},
+            {"remplacant_id": user_id}
+        ]
+    })
+    
+    # 4. Supprimer les disponibilités
+    deleted_disponibilites = await db.disponibilites.delete_many({
+        "tenant_id": tenant.id,
+        "user_id": user_id
+    })
+    
+    # 5. Retourner les EPI assignés (marquer comme retournés)
+    await db.epi_assignations.update_many(
+        {"tenant_id": tenant.id, "user_id": user_id, "date_retour": None},
+        {"$set": {
+            "date_retour": data.date_fin_embauche,
+            "note_retour": f"Retour automatique - Fin d'emploi ({data.motif_fin_emploi or 'Non spécifié'})"
+        }}
+    )
+    
+    # 6. Supprimer les inscriptions aux formations futures
+    from datetime import datetime
+    today = datetime.now().strftime("%Y-%m-%d")
+    deleted_formations = await db.formation_inscriptions.delete_many({
+        "tenant_id": tenant.id,
+        "user_id": user_id,
+        "date_formation": {"$gte": today}
+    })
+    
+    # 7. Créer une activité pour tracer cette action
+    await creer_activite(
+        tenant_id=tenant.id,
+        type_activite="fin_emploi",
+        description=f"🚫 {current_user.prenom} {current_user.nom} a mis fin à l'emploi de {user_name} (Motif: {data.motif_fin_emploi or 'Non spécifié'})",
+        user_id=current_user.id,
+        user_nom=f"{current_user.prenom} {current_user.nom}"
+    )
+    
+    # Broadcast WebSocket
+    asyncio.create_task(broadcast_user_update(tenant_slug, "end_employment", {"user_id": user_id}))
+    
+    logging.info(f"✅ Fin d'emploi confirmée pour {user_name} (ID: {user_id})")
+    
+    return {
+        "success": True,
+        "message": f"Fin d'emploi confirmée pour {user_name}",
+        "deleted": {
+            "assignations": deleted_assignations.deleted_count,
+            "remplacements": deleted_remplacements.deleted_count,
+            "disponibilites": deleted_disponibilites.deleted_count,
+            "formations": deleted_formations.deleted_count
+        }
+    }

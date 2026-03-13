@@ -79,6 +79,14 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   const [previewFilename, setPreviewFilename] = useState('');
   const [previewType, setPreviewType] = useState('pdf'); // 'pdf' ou 'excel'
   
+  // État pour le modal de fin d'emploi
+  const [showEndEmploymentModal, setShowEndEmploymentModal] = useState(false);
+  const [endEmploymentUser, setEndEmploymentUser] = useState(null);
+  const [endEmploymentStep, setEndEmploymentStep] = useState(1); // 1 = première confirmation, 2 = confirmation finale
+  const [endEmploymentDate, setEndEmploymentDate] = useState('');
+  const [endEmploymentMotif, setEndEmploymentMotif] = useState('');
+  const [endEmploymentProcessing, setEndEmploymentProcessing] = useState(false);
+  
   // État pour la photo de profil
   const [photoUploading, setPhotoUploading] = useState(false);
   const photoInputRef = React.useRef(null);
@@ -730,6 +738,81 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     // Stocker l'utilisateur et naviguer vers le module disponibilités
     setManagingUserDisponibilites(user);
     setCurrentPage('disponibilites');
+  };
+
+  // Ouvrir le modal de fin d'emploi
+  const handleOpenEndEmployment = (user, date, motif) => {
+    setEndEmploymentUser(user);
+    setEndEmploymentDate(date);
+    setEndEmploymentMotif(motif);
+    setEndEmploymentStep(1);
+    setShowEndEmploymentModal(true);
+  };
+
+  // Confirmer la fin d'emploi (étape finale)
+  const handleConfirmEndEmployment = async () => {
+    if (!endEmploymentUser || !endEmploymentDate) return;
+    
+    setEndEmploymentProcessing(true);
+    try {
+      // Appeler l'API pour terminer l'emploi
+      const response = await apiPost(tenantSlug, `/personnel/${endEmploymentUser.id}/end-employment`, {
+        date_fin_embauche: endEmploymentDate,
+        motif_fin_emploi: endEmploymentMotif
+      });
+      
+      toast({
+        title: "Fin d'emploi confirmée",
+        description: `${endEmploymentUser.prenom} ${endEmploymentUser.nom} a été archivé. Toutes les données associées ont été supprimées.`,
+        variant: "default"
+      });
+      
+      // Recharger la liste
+      await fetchUsers();
+      setShowEndEmploymentModal(false);
+      setShowEditModal(false);
+      
+    } catch (error) {
+      console.error('Erreur fin emploi:', error);
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Impossible de terminer l'emploi",
+        variant: "destructive"
+      });
+    } finally {
+      setEndEmploymentProcessing(false);
+    }
+  };
+
+  // Réactiver un ancien employé (créer un nouvel employé avec infos de base)
+  const handleReactivateEmployee = async (formerEmployee) => {
+    // Pré-remplir le formulaire avec les infos de base
+    setNewUser({
+      ...newUser,
+      prenom: formerEmployee.prenom,
+      nom: formerEmployee.nom,
+      email: formerEmployee.email, // L'email est libéré car l'ancien compte est supprimé
+      telephone: formerEmployee.telephone || '',
+      adresse: formerEmployee.adresse || '',
+      grade: formerEmployee.grade || '',
+      role: 'employe',
+      type_emploi: formerEmployee.type_emploi || 'temps_partiel',
+      date_embauche: new Date().toISOString().split('T')[0],
+      date_fin_embauche: '',
+      motif_fin_emploi: '',
+      numero_employe: '', // Nouveau numéro
+      taux_horaire: 0, // Nouveau taux
+      mot_de_passe: ''
+    });
+    
+    setShowEditModal(true);
+    setEditingUser(null); // Mode création, pas édition
+    
+    toast({
+      title: "Réactivation",
+      description: `Créez un nouveau compte pour ${formerEmployee.prenom} ${formerEmployee.nom}. Un nouveau numéro d'employé et mot de passe seront requis.`,
+      variant: "default"
+    });
   };
 
   const handleAddDisponibilite = async () => {
@@ -1407,12 +1490,23 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
 
               <div className="actions-cell-modern">
                 <button onClick={() => handleViewUser(user)} title="Voir">👁️</button>
-                <button onClick={() => handleEditUser(user)} title="Modifier">✏️</button>
+                {!isFormer && (
+                  <button onClick={() => handleEditUser(user)} title="Modifier">✏️</button>
+                )}
                 {!isFormer && (
                   <button onClick={() => handleDeleteUser(user.id)} title="Supprimer">🗑️</button>
                 )}
                 {!isFormer && (user.type_emploi === 'temps_partiel' || user.type_emploi === 'temporaire') && (
                   <button onClick={() => handleManageDisponibilites(user)} title="Gérer dispo">📅</button>
+                )}
+                {isFormer && (
+                  <button 
+                    onClick={() => handleReactivateEmployee(user)} 
+                    title="Réactiver (créer nouveau compte)"
+                    style={{ color: '#16a34a' }}
+                  >
+                    🔄
+                  </button>
                 )}
               </div>
             </div>
@@ -1510,6 +1604,16 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                 {!isFormer && (user.type_emploi === 'temps_partiel' || user.type_emploi === 'temporaire') && (
                   <Button size="sm" variant="outline" onClick={() => handleManageDisponibilites(user)}>
                     📅 Dispo
+                  </Button>
+                )}
+                {isFormer && (
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => handleReactivateEmployee(user)}
+                    style={{ borderColor: '#16a34a', color: '#16a34a' }}
+                  >
+                    🔄 Réactiver
                   </Button>
                 )}
               </div>
@@ -2747,65 +2851,95 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                   </div>
 
                   {/* Section Fin d'emploi */}
-                  <div style={{ 
-                    marginTop: '1.5rem', 
-                    marginBottom: '1.5rem',
-                    padding: '1rem', 
-                    background: newUser.date_fin_embauche ? '#fef2f2' : '#f8fafc', 
-                    borderRadius: '8px',
-                    border: newUser.date_fin_embauche ? '1px solid #fecaca' : '1px solid #e2e8f0'
-                  }}>
-                    <h5 style={{ margin: '0 0 0.75rem 0', color: '#64748b', fontSize: '0.875rem' }}>
-                      📋 Fin d'emploi (optionnel)
-                    </h5>
-                    <div className="form-row">
-                      <div className="form-field">
-                        <Label>Date de fin d'embauche</Label>
-                        <input
-                          type="text"
-                          value={newUser.date_fin_embauche || ''}
-                          onChange={(e) => setNewUser({...newUser, date_fin_embauche: e.target.value})}
-                          placeholder="AAAA-MM-JJ"
-                          onFocus={(e) => e.target.type = 'date'}
-                          onBlur={(e) => { if (!e.target.value) e.target.type = 'text'; }}
-                          style={{
-                            width: '100%',
-                            padding: '8px 12px',
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '6px',
-                            fontSize: '14px'
-                          }}
-                          data-testid="edit-user-end-date-input"
-                        />
-                      </div>
-                      <div className="form-field">
-                        <Label>Motif de fin d'emploi</Label>
-                        <select
-                          value={newUser.motif_fin_emploi || ''}
-                          onChange={(e) => setNewUser({...newUser, motif_fin_emploi: e.target.value})}
-                          style={{
-                            width: '100%',
-                            padding: '8px 12px',
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '6px',
-                            fontSize: '14px',
-                            background: 'white'
-                          }}
-                          data-testid="edit-user-motif-fin-emploi"
-                        >
-                          <option value="">-- Sélectionner --</option>
-                          {MOTIFS_FIN_EMPLOI.map(m => (
-                            <option key={m.value} value={m.value}>{m.label}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    {newUser.date_fin_embauche && (
-                      <p style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#dc2626' }}>
-                        ⚠️ L'employé sera considéré comme "ancien" après cette date et ne pourra plus se connecter.
+                  {editingUser && !isFormerEmployee(editingUser) && (
+                    <div style={{ 
+                      marginTop: '1.5rem', 
+                      marginBottom: '1.5rem',
+                      padding: '1rem', 
+                      background: '#fef2f2', 
+                      borderRadius: '8px',
+                      border: '1px solid #fecaca'
+                    }}>
+                      <h5 style={{ margin: '0 0 0.75rem 0', color: '#dc2626', fontSize: '0.875rem', fontWeight: '600' }}>
+                        ⚠️ Mettre fin à l'emploi
+                      </h5>
+                      <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '1rem' }}>
+                        Cette action est <strong>irréversible</strong>. L'employé sera archivé et toutes ses données actives seront supprimées.
                       </p>
-                    )}
-                  </div>
+                      <div className="form-row">
+                        <div className="form-field">
+                          <Label>Date de fin d'embauche</Label>
+                          <input
+                            type="text"
+                            value={newUser.date_fin_embauche || ''}
+                            onChange={(e) => setNewUser({...newUser, date_fin_embauche: e.target.value})}
+                            placeholder="AAAA-MM-JJ"
+                            onFocus={(e) => e.target.type = 'date'}
+                            onBlur={(e) => { if (!e.target.value) e.target.type = 'text'; }}
+                            style={{
+                              width: '100%',
+                              padding: '8px 12px',
+                              border: '1px solid #fecaca',
+                              borderRadius: '6px',
+                              fontSize: '14px',
+                              background: '#fff'
+                            }}
+                            data-testid="edit-user-end-date-input"
+                          />
+                        </div>
+                        <div className="form-field">
+                          <Label>Motif de fin d'emploi</Label>
+                          <select
+                            value={newUser.motif_fin_emploi || ''}
+                            onChange={(e) => setNewUser({...newUser, motif_fin_emploi: e.target.value})}
+                            style={{
+                              width: '100%',
+                              padding: '8px 12px',
+                              border: '1px solid #fecaca',
+                              borderRadius: '6px',
+                              fontSize: '14px',
+                              background: 'white'
+                            }}
+                            data-testid="edit-user-motif-fin-emploi"
+                          >
+                            <option value="">-- Sélectionner --</option>
+                            {MOTIFS_FIN_EMPLOI.map(m => (
+                              <option key={m.value} value={m.value}>{m.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      {newUser.date_fin_embauche && (
+                        <Button
+                          variant="destructive"
+                          onClick={() => handleOpenEndEmployment(editingUser, newUser.date_fin_embauche, newUser.motif_fin_emploi)}
+                          style={{ marginTop: '1rem' }}
+                        >
+                          🚫 Confirmer la fin d'emploi
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Info si ancien employé */}
+                  {editingUser && isFormerEmployee(editingUser) && (
+                    <div style={{ 
+                      marginTop: '1.5rem', 
+                      marginBottom: '1.5rem',
+                      padding: '1rem', 
+                      background: '#f1f5f9', 
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1'
+                    }}>
+                      <h5 style={{ margin: '0 0 0.5rem 0', color: '#64748b', fontSize: '0.875rem' }}>
+                        📋 Ancien employé
+                      </h5>
+                      <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>
+                        <strong>Fin d'emploi :</strong> {editingUser.date_fin_embauche}<br/>
+                        <strong>Motif :</strong> {MOTIFS_FIN_EMPLOI.find(m => m.value === editingUser.motif_fin_emploi)?.label || editingUser.motif_fin_emploi || 'Non spécifié'}
+                      </p>
+                    </div>
+                  )}
 
                   <div className="form-row">
                     <div className="form-field">
@@ -3358,6 +3492,152 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
               <Button onClick={handleValidateCompetence}>
                 ✅ Enregistrer
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmation de fin d'emploi (double validation) */}
+      {showEndEmploymentModal && endEmploymentUser && (
+        <div className="modal-overlay" style={{ zIndex: 1100 }}>
+          <div className="modal-content" style={{ maxWidth: '500px' }}>
+            <div className="modal-header" style={{ background: '#fef2f2', borderBottom: '2px solid #dc2626' }}>
+              <h2 style={{ color: '#dc2626', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                ⚠️ Fin d'emploi - {endEmploymentUser.prenom} {endEmploymentUser.nom}
+              </h2>
+              <button className="modal-close" onClick={() => setShowEndEmploymentModal(false)}>×</button>
+            </div>
+            
+            <div className="modal-body" style={{ padding: '1.5rem' }}>
+              {endEmploymentStep === 1 ? (
+                <>
+                  <div style={{ 
+                    background: '#fef3c7', 
+                    border: '1px solid #f59e0b', 
+                    borderRadius: '8px', 
+                    padding: '1rem',
+                    marginBottom: '1.5rem'
+                  }}>
+                    <p style={{ margin: 0, fontWeight: '600', color: '#92400e' }}>
+                      🚨 ATTENTION - ACTION IRRÉVERSIBLE
+                    </p>
+                  </div>
+                  
+                  <p style={{ marginBottom: '1rem' }}>
+                    Vous êtes sur le point de mettre fin à l'emploi de <strong>{endEmploymentUser.prenom} {endEmploymentUser.nom}</strong>.
+                  </p>
+                  
+                  <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
+                    <p style={{ margin: '0 0 0.5rem 0', fontWeight: '600' }}>Les données suivantes seront SUPPRIMÉES :</p>
+                    <ul style={{ margin: 0, paddingLeft: '1.5rem', color: '#dc2626' }}>
+                      <li>Toutes les assignations de planning (gardes)</li>
+                      <li>Toutes les demandes de remplacement</li>
+                      <li>Toutes les disponibilités</li>
+                      <li>Tous les EPI assignés</li>
+                      <li>Toutes les inscriptions aux formations</li>
+                      <li>Le compte utilisateur (connexion impossible)</li>
+                    </ul>
+                  </div>
+                  
+                  <div style={{ background: '#f0fdf4', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
+                    <p style={{ margin: '0 0 0.5rem 0', fontWeight: '600', color: '#16a34a' }}>Seront conservés :</p>
+                    <ul style={{ margin: 0, paddingLeft: '1.5rem', color: '#16a34a' }}>
+                      <li>La fiche employé (pour consultation historique)</li>
+                      <li>Les compétences validées</li>
+                    </ul>
+                  </div>
+                  
+                  <p style={{ 
+                    background: '#fef2f2', 
+                    padding: '0.75rem', 
+                    borderRadius: '6px', 
+                    color: '#dc2626',
+                    fontWeight: '600',
+                    textAlign: 'center'
+                  }}>
+                    Date de fin : {endEmploymentDate}<br/>
+                    Motif : {MOTIFS_FIN_EMPLOI.find(m => m.value === endEmploymentMotif)?.label || 'Non spécifié'}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div style={{ 
+                    background: '#dc2626', 
+                    color: 'white',
+                    borderRadius: '8px', 
+                    padding: '1.5rem',
+                    textAlign: 'center',
+                    marginBottom: '1.5rem'
+                  }}>
+                    <p style={{ margin: 0, fontSize: '1.25rem', fontWeight: '700' }}>
+                      🛑 CONFIRMATION FINALE
+                    </p>
+                  </div>
+                  
+                  <p style={{ fontSize: '1.1rem', textAlign: 'center', marginBottom: '1.5rem' }}>
+                    Êtes-vous <strong>ABSOLUMENT CERTAIN</strong> de vouloir mettre fin à l'emploi de :
+                  </p>
+                  
+                  <p style={{ 
+                    fontSize: '1.5rem', 
+                    fontWeight: '700', 
+                    textAlign: 'center',
+                    padding: '1rem',
+                    background: '#f8fafc',
+                    borderRadius: '8px',
+                    marginBottom: '1.5rem'
+                  }}>
+                    {endEmploymentUser.prenom} {endEmploymentUser.nom}
+                  </p>
+                  
+                  <p style={{ 
+                    color: '#dc2626', 
+                    fontWeight: '600', 
+                    textAlign: 'center',
+                    fontSize: '0.9rem'
+                  }}>
+                    Cette action est DÉFINITIVE et ne peut pas être annulée.
+                  </p>
+                </>
+              )}
+            </div>
+            
+            <div className="modal-footer" style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between',
+              background: '#f8fafc',
+              padding: '1rem 1.5rem'
+            }}>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  if (endEmploymentStep === 2) {
+                    setEndEmploymentStep(1);
+                  } else {
+                    setShowEndEmploymentModal(false);
+                  }
+                }}
+              >
+                {endEmploymentStep === 2 ? '← Retour' : 'Annuler'}
+              </Button>
+              
+              {endEmploymentStep === 1 ? (
+                <Button 
+                  variant="destructive"
+                  onClick={() => setEndEmploymentStep(2)}
+                >
+                  Continuer →
+                </Button>
+              ) : (
+                <Button 
+                  variant="destructive"
+                  onClick={handleConfirmEndEmployment}
+                  disabled={endEmploymentProcessing}
+                  style={{ background: '#dc2626' }}
+                >
+                  {endEmploymentProcessing ? '⏳ Traitement...' : '🚫 CONFIRMER LA FIN D\'EMPLOI'}
+                </Button>
+              )}
             </div>
           </div>
         </div>
