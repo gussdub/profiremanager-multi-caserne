@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import axios from "axios";
 import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
@@ -3481,9 +3482,8 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       )}
 
       {/* Modal de confirmation de fin d'emploi */}
-      {showEndEmploymentModal && endEmploymentUser && (
+      {showEndEmploymentModal && endEmploymentUser && createPortal(
         <div 
-          className="modal-overlay" 
           style={{ 
             position: 'fixed',
             top: 0,
@@ -3494,28 +3494,30 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 9999 
+            zIndex: 99999 
           }}
+          onClick={() => setShowEndEmploymentModal(false)}
         >
           <div 
-            className="modal-content" 
             style={{ 
               maxWidth: '450px',
               width: '90%',
               background: 'white',
               borderRadius: '12px',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              position: 'relative'
             }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <div className="modal-header" style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e5e7eb' }}>
+            <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e5e7eb', position: 'relative' }}>
               <h2 style={{ margin: 0, fontSize: '1.25rem' }}>Fin d'emploi</h2>
               <button 
-                className="modal-close" 
                 onClick={() => setShowEndEmploymentModal(false)}
                 style={{
                   position: 'absolute',
                   right: '1rem',
-                  top: '1rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
                   background: 'none',
                   border: 'none',
                   fontSize: '1.5rem',
@@ -3566,7 +3568,8 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
               </Button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
