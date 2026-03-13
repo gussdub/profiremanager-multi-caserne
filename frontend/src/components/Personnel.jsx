@@ -3482,14 +3482,52 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
 
       {/* Modal de confirmation de fin d'emploi */}
       {showEndEmploymentModal && endEmploymentUser && (
-        <div className="modal-overlay" style={{ zIndex: 1100 }}>
-          <div className="modal-content" style={{ maxWidth: '450px' }}>
-            <div className="modal-header">
-              <h2>Fin d'emploi</h2>
-              <button className="modal-close" onClick={() => setShowEndEmploymentModal(false)}>×</button>
+        <div 
+          className="modal-overlay" 
+          style={{ 
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999 
+          }}
+        >
+          <div 
+            className="modal-content" 
+            style={{ 
+              maxWidth: '450px',
+              width: '90%',
+              background: 'white',
+              borderRadius: '12px',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+            }}
+          >
+            <div className="modal-header" style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e5e7eb' }}>
+              <h2 style={{ margin: 0, fontSize: '1.25rem' }}>Fin d'emploi</h2>
+              <button 
+                className="modal-close" 
+                onClick={() => setShowEndEmploymentModal(false)}
+                style={{
+                  position: 'absolute',
+                  right: '1rem',
+                  top: '1rem',
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  color: '#64748b'
+                }}
+              >
+                ×
+              </button>
             </div>
             
-            <div className="modal-body" style={{ padding: '1.5rem' }}>
+            <div style={{ padding: '1.5rem' }}>
               <p style={{ marginBottom: '1rem', fontSize: '1rem' }}>
                 Confirmer la fin d'emploi de <strong>{endEmploymentUser.prenom} {endEmploymentUser.nom}</strong> ?
               </p>
@@ -3506,11 +3544,12 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
               </p>
             </div>
             
-            <div className="modal-footer" style={{ 
+            <div style={{ 
               display: 'flex', 
               justifyContent: 'flex-end',
               gap: '0.5rem',
-              padding: '1rem 1.5rem'
+              padding: '1rem 1.5rem',
+              borderTop: '1px solid #e5e7eb'
             }}>
               <Button 
                 variant="outline" 
