@@ -805,8 +805,8 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       mot_de_passe: ''
     });
     
+    setSelectedUser(null); // Mode création, pas édition
     setShowEditModal(true);
-    setEditingUser(null); // Mode création, pas édition
     
     toast({
       title: "Réactivation",
@@ -2851,7 +2851,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                   </div>
 
                   {/* Section Fin d'emploi */}
-                  {editingUser && !isFormerEmployee(editingUser) && (
+                  {selectedUser && !isFormerEmployee(selectedUser) && (
                     <div style={{ 
                       marginTop: '1.5rem', 
                       marginBottom: '1.5rem',
@@ -2912,7 +2912,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       {newUser.date_fin_embauche && (
                         <Button
                           variant="destructive"
-                          onClick={() => handleOpenEndEmployment(editingUser, newUser.date_fin_embauche, newUser.motif_fin_emploi)}
+                          onClick={() => handleOpenEndEmployment(selectedUser, newUser.date_fin_embauche, newUser.motif_fin_emploi)}
                           style={{ marginTop: '1rem' }}
                         >
                           🚫 Confirmer la fin d'emploi
@@ -2922,7 +2922,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                   )}
                   
                   {/* Info si ancien employé */}
-                  {editingUser && isFormerEmployee(editingUser) && (
+                  {selectedUser && isFormerEmployee(selectedUser) && (
                     <div style={{ 
                       marginTop: '1.5rem', 
                       marginBottom: '1.5rem',
@@ -2935,8 +2935,8 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         📋 Ancien employé
                       </h5>
                       <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>
-                        <strong>Fin d'emploi :</strong> {editingUser.date_fin_embauche}<br/>
-                        <strong>Motif :</strong> {MOTIFS_FIN_EMPLOI.find(m => m.value === editingUser.motif_fin_emploi)?.label || editingUser.motif_fin_emploi || 'Non spécifié'}
+                        <strong>Fin d'emploi :</strong> {selectedUser.date_fin_embauche}<br/>
+                        <strong>Motif :</strong> {MOTIFS_FIN_EMPLOI.find(m => m.value === selectedUser.motif_fin_emploi)?.label || selectedUser.motif_fin_emploi || 'Non spécifié'}
                       </p>
                     </div>
                   )}
