@@ -520,8 +520,8 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       equipe_garde: user.equipe_garde || null,
       numero_employe: user.numero_employe,
       date_embauche: user.date_embauche,
-      date_fin_embauche: user.date_fin_embauche || '',
-      motif_fin_emploi: user.motif_fin_emploi || '',
+      date_fin_embauche: user.date_fin_embauche && user.date_fin_embauche !== 'null' ? user.date_fin_embauche : '',
+      motif_fin_emploi: user.motif_fin_emploi && user.motif_fin_emploi !== 'null' ? user.motif_fin_emploi : '',
       taux_horaire: user.taux_horaire || 0,
       heures_max_semaine: user.heures_max_semaine || 40,
       formations: user.formations || [],
@@ -2969,6 +2969,8 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                             value={newUser.date_fin_embauche || ''}
                             onChange={(e) => setNewUser({...newUser, date_fin_embauche: e.target.value})}
                             data-testid="edit-user-end-date-input"
+                            autoComplete="off"
+                            placeholder="AAAA-MM-JJ"
                           />
                         </div>
                         <div className="form-field">
