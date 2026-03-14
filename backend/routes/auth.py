@@ -129,7 +129,6 @@ async def tenant_login(tenant_slug: str, login: LoginRequest):
     # Vérifier si l'employé est un ancien (date de fin d'embauche passée)
     date_fin_embauche = user.get("date_fin_embauche")
     if date_fin_embauche:
-        from datetime import datetime
         try:
             date_fin = datetime.strptime(date_fin_embauche, "%Y-%m-%d").date()
             today = datetime.now().date()

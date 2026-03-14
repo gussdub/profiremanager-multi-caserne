@@ -1,0 +1,71 @@
+{
+  "summary": "Tests de régression RBAC et refactoring Remplacements - 1 bug critique corrigé (erreur login), tous les modules fonctionnent correctement",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "/api/demo/auth/login",
+        "issue": "UnboundLocalError: cannot access local variable 'datetime' - CORRIGÉ (import datetime redondant dans bloc conditionnel)",
+        "priority": "FIXED"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_regression_rbac.py",
+    "/app/test_reports/pytest/pytest_regression_rbac.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "BUG CORRIGÉ: Dans /app/backend/routes/auth.py ligne 132, un 'from datetime import datetime' était présent dans un bloc conditionnel, causant un UnboundLocalError car datetime était déjà importé au niveau module (ligne 13). L'import redondant a été supprimé."
+  ],
+  "updated_files": [
+    "/app/backend/routes/auth.py"
+  ],
+  "success_rate": {
+    "backend": "100% (17/17 tests après correction)",
+    "frontend": "100% - Tous les modules testés fonctionnent"
+  },
+  "test_credentials": {
+    "email": "gussdub@gmail.com",
+    "password": "230685Juin+",
+    "role": "admin",
+    "tenant": "demo"
+  },
+  "seed_data_creation": "N/A - Utilisation des données existantes",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Le système RBAC est intégré et fonctionnel. L'utilisateur admin a accès complet à tous les modules. Les modules testés avec succès: Personnel (avec cycle de vie employé Actif/Ancien), Remplacements (KPIs, filtres, exports), Planning (calendrier mensuel, équipes de garde, assignations). Le bug d'authentification a été corrigé.",
+  "modules_tested": {
+    "login": {
+      "status": "PASS",
+      "notes": "Login fonctionne après correction du bug datetime"
+    },
+    "sidebar_rbac": {
+      "status": "PASS",
+      "notes": "Tous les menus affichés pour admin: Tableau de bord, Personnel, Gestion des Actifs, Interventions, Paie, Horaire, Remplacements, Formations, Prévention, Mes disponibilités, Mes EPI, Mon profil"
+    },
+    "personnel": {
+      "status": "PASS",
+      "notes": "Liste du personnel visible, KPIs (Total: 2, Actif: 2, Temps Plein: 0, Temps Partiel: 2), bouton 'Anciens employés' visible, badges statut 'Actif' fonctionnels"
+    },
+    "remplacements": {
+      "status": "PASS",
+      "notes": "KPIs visibles (6 demandes, 5 acceptées, 67% succès), tabs Remplacement/Congé, filtres, exports PDF/Excel, cards demandes avec priorité 'Urgent'"
+    },
+    "planning": {
+      "status": "PASS",
+      "notes": "Calendrier mensuel affiché (mars 2026), équipes de garde visibles, boutons Attribution Auto/Manuelle, assignations 'Garde de jour' affichées"
+    }
+  },
+  "rca_of_the_issue": {
+    "bug_description": "Erreur 500 Internal Server Error lors de la connexion",
+    "root_cause": "Dans /app/backend/routes/auth.py, un import 'from datetime import datetime' était présent à l'intérieur d'un bloc conditionnel (ligne 132). Python interprète cela comme une déclaration de variable locale, ce qui cause un UnboundLocalError quand datetime est utilisé dans la fonction mais l'import conditionnel n'est pas exécuté.",
+    "fix_applied": "Suppression de l'import redondant 'from datetime import datetime' du bloc conditionnel, car datetime est déjà importé au niveau module (ligne 13)",
+    "mitigation_steps": "Éviter les imports conditionnels qui shadent des imports globaux. Utiliser des imports uniquement au niveau module."
+  }
+}
