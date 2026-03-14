@@ -41,6 +41,32 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
   - `POST /{tenant}/personnel/{user_id}/reactivate` - Réactiver un ancien employé
 
 
+
+### NEW - Système RBAC Personnalisé (13 Mars 2026)
+- **Fonctionnalité:** Contrôle d'accès basé sur les rôles (Role-Based Access Control)
+- **Types d'accès personnalisés:**
+  - Création/modification de rôles avec permissions granulaires
+  - Héritage des permissions de base (Admin, Superviseur, Employé)
+  - Permissions par module, onglet et action (voir, créer, modifier, supprimer)
+- **Intégration frontend:**
+  - Hook `usePermissions` pour vérification des permissions
+  - Sidebar filtré par permissions (plus par rôle hardcodé)
+  - Boutons conditionnés dans Personnel, Planning, Remplacements
+- **API:**
+  - `GET/POST/PUT/DELETE /{tenant}/access-types` - Gestion des types d'accès
+  - `GET /{tenant}/users/{user_id}/permissions` - Permissions effectives d'un utilisateur
+
+### NEW - Refactoring Backend Remplacements (13 Mars 2026)
+- **Structure modulaire créée:** `/app/backend/routes/remplacements/`
+  - `models.py` (96 lignes) - Modèles Pydantic
+  - `utils.py` (129 lignes) - Fonctions utilitaires
+  - `notifications.py` (252 lignes) - Envoi emails/SMS
+  - `search.py` - Placeholder pour migration future
+- **Fichier principal:** `remplacements_routes.py` (~3022 lignes)
+- **Avantages:** Code plus maintenable, tests unitaires facilités
+
+
+
 ## Recent Fixes (February 2026)
 
 ### NEW - Heures Silencieuses pour Remplacements (27 Feb 2026)
