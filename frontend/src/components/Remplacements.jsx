@@ -20,6 +20,7 @@ import KPICards from './remplacements/KPICards';
 import FilterBar from './remplacements/FilterBar';
 import TabsBar from './remplacements/TabsBar';
 import PropositionsRecues from './remplacements/PropositionsRecues';
+import DemandeCard from './remplacements/DemandeCard';
 
 // Fonction pour parser une date en évitant les problèmes de timezone
 const parseDateLocal = (dateStr) => {

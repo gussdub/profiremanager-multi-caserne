@@ -10,7 +10,7 @@ import sys
 from datetime import datetime, timedelta
 
 # Configuration
-BACKEND_URL = "https://personnel-mgmt-11.preview.emergentagent.com/api"
+BACKEND_URL = "https://employee-lifecycle-6.preview.emergentagent.com/api"
 
 # Credentials pour les tests
 DEMO_ADMIN = {

@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://personnel-mgmt-11.preview.emergentagent.com
+- **URL** : https://employee-lifecycle-6.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://personnel-mgmt-11.preview.emergentagent.com"
+  "apiUrl": "https://employee-lifecycle-6.preview.emergentagent.com"
 }
 ```
 

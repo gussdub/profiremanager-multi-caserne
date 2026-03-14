@@ -21,6 +21,7 @@ export { default as KPICards } from './KPICards';
 export { default as FilterBar } from './FilterBar';
 export { default as TabsBar } from './TabsBar';
 export { default as PropositionsRecues } from './PropositionsRecues';
+export { default as DemandeCard } from './DemandeCard';
 
 // Réexport du composant principal
 export { default } from '../Remplacements';
