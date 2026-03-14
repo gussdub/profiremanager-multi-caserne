@@ -40,3 +40,6 @@ from .notifications import (
     envoyer_email_remplacement,
     envoyer_sms_remplacement
 )
+
+# Import de la fonction de recherche
+from .search import trouver_remplacants_potentiels
