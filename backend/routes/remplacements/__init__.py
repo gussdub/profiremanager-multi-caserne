@@ -46,3 +46,10 @@ from .search import trouver_remplacants_potentiels
 
 # Import des fonctions d'export
 from .exports import export_remplacements_to_pdf, export_remplacements_to_excel
+
+# Import des fonctions de workflow
+from .workflow import (
+    accepter_remplacement_workflow,
+    refuser_remplacement_workflow,
+    verifier_et_traiter_timeouts_workflow
+)
