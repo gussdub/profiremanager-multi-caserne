@@ -4,18 +4,23 @@
  * 
  * Structure modulaire pour la gestion des remplacements.
  * 
- * Organisation future:
- * - index.jsx: Composant principal avec orchestration
- * - DemandesList.jsx: Liste des demandes de remplacement
- * - CongesTab.jsx: Onglet des demandes de congés
- * - PropositionsTab.jsx: Propositions reçues
- * - CreateDemandeModal.jsx: Modal de création
- * - SuiviModal.jsx: Modal de suivi détaillé
- * - KPICards.jsx: Cartes de statistiques
+ * Composants disponibles:
+ * - KPICards: Cartes de statistiques (total, acceptées, refusées, etc.)
+ * - FilterBar: Barre de filtres (statut, période, export)
+ * - TabsBar: Onglets (Propositions, Remplacements, Congés)
+ * - PropositionsRecues: Liste des propositions reçues
  * 
- * Pour l'instant, le composant principal est dans Remplacements.jsx
- * Ce module sera progressivement migré vers cette structure.
+ * Composants à migrer:
+ * - DemandesList: Liste des demandes de remplacement
+ * - CongesTab: Onglet des congés
+ * - CreateDemandeModal: Modal de création
  */
+
+// Export des sous-composants
+export { default as KPICards } from './KPICards';
+export { default as FilterBar } from './FilterBar';
+export { default as TabsBar } from './TabsBar';
+export { default as PropositionsRecues } from './PropositionsRecues';
 
 // Réexport du composant principal
 export { default } from '../Remplacements';

@@ -15,6 +15,12 @@ import { useWebSocketUpdate } from '../hooks/useWebSocketUpdate';
 import SuiviRemplacementModal from './SuiviRemplacementModal';
 import usePermissions from '../hooks/usePermissions';
 
+// Import des sous-composants refactorisés
+import KPICards from './remplacements/KPICards';
+import FilterBar from './remplacements/FilterBar';
+import TabsBar from './remplacements/TabsBar';
+import PropositionsRecues from './remplacements/PropositionsRecues';
+
 // Fonction pour parser une date en évitant les problèmes de timezone
 const parseDateLocal = (dateStr) => {
   if (!dateStr) return new Date();
@@ -628,41 +634,16 @@ const Remplacements = () => {
       </div>
 
       {/* KPIs - Visible uniquement pour admin/superviseur */}
-      {isAdminOrSuperviseur && (
-        <div className="kpi-grid" style={{marginBottom: '2rem'}}>
-          <div className="kpi-card" style={{background: '#FCA5A5'}}>
-            <h3>{totalDemandes}</h3>
-            <p>Total Demandes</p>
-          </div>
-          <div className="kpi-card kpi-card-triple" style={{background: '#FEF3C7'}}>
-            <div className="kpi-triple-container">
-              <div className="kpi-triple-item">
-                <h3>{enAttente}</h3>
-                <p>En Attente</p>
-              </div>
-              <div className="kpi-triple-item">
-                <h3>{acceptees}</h3>
-                <p>Acceptées</p>
-              </div>
-              <div className="kpi-triple-item">
-                <h3>{refusees}</h3>
-                <p>Refusées</p>
-              </div>
-            </div>
-          </div>
-          <div className="kpi-card" style={{background: '#D1FAE5'}}>
-            <h3>{remplacementsTrouves}</h3>
-            <p>Remplacements Trouvés</p>
-          </div>
-          <div className="kpi-card" style={{background: '#DBEAFE'}}>
-            <h3>{tauxSucces}%</h3>
-            <p>Taux de Succès</p>
-          </div>
-          <div className="kpi-card" style={{background: '#E9D5FF'}}>
-            <h3>{congesDuMois}</h3>
-            <p>Congés du Mois</p>
-          </div>
-        </div>
+      {canViewAllDemandes && (
+        <KPICards
+          totalDemandes={totalDemandes}
+          enAttente={enAttente}
+          acceptees={acceptees}
+          refusees={refusees}
+          remplacementsTrouves={remplacementsTrouves}
+          tauxSucces={tauxSucces}
+          congesDuMois={congesDuMois}
+        />
       )}
 
       {/* Barre de Contrôles */}
@@ -843,123 +824,26 @@ const Remplacements = () => {
       </div>
 
       {/* Onglets Remplacements / Congés / Propositions - Style unifié */}
-      <div className="flex gap-2 mb-6 border-b border-gray-200 pb-2 flex-wrap">
-        {/* Onglet Propositions reçues - Affiché en premier pour attirer l'attention */}
-        {propositionsRecues.length > 0 && (
-          <button
-            className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
-              activeTab === 'propositions' ? 'bg-green-600 text-white' : 'bg-green-100 text-green-700 hover:bg-green-200'
-            }`}
-            style={{ animation: 'pulse 2s infinite' }}
-            onClick={() => setActiveTab('propositions')}
-            data-testid="tab-propositions"
-          >
-            🚨 Propositions reçues ({propositionsRecues.length})
-          </button>
-        )}
-        <button
-          className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
-            activeTab === 'remplacements' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-          onClick={() => setActiveTab('remplacements')}
-          data-testid="tab-remplacements"
-        >
-          🔄 Remplacements ({filteredDemandes.length})
-        </button>
-        <button
-          className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
-            activeTab === 'conges' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-          onClick={() => setActiveTab('conges')}
-          data-testid="tab-conges"
-        >
-          🏖️ Congés ({filteredConges.length})
-        </button>
-      </div>
+      <TabsBar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        propositionsCount={propositionsRecues.length}
+        remplacementsCount={filteredDemandes.length}
+        congesCount={filteredConges.length}
+      />
 
       {/* Contenu des onglets */}
       <div className="tab-content">
         {/* Onglet Propositions reçues */}
         {activeTab === 'propositions' && (
-          <div className="propositions-recues">
-            <div style={{
-              background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)',
-              borderRadius: '12px',
-              padding: '1.5rem',
-              marginBottom: '1.5rem'
-            }}>
-              <h3 style={{ color: '#166534', margin: 0, marginBottom: '0.5rem' }}>
-                🚨 Demandes de remplacement pour vous
-              </h3>
-              <p style={{ color: '#15803d', margin: 0, fontSize: '0.9rem' }}>
-                Un collègue a besoin d'être remplacé et vous avez été identifié comme disponible. 
-                Répondez ci-dessous pour accepter ou refuser.
-              </p>
-            </div>
-            
-            <div className="propositions-list" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {propositionsRecues.map(proposition => (
-                <Card key={proposition.id} style={{ 
-                  border: '2px solid #22c55e',
-                  boxShadow: '0 4px 12px rgba(34, 197, 94, 0.2)'
-                }}>
-                  <CardContent style={{ padding: '1.5rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
-                      <div>
-                        <h4 style={{ margin: 0, marginBottom: '0.5rem', color: '#1e3a5f' }}>
-                          {getTypeGardeName(proposition.type_garde_id)}
-                        </h4>
-                        <p style={{ margin: 0, marginBottom: '0.5rem', fontSize: '1.1rem', fontWeight: 'bold' }}>
-                          📅 {parseDateLocal(proposition.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                        </p>
-                        <p style={{ margin: 0, marginBottom: '0.5rem', color: '#666' }}>
-                          👤 Demandeur : <strong>{getUserName(proposition.demandeur_id)}</strong>
-                        </p>
-                        {proposition.raison && (
-                          <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>
-                            💬 Raison : {proposition.raison}
-                          </p>
-                        )}
-                      </div>
-                      
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: '200px' }}>
-                        <Button 
-                          style={{ 
-                            backgroundColor: '#22c55e', 
-                            color: 'white',
-                            padding: '1rem 2rem',
-                            fontSize: '1rem'
-                          }}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleRepondreProposition(proposition.id, 'accepter');
-                          }}
-                        >
-                          ✅ J'accepte ce remplacement
-                        </Button>
-                        <Button 
-                          variant="outline"
-                          style={{ 
-                            borderColor: '#ef4444', 
-                            color: '#ef4444',
-                            padding: '0.75rem 2rem'
-                          }}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleRepondreProposition(proposition.id, 'refuser');
-                          }}
-                        >
-                          ❌ Je refuse
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
+          <PropositionsRecues
+            propositions={propositionsRecues}
+            getTypeGardeName={getTypeGardeName}
+            getUserName={getUserName}
+            parseDateLocal={parseDateLocal}
+            onAccept={(id) => handleRepondreProposition(id, 'accepter')}
+            onRefuse={(id) => handleRepondreProposition(id, 'refuser')}
+          />
         )}
 
         {activeTab === 'remplacements' && (
