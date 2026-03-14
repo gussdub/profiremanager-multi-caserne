@@ -43,3 +43,6 @@ from .notifications import (
 
 # Import de la fonction de recherche
 from .search import trouver_remplacants_potentiels
+
+# Import des fonctions d'export
+from .exports import export_remplacements_to_pdf, export_remplacements_to_excel
