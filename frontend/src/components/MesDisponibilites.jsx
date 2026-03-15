@@ -13,6 +13,7 @@ import { apiGet, apiPost, apiPut, apiDelete, apiCall } from '../utils/api';
 import { fr } from "date-fns/locale";
 import { ReinitModal, ExportModal, DayDetailModal, QuickAddModal, BatchConflictModal } from './disponibilites';
 import { useWebSocketUpdate } from '../hooks/useWebSocketUpdate';
+import usePermissions from '../hooks/usePermissions';
 
 // Fonction pour parser une date en évitant les problèmes de timezone
 const parseDateLocal = (dateStr) => {
@@ -32,6 +33,15 @@ const formatDateLocal = (date) => {
 const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDisponibilites }) => {
   const { user, tenant } = useAuth();
   const { tenantSlug } = useTenant();
+  
+  // Hook de permissions RBAC
+  const { hasModuleAction, hasTabAction } = usePermissions(tenantSlug, user);
+  
+  // Permissions RBAC pour les disponibilités
+  const canModifyOthersDisponibilites = hasModuleAction('disponibilites', 'modifier');
+  const canViewTeamDisponibilites = hasTabAction('disponibilites', 'equipe', 'voir');
+  const canImportDisponibilites = hasTabAction('disponibilites', 'import', 'creer');
+  const canExportDisponibilites = hasTabAction('disponibilites', 'rapport', 'exporter');
   
   // Déterminer quel utilisateur on gère (soi-même ou un autre)
   const targetUser = managingUser || user;
@@ -922,10 +932,10 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
       return;
     }
 
-    if (user.role !== 'admin') {
+    if (!canModifyOthersDisponibilites) {
       toast({
         title: 'Accès refusé',
-        description: 'Accès réservé aux administrateurs',
+        description: 'Vous n\'avez pas la permission de formater le planning',
         variant: 'destructive'
       });
       return;
@@ -1782,8 +1792,8 @@ const MesDisponibilites = ({ managingUser, setCurrentPage, setManagingUserDispon
             </Button>
           </div>
 
-          {/* Exports - Uniquement pour Admin/Superviseur */}
-          {(user.role === 'admin' || user.role === 'superviseur') && (
+          {/* Exports - Uniquement pour utilisateurs avec permission d'export */}
+          {canExportDisponibilites && (
             <div style={{display: 'flex', gap: '1rem'}}>
               <Button variant="outline" onClick={() => { setExportType('pdf'); setShowExportModal(true); }}>
                 📄 Export PDF

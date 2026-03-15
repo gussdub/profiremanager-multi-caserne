@@ -42,6 +42,23 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 
 
 
+### NEW - Audit RBAC Frontend - Phase 1 (15 Mars 2026)
+**Statut:** EN COURS (~40% complété, de 38 à 23 occurrences)
+
+**Fichiers frontend migrés vers usePermissions:**
+| Composant | Status | Occurrences migrées |
+|-----------|--------|---------------------|
+| `Planning.jsx` | ✅ 100% migré | 6 |
+| `Personnel.jsx` | ✅ 100% migré | 2 |
+| `MesDisponibilites.jsx` | ✅ 100% migré | 2 |
+| `CongesList.jsx` | ✅ 100% migré | 5 |
+| `GestionInterventions.jsx` | Partiel (sous-composants) | 0/7 |
+
+**Fichiers restants à migrer (23 occurrences):**
+- `GestionInterventions.jsx` (7) - sous-composants internes
+- `ParametresInventairesVehicules.jsx` (2)
+- Autres fichiers (1 chacun): Sidebar, Parametres, MapComponents, InspectionComponents, Dashboard, ConfigurationEmails*, CalendrierInspections
+
 ### NEW - Migration RBAC Backend - Phase 3 COMPLÉTÉE (15 Mars 2026)
 **Statut:** ✅ TERMINÉ (87% des vérifications migrées - de 175 à 22 occurrences système)
 

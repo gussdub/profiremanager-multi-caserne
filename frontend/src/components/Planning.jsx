@@ -477,10 +477,10 @@ const Planning = () => {
   };
 
   const handleNettoyerAssignationsInvalides = async () => {
-    if (user.role !== 'admin') {
+    if (!canDeletePlanning) {
       toast({
         title: "Accès refusé",
-        description: "Cette action est réservée aux administrateurs",
+        description: "Vous n'avez pas la permission de supprimer des assignations",
         variant: "destructive"
       });
       return;
@@ -573,8 +573,8 @@ const Planning = () => {
       return;
     }
 
-    if (user.role !== 'admin') {
-      toast({ title: 'Accès refusé', description: 'Accès réservé aux administrateurs', variant: 'destructive' });
+    if (!canDeletePlanning) {
+      toast({ title: 'Accès refusé', description: 'Vous n\'avez pas la permission de formater le planning', variant: 'destructive' });
       return;
     }
 
@@ -2092,8 +2092,8 @@ const Planning = () => {
                   // Vérifier si un officier est assigné à cette garde
                   const hasOfficerAssigned = assignedUsers.some(u => isUserOfficer(u));
                   
-                  // Vérifier si c'est un quart de l'utilisateur actuel
-                  const isMyShift = ['employe', 'pompier'].includes(user.role) && assignedUsers.some(u => u.id === user.id);
+                  // Vérifier si c'est un quart de l'utilisateur actuel (pour surbrillance visuelle)
+                  const isMyShift = !canEditPlanning && assignedUsers.some(u => u.id === user.id);
                   
                   // Surbrillance bleue UNIQUEMENT si une recherche est active ET des utilisateurs correspondent
                   const isSearchedUserAssigned = (selectedUserId || searchFilter.trim()) && filteredUsers.length > 0;
@@ -2323,7 +2323,7 @@ const Planning = () => {
                             )
                           : [];
                       
-                      const isMyShift = ['employe', 'pompier'].includes(user.role) && assignedUsers.some(u => u.id === user.id);
+                      const isMyShift = !canEditPlanning && assignedUsers.some(u => u.id === user.id);
                       // Surbrillance bleue UNIQUEMENT si une recherche est active ET des utilisateurs correspondent
                       const isSearchedUserAssigned = (selectedUserId || searchFilter.trim()) && filteredUsers.length > 0;
                       
@@ -2402,7 +2402,7 @@ const Planning = () => {
           }}></span>
           <span style={{fontSize: '0.85rem', fontWeight: '500', color: '#1e293b', whiteSpace: 'nowrap'}}>❌ Vacant</span>
         </div>
-        {['employe', 'pompier'].includes(user.role) && (
+        {!canEditPlanning && (
           <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
             <span style={{
               width: '20px', 
@@ -2644,7 +2644,7 @@ const Planning = () => {
                                 ? '🔄 Remplacement' 
                                 : '👤 Manuel'}
                           </span>
-                          {user.role === 'admin' && selectedGardeDetails.assignations[index]?.assignation_type === 'auto' && (
+                          {canEditPlanning && selectedGardeDetails.assignations[index]?.assignation_type === 'auto' && (
                             <Button 
                               variant="outline" 
                               size="sm" 

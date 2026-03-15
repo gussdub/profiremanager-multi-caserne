@@ -1833,8 +1833,8 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                     </div>
                   )}
 
-                  {/* Option préventionniste (admin seulement) */}
-                  {user.role === 'admin' && (
+                  {/* Option préventionniste (utilisateurs avec permission modifier) */}
+                  {canEditPersonnel && (
                     <div className="form-field">
                       <div className="fonction-superieur-option">
                         <label className="fonction-checkbox">
@@ -2910,8 +2910,8 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                     </div>
                   )}
 
-                  {/* Option préventionniste (admin seulement) */}
-                  {user.role === 'admin' && (
+                  {/* Option préventionniste (utilisateurs avec permission modifier) */}
+                  {canEditPersonnel && (
                     <div className="form-field">
                       <div className="fonction-superieur-option">
                         <label className="fonction-checkbox">

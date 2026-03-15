@@ -37,14 +37,12 @@ const CongesList = ({
   return (
     <div className="conges-content">
       {/* En-tête de gestion toujours visible pour admin/superviseur */}
-      {!['employe', 'pompier'].includes(user.role) && (
+      {isAdminOrSuperviseur && (
         <div className="management-header">
           <div className="management-info">
             <h3>👑 Gestion des demandes de congé</h3>
             <p>
-              {user.role === 'admin' ? 
-                'Vous pouvez approuver toutes les demandes de congé (employés et superviseurs)' : 
-                'Vous pouvez approuver les demandes des employés uniquement'}
+              Vous pouvez approuver les demandes de congé selon vos permissions
             </p>
           </div>
           <div className="pending-indicator">
@@ -149,7 +147,7 @@ const CongesList = ({
                 </div>
               </div>
 
-              {!['employe', 'pompier'].includes(user.role) && conge.statut === 'en_attente' && (
+              {isAdminOrSuperviseur && conge.statut === 'en_attente' && (
                 <div className="conge-actions">
                   <Button 
                     variant="outline" 
@@ -225,11 +223,11 @@ const CongesList = ({
             <p>
               {filterStatut !== 'toutes' || filterPeriode !== 'toutes'
                 ? 'Aucun résultat pour les filtres sélectionnés. Essayez de modifier vos critères.'
-                : (!['employe', 'pompier'].includes(user.role) 
+                : (isAdminOrSuperviseur 
                   ? 'Les demandes de congé des employés apparaîtront ici pour approbation.' 
                   : 'Vos demandes de congé apparaîtront ici.')}
             </p>
-            {!['employe', 'pompier'].includes(user.role) && (
+            {isAdminOrSuperviseur && (
               <div className="management-tips">
                 <h4>💡 Conseils de gestion :</h4>
                 <ul>

@@ -119,27 +119,26 @@ const GestionInterventions = ({ user, tenantSlug }) => {
   }, [API, user]);
 
   // Utiliser le hook de permissions
-  const { canSignInterventions, canCreateInterventions, loading: permissionsLoading } = usePermissions(tenantSlug, user);
+  const { canSignInterventions, canCreateInterventions, hasModuleAction, hasTabAction, loading: permissionsLoading } = usePermissions(tenantSlug, user);
 
   if (loading || permissionsLoading) {
     return <div className="p-6 text-center">Chargement...</div>;
   }
 
-  // Déterminer les permissions
-  const isAdmin = user?.role === 'admin';
-  const isSuperviseur = user?.role === 'superviseur';
-  const isAdminOrSupervisor = isAdmin || isSuperviseur;
-  const isEmployee = ['employe', 'pompier'].includes(user?.role);
+  // Déterminer les permissions via RBAC
+  const canModifyInterventions = hasModuleAction('interventions', 'modifier');
+  const canDeleteInterventions = hasModuleAction('interventions', 'supprimer');
+  const canExportInterventions = hasModuleAction('interventions', 'exporter');
   
   // Vérifier si la facturation des fausses alarmes est activée
   const faussesAlarmesActif = settings?.fausse_alarme_config?.actif || false;
   
   // Permission de signer (valider) les rapports
-  const canSign = canSignInterventions() || isAdminOrSupervisor;
+  const canSign = canSignInterventions() || hasTabAction('interventions', 'rapports', 'signer');
   
-  // Mode lecture seule pour les employés qui n'ont pas la permission créer
-  const canCreate = canCreateInterventions() || isAdminOrSupervisor;
-  const isReadOnlyMode = isEmployee && !canCreate;
+  // Mode lecture seule si pas de permission créer
+  const canCreate = canCreateInterventions() || hasTabAction('interventions', 'rapports', 'creer');
+  const isReadOnlyMode = !canCreate;
 
   const tabs = [
     { id: 'rapports', label: 'Cartes d\'appel', icon: '📋' },
