@@ -221,23 +221,6 @@ const TabParametres = ({ context }) => {
         </div>
       </div>
 
-      {/* Note Prime fonction supérieure */}
-      <div style={{ 
-        background: '#f0f9ff', 
-        borderRadius: '12px', 
-        padding: '16px', 
-        border: '1px solid #bae6fd',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px'
-      }}>
-        <span style={{ fontSize: '1.25rem' }}>💡</span>
-        <div style={{ fontSize: '0.875rem', color: '#0369a1' }}>
-          <strong>Prime fonction supérieure :</strong> Ce paramètre est maintenant configuré dans 
-          <strong> Paramètres → Grades → Échelle salariale</strong>.
-        </div>
-      </div>
-
       {/* Heures supplémentaires */}
       <div style={{ background: 'white', borderRadius: '12px', padding: '24px', border: '1px solid #e5e7eb' }}>
         <h3 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', color: '#1e293b' }}>
