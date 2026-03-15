@@ -565,6 +565,21 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     // Définir l'utilisateur sélectionné directement avec ses tailles EPI
     setSelectedUser(user);
     
+    // Récupérer le taux horaire : soit celui de l'employé, soit calculé depuis l'échelle
+    let tauxHoraire = user.taux_horaire || 0;
+    
+    // Si pas de taux défini, essayer de le calculer depuis l'échelle salariale
+    if (!tauxHoraire || tauxHoraire === 0) {
+      try {
+        const salaireData = await apiGet(tenantSlug, `/users/${user.id}/salaire`);
+        if (salaireData && salaireData.taux_horaire_final > 0) {
+          tauxHoraire = salaireData.taux_horaire_final;
+        }
+      } catch (e) {
+        console.log('Échelle salariale non configurée, taux horaire à 0');
+      }
+    }
+    
     setNewUser({
       nom: user.nom,
       prenom: user.prenom,
@@ -581,7 +596,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       date_embauche: user.date_embauche,
       date_fin_embauche: user.date_fin_embauche && user.date_fin_embauche !== 'null' ? user.date_fin_embauche : '',
       motif_fin_emploi: user.motif_fin_emploi && user.motif_fin_emploi !== 'null' ? user.motif_fin_emploi : '',
-      taux_horaire: user.taux_horaire || 0,
+      taux_horaire: tauxHoraire,
       heures_max_semaine: user.heures_max_semaine || 40,
       formations: user.formations || [],
       accepte_gardes_externes: user.accepte_gardes_externes !== false,
@@ -3103,41 +3118,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       />
                     </div>
                     <div className="form-field">
-                      <Label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        Taux horaire ($/h)
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            if (newUser.id) {
-                              try {
-                                const salaire = await apiGet(tenantSlug, `/users/${newUser.id}/salaire`);
-                                if (salaire.taux_horaire_final > 0) {
-                                  setNewUser({...newUser, taux_horaire: salaire.taux_horaire_final});
-                                  toast({
-                                    title: "✅ Taux calculé",
-                                    description: `Taux de ${salaire.taux_horaire_final.toFixed(2)} $/h appliqué depuis l'échelle salariale`,
-                                    variant: "success"
-                                  });
-                                }
-                              } catch (e) {
-                                console.error('Erreur calcul taux:', e);
-                              }
-                            }
-                          }}
-                          style={{
-                            background: '#f0f9ff',
-                            border: '1px solid #bae6fd',
-                            borderRadius: '4px',
-                            padding: '2px 8px',
-                            fontSize: '0.75rem',
-                            cursor: 'pointer',
-                            color: '#0369a1'
-                          }}
-                          title="Calculer depuis l'échelle salariale"
-                        >
-                          🔄 Calculer
-                        </button>
-                      </Label>
+                      <Label>Taux horaire ($/h)</Label>
                       <Input
                         type="number"
                         step="0.01"
@@ -3147,7 +3128,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         data-testid="edit-user-taux-horaire-input"
                       />
                       <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                        Ce taux prime sur le calcul automatique (paie, entraide, etc.)
+                        Calculé automatiquement depuis l'échelle salariale, modifiable au besoin
                       </span>
                     </div>
                   </div>
