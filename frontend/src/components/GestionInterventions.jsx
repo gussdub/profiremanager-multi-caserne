@@ -130,6 +130,11 @@ const GestionInterventions = ({ user, tenantSlug }) => {
   const canDeleteInterventions = hasModuleAction('interventions', 'supprimer');
   const canExportInterventions = hasModuleAction('interventions', 'exporter');
   
+  // Permissions pour les onglets spécifiques
+  const canViewFaussesAlarmes = hasTabAction('interventions', 'fausses-alarmes', 'voir');
+  const canViewConformiteDSI = hasTabAction('interventions', 'conformite-dsi', 'voir');
+  const canViewParametres = hasTabAction('interventions', 'parametres', 'voir');
+  
   // Vérifier si la facturation des fausses alarmes est activée
   const faussesAlarmesActif = settings?.fausse_alarme_config?.actif || false;
   
@@ -142,19 +147,15 @@ const GestionInterventions = ({ user, tenantSlug }) => {
 
   const tabs = [
     { id: 'rapports', label: 'Cartes d\'appel', icon: '📋' },
-    // Onglet fausses alarmes visible uniquement si activé ET pour admins/superviseurs
-    ...(faussesAlarmesActif && isAdminOrSupervisor ? [{ id: 'fausses-alarmes', label: 'Fausses alarmes', icon: '🚨' }] : []),
-    { id: 'conformite-dsi', label: 'Conformité DSI', icon: '📊', validatorsOnly: true },
+    // Onglet fausses alarmes visible uniquement si activé ET permission accordée
+    ...(faussesAlarmesActif && canViewFaussesAlarmes ? [{ id: 'fausses-alarmes', label: 'Fausses alarmes', icon: '🚨' }] : []),
+    ...(canViewConformiteDSI ? [{ id: 'conformite-dsi', label: 'Conformité DSI', icon: '📊' }] : []),
     { id: 'historique', label: 'Historique', icon: '📚' },
-    { id: 'parametres', label: 'Paramètres', icon: '⚙️', adminOnly: true },
+    ...(canViewParametres ? [{ id: 'parametres', label: 'Paramètres', icon: '⚙️' }] : []),
   ];
 
-  // Filtrer les onglets selon le rôle
-  const visibleTabs = tabs.filter(tab => {
-    if (tab.adminOnly && !isAdmin) return false;
-    if (tab.validatorsOnly && !isAdmin && !isValidateur) return false;
-    return true;
-  });
+  // Pas besoin de filtrer, les onglets sont déjà conditionnels
+  const visibleTabs = tabs;
 
   return (
     <div className="p-6" data-testid="gestion-interventions">
@@ -189,9 +190,9 @@ const GestionInterventions = ({ user, tenantSlug }) => {
 
       {/* Contenu des onglets */}
       {activeTab === 'rapports' && (
-        <TabRapports user={user} tenantSlug={tenantSlug} toast={toast} readOnly={isReadOnlyMode} isSuperAdmin={isSuperAdmin} canSign={canSign} />
+        <TabRapports user={user} tenantSlug={tenantSlug} toast={toast} readOnly={isReadOnlyMode} isSuperAdmin={isSuperAdmin} canSign={canSign} canModify={canModifyInterventions} canValidate={canViewConformiteDSI} />
       )}
-      {activeTab === 'fausses-alarmes' && isAdminOrSupervisor && faussesAlarmesActif && (
+      {activeTab === 'fausses-alarmes' && canViewFaussesAlarmes && faussesAlarmesActif && (
         <FaussesAlarmesView 
           tenantSlug={tenantSlug} 
           getToken={() => localStorage.getItem(`${tenantSlug}_token`) || localStorage.getItem('token')} 
@@ -199,12 +200,12 @@ const GestionInterventions = ({ user, tenantSlug }) => {
         />
       )}
       {activeTab === 'historique' && (
-        <TabHistorique user={user} tenantSlug={tenantSlug} toast={toast} confirm={confirm} readOnly={isReadOnlyMode} settings={settings} isSuperAdmin={isSuperAdmin} />
+        <TabHistorique user={user} tenantSlug={tenantSlug} toast={toast} confirm={confirm} readOnly={isReadOnlyMode} settings={settings} isSuperAdmin={isSuperAdmin} canModify={canModifyInterventions} canValidate={canViewConformiteDSI} />
       )}
-      {activeTab === 'conformite-dsi' && (isAdmin || isValidateur) && (
+      {activeTab === 'conformite-dsi' && canViewConformiteDSI && (
         <TabConformiteDSI user={user} tenantSlug={tenantSlug} toast={toast} />
       )}
-      {activeTab === 'parametres' && user?.role === 'admin' && (
+      {activeTab === 'parametres' && canViewParametres && (
         <TabParametres user={user} tenantSlug={tenantSlug} toast={toast} />
       )}
     </div>
@@ -214,7 +215,7 @@ const GestionInterventions = ({ user, tenantSlug }) => {
 
 // ==================== ONGLET RAPPORTS ====================
 
-const TabRapports = ({ user, tenantSlug, toast, readOnly = false, isSuperAdmin = false, canSign = false }) => {
+const TabRapports = ({ user, tenantSlug, toast, readOnly = false, isSuperAdmin = false, canSign = false, canModify = false, canValidate = false }) => {
   const [dashboard, setDashboard] = useState({ counts: {}, new: [], drafts: [], review: [] });
   const [loading, setLoading] = useState(true);
   const [selectedIntervention, setSelectedIntervention] = useState(null);
@@ -513,6 +514,8 @@ const TabRapports = ({ user, tenantSlug, toast, readOnly = false, isSuperAdmin =
           }}
           toast={toast}
           readOnly={readOnly}
+          canModify={canModify}
+          canValidate={canValidate}
         />
       )}
     </div>
@@ -587,7 +590,7 @@ const InterventionCard = ({ intervention, formatDate, getStatusBadge, onSelect, 
 
 // ==================== MODAL DÉTAIL INTERVENTION (DSI COMPLET) ====================
 
-const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUpdate, toast, readOnly = false }) => {
+const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUpdate, toast, readOnly = false, canModify = false, canValidate = false }) => {
   const [activeSection, setActiveSection] = useState('identification');
   const [formData, setFormData] = useState({ ...intervention });
   const [originalData, setOriginalData] = useState(null); // Pour détecter les changements
@@ -632,12 +635,9 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
   useEffect(() => {
     // Ne pas auto-save si pas de changements, en lecture seule, ou si intervention verrouillée
     const isLocked = formData.status === 'signed';
-    const isAdmin = user.role === 'admin';
-    const isSuperviseur = user.role === 'superviseur';
     const isReporter = (formData.assigned_reporters || []).includes(user.id);
-    const isEmployee = user.role === 'pompier' || user.role === 'employe';
-    const employeeLimitedAccess = isEmployee && !isReporter;
-    const canEdit = (isAdmin || isSuperviseur || isReporter) && !employeeLimitedAccess;
+    // Utiliser les permissions RBAC - un rédacteur assigné peut toujours modifier
+    const canEdit = canModify || isReporter;
     
     if (!hasChanges || readOnly || isLocked || !canEdit || !originalData) {
       return;
@@ -960,14 +960,12 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
     }
   };
 
-  const isAdmin = user.role === 'admin';
-  const isSuperviseur = user.role === 'superviseur';
+  // Utiliser les permissions RBAC au lieu des rôles hardcodés
   const isReporter = (formData.assigned_reporters || []).includes(user.id);
-  const isEmployee = user.role === 'pompier' || user.role === 'employe';
   
-  // Les employés (non admin/superviseur) ne peuvent voir que certaines sections
+  // Les employés sans permission de modifier ne peuvent voir que certaines sections
   // Sauf s'ils sont assignés comme rédacteurs de rapport
-  const employeeLimitedAccess = isEmployee && !isReporter;
+  const employeeLimitedAccess = !canModify && !isReporter;
   
   const sections = [
     { id: 'identification', label: 'Identification & Chrono', icon: '📋', employeeAccess: true },
@@ -981,10 +979,10 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
     { id: 'rcci', label: 'RCCI (Enquête)', icon: '🔍', showIf: isFireIncident, employeeAccess: false },
     { id: 'narratif', label: 'Narratif', icon: '📝', employeeAccess: false },
     { id: 'remise', label: 'Remise de propriété', icon: '📋', showIf: () => !isAlerteSante(), employeeAccess: false },
-    { id: 'facturation', label: 'Facturation', icon: '🧾', showIf: () => isAdmin && !isAlerteSante(), employeeAccess: false },
+    { id: 'facturation', label: 'Facturation', icon: '🧾', showIf: () => canValidate && !isAlerteSante(), employeeAccess: false },
   ];
 
-  // Filtrer les sections selon le rôle
+  // Filtrer les sections selon les permissions
   const visibleSections = sections.filter(s => {
     // Vérifier d'abord les conditions showIf
     if (s.showIf && !s.showIf()) return false;
@@ -993,8 +991,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
     return true;
   });
 
-  const canEdit = (isAdmin || isSuperviseur || isReporter) && !employeeLimitedAccess;
-  const canValidate = isAdmin || isSuperviseur;
+  const canEdit = canModify || isReporter;
   const isLocked = formData.status === 'signed';
   
   // Forcer le mode lecture seule pour les employés avec accès limité
@@ -1464,7 +1461,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
 
 // ==================== ONGLET HISTORIQUE ====================
 
-const TabHistorique = ({ user, tenantSlug, toast, confirm, readOnly = false, settings = {}, isSuperAdmin = false }) => {
+const TabHistorique = ({ user, tenantSlug, toast, confirm, readOnly = false, settings = {}, isSuperAdmin = false, canModify = false, canValidate = false }) => {
   const [interventions, setInterventions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ status: 'signed', dateFrom: '', dateTo: '' });
@@ -1687,8 +1684,6 @@ const TabHistorique = ({ user, tenantSlug, toast, confirm, readOnly = false, set
     return labels[status] || status;
   };
 
-  const isAdmin = user.role === 'admin';
-
   return (
     <div>
       <div className="flex gap-4 mb-6 flex-wrap">
@@ -1763,7 +1758,7 @@ const TabHistorique = ({ user, tenantSlug, toast, confirm, readOnly = false, set
                         >
                           👁️ Consulter
                         </button>
-                        {isAdmin && intervention.status === 'signed' && (
+                        {canValidate && intervention.status === 'signed' && (
                           <button 
                             onClick={(e) => { e.stopPropagation(); handleUnlock(intervention.id); }}
                             disabled={unlocking === intervention.id}
@@ -1802,6 +1797,8 @@ const TabHistorique = ({ user, tenantSlug, toast, confirm, readOnly = false, set
           onUpdate={() => setSelectedIntervention(null)}
           toast={toast}
           readOnly={true}
+          canModify={canModify}
+          canValidate={canValidate}
         />
       )}
     </div>

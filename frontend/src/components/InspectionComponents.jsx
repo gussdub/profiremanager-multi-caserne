@@ -6,6 +6,7 @@ import { useToast } from '../hooks/use-toast';
 import { useConfirmDialog } from './ui/ConfirmDialog';
 import { useTenant } from '../contexts/TenantContext';
 import { useAuth } from '../contexts/AuthContext';
+import usePermissions from '../hooks/usePermissions';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import { Calendar } from './ui/calendar';
 import { fr } from 'date-fns/locale';
@@ -197,6 +198,10 @@ const ListeInspections = ({ setCurrentView }) => {
   const [grades, setGrades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all, conforme, non_conforme
+  
+  // Utiliser le hook de permissions RBAC
+  const { hasTabAction } = usePermissions(tenantSlug, user);
+  const canDeleteInspection = hasTabAction('prevention', 'inspections', 'supprimer');
 
   const fetchData = async () => {
     try {
@@ -398,7 +403,7 @@ const ListeInspections = ({ setCurrentView }) => {
                 >
                   👁️ Voir détails
                 </Button>
-                {(user.role === 'admin' || user.role === 'superviseur') && (
+                {canDeleteInspection && (
                   <Button 
                     size="sm"
                     variant="destructive"

@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://rbac-migration-1.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://role-based-ui-config.preview.emergentagent.com')
 TENANT_SLUG = "demo"
 LOGIN_EMAIL = "gussdub@gmail.com"
 LOGIN_PASSWORD = "230685Juin+"

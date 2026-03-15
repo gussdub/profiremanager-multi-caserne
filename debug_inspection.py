@@ -8,7 +8,7 @@ import json
 import uuid
 
 # Configuration
-base_url = "https://rbac-migration-1.preview.emergentagent.com/api"
+base_url = "https://role-based-ui-config.preview.emergentagent.com/api"
 tenant_slug = "shefford"
 admin_credentials = {"email": "gussdub@gmail.com", "mot_de_passe": "230685Juin+"}
 

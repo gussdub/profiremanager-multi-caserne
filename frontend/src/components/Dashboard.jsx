@@ -3,6 +3,7 @@ import axios from "axios";
 import { useToast } from "../hooks/use-toast";
 import { useTenant } from "../contexts/TenantContext";
 import { useAuth } from "../contexts/AuthContext";
+import usePermissions from "../hooks/usePermissions";
 import { 
   StatCard,
   HeuresTravailleesCard,
@@ -76,8 +77,14 @@ const Dashboard = ({ setCurrentPage }) => {
     ? `${process.env.REACT_APP_BACKEND_URL}/api` 
     : '/api';
 
-  const isAdmin = user?.role === 'admin' || user?.role === 'production';
-  const canBroadcast = user?.role && ['admin', 'superviseur', 'super_admin'].includes(user.role);
+  // Utiliser le hook de permissions RBAC
+  const { hasTabAction, hasModuleAction, loading: permissionsLoading } = usePermissions(tenantSlug, user);
+  
+  // Permissions RBAC pour les sections du dashboard
+  const canViewGeneralSection = hasTabAction('dashboard', 'general', 'voir');
+  const canViewActivites = hasTabAction('dashboard', 'activites', 'voir');
+  const canViewAlertes = hasTabAction('dashboard', 'alertes', 'voir');
+  const canBroadcast = hasModuleAction('parametres', 'modifier');
 
   // Fonction de chargement des données (mémorisée pour réutilisation)
   const fetchDashboardData = useCallback(async () => {
@@ -112,7 +119,7 @@ const Dashboard = ({ setCurrentPage }) => {
         axios.get(`${API}/${tenantSlug}/actifs/vehicules/alertes-maintenance`, { headers, timeout: 10000 }).catch(() => null),
       ];
       
-      if (isAdmin) {
+      if (canViewGeneralSection) {
         const todayStr = now.toISOString().split('T')[0];
         promises.push(
           axios.get(`${API}/${tenantSlug}/users`, { headers, timeout: 10000 }).catch(() => null),
@@ -174,7 +181,7 @@ const Dashboard = ({ setCurrentPage }) => {
       if (results[4]?.data) setTauxPresence(results[4].data.taux_presence || 0);
 
       // Données admin (indices 9-13)
-      if (isAdmin && results.length > 9) {
+      if (canViewGeneralSection && results.length > 9) {
         const usersData = results[9]?.data;
         const vehiculesData = results[10]?.data;
         const congesData = results[11]?.data;
@@ -269,7 +276,7 @@ const Dashboard = ({ setCurrentPage }) => {
     } finally {
       setLoading(false);
     }
-  }, [tenantSlug, user, API, isAdmin]);
+  }, [tenantSlug, user, API, canViewGeneralSection]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -419,7 +426,7 @@ const Dashboard = ({ setCurrentPage }) => {
       {/* Alertes Maintenance Véhicules */}
       <VehiculeAlertesSection 
         alertesVehicules={alertesVehicules} 
-        isVisible={isAdmin || user?.role === 'superviseur'}
+        isVisible={canViewAlertes}
         onNavigate={() => {
           localStorage.setItem('actifs_target_tab', 'vehicules');
           setCurrentPage('actifs');
@@ -534,7 +541,7 @@ const Dashboard = ({ setCurrentPage }) => {
       </div>
 
       {/* Section Admin */}
-      {isAdmin && (
+      {canViewGeneralSection && (
         <AdminSection 
           statsGenerales={statsGenerales}
           tauxCouverture={tauxCouverture}

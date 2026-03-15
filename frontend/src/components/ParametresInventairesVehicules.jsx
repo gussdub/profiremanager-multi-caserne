@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import ImageUpload from './ImageUpload';
 import { useConfirmDialog } from './ui/ConfirmDialog';
+import usePermissions from '../hooks/usePermissions';
 import {
   DndContext,
   closestCenter,
@@ -389,6 +390,11 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
   const [typesVehicules, setTypesVehicules] = useState([]);
   const [vehicules, setVehicules] = useState([]);
 
+  // Utiliser le hook de permissions RBAC
+  const { hasTabAction, loading: permissionsLoading } = usePermissions(tenantSlug, user);
+  const canAccessInventaires = hasTabAction('actifs', 'inventaires', 'voir');
+  const canModifyInventaires = hasTabAction('actifs', 'inventaires', 'modifier');
+
   // Form state
   const [nom, setNom] = useState('');
   const [typeVehicule, setTypeVehicule] = useState('');
@@ -697,10 +703,18 @@ const ParametresInventairesVehicules = ({ tenantSlug, user }) => {
     }
   };
 
-  if (!user || !['admin', 'superviseur'].includes(user.role)) {
+  if (permissionsLoading) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <p style={{ color: '#dc2626' }}>⛔ Accès refusé - Admin/Superviseur uniquement</p>
+        <p style={{ color: '#6b7280' }}>Chargement...</p>
+      </div>
+    );
+  }
+
+  if (!user || !canAccessInventaires) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center' }}>
+        <p style={{ color: '#dc2626' }}>⛔ Accès refusé - Vous n'avez pas la permission d'accéder à cette page</p>
       </div>
     );
   }

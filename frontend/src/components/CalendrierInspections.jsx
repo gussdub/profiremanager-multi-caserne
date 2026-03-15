@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
+import usePermissions from '../hooks/usePermissions';
 
 // Fonction utilitaire pour formater une date locale au format YYYY-MM-DD (sans décalage timezone)
 const formatDateLocalYMD = (date) => {
@@ -29,6 +30,10 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
     heure_debut: '09:00',
     type_inspection: 'reguliere'
   });
+  
+  // Utiliser le hook de permissions RBAC
+  const { hasTabAction } = usePermissions(tenantSlug, user);
+  const canCreateInspection = hasTabAction('prevention', 'inspections', 'creer');
 
   // Charger les données
   useEffect(() => {
@@ -58,11 +63,11 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
   };
 
   const handleDayClick = (date) => {
-    // Vérifier si l'utilisateur est admin ou superviseur
-    if (user.role !== 'admin' && user.role !== 'superviseur') {
+    // Vérifier les permissions RBAC pour créer une inspection
+    if (!canCreateInspection) {
       toast({
         title: "Accès refusé",
-        description: "Seuls les administrateurs et superviseurs peuvent créer des inspections.",
+        description: "Vous n'avez pas la permission de créer des inspections.",
         variant: "destructive"
       });
       return;

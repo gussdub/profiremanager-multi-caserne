@@ -79,8 +79,8 @@ const RemplacementsList = ({
                   <p style={{ margin: '4px 0 0 0', color: '#4B5563', fontSize: '0.95rem' }}>{demande.raison}</p>
                 </div>
                 <div className="demande-status" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  {/* Bouton de suivi - visible pour le demandeur et les admins/superviseurs */}
-                  {(demande.demandeur_id === user.id || !['employe', 'pompier'].includes(user.role)) && (
+                  {/* Bouton de suivi - visible pour le demandeur et ceux qui peuvent modifier les remplacements */}
+                  {(demande.demandeur_id === user.id || canEditRemplacement) && (
                     <Button
                       variant="outline"
                       size="sm"

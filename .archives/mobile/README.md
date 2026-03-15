@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://rbac-migration-1.preview.emergentagent.com
+- **URL** : https://role-based-ui-config.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://rbac-migration-1.preview.emergentagent.com"
+  "apiUrl": "https://role-based-ui-config.preview.emergentagent.com"
 }
 ```
 
