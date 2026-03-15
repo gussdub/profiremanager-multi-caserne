@@ -1939,6 +1939,11 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         type="date"
                         value={newUser.date_embauche}
                         onChange={(e) => setNewUser({...newUser, date_embauche: e.target.value})}
+                        onBlur={(e) => {
+                          if (e.target.value) {
+                            setNewUser({...newUser, date_embauche: e.target.value});
+                          }
+                        }}
                         data-testid="user-hire-date-input"
                       />
                     </div>
@@ -3114,6 +3119,12 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         type="date"
                         value={newUser.date_embauche}
                         onChange={(e) => setNewUser({...newUser, date_embauche: e.target.value})}
+                        onBlur={(e) => {
+                          // Capturer aussi la valeur au blur pour la saisie manuelle
+                          if (e.target.value) {
+                            setNewUser({...newUser, date_embauche: e.target.value});
+                          }
+                        }}
                         data-testid="edit-user-hire-date-input"
                       />
                     </div>
