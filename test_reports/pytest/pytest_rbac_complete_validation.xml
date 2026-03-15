@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="19" skipped="0" tests="25" time="24.081" timestamp="2026-03-15T17:59:13.639624+00:00" hostname="agent-env-b0b6a938-2d7c-46a2-8742-35e195d1b473"><testcase classname="tests.test_rbac_complete_validation.TestRBACCompleteValidation" name="test_removed_route_auto_affecter_disponibilites_temps_partiel" time="3.918" /><testcase classname="tests.test_rbac_complete_validation.TestRBACCompleteValidation" name="test_removed_route_init_disponibilites_demo_complete" time="0.634" /><testcase classname="tests.test_rbac_complete_validation.TestRBACCompleteValidation" name="test_removed_route_init_disponibilites_semaine_courante" time="1.080" /><testcase classname="tests.test_rbac_complete_validation.TestRBACCompleteValidation" name="test_removed_route_planning_reinitialiser" time="0.817"><failure message="AssertionError: Expected 404, got 405&#10;assert 405 == 404&#10; +  where 405 = &lt;Response [405]&gt;.status_code">backend/tests/test_rbac_complete_validation.py:79: in test_removed_route_planning_reinitialiser
+    assert response.status_code == 404, f"Expected 404, got {response.status_code}"
+E   AssertionError: Expected 404, got 405
+E   assert 405 == 404
+E    +  where 405 = &lt;Response [405]&gt;.status_code</failure></testcase><testcase classname="tests.test_rbac_complete_validation.TestRBACCompleteValidation" name="test_auto_attribution_route_exists" time="0.833"><failure message="AssertionError: Unexpected status: 401&#10;assert 401 in [200, 400, 422, 500]&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_rbac_complete_validation.py:103: in test_auto_attribution_route_exists
+    assert response.status_code in [200, 400, 422, 500], f"Unexpected status: {response.status_code}"
+E   AssertionError: Unexpected status: 401
+E   assert 401 in [200, 400, 422, 500]
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="tests.test_rbac_complete_validation.TestRBACCompleteValidation" name="test_auto_attribution_with_reset_parameter" time="0.766"><failure message="AssertionError: Unexpected status: 401&#10;assert 401 in [200, 400, 422, 500]&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_rbac_complete_validation.py:128: in test_auto_attribution_with_reset_parameter
+    assert response.status_code in [200, 400, 422, 500], f"Unexpected status: {response.status_code}"
+E   AssertionError: Unexpected status: 401
+E   assert 401 in [200, 400, 422, 500]
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="tests.test_rbac_complete_validation.TestRBACCompleteValidation" name="test_dashboard_endpoint" time="1.097"><failure message="AssertionError: Expected 200, got 404&#10;assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_rbac_complete_validation.py:136: in test_dashboard_endpoint
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+E   AssertionError: Expected 200, got 404
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="tests.test_rbac_complete_validation.TestRBACCompleteValidation" name="test_planning_semaine" time="0.850"><failure message="AssertionError: Expected 200, got 401&#10;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_rbac_complete_validation.py:146: in test_planning_semaine
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+E   AssertionError: Expected 200, got 401
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="tests.test_rbac_complete_validation.TestRBACCompleteValidation" name="test_users_list" time="1.033"><failure message="AssertionError: Expected 200, got 401&#10;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_rbac_complete_validation.py:152: in test_users_list
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+E   AssertionError: Expected 200, got 401
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="tests.test_rbac_complete_validation.TestRBACCompleteValidation" name="test_remplacements_list" time="0.712"><failure message="AssertionError: Expected 200, got 401&#10;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_rbac_complete_validation.py:160: in test_remplacements_list
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+E   AssertionError: Expected 200, got 401
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="tests.test_rbac_complete_validation.TestRBACCompleteValidation" name="test_remplacements_export_pdf" time="1.320" /><testcase classname="tests.test_rbac_complete_validation.TestRBACCompleteValidation" name="test_remplacements_export_excel" time="0.741" /><testcase classname="tests.test_rbac_complete_validation.TestRBACCompleteValidation" name="test_equipements_vehicules" time="0.885"><failure message="AssertionError: Expected 200, got 404&#10;assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_rbac_complete_validation.py:178: in test_equipements_vehicules
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+E   AssertionError: Expected 200, got 404
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="tests.test_rbac_complete_validation.TestRBACCompleteValidation" name="test_equipements_materiel" time="0.687"><failure message="AssertionError: Expected 200, got 401&#10;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_rbac_complete_validation.py:184: in test_equipements_materiel
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+E   AssertionError: Expected 200, got 401
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="tests.test_rbac_complete_validation.TestRBACCompleteValidation" name="test_equipements_epi" time="1.343"><failure message="AssertionError: Expected 200, got 401&#10;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_rbac_complete_validation.py:190: in test_equipements_epi
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+E   AssertionError: Expected 200, got 401
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="tests.test_rbac_complete_validation.TestRBACCompleteValidation" name="test_interventions_rapports" time="0.757"><failure message="AssertionError: Expected 200, got 404&#10;assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_rbac_complete_validation.py:196: in test_interventions_rapports
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+E   AssertionError: Expected 200, got 404
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="tests.test_rbac_complete_validation.TestRBACCompleteValidation" name="test_prevention_inspections" time="0.724" /><testcase classname="tests.test_rbac_complete_validation.TestRBACCompleteValidation" name="test_prevention_batiments" time="0.693"><failure message="AssertionError: Expected 200, got 404&#10;assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_rbac_complete_validation.py:209: in test_prevention_batiments
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+E   AssertionError: Expected 200, got 404
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="tests.test_rbac_complete_validation.TestRBACCompleteValidation" name="test_disponibilites_statut_blocage" time="0.648"><failure message="AssertionError: Expected 200, got 401&#10;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_rbac_complete_validation.py:215: in test_disponibilites_statut_blocage
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+E   AssertionError: Expected 200, got 401
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="tests.test_rbac_complete_validation.TestRBACCompleteValidation" name="test_parametres_roles" time="0.659"><failure message="AssertionError: Expected 200, got 404&#10;assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_rbac_complete_validation.py:221: in test_parametres_roles
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+E   AssertionError: Expected 200, got 404
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="tests.test_rbac_complete_validation.TestRBACCompleteValidation" name="test_types_garde" time="0.668"><failure message="AssertionError: Expected 200, got 401&#10;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_rbac_complete_validation.py:227: in test_types_garde
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+E   AssertionError: Expected 200, got 401
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="tests.test_rbac_complete_validation.TestRBACCompleteValidation" name="test_rbac_dashboard_messages_get" time="0.642"><failure message="AssertionError: Expected 200, got 401&#10;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_rbac_complete_validation.py:235: in test_rbac_dashboard_messages_get
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+E   AssertionError: Expected 200, got 401
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="tests.test_rbac_complete_validation.TestRBACCompleteValidation" name="test_rbac_broadcast_actif" time="0.720"><failure message="AssertionError: Expected 200, got 401&#10;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_rbac_complete_validation.py:241: in test_rbac_broadcast_actif
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+E   AssertionError: Expected 200, got 401
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="tests.test_rbac_complete_validation.TestRBACCompleteValidation" name="test_rbac_notifications" time="0.996"><failure message="AssertionError: Expected 200, got 401&#10;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_rbac_complete_validation.py:247: in test_rbac_notifications
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+E   AssertionError: Expected 200, got 401
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="tests.test_rbac_complete_validation.TestRBACCompleteValidation" name="test_rbac_equipes_garde" time="0.702"><failure message="AssertionError: Unexpected status: 401&#10;assert 401 in [200, 404]&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_rbac_complete_validation.py:254: in test_rbac_equipes_garde
+    assert response.status_code in [200, 404], f"Unexpected status: {response.status_code}"
+E   AssertionError: Unexpected status: 401
+E   assert 401 in [200, 404]
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase></testsuite></testsuites>
