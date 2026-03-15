@@ -71,6 +71,7 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
    - `PUT /{tenant}/grades/{id}/prime` - Définir la prime % par grade
    - `GET /{tenant}/users/{id}/salaire` - Calculer le salaire d'un employé
    - `PUT /{tenant}/users/{id}/echelon` - Modifier l'échelon d'embauche
+   - `PUT /{tenant}/users/{id}` - Modifier un utilisateur (endpoint générique)
 
 3. **Calcul automatique de l'échelon:**
    - Formule: `Échelon actuel = Échelon d'embauche + Années complètes depuis embauche`
@@ -94,18 +95,21 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
      - Taux horaire de base
      - Prime de grade (si applicable)
      - Taux horaire final
+   - Taux horaire pré-rempli automatiquement depuis l'échelle salariale
+   - Champ date d'embauche amélioré (capture saisie clavier)
    - Permission RBAC `personnel-modifier` requise pour changer l'échelon
 
 6. **Intégration Module Paie:**
+   - Le taux horaire de la fiche employé est la source de vérité
    - La prime fonction supérieure est lue depuis l'échelle salariale
-   - Appliquée automatiquement quand un employé FS occupe un poste supérieur
 
 **Fichiers modifiés/créés:**
 - `/app/backend/routes/competences_grades.py` - Nouveaux endpoints
+- `/app/backend/routes/users.py` - Endpoint PUT générique
 - `/app/frontend/src/components/ParametresGrades.jsx` - Nouveau composant
-- `/app/frontend/src/components/Personnel.jsx` - Section Rémunération
+- `/app/frontend/src/components/Personnel.jsx` - Section Rémunération + corrections
 - `/app/frontend/src/components/Parametres.js` - Intégration
-- `/app/backend/routes/paie_complet.py` - Lecture prime FS depuis échelle
+- `/app/frontend/src/components/paie/TabParametres.jsx` - Retrait prime FS (déplacée)
 
 ### Module Points d'Eau / Approvisionnement
 - Gestion des bornes fontaines, bornes sèches et points d'eau statiques
