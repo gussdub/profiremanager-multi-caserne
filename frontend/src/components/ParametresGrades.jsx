@@ -517,14 +517,14 @@ const ParametresGrades = ({
       {/* Modal Générer Année */}
       {showGenererAnneeModal && (
         <div className="modal-overlay" onClick={() => setShowGenererAnneeModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '450px' }}>
-            <h3>🔄 Générer les taux pour une nouvelle année</h3>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px', padding: '1.5rem' }}>
+            <h3 style={{ marginTop: 0 }}>🔄 Générer les taux pour une nouvelle année</h3>
             
             <p style={{ color: '#64748b', marginBottom: '1rem' }}>
               Les taux seront calculés en appliquant l'indexation de <strong>{echelleSalariale.taux_indexation}%</strong> par année.
             </p>
 
-            <div style={{ marginBottom: '1rem' }}>
+            <div style={{ marginBottom: '1.5rem' }}>
               <Label>Nouvelle année</Label>
               <Input
                 type="number"
@@ -539,7 +539,7 @@ const ParametresGrades = ({
               padding: '1rem', 
               borderRadius: '8px',
               border: '1px solid #bbf7d0',
-              marginBottom: '1rem'
+              marginBottom: '1.5rem'
             }}>
               <strong>Aperçu des nouveaux taux ({nouvelleAnnee}):</strong>
               <div style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
