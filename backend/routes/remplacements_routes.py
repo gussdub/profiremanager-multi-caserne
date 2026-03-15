@@ -548,7 +548,9 @@ async def export_remplacements_pdf(
 ):
     """Export des demandes de remplacement en PDF"""
     tenant = await get_tenant_from_slug(tenant_slug)
-    return await export_remplacements_to_pdf(db, tenant, current_user, user_id)
+    # RBAC: Vérifier si l'utilisateur peut voir toutes les demandes
+    can_view_all = await user_has_module_action(tenant.id, current_user, "remplacements", "voir", "toutes-demandes")
+    return await export_remplacements_to_pdf(db, tenant, current_user, user_id, can_view_all)
 
 
 @router.get("/{tenant_slug}/remplacements/export-excel")
@@ -559,7 +561,9 @@ async def export_remplacements_excel(
 ):
     """Export des demandes de remplacement en Excel"""
     tenant = await get_tenant_from_slug(tenant_slug)
-    return await export_remplacements_to_excel(db, tenant, current_user, user_id)
+    # RBAC: Vérifier si l'utilisateur peut voir toutes les demandes
+    can_view_all = await user_has_module_action(tenant.id, current_user, "remplacements", "voir", "toutes-demandes")
+    return await export_remplacements_to_excel(db, tenant, current_user, user_id, can_view_all)
 
 
 @router.get("/{tenant_slug}/remplacements", response_model=List[DemandeRemplacement])

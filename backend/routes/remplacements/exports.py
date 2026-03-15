@@ -17,7 +17,8 @@ async def export_remplacements_to_pdf(
     db,
     tenant,
     current_user,
-    user_id: str = None
+    user_id: str = None,
+    can_view_all: bool = False
 ) -> StreamingResponse:
     """
     Export des demandes de remplacement en PDF
@@ -27,6 +28,7 @@ async def export_remplacements_to_pdf(
         tenant: Objet tenant
         current_user: Utilisateur courant
         user_id: Filtrer par utilisateur (optionnel)
+        can_view_all: True si l'utilisateur a la permission de voir toutes les demandes (RBAC)
     
     Returns:
         StreamingResponse avec le PDF
@@ -44,21 +46,22 @@ async def export_remplacements_to_pdf(
         create_branded_pdf = server.create_branded_pdf
         get_modern_pdf_styles = server.get_modern_pdf_styles
         
-        # Récupérer les demandes selon les permissions
+        # Récupérer les demandes selon les permissions RBAC
         if user_id:
             demandes_list = await db.demandes_remplacement.find({
                 "tenant_id": tenant.id,
                 "demandeur_id": user_id
             }).to_list(length=None)
         else:
-            if current_user.role == "employe":
+            # Utiliser RBAC: si l'utilisateur peut voir toutes les demandes, les montrer toutes
+            if can_view_all:
                 demandes_list = await db.demandes_remplacement.find({
-                    "tenant_id": tenant.id,
-                    "demandeur_id": current_user.id
+                    "tenant_id": tenant.id
                 }).to_list(length=None)
             else:
                 demandes_list = await db.demandes_remplacement.find({
-                    "tenant_id": tenant.id
+                    "tenant_id": tenant.id,
+                    "demandeur_id": current_user.id
                 }).to_list(length=None)
         
         # Récupérer les données de référence
@@ -157,7 +160,8 @@ async def export_remplacements_to_excel(
     db,
     tenant,
     current_user,
-    user_id: str = None
+    user_id: str = None,
+    can_view_all: bool = False
 ) -> StreamingResponse:
     """
     Export des demandes de remplacement en Excel
@@ -167,6 +171,7 @@ async def export_remplacements_to_excel(
         tenant: Objet tenant
         current_user: Utilisateur courant
         user_id: Filtrer par utilisateur (optionnel)
+        can_view_all: True si l'utilisateur a la permission de voir toutes les demandes (RBAC)
     
     Returns:
         StreamingResponse avec le fichier Excel
@@ -176,21 +181,22 @@ async def export_remplacements_to_excel(
         from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
         from io import BytesIO
         
-        # Récupérer les demandes selon les permissions
+        # Récupérer les demandes selon les permissions RBAC
         if user_id:
             demandes_list = await db.demandes_remplacement.find({
                 "tenant_id": tenant.id,
                 "demandeur_id": user_id
             }).to_list(length=None)
         else:
-            if current_user.role == "employe":
+            # Utiliser RBAC: si l'utilisateur peut voir toutes les demandes, les montrer toutes
+            if can_view_all:
                 demandes_list = await db.demandes_remplacement.find({
-                    "tenant_id": tenant.id,
-                    "demandeur_id": current_user.id
+                    "tenant_id": tenant.id
                 }).to_list(length=None)
             else:
                 demandes_list = await db.demandes_remplacement.find({
-                    "tenant_id": tenant.id
+                    "tenant_id": tenant.id,
+                    "demandeur_id": current_user.id
                 }).to_list(length=None)
         
         # Récupérer les données de référence

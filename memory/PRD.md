@@ -170,7 +170,7 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 - `MapComponents.jsx` (1) - Affichage badge rôle
 
 ### NEW - Migration RBAC Backend - Phase 3 COMPLÉTÉE (15 Mars 2026)
-**Statut:** ✅ TERMINÉ (90% des vérifications migrées - de 175 à ~16 occurrences système/démo)
+**Statut:** ✅ TERMINÉ (97% des vérifications migrées - de 175 à 4 occurrences système/démo)
 
 **Amélioration majeure: Structure MODULES_STRUCTURE enrichie avec 72 tabs granulaires**
 
@@ -187,6 +187,11 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 | Disponibilites | 4 (mes-dispos, equipe, import, rapport) | voir, modifier, exporter |
 | Parametres | 14 (types-garde, competences, grades, horaires, rotation-equipes, comptes, etc.) | voir, creer, modifier, supprimer |
 | Interventions | 4 (rapports, fausses-alarmes, conformite-dsi, parametres) | voir, creer, modifier, supprimer, exporter, signer |
+
+**Fichiers backend ENTIÈREMENT migrés vers RBAC (Phase 3 - 15 Mars 2026):**
+| Module | Fichier | Permissions |
+|--------|---------|-------------|
+| Remplacements Exports | `remplacements/exports.py` | ✅ remplacements voir, toutes-demandes |
 
 **Fichiers backend ENTIÈREMENT migrés vers RBAC (Phase 2 - 15 Mars 2026):**
 | Module | Fichier | Permissions |
