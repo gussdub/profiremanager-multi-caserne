@@ -526,6 +526,7 @@ const Remplacements = () => {
 
   // Déterminer si l'utilisateur peut voir toutes les demandes (via RBAC)
   const canViewAllDemandes = hasModuleAction('remplacements', 'voir_tous') || user?.role === 'admin';
+  const isAdminOrSuperviseur = !['employe', 'pompier'].includes(user?.role);
 
   // Filtrer les demandes selon les permissions pour les KPIs ET l'affichage
   const mesDemandes = canViewAllDemandes 

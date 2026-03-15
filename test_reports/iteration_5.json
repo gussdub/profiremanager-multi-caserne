@@ -1,0 +1,109 @@
+{
+  "summary": "Test de régression du module Remplacements après refactoring majeur - 1 bug critique trouvé et corrigé (isAdminOrSuperviseur is not defined)",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "Remplacements.jsx",
+        "issue": "ReferenceError: isAdminOrSuperviseur is not defined at line 880 - CORRIGÉ",
+        "selector": "CongesList component",
+        "priority": "CRITICAL - FIXED"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_remplacements_regression.py",
+    "/app/test_reports/pytest/pytest_remplacements_regression.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "BUG TROUVÉ ET CORRIGÉ: Dans /app/frontend/src/components/Remplacements.jsx, la variable 'isAdminOrSuperviseur' était passée en prop au composant CongesList (ligne 880) mais n'était jamais définie dans le composant parent.",
+    "FIX APPLIQUÉ: Ajout de la définition 'const isAdminOrSuperviseur = ![\"employe\", \"pompier\"].includes(user?.role);' après la définition de canViewAllDemandes (ligne 529)",
+    "CAUSE RACINE: Lors du refactoring de 1934 à 1050 lignes, la variable isAdminOrSuperviseur qui était probablement définie ailleurs a été omise lors de l'extraction des composants."
+  ],
+  "updated_files": [
+    "/app/frontend/src/components/Remplacements.jsx",
+    "/app/backend/tests/test_remplacements_regression.py"
+  ],
+  "success_rate": {
+    "backend": "100% (9/9 tests passés)",
+    "frontend": "100% après correction du bug"
+  },
+  "test_credentials": {
+    "email": "gussdub@gmail.com",
+    "password": "230685Juin+",
+    "role": "admin",
+    "tenant": "demo"
+  },
+  "seed_data_creation": "N/A - Utilisation des données existantes",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Le module Remplacements a été refactorisé avec succès. 11 composants ont été extraits vers /frontend/src/components/remplacements/. Un bug critique (isAdminOrSuperviseur non défini) a été trouvé et corrigé. Tous les onglets (Remplacements, Congés), les modals de création, les KPIs et les filtres fonctionnent correctement après la correction.",
+  "modules_tested": {
+    "login": {
+      "status": "PASS",
+      "notes": "Login fonctionne correctement avec email/mot_de_passe"
+    },
+    "navigation_remplacements": {
+      "status": "PASS",
+      "notes": "Navigation vers le module Remplacements fonctionne"
+    },
+    "tabs": {
+      "status": "PASS",
+      "notes": "Onglets Remplacements (0) et Congés (1) fonctionnent après correction du bug isAdminOrSuperviseur"
+    },
+    "kpi_cards": {
+      "status": "PASS",
+      "notes": "5 cartes KPI affichées: Total (6), En Attente (0), Acceptées (5), Refusées (1), Remplacements Trouvés (4), Taux Succès (67%), Congés du Mois (1)"
+    },
+    "create_remplacement_modal": {
+      "status": "PASS",
+      "notes": "Modal s'ouvre correctement avec tous les champs: Type de garde, Date, Priorité, Raison"
+    },
+    "create_conge_modal": {
+      "status": "PASS",
+      "notes": "Modal s'ouvre correctement avec tous les champs: Type congé, Date début/fin, Priorité, Raison"
+    },
+    "filters": {
+      "status": "PASS",
+      "notes": "Filtres de statut (Non traitées, Acceptées, Refusées) et période fonctionnent"
+    },
+    "remplacements_list": {
+      "status": "PASS",
+      "notes": "Liste des remplacements affiche les demandes avec badges Urgent/Normal, statuts, actions (Suivi, Acceptée)"
+    },
+    "conges_list": {
+      "status": "PASS",
+      "notes": "Liste des congés affiche les stats (En attente, Approuvés, Total jours) et boutons d'action (Congés urgents, Exporter)"
+    }
+  },
+  "rca_of_the_issue": {
+    "bug_description": "ReferenceError: isAdminOrSuperviseur is not defined - L'application plante lors du passage à l'onglet Congés",
+    "root_cause": "Lors du refactoring du fichier Remplacements.jsx (de 1934 à 1050 lignes), la variable isAdminOrSuperviseur était passée en prop au composant CongesList (ligne 880) mais n'avait jamais été définie dans le composant parent. Cette variable était probablement définie dans l'ancienne version mais a été omise lors de l'extraction des composants.",
+    "fix_applied": "Ajout de la définition de la variable après canViewAllDemandes: const isAdminOrSuperviseur = !['employe', 'pompier'].includes(user?.role);",
+    "affected_file": "/app/frontend/src/components/Remplacements.jsx",
+    "affected_line": "529 (ajout) -> utilisée à ligne 880",
+    "mitigation_steps": "Lors de refactoring de composants React, vérifier que toutes les variables passées en props aux sous-composants sont bien définies dans le composant parent. Utiliser TypeScript ou PropTypes pour détecter ce type d'erreur à la compilation."
+  },
+  "components_verified": {
+    "extracted_components": [
+      "KPICards.jsx - Cartes statistiques ✅",
+      "TabsBar.jsx - Onglets navigation ✅",
+      "PropositionsRecues.jsx - Liste des propositions ✅",
+      "RemplacementsList.jsx - Liste des remplacements ✅",
+      "CongesList.jsx - Liste des congés ✅",
+      "CreateRemplacementModal.jsx - Modal création remplacement ✅",
+      "CreateCongeModal.jsx - Modal création congé ✅",
+      "ExportModal.jsx - Modal export PDF/Excel ✅",
+      "ImpactPlanningModal.jsx - Modal impact planning ✅",
+      "DemandeCard.jsx - Carte individuelle ✅",
+      "FilterBar.jsx - Barre de filtres ✅"
+    ],
+    "parent_component": "Remplacements.jsx (1050 lignes) - Fonctionnel après correction ✅"
+  }
+}
