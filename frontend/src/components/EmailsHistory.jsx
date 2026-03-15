@@ -34,7 +34,13 @@ const EmailsHistory = () => {
     'temp_password': 'MDP Temporaire',
     'gardes_notification': 'Notification Gardes',
     'super_admin_welcome': 'Bienvenue Super Admin',
-    'debogage': 'Notification Débogage'
+    'debogage': 'Notification Débogage',
+    'rappel_disponibilites': 'Rappel Disponibilités (Auto)',
+    'rappel_disponibilites_manuel': 'Rappel Disponibilités (Manuel)',
+    'alerte_inspection': 'Alerte Inspection',
+    'planning_publie': 'Planning Publié',
+    'alerte_epi': 'Alerte EPI',
+    'rappel_inspection_epi': 'Rappel Inspection EPI'
   };
 
   const loadEmails = async () => {
@@ -195,6 +201,12 @@ const EmailsHistory = () => {
                   <SelectItem value="password_reset">Réinitialisation MDP</SelectItem>
                   <SelectItem value="temp_password">MDP Temporaire</SelectItem>
                   <SelectItem value="gardes_notification">Notification Gardes</SelectItem>
+                  <SelectItem value="rappel_disponibilites">Rappel Disponibilités (Auto)</SelectItem>
+                  <SelectItem value="rappel_disponibilites_manuel">Rappel Disponibilités (Manuel)</SelectItem>
+                  <SelectItem value="alerte_inspection">Alerte Inspection</SelectItem>
+                  <SelectItem value="planning_publie">Planning Publié</SelectItem>
+                  <SelectItem value="alerte_epi">Alerte EPI</SelectItem>
+                  <SelectItem value="rappel_inspection_epi">Rappel Inspection EPI</SelectItem>
                 </SelectContent>
               </Select>
             </div>
