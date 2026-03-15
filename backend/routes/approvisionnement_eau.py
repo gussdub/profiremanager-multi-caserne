@@ -27,7 +27,9 @@ from routes.dependencies import (
     db,
     get_current_user,
     get_tenant_from_slug,
-    User
+    User,
+    require_permission,
+    user_has_module_action
 )
 
 router = APIRouter(tags=["Approvisionnement Eau"])
@@ -139,8 +141,8 @@ async def create_point_eau(
     """Créer un nouveau point d'eau (admin ou superviseur)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée")
+    # RBAC: Vérifier permission de création sur le module actifs/eau
+    await require_permission(tenant.id, current_user, "actifs", "creer", "eau")
     
     point_dict = point_data.dict()
     point_dict['id'] = str(uuid.uuid4())
@@ -187,8 +189,8 @@ async def update_point_eau(
     """Modifier un point d'eau (admin ou superviseur)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée")
+    # RBAC: Vérifier permission de modification sur le module actifs/eau
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "eau")
     
     update_dict = {k: v for k, v in point_data.dict().items() if v is not None}
     update_dict['updated_at'] = datetime.now(timezone.utc).isoformat()
@@ -218,8 +220,8 @@ async def delete_point_eau(
     """Supprimer un point d'eau (admin/superviseur)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin ou Superviseur requis")
+    # RBAC: Vérifier permission de suppression sur le module actifs/eau
+    await require_permission(tenant.id, current_user, "actifs", "supprimer", "eau")
     
     result = await db.points_eau.delete_one(
         {"id": point_id, "tenant_id": tenant.id}
@@ -302,8 +304,8 @@ async def programmer_test_borne_seche(
     """Programmer la prochaine date de test pour une borne sèche (superviseur uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée - Superviseur requis")
+    # RBAC: Vérifier permission de modification sur le module actifs/eau
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "eau")
     
     result = await db.points_eau.update_one(
         {"id": point_id, "tenant_id": tenant.id, "type": "borne_seche"},

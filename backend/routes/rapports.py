@@ -47,7 +47,9 @@ from routes.dependencies import (
     get_current_user,
     get_tenant_from_slug,
     clean_mongo_doc,
-    User
+    User,
+    require_permission,
+    user_has_module_action
 )
 
 # Import des helpers PDF partagés
@@ -202,8 +204,8 @@ class InterventionCreate(BaseModel):
 
 @router.get("/{tenant_slug}/rapports/statistiques-avancees")
 async def get_statistiques_avancees(tenant_slug: str, current_user: User = Depends(get_current_user)):
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "rapports", "voir")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -274,8 +276,8 @@ async def create_budget(
     current_user: User = Depends(get_current_user)
 ):
     """Créer une entrée budget"""
-    if current_user.role not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "rapports", "creer")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -309,8 +311,8 @@ async def get_budgets(
     current_user: User = Depends(get_current_user)
 ):
     """Récupérer tous les budgets"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "rapports", "voir")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -330,8 +332,8 @@ async def update_budget(
     current_user: User = Depends(get_current_user)
 ):
     """Modifier un budget"""
-    if current_user.role not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "rapports", "modifier")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -367,8 +369,8 @@ async def delete_budget(
     current_user: User = Depends(get_current_user)
 ):
     """Supprimer un budget"""
-    if current_user.role not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "rapports", "supprimer")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -389,8 +391,8 @@ async def create_immobilisation(
     current_user: User = Depends(get_current_user)
 ):
     """Créer une immobilisation"""
-    if current_user.role not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "rapports", "creer")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -422,8 +424,8 @@ async def create_immobilisation(
 @router.get("/{tenant_slug}/rapports/immobilisations")
 async def get_immobilisations(tenant_slug: str, current_user: User = Depends(get_current_user)):
     """Récupérer toutes les immobilisations"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "rapports", "voir")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -438,8 +440,8 @@ async def delete_immobilisation(
     current_user: User = Depends(get_current_user)
 ):
     """Supprimer une immobilisation"""
-    if current_user.role not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "rapports", "supprimer")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -460,8 +462,8 @@ async def create_projet_triennal(
     current_user: User = Depends(get_current_user)
 ):
     """Créer un projet triennal"""
-    if current_user.role not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "rapports", "creer")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -486,8 +488,8 @@ async def create_projet_triennal(
 @router.get("/{tenant_slug}/rapports/projets-triennaux")
 async def get_projets_triennaux(tenant_slug: str, current_user: User = Depends(get_current_user)):
     """Récupérer tous les projets triennaux"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "rapports", "voir")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -502,8 +504,8 @@ async def delete_projet_triennal(
     current_user: User = Depends(get_current_user)
 ):
     """Supprimer un projet triennal"""
-    if current_user.role not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "rapports", "supprimer")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -524,8 +526,8 @@ async def create_intervention(
     current_user: User = Depends(get_current_user)
 ):
     """Créer une intervention"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "rapports", "creer")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -561,10 +563,10 @@ async def get_interventions(tenant_slug: str, current_user: User = Depends(get_c
 @router.get("/{tenant_slug}/rapports/dashboard-interne")
 async def get_dashboard_interne(tenant_slug: str, current_user: User = Depends(get_current_user)):
     """Données du dashboard interne"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de voir sur le module rapports
+    await require_permission(tenant.id, current_user, "rapports", "voir")
     
     try:
         # Récupérer les données
@@ -644,10 +646,10 @@ async def get_rapport_couts_salariaux(
     current_user: User = Depends(get_current_user)
 ):
     """Rapport des coûts salariaux"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de voir sur le module rapports
+    await require_permission(tenant.id, current_user, "rapports", "voir")
     
     try:
         # Mois par défaut: mois courant
@@ -716,10 +718,10 @@ async def get_rapport_couts_salariaux(
 @router.get("/{tenant_slug}/rapports/tableau-bord-budgetaire")
 async def get_tableau_bord_budgetaire(tenant_slug: str, current_user: User = Depends(get_current_user)):
     """Tableau de bord budgétaire"""
-    if current_user.role not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de voir sur le module rapports
+    await require_permission(tenant.id, current_user, "rapports", "voir")
     
     try:
         budgets = await db.budgets.find({"tenant_id": tenant.id}).to_list(1000)
@@ -756,10 +758,10 @@ async def get_tableau_bord_budgetaire(tenant_slug: str, current_user: User = Dep
 @router.get("/{tenant_slug}/rapports/rapport-immobilisations")
 async def get_rapport_immobilisations(tenant_slug: str, current_user: User = Depends(get_current_user)):
     """Rapport détaillé des immobilisations"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de voir sur le module rapports
+    await require_permission(tenant.id, current_user, "rapports", "voir")
     
     try:
         immobs = await db.immobilisations.find({"tenant_id": tenant.id}).to_list(1000)
@@ -838,10 +840,10 @@ async def import_rapports_csv(
     current_user: User = Depends(get_current_user)
 ):
     """Import CSV pour rapports (budgets, immobilisations, etc.)"""
-    if current_user.role not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de création sur le module rapports
+    await require_permission(tenant.id, current_user, "rapports", "exporter")
     
     try:
         content = await file.read()
@@ -896,10 +898,10 @@ async def import_rapports_csv(
 @router.get("/{tenant_slug}/rapports/export-dashboard-pdf")
 async def export_dashboard_pdf(tenant_slug: str, current_user: User = Depends(get_current_user)):
     """Export PDF du dashboard"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission d'export sur le module rapports
+    await require_permission(tenant.id, current_user, "rapports", "exporter")
     
     try:
         # Récupérer les données
@@ -980,10 +982,10 @@ async def export_salaires_pdf(
     current_user: User = Depends(get_current_user)
 ):
     """Export PDF des salaires"""
-    if current_user.role not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission d'export sur le module rapports
+    await require_permission(tenant.id, current_user, "rapports", "exporter")
     
     if not mois:
         mois = datetime.now().strftime("%Y-%m")
@@ -1083,10 +1085,10 @@ async def export_salaires_excel(
     current_user: User = Depends(get_current_user)
 ):
     """Export Excel des salaires"""
-    if current_user.role not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission d'export sur le module rapports
+    await require_permission(tenant.id, current_user, "rapports", "exporter")
     
     if not mois:
         mois = datetime.now().strftime("%Y-%m")
@@ -1186,10 +1188,10 @@ async def export_personnel_pdf(
     current_user: User = Depends(get_current_user)
 ):
     """Export PDF de la liste personnel ou d'un utilisateur"""
-    if current_user.role == "employe":
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission d'export sur le module personnel
+    await require_permission(tenant.id, current_user, "personnel", "exporter")
     
     try:
         # Récupérer les utilisateurs
@@ -1276,10 +1278,10 @@ async def export_personnel_excel(
     current_user: User = Depends(get_current_user)
 ):
     """Export Excel de la liste personnel ou d'un utilisateur"""
-    if current_user.role == "employe":
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission d'export sur le module personnel
+    await require_permission(tenant.id, current_user, "personnel", "exporter")
     
     try:
         # Récupérer les utilisateurs
@@ -1412,10 +1414,10 @@ async def generate_personnel_export(
     current_user: User = Depends(get_current_user)
 ):
     """Génère un export et retourne une URL de téléchargement direct"""
-    if current_user.role == "employe":
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission d'export sur le module personnel
+    await require_permission(tenant.id, current_user, "personnel", "exporter")
     
     try:
         # Nettoyer les vieux fichiers

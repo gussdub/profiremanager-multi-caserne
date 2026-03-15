@@ -31,7 +31,9 @@ from routes.dependencies import (
     get_current_user,
     get_tenant_from_slug,
     clean_mongo_doc,
-    User
+    User,
+    require_permission,
+    user_has_module_action
 )
 
 router = APIRouter(tags=["Compétences & Grades"])
@@ -101,10 +103,10 @@ async def create_competence(
     current_user: User = Depends(get_current_user)
 ):
     """Crée une compétence"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de création sur le module formations/competences
+    await require_permission(tenant.id, current_user, "formations", "creer", "competences")
     
     competence_dict = competence.dict()
     competence_dict["tenant_id"] = tenant.id
@@ -143,10 +145,10 @@ async def update_competence(
     current_user: User = Depends(get_current_user)
 ):
     """Met à jour une compétence"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de modification sur le module formations/competences
+    await require_permission(tenant.id, current_user, "formations", "modifier", "competences")
     
     update_data = {k: v for k, v in competence_update.dict().items() if v is not None}
     
@@ -174,10 +176,10 @@ async def delete_competence(
     current_user: User = Depends(get_current_user)
 ):
     """Supprime une compétence"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de suppression sur le module formations/competences
+    await require_permission(tenant.id, current_user, "formations", "supprimer", "competences")
     
     result = await db.competences.delete_one({"id": competence_id, "tenant_id": tenant.id})
     
@@ -197,10 +199,10 @@ async def clean_invalid_competences(
     Supprime des profils utilisateurs toutes les compétences qui n'existent plus 
     dans la collection competences.
     """
-    if current_user.role not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de modification sur le module formations/competences
+    await require_permission(tenant.id, current_user, "formations", "modifier", "competences")
     
     # Récupérer tous les IDs de compétences valides
     valid_competences = await db.competences.find({"tenant_id": tenant.id}, {"id": 1, "_id": 0}).to_list(1000)
@@ -250,10 +252,10 @@ async def create_grade(
     current_user: User = Depends(get_current_user)
 ):
     """Crée un grade"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de création sur le module parametres/grades
+    await require_permission(tenant.id, current_user, "parametres", "creer")
     
     # Vérifier si le grade existe déjà
     existing = await db.grades.find_one({"nom": grade.nom, "tenant_id": tenant.id})
@@ -300,10 +302,10 @@ async def update_grade(
     current_user: User = Depends(get_current_user)
 ):
     """Met à jour un grade"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de modification sur le module parametres
+    await require_permission(tenant.id, current_user, "parametres", "modifier")
     
     update_data = {k: v for k, v in grade_update.dict().items() if v is not None}
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
@@ -334,10 +336,10 @@ async def delete_grade(
     current_user: User = Depends(get_current_user)
 ):
     """Supprime un grade si aucun employé ne l'utilise"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de suppression sur le module parametres
+    await require_permission(tenant.id, current_user, "parametres", "supprimer")
     
     # Vérifier si le grade existe
     existing_grade = await db.grades.find_one({"id": grade_id, "tenant_id": tenant.id})

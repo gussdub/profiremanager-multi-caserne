@@ -21,7 +21,9 @@ from routes.dependencies import (
     get_current_user,
     get_tenant_from_slug,
     clean_mongo_doc,
-    User
+    User,
+    require_permission,
+    user_has_module_action
 )
 
 router = APIRouter(tags=["Rapports Interventions"])
@@ -39,10 +41,10 @@ async def get_statistiques_interventions(
     """
     Récupère les statistiques globales des interventions pour une période donnée.
     """
-    if current_user.role not in ["admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Admin requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de voir sur le module rapports
+    await require_permission(tenant.id, current_user, "rapports", "voir")
     
     # Définir la période
     if annee:
@@ -159,10 +161,10 @@ async def get_statistiques_par_pompier(
     Récupère les statistiques d'interventions par pompier.
     Inclut le taux de présence basé sur les gardes assignées et global.
     """
-    if current_user.role not in ["admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Admin requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de voir sur le module rapports
+    await require_permission(tenant.id, current_user, "rapports", "voir")
     
     # Définir la période
     if annee:
@@ -357,10 +359,10 @@ async def get_comparaison_annees(
     """
     Compare les statistiques d'interventions entre plusieurs années.
     """
-    if current_user.role not in ["admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Admin requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de voir sur le module rapports
+    await require_permission(tenant.id, current_user, "rapports", "voir")
     
     # Parser les années
     try:
@@ -470,10 +472,10 @@ async def import_historique_interventions(
     """
     Permet d'importer des données historiques d'interventions pour les années précédentes.
     """
-    if current_user.role not in ["admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Admin requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de création sur le module rapports
+    await require_permission(tenant.id, current_user, "rapports", "exporter")
     
     annee = data.get("annee")
     total_interventions = data.get("total_interventions", 0)
@@ -525,10 +527,10 @@ async def get_historique_interventions(
     """
     Récupère les données historiques importées manuellement.
     """
-    if current_user.role not in ["admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Admin requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de voir sur le module rapports
+    await require_permission(tenant.id, current_user, "rapports", "voir")
     
     historiques = await db.historique_interventions.find({
         "tenant_id": tenant.id
@@ -547,10 +549,10 @@ async def seed_test_interventions(
     Génère des données de test d'interventions pour le tenant.
     ATTENTION: À utiliser uniquement en mode développement/preview.
     """
-    if current_user.role not in ["admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Admin requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de création sur le module rapports
+    await require_permission(tenant.id, current_user, "rapports", "creer")
     
     import random
     import uuid
@@ -658,10 +660,10 @@ async def clear_test_interventions(
     """
     Supprime les données de test d'interventions (celles marquées source=seed_test_data).
     """
-    if current_user.role not in ["admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Admin requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de suppression sur le module rapports
+    await require_permission(tenant.id, current_user, "rapports", "supprimer")
     
     result = await db.interventions.delete_many({
         "tenant_id": tenant.id,

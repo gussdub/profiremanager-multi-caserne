@@ -49,7 +49,9 @@ from routes.dependencies import (
     get_tenant_from_slug,
     clean_mongo_doc,
     User,
-    creer_notification
+    creer_notification,
+    require_permission,
+    user_has_module_action
 )
 
 # Import pour les notifications push (optionnel, peut échouer si module incomplet)
@@ -378,8 +380,8 @@ async def create_categorie_materiel(
     """Créer une nouvelle catégorie (admin/superviseur uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin/Superviseur requis")
+    # RBAC: Vérifier permission de création sur le module actifs/materiel
+    await require_permission(tenant.id, current_user, "actifs", "creer", "materiel")
     
     existing = await db.categories_materiel.find_one({
         "tenant_id": tenant.id,
@@ -409,8 +411,8 @@ async def update_categorie_materiel(
     """Modifier une catégorie (admin/superviseur uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin/Superviseur requis")
+    # RBAC: Vérifier permission de modification sur le module actifs/materiel
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "materiel")
     
     update_data = {k: v for k, v in categorie.dict().items() if v is not None}
     if not update_data:
@@ -438,8 +440,8 @@ async def delete_categorie_materiel(
     """Supprimer une catégorie (admin/superviseur uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin/Superviseur requis")
+    # RBAC: Vérifier permission de suppression sur le module actifs/materiel
+    await require_permission(tenant.id, current_user, "actifs", "supprimer", "materiel")
     
     count = await db.materiel.count_documents({
         "tenant_id": tenant.id,
@@ -535,8 +537,8 @@ async def create_materiel(
     """Créer un nouveau matériel (admin/superviseur uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin/Superviseur requis")
+    # RBAC: Vérifier permission de création sur le module actifs/materiel
+    await require_permission(tenant.id, current_user, "actifs", "creer", "materiel")
     
     categorie = await db.categories_materiel.find_one({
         "id": materiel.categorie_id,
@@ -598,8 +600,8 @@ async def update_materiel(
     """Modifier un matériel (admin/superviseur uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin/Superviseur requis")
+    # RBAC: Vérifier permission de modification sur le module actifs/materiel
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "materiel")
     
     item_actuel = await db.materiel.find_one({
         "id": materiel_id,
@@ -656,8 +658,8 @@ async def delete_materiel(
     """Supprimer un matériel (admin/superviseur uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin/Superviseur requis")
+    # RBAC: Vérifier permission de suppression sur le module actifs/materiel
+    await require_permission(tenant.id, current_user, "actifs", "supprimer", "materiel")
     
     result = await db.materiel.delete_one({
         "id": materiel_id,
@@ -689,8 +691,8 @@ async def create_mouvement_stock(
     """Créer un mouvement de stock"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin/Superviseur requis")
+    # RBAC: Vérifier permission de modification sur le module actifs/materiel
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "materiel")
     
     item = await db.materiel.find_one({
         "id": materiel_id,
@@ -794,8 +796,8 @@ async def create_maintenance(
     """Planifier une maintenance"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin/Superviseur requis")
+    # RBAC: Vérifier permission de création sur le module actifs/materiel
+    await require_permission(tenant.id, current_user, "actifs", "creer", "materiel")
     
     item = await db.materiel.find_one({
         "id": materiel_id,
@@ -832,8 +834,8 @@ async def update_maintenance(
     """Modifier une maintenance"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin/Superviseur requis")
+    # RBAC: Vérifier permission de modification sur le module actifs/materiel
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "materiel")
     
     update_data = {k: v for k, v in maintenance.dict().items() if v is not None}
     if not update_data:

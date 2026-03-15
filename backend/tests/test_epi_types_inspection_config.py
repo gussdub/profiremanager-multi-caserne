@@ -13,7 +13,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://unit-test-validation.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://rbac-migration-1.preview.emergentagent.com').rstrip('/')
 TENANT_SLUG = "demo"
 
 # Test credentials from previous iterations

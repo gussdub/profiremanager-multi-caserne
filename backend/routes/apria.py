@@ -22,7 +22,9 @@ from routes.dependencies import (
     get_current_user,
     get_tenant_from_slug,
     clean_mongo_doc,
-    User
+    User,
+    require_permission,
+    user_has_module_action
 )
 
 router = APIRouter(tags=["APRIA - Inspections"])
@@ -167,8 +169,8 @@ async def create_modele_inspection_apria(
     """Créer un nouveau modèle d'inspection APRIA"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée")
+    # RBAC: Vérifier permission de création sur le module actifs/materiel
+    await require_permission(tenant.id, current_user, "actifs", "creer", "materiel")
     
     modele = {
         "id": str(uuid.uuid4()),
@@ -196,8 +198,8 @@ async def update_modele_inspection_apria(
     """Mettre à jour un modèle d'inspection APRIA"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée")
+    # RBAC: Vérifier permission de modification sur le module actifs/materiel
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "materiel")
     
     update_data = {k: v for k, v in modele_data.items() if k != 'id' and k != 'tenant_id'}
     update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
@@ -221,8 +223,8 @@ async def delete_modele_inspection_apria(
     """Supprimer un modèle d'inspection APRIA"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée")
+    # RBAC: Vérifier permission de suppression sur le module actifs/materiel
+    await require_permission(tenant.id, current_user, "actifs", "supprimer", "materiel")
     
     # Vérifier si le modèle est actif
     modele = await db.modeles_inspection_apria.find_one({"id": modele_id, "tenant_id": tenant.id})
@@ -245,8 +247,8 @@ async def activer_modele_inspection_apria(
     """Activer un modèle d'inspection APRIA (désactive les autres)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée")
+    # RBAC: Vérifier permission de modification sur le module actifs/materiel
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "materiel")
     
     # Désactiver tous les modèles
     await db.modeles_inspection_apria.update_many(
@@ -275,8 +277,8 @@ async def dupliquer_modele_inspection_apria(
     """Dupliquer un modèle d'inspection APRIA"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée")
+    # RBAC: Vérifier permission de création sur le module actifs/materiel
+    await require_permission(tenant.id, current_user, "actifs", "creer", "materiel")
     
     # Récupérer le modèle source
     modele_source = await db.modeles_inspection_apria.find_one(
@@ -463,8 +465,8 @@ async def update_parametres_apria(
     """Mettre à jour les paramètres du module APRIA"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée")
+    # RBAC: Vérifier permission de modification sur le module actifs/parametres
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "parametres")
     
     update_data = {k: v for k, v in parametres_data.items() if k not in ['id', 'tenant_id']}
     update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
@@ -608,8 +610,8 @@ async def create_modele_inspection_parties_faciales(
     """Créer un nouveau modèle d'inspection pour les parties faciales"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée")
+    # RBAC: Vérifier permission de création sur le module actifs/materiel
+    await require_permission(tenant.id, current_user, "actifs", "creer", "materiel")
     
     modele = {
         "id": str(uuid.uuid4()),
@@ -636,8 +638,8 @@ async def update_modele_inspection_parties_faciales(
     """Mettre à jour un modèle d'inspection des parties faciales"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée")
+    # RBAC: Vérifier permission de modification sur le module actifs/materiel
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "materiel")
     
     existing = await db.modeles_inspection_parties_faciales.find_one(
         {"id": modele_id, "tenant_id": tenant.id}
@@ -671,8 +673,8 @@ async def delete_modele_inspection_parties_faciales(
     """Supprimer un modèle d'inspection des parties faciales"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin']:
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin uniquement")
+    # RBAC: Vérifier permission de suppression sur le module actifs/materiel
+    await require_permission(tenant.id, current_user, "actifs", "supprimer", "materiel")
     
     result = await db.modeles_inspection_parties_faciales.delete_one(
         {"id": modele_id, "tenant_id": tenant.id}
@@ -692,8 +694,8 @@ async def activer_modele_inspection_parties_faciales(
     """Activer un modèle d'inspection (désactive les autres)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée")
+    # RBAC: Vérifier permission de modification sur le module actifs/materiel
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "materiel")
     
     # Désactiver tous les modèles
     await db.modeles_inspection_parties_faciales.update_many(
@@ -917,9 +919,8 @@ async def create_formulaire_inspection(
     """Créer un nouveau formulaire d'inspection"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Vérifier les permissions (admin seulement)
-    if current_user.role not in ['admin', 'superadmin']:
-        raise HTTPException(status_code=403, detail="Permission refusée")
+    # RBAC: Vérifier permission de création sur le module actifs/materiel
+    await require_permission(tenant.id, current_user, "actifs", "creer", "materiel")
     
     formulaire = {
         "id": str(uuid.uuid4()),
@@ -953,8 +954,8 @@ async def update_formulaire_inspection(
     """Mettre à jour un formulaire d'inspection"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superadmin']:
-        raise HTTPException(status_code=403, detail="Permission refusée")
+    # RBAC: Vérifier permission de modification sur le module actifs/materiel
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "materiel")
     
     formulaire = await db.formulaires_inspection.find_one(
         {"tenant_id": tenant.id, "id": formulaire_id}
@@ -997,8 +998,8 @@ async def delete_formulaire_inspection(
     """Supprimer un formulaire d'inspection"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superadmin']:
-        raise HTTPException(status_code=403, detail="Permission refusée")
+    # RBAC: Vérifier permission de suppression sur le module actifs/materiel
+    await require_permission(tenant.id, current_user, "actifs", "supprimer", "materiel")
     
     result = await db.formulaires_inspection.delete_one(
         {"tenant_id": tenant.id, "id": formulaire_id}
@@ -1019,8 +1020,8 @@ async def dupliquer_formulaire_inspection(
     """Dupliquer un formulaire d'inspection"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superadmin']:
-        raise HTTPException(status_code=403, detail="Permission refusée")
+    # RBAC: Vérifier permission de création sur le module actifs/materiel
+    await require_permission(tenant.id, current_user, "actifs", "creer", "materiel")
     
     original = await db.formulaires_inspection.find_one(
         {"tenant_id": tenant.id, "id": formulaire_id}
@@ -1384,8 +1385,8 @@ async def migrer_categories_formulaires(
     """Migrer les catégories des formulaires vers les 4 catégories principales"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superadmin']:
-        raise HTTPException(status_code=403, detail="Permission refusée")
+    # RBAC: Vérifier permission de modification sur le module actifs/materiel
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "materiel")
     
     # Mapping des anciennes catégories vers les nouvelles
     category_mapping = {
@@ -1467,8 +1468,8 @@ async def migrer_formulaires_existants(
     """Migrer les formulaires existants (APRIA, Bornes Sèches, Parties Faciales) vers le système unifié"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superadmin']:
-        raise HTTPException(status_code=403, detail="Permission refusée")
+    # RBAC: Vérifier permission de modification sur le module actifs/materiel
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "materiel")
     
     migrated = []
     

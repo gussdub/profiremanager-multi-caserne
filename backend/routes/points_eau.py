@@ -31,7 +31,9 @@ from routes.dependencies import (
     get_tenant_from_slug,
     clean_mongo_doc,
     User,
-    creer_notification
+    creer_notification,
+    require_permission,
+    user_has_module_action
 )
 
 router = APIRouter(tags=["Points d'Eau"])
@@ -358,8 +360,8 @@ async def create_point_eau(
     """Créer un nouveau point d'eau (Admin/Superviseur uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée")
+    # RBAC: Vérifier permission de création sur le module actifs/eau
+    await require_permission(tenant.id, current_user, "actifs", "creer", "eau")
     
     point_dict = point_data.dict()
     point_dict['id'] = str(uuid.uuid4())
@@ -385,8 +387,8 @@ async def update_point_eau(
     """Modifier un point d'eau (Admin/Superviseur uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée")
+    # RBAC: Vérifier permission de modification sur le module actifs/eau
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "eau")
     
     # Récupérer l'ancien état pour détecter les changements de statut
     ancien_point = await db.points_eau.find_one({"id": point_id, "tenant_id": tenant.id})
@@ -447,8 +449,8 @@ async def delete_point_eau(
     """Supprimer un point d'eau (Admin/Superviseur)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin ou Superviseur requis")
+    # RBAC: Vérifier permission de suppression sur le module actifs/eau
+    await require_permission(tenant.id, current_user, "actifs", "supprimer", "eau")
     
     result = await db.points_eau.delete_one({
         "id": point_id,
@@ -561,10 +563,10 @@ async def delete_inspection(
     current_user: User = Depends(get_current_user)
 ):
     """Supprimer une inspection (admin/superviseur)"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Seuls les administrateurs et superviseurs peuvent supprimer des inspections")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de suppression sur le module actifs/eau
+    await require_permission(tenant.id, current_user, "actifs", "supprimer", "eau")
     
     # Essayer de supprimer dans les deux collections possibles
     result1 = await db.inspections_bornes_seches.delete_one({
@@ -631,10 +633,10 @@ async def import_points_eau(
     - update: mettre à jour un point existant
     - skip: ignorer (doublon)
     """
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin ou Superviseur requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de création sur le module actifs/eau
+    await require_permission(tenant.id, current_user, "actifs", "creer", "eau")
     
     results = {
         "created": 0,

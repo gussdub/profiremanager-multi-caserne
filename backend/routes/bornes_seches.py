@@ -45,7 +45,9 @@ from routes.dependencies import (
     get_current_user,
     get_tenant_from_slug,
     clean_mongo_doc,
-    User
+    User,
+    require_permission,
+    user_has_module_action
 )
 
 router = APIRouter(tags=["Bornes Sèches"])
@@ -185,8 +187,8 @@ async def create_template_borne_seche(
     """Créer un nouveau template de borne sèche (Admin/Superviseur uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin/Superviseur requis")
+    # RBAC: Vérifier permission de création sur le module actifs/eau
+    await require_permission(tenant.id, current_user, "actifs", "creer", "eau")
     
     template_dict = template_data.dict()
     template_dict['id'] = str(uuid.uuid4())
@@ -212,8 +214,8 @@ async def update_template_borne_seche(
     """Modifier un template de borne sèche (Admin/Superviseur uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin/Superviseur requis")
+    # RBAC: Vérifier permission de modification sur le module actifs/eau
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "eau")
     
     update_data = {k: v for k, v in template_data.dict().items() if v is not None}
     if not update_data:
@@ -241,8 +243,8 @@ async def delete_template_borne_seche(
     """Supprimer un template de borne sèche (Admin/Superviseur)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin ou Superviseur requis")
+    # RBAC: Vérifier permission de suppression sur le module actifs/eau
+    await require_permission(tenant.id, current_user, "actifs", "supprimer", "eau")
     
     # Vérifier si des inspections utilisent ce template
     inspections_count = await db.inspections_bornes_seches.count_documents({
@@ -446,10 +448,10 @@ async def create_modele_inspection_borne_seche(
     current_user: User = Depends(get_current_user)
 ):
     """Créer un nouveau modèle d'inspection (Admin/Superviseur uniquement)"""
-    if current_user.role == "employe":
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de création sur le module actifs/eau
+    await require_permission(tenant.id, current_user, "actifs", "creer", "eau")
     
     modele_dict = modele_data.dict()
     modele_dict['id'] = str(uuid.uuid4())
@@ -480,10 +482,10 @@ async def update_modele_inspection_borne_seche(
     current_user: User = Depends(get_current_user)
 ):
     """Modifier un modèle d'inspection (Admin/Superviseur uniquement)"""
-    if current_user.role == "employe":
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de modification sur le module actifs/eau
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "eau")
     
     update_data = {k: v for k, v in modele_data.dict().items() if v is not None}
     if not update_data:
@@ -515,10 +517,10 @@ async def delete_modele_inspection_borne_seche(
     current_user: User = Depends(get_current_user)
 ):
     """Supprimer un modèle d'inspection (Admin/Superviseur)"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé - Admin ou Superviseur requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de suppression sur le module actifs/eau
+    await require_permission(tenant.id, current_user, "actifs", "supprimer", "eau")
     
     # Vérifier que le modèle n'est pas actif
     modele = await db.modeles_inspection_bornes_seches.find_one({
@@ -550,10 +552,10 @@ async def activer_modele_inspection(
     current_user: User = Depends(get_current_user)
 ):
     """Activer un modèle d'inspection (désactive les autres)"""
-    if current_user.role == "employe":
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de modification sur le module actifs/eau
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "eau")
     
     modele = await db.modeles_inspection_bornes_seches.find_one(
         {"id": modele_id, "tenant_id": tenant.id}
@@ -586,10 +588,10 @@ async def duplicate_modele_inspection_borne_seche(
     current_user: User = Depends(get_current_user)
 ):
     """Dupliquer un modèle d'inspection existant"""
-    if current_user.role == "employe":
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de création sur le module actifs/eau
+    await require_permission(tenant.id, current_user, "actifs", "creer", "eau")
     
     modele_original = await db.modeles_inspection_bornes_seches.find_one(
         {"id": modele_id, "tenant_id": tenant.id},

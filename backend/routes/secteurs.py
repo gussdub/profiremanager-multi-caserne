@@ -23,7 +23,9 @@ from routes.dependencies import (
     get_current_user,
     get_tenant_from_slug,
     clean_mongo_doc,
-    User
+    User,
+    require_permission,
+    user_has_module_action
 )
 
 router = APIRouter(tags=["Secteurs"])
@@ -111,10 +113,10 @@ async def create_secteur(
     """
     Crée un nouveau secteur
     """
-    if current_user.role not in ["admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Admin requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de création sur le module parametres
+    await require_permission(tenant.id, current_user, "parametres", "creer")
     
     # Vérifier si le nom existe déjà
     existing = await db.secteurs.find_one({
@@ -166,10 +168,10 @@ async def update_secteur(
     """
     Met à jour un secteur
     """
-    if current_user.role not in ["admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Admin requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de modification sur le module parametres
+    await require_permission(tenant.id, current_user, "parametres", "modifier")
     
     secteur = await db.secteurs.find_one({
         "tenant_id": tenant.id,
@@ -237,10 +239,10 @@ async def delete_secteur(
     """
     Supprime un secteur
     """
-    if current_user.role not in ["admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Admin requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de suppression sur le module parametres
+    await require_permission(tenant.id, current_user, "parametres", "supprimer")
     
     # Vérifier si le secteur est utilisé dans des interventions
     interventions_count = await db.interventions.count_documents({
@@ -287,10 +289,10 @@ async def get_stats_utilisation_secteurs(
     """
     Récupère les statistiques d'utilisation des secteurs
     """
-    if current_user.role not in ["admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Admin requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de voir sur le module parametres
+    await require_permission(tenant.id, current_user, "parametres", "voir")
     
     secteurs = await db.secteurs.find({"tenant_id": tenant.id}).to_list(500)
     
@@ -339,10 +341,10 @@ async def initialiser_secteurs_defaut(
     """
     Initialise des secteurs par défaut pour un nouveau tenant
     """
-    if current_user.role not in ["admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Admin requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de création sur le module parametres
+    await require_permission(tenant.id, current_user, "parametres", "creer")
     
     # Vérifier si des secteurs existent déjà
     existing = await db.secteurs.count_documents({"tenant_id": tenant.id})

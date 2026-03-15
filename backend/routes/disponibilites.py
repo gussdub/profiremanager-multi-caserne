@@ -28,7 +28,9 @@ from routes.dependencies import (
     clean_mongo_doc,
     User,
     creer_activite,
-    creer_notification
+    creer_notification,
+    require_permission,
+    user_has_module_action
 )
 
 # Import WebSocket pour synchronisation temps réel
@@ -154,8 +156,9 @@ async def get_disponibilites_user(
     if current_user.tenant_id != tenant.id:
         raise HTTPException(status_code=403, detail="Accès interdit à cette caserne")
     
-    # Vérifier permissions
-    if current_user.role not in ["admin", "superviseur"] and current_user.id != user_id:
+    # Vérifier permissions via RBAC (ou accès à ses propres données)
+    can_view_others = await user_has_module_action(tenant.id, current_user, "disponibilites", "voir")
+    if not can_view_others and current_user.id != user_id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
     # Construire le filtre
@@ -187,9 +190,10 @@ async def create_disponibilite(
     # Déterminer le user_id cible
     target_user_id = dispo.user_id if dispo.user_id else current_user.id
     
-    # Si l'admin/superviseur crée pour quelqu'un d'autre, vérifier les permissions
+    # Si l'admin/superviseur crée pour quelqu'un d'autre, vérifier les permissions RBAC
     if target_user_id != current_user.id:
-        if current_user.role not in ["admin", "superviseur"]:
+        can_create_for_others = await user_has_module_action(tenant.id, current_user, "disponibilites", "modifier")
+        if not can_create_for_others:
             raise HTTPException(
                 status_code=403,
                 detail="Vous ne pouvez pas créer des disponibilités pour un autre utilisateur"
@@ -231,8 +235,9 @@ async def create_disponibilite(
                            f"mais la date {dispo.date} est un {day_names[day_of_week]}"
                 )
     
-    # Vérifier si l'utilisateur peut soumettre (deadline) - seulement pour les non-admins
-    if current_user.role not in ["admin", "superviseur"]:
+    # Vérifier si l'utilisateur peut soumettre (deadline) - seulement pour ceux sans permission modifier
+    can_bypass_deadline = await user_has_module_action(tenant.id, current_user, "disponibilites", "modifier")
+    if not can_bypass_deadline:
         params = await db.parametres_disponibilites.find_one({"tenant_id": tenant.id})
         if params and params.get("bloquer_apres_deadline"):
             today = date.today()
@@ -284,8 +289,9 @@ async def update_disponibilites(
     if current_user.tenant_id != tenant.id:
         raise HTTPException(status_code=403, detail="Accès interdit à cette caserne")
     
-    # Vérification de sécurité côté serveur
-    if current_user.id != user_id and current_user.role not in ["admin", "superviseur"]:
+    # Vérification de sécurité côté serveur via RBAC
+    can_modify_others = await user_has_module_action(tenant.id, current_user, "disponibilites", "modifier")
+    if current_user.id != user_id and not can_modify_others:
         raise HTTPException(
             status_code=403,
             detail="Vous ne pouvez pas modifier les disponibilités d'un autre utilisateur"
@@ -346,10 +352,9 @@ async def get_rapport_disponibilite(
     current_user: User = Depends(get_current_user)
 ):
     """Rapport de disponibilité/indisponibilité des pompiers"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
+    # RBAC: Vérifier permission d'accès au module rapports
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "rapports", "voir")
     
     # Convertir dates
     date_debut_dt = datetime.fromisoformat(date_debut)
@@ -723,10 +728,13 @@ async def import_disponibilites_csv(
     current_user: User = Depends(get_current_user)
 ):
     """Import en masse de disponibilités depuis un CSV/XLS"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de modification sur le module disponibilites
+    await require_permission(tenant.id, current_user, "disponibilites", "modifier")
+    
+    # Pré-calculer si l'utilisateur peut contourner les blocages via RBAC
+    can_bypass_blocage = await user_has_module_action(tenant.id, current_user, "disponibilites", "modifier")
     
     disponibilites = disponibilites_data.get("disponibilites", [])
     if not disponibilites:
@@ -770,8 +778,8 @@ async def import_disponibilites_csv(
         
         est_bloque = mois_cible_est_passe or (est_apres_date_limite and mois_cible_est_le_mois_bloque)
         
-        # Exception pour admin/superviseur
-        if est_bloque and exceptions_admin and current_user.role in ["admin", "superviseur"]:
+        # Exception via RBAC (utilisateur a la permission de modifier)
+        if est_bloque and exceptions_admin and can_bypass_blocage:
             return False
         
         return est_bloque
@@ -1193,8 +1201,9 @@ async def reinitialiser_disponibilites(
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Vérifier les permissions
-    if current_user.role not in ["admin", "superviseur"] and current_user.id != reinit_data.user_id:
+    # Vérifier les permissions via RBAC (ou accès à ses propres données)
+    can_modify_others = await user_has_module_action(tenant.id, current_user, "disponibilites", "modifier")
+    if not can_modify_others and current_user.id != reinit_data.user_id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
     try:
@@ -1339,7 +1348,9 @@ async def delete_disponibilite(tenant_slug: str, disponibilite_id: str, current_
     if not disponibilite:
         raise HTTPException(status_code=404, detail="Disponibilité non trouvée")
     
-    if current_user.role not in ["admin", "superviseur"] and current_user.id != disponibilite["user_id"]:
+    # Vérifier permission via RBAC (ou accès à ses propres données)
+    can_delete_others = await user_has_module_action(tenant.id, current_user, "disponibilites", "modifier")
+    if not can_delete_others and current_user.id != disponibilite["user_id"]:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
     result = await db.disponibilites.delete_one({

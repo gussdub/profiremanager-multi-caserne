@@ -18,7 +18,9 @@ from routes.dependencies import (
     get_current_user,
     get_tenant_from_slug,
     clean_mongo_doc,
-    User
+    User,
+    require_permission,
+    user_has_module_action
 )
 
 router = APIRouter(tags=["Dashboard"])
@@ -65,7 +67,8 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
     }).to_list(1000)
     
     # Pour section admin : charger données agrégées uniquement si nécessaire
-    if current_user.role in ["admin", "superviseur"]:
+    can_view_all_data = await user_has_module_action(tenant.id, current_user, "planning", "voir")
+    if can_view_all_data:
         assignations = await db.assignations.find({
             "tenant_id": tenant.id,
             "date": {
@@ -168,9 +171,9 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
         "formations_a_venir": formations_a_venir
     }
     
-    # ===== SECTION GÉNÉRALE (Admin/Superviseur uniquement) =====
+    # ===== SECTION GÉNÉRALE (Utilisateurs avec permission de voir le planning) =====
     section_generale = None
-    if current_user.role in ["admin", "superviseur"]:
+    if can_view_all_data:
         nb_assignations_mois = len(assignations)
         
         # Calculer précisément le taux de couverture
@@ -241,14 +244,18 @@ async def get_dashboard_donnees_completes(tenant_slug: str, current_user: User =
     # ===== ACTIVITÉS RÉCENTES =====
     activites_recentes = []
     
-    if current_user.role == "admin":
+    # Vérifier si l'utilisateur a permission de voir toutes les activités
+    can_view_all_activities = await user_has_module_action(tenant.id, current_user, "rapports", "voir")
+    
+    if can_view_all_activities:
         activites = await db.activites.find({
             "tenant_id": tenant.id,
             "type_activite": {"$nin": ["parametres"]}
         }).sort("created_at", -1).limit(50).to_list(50)
         activites_recentes = [clean_mongo_doc(a) for a in activites]
     
-    elif current_user.role in ["superviseur", "employe"]:
+    else:
+        # Employé standard : seulement les activités le concernant
         activites = await db.activites.find({
             "tenant_id": tenant.id,
             "$or": [
@@ -283,10 +290,12 @@ async def get_activites_systeme(
     - Modifications de personnel
     - Etc.
     """
-    if current_user.role not in ["admin", "superviseur"]:
-        return {"activites": [], "total": 0, "message": "Accès réservé aux administrateurs"}
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de voir les rapports
+    can_view_activities = await user_has_module_action(tenant.id, current_user, "rapports", "voir")
+    if not can_view_activities:
+        return {"activites": [], "total": 0, "message": "Accès réservé aux administrateurs"}
     
     # Compter le total
     total = await db.activites.count_documents({"tenant_id": tenant.id})
@@ -369,7 +378,7 @@ async def get_alertes_equipements_dashboard(
     
     # Déterminer les catégories visibles pour l'utilisateur
     categories_visibles = []
-    is_admin = current_user.role in ['admin', 'superviseur']
+    is_admin = await user_has_module_action(tenant.id, current_user, "actifs", "voir")
     is_personne_ressource = False
     
     if not is_admin:
@@ -667,10 +676,12 @@ async def get_couverture_precise(
     - Orange (partielle): 0 < assignations < personnel_requis  
     - Rouge (vacante): assignations = 0
     """
-    if current_user.role not in ["admin", "superviseur", "production"]:
-        return {"taux_couverture": 0, "message": "Accès réservé aux administrateurs"}
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de voir le planning
+    can_view_planning = await user_has_module_action(tenant.id, current_user, "planning", "voir")
+    if not can_view_planning:
+        return {"taux_couverture": 0, "message": "Accès réservé aux administrateurs"}
     
     # Mapping des jours: Python weekday() -> nom anglais utilisé dans jours_application
     JOURS_MAPPING = {

@@ -27,7 +27,9 @@ from routes.dependencies import (
     validate_complex_password,
     get_password_hash,
     verify_password,
-    creer_activite
+    creer_activite,
+    require_permission,
+    user_has_module_action
 )
 
 router = APIRouter(tags=["Users"])
@@ -152,11 +154,11 @@ def resize_and_compress_image(base64_string: str, max_size: int = 200) -> str:
 # POST users
 @router.post("/{tenant_slug}/users", response_model=User)
 async def create_user(tenant_slug: str, user_create: UserCreate, current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de création sur le module personnel
+    await require_permission(tenant.id, current_user, "personnel", "creer")
     
     # VÉRIFIER LA LIMITE DU PALIER
     current_count = await db.users.count_documents({"tenant_id": tenant.id})
@@ -282,10 +284,10 @@ async def import_users_csv(
     current_user: User = Depends(get_current_user)
 ):
     """Import en masse d'utilisateurs/personnel depuis un CSV"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de création sur le module personnel
+    await require_permission(tenant.id, current_user, "personnel", "creer")
     
     users = users_data.get("users", [])
     if not users:
@@ -631,10 +633,10 @@ async def upload_photo_profil_admin(
     """
     Upload une photo de profil pour un utilisateur (Admin uniquement)
     """
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé - Admin requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de modification sur le module personnel
+    await require_permission(tenant.id, current_user, "personnel", "modifier")
     
     try:
         # Vérifier que l'utilisateur existe
@@ -691,10 +693,10 @@ async def delete_photo_profil_admin(
     """
     Supprime la photo de profil d'un utilisateur (Admin uniquement)
     """
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé - Admin requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de modification sur le module personnel
+    await require_permission(tenant.id, current_user, "personnel", "modifier")
     
     result = await db.users.update_one(
         {"id": user_id, "tenant_id": tenant.id},
@@ -870,8 +872,9 @@ async def change_user_password(
             logging.warning(f"❌ Utilisateur non trouvé pour changement de mot de passe: {user_id}")
             raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
         
-        # Cas 1: Admin qui réinitialise le mot de passe d'un autre utilisateur
-        is_admin_reset = current_user.role == "admin" and current_user.id != user_id
+        # Cas 1: Utilisateur avec permission de modifier qui réinitialise le mot de passe d'un autre utilisateur
+        can_modify_others = await user_has_module_action(tenant.id, current_user, "personnel", "modifier")
+        is_admin_reset = can_modify_others and current_user.id != user_id
         
         # Cas 2: Utilisateur qui change son propre mot de passe
         is_self_change = current_user.id == user_id
@@ -972,11 +975,11 @@ async def change_user_password(
 # PUT users/{user_id}/access
 @router.put("/{tenant_slug}/users/{user_id}/access", response_model=User)
 async def update_user_access(tenant_slug: str, user_id: str, role: str, statut: str, current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de modification sur le module personnel
+    await require_permission(tenant.id, current_user, "personnel", "modifier")
     
     # Validation des valeurs
     valid_roles = ["admin", "superviseur", "employe"]
@@ -1018,11 +1021,12 @@ async def upload_signature(
     Upload une signature numérique (JPEG ou PNG) pour un utilisateur.
     Utilisée dans les avis de non-conformité et autres documents officiels.
     """
-    # Vérifier les permissions (soi-même ou admin)
-    if current_user.id != user_id and current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier les permissions via RBAC (soi-même ou permission de modifier)
+    can_modify_others = await user_has_module_action(tenant.id, current_user, "personnel", "modifier")
+    if current_user.id != user_id and not can_modify_others:
+        raise HTTPException(status_code=403, detail="Accès refusé")
     
     # Vérifier que l'utilisateur existe
     existing_user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
@@ -1065,10 +1069,12 @@ async def delete_signature(
     current_user: User = Depends(get_current_user)
 ):
     """Supprimer la signature numérique d'un utilisateur"""
-    if current_user.id != user_id and current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier les permissions via RBAC (soi-même ou permission de modifier)
+    can_modify_others = await user_has_module_action(tenant.id, current_user, "personnel", "modifier")
+    if current_user.id != user_id and not can_modify_others:
+        raise HTTPException(status_code=403, detail="Accès refusé")
     
     await db.users.update_one(
         {"id": user_id, "tenant_id": tenant.id},
@@ -1081,11 +1087,11 @@ async def delete_signature(
 # DELETE users/{user_id}/revoke
 @router.delete("/{tenant_slug}/users/{user_id}/revoke")
 async def revoke_user_completely(tenant_slug: str, user_id: str, current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de suppression sur le module personnel
+    await require_permission(tenant.id, current_user, "personnel", "supprimer")
     
     # Check if user exists IN THIS TENANT
     existing_user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
@@ -1112,7 +1118,9 @@ async def get_user_monthly_stats(tenant_slug: str, user_id: str, current_user: U
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ["admin", "superviseur"] and current_user.id != user_id:
+    # Vérifier les permissions via RBAC (soi-même ou permission de voir)
+    can_view_others = await user_has_module_action(tenant.id, current_user, "personnel", "voir")
+    if not can_view_others and current_user.id != user_id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
     try:

@@ -26,6 +26,17 @@ from routes.dependencies import (
 router = APIRouter(tags=["Access Types"])
 logger = logging.getLogger(__name__)
 
+# Import tardif pour éviter l'import circulaire
+async def check_parametres_permission(tenant_id: str, user, action: str):
+    """Vérifie la permission sur le module parametres (import tardif)"""
+    from routes.dependencies import user_has_module_action
+    return await user_has_module_action(tenant_id, user, "parametres", action)
+
+async def require_parametres_permission(tenant_id: str, user, action: str):
+    """Exige la permission sur le module parametres (import tardif)"""
+    from routes.dependencies import require_permission
+    await require_permission(tenant_id, user, "parametres", action)
+
 # Limite maximale de types d'accès personnalisés par tenant
 MAX_ACCESS_TYPES = 15
 
@@ -456,12 +467,12 @@ async def get_modules_structure(
     Retourne la structure des modules actifs pour ce tenant et leurs permissions possibles.
     Utilisé par le frontend pour construire l'interface de configuration.
     """
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # RBAC: Vérifier permission de voir sur le module parametres
+    await require_parametres_permission(tenant.id, current_user, "voir")
     
     # Filtrer les modules selon ce qui est activé pour le tenant
     active_modules = get_active_modules_for_tenant(tenant)
@@ -496,12 +507,12 @@ async def list_access_types(
     current_user: User = Depends(get_current_user)
 ):
     """Liste tous les types d'accès du tenant (de base + personnalisés)"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # RBAC: Vérifier permission de voir sur le module parametres
+    await require_parametres_permission(tenant.id, current_user, "voir")
     
     # Récupérer les types personnalisés
     custom_types = await db.access_types.find(
@@ -555,12 +566,12 @@ async def get_access_type(
     current_user: User = Depends(get_current_user)
 ):
     """Récupère un type d'accès spécifique"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # RBAC: Vérifier permission de voir sur le module parametres
+    await require_parametres_permission(tenant.id, current_user, "voir")
     
     # Vérifier si c'est un rôle de base
     if access_type_id in DEFAULT_PERMISSIONS:
@@ -590,12 +601,12 @@ async def create_access_type(
     current_user: User = Depends(get_current_user)
 ):
     """Crée un nouveau type d'accès personnalisé"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # RBAC: Vérifier permission de création sur le module parametres
+    await require_parametres_permission(tenant.id, current_user, "creer")
     
     # Vérifier la limite
     count = await db.access_types.count_documents({"tenant_id": tenant.id})
@@ -657,12 +668,12 @@ async def update_access_type(
     current_user: User = Depends(get_current_user)
 ):
     """Met à jour un type d'accès personnalisé"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # RBAC: Vérifier permission de modification sur le module parametres
+    await require_parametres_permission(tenant.id, current_user, "modifier")
     
     # Les rôles de base ne peuvent pas être modifiés directement
     if access_type_id in ["admin", "superviseur", "employe"]:
@@ -724,12 +735,12 @@ async def delete_access_type(
     current_user: User = Depends(get_current_user)
 ):
     """Supprime un type d'accès personnalisé"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # RBAC: Vérifier permission de suppression sur le module parametres
+    await require_parametres_permission(tenant.id, current_user, "supprimer")
     
     # Les rôles de base ne peuvent pas être supprimés
     if access_type_id in ["admin", "superviseur", "employe"]:
@@ -767,12 +778,12 @@ async def get_users_with_access_type(
     current_user: User = Depends(get_current_user)
 ):
     """Liste les utilisateurs ayant un type d'accès spécifique"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # RBAC: Vérifier permission de voir sur le module parametres
+    await require_parametres_permission(tenant.id, current_user, "voir")
     
     # Pour les rôles de base, chercher par le champ 'role'
     if access_type_id in ["admin", "superviseur", "employe"]:
@@ -804,8 +815,9 @@ async def get_user_permissions(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
-    # Vérifier l'accès : soit c'est ses propres permissions, soit c'est un admin
-    if current_user.id != user_id and current_user.role != "admin":
+    # Vérifier l'accès via RBAC : soit c'est ses propres permissions, soit il a la permission de voir les paramètres
+    can_view_others = await check_parametres_permission(tenant.id, current_user, "voir")
+    if current_user.id != user_id and not can_view_others:
         raise HTTPException(status_code=403, detail="Accès non autorisé")
     
     # Récupérer l'utilisateur
