@@ -630,8 +630,62 @@ async def calculer_feuille_temps(
         "primes_repas": 0.0
     }
     
-    # Taux horaire: utiliser celui de l'employé ou le taux par défaut des paramètres
+    # Taux horaire: 
+    # 1. Priorité au taux manuel de l'employé (s'il est défini et > 0)
+    # 2. Sinon, calcul automatique depuis l'échelle salariale
+    # 3. En dernier recours, taux par défaut des paramètres paie
     taux_horaire = employe.get("taux_horaire", 0.0) or 0.0
+    
+    if taux_horaire == 0:
+        # Essayer de calculer depuis l'échelle salariale
+        echelle_salariale = await db.echelles_salariales.find_one({"tenant_id": tenant.id})
+        if echelle_salariale and echelle_salariale.get("echelons"):
+            # Calculer l'échelon actuel
+            echelon_embauche = employe.get("echelon_embauche", 1)
+            date_embauche_str = employe.get("date_embauche")
+            anciennete_annees = 0
+            
+            if date_embauche_str:
+                try:
+                    from datetime import datetime, timezone
+                    formats_to_try = ["%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y"]
+                    date_embauche = None
+                    for fmt in formats_to_try:
+                        try:
+                            date_str = date_embauche_str.split('T')[0] if 'T' in str(date_embauche_str) else str(date_embauche_str)
+                            date_embauche = datetime.strptime(date_str, fmt)
+                            break
+                        except ValueError:
+                            continue
+                    
+                    if date_embauche:
+                        now = datetime.now(timezone.utc)
+                        if date_embauche.tzinfo is None:
+                            date_embauche = date_embauche.replace(tzinfo=timezone.utc)
+                        diff = now - date_embauche
+                        anciennete_annees = int(diff.days / 365.25)
+                except Exception as e:
+                    logger.warning(f"Erreur calcul ancienneté pour paie: {e}")
+            
+            echelon_actuel = echelon_embauche + anciennete_annees
+            echelon_max = max([e["numero"] for e in echelle_salariale["echelons"]])
+            echelon_actuel = min(echelon_actuel, echelon_max)
+            
+            # Trouver le taux horaire de base
+            for echelon in echelle_salariale["echelons"]:
+                if echelon["numero"] == echelon_actuel:
+                    taux_horaire = echelon["taux_horaire"]
+                    break
+            
+            # Ajouter la prime de grade si applicable
+            grade_nom = employe.get("grade", "")
+            if grade_nom:
+                grade_doc = await db.grades.find_one({"nom": grade_nom, "tenant_id": tenant.id})
+                if grade_doc and grade_doc.get("prime_pourcentage", 0) > 0:
+                    prime_grade = grade_doc["prime_pourcentage"] / 100
+                    taux_horaire = taux_horaire * (1 + prime_grade)
+    
+    # Fallback au taux par défaut si toujours 0
     if taux_horaire == 0:
         taux_horaire = params_paie.get("taux_horaire_defaut", 25.0)
     
@@ -642,7 +696,8 @@ async def calculer_feuille_temps(
     a_fonction_superieur = employe.get("fonction_superieur", False)
     
     # Lire la prime FS depuis l'échelle salariale (prioritaire) ou les params paie (fallback)
-    echelle_salariale = await db.echelles_salariales.find_one({"tenant_id": tenant.id})
+    if not echelle_salariale:
+        echelle_salariale = await db.echelles_salariales.find_one({"tenant_id": tenant.id})
     prime_fonction_superieure_pct = (
         echelle_salariale.get("prime_fonction_superieure_pct", 10) if echelle_salariale 
         else params_paie.get("prime_fonction_superieure_pct", 10)

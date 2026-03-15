@@ -1937,6 +1937,9 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         placeholder="Ex: 25.50"
                         data-testid="user-taux-horaire-input"
                       />
+                      <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                        Laissez vide pour utiliser l'échelle salariale automatique
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -3100,7 +3103,41 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       />
                     </div>
                     <div className="form-field">
-                      <Label>Taux horaire ($/h)</Label>
+                      <Label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        Taux horaire ($/h)
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (newUser.id) {
+                              try {
+                                const salaire = await apiGet(tenantSlug, `/users/${newUser.id}/salaire`);
+                                if (salaire.taux_horaire_final > 0) {
+                                  setNewUser({...newUser, taux_horaire: salaire.taux_horaire_final});
+                                  toast({
+                                    title: "✅ Taux calculé",
+                                    description: `Taux de ${salaire.taux_horaire_final.toFixed(2)} $/h appliqué depuis l'échelle salariale`,
+                                    variant: "success"
+                                  });
+                                }
+                              } catch (e) {
+                                console.error('Erreur calcul taux:', e);
+                              }
+                            }
+                          }}
+                          style={{
+                            background: '#f0f9ff',
+                            border: '1px solid #bae6fd',
+                            borderRadius: '4px',
+                            padding: '2px 8px',
+                            fontSize: '0.75rem',
+                            cursor: 'pointer',
+                            color: '#0369a1'
+                          }}
+                          title="Calculer depuis l'échelle salariale"
+                        >
+                          🔄 Calculer
+                        </button>
+                      </Label>
                       <Input
                         type="number"
                         step="0.01"
@@ -3109,6 +3146,9 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         placeholder="Ex: 25.50"
                         data-testid="edit-user-taux-horaire-input"
                       />
+                      <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                        Ce taux prime sur le calcul automatique (paie, entraide, etc.)
+                      </span>
                     </div>
                   </div>
 
