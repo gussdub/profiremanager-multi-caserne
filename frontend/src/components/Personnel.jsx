@@ -2180,7 +2180,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                     <div className="detail-section detail-section-optimized" style={{ marginBottom: '1.5rem' }}>
                       <h5 style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <span>💰 Rémunération</span>
-                        {canModifyPersonnel && echelleSalariale?.echelons?.length > 0 && !editingEchelon && (
+                        {canEditPersonnel && echelleSalariale?.echelons?.length > 0 && !editingEchelon && (
                           <Button 
                             variant="ghost" 
                             size="sm" 
