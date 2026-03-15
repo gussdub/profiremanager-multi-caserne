@@ -42,6 +42,34 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 
 
 
+### NEW - Migration RBAC Backend - Phase 2 (15 Mars 2026)
+**Statut:** EN COURS (~53% complété, 178 occurrences restantes sur 377)
+
+**Fichiers backend ENTIÈREMENT migrés vers RBAC:**
+| Module | Fichier | Endpoints migrés |
+|--------|---------|------------------|
+| Planning | `planning.py` | 19 |
+| Personnel | `personnel.py` | 6 |
+| Formations | `formations.py` | 14 |
+| Interventions | `interventions.py` | 11 |
+| Actifs | `actifs.py` | 20 |
+| EPI | `epi.py` | 37 |
+| Paie | `paie_complet.py` | 35 |
+| Prévention | `prevention.py` | 45 |
+| Délégations | `delegations.py` | 4 |
+
+**Total endpoints migrés : ~191**
+
+**Fichiers restants à migrer (priorité):**
+| Fichier | Occurrences restantes |
+|---------|----------------------|
+| `rapports.py` | 23 |
+| `apria.py` | 16 |
+| `disponibilites.py` | 12 |
+| `users.py` | 10 |
+| `materiel.py` | 9 |
+| Autres (~20 fichiers) | ~108 |
+
 ### NEW - Migration RBAC Backend (15 Mars 2026)
 **Statut:** EN COURS (~30% complété)
 

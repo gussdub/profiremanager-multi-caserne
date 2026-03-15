@@ -27,7 +27,9 @@ from routes.dependencies import (
     get_tenant_from_slug,
     clean_mongo_doc,
     User,
-    SuperAdmin
+    SuperAdmin,
+    require_permission,
+    user_has_module_action
 )
 
 router = APIRouter(tags=["Paie"])
@@ -340,8 +342,8 @@ async def create_jour_ferie(
     current_user: User = Depends(get_current_user)
 ):
     """Crée un nouveau jour férié (personnalisé ponctuel)"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "creer", "jours_feries")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -382,8 +384,8 @@ async def update_jour_ferie(
     current_user: User = Depends(get_current_user)
 ):
     """Met à jour un jour férié (principalement les majorations)"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "modifier", "jours_feries")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -423,8 +425,8 @@ async def delete_jour_ferie(
     current_user: User = Depends(get_current_user)
 ):
     """Supprime un jour férié (les récurrents sont désactivés, les personnalisés sont supprimés)"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "supprimer", "jours_feries")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -454,8 +456,8 @@ async def reactiver_jour_ferie(
     current_user: User = Depends(get_current_user)
 ):
     """Réactive un jour férié désactivé"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "modifier", "jours_feries")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -544,8 +546,8 @@ async def get_parametres_paie(
     current_user: User = Depends(get_current_user)
 ):
     """Récupère les paramètres de paie du tenant"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "voir", "parametres")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -570,8 +572,8 @@ async def update_parametres_paie(
     current_user: User = Depends(get_current_user)
 ):
     """Met à jour les paramètres de paie du tenant"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "modifier", "parametres")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -1158,8 +1160,8 @@ async def generer_feuille_temps(
     current_user: User = Depends(get_current_user)
 ):
     """Génère une feuille de temps pour un employé sur une période"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "creer", "feuilles_temps")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -1225,8 +1227,8 @@ async def lister_feuilles_temps(
     current_user: User = Depends(get_current_user)
 ):
     """Liste les feuilles de temps du tenant"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "voir", "feuilles_temps")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -1258,8 +1260,8 @@ async def get_feuille_temps(
     current_user: User = Depends(get_current_user)
 ):
     """Récupère une feuille de temps spécifique"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "voir", "feuilles_temps")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -1283,8 +1285,8 @@ async def valider_feuille_temps(
     current_user: User = Depends(get_current_user)
 ):
     """Valide une feuille de temps (passage brouillon -> validé)"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent valider les feuilles de temps")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "valider", "feuilles_temps")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -1322,8 +1324,8 @@ async def modifier_feuille_temps(
     current_user: User = Depends(get_current_user)
 ):
     """Modifie une feuille de temps (uniquement si en brouillon)"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "modifier", "feuilles_temps")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -1431,8 +1433,8 @@ async def ajouter_ligne_feuille_temps(
     current_user: User = Depends(get_current_user)
 ):
     """Ajoute une ligne manuelle à une feuille de temps"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "modifier", "feuilles_temps")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -1486,8 +1488,8 @@ async def supprimer_feuille_temps(
     current_user: User = Depends(get_current_user)
 ):
     """Supprime une feuille de temps (brouillon uniquement)"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent supprimer les feuilles de temps")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "supprimer", "feuilles_temps")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -1516,8 +1518,8 @@ async def valider_toutes_feuilles(
     current_user: User = Depends(get_current_user)
 ):
     """Valide toutes les feuilles de temps en brouillon pour une période"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent valider les feuilles de temps")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "valider", "feuilles_temps")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -1572,8 +1574,8 @@ async def export_feuilles_pdf(
     from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
     from io import BytesIO
     
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "exporter", "feuilles_temps")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -1779,8 +1781,8 @@ async def export_feuilles_temps(
     import pandas as pd
     from io import BytesIO
     
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "exporter", "feuilles_temps")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -1918,8 +1920,8 @@ async def generer_feuilles_temps_lot(
     current_user: User = Depends(get_current_user)
 ):
     """Génère les feuilles de temps pour TOUS les employés actifs sur une période"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "creer", "feuilles_temps")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -2229,8 +2231,8 @@ async def get_tenant_payroll_config(
     current_user: User = Depends(get_current_user)
 ):
     """Récupère la configuration de paie du tenant"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès admin requis")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "voir", "parametres")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -2255,8 +2257,8 @@ async def update_tenant_payroll_config(
     current_user: User = Depends(get_current_user)
 ):
     """Met à jour la configuration de paie du tenant"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès admin requis")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "modifier", "parametres")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -2288,8 +2290,8 @@ async def get_pay_code_mappings(
     current_user: User = Depends(get_current_user)
 ):
     """Récupère les mappings de codes de paie du tenant"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "voir", "parametres")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -2330,8 +2332,8 @@ async def create_pay_code_mapping(
     current_user: User = Depends(get_current_user)
 ):
     """Crée un mapping de code de paie"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès admin requis")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "creer", "parametres")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -2364,8 +2366,8 @@ async def delete_pay_code_mapping(
     current_user: User = Depends(get_current_user)
 ):
     """Supprime un mapping de code de paie"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès admin requis")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "supprimer", "parametres")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -2386,8 +2388,8 @@ async def update_employee_matricules(
     current_user: User = Depends(get_current_user)
 ):
     """Met à jour les matricules de paie pour tous les employés (Nethris)"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès admin requis")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "modifier", "parametres")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -2415,8 +2417,8 @@ async def update_single_employee_matricule(
     current_user: User = Depends(get_current_user)
 ):
     """Met à jour le matricule de paie pour un seul employé"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès admin requis")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "modifier", "parametres")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -2443,8 +2445,8 @@ async def get_tenant_event_types(
     current_user: User = Depends(get_current_user)
 ):
     """Récupère les types d'heures personnalisés du tenant"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès admin requis")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "voir", "parametres")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -2465,8 +2467,8 @@ async def create_tenant_event_type(
     current_user: User = Depends(get_current_user)
 ):
     """Crée un nouveau type d'heures pour le tenant"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès admin requis")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "creer", "parametres")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -2505,8 +2507,8 @@ async def update_tenant_event_type(
     current_user: User = Depends(get_current_user)
 ):
     """Met à jour un type d'heures du tenant (ou crée à partir d'un type par défaut)"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès admin requis")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "modifier", "parametres")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -2561,8 +2563,8 @@ async def delete_tenant_event_type(
     current_user: User = Depends(get_current_user)
 ):
     """Supprime un type d'heures du tenant"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès admin requis")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "supprimer", "parametres")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -2711,8 +2713,8 @@ async def export_payroll(
     Exporte les données de paie selon le format du fournisseur configuré.
     Retourne un fichier Excel, CSV ou autre selon la configuration.
     """
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "exporter", "feuilles_temps")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -2858,8 +2860,8 @@ async def get_champs_supplementaires(
     current_user: User = Depends(get_current_user)
 ):
     """Récupère les champs supplémentaires configurés (kilométrage, frais, etc.)"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "voir", "parametres")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -2887,8 +2889,8 @@ async def update_champs_supplementaires(
     current_user: User = Depends(get_current_user)
 ):
     """Met à jour les champs supplémentaires"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès admin requis")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "modifier", "parametres")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -2914,8 +2916,8 @@ async def save_api_credentials(
     current_user: User = Depends(get_current_user)
 ):
     """Enregistre les credentials API du fournisseur de paie pour ce tenant"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès admin requis")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "modifier", "parametres")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -2940,8 +2942,8 @@ async def test_api_connection(
     current_user: User = Depends(get_current_user)
 ):
     """Teste la connexion API avec le fournisseur de paie"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès admin requis")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "modifier", "parametres")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -3135,8 +3137,8 @@ async def send_payroll_to_api(
     current_user: User = Depends(get_current_user)
 ):
     """Envoie les données de paie directement au fournisseur via API"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et superviseurs")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "exporter", "feuilles_temps")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -3446,8 +3448,8 @@ async def fetch_pay_codes_from_api(
     current_user: User = Depends(get_current_user)
 ):
     """Récupère les codes de gains/déductions depuis l'API du fournisseur"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès admin requis")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "paie", "voir", "parametres")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:

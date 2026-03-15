@@ -811,9 +811,9 @@ async def update_type_epi(
     type_data: TypeEPIUpdate,
     current_user: User = Depends(get_current_user)
 ):
-    """Modifie un type d'EPI (Admin/Superviseur)"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé - Admin ou Superviseur requis")
+    """Modifie un type d'EPI"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "epi")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -876,9 +876,9 @@ async def delete_type_epi(
     type_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Supprime un type d'EPI (Admin/Superviseur, types non-défaut uniquement)"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé - Admin ou Superviseur requis")
+    """Supprime un type d'EPI (types non-défaut uniquement)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "supprimer", "epi")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -911,12 +911,12 @@ async def delete_type_epi(
 
 @router.post("/{tenant_slug}/epi", response_model=EPI)
 async def create_epi(tenant_slug: str, epi: EPICreate, current_user: User = Depends(get_current_user)):
-    """Crée un nouvel équipement EPI (Admin/Superviseur/Employé pour lui-même)"""
+    """Crée un nouvel équipement EPI"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Les admins/superviseurs peuvent créer pour n'importe qui
-    # Les employés peuvent créer uniquement pour eux-mêmes
-    if current_user.role not in ["admin", "superviseur"]:
+    # Vérifier permission de création - les utilisateurs peuvent créer pour eux-mêmes
+    can_create_all = await user_has_module_action(tenant.id, current_user, "actifs", "creer", "epi")
+    if not can_create_all:
         if epi.user_id != current_user.id:
             raise HTTPException(status_code=403, detail="Vous ne pouvez créer des EPI que pour vous-même")
     
@@ -979,8 +979,8 @@ async def import_epis_csv(
     current_user: User = Depends(get_current_user)
 ):
     """Import en masse d'EPI depuis un CSV"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "creer", "epi")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -1269,9 +1269,8 @@ async def get_import_settings(
     """Récupère la configuration des imports CSV pour le tenant"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Vérifier que l'utilisateur a les droits
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès non autorisé")
+    # Vérifier permission d'accès aux paramètres
+    await require_permission(tenant.id, current_user, "actifs", "voir", "epi")
     
     # Récupérer ou créer la configuration par défaut
     settings = await db.import_settings.find_one({"tenant_id": tenant.id})
@@ -1349,9 +1348,8 @@ async def update_import_settings(
     """Met à jour la configuration des imports CSV"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Vérifier que l'utilisateur a les droits
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès non autorisé")
+    # Vérifier permission de modification
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "epi")
     
     # Récupérer la configuration existante
     existing_settings = await db.import_settings.find_one({"tenant_id": tenant.id})
@@ -1384,9 +1382,9 @@ async def update_import_settings(
 
 @router.get("/{tenant_slug}/epi", response_model=List[EPI])
 async def get_all_epis(tenant_slug: str, current_user: User = Depends(get_current_user)):
-    """Récupère tous les EPI du tenant (Admin/Superviseur)"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    """Récupère tous les EPI du tenant"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "voir", "epi")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -1405,9 +1403,12 @@ async def get_all_epis(tenant_slug: str, current_user: User = Depends(get_curren
 @router.get("/{tenant_slug}/epi/employe/{user_id}", response_model=List[EPI])
 async def get_epis_by_employe(tenant_slug: str, user_id: str, current_user: User = Depends(get_current_user)):
     """Récupère tous les EPI d'un employé spécifique"""
-    # Un employé peut voir ses propres EPIs, admin/superviseur peuvent voir tous les EPIs
-    if current_user.role not in ["admin", "superviseur"] and current_user.id != user_id:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    # Un employé peut voir ses propres EPIs, sinon vérifier permission
+    if current_user.id != user_id:
+        can_view = await user_has_module_action(tenant.id, current_user, "actifs", "voir", "epi")
+        if not can_view:
+            raise HTTPException(status_code=403, detail="Accès refusé")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -1430,9 +1431,9 @@ async def get_demandes_remplacement_epi(
     statut: Optional[str] = None,
     current_user: User = Depends(get_current_user)
 ):
-    """Récupère les demandes de remplacement EPI (admin/superviseur)"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    """Récupère les demandes de remplacement EPI"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "voir", "epi")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -1479,9 +1480,9 @@ async def traiter_demande_remplacement(
     notes_admin: str = "",
     current_user: User = Depends(get_current_user)
 ):
-    """Approuver ou refuser une demande de remplacement (admin/superviseur)"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    """Approuver ou refuser une demande de remplacement"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "approuver", "epi")
     
     if statut not in ["Approuvée", "Refusée"]:
         raise HTTPException(status_code=400, detail="Statut invalide. Doit être 'Approuvée' ou 'Refusée'")
@@ -1570,9 +1571,8 @@ async def update_epi_parametres(
     """Mettre à jour les paramètres EPI"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Vérifier les permissions (admin ou superviseur)
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée")
+    # Vérifier permission de modification des paramètres
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "epi")
     
     # Récupérer les paramètres actuels
     current_parametres = tenant.parametres if hasattr(tenant, 'parametres') and tenant.parametres else {}
@@ -1601,8 +1601,8 @@ async def update_epi_parametres(
 @router.get("/{tenant_slug}/epi/{epi_id}", response_model=EPI)
 async def get_epi_by_id(tenant_slug: str, epi_id: str, current_user: User = Depends(get_current_user)):
     """Récupère un EPI spécifique par son ID"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "voir", "epi")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -1636,9 +1636,9 @@ async def update_epi(
     if not epi:
         raise HTTPException(status_code=404, detail="EPI non trouvé")
     
-    # Les admins/superviseurs peuvent tout modifier
-    # Les employés peuvent modifier uniquement la taille de leurs propres EPIs
-    if current_user.role not in ["admin", "superviseur"]:
+    # Vérifier permission - les utilisateurs peuvent modifier uniquement leurs propres EPIs
+    can_modify_all = await user_has_module_action(tenant.id, current_user, "actifs", "modifier", "epi")
+    if not can_modify_all:
         if epi.get("user_id") != current_user.id:
             raise HTTPException(status_code=403, detail="Vous ne pouvez modifier que vos propres EPIs")
         
@@ -1693,9 +1693,9 @@ async def update_epi(
 
 @router.delete("/{tenant_slug}/epi/{epi_id}")
 async def delete_epi(tenant_slug: str, epi_id: str, current_user: User = Depends(get_current_user)):
-    """Supprime un EPI (Admin/Superviseur)"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    """Supprime un EPI"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "supprimer", "epi")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -1722,8 +1722,8 @@ async def create_inspection(
     current_user: User = Depends(get_current_user)
 ):
     """Crée une nouvelle inspection pour un EPI"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "creer", "epi")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -1785,8 +1785,8 @@ async def create_inspection(
 @router.get("/{tenant_slug}/epi/{epi_id}/inspections", response_model=List[InspectionEPI])
 async def get_epi_inspections(tenant_slug: str, epi_id: str, current_user: User = Depends(get_current_user)):
     """Récupère toutes les inspections d'un EPI"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "voir", "epi")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -1809,8 +1809,8 @@ async def get_epi_inspections(tenant_slug: str, epi_id: str, current_user: User 
 @router.post("/{tenant_slug}/isp", response_model=ISP)
 async def create_isp(tenant_slug: str, isp: ISPCreate, current_user: User = Depends(get_current_user)):
     """Crée un nouveau fournisseur de services indépendant"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "creer", "epi")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -1829,8 +1829,8 @@ async def create_isp(tenant_slug: str, isp: ISPCreate, current_user: User = Depe
 @router.get("/{tenant_slug}/isp", response_model=List[ISP])
 async def get_all_isps(tenant_slug: str, current_user: User = Depends(get_current_user)):
     """Récupère tous les ISP du tenant"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "voir", "epi")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -1852,8 +1852,8 @@ async def update_isp(
     current_user: User = Depends(get_current_user)
 ):
     """Met à jour un ISP"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "epi")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -1879,8 +1879,8 @@ async def update_isp(
 @router.delete("/{tenant_slug}/isp/{isp_id}")
 async def delete_isp(tenant_slug: str, isp_id: str, current_user: User = Depends(get_current_user)):
     """Supprime un ISP"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "supprimer", "epi")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -1896,8 +1896,8 @@ async def delete_isp(tenant_slug: str, isp_id: str, current_user: User = Depends
 @router.get("/{tenant_slug}/epi/rapports/conformite")
 async def get_rapport_conformite(tenant_slug: str, current_user: User = Depends(get_current_user)):
     """Rapport de conformité générale avec code couleur"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "voir", "epi")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -1977,8 +1977,8 @@ async def get_rapport_conformite(tenant_slug: str, current_user: User = Depends(
 @router.get("/{tenant_slug}/epi/rapports/echeances")
 async def get_rapport_echeances(tenant_slug: str, jours: int = 30, current_user: User = Depends(get_current_user)):
     """Rapport des échéances d'inspection (dans X jours)"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "voir", "epi")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -2064,8 +2064,8 @@ async def create_nettoyage(
     current_user: User = Depends(get_current_user)
 ):
     """Enregistre un nettoyage EPI"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "creer", "epi")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -2093,8 +2093,8 @@ async def get_nettoyages_epi(
     current_user: User = Depends(get_current_user)
 ):
     """Récupère l'historique de nettoyage d'un EPI"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "voir", "epi")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -2119,8 +2119,8 @@ async def envoyer_au_nettoyage(
     current_user: User = Depends(get_current_user)
 ):
     """Envoie un EPI au nettoyage - change statut et notifie l'employé"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "epi")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -2157,8 +2157,8 @@ async def retour_de_nettoyage(
     current_user: User = Depends(get_current_user)
 ):
     """Enregistre le retour de nettoyage d'un EPI - remet en service et notifie l'employé"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "epi")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -2208,8 +2208,8 @@ async def create_reparation(
     current_user: User = Depends(get_current_user)
 ):
     """Crée une demande de réparation"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "creer", "epi")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -2257,8 +2257,8 @@ async def get_reparations_epi(
     current_user: User = Depends(get_current_user)
 ):
     """Récupère l'historique de réparations d'un EPI"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "voir", "epi")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -2286,8 +2286,8 @@ async def update_reparation(
     current_user: User = Depends(get_current_user)
 ):
     """Met à jour une réparation"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "epi")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -2352,8 +2352,8 @@ async def create_retrait(
     current_user: User = Depends(get_current_user)
 ):
     """Enregistre le retrait définitif d'un EPI"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "epi")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -2387,8 +2387,8 @@ async def get_retrait_epi(
     current_user: User = Depends(get_current_user)
 ):
     """Récupère les informations de retrait d'un EPI"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "voir", "epi")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -2415,8 +2415,8 @@ async def get_rapport_retraits_prevus(
     current_user: User = Depends(get_current_user)
 ):
     """Rapport des EPI approchant de leur limite de 10 ans"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "voir", "epi")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -2470,8 +2470,8 @@ async def get_rapport_cout_total(
     current_user: User = Depends(get_current_user)
 ):
     """Rapport du coût total de possession (TCO) par EPI"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "voir", "epi")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -2703,12 +2703,14 @@ async def get_historique_inspections(
     """Récupère l'historique des inspections après usage d'un EPI"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Vérifier que l'EPI appartient à l'utilisateur (ou que c'est un admin/superviseur)
+    # Vérifier que l'EPI appartient à l'utilisateur (ou vérifier permission)
     epi = await db.epis.find_one({"id": epi_id, "tenant_id": tenant.id})
     if not epi:
         raise HTTPException(status_code=404, detail="EPI non trouvé")
     
-    if epi.get("user_id") != current_user.id and current_user.role not in ["admin", "superviseur"]:
+    # Vérifier permission - l'utilisateur peut voir ses propres EPIs
+    can_view_all = await user_has_module_action(tenant.id, current_user, "actifs", "voir", "epi")
+    if epi.get("user_id") != current_user.id and not can_view_all:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
     # Récupérer toutes les inspections
@@ -2879,10 +2881,8 @@ async def fix_epi_types(
     - Crée les types manquants automatiquement
     - Met à jour les EPI pour utiliser type_epi_id
     """
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Admin ou Superviseur requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "epi")
     
     results = {
         "epis_analyzed": 0,
@@ -3012,10 +3012,8 @@ async def get_fix_types_status(
     """
     Retourne le nombre d'EPI qui ont besoin d'être corrigés (type texte au lieu d'ID).
     """
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Admin requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "voir", "epi")
     
     # Compter les EPI avec type_epi (texte) mais sans type_epi_id valide
     count_to_fix = await db.epis.count_documents({
@@ -3064,10 +3062,9 @@ async def supprimer_tous_les_epis(
     """
     logger.info(f"[SUPPRIMER-TOUS] Demande de suppression de tous les EPI pour {tenant_slug} par {current_user.email}")
     
-    # Vérification admin/superviseur
-    if current_user.role not in ["admin", "superviseur"]:
-        logger.warning(f"[SUPPRIMER-TOUS] Refusé - utilisateur non admin/superviseur: {current_user.email}")
-        raise HTTPException(status_code=403, detail="Seul un administrateur ou superviseur peut supprimer tous les EPI")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    # Vérification permission suppression
+    await require_permission(tenant.id, current_user, "actifs", "supprimer", "epi")
     
     # Récupérer le tenant
     tenant = await get_tenant_from_slug(tenant_slug)

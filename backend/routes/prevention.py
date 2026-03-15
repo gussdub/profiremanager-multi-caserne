@@ -60,7 +60,9 @@ from routes.dependencies import (
     get_tenant_from_slug,
     clean_mongo_doc,
     User,
-    creer_notification
+    creer_notification,
+    require_permission,
+    user_has_module_action
 )
 
 # Import des helpers PDF partagés
@@ -444,8 +446,8 @@ async def create_batiment(
     current_user: User = Depends(get_current_user)
 ):
     """Créer un nouveau bâtiment"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "creer", "batiments")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -467,8 +469,8 @@ async def update_batiment(
     current_user: User = Depends(get_current_user)
 ):
     """Mettre à jour un bâtiment"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "modifier", "batiments")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -498,8 +500,8 @@ async def delete_batiment(
     current_user: User = Depends(get_current_user)
 ):
     """Supprimer un bâtiment"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "supprimer", "batiments")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -523,8 +525,8 @@ async def import_batiments_csv(
     current_user: User = Depends(get_current_user)
 ):
     """Importer des bâtiments depuis un fichier CSV"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "creer", "batiments")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -625,8 +627,10 @@ async def create_inspection(
     current_user: User = Depends(get_current_user)
 ):
     """Créer une nouvelle inspection"""
-    # Admin, superviseur ou préventionniste peut créer une inspection
-    if current_user.role not in ["admin", "superviseur"] and not getattr(current_user, 'est_preventionniste', False):
+    tenant = await get_tenant_from_slug(tenant_slug)
+    # Vérifie permission RBAC ou est_preventionniste
+    can_create = await user_has_module_action(tenant.id, current_user, "prevention", "creer", "inspections")
+    if not can_create and not getattr(current_user, 'est_preventionniste', False):
         raise HTTPException(status_code=403, detail="Accès refusé")
     
     tenant = await get_tenant_from_slug(tenant_slug)
@@ -664,8 +668,8 @@ async def update_inspection(
     current_user: User = Depends(get_current_user)
 ):
     """Mettre à jour une inspection"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "modifier", "inspections")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -744,8 +748,8 @@ async def create_grille_inspection(
     current_user: User = Depends(get_current_user)
 ):
     """Créer une nouvelle grille d'inspection"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "creer", "grilles")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -767,8 +771,8 @@ async def update_grille_inspection(
     current_user: User = Depends(get_current_user)
 ):
     """Mettre à jour une grille d'inspection"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "modifier", "grilles")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -798,8 +802,8 @@ async def delete_grille_inspection(
     current_user: User = Depends(get_current_user)
 ):
     """Supprimer une grille d'inspection"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "supprimer", "grilles")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -822,8 +826,8 @@ async def dupliquer_grille_inspection(
     current_user: User = Depends(get_current_user)
 ):
     """Dupliquer une grille d'inspection"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "creer", "grilles")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -897,8 +901,8 @@ async def create_secteur(
     current_user: User = Depends(get_current_user)
 ):
     """Créer un nouveau secteur géographique"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "creer", "secteurs")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -920,8 +924,8 @@ async def update_secteur(
     current_user: User = Depends(get_current_user)
 ):
     """Mettre à jour un secteur"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "modifier", "secteurs")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -951,8 +955,8 @@ async def delete_secteur(
     current_user: User = Depends(get_current_user)
 ):
     """Supprimer un secteur"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "supprimer", "secteurs")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -1638,8 +1642,8 @@ async def initialiser_module_prevention(
     current_user: User = Depends(get_current_user)
 ):
     """Initialiser le module prévention avec les 7 grilles d'inspection standards"""
-    if current_user.role not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "creer", "grilles")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -1685,8 +1689,10 @@ async def upload_batiment_photo(
     current_user: User = Depends(get_current_user)
 ):
     """Uploader/Mettre à jour la photo d'un bâtiment (en base64)"""
-    # Admins, superviseurs et préventionnistes peuvent uploader des photos
-    if current_user.role not in ["admin", "superviseur"] and not current_user.est_preventionniste:
+    tenant = await get_tenant_from_slug(tenant_slug)
+    # Vérifie permission RBAC ou est_preventionniste
+    can_modify = await user_has_module_action(tenant.id, current_user, "prevention", "modifier", "batiments")
+    if not can_modify and not current_user.est_preventionniste:
         raise HTTPException(status_code=403, detail="Accès refusé - Permission insuffisante")
     
     tenant = await get_tenant_from_slug(tenant_slug)
@@ -1719,8 +1725,8 @@ async def delete_batiment_photo(
     current_user: User = Depends(get_current_user)
 ):
     """Supprimer la photo d'un bâtiment"""
-    if current_user.role not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "supprimer", "batiments")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -1747,8 +1753,8 @@ async def get_symboles_personnalises(
     current_user: User = Depends(get_current_user)
 ):
     """Récupérer tous les symboles personnalisés du tenant"""
-    if current_user.role not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "voir", "symboles")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -1765,8 +1771,8 @@ async def create_symbole_personnalise(
     current_user: User = Depends(get_current_user)
 ):
     """Créer un nouveau symbole personnalisé"""
-    if current_user.role not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "creer", "symboles")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -1796,8 +1802,8 @@ async def update_symbole_personnalise(
     current_user: User = Depends(get_current_user)
 ):
     """Modifier un symbole personnalisé"""
-    if current_user.role not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "modifier", "symboles")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -1831,8 +1837,8 @@ async def delete_symbole_personnalise(
     current_user: User = Depends(get_current_user)
 ):
     """Supprimer un symbole personnalisé"""
-    if current_user.role not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "supprimer", "symboles")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -2179,8 +2185,8 @@ async def delete_inspection(
     current_user: User = Depends(get_current_user)
 ):
     """Supprimer une inspection"""
-    if current_user.role not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "supprimer", "inspections")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -2207,8 +2213,8 @@ async def create_non_conformite(
     current_user: User = Depends(get_current_user)
 ):
     """Créer une nouvelle non-conformité (manuelle ou liée à une inspection)"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "creer", "non_conformites")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -2287,8 +2293,8 @@ async def update_non_conformite(
     current_user: User = Depends(get_current_user)
 ):
     """Mettre à jour une non-conformité"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "modifier", "non_conformites")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -2318,8 +2324,8 @@ async def update_non_conformite_statut(
     current_user: User = Depends(get_current_user)
 ):
     """Mettre à jour le statut d'une non-conformité"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "modifier", "non_conformites")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -2353,8 +2359,8 @@ async def delete_non_conformite(
     current_user: User = Depends(get_current_user)
 ):
     """Supprimer une non-conformité"""
-    if current_user.role not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "supprimer", "non_conformites")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -2434,8 +2440,8 @@ async def relancer_non_conformites(
     - Le responsable prévention (admin/superviseur avec role prevention)
     - Le préventionniste assigné au bâtiment
     """
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "voir", "non_conformites")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -2540,8 +2546,8 @@ async def upload_photo(
     current_user: User = Depends(get_current_user)
 ):
     """Upload une photo en base64 et retourne l'URL"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "creer", "photos")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -2672,8 +2678,8 @@ async def delete_photo(
     current_user: User = Depends(get_current_user)
 ):
     """Supprimer une photo"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "supprimer", "photos")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -2697,8 +2703,8 @@ async def create_icone_personnalisee(
     current_user: User = Depends(get_current_user)
 ):
     """Créer une icône personnalisée"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "creer", "icones")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -2746,8 +2752,8 @@ async def delete_icone_personnalisee(
     current_user: User = Depends(get_current_user)
 ):
     """Supprimer une icône personnalisée"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "supprimer", "icones")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -2951,8 +2957,9 @@ async def delete_inspection_visuelle(
     if not tenant.parametres.get('module_prevention_active', False):
         raise HTTPException(status_code=403, detail="Module prévention non activé")
     
-    # Vérifier que l'utilisateur est préventionniste ou admin
-    if current_user.role not in ["admin", "superviseur"] and current_user.type_emploi != "preventionniste":
+    # Vérifier permission RBAC ou préventionniste
+    can_delete = await user_has_module_action(tenant.id, current_user, "prevention", "supprimer", "inspections")
+    if not can_delete and current_user.type_emploi != "preventionniste":
         raise HTTPException(status_code=403, detail="Seuls les préventionnistes peuvent supprimer des inspections")
     
     result = await db.inspections_visuelles.delete_one({"id": inspection_id, "tenant_id": tenant.id})
@@ -3034,8 +3041,9 @@ async def valider_inspection(
     if not tenant.parametres.get('module_prevention_active', False):
         raise HTTPException(status_code=403, detail="Module prévention non activé")
     
-    # Vérifier les droits
-    if current_user.role not in ["admin", "superadmin"] and not current_user.est_preventionniste:
+    # Vérifier permission RBAC ou préventionniste
+    can_access = await user_has_module_action(tenant.id, current_user, "prevention", "modifier", "plans")
+    if not can_access and not current_user.est_preventionniste:
         raise HTTPException(status_code=403, detail="Réservé aux préventionnistes")
     
     # Récupérer l'inspection
@@ -3100,8 +3108,9 @@ async def rejeter_inspection(
     if not tenant.parametres.get('module_prevention_active', False):
         raise HTTPException(status_code=403, detail="Module prévention non activé")
     
-    # Vérifier les droits
-    if current_user.role not in ["admin", "superadmin"] and not current_user.est_preventionniste:
+    # Vérifier permission RBAC ou préventionniste
+    can_access = await user_has_module_action(tenant.id, current_user, "prevention", "modifier", "plans")
+    if not can_access and not current_user.est_preventionniste:
         raise HTTPException(status_code=403, detail="Réservé aux préventionnistes")
     
     # Récupérer l'inspection
@@ -3407,9 +3416,8 @@ async def toggle_preventionniste(
     """Activer/désactiver le statut de préventionniste pour un utilisateur (admin uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Seuls les admins et superviseurs peuvent modifier ce statut
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Permissions insuffisantes")
+    # Vérifier permission RBAC
+    await require_permission(tenant.id, current_user, "prevention", "modifier", "inspections")
     
     # Récupérer l'utilisateur
     user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
@@ -3631,9 +3639,8 @@ async def assigner_batiment_preventionniste(
     if not tenant.parametres.get('module_prevention_active', False):
         raise HTTPException(status_code=403, detail="Module prévention non activé")
     
-    # Vérifier permissions
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Permissions insuffisantes")
+    # Vérifier permission RBAC
+    await require_permission(tenant.id, current_user, "prevention", "creer", "batiments")
     
     # Récupérer le bâtiment
     batiment = await db.batiments.find_one({"id": batiment_id, "tenant_id": tenant.id})
@@ -3713,9 +3720,8 @@ async def assigner_secteur_preventionniste(
     if not tenant.parametres.get('module_prevention_active', False):
         raise HTTPException(status_code=403, detail="Module prévention non activé")
     
-    # Vérifier permissions
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Permissions insuffisantes")
+    # Vérifier permission RBAC
+    await require_permission(tenant.id, current_user, "prevention", "creer", "batiments")
     
     # Récupérer le secteur
     secteur = await db.secteurs_geographiques.find_one({"id": secteur_id, "tenant_id": tenant.id})
@@ -3832,9 +3838,8 @@ async def update_parametres_prevention(
     """Mettre à jour les paramètres de prévention (admin uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Vérifier permissions (admin seulement)
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent modifier les paramètres")
+    # Vérifier permission RBAC
+    await require_permission(tenant.id, current_user, "prevention", "modifier", "parametres")
     
     # Valider les valeurs
     if recurrence_inspections not in [1, 2, 3, 4, 5]:
@@ -3891,8 +3896,9 @@ async def create_plan_intervention(
     if not tenant.parametres.get('module_prevention_active', False):
         raise HTTPException(status_code=403, detail="Module prévention non activé")
     
-    # Vérifier que l'utilisateur est préventionniste ou admin
-    if current_user.role not in ["admin", "superviseur"] and current_user.type_emploi != "preventionniste":
+    # Vérifier permission RBAC ou préventionniste
+    can_create = await user_has_module_action(tenant.id, current_user, "prevention", "creer", "plans")
+    if not can_create and current_user.type_emploi != "preventionniste":
         raise HTTPException(status_code=403, detail="Seuls les préventionnistes peuvent créer des plans")
     
     # Vérifier que le bâtiment existe
@@ -4010,9 +4016,10 @@ async def update_plan_intervention(
     if existing["statut"] not in ["brouillon", "en_attente_validation", "rejete"]:
         raise HTTPException(status_code=403, detail="Plan validé non modifiable - créer une nouvelle version")
     
-    # Vérifier que l'utilisateur est le créateur ou admin
-    if existing["created_by_id"] != current_user.id and current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Seul le créateur ou un admin peut modifier ce plan")
+    # Vérifier permission - créateur ou permission modifier
+    can_modify = await user_has_module_action(tenant.id, current_user, "prevention", "modifier", "plans")
+    if existing["created_by_id"] != current_user.id and not can_modify:
+        raise HTTPException(status_code=403, detail="Seul le créateur ou un utilisateur autorisé peut modifier ce plan")
     
     # Mettre à jour les champs fournis
     update_dict = {k: v for k, v in plan_update.dict(exclude_unset=True).items() if v is not None}
@@ -4048,9 +4055,9 @@ async def delete_plan_intervention(
     plan_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Supprimer un plan d'intervention (admin uniquement)"""
-    if current_user.role not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
+    """Supprimer un plan d'intervention"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "supprimer", "plans")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -4081,8 +4088,9 @@ async def soumettre_plan_validation(
     if not plan:
         raise HTTPException(status_code=404, detail="Plan non trouvé")
     
-    # Vérifier que l'utilisateur est le créateur
-    if plan["created_by_id"] != current_user.id and current_user.role not in ["admin"]:
+    # Vérifier permission - créateur ou permission supprimer
+    can_submit = await user_has_module_action(tenant.id, current_user, "prevention", "modifier", "plans")
+    if plan["created_by_id"] != current_user.id and not can_submit:
         raise HTTPException(status_code=403, detail="Seul le créateur peut soumettre le plan")
     
     # Vérifier que le plan est en brouillon
@@ -4107,9 +4115,9 @@ async def approuver_plan_intervention(
     request: ValidationRequest,
     current_user: User = Depends(get_current_user)
 ):
-    """Approuver un plan d'intervention (admin/superviseur uniquement)"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Seuls les admin/superviseurs peuvent approuver")
+    """Approuver un plan d'intervention"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "approuver", "plans")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -4143,9 +4151,9 @@ async def rejeter_plan_intervention(
     request: RejectionRequest,
     current_user: User = Depends(get_current_user)
 ):
-    """Rejeter un plan d'intervention (admin/superviseur uniquement)"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Seuls les admin/superviseurs peuvent rejeter")
+    """Rejeter un plan d'intervention"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "approuver", "plans")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
@@ -4183,8 +4191,9 @@ async def creer_nouvelle_version_plan(
     if not tenant.parametres.get('module_prevention_active', False):
         raise HTTPException(status_code=403, detail="Module prévention non activé")
     
-    # Vérifier permissions
-    if current_user.role not in ["admin", "superviseur"] and current_user.type_emploi != "preventionniste":
+    # Vérifier permission RBAC ou préventionniste
+    can_create = await user_has_module_action(tenant.id, current_user, "prevention", "creer", "plans")
+    if not can_create and current_user.type_emploi != "preventionniste":
         raise HTTPException(status_code=403, detail="Seuls les préventionnistes peuvent créer des versions")
     
     # Récupérer le plan existant
@@ -4935,8 +4944,9 @@ async def creer_plan_depuis_template(
     if not tenant.parametres.get('module_prevention_active', False):
         raise HTTPException(status_code=403, detail="Module prévention non activé")
     
-    # Vérifier permissions
-    if current_user.role not in ["admin", "superviseur"] and current_user.type_emploi != "preventionniste":
+    # Vérifier permission RBAC ou préventionniste
+    can_create = await user_has_module_action(tenant.id, current_user, "prevention", "creer", "plans")
+    if not can_create and current_user.type_emploi != "preventionniste":
         raise HTTPException(status_code=403, detail="Seuls les préventionnistes peuvent créer des plans")
     
     # Récupérer le template
