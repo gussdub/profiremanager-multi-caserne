@@ -3086,3 +3086,120 @@ async def supprimer_tous_les_epis(
         "message": f"{result.deleted_count} EPI supprimé(s) avec succès",
         "deleted": result.deleted_count
     }
+
+
+@router.post("/{tenant_slug}/epi/test-alertes-frequence")
+async def test_alertes_epi_frequence(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Endpoint de test pour déclencher manuellement la vérification des alertes EPI basées sur fréquence.
+    Réservé aux admins.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "epi")
+    
+    from routes.notifications import send_push_notification_to_users, send_web_push_to_users
+    from routes.dependencies import creer_notification
+    
+    today = datetime.now(timezone.utc).date()
+    tenant_id = tenant.id
+    parametres = tenant.parametres if hasattr(tenant, 'parametres') and tenant.parametres else {}
+    
+    # Paramètres d'alertes EPI
+    jours_avance_expiration = parametres.get("epi_jours_avance_expiration", 30)
+    jours_avant_inspection = 7
+    
+    # Récupérer tous les types d'EPI
+    types_epi = await db.types_epi.find({"tenant_id": tenant_id}).to_list(None)
+    types_map = {t["id"]: t for t in types_epi}
+    
+    # Récupérer tous les EPI assignés
+    epis = await db.epis.find({
+        "tenant_id": tenant_id,
+        "user_id": {"$ne": None, "$ne": ""},
+        "statut": {"$in": ["En service", "en_service", "actif"]}
+    }).to_list(None)
+    
+    # Admins/superviseurs
+    admins = await db.users.find({
+        "tenant_id": tenant_id,
+        "statut": "actif",
+        "role": {"$in": ["admin", "superviseur"]}
+    }).to_list(None)
+    admin_ids = [u["id"] for u in admins]
+    
+    resultats = {
+        "epis_analyses": len(epis),
+        "types_epi": len(types_epi),
+        "alertes_inspection": [],
+        "alertes_fin_vie": []
+    }
+    
+    for epi in epis:
+        epi_id = epi.get("id")
+        user_id = epi.get("user_id")
+        epi_nom = epi.get("numero_serie") or epi.get("nom") or epi_id[:8]
+        type_epi = types_map.get(epi.get("type_id"), {})
+        type_nom = type_epi.get("nom", "EPI")
+        
+        frequence_routine = type_epi.get("frequence_routine", "mensuelle")
+        frequence_avancee = type_epi.get("frequence_avancee", "annuelle")
+        
+        jours_routine = frequence_to_jours(frequence_routine)
+        jours_avancee = frequence_to_jours(frequence_avancee)
+        
+        # Dernière inspection
+        derniere_inspection = await db.inspections_epi.find_one(
+            {"epi_id": epi_id, "tenant_id": tenant_id},
+            sort=[("date_inspection", -1)]
+        )
+        
+        prochaine_echeance = None
+        
+        if derniere_inspection:
+            date_insp = datetime.fromisoformat(derniere_inspection["date_inspection"].replace('Z', '+00:00')).date()
+            type_insp = derniere_inspection.get("type_inspection", "routine_mensuelle")
+            
+            if type_insp == "avancee_annuelle":
+                prochaine_echeance = date_insp + timedelta(days=jours_avancee)
+            else:
+                prochaine_echeance = date_insp + timedelta(days=jours_routine)
+        else:
+            prochaine_echeance = today
+        
+        if prochaine_echeance:
+            jours_restants = (prochaine_echeance - today).days
+            
+            resultats["alertes_inspection"].append({
+                "epi_id": epi_id,
+                "epi_nom": epi_nom,
+                "type_nom": type_nom,
+                "user_id": user_id,
+                "prochaine_echeance": prochaine_echeance.isoformat(),
+                "jours_restants": jours_restants,
+                "alerte_due": 0 <= jours_restants <= jours_avant_inspection
+            })
+        
+        # Fin de vie
+        date_fin_vie = epi.get("date_fin_vie") or epi.get("date_expiration")
+        if date_fin_vie:
+            try:
+                if isinstance(date_fin_vie, str):
+                    fin_vie = datetime.fromisoformat(date_fin_vie.replace('Z', '+00:00')).date()
+                else:
+                    fin_vie = date_fin_vie
+                
+                jours_avant_fin = (fin_vie - today).days
+                resultats["alertes_fin_vie"].append({
+                    "epi_id": epi_id,
+                    "epi_nom": epi_nom,
+                    "date_fin_vie": fin_vie.isoformat(),
+                    "jours_avant_fin": jours_avant_fin,
+                    "alerte_due": 0 <= jours_avant_fin <= jours_avance_expiration
+                })
+            except Exception:
+                pass
+    
+    return resultats

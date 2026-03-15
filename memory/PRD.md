@@ -22,6 +22,45 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 - Gestion des employés par tenant
 - Attribution des équipes de garde
 
+### NEW - Alertes EPI basées sur fréquence d'inspection (15 Mars 2026)
+**Statut:** ✅ TERMINÉ
+
+**Objectif:** Envoyer des relances automatiques pour les inspections EPI basées sur la fréquence définie dans les types d'EPI.
+
+**Fonctionnalités implémentées:**
+
+1. **Job automatique `job_alertes_epi_frequence`:**
+   - S'exécute tous les jours à 8h00
+   - Vérifie chaque EPI assigné pour calculer la prochaine échéance d'inspection
+   - Envoie des alertes 7 jours avant l'échéance
+
+2. **Types de notifications:**
+   - ✅ Notification in-app
+   - ✅ Push notification (iOS/Android via Firebase)
+   - ✅ Web Push (navigateurs)
+
+3. **Destinataires:**
+   - L'employé assigné à l'EPI
+   - Les admins/superviseurs (rôles RBAC)
+
+4. **Alertes gérées:**
+   - 🔔 Inspection routine (fréquence: mensuelle, trimestrielle, etc.)
+   - 🔔 Inspection avancée annuelle
+   - ⚠️ Fin de vie EPI (basée sur paramètre `epi_jours_avance_expiration`)
+
+5. **Endpoint de test:**
+   - `POST /{tenant}/epi/test-alertes-frequence` pour déclencher manuellement et voir les résultats
+
+**Fréquences EPI supportées:**
+| Fréquence | Jours |
+|-----------|-------|
+| quotidienne | 1 |
+| hebdomadaire | 7 |
+| mensuelle | 30 |
+| trimestrielle | 90 |
+| semestrielle | 180 |
+| annuelle | 365 |
+
 ### NEW - P3: Logique d'inspection équipements (15 Mars 2026)
 **Statut:** ✅ TERMINÉ
 

@@ -616,6 +616,14 @@ async def start_notification_scheduler():
         replace_existing=True
     )
     
+    # Job pour alertes EPI basées sur fréquence d'inspection (7 jours avant échéance)
+    scheduler.add_job(
+        job_alertes_epi_frequence,
+        CronTrigger(hour=8, minute=0),  # Tous les jours à 8h00
+        id='alertes_epi_frequence',
+        replace_existing=True
+    )
+    
     # Job pour vérifier les délégations de responsabilités (début/fin de congés)
     scheduler.add_job(
         job_verifier_delegations,
@@ -625,7 +633,7 @@ async def start_notification_scheduler():
     )
     
     scheduler.start()
-    logging.info("✅ Scheduler de notifications automatiques démarré (planning + équipements + disponibilités + paiements + inspections EPI + délégations)")
+    logging.info("✅ Scheduler de notifications automatiques démarré (planning + équipements + disponibilités + paiements + inspections EPI + alertes EPI fréquence + délégations)")
 
 
 async def job_check_overdue_payments():
@@ -1493,6 +1501,253 @@ async def job_rappel_inspection_epi_mensuelle():
         
     except Exception as e:
         logging.error(f"❌ Erreur dans job_rappel_inspection_epi_mensuelle: {str(e)}", exc_info=True)
+
+
+async def job_alertes_epi_frequence():
+    """
+    Job qui envoie des alertes EPI 7 jours avant l'échéance d'inspection basée sur la fréquence du type d'EPI.
+    S'exécute tous les jours à 8h00.
+    
+    Logique:
+    - Pour chaque tenant actif, récupérer les EPI assignés
+    - Pour chaque EPI, calculer la prochaine date d'inspection basée sur:
+      - frequence_routine (mensuelle, trimestrielle, etc.) du TYPE d'EPI
+      - frequence_avancee (annuelle) du TYPE d'EPI
+    - Si l'échéance est dans 7 jours, envoyer notification + push à:
+      - L'employé assigné
+      - Les admins/superviseurs (ceux avec permission RBAC)
+    - Gérer aussi les alertes de fin de vie EPI basées sur les paramètres tenant
+    """
+    from routes.notifications import send_push_notification_to_users, send_web_push_to_users
+    from routes.dependencies import creer_notification
+    
+    try:
+        logging.info("🔔 Vérification des alertes EPI basées sur fréquence d'inspection")
+        
+        today = datetime.now(timezone.utc).date()
+        
+        # Récupérer tous les tenants actifs
+        tenants = await db.tenants.find({"actif": True}).to_list(None)
+        
+        for tenant in tenants:
+            try:
+                tenant_id = tenant.get("id")
+                tenant_nom = tenant.get("nom", "Unknown")
+                tenant_slug = tenant.get("slug", "")
+                parametres = tenant.get("parametres", {})
+                
+                # Paramètres d'alertes EPI
+                jours_avance_expiration = parametres.get("epi_jours_avance_expiration", 30)
+                jours_avant_inspection = 7  # 7 jours avant l'échéance d'inspection
+                
+                # Récupérer tous les types d'EPI pour ce tenant
+                types_epi = await db.types_epi.find({"tenant_id": tenant_id}).to_list(None)
+                types_map = {t["id"]: t for t in types_epi}
+                
+                # Récupérer tous les EPI assignés à des utilisateurs
+                epis = await db.epis.find({
+                    "tenant_id": tenant_id,
+                    "user_id": {"$ne": None, "$ne": ""},
+                    "statut": {"$in": ["En service", "en_service", "actif"]}
+                }).to_list(None)
+                
+                if not epis:
+                    continue
+                
+                # Récupérer les admins/superviseurs (ceux avec permission RBAC)
+                admins_superviseurs = await db.users.find({
+                    "tenant_id": tenant_id,
+                    "statut": "actif",
+                    "role": {"$in": ["admin", "superviseur"]}
+                }).to_list(None)
+                admin_ids = [u["id"] for u in admins_superviseurs]
+                
+                alertes_envoyees = 0
+                alertes_fin_vie = 0
+                
+                for epi in epis:
+                    epi_id = epi.get("id")
+                    user_id = epi.get("user_id")
+                    epi_nom = epi.get("numero_serie") or epi.get("nom") or epi_id[:8]
+                    type_epi = types_map.get(epi.get("type_id"), {})
+                    type_nom = type_epi.get("nom", "EPI")
+                    
+                    # Fréquences du type d'EPI
+                    frequence_routine = type_epi.get("frequence_routine", "mensuelle")
+                    frequence_avancee = type_epi.get("frequence_avancee", "annuelle")
+                    
+                    # Convertir en jours
+                    jours_routine = frequence_to_jours(frequence_routine)
+                    jours_avancee = frequence_to_jours(frequence_avancee)
+                    
+                    # Récupérer la dernière inspection
+                    derniere_inspection = await db.inspections_epi.find_one(
+                        {"epi_id": epi_id, "tenant_id": tenant_id},
+                        sort=[("date_inspection", -1)]
+                    )
+                    
+                    prochaine_echeance = None
+                    type_inspection_due = None
+                    
+                    if derniere_inspection:
+                        date_inspection = datetime.fromisoformat(derniere_inspection["date_inspection"].replace('Z', '+00:00')).date()
+                        type_inspection = derniere_inspection.get("type_inspection", "routine_mensuelle")
+                        
+                        if type_inspection == "avancee_annuelle":
+                            prochaine_echeance = date_inspection + timedelta(days=jours_avancee)
+                            type_inspection_due = "avancee_annuelle"
+                        else:
+                            prochaine_echeance = date_inspection + timedelta(days=jours_routine)
+                            type_inspection_due = "routine"
+                    else:
+                        # Jamais inspecté - échéance immédiate
+                        prochaine_echeance = today
+                        type_inspection_due = "routine"
+                    
+                    # Vérifier si dans la fenêtre de 7 jours
+                    if prochaine_echeance:
+                        jours_restants = (prochaine_echeance - today).days
+                        
+                        if 0 <= jours_restants <= jours_avant_inspection:
+                            # Envoyer alerte à l'employé
+                            destinataires = [user_id] if user_id else []
+                            
+                            # Ajouter les admins/superviseurs
+                            destinataires.extend(admin_ids)
+                            destinataires = list(set(destinataires))  # Dédupliquer
+                            
+                            titre = f"🔔 Inspection EPI à venir"
+                            if jours_restants == 0:
+                                message = f"L'inspection {type_inspection_due} de votre {type_nom} ({epi_nom}) est due aujourd'hui."
+                            else:
+                                message = f"L'inspection {type_inspection_due} de votre {type_nom} ({epi_nom}) est due dans {jours_restants} jour(s)."
+                            
+                            # Notification in-app pour chaque destinataire
+                            for dest_id in destinataires:
+                                await creer_notification(
+                                    tenant_id=tenant_id,
+                                    destinataire_id=dest_id,
+                                    type="alerte_inspection_epi",
+                                    titre=titre,
+                                    message=message,
+                                    lien="/mes-epi" if dest_id == user_id else "/gestion-epi",
+                                    data={
+                                        "epi_id": epi_id,
+                                        "epi_nom": epi_nom,
+                                        "type_inspection": type_inspection_due,
+                                        "jours_restants": jours_restants
+                                    }
+                                )
+                            
+                            # Notification push (iOS/Android)
+                            try:
+                                await send_push_notification_to_users(
+                                    user_ids=destinataires,
+                                    title=titre,
+                                    body=message,
+                                    data={
+                                        "type": "alerte_inspection_epi",
+                                        "epi_id": epi_id,
+                                        "lien": "/mes-epi"
+                                    },
+                                    tenant_slug=tenant_slug
+                                )
+                            except Exception as push_err:
+                                logging.warning(f"⚠️ Erreur push notification EPI: {str(push_err)}")
+                            
+                            # Web Push
+                            try:
+                                await send_web_push_to_users(
+                                    tenant_id=tenant_id,
+                                    user_ids=destinataires,
+                                    title=titre,
+                                    body=message,
+                                    data={"url": f"/{tenant_slug}/mes-epi"}
+                                )
+                            except Exception as web_err:
+                                logging.warning(f"⚠️ Erreur web push EPI: {str(web_err)}")
+                            
+                            alertes_envoyees += 1
+                    
+                    # Vérifier la fin de vie EPI
+                    date_fin_vie = epi.get("date_fin_vie") or epi.get("date_expiration")
+                    if date_fin_vie:
+                        try:
+                            if isinstance(date_fin_vie, str):
+                                fin_vie = datetime.fromisoformat(date_fin_vie.replace('Z', '+00:00')).date()
+                            else:
+                                fin_vie = date_fin_vie
+                            
+                            jours_avant_fin = (fin_vie - today).days
+                            
+                            if 0 <= jours_avant_fin <= jours_avance_expiration:
+                                destinataires = [user_id] if user_id else []
+                                destinataires.extend(admin_ids)
+                                destinataires = list(set(destinataires))
+                                
+                                titre = "⚠️ Fin de vie EPI"
+                                if jours_avant_fin == 0:
+                                    message = f"Votre {type_nom} ({epi_nom}) arrive à fin de vie aujourd'hui!"
+                                else:
+                                    message = f"Votre {type_nom} ({epi_nom}) arrive à fin de vie dans {jours_avant_fin} jour(s)."
+                                
+                                for dest_id in destinataires:
+                                    await creer_notification(
+                                        tenant_id=tenant_id,
+                                        destinataire_id=dest_id,
+                                        type="alerte_fin_vie_epi",
+                                        titre=titre,
+                                        message=message,
+                                        lien="/mes-epi" if dest_id == user_id else "/gestion-epi",
+                                        data={
+                                            "epi_id": epi_id,
+                                            "epi_nom": epi_nom,
+                                            "jours_avant_fin": jours_avant_fin
+                                        }
+                                    )
+                                
+                                # Push notification
+                                try:
+                                    await send_push_notification_to_users(
+                                        user_ids=destinataires,
+                                        title=titre,
+                                        body=message,
+                                        data={"type": "alerte_fin_vie_epi", "epi_id": epi_id},
+                                        tenant_slug=tenant_slug
+                                    )
+                                except Exception as push_err:
+                                    logging.warning(f"⚠️ Erreur push fin vie EPI: {str(push_err)}")
+                                
+                                alertes_fin_vie += 1
+                        except Exception as date_err:
+                            logging.warning(f"⚠️ Erreur parsing date fin vie EPI {epi_id}: {str(date_err)}")
+                
+                if alertes_envoyees > 0 or alertes_fin_vie > 0:
+                    logging.info(f"✅ {tenant_nom}: {alertes_envoyees} alerte(s) inspection + {alertes_fin_vie} alerte(s) fin de vie EPI")
+                    
+            except Exception as tenant_err:
+                logging.error(f"❌ Erreur alertes EPI pour {tenant.get('nom', 'Unknown')}: {str(tenant_err)}", exc_info=True)
+        
+        logging.info("✅ Vérification des alertes EPI basées sur fréquence terminée")
+        
+    except Exception as e:
+        logging.error(f"❌ Erreur dans job_alertes_epi_frequence: {str(e)}", exc_info=True)
+
+
+def frequence_to_jours(frequence: str) -> int:
+    """Convertit une fréquence textuelle en nombre de jours."""
+    frequences_map = {
+        'quotidienne': 1,
+        'hebdomadaire': 7,
+        'mensuelle': 30,
+        'trimestrielle': 90,
+        'semestrielle': 180,
+        'annuelle': 365,
+        '5_ans': 1825,
+        'apres_usage': 0,
+        'sur_demande': 0,
+    }
+    return frequences_map.get(frequence.lower() if frequence else '', 365)
 
 
 async def job_verifier_rappels_disponibilites():
