@@ -26,7 +26,7 @@ const ParametresGrades = ({
   const [loading, setLoading] = useState(false);
   const [showAddEchelonModal, setShowAddEchelonModal] = useState(false);
   const [editingEchelon, setEditingEchelon] = useState(null);
-  const [newEchelon, setNewEchelon] = useState({ numero: 1, libelle: '', taux_horaire: 0 });
+  const [newEchelon, setNewEchelon] = useState({ numero: 1, libelle: '', taux_horaire: '' });
   const [showGenererAnneeModal, setShowGenererAnneeModal] = useState(false);
   const [nouvelleAnnee, setNouvelleAnnee] = useState(new Date().getFullYear() + 1);
 
@@ -83,32 +83,41 @@ const ParametresGrades = ({
     setNewEchelon({
       numero: maxNumero + 1,
       libelle: `${maxNumero + 1}${maxNumero === 0 ? 'ère' : 'ème'} année`,
-      taux_horaire: 0
+      taux_horaire: ''
     });
     setEditingEchelon(null);
     setShowAddEchelonModal(true);
   };
 
   const handleEditEchelon = (echelon) => {
-    setNewEchelon({ ...echelon });
+    setNewEchelon({ 
+      ...echelon, 
+      taux_horaire: echelon.taux_horaire.toString() 
+    });
     setEditingEchelon(echelon);
     setShowAddEchelonModal(true);
   };
 
   const handleSaveEchelon = () => {
+    const tauxHoraire = parseFloat(newEchelon.taux_horaire.toString().replace(',', '.')) || 0;
+    const echelonToSave = {
+      ...newEchelon,
+      taux_horaire: tauxHoraire
+    };
+    
     if (editingEchelon) {
       // Modification
       setEchelleSalariale(prev => ({
         ...prev,
         echelons: prev.echelons.map(e => 
-          e.numero === editingEchelon.numero ? newEchelon : e
+          e.numero === editingEchelon.numero ? echelonToSave : e
         )
       }));
     } else {
       // Ajout
       setEchelleSalariale(prev => ({
         ...prev,
-        echelons: [...prev.echelons, newEchelon].sort((a, b) => a.numero - b.numero)
+        echelons: [...prev.echelons, echelonToSave].sort((a, b) => a.numero - b.numero)
       }));
     }
     setShowAddEchelonModal(false);
@@ -492,12 +501,11 @@ const ParametresGrades = ({
               <div>
                 <Label>Taux horaire ($)</Label>
                 <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
+                  type="text"
+                  inputMode="decimal"
                   placeholder="Ex: 23.83"
                   value={newEchelon.taux_horaire}
-                  onChange={(e) => setNewEchelon(prev => ({ ...prev, taux_horaire: parseFloat(e.target.value) || 0 }))}
+                  onChange={(e) => setNewEchelon(prev => ({ ...prev, taux_horaire: e.target.value }))}
                 />
               </div>
             </div>
