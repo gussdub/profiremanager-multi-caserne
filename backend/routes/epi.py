@@ -50,6 +50,25 @@ async def get_send_push_notification():
 
 # ==================== FONCTIONS UTILITAIRES DE MATCHING ====================
 
+def frequence_to_jours(frequence: str) -> int:
+    """
+    Convertit une fréquence textuelle en nombre de jours.
+    Utilisé pour calculer les échéances et retards d'inspection.
+    """
+    frequences_map = {
+        'quotidienne': 1,
+        'hebdomadaire': 7,
+        'mensuelle': 30,
+        'trimestrielle': 90,
+        'semestrielle': 180,
+        'annuelle': 365,
+        '5_ans': 1825,
+        'apres_usage': 0,  # Pas de délai automatique, dépend de l'utilisation
+        'sur_demande': 0,  # Pas de délai automatique
+    }
+    return frequences_map.get(frequence, 365)  # Par défaut annuelle
+
+
 def normalize_string_for_matching(s: str) -> str:
     """
     Normalise une chaîne pour le matching intelligent :
@@ -1885,6 +1904,10 @@ async def get_rapport_conformite(tenant_slug: str, current_user: User = Depends(
     # Récupérer tous les EPI
     epis = await db.epis.find({"tenant_id": tenant.id}).to_list(1000)
     
+    # Charger les types d'EPI pour obtenir les fréquences configurées
+    types_epi = await db.epi_types.find({"tenant_id": tenant.id}).to_list(100)
+    types_map = {t["id"]: t for t in types_epi}
+    
     rapport = {
         "total": len(epis),
         "en_service": 0,
@@ -1910,6 +1933,11 @@ async def get_rapport_conformite(tenant_slug: str, current_user: User = Depends(
         elif statut == "Retiré":
             rapport["retire"] += 1
         
+        # Récupérer le type d'EPI pour obtenir les fréquences configurées
+        type_epi = types_map.get(epi.get("type_id"))
+        frequence_avancee = type_epi.get("frequence_avancee", "annuelle") if type_epi else "annuelle"
+        jours_avancee = frequence_to_jours(frequence_avancee)
+        
         # Récupérer la dernière inspection
         derniere_inspection = await db.inspections_epi.find_one(
             {"epi_id": epi["id"], "tenant_id": tenant.id},
@@ -1924,13 +1952,15 @@ async def get_rapport_conformite(tenant_slug: str, current_user: User = Depends(
         elif statut == "En réparation":
             couleur = "jaune"
         elif derniere_inspection:
-            # Vérifier si l'inspection est récente
+            # Vérifier si l'inspection est récente selon la fréquence configurée
             date_inspection = datetime.fromisoformat(derniere_inspection["date_inspection"])
             jours_depuis_inspection = (datetime.now(timezone.utc) - date_inspection).days
             
-            if jours_depuis_inspection > 365:  # Inspection avancée en retard
+            # En retard si dépasse la fréquence configurée
+            if jours_depuis_inspection > jours_avancee:
                 couleur = "rouge"
-            elif jours_depuis_inspection > 330:  # Inspection bientôt en retard (dans 35 jours)
+            # Bientôt en retard si dans les 10% restants (ex: 35 jours pour annuelle)
+            elif jours_depuis_inspection > (jours_avancee - (jours_avancee * 0.1)):
                 couleur = "jaune"
         else:
             # Pas d'inspection du tout
@@ -1955,10 +1985,25 @@ async def get_rapport_echeances(tenant_slug: str, jours: int = 30, current_user:
     # Récupérer tous les EPI
     epis = await db.epis.find({"tenant_id": tenant.id}).to_list(1000)
     
+    # Charger les types d'EPI pour obtenir les fréquences configurées
+    types_epi = await db.epi_types.find({"tenant_id": tenant.id}).to_list(100)
+    types_map = {t["id"]: t for t in types_epi}
+    
     echeances = []
     aujourd_hui = datetime.now(timezone.utc)
     
     for epi in epis:
+        # Récupérer le type d'EPI pour obtenir les fréquences configurées
+        type_epi = types_map.get(epi.get("type_id"))
+        
+        # Fréquences par défaut si non définies dans le type
+        frequence_routine = type_epi.get("frequence_routine", "mensuelle") if type_epi else "mensuelle"
+        frequence_avancee = type_epi.get("frequence_avancee", "annuelle") if type_epi else "annuelle"
+        
+        # Convertir en jours
+        jours_routine = frequence_to_jours(frequence_routine)
+        jours_avancee = frequence_to_jours(frequence_avancee)
+        
         # Récupérer la dernière inspection
         derniere_inspection = await db.inspections_epi.find_one(
             {"epi_id": epi["id"], "tenant_id": tenant.id},
@@ -1969,13 +2014,13 @@ async def get_rapport_echeances(tenant_slug: str, jours: int = 30, current_user:
             date_inspection = datetime.fromisoformat(derniere_inspection["date_inspection"])
             type_inspection = derniere_inspection["type_inspection"]
             
-            # Calculer la prochaine échéance selon le type
+            # Calculer la prochaine échéance selon le type et la fréquence configurée
             if type_inspection == "avancee_annuelle":
-                prochaine_echeance = date_inspection + timedelta(days=365)
+                prochaine_echeance = date_inspection + timedelta(days=jours_avancee)
             elif type_inspection == "routine_mensuelle":
-                prochaine_echeance = date_inspection + timedelta(days=30)
+                prochaine_echeance = date_inspection + timedelta(days=jours_routine)
             else:  # apres_utilisation
-                prochaine_echeance = date_inspection + timedelta(days=30)  # Routine dans 30 jours
+                prochaine_echeance = date_inspection + timedelta(days=jours_routine)
             
             # Vérifier si dans la fenêtre de X jours
             jours_restants = (prochaine_echeance - aujourd_hui).days

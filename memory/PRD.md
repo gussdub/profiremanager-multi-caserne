@@ -67,6 +67,21 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 
 
 
+### NEW - Amélioration Module Inventaire (15 Mars 2026)
+- **Scroll automatique:** À chaque changement de section, le contenu scroll en haut
+- **Champs non pré-remplis:** Les champs radio, select et number sont vides par défaut (l'utilisateur doit choisir)
+
+### NEW - Consolidation des Fréquences d'Inspection (15 Mars 2026)
+- **Suppression du dédoublement:** Le champ "Fréquence" a été retiré du modal de création/modification de formulaire
+- **Source unique:** La fréquence est maintenant définie uniquement au niveau de la catégorie (matériel) ou du type (EPI)
+- **Backend mis à jour:** 
+  - Nouvelle fonction `frequence_to_jours()` dans `epi.py` pour convertir les fréquences en jours
+  - Les rapports de conformité et d'échéances EPI utilisent maintenant les fréquences configurées dans les types d'EPI
+  - Calcul dynamique des retards et alertes basé sur la fréquence réelle configurée
+- **Fréquences supportées:** quotidienne, hebdomadaire, mensuelle, trimestrielle, semestrielle, annuelle, 5_ans
+
+
+
 ## Recent Fixes (February 2026)
 
 ### NEW - Heures Silencieuses pour Remplacements (27 Feb 2026)

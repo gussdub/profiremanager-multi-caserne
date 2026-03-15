@@ -856,15 +856,6 @@ const FormulairesInspectionConfig = () => {
                   backgroundColor: '#f1f5f9',
                   color: '#475569'
                 }}>
-                  ⏱️ {frequences.find(f => f.value === formulaire.frequence)?.label || formulaire.frequence}
-                </span>
-                <span style={{
-                  padding: '0.25rem 0.5rem',
-                  borderRadius: '6px',
-                  fontSize: '0.75rem',
-                  backgroundColor: '#f1f5f9',
-                  color: '#475569'
-                }}>
                   📂 {formulaire.sections?.length || 0} section(s)
                 </span>
                 <span style={{
@@ -1097,25 +1088,7 @@ const FormulairesInspectionConfig = () => {
                     </p>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    <div>
-                      <Label>Fréquence</Label>
-                      <select
-                        value={formData.frequence}
-                        onChange={(e) => setFormData({ ...formData, frequence: e.target.value })}
-                        style={{
-                          width: '100%',
-                          padding: '0.5rem',
-                          borderRadius: '6px',
-                          border: '1px solid #e5e7eb'
-                        }}
-                      >
-                        {frequences.map(f => (
-                          <option key={f.value} value={f.value}>{f.label}</option>
-                        ))}
-                      </select>
-                    </div>
-                    
+                  <div style={{ marginTop: '0.5rem' }}>
                     <div>
                       <Label>État</Label>
                       <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
