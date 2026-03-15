@@ -729,7 +729,7 @@ async def recalculer_alertes(
     tenant_slug: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Recalculer toutes les alertes équipements"""
+    """Recalculer toutes les alertes équipements incluant les inspections basées sur fréquence"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     # RBAC: Vérifier permission de modification sur le module actifs/materiel
@@ -740,41 +740,76 @@ async def recalculer_alertes(
     params = tenant.parametres.get('equipements', {}) if tenant.parametres else {}
     delai_maintenance = params.get('delai_alerte_maintenance_jours', 30)
     delai_fin_vie = params.get('delai_alerte_fin_vie_jours', 90)
+    delai_inspection = params.get('delai_alerte_inspection_jours', 7)  # Nouveau paramètre pour inspection
     
     aujourdhui = datetime.now(timezone.utc).date()
     date_limite_maintenance = (aujourdhui + timedelta(days=delai_maintenance)).isoformat()
     date_limite_fin_vie = (aujourdhui + timedelta(days=delai_fin_vie)).isoformat()
+    date_limite_inspection = (aujourdhui + timedelta(days=delai_inspection)).isoformat()
     
     equipements = await db.equipements.find({"tenant_id": tenant.id}).to_list(10000)
     
     alertes_generees = 0
+    alertes_inspection_count = 0
     
     for eq in equipements:
         updates = {}
         
+        # Alerte maintenance
         if eq.get("date_prochaine_maintenance") and eq["date_prochaine_maintenance"] <= date_limite_maintenance:
             updates["alerte_maintenance"] = True
             alertes_generees += 1
         else:
             updates["alerte_maintenance"] = False
         
+        # Alerte stock bas
         if eq.get("quantite", 1) < eq.get("quantite_minimum", 1):
             updates["alerte_stock_bas"] = True
             alertes_generees += 1
         else:
             updates["alerte_stock_bas"] = False
         
+        # Alerte réparation
         if eq.get("etat") in ["a_reparer", "en_reparation"]:
             updates["alerte_reparation"] = True
             alertes_generees += 1
         else:
             updates["alerte_reparation"] = False
         
+        # Alerte fin de vie
         if eq.get("date_fin_vie") and eq["date_fin_vie"] <= date_limite_fin_vie:
             updates["alerte_fin_vie"] = True
             alertes_generees += 1
         else:
             updates["alerte_fin_vie"] = False
+        
+        # NOUVEAU: Alerte inspection basée sur fréquence
+        frequence_inspection = eq.get("frequence_inspection", "")
+        if frequence_inspection and frequence_inspection not in ["aucune", "", "apres_usage"]:
+            # Calculer la prochaine date d'inspection
+            derniere_inspection = eq.get("date_derniere_inspection", "")
+            prochaine_inspection = eq.get("date_prochaine_inspection", "")
+            
+            # Si pas de date prochaine explicite, calculer basé sur fréquence
+            if not prochaine_inspection and derniere_inspection:
+                prochaine_inspection = calculer_prochaine_inspection(derniere_inspection, frequence_inspection)
+            elif not prochaine_inspection and not derniere_inspection:
+                # Jamais inspecté - alerte immédiate
+                prochaine_inspection = aujourdhui.isoformat()
+            
+            # Mettre à jour date_prochaine_inspection si calculée
+            if prochaine_inspection and not eq.get("date_prochaine_inspection"):
+                updates["date_prochaine_inspection"] = prochaine_inspection
+            
+            # Vérifier si inspection due
+            if prochaine_inspection and prochaine_inspection <= date_limite_inspection:
+                updates["alerte_inspection"] = True
+                alertes_generees += 1
+                alertes_inspection_count += 1
+            else:
+                updates["alerte_inspection"] = False
+        else:
+            updates["alerte_inspection"] = False
         
         if updates:
             await db.equipements.update_one(
@@ -782,7 +817,53 @@ async def recalculer_alertes(
                 {"$set": updates}
             )
     
-    return {"message": f"Alertes recalculées: {alertes_generees} alertes actives"}
+    return {
+        "message": f"Alertes recalculées: {alertes_generees} alertes actives",
+        "details": {
+            "total_equipements": len(equipements),
+            "alertes_inspection": alertes_inspection_count
+        }
+    }
+
+
+def calculer_prochaine_inspection(derniere_date: str, frequence: str) -> str:
+    """Calcule la prochaine date d'inspection basée sur la fréquence"""
+    from datetime import timedelta
+    
+    if not derniere_date:
+        return datetime.now(timezone.utc).strftime("%Y-%m-%d")  # Due maintenant si jamais fait
+    
+    try:
+        date_base = datetime.strptime(derniere_date[:10], "%Y-%m-%d")
+        
+        deltas = {
+            # Fréquences standard
+            "journaliere": timedelta(days=1),
+            "quotidienne": timedelta(days=1),
+            "hebdomadaire": timedelta(weeks=1),
+            "mensuelle": timedelta(days=30),
+            "bimestrielle": timedelta(days=60),
+            "trimestrielle": timedelta(days=90),
+            "semestrielle": timedelta(days=180),
+            "bi-annuelle": timedelta(days=180),
+            "bi_annuelle": timedelta(days=180),
+            "annuelle": timedelta(days=365),
+            "2ans": timedelta(days=730),
+            "2_ans": timedelta(days=730),
+            "5ans": timedelta(days=1825),
+            "5_ans": timedelta(days=1825),
+        }
+        
+        frequence_lower = frequence.lower().replace("-", "_").replace(" ", "_")
+        delta = deltas.get(frequence_lower)
+        
+        if delta:
+            prochaine = date_base + delta
+            return prochaine.strftime("%Y-%m-%d")
+    except Exception:
+        pass
+    
+    return None
 
 
 # ==================== ROUTES STATS ====================

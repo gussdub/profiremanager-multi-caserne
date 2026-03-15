@@ -19,7 +19,8 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
+# Utiliser la variable d'environnement avec fallback pour les tests locaux
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'http://localhost:8001').rstrip('/')
 
 # Test credentials
 TEST_EMAIL = "gussdub@gmail.com"

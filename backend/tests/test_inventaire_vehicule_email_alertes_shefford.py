@@ -29,7 +29,9 @@ import os
 
 class SheffordVehicleInventoryEmailTester:
     def __init__(self):
-        self.base_url = "https://role-based-ui-config.preview.emergentagent.com/api"
+        # Utiliser la variable d'environnement pour l'URL avec fallback
+        backend_url = os.environ.get('REACT_APP_BACKEND_URL', 'http://localhost:8001').rstrip('/')
+        self.base_url = f"{backend_url}/api"
         self.headers = {}
         self.token = None
         self.tenant_slug = "shefford"

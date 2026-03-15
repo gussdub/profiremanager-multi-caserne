@@ -22,6 +22,45 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 - Gestion des employés par tenant
 - Attribution des équipes de garde
 
+### NEW - P3: Logique d'inspection équipements (15 Mars 2026)
+**Statut:** ✅ TERMINÉ
+
+**Objectif:** Implémenter le calcul automatique des alertes d'inspection basé sur la fréquence définie pour chaque équipement.
+
+**Améliorations apportées:**
+- **Fonction `calculer_prochaine_inspection`:** Calcule la prochaine date d'inspection basée sur la fréquence (journalière, hebdomadaire, mensuelle, annuelle, etc.)
+- **Endpoint `POST /{tenant}/equipements/alertes/recalculer`:** Recalcule toutes les alertes incluant les inspections
+- **Nouveau paramètre:** `delai_alerte_inspection_jours` (défaut: 7 jours) pour configurer le seuil d'alerte
+
+**Fréquences supportées:**
+| Fréquence | Intervalle |
+|-----------|------------|
+| journaliere | 1 jour |
+| hebdomadaire | 1 semaine |
+| mensuelle | 30 jours |
+| trimestrielle | 90 jours |
+| semestrielle | 180 jours |
+| annuelle | 365 jours |
+| 2ans | 730 jours |
+| 5ans | 1825 jours |
+
+**Tests:**
+- Endpoint testé: retourne `{"message": "Alertes recalculées: 1 alertes actives", "details": {"total_equipements": 3, "alertes_inspection": 1}}`
+
+### NEW - P3: Correction BASE_URL tests (15 Mars 2026)
+**Statut:** ✅ TERMINÉ
+
+**Fichiers corrigés:**
+- `test_inventaire_vehicule_email_alertes_shefford.py`
+- `test_inventaire_vehicule_email_alertes.py`
+- `test_rbac_phase3_granular_tabs.py`
+- `test_regression_rbac.py`
+- `test_rbac_migration.py`
+- `test_rbac_migration_endpoints.py`
+- `test_epi_types_inspection_config.py`
+
+**Changement:** URLs hardcodées remplacées par `os.environ.get('REACT_APP_BACKEND_URL', 'http://localhost:8001')`
+
 ### NEW - Refactoring Remplacements.jsx (15 Mars 2026)
 **Statut:** ✅ TERMINÉ
 

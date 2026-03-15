@@ -20,7 +20,7 @@ import os
 import uuid
 from datetime import datetime, timezone
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://role-based-ui-config.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'http://localhost:8001')
 TENANT_SLUG = "demo"
 LOGIN_EMAIL = "gussdub@gmail.com"
 LOGIN_PASSWORD = "230685Juin+"
