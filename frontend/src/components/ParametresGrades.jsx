@@ -224,19 +224,6 @@ const ParametresGrades = ({
                     </h3>
                     <div className="grade-details">
                       <span className="detail-item">📊 Niveau: {grade.niveau_hierarchique}</span>
-                      <span className="detail-item" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        💰 Prime: 
-                        <Input
-                          type="number"
-                          step="0.5"
-                          min="0"
-                          max="100"
-                          value={grade.prime_pourcentage || 0}
-                          onChange={(e) => handleUpdateGradePrime(grade.id, grade.nom, e.target.value)}
-                          style={{ width: '70px', display: 'inline-block' }}
-                        />
-                        %
-                      </span>
                     </div>
                   </div>
                   <div className="grade-actions">
