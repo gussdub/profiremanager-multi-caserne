@@ -43,17 +43,32 @@ MAX_ACCESS_TYPES = 15
 # ==================== DÉFINITION DES PERMISSIONS ====================
 
 # Structure des modules et leurs onglets avec actions disponibles
+# ENRICHI pour permettre une configuration granulaire via l'interface "Comptes et accès"
 MODULES_STRUCTURE = {
     "dashboard": {
         "label": "Tableau de bord",
         "icon": "📊",
-        "tabs": {},
+        "tabs": {
+            "personnel": {"label": "Section personnelle (mes gardes, mes heures)", "actions": ["voir"]},
+            "general": {"label": "Section générale (couverture planning, stats équipe)", "actions": ["voir"]},
+            "activites": {"label": "Fil d'activités système", "actions": ["voir"]},
+            "alertes": {"label": "Alertes équipements et EPI", "actions": ["voir"]},
+            "couverture": {"label": "Taux de couverture mensuel", "actions": ["voir"]}
+        },
         "actions": ["voir"]
     },
     "personnel": {
         "label": "Personnel",
         "icon": "👥",
-        "tabs": {},
+        "tabs": {
+            "liste": {"label": "Liste des employés", "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+            "fiches": {"label": "Fiches individuelles", "actions": ["voir", "modifier", "exporter"]},
+            "photos": {"label": "Photos de profil", "actions": ["voir", "modifier"]},
+            "signatures": {"label": "Signatures numériques", "actions": ["voir", "modifier"]},
+            "anciens": {"label": "Anciens employés", "actions": ["voir", "voir_anciens"]},
+            "import": {"label": "Import CSV personnel", "actions": ["creer"]},
+            "stats": {"label": "Statistiques mensuelles", "actions": ["voir"]}
+        },
         "actions": ["voir", "creer", "modifier", "supprimer", "exporter", "voir_anciens"]
     },
     "interventions": {
@@ -64,6 +79,8 @@ MODULES_STRUCTURE = {
             "fausses-alarmes": {"label": "Fausses alarmes", "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
             "conformite-dsi": {"label": "Conformité DSI", "actions": ["voir", "valider", "exporter"]},
             "historique": {"label": "Historique", "actions": ["voir", "exporter"]},
+            "statistiques": {"label": "Statistiques interventions", "actions": ["voir", "exporter"]},
+            "comparaison": {"label": "Comparaison annuelle", "actions": ["voir"]},
             "parametres": {"label": "Paramètres", "actions": ["voir", "modifier"]}
         },
         "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]
@@ -73,16 +90,23 @@ MODULES_STRUCTURE = {
         "icon": "💰",
         "tabs": {
             "feuilles": {"label": "Feuilles de temps", "actions": ["voir", "creer", "modifier", "supprimer", "valider", "exporter"]},
-            "rapports": {"label": "Rapports", "actions": ["voir", "exporter"]},
+            "rapports": {"label": "Rapports salariaux", "actions": ["voir", "exporter"]},
+            "couts": {"label": "Coûts salariaux", "actions": ["voir", "exporter"]},
             "jours-feries": {"label": "Jours fériés", "actions": ["voir", "creer", "modifier", "supprimer"]},
-            "parametres": {"label": "Paramètres", "actions": ["voir", "modifier"]}
+            "parametres": {"label": "Paramètres paie", "actions": ["voir", "modifier"]}
         },
         "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]
     },
     "planning": {
         "label": "Horaire",
         "icon": "📅",
-        "tabs": {},
+        "tabs": {
+            "calendrier": {"label": "Calendrier des gardes", "actions": ["voir", "creer", "modifier", "supprimer"]},
+            "assignations": {"label": "Assignations", "actions": ["voir", "creer", "modifier", "supprimer"]},
+            "equipe-jour": {"label": "Équipe du jour", "actions": ["voir"]},
+            "rapport-heures": {"label": "Rapport d'heures", "actions": ["voir", "exporter"]},
+            "export": {"label": "Export planning", "actions": ["exporter"]}
+        },
         "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]
     },
     "remplacements": {
@@ -90,18 +114,23 @@ MODULES_STRUCTURE = {
         "icon": "🔄",
         "tabs": {
             "propositions": {"label": "Propositions reçues", "actions": ["voir", "accepter", "refuser"]},
-            "demandes": {"label": "Mes demandes", "actions": ["voir", "creer", "modifier", "supprimer"]},
-            "conges": {"label": "Congés", "actions": ["voir", "creer", "modifier", "supprimer", "approuver"]}
+            "demandes": {"label": "Demandes de remplacement", "actions": ["voir", "creer", "modifier", "supprimer", "annuler"]},
+            "conges": {"label": "Congés et absences", "actions": ["voir", "creer", "modifier", "supprimer", "approuver"]},
+            "toutes-demandes": {"label": "Toutes les demandes (admin)", "actions": ["voir", "modifier", "supprimer"]},
+            "parametres": {"label": "Paramètres remplacements", "actions": ["voir", "modifier"]}
         },
-        "actions": ["voir", "creer", "modifier", "supprimer", "approuver"]
+        "actions": ["voir", "creer", "modifier", "supprimer", "approuver", "annuler"]
     },
     "formations": {
         "label": "Formations",
         "icon": "📚",
         "tabs": {
-            "catalogue": {"label": "Catalogue", "actions": ["voir", "creer", "modifier", "supprimer"]},
+            "catalogue": {"label": "Catalogue formations", "actions": ["voir", "creer", "modifier", "supprimer"]},
             "inscriptions": {"label": "Inscriptions", "actions": ["voir", "creer", "modifier", "supprimer"]},
-            "suivi": {"label": "Suivi compétences", "actions": ["voir", "exporter"]}
+            "suivi": {"label": "Suivi compétences", "actions": ["voir", "exporter"]},
+            "competences": {"label": "Gestion compétences", "actions": ["voir", "creer", "modifier", "supprimer"]},
+            "conformite": {"label": "Rapport conformité NFPA", "actions": ["voir", "exporter"]},
+            "dashboard": {"label": "Tableau de bord formations", "actions": ["voir"]}
         },
         "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]
     },
@@ -110,10 +139,17 @@ MODULES_STRUCTURE = {
         "icon": "🚒",
         "tabs": {
             "vehicules": {"label": "Véhicules", "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+            "inventaires": {"label": "Inventaires véhicules", "actions": ["voir", "creer", "modifier", "supprimer"]},
             "eau": {"label": "Approvisionnement Eau", "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+            "bornes": {"label": "Bornes sèches", "actions": ["voir", "creer", "modifier", "supprimer"]},
+            "points-eau": {"label": "Points d'eau", "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
             "materiel": {"label": "Matériel & Équipements", "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+            "categories": {"label": "Catégories équipements", "actions": ["voir", "creer", "modifier", "supprimer"]},
+            "apria": {"label": "Inspections APRIA", "actions": ["voir", "creer", "modifier", "supprimer"]},
+            "formulaires": {"label": "Formulaires inspection", "actions": ["voir", "creer", "modifier", "supprimer"]},
             "epi": {"label": "Gestion EPI", "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
-            "parametres": {"label": "Paramètres", "actions": ["voir", "modifier"]}
+            "alertes": {"label": "Alertes maintenance/expiration", "actions": ["voir"]},
+            "parametres": {"label": "Paramètres actifs", "actions": ["voir", "modifier"]}
         },
         "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]
     },
@@ -122,16 +158,23 @@ MODULES_STRUCTURE = {
         "icon": "🔥",
         "tabs": {
             "batiments": {"label": "Bâtiments", "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
-            "inspections": {"label": "Inspections", "actions": ["voir", "creer", "modifier", "supprimer", "valider", "exporter"]},
-            "calendrier": {"label": "Calendrier", "actions": ["voir"]}
+            "inspections": {"label": "Inspections préventives", "actions": ["voir", "creer", "modifier", "supprimer", "valider", "exporter"]},
+            "avis": {"label": "Avis de non-conformité", "actions": ["voir", "creer", "modifier", "supprimer", "signer"]},
+            "calendrier": {"label": "Calendrier inspections", "actions": ["voir"]},
+            "rapports": {"label": "Rapports prévention", "actions": ["voir", "exporter"]}
         },
         "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]
     },
     "disponibilites": {
-        "label": "Mes disponibilités",
+        "label": "Disponibilités",
         "icon": "📋",
-        "tabs": {},
-        "actions": ["voir", "modifier"]
+        "tabs": {
+            "mes-dispos": {"label": "Mes disponibilités", "actions": ["voir", "modifier"]},
+            "equipe": {"label": "Disponibilités de l'équipe", "actions": ["voir"]},
+            "import": {"label": "Import en masse", "actions": ["creer"]},
+            "rapport": {"label": "Rapport disponibilités", "actions": ["voir", "exporter"]}
+        },
+        "actions": ["voir", "modifier", "exporter"]
     },
     "mesepi": {
         "label": "Mes EPI",
@@ -142,35 +185,50 @@ MODULES_STRUCTURE = {
     "monprofil": {
         "label": "Mon profil",
         "icon": "👤",
-        "tabs": {},
+        "tabs": {
+            "informations": {"label": "Informations personnelles", "actions": ["voir", "modifier"]},
+            "photo": {"label": "Photo de profil", "actions": ["voir", "modifier"]},
+            "signature": {"label": "Signature numérique", "actions": ["voir", "modifier"]},
+            "mot-de-passe": {"label": "Mot de passe", "actions": ["modifier"]}
+        },
         "actions": ["voir", "modifier"]
     },
     "rapports": {
         "label": "Rapports",
         "icon": "📈",
-        "tabs": {},
+        "tabs": {
+            "dashboard-interne": {"label": "Dashboard interne", "actions": ["voir"]},
+            "couts-salariaux": {"label": "Coûts salariaux", "actions": ["voir", "exporter"]},
+            "budget": {"label": "Tableau de bord budgétaire", "actions": ["voir"]},
+            "immobilisations": {"label": "Rapport immobilisations", "actions": ["voir", "exporter"]},
+            "interventions": {"label": "Statistiques interventions", "actions": ["voir", "exporter"]},
+            "personnel-pdf": {"label": "Export personnel PDF", "actions": ["exporter"]},
+            "personnel-excel": {"label": "Export personnel Excel", "actions": ["exporter"]},
+            "salaires-pdf": {"label": "Export salaires PDF", "actions": ["exporter"]},
+            "salaires-excel": {"label": "Export salaires Excel", "actions": ["exporter"]}
+        },
         "actions": ["voir", "exporter"]
     },
     "parametres": {
         "label": "Paramètres",
         "icon": "⚙️",
         "tabs": {
-            "types-garde": {"label": "Gardes", "actions": ["voir", "creer", "modifier", "supprimer"]},
+            "types-garde": {"label": "Types de gardes", "actions": ["voir", "creer", "modifier", "supprimer"]},
             "competences": {"label": "Compétences", "actions": ["voir", "creer", "modifier", "supprimer"]},
             "grades": {"label": "Grades", "actions": ["voir", "creer", "modifier", "supprimer"]},
-            "attribution": {"label": "Horaire", "actions": ["voir", "modifier"]},
-            "rotation-equipes": {"label": "Rotation", "actions": ["voir", "creer", "modifier", "supprimer"]},
+            "horaires": {"label": "Horaires personnalisés", "actions": ["voir", "creer", "modifier", "supprimer"]},
+            "rotation-equipes": {"label": "Rotation équipes", "actions": ["voir", "creer", "modifier", "supprimer"]},
             "comptes": {"label": "Comptes & Accès", "actions": ["voir", "creer", "modifier", "supprimer"]},
-            "remplacements": {"label": "Remplacements", "actions": ["voir", "modifier"]},
-            "disponibilites": {"label": "Disponibilités", "actions": ["voir", "modifier"]},
-            "formations": {"label": "Formations", "actions": ["voir", "modifier"]},
-            "personnalisation": {"label": "Personnalisation", "actions": ["voir", "modifier"]},
-            "secteurs": {"label": "Secteurs", "actions": ["voir", "creer", "modifier", "supprimer"]},
+            "remplacements": {"label": "Paramètres remplacements", "actions": ["voir", "modifier"]},
+            "disponibilites": {"label": "Paramètres disponibilités", "actions": ["voir", "modifier"]},
+            "formations": {"label": "Paramètres formations", "actions": ["voir", "modifier"]},
+            "personnalisation": {"label": "Personnalisation caserne", "actions": ["voir", "modifier"]},
+            "secteurs": {"label": "Secteurs d'intervention", "actions": ["voir", "creer", "modifier", "supprimer"]},
             "imports": {"label": "Imports CSV", "actions": ["voir", "creer"]},
             "facturation": {"label": "Facturation", "actions": ["voir", "modifier"]},
-            "emails-history": {"label": "E-mails", "actions": ["voir"]}
+            "emails-history": {"label": "Historique E-mails", "actions": ["voir"]}
         },
-        "actions": ["voir", "modifier"]
+        "actions": ["voir", "creer", "modifier", "supprimer"]
     }
 }
 
@@ -180,8 +238,30 @@ DEFAULT_PERMISSIONS = {
         # Admin a accès à TOUT - cette permission ne peut pas être modifiée
         "is_full_access": True,
         "modules": {
-            "dashboard": {"access": True, "actions": ["voir"]},
-            "personnel": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter", "voir_anciens"]},
+            "dashboard": {
+                "access": True, 
+                "actions": ["voir"],
+                "tabs": {
+                    "personnel": {"access": True, "actions": ["voir"]},
+                    "general": {"access": True, "actions": ["voir"]},
+                    "activites": {"access": True, "actions": ["voir"]},
+                    "alertes": {"access": True, "actions": ["voir"]},
+                    "couverture": {"access": True, "actions": ["voir"]}
+                }
+            },
+            "personnel": {
+                "access": True, 
+                "actions": ["voir", "creer", "modifier", "supprimer", "exporter", "voir_anciens"],
+                "tabs": {
+                    "liste": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+                    "fiches": {"access": True, "actions": ["voir", "modifier", "exporter"]},
+                    "photos": {"access": True, "actions": ["voir", "modifier"]},
+                    "signatures": {"access": True, "actions": ["voir", "modifier"]},
+                    "anciens": {"access": True, "actions": ["voir", "voir_anciens"]},
+                    "import": {"access": True, "actions": ["creer"]},
+                    "stats": {"access": True, "actions": ["voir"]}
+                }
+            },
             "interventions": {
                 "access": True, 
                 "actions": ["voir", "creer", "modifier", "supprimer", "exporter"],
@@ -190,6 +270,8 @@ DEFAULT_PERMISSIONS = {
                     "fausses-alarmes": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
                     "conformite-dsi": {"access": True, "actions": ["voir", "valider", "exporter"]},
                     "historique": {"access": True, "actions": ["voir", "exporter"]},
+                    "statistiques": {"access": True, "actions": ["voir", "exporter"]},
+                    "comparaison": {"access": True, "actions": ["voir"]},
                     "parametres": {"access": True, "actions": ["voir", "modifier"]}
                 }
             },
@@ -199,18 +281,31 @@ DEFAULT_PERMISSIONS = {
                 "tabs": {
                     "feuilles": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "valider", "exporter"]},
                     "rapports": {"access": True, "actions": ["voir", "exporter"]},
+                    "couts": {"access": True, "actions": ["voir", "exporter"]},
                     "jours-feries": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
                     "parametres": {"access": True, "actions": ["voir", "modifier"]}
                 }
             },
-            "planning": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+            "planning": {
+                "access": True, 
+                "actions": ["voir", "creer", "modifier", "supprimer", "exporter"],
+                "tabs": {
+                    "calendrier": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
+                    "assignations": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
+                    "equipe-jour": {"access": True, "actions": ["voir"]},
+                    "rapport-heures": {"access": True, "actions": ["voir", "exporter"]},
+                    "export": {"access": True, "actions": ["exporter"]}
+                }
+            },
             "remplacements": {
                 "access": True,
-                "actions": ["voir", "creer", "modifier", "supprimer", "approuver"],
+                "actions": ["voir", "creer", "modifier", "supprimer", "approuver", "annuler"],
                 "tabs": {
                     "propositions": {"access": True, "actions": ["voir", "accepter", "refuser"]},
-                    "demandes": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
-                    "conges": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "approuver"]}
+                    "demandes": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "annuler"]},
+                    "conges": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "approuver"]},
+                    "toutes-demandes": {"access": True, "actions": ["voir", "modifier", "supprimer"]},
+                    "parametres": {"access": True, "actions": ["voir", "modifier"]}
                 }
             },
             "formations": {
@@ -219,7 +314,10 @@ DEFAULT_PERMISSIONS = {
                 "tabs": {
                     "catalogue": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
                     "inscriptions": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
-                    "suivi": {"access": True, "actions": ["voir", "exporter"]}
+                    "suivi": {"access": True, "actions": ["voir", "exporter"]},
+                    "competences": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
+                    "conformite": {"access": True, "actions": ["voir", "exporter"]},
+                    "dashboard": {"access": True, "actions": ["voir"]}
                 }
             },
             "actifs": {
@@ -227,9 +325,16 @@ DEFAULT_PERMISSIONS = {
                 "actions": ["voir", "creer", "modifier", "supprimer", "exporter"],
                 "tabs": {
                     "vehicules": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+                    "inventaires": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
                     "eau": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+                    "bornes": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
+                    "points-eau": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
                     "materiel": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+                    "categories": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
+                    "apria": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
+                    "formulaires": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
                     "epi": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+                    "alertes": {"access": True, "actions": ["voir"]},
                     "parametres": {"access": True, "actions": ["voir", "modifier"]}
                 }
             },
@@ -239,21 +344,55 @@ DEFAULT_PERMISSIONS = {
                 "tabs": {
                     "batiments": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
                     "inspections": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "valider", "exporter"]},
-                    "calendrier": {"access": True, "actions": ["voir"]}
+                    "avis": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "signer"]},
+                    "calendrier": {"access": True, "actions": ["voir"]},
+                    "rapports": {"access": True, "actions": ["voir", "exporter"]}
                 }
             },
-            "disponibilites": {"access": True, "actions": ["voir", "modifier"]},
+            "disponibilites": {
+                "access": True, 
+                "actions": ["voir", "modifier", "exporter"],
+                "tabs": {
+                    "mes-dispos": {"access": True, "actions": ["voir", "modifier"]},
+                    "equipe": {"access": True, "actions": ["voir"]},
+                    "import": {"access": True, "actions": ["creer"]},
+                    "rapport": {"access": True, "actions": ["voir", "exporter"]}
+                }
+            },
             "mesepi": {"access": True, "actions": ["voir"]},
-            "monprofil": {"access": True, "actions": ["voir", "modifier"]},
-            "rapports": {"access": True, "actions": ["voir", "exporter"]},
+            "monprofil": {
+                "access": True, 
+                "actions": ["voir", "modifier"],
+                "tabs": {
+                    "informations": {"access": True, "actions": ["voir", "modifier"]},
+                    "photo": {"access": True, "actions": ["voir", "modifier"]},
+                    "signature": {"access": True, "actions": ["voir", "modifier"]},
+                    "mot-de-passe": {"access": True, "actions": ["modifier"]}
+                }
+            },
+            "rapports": {
+                "access": True, 
+                "actions": ["voir", "exporter"],
+                "tabs": {
+                    "dashboard-interne": {"access": True, "actions": ["voir"]},
+                    "couts-salariaux": {"access": True, "actions": ["voir", "exporter"]},
+                    "budget": {"access": True, "actions": ["voir"]},
+                    "immobilisations": {"access": True, "actions": ["voir", "exporter"]},
+                    "interventions": {"access": True, "actions": ["voir", "exporter"]},
+                    "personnel-pdf": {"access": True, "actions": ["exporter"]},
+                    "personnel-excel": {"access": True, "actions": ["exporter"]},
+                    "salaires-pdf": {"access": True, "actions": ["exporter"]},
+                    "salaires-excel": {"access": True, "actions": ["exporter"]}
+                }
+            },
             "parametres": {
                 "access": True,
-                "actions": ["voir", "modifier"],
+                "actions": ["voir", "creer", "modifier", "supprimer"],
                 "tabs": {
                     "types-garde": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
                     "competences": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
                     "grades": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
-                    "attribution": {"access": True, "actions": ["voir", "modifier"]},
+                    "horaires": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
                     "rotation-equipes": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
                     "comptes": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
                     "remplacements": {"access": True, "actions": ["voir", "modifier"]},
@@ -270,8 +409,30 @@ DEFAULT_PERMISSIONS = {
     },
     "superviseur": {
         "modules": {
-            "dashboard": {"access": True, "actions": ["voir"]},
-            "personnel": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter", "voir_anciens"]},
+            "dashboard": {
+                "access": True, 
+                "actions": ["voir"],
+                "tabs": {
+                    "personnel": {"access": True, "actions": ["voir"]},
+                    "general": {"access": True, "actions": ["voir"]},
+                    "activites": {"access": False, "actions": []},
+                    "alertes": {"access": True, "actions": ["voir"]},
+                    "couverture": {"access": True, "actions": ["voir"]}
+                }
+            },
+            "personnel": {
+                "access": True, 
+                "actions": ["voir", "creer", "modifier", "supprimer", "exporter", "voir_anciens"],
+                "tabs": {
+                    "liste": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+                    "fiches": {"access": True, "actions": ["voir", "modifier", "exporter"]},
+                    "photos": {"access": True, "actions": ["voir", "modifier"]},
+                    "signatures": {"access": True, "actions": ["voir", "modifier"]},
+                    "anciens": {"access": True, "actions": ["voir", "voir_anciens"]},
+                    "import": {"access": True, "actions": ["creer"]},
+                    "stats": {"access": True, "actions": ["voir"]}
+                }
+            },
             "interventions": {
                 "access": True, 
                 "actions": ["voir", "creer", "modifier", "supprimer", "exporter"],
@@ -280,6 +441,8 @@ DEFAULT_PERMISSIONS = {
                     "fausses-alarmes": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
                     "conformite-dsi": {"access": True, "actions": ["voir", "valider", "exporter"]},
                     "historique": {"access": True, "actions": ["voir", "exporter"]},
+                    "statistiques": {"access": True, "actions": ["voir", "exporter"]},
+                    "comparaison": {"access": True, "actions": ["voir"]},
                     "parametres": {"access": False, "actions": []}
                 }
             },
@@ -289,18 +452,31 @@ DEFAULT_PERMISSIONS = {
                 "tabs": {
                     "feuilles": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "valider", "exporter"]},
                     "rapports": {"access": True, "actions": ["voir", "exporter"]},
+                    "couts": {"access": False, "actions": []},
                     "jours-feries": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
                     "parametres": {"access": False, "actions": []}
                 }
             },
-            "planning": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+            "planning": {
+                "access": True, 
+                "actions": ["voir", "creer", "modifier", "supprimer", "exporter"],
+                "tabs": {
+                    "calendrier": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
+                    "assignations": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
+                    "equipe-jour": {"access": True, "actions": ["voir"]},
+                    "rapport-heures": {"access": True, "actions": ["voir", "exporter"]},
+                    "export": {"access": True, "actions": ["exporter"]}
+                }
+            },
             "remplacements": {
                 "access": True,
                 "actions": ["voir", "creer", "modifier", "supprimer", "approuver"],
                 "tabs": {
                     "propositions": {"access": True, "actions": ["voir", "accepter", "refuser"]},
                     "demandes": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
-                    "conges": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "approuver"]}
+                    "conges": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "approuver"]},
+                    "toutes-demandes": {"access": True, "actions": ["voir", "modifier", "supprimer"]},
+                    "parametres": {"access": False, "actions": []}
                 }
             },
             "formations": {
@@ -309,7 +485,10 @@ DEFAULT_PERMISSIONS = {
                 "tabs": {
                     "catalogue": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
                     "inscriptions": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
-                    "suivi": {"access": True, "actions": ["voir", "exporter"]}
+                    "suivi": {"access": True, "actions": ["voir", "exporter"]},
+                    "competences": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
+                    "conformite": {"access": True, "actions": ["voir", "exporter"]},
+                    "dashboard": {"access": True, "actions": ["voir"]}
                 }
             },
             "actifs": {
@@ -317,9 +496,16 @@ DEFAULT_PERMISSIONS = {
                 "actions": ["voir", "creer", "modifier", "supprimer", "exporter"],
                 "tabs": {
                     "vehicules": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+                    "inventaires": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
                     "eau": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+                    "bornes": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
+                    "points-eau": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
                     "materiel": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+                    "categories": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
+                    "apria": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
+                    "formulaires": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
                     "epi": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+                    "alertes": {"access": True, "actions": ["voir"]},
                     "parametres": {"access": False, "actions": []}
                 }
             },
@@ -329,30 +515,72 @@ DEFAULT_PERMISSIONS = {
                 "tabs": {
                     "batiments": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
                     "inspections": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "valider", "exporter"]},
-                    "calendrier": {"access": True, "actions": ["voir"]}
+                    "avis": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "signer"]},
+                    "calendrier": {"access": True, "actions": ["voir"]},
+                    "rapports": {"access": True, "actions": ["voir", "exporter"]}
                 }
             },
-            "disponibilites": {"access": True, "actions": ["voir", "modifier"]},
+            "disponibilites": {
+                "access": True, 
+                "actions": ["voir", "modifier"],
+                "tabs": {
+                    "mes-dispos": {"access": True, "actions": ["voir", "modifier"]},
+                    "equipe": {"access": True, "actions": ["voir"]},
+                    "import": {"access": True, "actions": ["creer"]},
+                    "rapport": {"access": False, "actions": []}
+                }
+            },
             "mesepi": {"access": True, "actions": ["voir"]},
-            "monprofil": {"access": True, "actions": ["voir", "modifier"]},
-            "rapports": {"access": False, "actions": []},
+            "monprofil": {
+                "access": True, 
+                "actions": ["voir", "modifier"],
+                "tabs": {
+                    "informations": {"access": True, "actions": ["voir", "modifier"]},
+                    "photo": {"access": True, "actions": ["voir", "modifier"]},
+                    "signature": {"access": True, "actions": ["voir", "modifier"]},
+                    "mot-de-passe": {"access": True, "actions": ["modifier"]}
+                }
+            },
+            "rapports": {"access": False, "actions": [], "tabs": {}},
             "parametres": {"access": False, "actions": [], "tabs": {}}
         }
     },
     "employe": {
         "modules": {
-            "dashboard": {"access": True, "actions": ["voir"]},
-            "personnel": {"access": False, "actions": []},
+            "dashboard": {
+                "access": True, 
+                "actions": ["voir"],
+                "tabs": {
+                    "personnel": {"access": True, "actions": ["voir"]},
+                    "general": {"access": False, "actions": []},
+                    "activites": {"access": False, "actions": []},
+                    "alertes": {"access": False, "actions": []},
+                    "couverture": {"access": False, "actions": []}
+                }
+            },
+            "personnel": {"access": False, "actions": [], "tabs": {}},
             "interventions": {"access": False, "actions": [], "tabs": {}},
             "paie": {"access": False, "actions": [], "tabs": {}},
-            "planning": {"access": True, "actions": ["voir"]},
+            "planning": {
+                "access": True, 
+                "actions": ["voir"],
+                "tabs": {
+                    "calendrier": {"access": True, "actions": ["voir"]},
+                    "assignations": {"access": False, "actions": []},
+                    "equipe-jour": {"access": True, "actions": ["voir"]},
+                    "rapport-heures": {"access": False, "actions": []},
+                    "export": {"access": False, "actions": []}
+                }
+            },
             "remplacements": {
                 "access": True,
-                "actions": ["voir", "creer"],
+                "actions": ["voir", "creer", "annuler"],
                 "tabs": {
                     "propositions": {"access": True, "actions": ["voir", "accepter", "refuser"]},
-                    "demandes": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer"]},
-                    "conges": {"access": True, "actions": ["voir", "creer"]}
+                    "demandes": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "annuler"]},
+                    "conges": {"access": True, "actions": ["voir", "creer"]},
+                    "toutes-demandes": {"access": False, "actions": []},
+                    "parametres": {"access": False, "actions": []}
                 }
             },
             "formations": {
@@ -361,7 +589,10 @@ DEFAULT_PERMISSIONS = {
                 "tabs": {
                     "catalogue": {"access": True, "actions": ["voir"]},
                     "inscriptions": {"access": True, "actions": ["voir"]},
-                    "suivi": {"access": True, "actions": ["voir"]}
+                    "suivi": {"access": True, "actions": ["voir"]},
+                    "competences": {"access": False, "actions": []},
+                    "conformite": {"access": False, "actions": []},
+                    "dashboard": {"access": False, "actions": []}
                 }
             },
             "actifs": {
@@ -369,9 +600,16 @@ DEFAULT_PERMISSIONS = {
                 "actions": ["voir"],
                 "tabs": {
                     "vehicules": {"access": True, "actions": ["voir"]},
+                    "inventaires": {"access": True, "actions": ["voir"]},
                     "eau": {"access": True, "actions": ["voir"]},
+                    "bornes": {"access": True, "actions": ["voir"]},
+                    "points-eau": {"access": True, "actions": ["voir"]},
                     "materiel": {"access": True, "actions": ["voir"]},
+                    "categories": {"access": False, "actions": []},
+                    "apria": {"access": True, "actions": ["voir"]},
+                    "formulaires": {"access": False, "actions": []},
                     "epi": {"access": False, "actions": []},
+                    "alertes": {"access": False, "actions": []},
                     "parametres": {"access": False, "actions": []}
                 }
             },
@@ -381,13 +619,33 @@ DEFAULT_PERMISSIONS = {
                 "tabs": {
                     "batiments": {"access": True, "actions": ["voir"]},
                     "inspections": {"access": True, "actions": ["voir", "creer", "modifier"]},
-                    "calendrier": {"access": True, "actions": ["voir"]}
+                    "avis": {"access": False, "actions": []},
+                    "calendrier": {"access": True, "actions": ["voir"]},
+                    "rapports": {"access": False, "actions": []}
                 }
             },
-            "disponibilites": {"access": True, "actions": ["voir", "modifier"]},
+            "disponibilites": {
+                "access": True, 
+                "actions": ["voir", "modifier"],
+                "tabs": {
+                    "mes-dispos": {"access": True, "actions": ["voir", "modifier"]},
+                    "equipe": {"access": False, "actions": []},
+                    "import": {"access": False, "actions": []},
+                    "rapport": {"access": False, "actions": []}
+                }
+            },
             "mesepi": {"access": True, "actions": ["voir"]},
-            "monprofil": {"access": True, "actions": ["voir", "modifier"]},
-            "rapports": {"access": False, "actions": []},
+            "monprofil": {
+                "access": True, 
+                "actions": ["voir", "modifier"],
+                "tabs": {
+                    "informations": {"access": True, "actions": ["voir", "modifier"]},
+                    "photo": {"access": True, "actions": ["voir", "modifier"]},
+                    "signature": {"access": True, "actions": ["voir", "modifier"]},
+                    "mot-de-passe": {"access": True, "actions": ["modifier"]}
+                }
+            },
+            "rapports": {"access": False, "actions": [], "tabs": {}},
             "parametres": {"access": False, "actions": [], "tabs": {}}
         }
     }
