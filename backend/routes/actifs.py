@@ -64,7 +64,9 @@ from routes.dependencies import (
     get_tenant_from_slug,
     clean_mongo_doc,
     User,
-    creer_notification
+    creer_notification,
+    require_permission,
+    user_has_module_action
 )
 
 # Import pour les notifications push
@@ -896,8 +898,7 @@ async def create_vehicule(
     if current_user.tenant_id != tenant.id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Permissions insuffisantes")
+    await require_permission(tenant.id, current_user, "actifs", "creer", "vehicules")
     
     vehicule = Vehicule(
         tenant_id=tenant.id,
@@ -939,8 +940,7 @@ async def update_vehicule(
     if current_user.tenant_id != tenant.id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Permissions insuffisantes")
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "vehicules")
     
     vehicule = await db.vehicules.find_one(
         {"id": vehicule_id, "tenant_id": tenant.id}

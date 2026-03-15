@@ -42,7 +42,9 @@ from routes.dependencies import (
     clean_mongo_doc,
     User,
     creer_activite,
-    creer_notification
+    creer_notification,
+    require_permission,
+    user_has_module_action
 )
 
 # Import WebSocket pour synchronisation temps réel
@@ -513,10 +515,8 @@ async def create_assignation(
     current_user: User = Depends(get_current_user)
 ):
     """Créer une nouvelle assignation"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "planning", "creer")
     
     # Vérifier que l'utilisateur existe
     user = await db.users.find_one({"id": assignation_data.user_id, "tenant_id": tenant.id})
@@ -627,10 +627,8 @@ async def delete_assignation(
     current_user: User = Depends(get_current_user)
 ):
     """Supprimer une assignation"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "planning", "supprimer")
     
     assignation = await db.assignations.find_one({
         "id": assignation_id,
@@ -814,10 +812,8 @@ async def get_rapport_heures(
     - Heures INTERNES = gardes de type "interne" (est_garde_externe = False)
     - Heures EXTERNES = gardes de type "externe" (est_garde_externe = True)
     """
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "planning", "voir")
     
     # Calculer les dates de la période
     if date_debut and date_fin:
@@ -975,10 +971,8 @@ async def get_assignations_invalides(
     """
     Rapport des assignations invalides (employés inactifs, types de garde supprimés, etc.)
     """
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "planning", "voir")
     
     # Récupérer toutes les assignations futures
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -1034,10 +1028,8 @@ async def recalculer_durees_gardes(
     """
     Recalculer les durées de toutes les gardes selon les types de garde actuels
     """
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "planning", "modifier")
     
     # Récupérer les types de garde
     types_garde = await get_types_garde(tenant.id)
@@ -1166,11 +1158,9 @@ async def formater_planning_mois(
     if tenant_slug != "demo":
         raise HTTPException(status_code=403, detail="Cette fonctionnalité est réservée au tenant demo")
     
-    # 2. Vérifier que l'utilisateur est admin
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    # Opération critique - exige permission "supprimer" sur planning
+    await require_permission(tenant.id, current_user, "planning", "supprimer")
     
     # 3. Valider le format du mois
     try:
@@ -1919,10 +1909,8 @@ async def debug_rapport_heures_user(
     current_user: User = Depends(get_current_user)
 ):
     """Endpoint de diagnostic pour comprendre le calcul des heures d'un utilisateur"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "planning", "voir")
     
     # Récupérer l'utilisateur
     user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id}, {"_id": 0})
@@ -2022,10 +2010,8 @@ async def supprimer_assignations_invalides(
     current_user: User = Depends(get_current_user)
 ):
     """Supprime toutes les assignations qui ne respectent pas les jours_application"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "planning", "supprimer")
     
     # D'abord, récupérer le rapport des invalides
     assignations = await db.assignations.find({"tenant_id": tenant.id}, {"_id": 0}).to_list(10000)
@@ -2084,10 +2070,8 @@ async def export_rapport_heures_pdf(
     current_user: User = Depends(get_current_user)
 ):
     """Génère le PDF du rapport d'heures pour impression"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "planning", "exporter")
     
     # Convertir date_debut en format mois pour appeler get_rapport_heures
     mois = date_debut[:7]  # YYYY-MM
@@ -2266,10 +2250,8 @@ async def export_rapport_heures_excel(
     current_user: User = Depends(get_current_user)
 ):
     """Génère l'Excel du rapport d'heures"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "planning", "exporter")
     
     # Récupérer les données directement (même logique que pour le PDF)
     from datetime import datetime as dt
@@ -2451,11 +2433,9 @@ async def assignation_manuelle_avancee(
     assignation_data: dict,
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "planning", "creer")
     
     try:
         user_id = assignation_data.get("user_id")
@@ -2733,11 +2713,9 @@ async def assignation_manuelle_avancee(
 # POST attribution-auto-demo
 @router.post("/{tenant_slug}/planning/attribution-auto-demo")
 async def attribution_automatique_demo(tenant_slug: str, semaine_debut: str, current_user: User = Depends(get_current_user)):
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "planning", "creer")
     
     try:
         # Get all available users and types de garde pour ce tenant
@@ -2927,11 +2905,9 @@ async def attribution_automatique(
     logging.info(f"🔥 [ENDPOINT] Attribution auto appelé par {current_user.email}")
     logging.info(f"🔥 [ENDPOINT] Paramètres reçus: tenant={tenant_slug}, debut={semaine_debut}, fin={semaine_fin}, reset={reset}")
     
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "planning", "creer")
     
     # Générer un task_id unique
     task_id = str(uuid.uuid4())
@@ -4298,11 +4274,9 @@ async def generer_rapport_audit_assignations(
     current_user: User = Depends(get_current_user)
 ):
     """Génère un rapport d'audit complet des assignations automatiques pour un mois donné"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
-    
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "planning", "exporter")
     
     try:
         # Parser le mois
@@ -4536,8 +4510,9 @@ async def generer_excel_audit(assignations, user_map, type_garde_map, tenant, mo
 # POST reinitialiser
 @router.post("/planning/reinitialiser")
 async def reinitialiser_planning(current_user: User = Depends(get_current_user)):
+    # Cette opération nécessite admin - pas de tenant spécifique
     if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé")
+        raise HTTPException(status_code=403, detail="Accès refusé - Opération admin uniquement")
     
     try:
         # Supprimer toutes les assignations
@@ -4558,11 +4533,9 @@ async def get_parametres_validation(tenant_slug: str, current_user: User = Depen
     """
     Récupérer les paramètres de validation du planning pour le tenant
     """
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     try:
         tenant = await get_tenant_from_slug(tenant_slug)
+        await require_permission(tenant.id, current_user, "parametres", "voir", "attribution")
         
         # Récupérer les paramètres de validation ou retourner valeurs par défaut
         validation_params = tenant.parametres.get('validation_planning', {
@@ -4586,11 +4559,10 @@ async def update_parametres_validation(tenant_slug: str, parametres: dict, curre
     """
     Mettre à jour les paramètres de validation du planning
     """
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     try:
         tenant = await get_tenant_from_slug(tenant_slug)
+        await require_permission(tenant.id, current_user, "parametres", "modifier", "attribution")
+        
         tenant_doc = await db.tenants.find_one({"id": tenant.id})
         
         if not tenant_doc:
@@ -4622,11 +4594,9 @@ async def envoyer_notifications_planning(tenant_slug: str, periode_debut: str, p
         periode_debut: Date début (YYYY-MM-DD)
         periode_fin: Date fin (YYYY-MM-DD)
     """
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     try:
         tenant = await get_tenant_from_slug(tenant_slug)
+        await require_permission(tenant.id, current_user, "planning", "modifier")
         
         # Récupérer toutes les assignations de la période
         assignations_list = await db.assignations.find({
@@ -4761,10 +4731,8 @@ async def update_assignation_notes(
     current_user: User = Depends(get_current_user)
 ):
     """Permet à un admin de mettre à jour les notes sur une assignation"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "planning", "modifier")
     
     # Trouver l'assignation
     assignation = await db.assignations.find_one({

@@ -1127,15 +1127,55 @@ async def get_delegations_actives(tenant_id: str) -> List[dict]:
 # Import DEFAULT_PERMISSIONS pour la fonction de vérification des permissions
 from routes.access_types import DEFAULT_PERMISSIONS
 
-async def user_has_module_action(tenant_id: str, user: User, module_id: str, action: str) -> bool:
+async def user_has_module_access(tenant_id: str, user, module_id: str) -> bool:
     """
-    Vérifie si un utilisateur a une action spécifique sur un module.
+    Vérifie si un utilisateur a accès à un module.
+    
+    Args:
+        tenant_id: ID du tenant
+        user: Utilisateur (objet User ou dict)
+        module_id: ID du module (ex: 'remplacements', 'personnel')
+    
+    Returns:
+        True si l'utilisateur a accès au module, False sinon
+    """
+    user_role = user.role if hasattr(user, 'role') else user.get('role')
+    if user_role == "admin":
+        return True
+    
+    user_dict = user.model_dump() if hasattr(user, 'model_dump') else (user.dict() if hasattr(user, 'dict') else user)
+    access_type_id = user_dict.get("access_type_id")
+    
+    if access_type_id:
+        access_type = await db.access_types.find_one(
+            {"id": access_type_id, "tenant_id": tenant_id},
+            {"_id": 0}
+        )
+        if access_type:
+            permissions = access_type.get("permissions", {})
+            if permissions.get("is_full_access"):
+                return True
+            module_perms = permissions.get("modules", {}).get(module_id, {})
+            return module_perms.get("access", False)
+    
+    default_perms = DEFAULT_PERMISSIONS.get(user_role, DEFAULT_PERMISSIONS.get("employe", {}))
+    if default_perms.get("is_full_access"):
+        return True
+    
+    module_perms = default_perms.get("modules", {}).get(module_id, {})
+    return module_perms.get("access", False)
+
+
+async def user_has_module_action(tenant_id: str, user, module_id: str, action: str, tab_id: str = None) -> bool:
+    """
+    Vérifie si un utilisateur a une action spécifique sur un module ou un onglet.
     
     Args:
         tenant_id: ID du tenant
         user: Utilisateur (objet User ou dict avec id, role, access_type_id)
         module_id: ID du module (ex: 'remplacements', 'personnel')
         action: Action à vérifier (ex: 'supprimer', 'modifier', 'creer')
+        tab_id: (optionnel) ID de l'onglet (ex: 'conges', 'vehicules')
     
     Returns:
         True si l'utilisateur a la permission, False sinon
@@ -1162,6 +1202,15 @@ async def user_has_module_action(tenant_id: str, user: User, module_id: str, act
             module_perms = permissions.get("modules", {}).get(module_id, {})
             if not module_perms.get("access"):
                 return False
+            
+            # Vérifier les permissions de l'onglet si spécifié
+            if tab_id:
+                tab_perms = module_perms.get("tabs", {}).get(tab_id, {})
+                if tab_perms.get("access") == False:
+                    return False
+                if tab_perms.get("actions"):
+                    return action in tab_perms.get("actions", [])
+            
             return action in module_perms.get("actions", [])
     
     # Utiliser les permissions par défaut du rôle
@@ -1172,4 +1221,29 @@ async def user_has_module_action(tenant_id: str, user: User, module_id: str, act
     module_perms = default_perms.get("modules", {}).get(module_id, {})
     if not module_perms.get("access"):
         return False
+    
+    # Vérifier les permissions de l'onglet si spécifié
+    if tab_id:
+        tab_perms = module_perms.get("tabs", {}).get(tab_id, {})
+        if tab_perms.get("access") == False:
+            return False
+        if tab_perms.get("actions"):
+            return action in tab_perms.get("actions", [])
+    
     return action in module_perms.get("actions", [])
+
+
+async def require_permission(tenant_id: str, user, module_id: str, action: str, tab_id: str = None):
+    """
+    Vérifie la permission et lève HTTPException 403 si refusée.
+    
+    Usage dans un endpoint:
+        await require_permission(tenant.id, current_user, "planning", "modifier")
+    """
+    has_permission = await user_has_module_action(tenant_id, user, module_id, action, tab_id)
+    if not has_permission:
+        raise HTTPException(
+            status_code=403, 
+            detail=f"Vous n'avez pas la permission '{action}' sur le module '{module_id}'"
+        )
+

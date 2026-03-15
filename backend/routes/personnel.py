@@ -33,7 +33,9 @@ from routes.dependencies import (
     get_tenant_from_slug,
     clean_mongo_doc,
     creer_activite,
-    User
+    User,
+    require_permission,
+    user_has_module_action
 )
 
 # Import WebSocket pour synchronisation temps réel
@@ -141,8 +143,11 @@ async def get_user(
     if current_user.tenant_id != tenant.id:
         raise HTTPException(status_code=403, detail="Accès interdit à cette caserne")
     
-    if current_user.role not in ["admin", "superviseur"] and current_user.id != user_id:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    # L'utilisateur peut voir ses propres infos, sinon vérifier permission "voir"
+    if current_user.id != user_id:
+        can_view = await user_has_module_action(tenant.id, current_user, "personnel", "voir")
+        if not can_view:
+            raise HTTPException(status_code=403, detail="Accès refusé")
     
     user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
     
@@ -159,10 +164,8 @@ async def create_user(
     current_user: User = Depends(get_current_user)
 ):
     """Créer un nouvel utilisateur"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "personnel", "creer")
     
     # Vérifier l'accès au tenant
     if current_user.tenant_id != tenant.id:
@@ -246,8 +249,9 @@ async def update_user(
     if current_user.tenant_id != tenant.id:
         raise HTTPException(status_code=403, detail="Accès interdit à cette caserne")
     
-    if current_user.role != "admin" and current_user.id != user_id:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    # L'utilisateur peut modifier son profil, sinon vérifier permission "modifier"
+    if current_user.id != user_id:
+        await require_permission(tenant.id, current_user, "personnel", "modifier")
     
     # Préparer les données de mise à jour (seulement les champs fournis)
     update_data = {k: v for k, v in user_update.dict(exclude_unset=True).items() if v is not None}
@@ -308,10 +312,8 @@ async def delete_user(
     current_user: User = Depends(get_current_user)
 ):
     """Supprime un utilisateur et ses données associées"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "personnel", "supprimer")
     
     # Vérifier l'accès
     if current_user.tenant_id != tenant.id:
@@ -374,10 +376,9 @@ async def end_employment(
     - Supprime toutes les données actives (planning, remplacements, dispo, EPI, formations)
     - Bloque la connexion
     """
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "personnel", "modifier")
+    
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
@@ -486,10 +487,9 @@ async def reactivate_employee(
     - Remet l'employé en statut Actif avec la nouvelle date d'embauche
     - Efface date_fin_embauche et motif_fin_emploi
     """
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "personnel", "modifier")
+    
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
