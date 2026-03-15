@@ -27,7 +27,9 @@ from routes.dependencies import (
     clean_mongo_doc,
     User,
     creer_notification,
-    creer_activite
+    creer_activite,
+    require_permission,
+    user_has_module_action
 )
 
 # Import WebSocket pour synchronisation temps réel
@@ -497,8 +499,8 @@ async def update_intervention_settings(
     current_user: User = Depends(get_current_user)
 ):
     """Met à jour les paramètres du module"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès admin requis")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "interventions", "modifier", "parametres")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -632,8 +634,8 @@ async def validate_intervention(
     current_user: User = Depends(get_current_user)
 ):
     """Valide ou retourne une intervention"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Permission refusée")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "interventions", "valider", "rapports")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -811,9 +813,8 @@ async def unlock_intervention(
     """
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Vérifier que c'est un admin
-    if current_user.role != 'admin':
-        raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent déverrouiller une intervention")
+    # Vérifier permission de modification
+    await require_permission(tenant.id, current_user, "interventions", "modifier", "rapports")
     
     # Récupérer l'intervention
     intervention = await db.interventions.find_one({
@@ -1418,8 +1419,7 @@ async def get_fausses_alarmes_list(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    await require_permission(tenant.id, current_user, "interventions", "voir", "fausses-alarmes")
     
     # Récupérer la config
     settings = await db.intervention_settings.find_one({"tenant_id": tenant.id})
@@ -1547,8 +1547,7 @@ async def exempter_fausse_alarme(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    await require_permission(tenant.id, current_user, "interventions", "modifier", "fausses-alarmes")
     
     await db.fausses_alarmes_suivi.update_one(
         {"tenant_id": tenant.id, "id": adresse_id},
@@ -1583,8 +1582,7 @@ async def creer_suggestion_facture(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    await require_permission(tenant.id, current_user, "interventions", "creer", "fausses-alarmes")
     
     suivi = await db.fausses_alarmes_suivi.find_one({
         "tenant_id": tenant.id,
@@ -1688,8 +1686,7 @@ async def toggle_alarme_non_fondee(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    await require_permission(tenant.id, current_user, "interventions", "modifier", "fausses-alarmes")
     
     intervention = await db.interventions.find_one({
         "tenant_id": tenant.id,
@@ -1740,8 +1737,8 @@ async def import_intervention_xml(
     current_user: User = Depends(get_current_user)
 ):
     """Importe des fichiers XML de la centrale 911"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Permission refusée")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "interventions", "creer", "rapports")
     
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
@@ -2064,12 +2061,11 @@ async def get_intervention_mappings(
     current_user: User = Depends(get_current_user)
 ):
     """Liste les mappings de codes 911"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès admin requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    await require_permission(tenant.id, current_user, "interventions", "voir", "parametres")
     
     query = {"tenant_id": tenant.id}
     if type_mapping:
@@ -2089,12 +2085,11 @@ async def create_intervention_mapping(
     current_user: User = Depends(get_current_user)
 ):
     """Crée ou met à jour un mapping de code"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès admin requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    await require_permission(tenant.id, current_user, "interventions", "modifier", "parametres")
     
     existing = await db.intervention_code_mappings.find_one({
         "tenant_id": tenant.id,
@@ -2242,12 +2237,11 @@ async def assign_intervention_reporters(
     current_user: User = Depends(get_current_user)
 ):
     """Assigne des personnes pour remplir le rapport"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès admin requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    await require_permission(tenant.id, current_user, "interventions", "modifier", "rapports")
     
     user_ids = reporters_data.get("user_ids", [])
     

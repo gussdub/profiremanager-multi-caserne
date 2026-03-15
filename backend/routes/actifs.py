@@ -1010,8 +1010,7 @@ async def delete_vehicule(
     if current_user.tenant_id != tenant.id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Permissions insuffisantes")
+    await require_permission(tenant.id, current_user, "actifs", "supprimer", "vehicules")
     
     vehicule = await db.vehicules.find_one(
         {"id": vehicule_id, "tenant_id": tenant.id}
@@ -1378,8 +1377,7 @@ async def create_borne(
     if current_user.tenant_id != tenant.id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Permissions insuffisantes")
+    await require_permission(tenant.id, current_user, "actifs", "creer", "eau")
     
     borne = BorneIncendie(
         tenant_id=tenant.id,
@@ -1414,8 +1412,7 @@ async def update_borne(
     if current_user.tenant_id != tenant.id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Permissions insuffisantes")
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "eau")
     
     borne = await db.bornes_incendie.find_one(
         {"id": borne_id, "tenant_id": tenant.id}
@@ -1451,8 +1448,7 @@ async def delete_borne(
     if current_user.tenant_id != tenant.id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Permissions insuffisantes")
+    await require_permission(tenant.id, current_user, "actifs", "supprimer", "eau")
     
     borne = await db.bornes_incendie.find_one(
         {"id": borne_id, "tenant_id": tenant.id}
@@ -1522,9 +1518,7 @@ async def import_inspections_bornes(
 ):
     """Importer des inspections de bornes fontaines depuis un fichier CSV"""
     tenant = await get_tenant_from_slug(tenant_slug)
-    
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée")
+    await require_permission(tenant.id, current_user, "actifs", "creer", "eau")
     
     contents = await file.read()
     try:
@@ -1616,9 +1610,7 @@ async def import_inspections_bornes_fontaines_mapped(
     Les données arrivent déjà mappées aux bons champs.
     """
     tenant = await get_tenant_from_slug(tenant_slug)
-    
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée")
+    await require_permission(tenant.id, current_user, "actifs", "creer", "eau")
     
     created = 0
     updated = 0
@@ -1800,8 +1792,7 @@ async def create_modele_inventaire(
     if current_user.tenant_id != tenant.id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Permissions insuffisantes")
+    await require_permission(tenant.id, current_user, "actifs", "creer", "materiel")
     
     modele = ModeleInventaire(
         tenant_id=tenant.id,
@@ -1826,8 +1817,7 @@ async def update_modele_inventaire(
     if current_user.tenant_id != tenant.id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Permissions insuffisantes")
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "materiel")
     
     modele = await db.modeles_inventaire.find_one(
         {"id": modele_id, "tenant_id": tenant.id}
@@ -1863,8 +1853,7 @@ async def delete_modele_inventaire(
     if current_user.tenant_id != tenant.id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Permissions insuffisantes")
+    await require_permission(tenant.id, current_user, "actifs", "supprimer", "materiel")
     
     modele = await db.modeles_inventaire.find_one(
         {"id": modele_id, "tenant_id": tenant.id}
@@ -1907,7 +1896,9 @@ async def get_inspections_inventaire(
     if vehicule_id:
         query["vehicule_id"] = vehicule_id
     
-    if current_user.role == "employe":
+    # Les employés ne voient que leurs propres inspections sauf s'ils ont la permission "voir" sur le module
+    can_view_all = await user_has_module_action(tenant.id, current_user, "actifs", "voir", "materiel")
+    if not can_view_all:
         query["inspecteur_id"] = current_user.id
     
     inspections = await db.inspections_inventaire.find(
@@ -1938,7 +1929,9 @@ async def get_inspection_inventaire(
     if not inspection:
         raise HTTPException(status_code=404, detail="Inspection non trouvée")
     
-    if current_user.role == "employe" and inspection["inspecteur_id"] != current_user.id:
+    # Vérifier si l'utilisateur peut voir cette inspection
+    can_view_all = await user_has_module_action(tenant.id, current_user, "actifs", "voir", "materiel")
+    if not can_view_all and inspection["inspecteur_id"] != current_user.id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
     return inspection
@@ -2003,7 +1996,9 @@ async def update_inspection_inventaire(
     if not inspection:
         raise HTTPException(status_code=404, detail="Inspection non trouvée")
     
-    if current_user.role == "employe" and inspection["inspecteur_id"] != current_user.id:
+    # Vérifier si l'utilisateur peut modifier cette inspection
+    can_modify_all = await user_has_module_action(tenant.id, current_user, "actifs", "modifier", "materiel")
+    if not can_modify_all and inspection["inspecteur_id"] != current_user.id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
     update_data = {k: v for k, v in inspection_data.dict(exclude_unset=True).items() if v is not None}
@@ -2036,8 +2031,7 @@ async def delete_inspection_inventaire(
     if current_user.tenant_id != tenant.id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Permissions insuffisantes")
+    await require_permission(tenant.id, current_user, "actifs", "supprimer", "materiel")
     
     inspection = await db.inspections_inventaire.find_one(
         {"id": inspection_id, "tenant_id": tenant.id}
@@ -2227,9 +2221,7 @@ async def update_parametres_actifs(
 ):
     """Mettre à jour les paramètres du module actifs"""
     tenant = await get_tenant_from_slug(tenant_slug)
-    
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin/Superviseur requis")
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "parametres")
     
     current_params = tenant.parametres or {}
     current_params['actifs'] = parametres
@@ -2268,10 +2260,8 @@ async def update_configuration_emails_rondes(
     current_user: User = Depends(get_current_user)
 ):
     """Mettre à jour la configuration des emails automatiques pour les rondes de sécurité"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé - Admin ou superviseur uniquement")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "parametres")
     
     if current_user.tenant_id != tenant.id:
         raise HTTPException(status_code=403, detail="Accès refusé")
@@ -2346,10 +2336,9 @@ async def creer_reparation_vehicule(
     current_user: User = Depends(get_current_user)
 ):
     """Créer une nouvelle entrée de réparation/entretien"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux admins et superviseurs")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "creer", "vehicules")
+    
     if current_user.tenant_id != tenant.id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
@@ -2423,10 +2412,9 @@ async def modifier_reparation_vehicule(
     current_user: User = Depends(get_current_user)
 ):
     """Modifier une réparation/entretien existant"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux admins et superviseurs")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "vehicules")
+    
     if current_user.tenant_id != tenant.id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
@@ -2457,10 +2445,9 @@ async def supprimer_reparation_vehicule(
     current_user: User = Depends(get_current_user)
 ):
     """Supprimer une réparation/entretien"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux admins et superviseurs")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "supprimer", "vehicules")
+    
     if current_user.tenant_id != tenant.id:
         raise HTTPException(status_code=403, detail="Accès refusé")
     

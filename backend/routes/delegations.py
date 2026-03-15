@@ -26,7 +26,9 @@ from routes.dependencies import (
     get_delegations_actives,
     get_user_responsibilities,
     verifier_et_mettre_a_jour_delegations,
-    get_user_active_conge
+    get_user_active_conge,
+    require_permission,
+    user_has_module_action
 )
 
 router = APIRouter(tags=["Délégations"])
@@ -40,12 +42,10 @@ async def get_active_delegations(
 ):
     """
     Récupère toutes les délégations actives pour le tenant.
-    Accessible aux admins et superviseurs.
+    Accessible selon les permissions RBAC.
     """
     tenant = await get_tenant_from_slug(tenant_slug)
-    
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    await require_permission(tenant.id, current_user, "personnel", "voir")
     
     delegations = await get_delegations_actives(tenant.id)
     
@@ -65,9 +65,7 @@ async def verify_delegations(
     Déclenche les notifications de début/fin de délégation si nécessaire.
     """
     tenant = await get_tenant_from_slug(tenant_slug)
-    
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    await require_permission(tenant.id, current_user, "personnel", "modifier")
     
     await verifier_et_mettre_a_jour_delegations(tenant.id)
     
@@ -92,9 +90,11 @@ async def get_user_responsibilities_endpoint(
     """
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Vérifier les permissions
-    if current_user.role not in ["admin", "superviseur"] and current_user.id != user_id:
-        raise HTTPException(status_code=403, detail="Accès non autorisé")
+    # L'utilisateur peut voir ses propres responsabilités, sinon vérifier permission
+    if current_user.id != user_id:
+        can_view = await user_has_module_action(tenant.id, current_user, "personnel", "voir")
+        if not can_view:
+            raise HTTPException(status_code=403, detail="Accès non autorisé")
     
     responsibilities = await get_user_responsibilities(tenant.id, user_id)
     
@@ -153,7 +153,10 @@ async def get_delegations_received(
     """
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ["admin", "superviseur"]:
+    # Cette route retourne les délégations reçues par l'utilisateur courant
+    # On vérifie si l'utilisateur peut voir les délégations (sinon retourne vide)
+    can_view = await user_has_module_action(tenant.id, current_user, "personnel", "voir")
+    if not can_view:
         return {"delegations_recues": [], "count": 0}
     
     # Récupérer les délégations où l'utilisateur est délégué

@@ -37,7 +37,9 @@ from routes.dependencies import (
     get_current_user,
     get_tenant_from_slug,
     clean_mongo_doc,
-    User
+    User,
+    require_permission,
+    user_has_module_action
 )
 
 # Import des helpers PDF partagés
@@ -239,10 +241,8 @@ async def create_formation(
     current_user: User = Depends(get_current_user)
 ):
     """Crée une formation"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "formations", "creer", "catalogue")
     
     # Validation: Vérifier que la compétence existe
     if not formation.competence_id or not formation.competence_id.strip():
@@ -345,10 +345,8 @@ async def update_formation(
     current_user: User = Depends(get_current_user)
 ):
     """Met à jour une formation"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "formations", "modifier", "catalogue")
     
     update_data = {k: v for k, v in formation_update.dict().items() if v is not None}
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
@@ -395,10 +393,8 @@ async def delete_formation(
     current_user: User = Depends(get_current_user)
 ):
     """Supprime une formation"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "formations", "supprimer", "catalogue")
     
     # Supprimer inscriptions
     await db.inscriptions_formations.delete_many({
@@ -420,10 +416,8 @@ async def corriger_durees_formations(
     current_user: User = Depends(get_current_user)
 ):
     """Corrige les durées incohérentes dans toutes les formations"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "formations", "modifier", "catalogue")
     
     formations = await db.formations.find({"tenant_id": tenant.id}).to_list(10000)
     
@@ -620,10 +614,8 @@ async def get_inscriptions(
     current_user: User = Depends(get_current_user)
 ):
     """Liste inscriptions formation"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "formations", "voir", "inscriptions")
     
     inscriptions = await db.inscriptions_formations.find({
         "formation_id": formation_id,
@@ -651,10 +643,8 @@ async def valider_presence(
     current_user: User = Depends(get_current_user)
 ):
     """Valider la présence d'un inscrit"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "formations", "modifier", "inscriptions")
     
     # Vérifier formation existe
     formation = await db.formations.find_one({"id": formation_id, "tenant_id": tenant.id})
@@ -805,10 +795,8 @@ async def debug_conformite_user(
 @router.get("/{tenant_slug}/formations/rapports/conformite")
 async def rapport_conformite(tenant_slug: str, annee: int, current_user: User = Depends(get_current_user)):
     """Rapport conformité NFPA 1500 amélioré avec formations obligatoires et validations manuelles"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "formations", "voir", "suivi")
     
     pompiers = await db.users.find({"tenant_id": tenant.id}, {"_id": 0}).to_list(1000)
     
@@ -990,10 +978,8 @@ async def rapport_conformite(tenant_slug: str, annee: int, current_user: User = 
 @router.get("/{tenant_slug}/formations/rapports/dashboard")
 async def dashboard_formations(tenant_slug: str, annee: int, current_user: User = Depends(get_current_user)):
     """Dashboard KPIs formations"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "formations", "voir", "suivi")
     
     formations = await db.formations.find({"tenant_id": tenant.id, "annee": annee}).to_list(1000)
     heures_planifiees = sum([f.get("duree_heures", 0) for f in formations])
@@ -1037,10 +1023,8 @@ async def export_rapport_presence(
     - type_formation: "obligatoires" ou "toutes"
     - annee: année concernée
     """
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "formations", "exporter", "suivi")
     
     # Récupérer les données
     pompiers = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
@@ -1275,10 +1259,8 @@ async def rapport_par_competences(
     - Si user_id fourni: rapport pour cette personne uniquement
     - Sinon: rapport général pour toute l'organisation
     """
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "formations", "voir", "suivi")
     
     # Récupérer toutes les compétences
     competences = await db.competences.find({"tenant_id": tenant.id}).to_list(1000)
@@ -1359,11 +1341,9 @@ async def export_rapport_competences(
     """
     Export du rapport par compétences en PDF ou Excel
     """
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     # Récupérer le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "formations", "exporter", "suivi")
     
     # Récupérer les données
     rapport_response = await rapport_par_competences(tenant_slug, annee, user_id, current_user)
@@ -1547,10 +1527,8 @@ async def get_rapport_couts_formations(
     current_user: User = Depends(get_current_user)
 ):
     """Rapport détaillé des coûts de formation"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "formations", "voir", "suivi")
     
     # Récupérer les données
     formations = await db.formations.find({"tenant_id": tenant.id, "annee": annee}).to_list(1000)
@@ -1602,11 +1580,9 @@ async def get_rapport_couts_formations(
 # POST sessions-formation
 @router.post("/{tenant_slug}/sessions-formation", response_model=SessionFormation)
 async def create_session_formation(tenant_slug: str, session: SessionFormationCreate, current_user: User = Depends(get_current_user)):
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "formations", "creer", "catalogue")
     
     session_dict = session.dict()
     session_dict["tenant_id"] = tenant.id
@@ -1728,11 +1704,10 @@ async def update_parametres_formations(tenant_slug: str, parametres: dict, curre
     """
     Mettre à jour les paramètres de formations
     """
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     try:
         tenant = await get_tenant_from_slug(tenant_slug)
+        await require_permission(tenant.id, current_user, "parametres", "modifier", "formations")
+        
         tenant_doc = await db.tenants.find_one({"id": tenant.id})
         
         if not tenant_doc:
