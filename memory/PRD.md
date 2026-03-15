@@ -22,6 +22,30 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 - Gestion des employés par tenant
 - Attribution des équipes de garde
 
+### NEW - Refactoring Remplacements.jsx (15 Mars 2026)
+**Statut:** ✅ TERMINÉ
+
+**Objectif:** Simplifier le composant Remplacements.jsx de 1075 lignes en extrayant la logique dans des hooks et composants réutilisables.
+
+**Résultat:**
+- **Avant:** 1075 lignes dans un seul fichier
+- **Après:** 499 lignes dans le composant principal (-53%)
+
+**Fichiers créés:**
+| Fichier | Lignes | Description |
+|---------|--------|-------------|
+| `hooks/useRemplacementsData.js` | 124 | Logique de fetch, état et WebSocket |
+| `hooks/useRemplacementsHandlers.js` | 254 | Handlers (create, approve, delete, etc.) |
+| `hooks/useRemplacementsFilters.js` | 112 | Logique de filtrage par statut/période |
+| `components/remplacements/FilterBar.jsx` | 142 | Barre de filtres UI |
+| `components/remplacements/ActionButtons.jsx` | 83 | Boutons d'action |
+
+**Bénéfices:**
+- Code plus lisible et maintenable
+- Hooks réutilisables dans d'autres composants
+- Séparation des préoccupations (UI vs logique)
+- Tests unitaires plus faciles à écrire
+
 
 ### NEW - Gestion du Cycle de Vie des Employés (13 Mars 2026)
 - **Fonctionnalité:** Gestion complète des anciens employés avec archivage et réactivation
