@@ -640,7 +640,14 @@ async def calculer_feuille_temps(
     
     # Prime fonction supérieure: vérifier si l'employé peut occuper un poste supérieur
     a_fonction_superieur = employe.get("fonction_superieur", False)
-    prime_fonction_superieure_pct = params_paie.get("prime_fonction_superieure_pct", 10) / 100  # Convertir % en décimal
+    
+    # Lire la prime FS depuis l'échelle salariale (prioritaire) ou les params paie (fallback)
+    echelle_salariale = await db.echelles_salariales.find_one({"tenant_id": tenant.id})
+    prime_fonction_superieure_pct = (
+        echelle_salariale.get("prime_fonction_superieure_pct", 10) if echelle_salariale 
+        else params_paie.get("prime_fonction_superieure_pct", 10)
+    ) / 100  # Convertir % en décimal
+    
     grade_employe = (employe.get("grade", "") or "").lower()
     
     # Hiérarchie des grades (du plus bas au plus haut)

@@ -386,6 +386,7 @@ class EchelleSalariale(BaseModel):
     tenant_id: str
     annee: int  # Année de référence (ex: 2026)
     taux_indexation: float = 3.0  # Pourcentage d'indexation annuelle
+    prime_fonction_superieure_pct: float = 10.0  # Prime % pour fonction supérieure (FS)
     echelons: List[Echelon] = []
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -394,6 +395,7 @@ class EchelleSalariale(BaseModel):
 class EchelleSalarialeCreate(BaseModel):
     annee: int
     taux_indexation: float = 3.0
+    prime_fonction_superieure_pct: float = 10.0
     echelons: List[Echelon] = []
 
 
@@ -451,6 +453,7 @@ async def get_echelle_salariale(
             "tenant_id": tenant.id,
             "annee": datetime.now().year,
             "taux_indexation": 3.0,
+            "prime_fonction_superieure_pct": 10.0,
             "echelons": []
         }
     
@@ -478,6 +481,7 @@ async def create_or_update_echelle_salariale(
         update_data = {
             "annee": echelle_data.annee,
             "taux_indexation": echelle_data.taux_indexation,
+            "prime_fonction_superieure_pct": echelle_data.prime_fonction_superieure_pct,
             "echelons": [e.dict() for e in echelle_data.echelons],
             "updated_at": now
         }
@@ -493,6 +497,7 @@ async def create_or_update_echelle_salariale(
             "tenant_id": tenant.id,
             "annee": echelle_data.annee,
             "taux_indexation": echelle_data.taux_indexation,
+            "prime_fonction_superieure_pct": echelle_data.prime_fonction_superieure_pct,
             "echelons": [e.dict() for e in echelle_data.echelons],
             "created_at": now,
             "updated_at": now

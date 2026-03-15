@@ -221,38 +221,20 @@ const TabParametres = ({ context }) => {
         </div>
       </div>
 
-      {/* Prime fonction supérieure */}
-      <div style={{ background: 'white', borderRadius: '12px', padding: '24px', border: '1px solid #e5e7eb' }}>
-        <h3 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', color: '#1e293b' }}>
-          ⬆️ Prime fonction supérieure
-        </h3>
-        <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '16px' }}>
-          Lorsqu&apos;un employé avec &quot;fonction supérieure&quot; cochée dans sa fiche occupe un poste de grade supérieur 
-          (ex: Pompier → Lieutenant, Lieutenant → Capitaine), son taux horaire est majoré de ce pourcentage.
-        </p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-          <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '0.875rem' }}>
-              Pourcentage de majoration (%)
-            </label>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={parametres?.prime_fonction_superieure_pct_text !== undefined ? parametres.prime_fonction_superieure_pct_text : (parametres?.prime_fonction_superieure_pct || '10')}
-              onChange={(e) => {
-                const textValue = e.target.value;
-                const numValue = parseFloat(textValue.replace(',', '.'));
-                setParametres({
-                  ...parametres, 
-                  prime_fonction_superieure_pct_text: textValue,
-                  prime_fonction_superieure_pct: isNaN(numValue) ? 10 : numValue
-                });
-              }}
-              placeholder="10"
-              style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db' }}
-            />
-            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Ex: 10 = +10% sur le taux horaire</span>
-          </div>
+      {/* Note Prime fonction supérieure */}
+      <div style={{ 
+        background: '#f0f9ff', 
+        borderRadius: '12px', 
+        padding: '16px', 
+        border: '1px solid #bae6fd',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px'
+      }}>
+        <span style={{ fontSize: '1.25rem' }}>💡</span>
+        <div style={{ fontSize: '0.875rem', color: '#0369a1' }}>
+          <strong>Prime fonction supérieure :</strong> Ce paramètre est maintenant configuré dans 
+          <strong> Paramètres → Grades → Échelle salariale</strong>.
         </div>
       </div>
 

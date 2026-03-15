@@ -20,6 +20,7 @@ const ParametresGrades = ({
   const [echelleSalariale, setEchelleSalariale] = useState({
     annee: new Date().getFullYear(),
     taux_indexation: 3.0,
+    prime_fonction_superieure_pct: 10.0,
     echelons: []
   });
   const [loading, setLoading] = useState(false);
@@ -43,6 +44,7 @@ const ParametresGrades = ({
       setEchelleSalariale({
         annee: data.annee || new Date().getFullYear(),
         taux_indexation: data.taux_indexation || 3.0,
+        prime_fonction_superieure_pct: data.prime_fonction_superieure_pct ?? 10.0,
         echelons: data.echelons || []
       });
     } catch (error) {
@@ -57,6 +59,7 @@ const ParametresGrades = ({
       await apiPost(tenantSlug, '/echelle-salariale', {
         annee: echelleSalariale.annee,
         taux_indexation: echelleSalariale.taux_indexation,
+        prime_fonction_superieure_pct: echelleSalariale.prime_fonction_superieure_pct,
         echelons: echelleSalariale.echelons
       });
       toast({
@@ -277,16 +280,19 @@ const ParametresGrades = ({
                 />
               </div>
               <div>
-                <Label>Taux d'indexation annuelle (%)</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  max="20"
-                  value={echelleSalariale.taux_indexation}
-                  onChange={(e) => setEchelleSalariale(prev => ({ ...prev, taux_indexation: parseFloat(e.target.value) }))}
-                  style={{ width: '100px' }}
-                />
+                <Label>Taux d'indexation annuelle</Label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="20"
+                    value={echelleSalariale.taux_indexation}
+                    onChange={(e) => setEchelleSalariale(prev => ({ ...prev, taux_indexation: parseFloat(e.target.value) }))}
+                    style={{ width: '80px' }}
+                  />
+                  <span>%</span>
+                </div>
               </div>
               <Button 
                 variant="outline"
@@ -298,6 +304,39 @@ const ParametresGrades = ({
               >
                 🔄 Générer taux {echelleSalariale.annee + 1}
               </Button>
+            </div>
+          </div>
+
+          {/* Prime Fonction Supérieure */}
+          <div style={{ 
+            background: '#fefce8', 
+            padding: '1.5rem', 
+            borderRadius: '12px', 
+            marginBottom: '1.5rem',
+            border: '1px solid #fde047'
+          }}>
+            <h3 style={{ marginTop: 0, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              ⬆️ Prime fonction supérieure
+            </h3>
+            <p style={{ color: '#713f12', fontSize: '0.875rem', marginBottom: '1rem' }}>
+              Lorsqu'un employé avec "fonction supérieure" cochée occupe un poste de grade supérieur 
+              (ex: Pompier → Lieutenant), son taux horaire est majoré de ce pourcentage.
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Label style={{ marginBottom: 0 }}>Pourcentage de majoration:</Label>
+              <Input
+                type="number"
+                step="0.5"
+                min="0"
+                max="50"
+                value={echelleSalariale.prime_fonction_superieure_pct}
+                onChange={(e) => setEchelleSalariale(prev => ({ ...prev, prime_fonction_superieure_pct: parseFloat(e.target.value) || 0 }))}
+                style={{ width: '80px' }}
+              />
+              <span>%</span>
+              <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.5rem' }}>
+                (Ex: 10 = +10% sur le taux horaire)
+              </span>
             </div>
           </div>
 
