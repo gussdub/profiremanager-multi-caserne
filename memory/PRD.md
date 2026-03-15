@@ -80,20 +80,26 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
   - Calcul dynamique des retards et alertes basé sur la fréquence réelle configurée
 - **Fréquences supportées:** quotidienne, hebdomadaire, mensuelle, trimestrielle, semestrielle, annuelle, 5_ans
 
-### NEW - Refactoring Frontend Remplacements (15 Mars 2026)
-**Composants extraits vers `/frontend/src/components/remplacements/`:**
-- `CreateRemplacementModal.jsx` - Modal de création de demande de remplacement
-- `CreateCongeModal.jsx` - Modal de création de demande de congé
-- `ExportModal.jsx` - Modal d'export PDF/Excel
-- `ImpactPlanningModal.jsx` - Modal d'impact sur le planning
-- `RemplacementsList.jsx` - Liste des demandes de remplacement
-- `CongesList.jsx` - Liste des demandes de congé (avec stats et actions)
-- `index.js` - Export centralisé de tous les composants
+### NEW - Refactoring Frontend Remplacements COMPLÉTÉ (15 Mars 2026)
+**Résultat:** `Remplacements.jsx` réduit de **1934 → 1050 lignes** (-46%)
+
+**11 composants extraits vers `/frontend/src/components/remplacements/`:**
+| Composant | Description |
+|-----------|-------------|
+| `CreateRemplacementModal.jsx` | Modal création remplacement |
+| `CreateCongeModal.jsx` | Modal création congé |
+| `ExportModal.jsx` | Modal export PDF/Excel |
+| `ImpactPlanningModal.jsx` | Modal impact planning |
+| `RemplacementsList.jsx` | Liste des remplacements |
+| `CongesList.jsx` | Liste des congés avec stats |
+| `KPICards.jsx` | Cartes statistiques |
+| `TabsBar.jsx` | Onglets navigation |
+| `FilterBar.jsx` | Barre de filtres |
+| `PropositionsRecues.jsx` | Propositions reçues |
+| `DemandeCard.jsx` | Carte de demande |
 
 **Utilitaire API ajouté:**
 - `downloadFile()` dans `/frontend/src/utils/api.js` - Téléchargement de fichiers
-
-**Note:** Le fichier principal `Remplacements.jsx` (1933 lignes) n'a pas encore été modifié pour utiliser ces nouveaux composants. La prochaine étape est d'intégrer les imports et de remplacer le code inline par les composants.
 
 
 
