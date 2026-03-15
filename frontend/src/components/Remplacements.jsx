@@ -8,7 +8,7 @@ import { Calendar } from "./ui/calendar";
 import { useToast } from "../hooks/use-toast";
 import { useTenant } from "../contexts/TenantContext";
 import { useAuth } from "../contexts/AuthContext";
-import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
+import { apiGet, apiPost, apiPut, apiDelete, downloadFile } from '../utils/api';
 import { fr } from "date-fns/locale";
 import { AlertTriangle, FileSpreadsheet, CalendarDays, Clock, CheckCircle, BarChart3, ClipboardList } from 'lucide-react';
 import { useWebSocketUpdate } from '../hooks/useWebSocketUpdate';
@@ -17,10 +17,14 @@ import usePermissions from '../hooks/usePermissions';
 
 // Import des sous-composants refactorisés
 import KPICards from './remplacements/KPICards';
-import FilterBar from './remplacements/FilterBar';
 import TabsBar from './remplacements/TabsBar';
 import PropositionsRecues from './remplacements/PropositionsRecues';
-import DemandeCard from './remplacements/DemandeCard';
+import RemplacementsList from './remplacements/RemplacementsList';
+import CongesList from './remplacements/CongesList';
+import CreateRemplacementModal from './remplacements/CreateRemplacementModal';
+import CreateCongeModal from './remplacements/CreateCongeModal';
+import ExportModal from './remplacements/ExportModal';
+import ImpactPlanningModal from './remplacements/ImpactPlanningModal';
 
 // Fonction pour parser une date en évitant les problèmes de timezone
 const parseDateLocal = (dateStr) => {

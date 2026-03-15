@@ -218,6 +218,38 @@ export const apiDelete = (tenantSlug, endpoint) => {
   return apiCall(tenantSlug, endpoint, { method: 'DELETE' });
 };
 
+/**
+ * Télécharge un fichier depuis l'API
+ * @param {string} tenantSlug - Le slug du tenant
+ * @param {string} endpoint - L'endpoint API (ex: '/remplacements/export/pdf')
+ * @param {string} filename - Le nom du fichier à télécharger
+ */
+export const downloadFile = async (tenantSlug, endpoint, filename) => {
+  const url = buildApiUrl(tenantSlug, endpoint);
+  const token = getTenantToken();
+  
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Authorization': token ? `Bearer ${token}` : '',
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+  }
+
+  const blob = await response.blob();
+  const downloadUrl = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = downloadUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(downloadUrl);
+};
+
 export default {
   buildApiUrl,
   apiCall,
@@ -226,4 +258,5 @@ export default {
   apiPut,
   apiPatch,
   apiDelete,
+  downloadFile,
 };
