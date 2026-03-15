@@ -65,6 +65,7 @@ from routes.materiel import router as materiel_router
 from routes.bornes_seches import router as bornes_seches_router
 from routes.points_eau import router as points_eau_router
 from routes.remplacements_routes import router as remplacements_router
+from routes.remplacements.parametres import router as remplacements_parametres_router
 from routes.equipes_garde import router as equipes_garde_router
 from routes.inventaires_vehicules import router as inventaires_vehicules_router
 from routes.rondes_securite import router as rondes_securite_router
@@ -6511,6 +6512,7 @@ app.include_router(materiel_router, prefix="/api")  # Module Matériel & Stock
 app.include_router(bornes_seches_router, prefix="/api")  # Module Bornes Sèches
 app.include_router(points_eau_router, prefix="/api")  # Module Points d'Eau
 app.include_router(remplacements_router, prefix="/api")  # Module Remplacements
+app.include_router(remplacements_parametres_router, prefix="/api")  # Module Remplacements - Paramètres
 app.include_router(equipes_garde_router, prefix="/api")  # Module Équipes de Garde
 app.include_router(inventaires_vehicules_router, prefix="/api")  # Module Inventaires Véhicules
 app.include_router(rondes_securite_router, prefix="/api")  # Module Rondes de Sécurité

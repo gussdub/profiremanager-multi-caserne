@@ -8,10 +8,10 @@ Organisation:
 - models.py: Modèles Pydantic (DemandeRemplacement, ParametresRemplacements, etc.)
 - utils.py: Fonctions utilitaires (calcul priorité, heures silencieuses, etc.)
 - notifications.py: Envoi d'emails, SMS (Resend, Twilio)
-- search.py: Logique de recherche de remplaçants (TODO: migration en cours)
-- workflow.py: Logique métier (accepter, refuser, relancer) - TODO
-- crud.py: Opérations CRUD de base - TODO
-- exports.py: Export PDF/Excel - TODO
+- search.py: Logique de recherche de remplaçants
+- workflow.py: Logique métier (accepter, refuser, relancer)
+- exports.py: Export PDF/Excel
+- parametres.py: Routes de configuration et diagnostic
 
 Le router principal est dans remplacements_routes.py
 Ce module est progressivement migré vers cette structure modulaire.
@@ -38,6 +38,8 @@ from .utils import (
 from .notifications import (
     generer_token_remplacement,
     envoyer_email_remplacement,
+    envoyer_email_remplacement_trouve,
+    envoyer_email_remplacement_non_trouve,
     envoyer_sms_remplacement
 )
 
@@ -53,3 +55,5 @@ from .workflow import (
     refuser_remplacement_workflow,
     verifier_et_traiter_timeouts_workflow
 )
+
+# Note: Le router des paramètres est importé directement dans server.py pour éviter les imports circulaires

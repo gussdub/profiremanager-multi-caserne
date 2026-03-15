@@ -106,7 +106,7 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 **Tests de régression effectués:** ✅ Tous les modules fonctionnent (Login, Navigation, Onglets, KPIs, Modals, Filtres, Listes)
 
 ### NEW - Refactoring Backend Remplacements (15 Mars 2026)
-**Résultat:** `remplacements_routes.py` réduit de **2012 → 1500 lignes** (-25%)
+**Résultat:** `remplacements_routes.py` réduit de **2012 → 1206 lignes** (-40%)
 
 **Fonctions déplacées vers `/backend/routes/remplacements/notifications.py`:**
 - `generer_token_remplacement()` - Génération de tokens pour emails
@@ -116,16 +116,25 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 - `envoyer_sms_remplacement()` - SMS via Twilio
 - `formater_numero_telephone()` - Formatage E.164
 
-**Structure backend actuelle:**
+**Routes déplacées vers `/backend/routes/remplacements/parametres.py`:**
+- `GET /parametres/remplacements` - Récupérer les paramètres
+- `PUT /parametres/remplacements` - Mettre à jour les paramètres
+- `GET /remplacements/debug/{id}` - Diagnostic de recherche
+
+**Bug corrigé:** Route DELETE dupliquée → renommée `/annuler` pour éviter le conflit
+
+**Structure backend finale:**
 | Module | Lignes | Description |
 |--------|--------|-------------|
-| `remplacements_routes.py` | 1500 | Routes principales |
+| `remplacements_routes.py` | 1206 | Routes principales |
 | `notifications.py` | 584 | Emails et SMS |
 | `search.py` | 492 | Recherche de remplaçants |
 | `workflow.py` | 468 | Logique acceptation/refus |
 | `exports.py` | 278 | Export PDF/Excel |
+| `parametres.py` | 233 | Configuration et debug |
 | `utils.py` | 129 | Fonctions utilitaires |
 | `models.py` | 96 | Modèles Pydantic |
+| **Total modules** | **2339** | - |
 
 
 
