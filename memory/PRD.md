@@ -11,6 +11,44 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 - Configuration personnalisée du jour et heure de rotation
 - Affichage de l'équipe de garde du jour
 - Export PDF du planning (vue semaine et mois)
+- **Mode Brouillon** : Attribution automatique de test avant publication officielle
+
+### NEW - Mode Brouillon Planning (15 Mars 2026)
+**Statut:** ✅ TERMINÉ ET VALIDÉ PAR L'UTILISATEUR
+
+**Objectif:** Permettre aux administrateurs de générer un planning "test" invisible aux employés, puis de le publier pour le rendre officiel.
+
+**Fonctionnalités implémentées:**
+
+1. **Backend - Modèle Assignation:**
+   - Nouveau champ `publication_status` ('brouillon' | 'publie')
+   - Valeur par défaut: 'publie' (assignations manuelles)
+   - Attribution automatique crée en mode 'brouillon'
+
+2. **Backend - Filtrage intelligent:**
+   - Utilisateurs normaux: ne voient que les assignations `publie`
+   - Admins (permission `planning-creer`): voient brouillons ET publiés
+   - Rétrocompatibilité avec anciennes assignations sans le champ
+
+3. **Backend - Nouveaux endpoints:**
+   - `POST /{tenant}/planning/publier` - Publie les brouillons + notifications (in-app, push, email)
+   - `GET /{tenant}/planning/brouillons/count` - Compte les brouillons
+   - `DELETE /{tenant}/planning/brouillons` - Supprime les brouillons
+
+4. **Frontend - Interface Admin:**
+   - Bannière jaune "Mode Brouillon Actif" avec compteur
+   - Bouton "📢 Publier le planning" (vert)
+   - Bouton "🗑️ Annuler" pour supprimer les brouillons
+   - Visible uniquement pour les utilisateurs avec permission `planning-creer`
+
+5. **Notifications à la publication:**
+   - ✅ In-app notification
+   - ✅ Push notification (iOS/Android/Web)
+   - ✅ Email avec détails des gardes assignées
+
+**Fichiers modifiés:**
+- `/app/backend/routes/planning.py` - Endpoints et logique de filtrage
+- `/app/frontend/src/components/Planning.jsx` - UI brouillon
 
 ### Module Points d'Eau / Approvisionnement
 - Gestion des bornes fontaines, bornes sèches et points d'eau statiques
