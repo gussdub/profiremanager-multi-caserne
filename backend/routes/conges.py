@@ -27,7 +27,9 @@ from routes.dependencies import (
     creer_notification,
     User,
     envoyer_notification_delegation_debut,
-    get_user_responsibilities
+    get_user_responsibilities,
+    require_permission,
+    user_has_module_action
 )
 
 # Import WebSocket pour synchronisation temps réel
@@ -135,8 +137,10 @@ async def get_demandes_conge(
     # Construire le filtre de base
     filter_query = {"tenant_id": tenant.id}
     
-    if current_user.role == "employe":
-        # Employés voient seulement leurs demandes
+    # RBAC: Vérifier si l'utilisateur peut voir toutes les demandes
+    can_view_all = await user_has_module_action(tenant.id, current_user, "remplacements", "voir", "conges")
+    if not can_view_all:
+        # Utilisateurs sans permission voient seulement leurs demandes
         filter_query["demandeur_id"] = current_user.id
     
     # Filtrer par statut si spécifié
@@ -163,10 +167,10 @@ async def approuver_demande_conge(
     current_user: User = Depends(get_current_user)
 ):
     """Approuve ou refuse une demande de congé"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission d'approuver les congés
+    await require_permission(tenant.id, current_user, "remplacements", "approuver", "conges")
     
     demande = await db.demandes_conge.find_one({"id": demande_id, "tenant_id": tenant.id})
     if not demande:
@@ -176,10 +180,8 @@ async def approuver_demande_conge(
     if demande["demandeur_id"] == current_user.id:
         raise HTTPException(status_code=403, detail="Vous ne pouvez pas approuver votre propre demande de congé")
     
-    # Vérifier les permissions : superviseur peut approuver employés, admin peut tout approuver
+    # Vérifier via RBAC si l'utilisateur peut approuver des demandes d'utilisateurs avec des rôles différents
     demandeur = await db.users.find_one({"id": demande["demandeur_id"], "tenant_id": tenant.id})
-    if current_user.role == "superviseur" and demandeur and demandeur.get("role") != "employe":
-        raise HTTPException(status_code=403, detail="Un superviseur ne peut approuver que les demandes d'employés")
     
     statut = "approuve" if action == "approuver" else "refuse"
     
@@ -279,10 +281,10 @@ async def get_impact_planning_conge(
     Récupère l'impact de la demande de congé sur le planning.
     Retourne la liste des assignations qui seront supprimées si le congé est approuvé.
     """
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de voir les congés
+    await require_permission(tenant.id, current_user, "remplacements", "voir", "conges")
     
     demande = await db.demandes_conge.find_one({"id": demande_id, "tenant_id": tenant.id})
     if not demande:

@@ -41,7 +41,9 @@ from routes.dependencies import (
     get_current_user,
     get_tenant_from_slug,
     clean_mongo_doc,
-    User
+    User,
+    require_permission,
+    user_has_module_action
 )
 
 # Import des helpers PDF partagés
@@ -998,10 +1000,10 @@ async def create_ref_violation(
     current_user: User = Depends(get_current_user)
 ):
     """Créer un nouvel article de référence"""
-    if current_user.role not in ["admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Admin requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de création sur le module prevention/avis
+    await require_permission(tenant.id, current_user, "prevention", "creer", "avis")
     
     # Vérifier que le code n'existe pas déjà
     existing = await db.ref_violations.find_one({
@@ -1030,10 +1032,10 @@ async def update_ref_violation(
     current_user: User = Depends(get_current_user)
 ):
     """Modifier un article de référence"""
-    if current_user.role not in ["admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Admin requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de modification sur le module prevention/avis
+    await require_permission(tenant.id, current_user, "prevention", "modifier", "avis")
     
     violation = await db.ref_violations.find_one({
         "id": violation_id,
@@ -1063,10 +1065,10 @@ async def delete_ref_violation(
     current_user: User = Depends(get_current_user)
 ):
     """Supprimer un article de référence"""
-    if current_user.role not in ["admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Admin requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de suppression sur le module prevention/avis
+    await require_permission(tenant.id, current_user, "prevention", "supprimer", "avis")
     
     result = await db.ref_violations.delete_one({
         "id": violation_id,
@@ -1086,10 +1088,10 @@ async def init_ref_violations(
     current_user: User = Depends(get_current_user)
 ):
     """Initialiser le référentiel avec les données par défaut"""
-    if current_user.role not in ["admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Admin requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de création sur le module prevention/avis
+    await require_permission(tenant.id, current_user, "prevention", "creer", "avis")
     
     # Vérifier s'il existe déjà des données
     existing = await db.ref_violations.count_documents({"tenant_id": tenant.id})

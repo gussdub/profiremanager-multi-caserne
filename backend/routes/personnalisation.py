@@ -19,7 +19,9 @@ from routes.dependencies import (
     db,
     get_current_user,
     get_tenant_from_slug,
-    User
+    User,
+    require_permission,
+    user_has_module_action
 )
 
 router = APIRouter(tags=["Personnalisation"])
@@ -65,10 +67,10 @@ async def update_personnalisation(
     current_user: User = Depends(get_current_user)
 ):
     """Mettre à jour les paramètres de personnalisation (admin uniquement)"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de modifier sur le module parametres/personnalisation
+    await require_permission(tenant.id, current_user, "parametres", "modifier", "personnalisation")
     
     # Préparer les mises à jour
     update_data = {}
@@ -103,10 +105,10 @@ async def upload_logo(
     current_user: User = Depends(get_current_user)
 ):
     """Upload du logo en base64"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé - Admin uniquement")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de modifier sur le module parametres/personnalisation
+    await require_permission(tenant.id, current_user, "parametres", "modifier", "personnalisation")
     
     # Récupérer les données base64
     if "logo_base64" not in logo_data:

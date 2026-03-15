@@ -24,7 +24,9 @@ from routes.dependencies import (
     get_current_user,
     get_tenant_from_slug,
     clean_mongo_doc,
-    User
+    User,
+    require_permission,
+    user_has_module_action
 )
 
 router = APIRouter(tags=["Horaires Personnalisés"])
@@ -233,10 +235,10 @@ async def create_horaire(
     """
     Crée un nouvel horaire personnalisé
     """
-    if current_user.role not in ["admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Admin requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de création sur le module parametres/horaires
+    await require_permission(tenant.id, current_user, "parametres", "creer", "horaires")
     
     # Vérifier que le nom n'existe pas déjà
     existing = await db.horaires_personnalises.find_one({
@@ -283,10 +285,10 @@ async def update_horaire(
     """
     Met à jour un horaire personnalisé ou crée une version modifiée d'un prédéfini
     """
-    if current_user.role not in ["admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Admin requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de modification sur le module parametres/horaires
+    await require_permission(tenant.id, current_user, "parametres", "modifier", "horaires")
     
     # Si c'est un horaire prédéfini, créer ou mettre à jour une version en base
     if horaire_id in HORAIRES_PREDEFINIS:
@@ -421,14 +423,14 @@ async def delete_horaire(
     """
     Supprime un horaire personnalisé
     """
-    if current_user.role not in ["admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Admin requis")
-    
     # Empêcher la suppression des prédéfinis
     if horaire_id in HORAIRES_PREDEFINIS:
         raise HTTPException(status_code=400, detail="Les horaires prédéfinis ne peuvent pas être supprimés")
     
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de suppression sur le module parametres/horaires
+    await require_permission(tenant.id, current_user, "parametres", "supprimer", "horaires")
     
     result = await db.horaires_personnalises.delete_one({
         "tenant_id": tenant.id,
@@ -452,10 +454,10 @@ async def dupliquer_horaire(
     """
     Duplique un horaire (prédéfini ou personnalisé) pour créer une version modifiable
     """
-    if current_user.role not in ["admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Admin requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de création sur le module parametres/horaires
+    await require_permission(tenant.id, current_user, "parametres", "creer", "horaires")
     
     # Récupérer l'horaire source
     if horaire_id in HORAIRES_PREDEFINIS:

@@ -42,7 +42,8 @@ from routes.dependencies import (
     User,
     creer_notification,
     creer_activite,
-    user_has_module_action
+    user_has_module_action,
+    require_permission
 )
 
 # Import WebSocket pour synchronisation temps réel
@@ -566,7 +567,10 @@ async def get_demandes_remplacement(tenant_slug: str, current_user: User = Depen
     """Liste des demandes de remplacement avec les noms des demandeurs"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role == "employe":
+    # RBAC: Vérifier si l'utilisateur peut voir toutes les demandes
+    can_view_all = await user_has_module_action(tenant.id, current_user, "remplacements", "voir", "toutes-demandes")
+    
+    if not can_view_all:
         demandes = await db.demandes_remplacement.find({
             "tenant_id": tenant.id,
             "demandeur_id": current_user.id
@@ -667,8 +671,9 @@ async def get_suivi_remplacement(
     if not demande:
         raise HTTPException(status_code=404, detail="Demande non trouvée")
     
-    # Vérifier les permissions : demandeur ou admin/superviseur
-    if current_user.role == "employe" and demande.get("demandeur_id") != current_user.id:
+    # Vérifier les permissions via RBAC : demandeur ou permission de voir toutes les demandes
+    can_view_all = await user_has_module_action(tenant.id, current_user, "remplacements", "voir", "toutes-demandes")
+    if not can_view_all and demande.get("demandeur_id") != current_user.id:
         raise HTTPException(status_code=403, detail="Accès non autorisé")
     
     # Récupérer les informations de notifications envoyées
@@ -841,9 +846,8 @@ async def arreter_demande_remplacement(
     send_push_notification_to_users = await get_send_push_notification()
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Vérifier les permissions
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Seuls les administrateurs et superviseurs peuvent arrêter le processus")
+    # RBAC: Vérifier permission de modifier toutes les demandes
+    await require_permission(tenant.id, current_user, "remplacements", "modifier", "toutes-demandes")
     
     demande_data = await db.demandes_remplacement.find_one({"id": demande_id, "tenant_id": tenant.id})
     if not demande_data:
@@ -928,8 +932,9 @@ async def relancer_demande_remplacement(
     if demande_data["statut"] not in ["expiree", "annulee"]:
         raise HTTPException(status_code=400, detail="Seules les demandes expirées ou annulées peuvent être relancées")
     
-    # Vérifier que l'utilisateur a le droit (admin, superviseur, ou demandeur original)
-    if current_user.role not in ["admin", "superviseur"] and current_user.id != demande_data.get("demandeur_id"):
+    # Vérifier que l'utilisateur a le droit via RBAC (permission modifier ou demandeur original)
+    can_modify_all = await user_has_module_action(tenant.id, current_user, "remplacements", "modifier", "toutes-demandes")
+    if not can_modify_all and current_user.id != demande_data.get("demandeur_id"):
         raise HTTPException(status_code=403, detail="Vous n'êtes pas autorisé à relancer cette demande")
     
     # Vérifier que la date n'est pas passée
@@ -1027,9 +1032,8 @@ async def nettoyer_anciennes_demandes(
     """Nettoyer les anciennes demandes terminées (admin uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Admin uniquement
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent nettoyer les demandes")
+    # RBAC: Vérifier permission de supprimer sur le module remplacements
+    await require_permission(tenant.id, current_user, "remplacements", "supprimer", "toutes-demandes")
     
     from datetime import datetime, timezone, timedelta
     date_limite = datetime.now(timezone.utc) - timedelta(days=delai_jours)

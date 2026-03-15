@@ -12,6 +12,11 @@ from datetime import datetime, timezone
 from models.user import User
 from routes.auth import get_current_user, get_tenant_from_slug
 
+# Import tardif pour RBAC
+async def check_permission(tenant_id, user, module, action, tab=None):
+    from routes.dependencies import require_permission
+    await require_permission(tenant_id, user, module, action, tab)
+
 router = APIRouter(tags=["Remplacements - Paramètres"])
 logger = logging.getLogger(__name__)
 
@@ -30,12 +35,12 @@ async def get_parametres_remplacements(tenant_slug: str, current_user: User = De
     """Récupère les paramètres de remplacements"""
     from routes.remplacements.models import ParametresRemplacements
     
-    if current_user.role not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     db = get_db()
     clean_mongo_doc = get_clean_mongo_doc()
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de voir sur le module parametres/remplacements
+    await check_permission(tenant.id, current_user, "parametres", "voir", "remplacements")
     
     parametres = await db.parametres_remplacements.find_one({"tenant_id": tenant.id})
     
@@ -57,11 +62,11 @@ async def update_parametres_remplacements(
     current_user: User = Depends(get_current_user)
 ):
     """Met à jour les paramètres de remplacements"""
-    if current_user.role not in ["admin"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     db = get_db()
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de modifier sur le module parametres/remplacements
+    await check_permission(tenant.id, current_user, "parametres", "modifier", "remplacements")
     
     logger.info(f"💾 Sauvegarde paramètres remplacements pour {tenant.slug}: {parametres_data}")
     
@@ -94,12 +99,12 @@ async def debug_recherche_remplacant(
     Endpoint de diagnostic pour comprendre pourquoi aucun remplaçant n'est trouvé.
     Retourne des détails sur chaque utilisateur et pourquoi il est éligible ou non.
     """
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux admins")
-    
     db = get_db()
     clean_mongo_doc = get_clean_mongo_doc()
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de voir sur le module remplacements/toutes-demandes
+    await check_permission(tenant.id, current_user, "remplacements", "voir", "toutes-demandes")
     
     # Récupérer la demande
     demande = await db.demandes_remplacement.find_one({"id": demande_id, "tenant_id": tenant.id})

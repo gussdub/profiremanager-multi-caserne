@@ -24,7 +24,9 @@ from routes.dependencies import (
     get_current_user,
     get_tenant_from_slug,
     clean_mongo_doc,
-    User
+    User,
+    require_permission,
+    user_has_module_action
 )
 
 router = APIRouter(tags=["Types de Garde"])
@@ -98,10 +100,10 @@ async def create_type_garde(
     current_user: User = Depends(get_current_user)
 ):
     """Crée un nouveau type de garde"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de création sur le module parametres/types-garde
+    await require_permission(tenant.id, current_user, "parametres", "creer", "types-garde")
     
     type_garde_dict = type_garde.dict()
     type_garde_dict["tenant_id"] = tenant.id
@@ -146,10 +148,10 @@ async def update_type_garde(
     current_user: User = Depends(get_current_user)
 ):
     """Met à jour un type de garde"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de modification sur le module parametres/types-garde
+    await require_permission(tenant.id, current_user, "parametres", "modifier", "types-garde")
     
     # Check if type garde exists dans ce tenant
     existing_type = await db.types_garde.find_one({"id": type_garde_id, "tenant_id": tenant.id})
@@ -194,10 +196,10 @@ async def delete_type_garde(
     current_user: User = Depends(get_current_user)
 ):
     """Supprime un type de garde et toutes ses assignations"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de suppression sur le module parametres/types-garde
+    await require_permission(tenant.id, current_user, "parametres", "supprimer", "types-garde")
     
     # Check if type garde exists
     existing_type = await db.types_garde.find_one({"id": type_garde_id, "tenant_id": tenant.id})

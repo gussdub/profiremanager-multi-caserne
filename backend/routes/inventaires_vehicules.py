@@ -28,7 +28,9 @@ from routes.dependencies import (
     get_current_user,
     get_tenant_from_slug,
     clean_mongo_doc,
-    User
+    User,
+    require_permission,
+    user_has_module_action
 )
 
 router = APIRouter(tags=["Inventaires Véhicules"])
@@ -161,8 +163,8 @@ async def create_modele_inventaire_vehicule(
     """Créer un modèle d'inventaire véhicule (admin/superviseur uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin/Superviseur requis")
+    # RBAC: Vérifier permission de création sur le module actifs/inventaires
+    await require_permission(tenant.id, current_user, "actifs", "creer", "inventaires")
     
     # Convertir les sections dict en objets
     sections_obj = []
@@ -210,8 +212,8 @@ async def update_modele_inventaire_vehicule(
     """Modifier un modèle d'inventaire véhicule (admin/superviseur uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin/Superviseur requis")
+    # RBAC: Vérifier permission de modification sur le module actifs/inventaires
+    await require_permission(tenant.id, current_user, "actifs", "modifier", "inventaires")
     
     update_data = {k: v for k, v in modele.dict().items() if v is not None}
     if not update_data:
@@ -264,8 +266,8 @@ async def delete_modele_inventaire_vehicule(
     """Supprimer un modèle d'inventaire véhicule (admin/superviseur uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin/Superviseur requis")
+    # RBAC: Vérifier permission de suppression sur le module actifs/inventaires
+    await require_permission(tenant.id, current_user, "actifs", "supprimer", "inventaires")
     
     result = await db.modeles_inventaires_vehicules.delete_one({
         "id": modele_id,
@@ -438,8 +440,8 @@ async def get_inventaires_vehicule(
     """Récupérer l'historique des inventaires d'un véhicule (admin/superviseur uniquement)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin/Superviseur requis")
+    # RBAC: Vérifier permission de voir sur le module actifs/inventaires
+    await require_permission(tenant.id, current_user, "actifs", "voir", "inventaires")
     
     inventaires = await db.inventaires_vehicules.find(
         {"vehicule_id": vehicule_id, "tenant_id": tenant.id},

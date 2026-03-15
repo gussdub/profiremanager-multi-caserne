@@ -25,7 +25,10 @@ from routes.dependencies import (
     get_current_user,
     get_super_admin,
     User,
-    SuperAdmin
+    SuperAdmin,
+    require_permission,
+    user_has_module_action,
+    get_tenant_from_slug
 )
 
 router = APIRouter(tags=["Billing"])
@@ -571,12 +574,12 @@ async def get_tenant_billing_info(
     current_user: User = Depends(get_current_user)
 ):
     """Récupère les informations de facturation pour un tenant (admin seulement)"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-    
     tenant = await db.tenants.find_one({"slug": tenant_slug})
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # RBAC: Vérifier permission de voir sur le module parametres/facturation
+    await require_permission(tenant.get("id"), current_user, "parametres", "voir", "facturation")
     
     tenant_id = tenant.get("id")
     
@@ -617,12 +620,12 @@ async def get_my_invoices(
     current_user: User = Depends(get_current_user)
 ):
     """Récupère les factures du tenant pour un admin"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-    
     tenant = await db.tenants.find_one({"slug": tenant_slug})
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # RBAC: Vérifier permission de voir sur le module parametres/facturation
+    await require_permission(tenant.get("id"), current_user, "parametres", "voir", "facturation")
     
     if not tenant.get("stripe_customer_id"):
         return {"invoices": []}
@@ -658,14 +661,14 @@ async def get_billing_portal(
     current_user: User = Depends(get_current_user)
 ):
     """Crée une session du portail de facturation Stripe"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-    
-    return_url = request_data.return_url
-    
     tenant = await db.tenants.find_one({"slug": tenant_slug})
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # RBAC: Vérifier permission de modifier sur le module parametres/facturation
+    await require_permission(tenant.get("id"), current_user, "parametres", "modifier", "facturation")
+    
+    return_url = request_data.return_url
     
     if not tenant.get("stripe_customer_id"):
         raise HTTPException(status_code=400, detail="Pas de compte de facturation")
@@ -692,14 +695,14 @@ async def create_checkout_session(
     Crée une session Stripe Checkout pour configurer le paiement.
     Utilisé quand le tenant n'a pas encore de stripe_customer_id.
     """
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-    
-    return_url = request_data.return_url
-    
     tenant = await db.tenants.find_one({"slug": tenant_slug})
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # RBAC: Vérifier permission de modifier sur le module parametres/facturation
+    await require_permission(tenant.get("id"), current_user, "parametres", "modifier", "facturation")
+    
+    return_url = request_data.return_url
     
     tenant_id = tenant.get("id")
     

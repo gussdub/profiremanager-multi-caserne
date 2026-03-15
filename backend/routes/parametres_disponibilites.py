@@ -26,7 +26,9 @@ from routes.dependencies import (
     get_current_user,
     get_tenant_from_slug,
     clean_mongo_doc,
-    User
+    User,
+    require_permission,
+    user_has_module_action
 )
 
 router = APIRouter(tags=["Paramètres Disponibilités"])
@@ -93,10 +95,10 @@ async def update_parametres_validation_planning(
     current_user: User = Depends(get_current_user)
 ):
     """Met à jour les paramètres de validation/notification du planning"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de modifier sur le module parametres/disponibilites
+    await require_permission(tenant.id, current_user, "parametres", "modifier", "disponibilites")
     
     # Valider les données
     if params.get("jour_envoi") and (params["jour_envoi"] < 1 or params["jour_envoi"] > 28):
@@ -157,10 +159,10 @@ async def update_parametres_disponibilites(
     current_user: User = Depends(get_current_user)
 ):
     """Met à jour les paramètres disponibilités"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de modifier sur le module parametres/disponibilites
+    await require_permission(tenant.id, current_user, "parametres", "modifier", "disponibilites")
     
     result = await db.parametres_disponibilites.update_one(
         {"tenant_id": tenant.id},
@@ -180,11 +182,12 @@ async def trigger_rappels_disponibilites(
     Endpoint admin pour déclencher manuellement l'envoi des rappels de disponibilités.
     Utile pour tester le système sans attendre le job planifié.
     """
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de modifier sur le module parametres/disponibilites
+    await require_permission(tenant.id, current_user, "parametres", "modifier", "disponibilites")
     
     send_push_notification_to_users = await get_send_push_notification()
-    tenant = await get_tenant_from_slug(tenant_slug)
     
     # Récupérer les paramètres
     params = await db.parametres_disponibilites.find_one({"tenant_id": tenant.id})

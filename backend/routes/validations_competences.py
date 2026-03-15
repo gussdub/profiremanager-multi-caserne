@@ -22,7 +22,9 @@ from routes.dependencies import (
     creer_activite,
     User,
     ValidationCompetence,
-    ValidationCompetenceCreate
+    ValidationCompetenceCreate,
+    require_permission,
+    user_has_module_action
 )
 
 router = APIRouter(tags=["Validations Compétences"])
@@ -36,10 +38,10 @@ async def creer_validation_competence(
     current_user: User = Depends(get_current_user)
 ):
     """Créer une validation manuelle de compétence (rattrapage de formation)"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de modifier sur le module formations/competences
+    await require_permission(tenant.id, current_user, "formations", "modifier", "competences")
     
     # Vérifier que la compétence existe
     competence = await db.competences.find_one({
@@ -129,10 +131,10 @@ async def supprimer_validation_competence(
     current_user: User = Depends(get_current_user)
 ):
     """Supprimer une validation manuelle"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de supprimer sur le module formations/competences
+    await require_permission(tenant.id, current_user, "formations", "supprimer", "competences")
     
     result = await db.validations_competences.delete_one({
         "id": validation_id,
