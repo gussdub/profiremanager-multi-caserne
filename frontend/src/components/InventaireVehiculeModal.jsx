@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTenant } from '../contexts/TenantContext';
 import { apiGet, apiPost } from '../utils/api';
 import ImageUpload from './ImageUpload';
@@ -13,6 +13,7 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
   const [heureDebut, setHeureDebut] = useState(null);
   const [sectionActuelle, setSectionActuelle] = useState(0); // Navigation par section
   const [alertesEnCours, setAlertesEnCours] = useState([]); // Alertes détectées en temps réel
+  const contentRef = useRef(null); // Référence pour scroller le contenu
 
   useEffect(() => {
     fetchModeles();
@@ -122,11 +123,11 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
         if (sectionTypeChamp === 'checkbox') {
           initialValue = [];
         } else if (sectionTypeChamp === 'radio') {
-          initialValue = sectionOptions.length > 0 ? sectionOptions[0].label : '';
+          initialValue = ''; // Aucune option sélectionnée par défaut
         } else if (sectionTypeChamp === 'number') {
-          initialValue = '0';
+          initialValue = ''; // Champ vide par défaut
         } else if (sectionTypeChamp === 'select') {
-          initialValue = sectionOptions.length > 0 ? sectionOptions[0].label : '';
+          initialValue = ''; // Aucune option sélectionnée par défaut
         } else {
           initialValue = '';
         }
@@ -311,16 +312,25 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
   const sectionNom = sections[sectionActuelle];
   const itemsSection = itemsParSection[sectionNom] || [];
 
+  // Fonction pour scroller le contenu en haut
+  const scrollToTop = () => {
+    if (contentRef.current) {
+      contentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   // Navigation
   const allerSectionPrecedente = () => {
     if (sectionActuelle > 0) {
       setSectionActuelle(sectionActuelle - 1);
+      scrollToTop();
     }
   };
 
   const allerSectionSuivante = () => {
     if (sectionActuelle < totalSections - 1) {
       setSectionActuelle(sectionActuelle + 1);
+      scrollToTop();
     }
   };
 
@@ -388,11 +398,14 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
         </div>
 
         {/* Content */}
-        <div style={{
-          flex: 1,
-          overflow: 'auto',
-          padding: '1.5rem'
-        }}>
+        <div 
+          ref={contentRef}
+          style={{
+            flex: 1,
+            overflow: 'auto',
+            padding: '1.5rem'
+          }}
+        >
           {!modeleSelectionne ? (
             // Sélection du modèle
             <div>
