@@ -23,7 +23,8 @@ from routes.dependencies import (
     get_current_user,
     get_tenant_from_slug,
     clean_mongo_doc,
-    User
+    User,
+    require_permission
 )
 
 router = APIRouter(tags=["Dashboard Messages"])
@@ -61,10 +62,8 @@ async def create_message_important(
     current_user: User = Depends(get_current_user)
 ):
     """Crée un nouveau message important sur le dashboard"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "dashboard", "modifier")
     
     message_dict = message.dict()
     message_dict["tenant_id"] = tenant.id
@@ -107,10 +106,9 @@ async def delete_message_important(
     current_user: User = Depends(get_current_user)
 ):
     """Supprime un message important"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "dashboard", "supprimer")
+    
     result = await db.messages_importants.delete_one({
         "id": message_id,
         "tenant_id": tenant.id

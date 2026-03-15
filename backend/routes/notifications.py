@@ -63,7 +63,8 @@ from routes.dependencies import (
     get_tenant_from_slug,
     clean_mongo_doc,
     Notification,
-    User
+    User,
+    require_permission
 )
 
 router = APIRouter(tags=["Notifications"])
@@ -363,9 +364,8 @@ async def send_push_notification(
     """
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Seuls les admins et superviseurs peuvent envoyer des notifications
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    # Vérifier les permissions RBAC
+    await require_permission(tenant.id, current_user, "parametres", "modifier")
     
     try:
         response = await send_push_notification_to_users(
@@ -528,9 +528,7 @@ async def send_web_push_notification(
     Envoie une notification Web Push à des utilisateurs spécifiques (Admin/Superviseur)
     """
     tenant = await get_tenant_from_slug(tenant_slug)
-    
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    await require_permission(tenant.id, current_user, "parametres", "modifier")
     
     result = await send_web_push_to_users(
         tenant_id=tenant.id,

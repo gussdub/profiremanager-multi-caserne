@@ -24,7 +24,8 @@ from routes.dependencies import (
     db,
     get_current_user,
     get_tenant_from_slug,
-    User
+    User,
+    require_permission
 )
 
 # Mapping des colonnes Excel vers les champs d'inspection
@@ -153,10 +154,8 @@ async def import_inspections_bornes_seches(
     Le nom de la borne est extrait du nom du fichier si borne_id n'est pas fourni.
     Les valeurs sont automatiquement mappées (Conforme, Non conforme, N/A).
     """
-    if current_user.role not in ['admin', 'superviseur']:
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin/Superviseur requis")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "creer", "bornes")
     
     # Vérifier le type de fichier
     if not file.filename.endswith(('.xlsx', '.xls')):

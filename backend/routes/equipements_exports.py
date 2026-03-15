@@ -28,7 +28,8 @@ from routes.dependencies import (
     get_current_user,
     get_tenant_from_slug,
     clean_mongo_doc,
-    User
+    User,
+    require_permission
 )
 
 router = APIRouter(tags=["Équipements Exports/Imports"])
@@ -416,9 +417,7 @@ async def initialiser_categories_equipements(
     courantes des services d'incendie.
     """
     tenant = await get_tenant_from_slug(tenant_slug)
-    
-    if current_user.role != 'admin':
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin requis")
+    await require_permission(tenant.id, current_user, "actifs", "creer", "categories")
     
     # Catégories par défaut pour services d'incendie
     categories_defaut = [
@@ -692,9 +691,7 @@ async def import_equipements_csv(
     Format attendu: nom, code_unique, categorie_nom, etat, emplacement, date_acquisition, vehicule, employe, champs_personnalises (JSON)
     """
     tenant = await get_tenant_from_slug(tenant_slug)
-    
-    if current_user.role != 'admin':
-        raise HTTPException(status_code=403, detail="Permission refusée - Admin requis")
+    await require_permission(tenant.id, current_user, "actifs", "creer", "materiel")
     
     equipements_data = data.get("equipements", [])
     

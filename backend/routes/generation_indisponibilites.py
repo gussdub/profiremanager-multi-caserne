@@ -22,7 +22,8 @@ from routes.dependencies import (
     get_current_user,
     get_tenant_from_slug,
     User,
-    creer_activite
+    creer_activite,
+    user_has_module_action
 )
 
 router = APIRouter(tags=["Génération Indisponibilités"])
@@ -386,8 +387,11 @@ async def generer_indisponibilites(
     """
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Vérifier les permissions
-    if current_user.role not in ["admin", "superviseur"] and current_user.id != generation_data.user_id:
+    # Vérifier les permissions RBAC - l'utilisateur peut générer ses propres indisponibilités
+    # ou doit avoir la permission de modifier les disponibilités
+    is_own_dispos = current_user.id == generation_data.user_id
+    can_modify_dispos = await user_has_module_action(tenant.id, current_user, "disponibilites", "modifier")
+    if not is_own_dispos and not can_modify_dispos:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
     try:

@@ -24,7 +24,8 @@ from routes.dependencies import (
     get_current_user,
     get_tenant_from_slug,
     clean_mongo_doc,
-    User
+    User,
+    require_permission
 )
 
 router = APIRouter(tags=["Équipes de Garde"])
@@ -289,10 +290,8 @@ async def update_parametres_equipes_garde(
     current_user: User = Depends(get_current_user)
 ):
     """Met à jour les paramètres des équipes de garde"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "parametres", "modifier", "rotation-equipes")
     
     params["updated_at"] = datetime.now(timezone.utc).isoformat()
     

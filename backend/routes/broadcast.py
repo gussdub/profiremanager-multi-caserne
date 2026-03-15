@@ -12,7 +12,8 @@ from routes.dependencies import (
     get_current_user,
     get_tenant_from_slug,
     User,
-    db
+    db,
+    require_permission
 )
 from services.email_service import send_notification_email
 
@@ -54,11 +55,9 @@ async def publier_message(
     Réservé aux admins et superviseurs.
     Envoie une notification et un email à tous les utilisateurs actifs.
     """
-    # Vérifier les permissions
-    if current_user.role not in ['admin', 'superviseur', 'super_admin']:
-        raise HTTPException(status_code=403, detail="Seuls les admins et superviseurs peuvent publier des messages")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    # Vérifier les permissions RBAC - permission de modifier les paramètres = droit de diffuser
+    await require_permission(tenant.id, current_user, "parametres", "modifier")
     
     # Créer le message
     message_id = str(uuid.uuid4())
@@ -110,8 +109,10 @@ async def publier_message(
     # Envoyer les notifications et emails
     emails_envoyes = 0
     notifications_creees = 0
-    
+    user_ids = []  # Pour les push notifications
+
     for user in users_actifs:
+        user_ids.append(user.get("id"))
         # Créer une notification in-app
         notification = {
             "id": str(uuid.uuid4()),
@@ -249,10 +250,8 @@ async def supprimer_message(
     Supprime/désactive un message de diffusion.
     Réservé aux admins et superviseurs.
     """
-    if current_user.role not in ['admin', 'superviseur', 'super_admin']:
-        raise HTTPException(status_code=403, detail="Non autorisé")
-    
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "parametres", "supprimer")
     
     await db.broadcast_messages.update_one(
         {"id": message_id, "tenant_id": tenant.id},
