@@ -13,6 +13,9 @@ const RemplacementsList = ({
   onArreterProcessus,
   onRelancerDemande,
   onSupprimerDemande,
+  onAnnulerDemande,
+  canDeleteRemplacement,
+  canEditRemplacement,
   onShowSuivi,
   filterStatut,
   filterPeriode
@@ -39,10 +42,11 @@ const RemplacementsList = ({
             Les demandes sont traitées automatiquement. Boutons disponibles :
           </p>
           <ul style={{ fontSize: '0.8rem', color: '#1e40af', margin: '0.25rem 0 0 1rem', lineHeight: '1.5', paddingLeft: '0.5rem' }}>
-            <li><strong>🛑 Arrêter</strong> - Arrêter le processus en cours</li>
+            <li><strong>❌ Annuler</strong> - Annuler votre propre demande</li>
+            <li><strong>🛑 Arrêter</strong> - Arrêter le processus en cours (superviseur)</li>
             <li><strong>🔄 Relancer</strong> - Relancer une demande expirée/annulée</li>
             <li><strong>👁️ Suivi</strong> - Voir l'historique des contacts et réponses</li>
-            <li><strong>🗑️</strong> - Supprimer définitivement (admin uniquement)</li>
+            <li><strong>🗑️</strong> - Supprimer définitivement (selon vos accès)</li>
           </ul>
         </div>
       </div>
@@ -135,7 +139,7 @@ const RemplacementsList = ({
               </div>
               
               {/* Actions pour admin/superviseur sur demandes en cours */}
-              {!['employe', 'pompier'].includes(user.role) && (demande.statut === 'en_cours' || demande.statut === 'en_attente') && (
+              {canEditRemplacement && (demande.statut === 'en_cours' || demande.statut === 'en_attente') && (
                 <div className="demande-actions">
                   <Button 
                     variant="ghost" 
@@ -151,6 +155,25 @@ const RemplacementsList = ({
                     style={{ color: '#DC2626' }}
                   >
                     🛑 Arrêter
+                  </Button>
+                </div>
+              )}
+              
+              {/* Bouton Annuler pour le demandeur (sa propre demande en cours) */}
+              {demande.demandeur_id === user?.id && (demande.statut === 'en_cours' || demande.statut === 'en_attente') && (
+                <div className="demande-actions" style={{ marginTop: '10px' }}>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    data-testid={`annuler-replacement-${demande.id}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onAnnulerDemande(demande.id);
+                    }}
+                    style={{ color: '#DC2626', borderColor: '#DC2626' }}
+                  >
+                    ❌ Annuler ma demande
                   </Button>
                 </div>
               )}
@@ -172,8 +195,8 @@ const RemplacementsList = ({
                     🔄 Relancer
                   </Button>
                   
-                  {/* Bouton supprimer pour admin uniquement */}
-                  {user.role === 'admin' && (
+                  {/* Bouton supprimer selon les permissions RBAC */}
+                  {canDeleteRemplacement && (
                     <Button 
                       variant="ghost" 
                       size="sm"

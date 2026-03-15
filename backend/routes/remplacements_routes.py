@@ -41,7 +41,8 @@ from routes.dependencies import (
     clean_mongo_doc,
     User,
     creer_notification,
-    creer_activite
+    creer_activite,
+    user_has_module_action
 )
 
 # Import WebSocket pour synchronisation temps réel
@@ -989,12 +990,13 @@ async def supprimer_demande_remplacement(
     demande_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Supprimer une demande de remplacement (admin uniquement)"""
+    """Supprimer une demande de remplacement (selon permissions RBAC)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Admin uniquement
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent supprimer des demandes")
+    # Vérifier les permissions RBAC pour l'action "supprimer" sur le module "remplacements"
+    can_delete = await user_has_module_action(tenant.id, current_user, "remplacements", "supprimer")
+    if not can_delete:
+        raise HTTPException(status_code=403, detail="Vous n'avez pas la permission de supprimer des demandes")
     
     demande_data = await db.demandes_remplacement.find_one({"id": demande_id, "tenant_id": tenant.id})
     if not demande_data:

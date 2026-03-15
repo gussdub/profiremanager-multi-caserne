@@ -1121,3 +1121,55 @@ async def get_delegations_actives(tenant_id: str) -> List[dict]:
     }).to_list(100)
     
     return [clean_mongo_doc(d) for d in delegations]
+
+
+
+# Import DEFAULT_PERMISSIONS pour la fonction de vérification des permissions
+from routes.access_types import DEFAULT_PERMISSIONS
+
+async def user_has_module_action(tenant_id: str, user: User, module_id: str, action: str) -> bool:
+    """
+    Vérifie si un utilisateur a une action spécifique sur un module.
+    
+    Args:
+        tenant_id: ID du tenant
+        user: Utilisateur (objet User ou dict avec id, role, access_type_id)
+        module_id: ID du module (ex: 'remplacements', 'personnel')
+        action: Action à vérifier (ex: 'supprimer', 'modifier', 'creer')
+    
+    Returns:
+        True si l'utilisateur a la permission, False sinon
+    """
+    # Admin a toujours accès complet
+    user_role = user.role if hasattr(user, 'role') else user.get('role')
+    if user_role == "admin":
+        return True
+    
+    # Vérifier si l'utilisateur a un type d'accès personnalisé
+    user_dict = user.model_dump() if hasattr(user, 'model_dump') else (user.dict() if hasattr(user, 'dict') else user)
+    access_type_id = user_dict.get("access_type_id")
+    
+    if access_type_id:
+        # Récupérer le type d'accès personnalisé
+        access_type = await db.access_types.find_one(
+            {"id": access_type_id, "tenant_id": tenant_id},
+            {"_id": 0}
+        )
+        if access_type:
+            permissions = access_type.get("permissions", {})
+            if permissions.get("is_full_access"):
+                return True
+            module_perms = permissions.get("modules", {}).get(module_id, {})
+            if not module_perms.get("access"):
+                return False
+            return action in module_perms.get("actions", [])
+    
+    # Utiliser les permissions par défaut du rôle
+    default_perms = DEFAULT_PERMISSIONS.get(user_role, DEFAULT_PERMISSIONS.get("employe", {}))
+    if default_perms.get("is_full_access"):
+        return True
+    
+    module_perms = default_perms.get("modules", {}).get(module_id, {})
+    if not module_perms.get("access"):
+        return False
+    return action in module_perms.get("actions", [])

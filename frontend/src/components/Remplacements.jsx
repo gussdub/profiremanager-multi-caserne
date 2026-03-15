@@ -383,7 +383,7 @@ const Remplacements = () => {
     }
   };
 
-  // Handler pour supprimer une demande (admin uniquement)
+  // Handler pour supprimer une demande (avec permission RBAC)
   const handleSupprimerDemande = async (demandeId) => {
     if (window.confirm("Êtes-vous sûr de vouloir supprimer cette demande? Cette action est irréversible.")) {
       try {
@@ -398,6 +398,27 @@ const Remplacements = () => {
         toast({
           title: "Erreur",
           description: error.message || "Impossible de supprimer la demande",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
+  // Handler pour annuler sa propre demande (par le demandeur)
+  const handleAnnulerDemande = async (demandeId) => {
+    if (window.confirm("Voulez-vous vraiment annuler votre demande de remplacement?")) {
+      try {
+        await apiDelete(tenantSlug, `/remplacements/${demandeId}/annuler`);
+        toast({
+          title: "❌ Demande annulée",
+          description: "Votre demande de remplacement a été annulée.",
+          variant: "default"
+        });
+        fetchData();
+      } catch (error) {
+        toast({
+          title: "Erreur",
+          description: error.response?.data?.detail || error.message || "Impossible d'annuler la demande",
           variant: "destructive"
         });
       }
@@ -864,6 +885,9 @@ const Remplacements = () => {
             onArreterProcessus={handleArreterProcessus}
             onRelancerDemande={handleRelancerDemande}
             onSupprimerDemande={handleSupprimerDemande}
+            onAnnulerDemande={handleAnnulerDemande}
+            canDeleteRemplacement={canDeleteRemplacement}
+            canEditRemplacement={canEditRemplacement}
             onShowSuivi={(demande) => {
               setSelectedDemandeForSuivi(demande);
               setShowSuiviModal(true);

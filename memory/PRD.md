@@ -98,6 +98,27 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 | `TabsBar.jsx` | Onglets navigation |
 | `FilterBar.jsx` | Barre de filtres |
 | `PropositionsRecues.jsx` | Propositions reçues |
+
+### NEW - Tests Unitaires Corrigés et Endpoint Annulation (15 Mars 2026)
+**Tests pytest corrigés:**
+- Fichier `test_workflow.py` entièrement réécrit (10 tests)
+- Correction des mocks pour correspondre à l'implémentation réelle
+- **54 tests unitaires passent** dans le module remplacements
+
+**Endpoint DELETE corrigé:**
+- `DELETE /{tenant}/remplacements/{id}` → Supprimer (selon permissions RBAC)
+- `DELETE /{tenant}/remplacements/{id}/annuler` → Annuler sa propre demande (demandeur uniquement)
+- Endpoint de suppression utilise maintenant `user_has_module_action()` pour vérifier les permissions RBAC
+
+**Nouvelle fonctionnalité frontend:**
+- Bouton "❌ Annuler ma demande" ajouté pour les demandeurs (sur leurs demandes en cours)
+- Le bouton de suppression 🗑️ est maintenant visible selon `canDeleteRemplacement` (permission RBAC)
+- Le bouton "Arrêter" est visible selon `canEditRemplacement` (permission RBAC)
+
+**Nouvelle fonction backend:**
+- `user_has_module_action()` ajoutée à `routes/dependencies.py`
+- Permet de vérifier les permissions RBAC d'un utilisateur sur un module/action donné
+- Supporte les types d'accès personnalisés et les permissions par défaut des rôles
 | `DemandeCard.jsx` | Carte de demande |
 
 **Utilitaire API ajouté:**
