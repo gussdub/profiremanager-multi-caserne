@@ -24,7 +24,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 from io import BytesIO
 import uuid
 import logging
@@ -417,6 +417,7 @@ class Assignation(BaseModel):
     date: str
     statut: str = "planifie"  # planifie, confirme, remplacement_demande
     assignation_type: str = "auto"  # auto, manuel, manuel_avance
+    publication_status: str = "publie"  # brouillon, publie - pour le mode test/preview
     justification: Optional[Dict[str, Any]] = None
     notes_admin: Optional[str] = None
     justification_historique: Optional[List[Dict[str, Any]]] = None
@@ -471,8 +472,15 @@ async def get_assignations_periode(
     Récupérer les assignations pour une période donnée.
     - mode='semaine': Récupère 7 jours à partir de date_debut
     - mode='mois': Récupère tout le mois de la date fournie
+    
+    Filtrage selon les permissions:
+    - Les utilisateurs avec 'planning-creer' voient TOUTES les assignations (brouillons + publiés)
+    - Les autres utilisateurs ne voient que les assignations PUBLIÉES
     """
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier si l'utilisateur peut voir les brouillons
+    can_see_drafts = await user_has_module_action(tenant.id, current_user, "planning", "creer")
     
     if mode == "mois":
         # Parser la date et calculer le premier et dernier jour du mois
@@ -496,13 +504,23 @@ async def get_assignations_periode(
         date_debut_str = date_debut
         date_fin_str = date_fin_obj.strftime("%Y-%m-%d")
     
-    assignations = await db.assignations.find({
+    # Construire la requête avec filtre sur publication_status
+    query = {
         "tenant_id": tenant.id,
         "date": {
             "$gte": date_debut_str,
             "$lte": date_fin_str
         }
-    }, {"_id": 0}).sort("date", 1).to_list(1000)
+    }
+    
+    # Si l'utilisateur ne peut pas voir les brouillons, filtrer
+    if not can_see_drafts:
+        query["$or"] = [
+            {"publication_status": "publie"},
+            {"publication_status": {"$exists": False}}  # Rétrocompatibilité avec anciennes assignations
+        ]
+    
+    assignations = await db.assignations.find(query, {"_id": 0}).sort("date", 1).to_list(1000)
     
     return assignations
 
@@ -699,6 +717,312 @@ async def delete_assignation(
     }))
     
     return {"message": "Assignation supprimée avec succès"}
+
+
+# ==================== ROUTES PUBLICATION PLANNING ====================
+
+class PublierPlanningRequest(BaseModel):
+    date_debut: str  # Format: YYYY-MM-DD
+    date_fin: str    # Format: YYYY-MM-DD
+
+
+@router.post("/{tenant_slug}/planning/publier")
+async def publier_planning(
+    tenant_slug: str,
+    request: PublierPlanningRequest,
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Publie le planning en brouillon pour une période donnée.
+    - Change le statut des assignations de 'brouillon' à 'publie'
+    - Envoie des notifications (in-app, push, email) à tous les employés concernés
+    
+    Requiert la permission 'planning-creer'
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "planning", "creer")
+    
+    date_debut = request.date_debut
+    date_fin = request.date_fin
+    
+    # Trouver tous les brouillons à publier
+    brouillons = await db.assignations.find({
+        "tenant_id": tenant.id,
+        "date": {
+            "$gte": date_debut,
+            "$lte": date_fin
+        },
+        "publication_status": "brouillon"
+    }).to_list(10000)
+    
+    if not brouillons:
+        raise HTTPException(status_code=404, detail="Aucun brouillon à publier pour cette période")
+    
+    # Mettre à jour le statut de tous les brouillons
+    result = await db.assignations.update_many(
+        {
+            "tenant_id": tenant.id,
+            "date": {
+                "$gte": date_debut,
+                "$lte": date_fin
+            },
+            "publication_status": "brouillon"
+        },
+        {
+            "$set": {
+                "publication_status": "publie",
+                "published_at": datetime.now(timezone.utc).isoformat(),
+                "published_by": current_user.id
+            }
+        }
+    )
+    
+    nb_publies = result.modified_count
+    
+    # Collecter les user_ids uniques pour les notifications
+    user_ids_affected = list(set([a.get("user_id") for a in brouillons if a.get("user_id")]))
+    
+    # Récupérer les informations des utilisateurs
+    users = await db.users.find({"id": {"$in": user_ids_affected}}).to_list(1000)
+    users_dict = {u["id"]: u for u in users}
+    
+    # Récupérer les types de garde pour les notifications détaillées
+    type_garde_ids = list(set([a.get("type_garde_id") for a in brouillons if a.get("type_garde_id")]))
+    types_garde = await db.types_garde.find({"id": {"$in": type_garde_ids}}).to_list(100)
+    types_garde_dict = {t["id"]: t for t in types_garde}
+    
+    # Formatter la période pour les messages
+    mois_noms = ["janvier", "février", "mars", "avril", "mai", "juin", 
+                 "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
+    try:
+        date_debut_obj = datetime.strptime(date_debut, "%Y-%m-%d")
+        mois_texte = f"{mois_noms[date_debut_obj.month - 1]} {date_debut_obj.year}"
+    except:
+        mois_texte = f"{date_debut} au {date_fin}"
+    
+    periode_str = f"{date_debut} au {date_fin}"
+    
+    # Préparer les notifications par utilisateur
+    notifications_envoyees = 0
+    emails_envoyes = 0
+    push_envoyes = 0
+    
+    async def envoyer_notifications_publication():
+        nonlocal notifications_envoyees, emails_envoyes, push_envoyes
+        
+        for user_id in user_ids_affected:
+            user = users_dict.get(user_id)
+            if not user:
+                continue
+            
+            # Récupérer les gardes de cet utilisateur
+            user_gardes = [a for a in brouillons if a.get("user_id") == user_id]
+            user_gardes.sort(key=lambda x: x.get("date", ""))
+            
+            nb_gardes = len(user_gardes)
+            
+            # 1. Créer notification in-app
+            try:
+                await creer_notification(
+                    tenant_id=tenant.id,
+                    user_id=user_id,
+                    type_notification="planning_publie",
+                    titre=f"📅 Planning validé - {mois_texte}",
+                    message=f"Votre planning pour {mois_texte} a été validé. Vous avez {nb_gardes} garde(s) assignée(s).",
+                    lien=f"/planning?date={date_debut}",
+                    envoyer_email=False
+                )
+                notifications_envoyees += 1
+            except Exception as e:
+                logger.warning(f"Erreur notification in-app pour {user_id}: {e}")
+            
+            # 2. Envoyer notification push
+            try:
+                await send_push_notification_to_users(
+                    user_ids=[user_id],
+                    title=f"📅 Planning validé - {mois_texte}",
+                    body=f"Vous avez {nb_gardes} garde(s) assignée(s). Consultez votre planning!",
+                    data={"type": "planning_publie", "date_debut": date_debut, "date_fin": date_fin},
+                    tenant_slug=tenant_slug
+                )
+                push_envoyes += 1
+            except Exception as e:
+                logger.warning(f"Erreur push notification pour {user_id}: {e}")
+            
+            # 3. Envoyer email avec détails des gardes
+            try:
+                user_email = user.get("email")
+                user_name = f"{user.get('prenom', '')} {user.get('nom', '')}".strip()
+                
+                if user_email:
+                    # Formatter la liste des gardes pour l'email
+                    gardes_list = []
+                    stats = {"par_type": {}, "heures_internes": 0, "heures_externes": 0, "total_gardes": nb_gardes}
+                    
+                    jours_fr = {
+                        0: "Lundi", 1: "Mardi", 2: "Mercredi", 3: "Jeudi",
+                        4: "Vendredi", 5: "Samedi", 6: "Dimanche"
+                    }
+                    
+                    for garde in user_gardes:
+                        type_garde = types_garde_dict.get(garde.get("type_garde_id"), {})
+                        type_nom = type_garde.get("nom", "Garde")
+                        duree = type_garde.get("duree_heures", 0) or 0
+                        est_externe = type_garde.get("est_garde_externe", False)
+                        
+                        # Stats
+                        stats["par_type"][type_nom] = stats["par_type"].get(type_nom, 0) + 1
+                        if est_externe:
+                            stats["heures_externes"] += duree
+                        else:
+                            stats["heures_internes"] += duree
+                        
+                        # Formatter date
+                        try:
+                            date_obj = datetime.strptime(garde.get("date", ""), "%Y-%m-%d")
+                            jour = jours_fr.get(date_obj.weekday(), "")
+                        except:
+                            jour = ""
+                        
+                        horaire = f"{type_garde.get('heure_debut', '??:??')} - {type_garde.get('heure_fin', '??:??')}"
+                        
+                        # Trouver les collègues pour cette garde
+                        collegues = []
+                        for a in brouillons:
+                            if a.get("date") == garde.get("date") and a.get("type_garde_id") == garde.get("type_garde_id") and a.get("user_id") != user_id:
+                                collegue = users_dict.get(a.get("user_id"))
+                                if collegue:
+                                    collegues.append(f"{collegue.get('prenom', '')} {collegue.get('nom', '')}".strip())
+                        
+                        gardes_list.append({
+                            "date": garde.get("date", ""),
+                            "jour": jour,
+                            "type_garde": type_nom,
+                            "horaire": horaire,
+                            "duree_heures": duree,
+                            "est_externe": est_externe,
+                            "collegues": collegues
+                        })
+                    
+                    # Envoyer l'email
+                    tenant_nom = tenant.nom if hasattr(tenant, 'nom') else tenant_slug.title()
+                    email_sent = send_planning_notification_email(
+                        user_email=user_email,
+                        user_name=user_name,
+                        gardes_list=gardes_list,
+                        tenant_slug=tenant_slug,
+                        periode=periode_str,
+                        tenant_nom=tenant_nom,
+                        stats=stats
+                    )
+                    if email_sent:
+                        emails_envoyes += 1
+                        
+            except Exception as e:
+                logger.warning(f"Erreur email pour {user_id}: {e}")
+    
+    # Lancer les notifications en tâche de fond
+    background_tasks.add_task(envoyer_notifications_publication)
+    
+    # Log d'activité
+    try:
+        await creer_activite(
+            tenant_id=tenant.id,
+            type_activite="planning_publie",
+            description=f"Planning publié pour la période {periode_str}: {nb_publies} assignations publiées pour {len(user_ids_affected)} employé(s)",
+            user_id=current_user.id,
+            user_nom=f"{current_user.prenom} {current_user.nom}",
+            metadata={
+                "date_debut": date_debut,
+                "date_fin": date_fin,
+                "nb_assignations": nb_publies,
+                "nb_employes": len(user_ids_affected)
+            }
+        )
+    except Exception as e:
+        logger.warning(f"Erreur log activité publication: {e}")
+    
+    # Broadcaster la mise à jour WebSocket
+    asyncio.create_task(broadcast_planning_update(tenant_slug, "publish", {
+        "date_debut": date_debut,
+        "date_fin": date_fin,
+        "nb_assignations": nb_publies,
+        "nb_employes": len(user_ids_affected)
+    }))
+    
+    return {
+        "message": f"Planning publié avec succès",
+        "periode": periode_str,
+        "assignations_publiees": nb_publies,
+        "employes_notifies": len(user_ids_affected),
+        "notifications": {
+            "in_app": "en cours",
+            "push": "en cours",
+            "email": "en cours"
+        }
+    }
+
+
+@router.delete("/{tenant_slug}/planning/brouillons")
+async def supprimer_brouillons(
+    tenant_slug: str,
+    date_debut: str = Query(..., description="Date de début (YYYY-MM-DD)"),
+    date_fin: str = Query(..., description="Date de fin (YYYY-MM-DD)"),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Supprime tous les brouillons pour une période donnée.
+    Utile pour annuler un planning test avant publication.
+    
+    Requiert la permission 'planning-supprimer'
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "planning", "supprimer")
+    
+    result = await db.assignations.delete_many({
+        "tenant_id": tenant.id,
+        "date": {
+            "$gte": date_debut,
+            "$lte": date_fin
+        },
+        "publication_status": "brouillon"
+    })
+    
+    return {
+        "message": f"{result.deleted_count} brouillon(s) supprimé(s)",
+        "periode": f"{date_debut} au {date_fin}",
+        "brouillons_supprimes": result.deleted_count
+    }
+
+
+@router.get("/{tenant_slug}/planning/brouillons/count")
+async def count_brouillons(
+    tenant_slug: str,
+    date_debut: str = Query(..., description="Date de début (YYYY-MM-DD)"),
+    date_fin: str = Query(..., description="Date de fin (YYYY-MM-DD)"),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Compte le nombre de brouillons pour une période donnée.
+    Requiert la permission 'planning-creer'
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "planning", "creer")
+    
+    count = await db.assignations.count_documents({
+        "tenant_id": tenant.id,
+        "date": {
+            "$gte": date_debut,
+            "$lte": date_fin
+        },
+        "publication_status": "brouillon"
+    })
+    
+    return {
+        "periode": f"{date_debut} au {date_fin}",
+        "nb_brouillons": count
+    }
 
 
 # ==================== ROUTES RAPPORTS D'HEURES ====================
@@ -1077,6 +1401,10 @@ async def get_planning_semaine(
     Récupérer le planning d'une semaine complète
     Retourne les assignations avec les informations des employés et types de garde
     
+    Filtrage selon les permissions:
+    - Les utilisateurs avec 'planning-creer' voient TOUTES les assignations (brouillons + publiés)
+    - Les autres utilisateurs ne voient que les assignations PUBLIÉES
+    
     IMPORTANT: Cette route DOIT être définie en DERNIER car {semaine_debut} 
     est un paramètre générique qui capturerait sinon les autres routes.
     """
@@ -1088,17 +1416,30 @@ async def get_planning_semaine(
     
     tenant = await get_tenant_from_slug(tenant_slug)
     
+    # Vérifier si l'utilisateur peut voir les brouillons
+    can_see_drafts = await user_has_module_action(tenant.id, current_user, "planning", "creer")
+    
     date_debut, date_fin = get_semaine_range(semaine_debut)
     semaine_fin = date_fin.strftime("%Y-%m-%d")
     
-    # Récupérer les assignations de la semaine
-    assignations = await db.assignations.find({
+    # Construire la requête avec filtre sur publication_status
+    query = {
         "tenant_id": tenant.id,
         "date": {
             "$gte": semaine_debut,
             "$lte": semaine_fin
         }
-    }, {"_id": 0}).to_list(1000)
+    }
+    
+    # Si l'utilisateur ne peut pas voir les brouillons, filtrer
+    if not can_see_drafts:
+        query["$or"] = [
+            {"publication_status": "publie"},
+            {"publication_status": {"$exists": False}}  # Rétrocompatibilité avec anciennes assignations
+        ]
+    
+    # Récupérer les assignations de la semaine
+    assignations = await db.assignations.find(query, {"_id": 0}).to_list(1000)
     
     # Récupérer les types de garde
     types_garde = await get_types_garde(tenant.id)
@@ -2891,19 +3232,21 @@ async def attribution_automatique(
     tenant_slug: str, 
     semaine_debut: str, 
     semaine_fin: str = None,
-    reset: bool = False,  # Nouveau paramètre pour réinitialiser
+    reset: bool = False,  # Paramètre pour réinitialiser
+    mode_brouillon: bool = True,  # NOUVEAU: Par défaut en mode brouillon
     current_user: User = Depends(get_current_user)
 ):
     """Attribution automatique pour une ou plusieurs semaines avec progression temps réel
     
     Args:
         reset: Si True, supprime d'abord toutes les assignations AUTO de la période
+        mode_brouillon: Si True, crée les assignations en mode brouillon (non visibles aux employés)
         
     Returns:
         task_id: Identifiant pour suivre la progression via SSE
     """
     logging.info(f"🔥 [ENDPOINT] Attribution auto appelé par {current_user.email}")
-    logging.info(f"🔥 [ENDPOINT] Paramètres reçus: tenant={tenant_slug}, debut={semaine_debut}, fin={semaine_fin}, reset={reset}")
+    logging.info(f"🔥 [ENDPOINT] Paramètres reçus: tenant={tenant_slug}, debut={semaine_debut}, fin={semaine_fin}, reset={reset}, mode_brouillon={mode_brouillon}")
     
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
@@ -2915,7 +3258,7 @@ async def attribution_automatique(
     # Lancer la tâche en arrière-plan
     asyncio.create_task(
         process_attribution_auto_async(
-            task_id, tenant, semaine_debut, semaine_fin, reset
+            task_id, tenant, semaine_debut, semaine_fin, reset, mode_brouillon
         )
     )
     
@@ -2923,6 +3266,7 @@ async def attribution_automatique(
     return {
         "task_id": task_id,
         "message": "Attribution automatique lancée en arrière-plan",
+        "mode_brouillon": mode_brouillon,
         "stream_url": f"/api/{tenant_slug}/planning/attribution-auto/progress/{task_id}"
     }
 
@@ -2931,7 +3275,8 @@ async def process_attribution_auto_async(
     tenant,
     semaine_debut: str,
     semaine_fin: str = None,
-    reset: bool = False
+    reset: bool = False,
+    mode_brouillon: bool = True
 ):
     """Traite l'attribution automatique de manière asynchrone avec suivi de progression"""
     progress = AttributionProgress(task_id)
@@ -2939,7 +3284,7 @@ async def process_attribution_auto_async(
     try:
         start_time = time.time()
         logging.info(f"⏱️ [PERF] Attribution auto démarrée - Task ID: {task_id}")
-        logging.info(f"🔍 [DEBUG] reset={reset}, type={type(reset)}, tenant_id={tenant.id}")
+        logging.info(f"🔍 [DEBUG] reset={reset}, mode_brouillon={mode_brouillon}, tenant_id={tenant.id}")
         logging.info(f"🔍 [DEBUG] Période: {semaine_debut} → {semaine_fin}")
         
         # Si pas de semaine_fin fournie, calculer pour une seule semaine
@@ -4178,6 +4523,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             "statut": "assigne",
                             "auto_attribue": True,
                             "assignation_type": "auto",
+                            "publication_status": "brouillon",  # Mode brouillon par défaut
                             "niveau_attribution": niveau,
                             "created_at": datetime.now(timezone.utc).isoformat(),
                             # Données d'audit/justification pour traçabilité (format attendu par le frontend)
@@ -4506,61 +4852,6 @@ async def generer_excel_audit(assignations, user_map, type_garde_map, tenant, mo
 
 # Endpoint pour obtenir les statistiques personnelles mensuelles
 @router.get("/{tenant_slug}/users/{user_id}/stats-mensuelles")
-
-# GET parametres/validation-planning
-@router.get("/{tenant_slug}/parametres/validation-planning")
-async def get_parametres_validation(tenant_slug: str, current_user: User = Depends(get_current_user)):
-    """
-    Récupérer les paramètres de validation du planning pour le tenant
-    """
-    try:
-        tenant = await get_tenant_from_slug(tenant_slug)
-        await require_permission(tenant.id, current_user, "parametres", "voir", "attribution")
-        
-        # Récupérer les paramètres de validation ou retourner valeurs par défaut
-        validation_params = tenant.parametres.get('validation_planning', {
-            'frequence': 'mensuel',
-            'jour_envoi': 25,  # 25 du mois
-            'heure_envoi': '17:00',
-            'periode_couverte': 'mois_suivant',
-            'envoi_automatique': True,
-            'derniere_notification': None
-        })
-        
-        return validation_params
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur récupération paramètres: {str(e)}")
-
-
-# PUT parametres/validation-planning
-@router.put("/{tenant_slug}/parametres/validation-planning")
-async def update_parametres_validation(tenant_slug: str, parametres: dict, current_user: User = Depends(get_current_user)):
-    """
-    Mettre à jour les paramètres de validation du planning
-    """
-    try:
-        tenant = await get_tenant_from_slug(tenant_slug)
-        await require_permission(tenant.id, current_user, "parametres", "modifier", "attribution")
-        
-        tenant_doc = await db.tenants.find_one({"id": tenant.id})
-        
-        if not tenant_doc:
-            raise HTTPException(status_code=404, detail="Tenant non trouvé")
-        
-        # Mettre à jour les paramètres
-        current_parametres = tenant_doc.get('parametres', {})
-        current_parametres['validation_planning'] = parametres
-        
-        await db.tenants.update_one(
-            {"id": tenant.id},
-            {"$set": {"parametres": current_parametres}}
-        )
-        
-        return {"message": "Paramètres mis à jour avec succès", "parametres": parametres}
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur mise à jour paramètres: {str(e)}")
 
 
 # POST envoyer-notifications

@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://role-based-ui-config.preview.emergentagent.com
+- **URL** : https://schedule-draft.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://role-based-ui-config.preview.emergentagent.com"
+  "apiUrl": "https://schedule-draft.preview.emergentagent.com"
 }
 ```
 

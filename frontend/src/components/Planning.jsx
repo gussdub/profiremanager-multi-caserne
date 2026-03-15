@@ -132,8 +132,16 @@ const Planning = () => {
   });
   const [selectedExportPeriod, setSelectedExportPeriod] = useState('mois_suivant');
   
+  // États pour le mode brouillon / publication
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [publishLoading, setPublishLoading] = useState(false);
+  
   const { toast } = useToast();
   const { confirm } = useConfirmDialog();
+
+  // Calculer le nombre de brouillons dans les assignations actuelles
+  const brouillonsCount = assignations.filter(a => a.publication_status === 'brouillon').length;
+  const hasBrouillons = brouillonsCount > 0;
 
   // Fonction utilitaire pour vérifier si un utilisateur est officier
   // Considère Lieutenant, Capitaine, Directeur comme officiers par défaut
@@ -600,6 +608,126 @@ const Planning = () => {
     } catch (error) {
       console.error('Erreur formatage planning:', error);
       alert('❌ Erreur lors du formatage: ' + error.message);
+    }
+  };
+
+  // Fonction pour publier le planning (brouillons → publiés)
+  const handlePublierPlanning = async () => {
+    if (!canCreatePlanning) return;
+
+    // Calculer la plage de dates selon le mode de vue actuel
+    let date_debut, date_fin;
+    
+    if (viewMode === 'semaine') {
+      date_debut = currentWeek;
+      const [year, month, day] = currentWeek.split('-').map(Number);
+      const endDate = new Date(Date.UTC(year, month - 1, day + 6));
+      date_fin = endDate.toISOString().split('T')[0];
+    } else {
+      // Mode mois
+      const [year, month] = currentMonth.split('-').map(Number);
+      date_debut = `${year}-${String(month).padStart(2, '0')}-01`;
+      const lastDay = new Date(year, month, 0);
+      date_fin = `${year}-${String(month).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
+    }
+
+    // Confirmer avec l'utilisateur
+    const moisNoms = ["janvier", "février", "mars", "avril", "mai", "juin", 
+                      "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+    const dateObj = new Date(date_debut);
+    const moisTexte = `${moisNoms[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+    
+    const confirmed = await confirm({
+      title: '📢 Publier le planning',
+      message: `Vous êtes sur le point de publier le planning pour ${moisTexte}.\n\n` +
+               `📊 ${brouillonsCount} assignation(s) en brouillon seront publiées.\n\n` +
+               `📬 Des notifications (in-app, push et email) seront envoyées à tous les employés concernés.\n\n` +
+               `Confirmer la publication ?`,
+      variant: 'default',
+      confirmText: '📢 Publier'
+    });
+
+    if (!confirmed) return;
+
+    try {
+      setPublishLoading(true);
+      
+      const response = await apiPost(tenantSlug, '/planning/publier', {
+        date_debut,
+        date_fin
+      });
+
+      toast({
+        title: "✅ Planning publié",
+        description: `${response.assignations_publiees} assignation(s) publiée(s). Notifications envoyées à ${response.employes_notifies} employé(s).`,
+        variant: "success"
+      });
+
+      // Recharger les données
+      fetchPlanningData();
+      setShowPublishModal(false);
+
+    } catch (error) {
+      console.error('Erreur publication planning:', error);
+      toast({
+        title: "Erreur",
+        description: error.data?.detail || error.message || "Impossible de publier le planning",
+        variant: "destructive"
+      });
+    } finally {
+      setPublishLoading(false);
+    }
+  };
+
+  // Fonction pour supprimer tous les brouillons
+  const handleSupprimerBrouillons = async () => {
+    if (!canDeletePlanning) return;
+
+    // Calculer la plage de dates selon le mode de vue actuel
+    let date_debut, date_fin;
+    
+    if (viewMode === 'semaine') {
+      date_debut = currentWeek;
+      const [year, month, day] = currentWeek.split('-').map(Number);
+      const endDate = new Date(Date.UTC(year, month - 1, day + 6));
+      date_fin = endDate.toISOString().split('T')[0];
+    } else {
+      const [year, month] = currentMonth.split('-').map(Number);
+      date_debut = `${year}-${String(month).padStart(2, '0')}-01`;
+      const lastDay = new Date(year, month, 0);
+      date_fin = `${year}-${String(month).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
+    }
+
+    const confirmed = await confirm({
+      title: '🗑️ Supprimer les brouillons',
+      message: `Êtes-vous sûr de vouloir supprimer tous les brouillons ?\n\n` +
+               `⚠️ ${brouillonsCount} assignation(s) en brouillon seront définitivement supprimées.\n\n` +
+               `Cette action est irréversible.`,
+      variant: 'danger',
+      confirmText: 'Supprimer'
+    });
+
+    if (!confirmed) return;
+
+    try {
+      const response = await apiDelete(tenantSlug, `/planning/brouillons?date_debut=${date_debut}&date_fin=${date_fin}`);
+
+      toast({
+        title: "✅ Brouillons supprimés",
+        description: `${response.brouillons_supprimes} brouillon(s) supprimé(s).`,
+        variant: "success"
+      });
+
+      // Recharger les données
+      fetchPlanningData();
+
+    } catch (error) {
+      console.error('Erreur suppression brouillons:', error);
+      toast({
+        title: "Erreur",
+        description: error.data?.detail || error.message || "Impossible de supprimer les brouillons",
+        variant: "destructive"
+      });
     }
   };
 
@@ -1970,6 +2098,63 @@ const Planning = () => {
             <span className="btn-text-short">Rapport</span>
             <span className="btn-text-full">Rapport d'Heures</span>
           </Button>
+        </div>
+      )}
+
+      {/* Bannière Mode Brouillon - Visible uniquement pour les admins quand il y a des brouillons */}
+      {canCreatePlanning && hasBrouillons && (
+        <div 
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '1rem',
+            padding: '1rem 1.5rem',
+            marginBottom: '1.5rem',
+            background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
+            border: '2px solid #F59E0B',
+            borderRadius: '12px',
+            flexWrap: 'wrap'
+          }}
+          data-testid="draft-mode-banner"
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span style={{ fontSize: '1.5rem' }}>📝</span>
+            <div>
+              <div style={{ fontWeight: '700', color: '#92400E', fontSize: '1rem' }}>
+                Mode Brouillon Actif
+              </div>
+              <div style={{ color: '#A16207', fontSize: '0.875rem' }}>
+                {brouillonsCount} assignation(s) en attente de publication • Non visibles par les employés
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <Button 
+              onClick={handlePublierPlanning}
+              disabled={publishLoading}
+              style={{ 
+                background: '#059669', 
+                color: 'white',
+                border: 'none',
+                fontWeight: '600'
+              }}
+              data-testid="publish-planning-btn"
+            >
+              {publishLoading ? '⏳ Publication...' : '📢 Publier le planning'}
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={handleSupprimerBrouillons}
+              style={{ 
+                borderColor: '#DC2626',
+                color: '#DC2626'
+              }}
+              data-testid="delete-drafts-btn"
+            >
+              🗑️ Annuler
+            </Button>
+          </div>
         </div>
       )}
 

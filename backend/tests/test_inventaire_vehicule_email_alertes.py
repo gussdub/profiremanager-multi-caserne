@@ -9,7 +9,7 @@ alors qu'il devait lire `parametres.get('actifs', {}).get('emails_notifications_
 
 ENVIRONNEMENT DE TEST:
 - Tenant: demo
-- Backend URL: https://role-based-ui-config.preview.emergentagent.com
+- Backend URL: https://schedule-draft.preview.emergentagent.com
 - Credentials: gussdub@gmail.com / 230685Juin+
 - User ID de Guillaume Dubeau: f4bdfa76-a2a2-4a01-9734-2cf534d04d31
 

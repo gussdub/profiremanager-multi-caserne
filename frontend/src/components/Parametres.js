@@ -1862,13 +1862,9 @@ const Parametres = ({ user, tenantSlug }) => {
           <Suspense fallback={<div style={{ padding: '40px', textAlign: 'center' }}>Chargement...</div>}>
             <ParametresAttribution
               systemSettings={systemSettings}
-              validationParams={validationParams}
               heuresSupParams={heuresSupParams}
               regroupementParams={regroupementParams}
               handleSettingChange={handleSettingChange}
-              handleValidationChange={handleValidationChange}
-              handleSaveValidationParams={handleSaveValidationParams}
-              handleSendNotificationsManually={handleSendNotificationsManually}
               handleSaveHeuresSupParams={handleSaveHeuresSupParams}
               setHeuresSupParams={setHeuresSupParams}
               setRegroupementParams={setRegroupementParams}
