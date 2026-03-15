@@ -81,7 +81,9 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 - **Fréquences supportées:** quotidienne, hebdomadaire, mensuelle, trimestrielle, semestrielle, annuelle, 5_ans
 
 ### NEW - Refactoring Frontend Remplacements COMPLÉTÉ (15 Mars 2026)
-**Résultat:** `Remplacements.jsx` réduit de **1934 → 1050 lignes** (-46%)
+**Résultat:** `Remplacements.jsx` réduit de **1934 → 1051 lignes** (-46%)
+
+**Bug corrigé par testing agent:** `isAdminOrSuperviseur is not defined` - Variable manquante lors de l'extraction des composants
 
 **11 composants extraits vers `/frontend/src/components/remplacements/`:**
 | Composant | Description |
@@ -100,6 +102,8 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 
 **Utilitaire API ajouté:**
 - `downloadFile()` dans `/frontend/src/utils/api.js` - Téléchargement de fichiers
+
+**Tests de régression effectués:** ✅ Tous les modules fonctionnent (Login, Navigation, Onglets, KPIs, Modals, Filtres, Listes)
 
 
 
