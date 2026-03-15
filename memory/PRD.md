@@ -68,7 +68,7 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 - `MapComponents.jsx` (1) - Affichage badge rôle
 
 ### NEW - Migration RBAC Backend - Phase 3 COMPLÉTÉE (15 Mars 2026)
-**Statut:** ✅ TERMINÉ (87% des vérifications migrées - de 175 à 22 occurrences système)
+**Statut:** ✅ TERMINÉ (90% des vérifications migrées - de 175 à ~16 occurrences système/démo)
 
 **Amélioration majeure: Structure MODULES_STRUCTURE enrichie avec 72 tabs granulaires**
 
@@ -84,8 +84,20 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 | Prevention | 5 (batiments, inspections, avis, calendrier, rapports) | voir, creer, modifier, supprimer, exporter, signer |
 | Disponibilites | 4 (mes-dispos, equipe, import, rapport) | voir, modifier, exporter |
 | Parametres | 14 (types-garde, competences, grades, horaires, rotation-equipes, comptes, etc.) | voir, creer, modifier, supprimer |
+| Interventions | 4 (rapports, fausses-alarmes, conformite-dsi, parametres) | voir, creer, modifier, supprimer, exporter, signer |
 
-**Fichiers backend ENTIÈREMENT migrés vers RBAC:**
+**Fichiers backend ENTIÈREMENT migrés vers RBAC (Phase 2 - 15 Mars 2026):**
+| Module | Fichier | Permissions |
+|--------|---------|-------------|
+| Dashboard Messages | `dashboard_messages.py` | ✅ dashboard modifier/supprimer |
+| Broadcast | `broadcast.py` | ✅ parametres modifier |
+| Équipes Garde | `equipes_garde.py` | ✅ parametres modifier, rotation-equipes |
+| Équipements Exports | `equipements_exports.py` | ✅ actifs creer, categories/materiel |
+| Notifications | `notifications.py` | ✅ parametres modifier |
+| Génération Indispos | `generation_indisponibilites.py` | ✅ disponibilites modifier |
+| Import Bornes | `import_inspections_bornes.py` | ✅ actifs creer, bornes |
+
+**Fichiers backend ENTIÈREMENT migrés vers RBAC (Phase 1):**
 | Module | Fichier | Status |
 |--------|---------|--------|
 | APRIA | `apria.py` | ✅ 100% migré |
@@ -103,21 +115,15 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 | Access Types | `access_types.py` | ✅ 100% migré |
 | Secteurs | `secteurs.py` | ✅ 100% migré |
 
-**Fichiers restants à migrer:**
-| Fichier | Occurrences restantes |
-|---------|----------------------|
-| `remplacements_routes.py` | 5 |
-| `inventaires_vehicules.py` | 4 |
-| `horaires_personnalises.py` | 4 |
-| `conges.py` | 4 |
-| `billing.py` | 4 |
-| `avis_non_conformite.py` | 4 |
-| `types_garde.py` | 3 |
-| `remplacements/parametres.py` | 3 |
-| `disponibilites.py` (routes utilitaires) | 3 |
-| Autres (~10 fichiers) | ~26 |
+**Fichiers restants (routes système sans tenant - hors scope RBAC):**
+| Fichier | Raison |
+|---------|--------|
+| `planning.py` /reinitialiser | Route système sans tenant |
+| `disponibilites.py` /init-* | Routes démo sans tenant |
+| `super_admin.py` | Fonctionnalités super admin (hors tenant) |
+| `remplacements/exports.py` | Filtrage de données (pas contrôle d'accès) |
 
-**Tests:** 62/62 tests passés (voir /app/test_reports/iteration_7.json)
+**Tests:** 17/17 tests Phase 2 passés (voir /app/test_reports/iteration_10.json)
 
 
 ### NEW - Système RBAC Personnalisé (13 Mars 2026)
