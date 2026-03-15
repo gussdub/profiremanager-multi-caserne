@@ -42,8 +42,8 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 
 
 
-### NEW - Audit RBAC Frontend - Phase 1 (15 Mars 2026)
-**Statut:** EN COURS (~40% complété, de 38 à 23 occurrences)
+### NEW - Audit RBAC Frontend - Phase 2 COMPLÉTÉE (15 Mars 2026)
+**Statut:** ✅ TERMINÉ (~85% complété, de 38 à ~6 occurrences restantes pour affichage)
 
 **Fichiers frontend migrés vers usePermissions:**
 | Composant | Status | Occurrences migrées |
@@ -52,12 +52,20 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 | `Personnel.jsx` | ✅ 100% migré | 2 |
 | `MesDisponibilites.jsx` | ✅ 100% migré | 2 |
 | `CongesList.jsx` | ✅ 100% migré | 5 |
-| `GestionInterventions.jsx` | Partiel (sous-composants) | 0/7 |
+| `GestionInterventions.jsx` | ✅ 100% migré | 7 |
+| `Dashboard.jsx` | ✅ 100% migré | 4 |
+| `CalendrierInspections.jsx` | ✅ 100% migré | 1 |
+| `ParametresInventairesVehicules.jsx` | ✅ 100% migré | 2 |
+| `InspectionComponents.jsx` | ✅ 100% migré | 1 |
+| `RemplacementsList.jsx` | ✅ 100% migré | 1 |
 
-**Fichiers restants à migrer (23 occurrences):**
-- `GestionInterventions.jsx` (7) - sous-composants internes
-- `ParametresInventairesVehicules.jsx` (2)
-- Autres fichiers (1 chacun): Sidebar, Parametres, MapComponents, InspectionComponents, Dashboard, ConfigurationEmails*, CalendrierInspections
+**Fichiers restants (affichage de label seulement, pas de contrôle d'accès):**
+- `Sidebar.jsx` (1) - Logique notification basée sur type_emploi
+- `ConfigurationEmailsEPI.jsx` (1) - Affichage label rôle
+- `ConfigurationEmailsRondes.jsx` (1) - Affichage label rôle
+- `ConfigurationEmailsEquipements.jsx` (1) - Affichage label rôle
+- `ConfigurationEmailsBornesSeches.jsx` (1) - Affichage label rôle
+- `MapComponents.jsx` (1) - Affichage badge rôle
 
 ### NEW - Migration RBAC Backend - Phase 3 COMPLÉTÉE (15 Mars 2026)
 **Statut:** ✅ TERMINÉ (87% des vérifications migrées - de 175 à 22 occurrences système)
