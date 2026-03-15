@@ -466,8 +466,8 @@ const ParametresGrades = ({
       {/* Modal Ajouter/Modifier Échelon */}
       {showAddEchelonModal && (
         <div className="modal-overlay" onClick={() => setShowAddEchelonModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
-            <h3>{editingEchelon ? 'Modifier l\'échelon' : 'Ajouter un échelon'}</h3>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '450px', padding: '1.5rem' }}>
+            <h3 style={{ marginTop: 0 }}>{editingEchelon ? 'Modifier l\'échelon' : 'Ajouter un échelon'}</h3>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
