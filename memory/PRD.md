@@ -105,6 +105,28 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 
 **Tests de régression effectués:** ✅ Tous les modules fonctionnent (Login, Navigation, Onglets, KPIs, Modals, Filtres, Listes)
 
+### NEW - Refactoring Backend Remplacements (15 Mars 2026)
+**Résultat:** `remplacements_routes.py` réduit de **2012 → 1500 lignes** (-25%)
+
+**Fonctions déplacées vers `/backend/routes/remplacements/notifications.py`:**
+- `generer_token_remplacement()` - Génération de tokens pour emails
+- `envoyer_email_remplacement()` - Email au remplaçant potentiel
+- `envoyer_email_remplacement_trouve()` - Email de confirmation au demandeur
+- `envoyer_email_remplacement_non_trouve()` - Email d'expiration au demandeur
+- `envoyer_sms_remplacement()` - SMS via Twilio
+- `formater_numero_telephone()` - Formatage E.164
+
+**Structure backend actuelle:**
+| Module | Lignes | Description |
+|--------|--------|-------------|
+| `remplacements_routes.py` | 1500 | Routes principales |
+| `notifications.py` | 584 | Emails et SMS |
+| `search.py` | 492 | Recherche de remplaçants |
+| `workflow.py` | 468 | Logique acceptation/refus |
+| `exports.py` | 278 | Export PDF/Excel |
+| `utils.py` | 129 | Fonctions utilitaires |
+| `models.py` | 96 | Modèles Pydantic |
+
 
 
 ## Recent Fixes (February 2026)
