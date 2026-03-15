@@ -622,6 +622,78 @@ async def upload_photo_profil(
         raise HTTPException(status_code=500, detail=f"Erreur upload photo: {str(e)}")
 
 
+# PUT users/{user_id} - Modifier un utilisateur (par un admin)
+@router.put("/{tenant_slug}/users/{user_id}")
+async def update_user(
+    tenant_slug: str,
+    user_id: str,
+    user_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Permet à un admin de modifier les informations d'un utilisateur
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier les permissions
+    await require_permission(tenant.id, current_user, "personnel", "modifier")
+    
+    # Vérifier que l'utilisateur existe
+    existing_user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
+    if not existing_user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    # Construire les données de mise à jour
+    update_data = {}
+    
+    # Champs texte simples
+    text_fields = [
+        "nom", "prenom", "email", "telephone", "adresse", "grade",
+        "type_emploi", "numero_employe", "date_embauche", "date_fin_embauche",
+        "motif_fin_emploi", "equipe_garde", "contact_urgence"
+    ]
+    for field in text_fields:
+        if field in user_data and user_data[field] is not None:
+            update_data[field] = user_data[field]
+    
+    # Champs numériques
+    if "taux_horaire" in user_data:
+        update_data["taux_horaire"] = float(user_data["taux_horaire"]) if user_data["taux_horaire"] else 0
+    if "heures_max_semaine" in user_data:
+        update_data["heures_max_semaine"] = int(user_data["heures_max_semaine"]) if user_data["heures_max_semaine"] else 40
+    if "echelon_embauche" in user_data:
+        update_data["echelon_embauche"] = int(user_data["echelon_embauche"]) if user_data["echelon_embauche"] else 1
+    
+    # Champs booléens
+    bool_fields = ["fonction_superieur", "est_preventionniste", "accepte_gardes_externes"]
+    for field in bool_fields:
+        if field in user_data:
+            update_data[field] = bool(user_data[field])
+    
+    # Champs complexes
+    if "formations" in user_data:
+        update_data["formations"] = user_data["formations"] if isinstance(user_data["formations"], list) else []
+    if "tailles_epi" in user_data:
+        update_data["tailles_epi"] = user_data["tailles_epi"] if isinstance(user_data["tailles_epi"], dict) else {}
+    
+    # Mot de passe (si fourni et différent de 'unchanged')
+    if user_data.get("mot_de_passe") and user_data["mot_de_passe"] != "unchanged":
+        from passlib.context import CryptContext
+        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        update_data["mot_de_passe_hash"] = pwd_context.hash(user_data["mot_de_passe"])
+    
+    # Mettre à jour
+    if update_data:
+        await db.users.update_one(
+            {"id": user_id, "tenant_id": tenant.id},
+            {"$set": update_data}
+        )
+    
+    # Retourner l'utilisateur mis à jour
+    updated_user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
+    return clean_mongo_doc(updated_user)
+
+
 # POST users/{user_id}/photo-profil
 @router.post("/{tenant_slug}/users/{user_id}/photo-profil")
 async def upload_photo_profil_admin(
