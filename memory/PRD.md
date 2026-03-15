@@ -42,6 +42,32 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 
 
 
+### NEW - Migration RBAC Backend (15 Mars 2026)
+**Statut:** EN COURS (~30% complété)
+
+**Fichiers backend ENTIÈREMENT migrés vers RBAC:**
+- `planning.py` - ✅ 19 endpoints migrés
+- `personnel.py` - ✅ 6 endpoints migrés  
+- `formations.py` - ✅ 14 endpoints migrés
+- `interventions.py` - ✅ 11 endpoints migrés
+- `actifs.py` - ✅ 20 endpoints migrés
+- `delegations.py` - ✅ 4 endpoints migrés
+- `remplacements_routes.py` - Partiellement (suppression/annulation migrés)
+
+**Nouvelles fonctions RBAC dans `dependencies.py`:**
+- `user_has_module_access(tenant_id, user, module_id)` - Vérifie l'accès à un module
+- `user_has_module_action(tenant_id, user, module_id, action, tab_id)` - Vérifie une action sur un module/onglet
+- `require_permission(tenant_id, user, module_id, action, tab_id)` - Lève HTTPException 403 si non autorisé
+
+**Fichiers restants à migrer (priorité):**
+- `prevention.py` (45 occurrences)
+- `epi.py` (37 occurrences)
+- `paie_complet.py` (35 occurrences)
+- + ~25 autres fichiers (~180 occurrences)
+
+**Tests RBAC:** 22/22 tests passés (voir /app/test_reports/iteration_6.json)
+
+
 ### NEW - Système RBAC Personnalisé (13 Mars 2026)
 - **Fonctionnalité:** Contrôle d'accès basé sur les rôles (Role-Based Access Control)
 - **Types d'accès personnalisés:**

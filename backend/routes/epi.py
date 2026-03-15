@@ -26,7 +26,9 @@ from routes.dependencies import (
     clean_mongo_doc,
     User,
     creer_notification,
-    creer_activite
+    creer_activite,
+    require_permission,
+    user_has_module_action
 )
 
 # Import WebSocket pour synchronisation temps réel
@@ -758,11 +760,9 @@ async def create_type_epi(
     type_data: TypeEPICreate, 
     current_user: User = Depends(get_current_user)
 ):
-    """Crée un nouveau type d'EPI (Admin/Superviseur)"""
-    if current_user.role not in ["admin", "superviseur"]:
-        raise HTTPException(status_code=403, detail="Accès refusé - Admin ou Superviseur requis")
-    
+    """Crée un nouveau type d'EPI"""
     tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "actifs", "creer", "epi")
     
     # Vérifier si le nom existe déjà
     existing = await db.types_epi.find_one({
