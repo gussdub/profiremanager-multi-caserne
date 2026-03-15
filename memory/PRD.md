@@ -42,58 +42,42 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 
 
 
-### NEW - Migration RBAC Backend - Phase 2 (15 Mars 2026)
-**Statut:** EN COURS (~53% complété, 178 occurrences restantes sur 377)
+### NEW - Migration RBAC Backend - Phase 3 (15 Mars 2026)
+**Statut:** EN COURS (~66% complété, 60 occurrences restantes sur 175)
 
-**Fichiers backend ENTIÈREMENT migrés vers RBAC:**
-| Module | Fichier | Endpoints migrés |
-|--------|---------|------------------|
-| Planning | `planning.py` | 19 |
-| Personnel | `personnel.py` | 6 |
-| Formations | `formations.py` | 14 |
-| Interventions | `interventions.py` | 11 |
-| Actifs | `actifs.py` | 20 |
-| EPI | `epi.py` | 37 |
-| Paie | `paie_complet.py` | 35 |
-| Prévention | `prevention.py` | 45 |
-| Délégations | `delegations.py` | 4 |
+**Fichiers backend ENTIÈREMENT migrés vers RBAC (session actuelle):**
+| Module | Fichier | Status |
+|--------|---------|--------|
+| APRIA | `apria.py` | ✅ 100% migré |
+| Équipements | `equipements.py` | ✅ 100% migré |
+| Disponibilités | `disponibilites.py` | ✅ 95% migré |
+| Matériel | `materiel.py` | ✅ 100% migré |
+| Bornes Sèches | `bornes_seches.py` | ✅ 100% migré |
+| Points d'Eau | `points_eau.py` | ✅ 100% migré |
+| Approv. Eau | `approvisionnement_eau.py` | ✅ 100% migré |
+| Rapports | `rapports.py` | ✅ 100% migré |
+| Users | `users.py` | ✅ 100% migré |
+| Compétences/Grades | `competences_grades.py` | ✅ 100% migré |
+| Dashboard | `dashboard.py` | ✅ 100% migré |
+| Rapports Interv. | `rapports_interventions.py` | ✅ 100% migré |
+| Access Types | `access_types.py` | ✅ 100% migré |
+| Secteurs | `secteurs.py` | ✅ 100% migré |
 
-**Total endpoints migrés : ~191**
-
-**Fichiers restants à migrer (priorité):**
+**Fichiers restants à migrer:**
 | Fichier | Occurrences restantes |
 |---------|----------------------|
-| `rapports.py` | 23 |
-| `apria.py` | 16 |
-| `disponibilites.py` | 12 |
-| `users.py` | 10 |
-| `materiel.py` | 9 |
-| Autres (~20 fichiers) | ~108 |
+| `remplacements_routes.py` | 5 |
+| `inventaires_vehicules.py` | 4 |
+| `horaires_personnalises.py` | 4 |
+| `conges.py` | 4 |
+| `billing.py` | 4 |
+| `avis_non_conformite.py` | 4 |
+| `types_garde.py` | 3 |
+| `remplacements/parametres.py` | 3 |
+| `disponibilites.py` (routes utilitaires) | 3 |
+| Autres (~10 fichiers) | ~26 |
 
-### NEW - Migration RBAC Backend (15 Mars 2026)
-**Statut:** EN COURS (~30% complété)
-
-**Fichiers backend ENTIÈREMENT migrés vers RBAC:**
-- `planning.py` - ✅ 19 endpoints migrés
-- `personnel.py` - ✅ 6 endpoints migrés  
-- `formations.py` - ✅ 14 endpoints migrés
-- `interventions.py` - ✅ 11 endpoints migrés
-- `actifs.py` - ✅ 20 endpoints migrés
-- `delegations.py` - ✅ 4 endpoints migrés
-- `remplacements_routes.py` - Partiellement (suppression/annulation migrés)
-
-**Nouvelles fonctions RBAC dans `dependencies.py`:**
-- `user_has_module_access(tenant_id, user, module_id)` - Vérifie l'accès à un module
-- `user_has_module_action(tenant_id, user, module_id, action, tab_id)` - Vérifie une action sur un module/onglet
-- `require_permission(tenant_id, user, module_id, action, tab_id)` - Lève HTTPException 403 si non autorisé
-
-**Fichiers restants à migrer (priorité):**
-- `prevention.py` (45 occurrences)
-- `epi.py` (37 occurrences)
-- `paie_complet.py` (35 occurrences)
-- + ~25 autres fichiers (~180 occurrences)
-
-**Tests RBAC:** 22/22 tests passés (voir /app/test_reports/iteration_6.json)
+**Tests:** 62/62 tests passés (voir /app/test_reports/iteration_7.json)
 
 
 ### NEW - Système RBAC Personnalisé (13 Mars 2026)
