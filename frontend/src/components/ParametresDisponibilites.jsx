@@ -6,6 +6,9 @@ import { Label } from "./ui/label.jsx";
 /**
  * ParametresDisponibilites - Onglet des paramètres de disponibilités
  * Extrait de Parametres.js pour améliorer la maintenabilité
+ * 
+ * Note: Les permissions d'accès (qui peut modifier, bypass le blocage, etc.) 
+ * sont gérées via le système RBAC dans Paramètres > Rôles et Permissions
  */
 const ParametresDisponibilites = ({
   systemSettings,
@@ -17,7 +20,7 @@ const ParametresDisponibilites = ({
       <div className="tab-header">
         <div>
           <h2>Paramètres des Disponibilités</h2>
-          <p>Configuration du système de blocage des disponibilités par date limite</p>
+          <p>Configuration du système de blocage et des notifications pour les disponibilités</p>
         </div>
       </div>
       
@@ -59,40 +62,9 @@ const ParametresDisponibilites = ({
           </div>
 
           <div className="settings-column">
-            <h4 className="compact-title">⚙️ Exceptions et permissions</h4>
-            <div className="validation-rules-compact">
-              <label className="validation-rule-compact">
-                <input
-                  type="checkbox"
-                  checked={systemSettings.exceptions_admin_superviseur}
-                  onChange={(e) => handleSettingChange('exceptions_admin_superviseur', e.target.checked)}
-                  data-testid="toggle-exceptions-admin"
-                />
-                <div className="rule-content-compact">
-                  <span className="rule-title">Exceptions pour admin/superviseur</span>
-                  <span className="rule-description">Les administrateurs et superviseurs peuvent modifier même après la date limite</span>
-                </div>
-              </label>
-              
-              <label className="validation-rule-compact">
-                <input
-                  type="checkbox"
-                  checked={systemSettings.admin_peut_modifier_temps_partiel}
-                  onChange={(e) => handleSettingChange('admin_peut_modifier_temps_partiel', e.target.checked)}
-                  data-testid="toggle-admin-modif-temps-partiel"
-                />
-                <div className="rule-content-compact">
-                  <span className="rule-title">Admin peut modifier les temps partiel</span>
-                  <span className="rule-description">Les admin/superviseurs peuvent modifier les disponibilités des employés temps partiel</span>
-                </div>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div className="settings-row">
-          <div className="settings-column">
             <h4 className="compact-title">🔔 Notifications</h4>
+            <p>Rappeler aux employés temps partiel de saisir leurs disponibilités</p>
+            
             <div className="setting-inputs-compact">
               <label className="setting-toggle">
                 <div className="toggle-info">
@@ -123,13 +95,13 @@ const ParametresDisponibilites = ({
               )}
             </div>
           </div>
+        </div>
 
-          {/* Bouton Sauvegarder */}
-          <div style={{marginTop: '2rem', textAlign: 'center'}}>
-            <Button onClick={handleSaveDisponibilitesParams}>
-              💾 Sauvegarder les paramètres de disponibilités
-            </Button>
-          </div>
+        {/* Bouton Sauvegarder */}
+        <div style={{marginTop: '2rem', textAlign: 'center'}}>
+          <Button onClick={handleSaveDisponibilitesParams}>
+            💾 Sauvegarder les paramètres de disponibilités
+          </Button>
         </div>
       </div>
     </div>

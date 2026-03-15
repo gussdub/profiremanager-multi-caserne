@@ -743,7 +743,7 @@ async def import_disponibilites_csv(
     # SÉCURITÉ: Vérifier le blocage des disponibilités
     params = await db.parametres_disponibilites.find_one({"tenant_id": tenant.id})
     blocage_actif = params and params.get("blocage_dispos_active", False)
-    exceptions_admin = params.get("exceptions_admin_superviseur", True) if params else True
+    # Les permissions sont gérées via RBAC - la variable can_bypass_blocage est définie plus haut
     
     # Fonction locale pour vérifier si un mois est bloqué
     def is_month_blocked(mois_str):
@@ -778,8 +778,8 @@ async def import_disponibilites_csv(
         
         est_bloque = mois_cible_est_passe or (est_apres_date_limite and mois_cible_est_le_mois_bloque)
         
-        # Exception via RBAC (utilisateur a la permission de modifier)
-        if est_bloque and exceptions_admin and can_bypass_blocage:
+        # Exception via RBAC: utilisateur avec permission "disponibilites-modifier" peut bypass le blocage
+        if est_bloque and can_bypass_blocage:
             return False
         
         return est_bloque

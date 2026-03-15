@@ -42,6 +42,49 @@ MAX_ACCESS_TYPES = 15
 
 # ==================== DÉFINITION DES PERMISSIONS ====================
 
+# Descriptions générales des actions (affichées en tooltip au survol)
+ACTION_DESCRIPTIONS = {
+    "voir": "Permet de consulter et visualiser les données",
+    "creer": "Permet de créer de nouvelles entrées",
+    "modifier": "Permet de modifier les données existantes",
+    "supprimer": "Permet de supprimer définitivement des données",
+    "exporter": "Permet d'exporter les données (PDF, Excel, etc.)",
+    "signer": "Permet de signer numériquement des documents",
+    "valider": "Permet de valider ou approuver des éléments",
+    "approuver": "Permet d'approuver ou refuser des demandes",
+    "accepter": "Permet d'accepter des propositions",
+    "refuser": "Permet de refuser des propositions",
+    "annuler": "Permet d'annuler des demandes en cours",
+    "voir_anciens": "Permet de consulter les données archivées"
+}
+
+# Descriptions spécifiques par module (surcharge les descriptions générales)
+MODULE_ACTION_DESCRIPTIONS = {
+    "disponibilites": {
+        "modifier": "Permet de modifier les disponibilités des autres employés et d'ignorer la date limite de blocage"
+    },
+    "planning": {
+        "creer": "Permet de créer des assignations, lancer l'attribution automatique et publier les plannings",
+        "modifier": "Permet de modifier les assignations existantes"
+    },
+    "remplacements": {
+        "approuver": "Permet d'approuver ou refuser les demandes de congés et absences"
+    },
+    "paie": {
+        "valider": "Permet de valider les feuilles de temps pour la paie",
+        "modifier": "Permet de modifier les données salariales et feuilles de temps"
+    },
+    "interventions": {
+        "signer": "Permet de signer électroniquement les rapports d'intervention"
+    },
+    "personnel": {
+        "voir_anciens": "Permet de consulter les fiches des employés inactifs/partis"
+    },
+    "parametres": {
+        "modifier": "Permet de modifier les paramètres système et la configuration"
+    }
+}
+
 # Structure des modules et leurs onglets avec actions disponibles
 # ENRICHI pour permettre une configuration granulaire via l'interface "Comptes et accès"
 MODULES_STRUCTURE = {
@@ -169,8 +212,8 @@ MODULES_STRUCTURE = {
         "label": "Disponibilités",
         "icon": "📋",
         "tabs": {
-            "mes-dispos": {"label": "Mes disponibilités", "actions": ["voir", "modifier"]},
-            "equipe": {"label": "Disponibilités de l'équipe", "actions": ["voir"]},
+            "mes-dispos": {"label": "Mes disponibilités", "actions": ["voir"]},
+            "equipe": {"label": "Disponibilités de l'équipe", "actions": ["voir", "modifier"]},
             "import": {"label": "Import en masse", "actions": ["creer"]},
             "rapport": {"label": "Rapport disponibilités", "actions": ["voir", "exporter"]}
         },
@@ -755,7 +798,9 @@ async def get_modules_structure(
             "accepter": "✔️ Accepter",
             "refuser": "❌ Refuser",
             "voir_anciens": "📜 Voir anciens employés"
-        }
+        },
+        "actions_descriptions": ACTION_DESCRIPTIONS,
+        "module_action_descriptions": MODULE_ACTION_DESCRIPTIONS
     }
 
 

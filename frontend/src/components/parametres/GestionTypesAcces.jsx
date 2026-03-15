@@ -45,6 +45,8 @@ const GestionTypesAcces = ({ tenantSlug, toast }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [expandedModules, setExpandedModules] = useState({});
+  const [actionsDescriptions, setActionsDescriptions] = useState({});
+  const [moduleActionDescriptions, setModuleActionDescriptions] = useState({});
   
   // Form state pour création/édition
   const [formData, setFormData] = useState({
@@ -68,6 +70,8 @@ const GestionTypesAcces = ({ tenantSlug, toast }) => {
       ]);
       setModulesStructure(structureRes.modules || {});
       setAccessTypes(typesRes);
+      setActionsDescriptions(structureRes.actions_descriptions || {});
+      setModuleActionDescriptions(structureRes.module_action_descriptions || {});
     } catch (error) {
       console.error('Erreur chargement données:', error);
       toast({
@@ -78,6 +82,16 @@ const GestionTypesAcces = ({ tenantSlug, toast }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Fonction pour obtenir la description d'une action (spécifique au module si disponible)
+  const getActionDescription = (moduleId, action) => {
+    // Vérifier d'abord si une description spécifique existe pour ce module
+    if (moduleActionDescriptions[moduleId]?.[action]) {
+      return moduleActionDescriptions[moduleId][action];
+    }
+    // Sinon utiliser la description générale
+    return actionsDescriptions[action] || '';
   };
 
   // Sélectionner un type d'accès pour voir/éditer
@@ -203,12 +217,36 @@ const GestionTypesAcces = ({ tenantSlug, toast }) => {
       }
       
       const currentActions = newPermissions.modules[moduleId].actions || [];
+      const moduleConfig = modulesStructure[moduleId];
       
       if (checked) {
+        // Activer l'action au niveau module
         if (!currentActions.includes(action)) {
           newPermissions.modules[moduleId].actions = [...currentActions, action];
         }
+        
+        // Propager automatiquement l'action vers tous les sous-onglets qui supportent cette action
+        if (moduleConfig?.tabs) {
+          const tabs = newPermissions.modules[moduleId].tabs || {};
+          Object.entries(moduleConfig.tabs).forEach(([tabId, tabConfig]) => {
+            // Vérifier si cet onglet supporte cette action
+            if (tabConfig.actions && tabConfig.actions.includes(action)) {
+              if (!tabs[tabId]) {
+                tabs[tabId] = { access: true, actions: [] };
+              }
+              // Activer l'accès à l'onglet si pas déjà fait
+              tabs[tabId].access = true;
+              // Ajouter l'action si pas déjà présente
+              if (!tabs[tabId].actions) tabs[tabId].actions = [];
+              if (!tabs[tabId].actions.includes(action)) {
+                tabs[tabId].actions = [...tabs[tabId].actions, action];
+              }
+            }
+          });
+          newPermissions.modules[moduleId].tabs = tabs;
+        }
       } else {
+        // Désactiver l'action au niveau module
         newPermissions.modules[moduleId].actions = currentActions.filter(a => a !== action);
         
         // Propager la désactivation aux tabs
@@ -589,11 +627,13 @@ const GestionTypesAcces = ({ tenantSlug, toast }) => {
                                 {moduleConfig.actions.map(action => {
                                   const ActionIcon = ACTION_ICONS[action] || Eye;
                                   const isEnabled = isModuleActionEnabled(moduleId, action);
+                                  const actionDescription = getActionDescription(moduleId, action);
                                   
                                   return (
                                     <label
                                       key={action}
                                       onClick={(e) => e.stopPropagation()}
+                                      title={actionDescription}
                                       style={{
                                         display: 'flex',
                                         alignItems: 'center',
@@ -678,6 +718,7 @@ const GestionTypesAcces = ({ tenantSlug, toast }) => {
                                           const ActionIcon = ACTION_ICONS[action] || Eye;
                                           const isEnabled = isTabActionEnabled(moduleId, tabId, action);
                                           const moduleHasAction = isModuleActionEnabled(moduleId, action) || action === 'voir';
+                                          const actionDescription = getActionDescription(moduleId, action);
                                           
                                           // L'action n'est disponible que si le module l'autorise
                                           const canEnable = moduleHasAction || action === 'voir' || 
@@ -697,7 +738,7 @@ const GestionTypesAcces = ({ tenantSlug, toast }) => {
                                                 fontSize: '0.7rem',
                                                 opacity: canEnable ? 1 : 0.5
                                               }}
-                                              title={!canEnable ? `Action "${action}" non autorisée au niveau module` : ''}
+                                              title={!canEnable ? `Action "${action}" non autorisée au niveau module` : actionDescription}
                                             >
                                               {canEdit && (
                                                 <input
