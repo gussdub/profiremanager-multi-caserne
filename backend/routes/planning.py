@@ -4507,26 +4507,6 @@ async def generer_excel_audit(assignations, user_map, type_garde_map, tenant, mo
 # Endpoint pour obtenir les statistiques personnelles mensuelles
 @router.get("/{tenant_slug}/users/{user_id}/stats-mensuelles")
 
-# POST reinitialiser
-@router.post("/planning/reinitialiser")
-async def reinitialiser_planning(current_user: User = Depends(get_current_user)):
-    # Cette opération nécessite admin - pas de tenant spécifique
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès refusé - Opération admin uniquement")
-    
-    try:
-        # Supprimer toutes les assignations
-        result = await db.assignations.delete_many({})
-        
-        return {
-            "message": "Planning réinitialisé avec succès",
-            "assignations_supprimees": result.deleted_count
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur réinitialisation: {str(e)}")
-
-
 # GET parametres/validation-planning
 @router.get("/{tenant_slug}/parametres/validation-planning")
 async def get_parametres_validation(tenant_slug: str, current_user: User = Depends(get_current_user)):
