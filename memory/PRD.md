@@ -50,6 +50,63 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 - `/app/backend/routes/planning.py` - Endpoints et logique de filtrage
 - `/app/frontend/src/components/Planning.jsx` - UI brouillon
 
+### NEW - Échelle Salariale et Primes (15 Mars 2026)
+**Statut:** ✅ TERMINÉ ET VALIDÉ PAR L'UTILISATEUR
+
+**Objectif:** Permettre la gestion des grilles salariales par échelon d'ancienneté, des primes par grade, et de la prime fonction supérieure.
+
+**Fonctionnalités implémentées:**
+
+1. **Backend - Modèle Échelle Salariale:**
+   - Collection `echelles_salariales` par tenant
+   - Échelons configurables (nombre illimité)
+   - Taux d'indexation annuelle configurable
+   - Prime fonction supérieure (%)
+   - Primes par grade (%) stockées dans collection `grades`
+
+2. **Backend - Nouveaux endpoints:**
+   - `GET /{tenant}/echelle-salariale` - Récupérer la grille
+   - `POST /{tenant}/echelle-salariale` - Créer/modifier la grille
+   - `POST /{tenant}/echelle-salariale/generer-annee` - Générer taux indexés pour nouvelle année
+   - `PUT /{tenant}/grades/{id}/prime` - Définir la prime % par grade
+   - `GET /{tenant}/users/{id}/salaire` - Calculer le salaire d'un employé
+   - `PUT /{tenant}/users/{id}/echelon` - Modifier l'échelon d'embauche
+
+3. **Calcul automatique de l'échelon:**
+   - Formule: `Échelon actuel = Échelon d'embauche + Années complètes depuis embauche`
+   - Permet d'embaucher à un échelon supérieur (ex: échelon 3)
+   - Progression automatique chaque année
+   - Plafonné au dernier échelon de la grille
+
+4. **Frontend - Paramètres > Grades:**
+   - Sous-onglet "Grades" pour la gestion des grades
+   - Sous-onglet "Échelle salariale" pour la grille et primes
+   - Interface pour ajouter/modifier/supprimer des échelons
+   - Configuration du taux d'indexation
+   - Configuration de la prime fonction supérieure
+   - Gestion des primes par grade (%)
+   - Bouton "Générer taux XXXX" avec aperçu des nouveaux taux
+
+5. **Frontend - Fiche Employé (Personnel):**
+   - Section "💰 Rémunération" affichant:
+     - Ancienneté calculée
+     - Échelon actuel (avec possibilité de modifier l'échelon d'embauche)
+     - Taux horaire de base
+     - Prime de grade (si applicable)
+     - Taux horaire final
+   - Permission RBAC `personnel-modifier` requise pour changer l'échelon
+
+6. **Intégration Module Paie:**
+   - La prime fonction supérieure est lue depuis l'échelle salariale
+   - Appliquée automatiquement quand un employé FS occupe un poste supérieur
+
+**Fichiers modifiés/créés:**
+- `/app/backend/routes/competences_grades.py` - Nouveaux endpoints
+- `/app/frontend/src/components/ParametresGrades.jsx` - Nouveau composant
+- `/app/frontend/src/components/Personnel.jsx` - Section Rémunération
+- `/app/frontend/src/components/Parametres.js` - Intégration
+- `/app/backend/routes/paie_complet.py` - Lecture prime FS depuis échelle
+
 ### Module Points d'Eau / Approvisionnement
 - Gestion des bornes fontaines, bornes sèches et points d'eau statiques
 - Carte interactive avec Leaflet
@@ -59,6 +116,40 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 ### Module Personnel
 - Gestion des employés par tenant
 - Attribution des équipes de garde
+- **Section Rémunération** dans la fiche employé avec calcul automatique du salaire
+
+### NEW - Améliorations RBAC et UI (15 Mars 2026)
+**Statut:** ✅ TERMINÉ
+
+**Améliorations apportées:**
+
+1. **Tooltips descriptifs sur les permissions:**
+   - Au survol d'une action (Voir, Modifier, etc.), une description apparaît
+   - Descriptions spécifiques par module (ex: "Disponibilités - Modifier" explique le bypass de blocage)
+
+2. **Propagation automatique des permissions:**
+   - Quand on active une action au niveau module, elle s'active automatiquement sur tous les sous-onglets compatibles
+   - Permet de désélectionner ensuite individuellement si nécessaire
+
+3. **Nettoyage Paramètres Disponibilités:**
+   - Suppression de la section "Exceptions et permissions" redondante
+   - Les permissions sont maintenant gérées uniquement via RBAC
+
+4. **Historique des emails:**
+   - Ajout des types d'emails manquants dans les filtres et labels:
+     - Rappel Disponibilités (Auto/Manuel)
+     - Alerte Inspection, Planning Publié
+     - Alerte EPI, Rappel Inspection EPI
+
+5. **Réorganisation actions "Disponibilités":**
+   - Action "Modifier" déplacée de "Mes disponibilités" vers "Disponibilités de l'équipe"
+   - Plus cohérent car "Modifier" concerne les disponibilités des autres
+
+**Fichiers modifiés:**
+- `/app/backend/routes/access_types.py` - Descriptions des actions
+- `/app/frontend/src/components/parametres/GestionTypesAcces.jsx` - Tooltips et propagation
+- `/app/frontend/src/components/ParametresDisponibilites.jsx` - Nettoyage UI
+- `/app/frontend/src/components/EmailsHistory.jsx` - Types d'emails
 
 ### NEW - Alertes EPI basées sur fréquence d'inspection (15 Mars 2026)
 **Statut:** ✅ TERMINÉ
