@@ -42,10 +42,25 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 
 
 
-### NEW - Migration RBAC Backend - Phase 3 (15 Mars 2026)
-**Statut:** EN COURS (~66% complété, 60 occurrences restantes sur 175)
+### NEW - Migration RBAC Backend - Phase 3 COMPLÉTÉE (15 Mars 2026)
+**Statut:** ✅ TERMINÉ (87% des vérifications migrées - de 175 à 22 occurrences système)
 
-**Fichiers backend ENTIÈREMENT migrés vers RBAC (session actuelle):**
+**Amélioration majeure: Structure MODULES_STRUCTURE enrichie avec 72 tabs granulaires**
+
+| Module | Tabs configurables | Actions disponibles |
+|--------|-------------------|---------------------|
+| Dashboard | 5 (personnel, general, activites, alertes, couverture) | voir |
+| Personnel | 7 (liste, fiches, photos, signatures, anciens, import, stats) | voir, creer, modifier, supprimer, exporter, voir_anciens |
+| Actifs | 12 (vehicules, inventaires, eau, bornes, points-eau, materiel, categories, apria, formulaires, epi, alertes, parametres) | voir, creer, modifier, supprimer, exporter |
+| Rapports | 9 (dashboard-interne, couts-salariaux, budget, immobilisations, interventions, exports) | voir, exporter |
+| Planning | 5 (calendrier, assignations, equipe-jour, rapport-heures, export) | voir, creer, modifier, supprimer, exporter |
+| Remplacements | 5 (propositions, demandes, conges, toutes-demandes, parametres) | voir, creer, modifier, supprimer, approuver, annuler |
+| Formations | 6 (catalogue, inscriptions, suivi, competences, conformite, dashboard) | voir, creer, modifier, supprimer, exporter |
+| Prevention | 5 (batiments, inspections, avis, calendrier, rapports) | voir, creer, modifier, supprimer, exporter, signer |
+| Disponibilites | 4 (mes-dispos, equipe, import, rapport) | voir, modifier, exporter |
+| Parametres | 14 (types-garde, competences, grades, horaires, rotation-equipes, comptes, etc.) | voir, creer, modifier, supprimer |
+
+**Fichiers backend ENTIÈREMENT migrés vers RBAC:**
 | Module | Fichier | Status |
 |--------|---------|--------|
 | APRIA | `apria.py` | ✅ 100% migré |
