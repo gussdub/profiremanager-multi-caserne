@@ -94,6 +94,13 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   const [reactivateDate, setReactivateDate] = useState('');
   const [reactivateProcessing, setReactivateProcessing] = useState(false);
   
+  // État pour les informations salariales
+  const [salaireInfo, setSalaireInfo] = useState(null);
+  const [salaireLoading, setSalaireLoading] = useState(false);
+  const [editingEchelon, setEditingEchelon] = useState(false);
+  const [newEchelonEmbauche, setNewEchelonEmbauche] = useState(1);
+  const [echelleSalariale, setEchelleSalariale] = useState(null);
+  
   // État pour la photo de profil
   const [photoUploading, setPhotoUploading] = useState(false);
   const photoInputRef = React.useRef(null);
@@ -222,6 +229,50 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     refreshUsers();
   }, [tenantSlug]);
 
+  // Fonction pour charger les informations salariales d'un employé
+  const loadSalaireInfo = async (userId) => {
+    try {
+      setSalaireLoading(true);
+      const [salaireData, echelleData] = await Promise.all([
+        apiGet(tenantSlug, `/users/${userId}/salaire`),
+        apiGet(tenantSlug, '/echelle-salariale')
+      ]);
+      setSalaireInfo(salaireData);
+      setEchelleSalariale(echelleData);
+      setNewEchelonEmbauche(salaireData.echelon_embauche || 1);
+    } catch (error) {
+      console.error('Erreur chargement salaire:', error);
+      setSalaireInfo(null);
+    } finally {
+      setSalaireLoading(false);
+    }
+  };
+
+  // Fonction pour mettre à jour l'échelon d'embauche
+  const handleUpdateEchelonEmbauche = async () => {
+    if (!selectedUser) return;
+    
+    try {
+      await apiPut(tenantSlug, `/users/${selectedUser.id}/echelon`, {
+        echelon_embauche: newEchelonEmbauche
+      });
+      toast({
+        title: "✅ Succès",
+        description: `Échelon d'embauche mis à jour à ${newEchelonEmbauche}`,
+        variant: "success"
+      });
+      setEditingEchelon(false);
+      // Recharger les infos salariales
+      loadSalaireInfo(selectedUser.id);
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.data?.detail || "Impossible de mettre à jour l'échelon",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleCreateUser = async () => {
     if (!newUser.nom || !newUser.prenom || !newUser.email) {
       toast({
@@ -286,7 +337,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
 
   const handleViewUser = async (user) => {
     setSelectedUser(user);
-    // Charger les EPI et validations de l'utilisateur
+    // Charger les EPI, validations et informations salariales de l'utilisateur
     try {
       const [episData, validationsData] = await Promise.all([
         apiGet(tenantSlug, `/epi/employe/${user.id}`),
@@ -294,6 +345,8 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       ]);
       setUserEPIs(episData || []);
       setUserValidations(validationsData || []);
+      // Charger les informations salariales
+      loadSalaireInfo(user.id);
       // Ouvrir le modal APRÈS avoir mis à jour les states
       setShowViewModal(true);
     } catch (error) {
@@ -2120,6 +2173,102 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         </div>
                       ) : (
                         <p className="no-data-text">Aucune taille renseignée</p>
+                      )}
+                    </div>
+
+                    {/* Section Rémunération */}
+                    <div className="detail-section detail-section-optimized" style={{ marginBottom: '1.5rem' }}>
+                      <h5 style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span>💰 Rémunération</span>
+                        {canModifyPersonnel && echelleSalariale?.echelons?.length > 0 && !editingEchelon && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => setEditingEchelon(true)}
+                            title="Modifier l'échelon d'embauche"
+                          >
+                            ✏️
+                          </Button>
+                        )}
+                      </h5>
+                      
+                      {salaireLoading ? (
+                        <p style={{ color: '#64748b', fontSize: '0.875rem' }}>Chargement...</p>
+                      ) : !echelleSalariale?.echelons?.length ? (
+                        <p style={{ color: '#64748b', fontSize: '0.875rem' }}>
+                          Échelle salariale non configurée.<br/>
+                          <span style={{ fontSize: '0.8rem' }}>Configurez-la dans Paramètres → Grades → Échelle salariale</span>
+                        </p>
+                      ) : salaireInfo ? (
+                        <div className="detail-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          <div className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
+                            <span className="detail-label" style={{ minWidth: '140px', color: '#64748b' }}>Ancienneté</span>
+                            <span className="detail-value" style={{ marginLeft: '1.5rem', textAlign: 'right', flex: 1 }}>
+                              {salaireInfo.anciennete_texte}
+                            </span>
+                          </div>
+                          
+                          <div className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: editingEchelon ? '#fef3c7' : '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem', border: editingEchelon ? '2px solid #f59e0b' : 'none' }}>
+                            <span className="detail-label" style={{ minWidth: '140px', color: '#64748b' }}>Échelon</span>
+                            {editingEchelon ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <select
+                                  value={newEchelonEmbauche}
+                                  onChange={(e) => setNewEchelonEmbauche(parseInt(e.target.value))}
+                                  style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }}
+                                >
+                                  {echelleSalariale.echelons.map(e => (
+                                    <option key={e.numero} value={e.numero}>
+                                      {e.numero} - {e.libelle}
+                                    </option>
+                                  ))}
+                                </select>
+                                <Button size="sm" onClick={handleUpdateEchelonEmbauche}>✓</Button>
+                                <Button size="sm" variant="ghost" onClick={() => setEditingEchelon(false)}>✕</Button>
+                              </div>
+                            ) : (
+                              <span className="detail-value" style={{ marginLeft: '1.5rem', textAlign: 'right', flex: 1 }}>
+                                <strong>{salaireInfo.echelon_actuel}</strong> ({salaireInfo.echelon_libelle})
+                                {salaireInfo.echelon_embauche !== 1 && (
+                                  <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: '0.5rem' }}>
+                                    (embauché à l'échelon {salaireInfo.echelon_embauche})
+                                  </span>
+                                )}
+                              </span>
+                            )}
+                          </div>
+                          
+                          <div className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
+                            <span className="detail-label" style={{ minWidth: '140px', color: '#64748b' }}>Taux horaire base</span>
+                            <span className="detail-value" style={{ marginLeft: '1.5rem', textAlign: 'right', flex: 1 }}>
+                              {salaireInfo.taux_horaire_base.toFixed(2)} $/h
+                            </span>
+                          </div>
+                          
+                          {salaireInfo.prime_grade_pourcentage > 0 && (
+                            <div className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f0fdf4', borderRadius: '6px', marginBottom: '0.5rem', border: '1px solid #bbf7d0' }}>
+                              <span className="detail-label" style={{ minWidth: '140px', color: '#059669' }}>
+                                Prime {salaireInfo.grade} (+{salaireInfo.prime_grade_pourcentage}%)
+                              </span>
+                              <span className="detail-value" style={{ marginLeft: '1.5rem', textAlign: 'right', flex: 1, color: '#059669' }}>
+                                +{salaireInfo.prime_grade_montant.toFixed(2)} $/h
+                              </span>
+                            </div>
+                          )}
+                          
+                          <div className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.75rem 0.85rem', background: '#059669', borderRadius: '6px', marginTop: '0.5rem' }}>
+                            <span style={{ color: 'white', fontWeight: '600' }}>Taux horaire final</span>
+                            <span style={{ color: 'white', fontWeight: '700', fontSize: '1.1rem' }}>
+                              {salaireInfo.taux_horaire_final.toFixed(2)} $/h
+                            </span>
+                          </div>
+                          
+                          <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.5rem', textAlign: 'right' }}>
+                            Référence: Grille {salaireInfo.annee_reference}
+                          </p>
+                        </div>
+                      ) : (
+                        <p style={{ color: '#64748b', fontSize: '0.875rem' }}>Informations non disponibles</p>
                       )}
                     </div>
                   </div>

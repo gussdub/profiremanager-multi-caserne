@@ -17,6 +17,14 @@ Routes Grades:
 - GET    /{tenant_slug}/grades                - Liste des grades
 - PUT    /{tenant_slug}/grades/{grade_id}     - Modifier un grade
 - DELETE /{tenant_slug}/grades/{grade_id}     - Supprimer un grade
+
+Routes Échelle Salariale:
+- GET    /{tenant_slug}/echelle-salariale              - Récupérer l'échelle salariale
+- POST   /{tenant_slug}/echelle-salariale              - Créer/mettre à jour l'échelle
+- POST   /{tenant_slug}/echelle-salariale/generer-annee - Générer les taux pour une nouvelle année
+- PUT    /{tenant_slug}/grades/{grade_id}/prime        - Définir la prime d'un grade
+- GET    /{tenant_slug}/users/{user_id}/salaire        - Calculer le salaire d'un employé
+- PUT    /{tenant_slug}/users/{user_id}/echelon        - Modifier l'échelon d'embauche d'un employé
 """
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -237,7 +245,7 @@ async def clean_invalid_competences(
             logger.info(f"🧹 Nettoyage: {user['prenom']} {user['nom']} - {removed} compétence(s) invalide(s) supprimée(s)")
     
     return {
-        "message": f"Nettoyage terminé",
+        "message": "Nettoyage terminé",
         "users_cleaned": cleaned_count,
         "invalid_competences_removed": invalid_removed
     }
@@ -361,3 +369,380 @@ async def delete_grade(
         raise HTTPException(status_code=404, detail="Grade non trouvé")
     
     return {"message": "Grade supprimé avec succès"}
+
+
+# ==================== MODÈLES ÉCHELLE SALARIALE ====================
+
+class Echelon(BaseModel):
+    """Un échelon dans l'échelle salariale"""
+    numero: int  # 1, 2, 3, etc.
+    libelle: str  # "1ère année", "2ème année", etc.
+    taux_horaire: float  # Taux en dollars
+
+
+class EchelleSalariale(BaseModel):
+    """Échelle salariale complète pour un tenant"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    annee: int  # Année de référence (ex: 2026)
+    taux_indexation: float = 3.0  # Pourcentage d'indexation annuelle
+    echelons: List[Echelon] = []
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class EchelleSalarialeCreate(BaseModel):
+    annee: int
+    taux_indexation: float = 3.0
+    echelons: List[Echelon] = []
+
+
+class EchelonUpdate(BaseModel):
+    numero: Optional[int] = None
+    libelle: Optional[str] = None
+    taux_horaire: Optional[float] = None
+
+
+class PrimeGradeUpdate(BaseModel):
+    prime_pourcentage: float = 0.0  # Pourcentage de prime (ex: 10 pour +10%)
+
+
+class EchelonEmbaucheUpdate(BaseModel):
+    echelon_embauche: int  # Échelon de départ à l'embauche
+
+
+class SalaireEmployeResponse(BaseModel):
+    """Réponse avec les informations salariales d'un employé"""
+    user_id: str
+    nom_complet: str
+    grade: str
+    date_embauche: Optional[str]
+    anciennete_mois: int
+    anciennete_texte: str
+    echelon_embauche: int
+    echelon_actuel: int
+    echelon_libelle: str
+    taux_horaire_base: float
+    prime_grade_pourcentage: float
+    prime_grade_montant: float
+    taux_horaire_final: float
+    annee_reference: int
+
+
+# ==================== ROUTES ÉCHELLE SALARIALE ====================
+
+@router.get("/{tenant_slug}/echelle-salariale")
+async def get_echelle_salariale(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère l'échelle salariale du tenant"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    echelle = await db.echelles_salariales.find_one(
+        {"tenant_id": tenant.id},
+        {"_id": 0}
+    )
+    
+    if not echelle:
+        # Retourner une échelle vide par défaut
+        return {
+            "id": None,
+            "tenant_id": tenant.id,
+            "annee": datetime.now().year,
+            "taux_indexation": 3.0,
+            "echelons": []
+        }
+    
+    return echelle
+
+
+@router.post("/{tenant_slug}/echelle-salariale")
+async def create_or_update_echelle_salariale(
+    tenant_slug: str,
+    echelle_data: EchelleSalarialeCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Crée ou met à jour l'échelle salariale du tenant"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de modification sur le module parametres
+    await require_permission(tenant.id, current_user, "parametres", "modifier")
+    
+    existing = await db.echelles_salariales.find_one({"tenant_id": tenant.id})
+    
+    now = datetime.now(timezone.utc).isoformat()
+    
+    if existing:
+        # Mise à jour
+        update_data = {
+            "annee": echelle_data.annee,
+            "taux_indexation": echelle_data.taux_indexation,
+            "echelons": [e.dict() for e in echelle_data.echelons],
+            "updated_at": now
+        }
+        await db.echelles_salariales.update_one(
+            {"tenant_id": tenant.id},
+            {"$set": update_data}
+        )
+        return {"message": "Échelle salariale mise à jour", "id": existing["id"]}
+    else:
+        # Création
+        echelle = {
+            "id": str(uuid.uuid4()),
+            "tenant_id": tenant.id,
+            "annee": echelle_data.annee,
+            "taux_indexation": echelle_data.taux_indexation,
+            "echelons": [e.dict() for e in echelle_data.echelons],
+            "created_at": now,
+            "updated_at": now
+        }
+        await db.echelles_salariales.insert_one(echelle)
+        return {"message": "Échelle salariale créée", "id": echelle["id"]}
+
+
+@router.post("/{tenant_slug}/echelle-salariale/generer-annee")
+async def generer_taux_nouvelle_annee(
+    tenant_slug: str,
+    nouvelle_annee: int,
+    current_user: User = Depends(get_current_user)
+):
+    """Génère les taux pour une nouvelle année en appliquant l'indexation"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de modification sur le module parametres
+    await require_permission(tenant.id, current_user, "parametres", "modifier")
+    
+    echelle = await db.echelles_salariales.find_one({"tenant_id": tenant.id})
+    
+    if not echelle or not echelle.get("echelons"):
+        raise HTTPException(status_code=400, detail="Aucune échelle salariale existante")
+    
+    if nouvelle_annee <= echelle.get("annee", 0):
+        raise HTTPException(
+            status_code=400, 
+            detail=f"L'année {nouvelle_annee} doit être supérieure à l'année actuelle ({echelle.get('annee')})"
+        )
+    
+    # Calculer le facteur d'indexation
+    taux_indexation = echelle.get("taux_indexation", 3.0) / 100
+    annees_diff = nouvelle_annee - echelle.get("annee", datetime.now().year)
+    facteur = (1 + taux_indexation) ** annees_diff
+    
+    # Appliquer l'indexation à chaque échelon
+    nouveaux_echelons = []
+    for echelon in echelle.get("echelons", []):
+        nouveau_taux = round(echelon["taux_horaire"] * facteur, 2)
+        nouveaux_echelons.append({
+            "numero": echelon["numero"],
+            "libelle": echelon["libelle"],
+            "taux_horaire": nouveau_taux
+        })
+    
+    # Mettre à jour l'échelle
+    await db.echelles_salariales.update_one(
+        {"tenant_id": tenant.id},
+        {
+            "$set": {
+                "annee": nouvelle_annee,
+                "echelons": nouveaux_echelons,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+        }
+    )
+    
+    return {
+        "message": f"Taux générés pour {nouvelle_annee} avec indexation de {echelle.get('taux_indexation', 3.0)}%",
+        "nouvelle_annee": nouvelle_annee,
+        "echelons": nouveaux_echelons
+    }
+
+
+@router.put("/{tenant_slug}/grades/{grade_id}/prime")
+async def update_grade_prime(
+    tenant_slug: str,
+    grade_id: str,
+    prime_data: PrimeGradeUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour la prime (%) associée à un grade"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de modification sur le module parametres
+    await require_permission(tenant.id, current_user, "parametres", "modifier")
+    
+    # Vérifier que le grade existe
+    grade = await db.grades.find_one({"id": grade_id, "tenant_id": tenant.id})
+    if not grade:
+        raise HTTPException(status_code=404, detail="Grade non trouvé")
+    
+    # Mettre à jour la prime
+    await db.grades.update_one(
+        {"id": grade_id, "tenant_id": tenant.id},
+        {
+            "$set": {
+                "prime_pourcentage": prime_data.prime_pourcentage,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+        }
+    )
+    
+    return {
+        "message": f"Prime de {prime_data.prime_pourcentage}% définie pour le grade {grade['nom']}",
+        "grade_id": grade_id,
+        "prime_pourcentage": prime_data.prime_pourcentage
+    }
+
+
+@router.get("/{tenant_slug}/users/{user_id}/salaire", response_model=SalaireEmployeResponse)
+async def get_salaire_employe(
+    tenant_slug: str,
+    user_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Calcule et retourne les informations salariales d'un employé"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer l'employé
+    user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
+    if not user:
+        raise HTTPException(status_code=404, detail="Employé non trouvé")
+    
+    # Récupérer l'échelle salariale
+    echelle = await db.echelles_salariales.find_one({"tenant_id": tenant.id})
+    
+    # Récupérer le grade pour la prime
+    grade_nom = user.get("grade", "")
+    grade = await db.grades.find_one({"nom": grade_nom, "tenant_id": tenant.id})
+    prime_pourcentage = grade.get("prime_pourcentage", 0) if grade else 0
+    
+    # Calculer l'ancienneté
+    date_embauche_str = user.get("date_embauche")
+    anciennete_mois = 0
+    anciennete_texte = "Non définie"
+    
+    if date_embauche_str:
+        try:
+            if isinstance(date_embauche_str, str):
+                # Essayer plusieurs formats de date
+                date_embauche = None
+                formats_to_try = [
+                    "%Y-%m-%d",      # ISO format: 2026-01-29
+                    "%d/%m/%Y",      # FR format: 29/01/2026
+                    "%d-%m-%Y",      # FR format with dashes: 29-01-2026
+                    "%Y-%m-%dT%H:%M:%S",  # ISO datetime
+                    "%Y-%m-%dT%H:%M:%SZ", # ISO datetime with Z
+                ]
+                for fmt in formats_to_try:
+                    try:
+                        date_embauche = datetime.strptime(date_embauche_str.split('T')[0] if 'T' in date_embauche_str else date_embauche_str, fmt.split('T')[0])
+                        break
+                    except ValueError:
+                        continue
+                
+                if date_embauche is None:
+                    # Dernier essai avec fromisoformat
+                    date_embauche = datetime.fromisoformat(date_embauche_str.replace('Z', '+00:00'))
+            else:
+                date_embauche = date_embauche_str
+            
+            now = datetime.now(timezone.utc)
+            if date_embauche.tzinfo is None:
+                date_embauche = date_embauche.replace(tzinfo=timezone.utc)
+            diff = now - date_embauche
+            anciennete_mois = int(diff.days / 30.44)  # Moyenne de jours par mois
+            
+            annees = anciennete_mois // 12
+            mois = anciennete_mois % 12
+            if annees > 0:
+                anciennete_texte = f"{annees} an{'s' if annees > 1 else ''}"
+                if mois > 0:
+                    anciennete_texte += f" {mois} mois"
+            else:
+                anciennete_texte = f"{mois} mois"
+        except Exception as e:
+            logger.warning(f"Erreur parsing date_embauche '{date_embauche_str}': {e}")
+    
+    # Déterminer l'échelon
+    echelon_embauche = user.get("echelon_embauche", 1)
+    annees_depuis_embauche = anciennete_mois // 12
+    echelon_actuel = echelon_embauche + annees_depuis_embauche
+    
+    # Plafonner à l'échelon max si échelle existe
+    echelons = echelle.get("echelons", []) if echelle else []
+    echelon_max = max([e["numero"] for e in echelons]) if echelons else 1
+    echelon_actuel = min(echelon_actuel, echelon_max)
+    
+    # Trouver le taux horaire de base
+    taux_horaire_base = 0.0
+    echelon_libelle = f"Échelon {echelon_actuel}"
+    
+    for e in echelons:
+        if e["numero"] == echelon_actuel:
+            taux_horaire_base = e["taux_horaire"]
+            echelon_libelle = e["libelle"]
+            break
+    
+    # Calculer la prime et le taux final
+    prime_montant = round(taux_horaire_base * (prime_pourcentage / 100), 2)
+    taux_horaire_final = round(taux_horaire_base + prime_montant, 2)
+    
+    return SalaireEmployeResponse(
+        user_id=user_id,
+        nom_complet=f"{user.get('prenom', '')} {user.get('nom', '')}".strip(),
+        grade=grade_nom,
+        date_embauche=date_embauche_str,
+        anciennete_mois=anciennete_mois,
+        anciennete_texte=anciennete_texte,
+        echelon_embauche=echelon_embauche,
+        echelon_actuel=echelon_actuel,
+        echelon_libelle=echelon_libelle,
+        taux_horaire_base=taux_horaire_base,
+        prime_grade_pourcentage=prime_pourcentage,
+        prime_grade_montant=prime_montant,
+        taux_horaire_final=taux_horaire_final,
+        annee_reference=echelle.get("annee", datetime.now().year) if echelle else datetime.now().year
+    )
+
+
+@router.put("/{tenant_slug}/users/{user_id}/echelon")
+async def update_echelon_embauche(
+    tenant_slug: str,
+    user_id: str,
+    echelon_data: EchelonEmbaucheUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Met à jour l'échelon d'embauche d'un employé"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # RBAC: Vérifier permission de modification sur le module personnel
+    # On utilise une action spéciale "modifier_salaire" ou simplement "modifier"
+    await require_permission(tenant.id, current_user, "personnel", "modifier")
+    
+    # Vérifier que l'employé existe
+    user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
+    if not user:
+        raise HTTPException(status_code=404, detail="Employé non trouvé")
+    
+    # Vérifier que l'échelon est valide
+    echelle = await db.echelles_salariales.find_one({"tenant_id": tenant.id})
+    if echelle and echelle.get("echelons"):
+        echelons_valides = [e["numero"] for e in echelle["echelons"]]
+        if echelon_data.echelon_embauche not in echelons_valides:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Échelon invalide. Échelons disponibles: {echelons_valides}"
+            )
+    
+    # Mettre à jour l'échelon
+    await db.users.update_one(
+        {"id": user_id, "tenant_id": tenant.id},
+        {"$set": {"echelon_embauche": echelon_data.echelon_embauche}}
+    )
+    
+    return {
+        "message": f"Échelon d'embauche mis à jour à {echelon_data.echelon_embauche}",
+        "user_id": user_id,
+        "echelon_embauche": echelon_data.echelon_embauche
+    }
+

@@ -78,6 +78,7 @@ MODULE_ACTION_DESCRIPTIONS = {
         "signer": "Permet de signer électroniquement les rapports d'intervention"
     },
     "personnel": {
+        "modifier": "Permet de modifier les fiches employés, y compris l'échelon salarial d'embauche",
         "voir_anciens": "Permet de consulter les fiches des employés inactifs/partis"
     },
     "parametres": {

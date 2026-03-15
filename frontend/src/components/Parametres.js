@@ -20,6 +20,7 @@ const ParametresHorairesPersonnalises = lazy(() => import("./ParametresHorairesP
 const EmailsHistory = lazy(() => import("./EmailsHistory.jsx"));
 const ParametresSecteurs = lazy(() => import("./ParametresSecteurs.jsx"));
 const GestionTypesAcces = lazy(() => import("./parametres/GestionTypesAcces.jsx"));
+const ParametresGrades = lazy(() => import("./ParametresGrades.jsx"));
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -1394,7 +1395,7 @@ const Parametres = ({ user, tenantSlug }) => {
         {[
           { id: 'types-garde', icon: '🚒', title: 'Gardes', desc: 'Types de gardes' },
           { id: 'competences', icon: '📜', title: 'Compétences', desc: 'Certifications' },
-          { id: 'grades', icon: '🎖️', title: 'Grades', desc: 'Hiérarchie' },
+          { id: 'grades', icon: '🎖️', title: 'Grades', desc: 'Grades et échelle salariale' },
           { id: 'attribution', icon: '📅', title: 'Horaire', desc: 'Attribution auto' },
           { id: 'rotation-equipes', icon: '🔄', title: 'Rotation', desc: 'Équipes & horaires' },
           { id: 'comptes', icon: '🔐', title: 'Comptes et Accès', desc: 'Utilisateurs et permissions' },
@@ -1803,58 +1804,17 @@ const Parametres = ({ user, tenantSlug }) => {
         )}
 
         {activeTab === 'grades' && (
-          <div className="grades-tab">
-            <div className="tab-header">
-              <div>
-                <h2>Gestion des grades</h2>
-                <p>Définissez les grades hiérarchiques utilisés dans votre organisation</p>
-              </div>
-              <Button 
-                variant="default" 
-                onClick={() => setShowCreateGradeModal(true)}
-                data-testid="create-grade-btn"
-              >
-                + Nouveau Grade
-              </Button>
-            </div>
-
-            <div className="grades-grid">
-              {grades.map(grade => (
-                <div key={grade.id} className="grade-card" data-testid={`grade-${grade.id}`}>
-                  <div className="grade-header">
-                    <div className="grade-info">
-                      <h3>
-                        {grade.nom}
-                        {grade.est_officier && <span className="badge-officier">👮 Officier</span>}
-                      </h3>
-                      <div className="grade-details">
-                        <span className="detail-item">📊 Niveau hiérarchique: {grade.niveau_hierarchique}</span>
-                      </div>
-                    </div>
-                    <div className="grade-actions">
-                      <Button 
-                        variant="ghost" 
-                        onClick={() => handleEditGrade(grade)}
-                        data-testid={`edit-grade-${grade.id}`}
-                        title="Modifier ce grade"
-                      >
-                        ✏️ Modifier
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        className="danger" 
-                        onClick={() => handleDeleteGrade(grade.id)}
-                        data-testid={`delete-grade-${grade.id}`}
-                        title="Supprimer ce grade"
-                      >
-                        🗑️ Supprimer
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <Suspense fallback={<div style={{ padding: '40px', textAlign: 'center' }}>Chargement...</div>}>
+            <ParametresGrades
+              tenantSlug={tenantSlug}
+              toast={toast}
+              grades={grades}
+              setGrades={setGrades}
+              handleEditGrade={handleEditGrade}
+              handleDeleteGrade={handleDeleteGrade}
+              setShowCreateGradeModal={setShowCreateGradeModal}
+            />
+          </Suspense>
         )}
 
 
