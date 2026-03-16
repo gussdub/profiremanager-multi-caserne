@@ -45,12 +45,17 @@ class DemandeRemplacement(BaseModel):
     approuve_par_id: Optional[str] = None
     approuve_par_nom: Optional[str] = None
     date_approbation: Optional[str] = None
+    # Traçabilité: qui a créé la demande (si différent du demandeur)
+    created_by_id: Optional[str] = None
+    created_by_nom: Optional[str] = None
 
 
 class DemandeRemplacementCreate(BaseModel):
     type_garde_id: str
     date: str
     raison: str
+    # Optionnel: pour créer une demande au nom d'un autre employé (admin uniquement)
+    target_user_id: Optional[str] = None
 
 
 class NotificationRemplacement(BaseModel):

@@ -86,7 +86,9 @@ const Remplacements = () => {
     canCreateRemplacement: hasModuleAction('remplacements', 'creer'),
     canEditRemplacement: hasModuleAction('remplacements', 'modifier'),
     canDeleteRemplacement: hasModuleAction('remplacements', 'supprimer'),
-    canApproveRemplacement: hasModuleAction('remplacements', 'approuver')
+    canApproveRemplacement: hasModuleAction('remplacements', 'approuver'),
+    // Permission pour créer des demandes pour d'autres employés
+    canCreateForOthers: hasModuleAction('remplacements', 'modifier')
   };
 
   // Hooks personnalisés
@@ -112,10 +114,10 @@ const Remplacements = () => {
   const [loadingImpact, setLoadingImpact] = useState(false);
 
   const [newDemande, setNewDemande] = useState({
-    type_garde_id: '', date: getLocalDateString(), raison: '', priorite: 'normale'
+    type_garde_id: '', date: getLocalDateString(), raison: '', priorite: 'normale', target_user_id: null
   });
   const [newConge, setNewConge] = useState({
-    type_conge: '', date_debut: getLocalDateString(), date_fin: getLocalDateString(), raison: '', priorite: 'normale'
+    type_conge: '', date_debut: getLocalDateString(), date_fin: getLocalDateString(), raison: '', priorite: 'normale', target_user_id: null
   });
 
   // Événements de navigation (depuis notifications)
@@ -190,14 +192,14 @@ const Remplacements = () => {
   const onCreateRemplacement = async () => {
     const success = await handlers.handleCreateRemplacement(newDemande, () => {
       setShowCreateRemplacementModal(false);
-      setNewDemande({ type_garde_id: '', date: getLocalDateString(), raison: '', priorite: 'normale' });
+      setNewDemande({ type_garde_id: '', date: getLocalDateString(), raison: '', priorite: 'normale', target_user_id: null });
     });
   };
 
   const onCreateConge = async () => {
     const success = await handlers.handleCreateConge(newConge, () => {
       setShowCreateCongeModal(false);
-      setNewConge({ type_conge: '', date_debut: getLocalDateString(), date_fin: getLocalDateString(), raison: '', priorite: 'normale' });
+      setNewConge({ type_conge: '', date_debut: getLocalDateString(), date_fin: getLocalDateString(), raison: '', priorite: 'normale', target_user_id: null });
     });
   };
 
@@ -414,19 +416,31 @@ const Remplacements = () => {
       {/* Modals */}
       <CreateRemplacementModal
         show={showCreateRemplacementModal}
-        onClose={() => setShowCreateRemplacementModal(false)}
+        onClose={() => {
+          setShowCreateRemplacementModal(false);
+          setNewDemande({ type_garde_id: '', date: getLocalDateString(), raison: '', priorite: 'normale', target_user_id: null });
+        }}
         newDemande={newDemande}
         setNewDemande={setNewDemande}
         typesGarde={typesGarde}
         onSubmit={onCreateRemplacement}
+        canCreateForOthers={permissions.canCreateForOthers}
+        users={users}
+        currentUserId={user?.id}
       />
 
       <CreateCongeModal
         show={showCreateCongeModal}
-        onClose={() => setShowCreateCongeModal(false)}
+        onClose={() => {
+          setShowCreateCongeModal(false);
+          setNewConge({ type_conge: '', date_debut: getLocalDateString(), date_fin: getLocalDateString(), raison: '', priorite: 'normale', target_user_id: null });
+        }}
         newConge={newConge}
         setNewConge={setNewConge}
         onSubmit={onCreateConge}
+        canCreateForOthers={permissions.canCreateForOthers}
+        users={users}
+        currentUserId={user?.id}
       />
 
       {/* Modal d'export */}

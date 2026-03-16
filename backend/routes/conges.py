@@ -57,6 +57,9 @@ class DemandeCongé(BaseModel):
     date_approbation: Optional[str] = None
     commentaire_approbation: str = ""
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    # Traçabilité: qui a créé la demande (si différent du demandeur)
+    created_by_id: Optional[str] = None
+    created_by_nom: Optional[str] = None
 
 
 class DemandeCongeCreate(BaseModel):
@@ -66,6 +69,8 @@ class DemandeCongeCreate(BaseModel):
     date_fin: str
     raison: str = ""
     statut: str = "en_attente"
+    # Optionnel: pour créer une demande au nom d'un autre employé (admin uniquement)
+    target_user_id: Optional[str] = None
 
 
 # ==================== ROUTES ====================
@@ -76,8 +81,44 @@ async def create_demande_conge(
     demande: DemandeCongeCreate,
     current_user: User = Depends(get_current_user)
 ):
-    """Crée une nouvelle demande de congé"""
+    """Crée une nouvelle demande de congé.
+    
+    Si target_user_id est fourni et l'utilisateur courant a la permission 'remplacements.modifier',
+    la demande sera créée au nom de l'employé ciblé ET automatiquement approuvée.
+    """
     tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Déterminer le demandeur effectif
+    demandeur_id = current_user.id
+    created_by_id = None
+    created_by_nom = None
+    auto_approve = False
+    
+    # Si target_user_id est fourni, vérifier la permission et utiliser cet utilisateur comme demandeur
+    if demande.target_user_id and demande.target_user_id != current_user.id:
+        # Vérifier que l'utilisateur courant a la permission de créer pour autrui
+        can_create_for_others = await user_has_module_action(tenant.id, current_user, "remplacements", "modifier")
+        if not can_create_for_others:
+            raise HTTPException(
+                status_code=403, 
+                detail="Vous n'avez pas la permission de créer des demandes de congé pour d'autres employés."
+            )
+        
+        # Vérifier que l'utilisateur cible existe et est actif
+        target_user = await db.users.find_one({
+            "id": demande.target_user_id, 
+            "tenant_id": tenant.id,
+            "actif": {"$ne": False}
+        })
+        if not target_user:
+            raise HTTPException(status_code=404, detail="Employé cible non trouvé ou inactif")
+        
+        demandeur_id = demande.target_user_id
+        created_by_id = current_user.id
+        created_by_nom = f"{current_user.prenom} {current_user.nom}"
+        auto_approve = True  # Les congés créés par un admin pour un autre sont auto-approuvés
+        
+        logger.info(f"📋 Création de demande de congé pour {target_user.get('prenom')} {target_user.get('nom')} par {current_user.prenom} {current_user.nom}")
     
     # Calculer le nombre de jours
     date_debut = datetime.strptime(demande.date_debut, "%Y-%m-%d")
@@ -85,40 +126,101 @@ async def create_demande_conge(
     nombre_jours = (date_fin - date_debut).days + 1
     
     demande_dict = demande.dict()
+    demande_dict.pop("target_user_id", None)  # Retirer le champ temporaire
     demande_dict["tenant_id"] = tenant.id
-    demande_dict["demandeur_id"] = current_user.id
+    demande_dict["demandeur_id"] = demandeur_id
     demande_dict["nombre_jours"] = nombre_jours
+    
+    # Ajouter la traçabilité si créé par un autre utilisateur
+    if created_by_id:
+        demande_dict["created_by_id"] = created_by_id
+        demande_dict["created_by_nom"] = created_by_nom
+    
+    # Auto-approbation si créé par un admin pour un autre employé
+    if auto_approve:
+        demande_dict["statut"] = "approuve"
+        demande_dict["approuve_par"] = current_user.id
+        demande_dict["date_approbation"] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        demande_dict["commentaire_approbation"] = f"Auto-approuvé (créé par {created_by_nom})"
     
     demande_obj = DemandeCongé(**demande_dict)
     await db.demandes_conge.insert_one(demande_obj.dict())
     
-    # Créer notification pour approbation - notifier tous les superviseurs/admins sauf le demandeur
-    superviseurs_admins = await db.users.find({
-        "tenant_id": tenant.id,
-        "role": {"$in": ["superviseur", "admin"]},
-        "id": {"$ne": current_user.id}  # Exclure le demandeur lui-même
-    }).to_list(100)
+    # Récupérer le nom du demandeur effectif pour les notifications
+    if demandeur_id != current_user.id:
+        demandeur_user = await db.users.find_one({"id": demandeur_id, "tenant_id": tenant.id})
+        demandeur_prenom = demandeur_user.get("prenom", "") if demandeur_user else ""
+        demandeur_nom_complet = demandeur_user.get("nom", "") if demandeur_user else ""
+    else:
+        demandeur_prenom = current_user.prenom
+        demandeur_nom_complet = current_user.nom
     
-    for superviseur in superviseurs_admins:
+    if auto_approve:
+        # Si auto-approuvé, appliquer directement les effets (suppression assignations, etc.)
+        # ========== RETIRER LES ASSIGNATIONS DU PLANNING ==========
+        deleted_assignations = await db.assignations.delete_many({
+            "tenant_id": tenant.id,
+            "user_id": demandeur_id,
+            "date": {
+                "$gte": demande.date_debut,
+                "$lte": demande.date_fin
+            }
+        })
+        
+        if deleted_assignations.deleted_count > 0:
+            logger.info(f"🗑️ {deleted_assignations.deleted_count} assignation(s) supprimée(s) pour {demandeur_id} ({demande.date_debut} → {demande.date_fin})")
+            
+            # Broadcaster la mise à jour du planning
+            from routes.websocket import broadcast_planning_update
+            asyncio.create_task(broadcast_planning_update(tenant_slug, "delete", {
+                "user_id": demandeur_id,
+                "date_debut": demande.date_debut,
+                "date_fin": demande.date_fin,
+                "raison": "conge_approuve",
+                "count": deleted_assignations.deleted_count
+            }))
+        
+        # Notifier l'employé que son congé a été créé et approuvé
         await creer_notification(
             tenant_id=tenant.id,
-            destinataire_id=superviseur["id"],
-            type="conge_demande",
-            titre="📅 Nouvelle demande de congé",
-            message=f"{current_user.prenom} {current_user.nom} demande un congé ({demande.type_conge}) du {demande.date_debut} au {demande.date_fin}",
+            destinataire_id=demandeur_id,
+            type="conge_approuve",
+            titre="📅 Congé créé et approuvé",
+            message=f"Un congé ({demande.type_conge}) du {demande.date_debut} au {demande.date_fin} a été créé pour vous par {created_by_nom}",
             lien="/conges",
             data={"demande_id": demande_obj.id}
         )
-    
-    logger.info(f"📅 Nouvelle demande de congé créée par {current_user.email}: {demande.type_conge} du {demande.date_debut} au {demande.date_fin}")
+        
+        logger.info(f"📅 Congé auto-approuvé pour {demandeur_prenom} {demandeur_nom_complet} par {created_by_nom}")
+    else:
+        # Créer notification pour approbation - notifier tous les superviseurs/admins sauf le demandeur
+        superviseurs_admins = await db.users.find({
+            "tenant_id": tenant.id,
+            "role": {"$in": ["superviseur", "admin"]},
+            "id": {"$ne": demandeur_id}  # Exclure le demandeur lui-même
+        }).to_list(100)
+        
+        for superviseur in superviseurs_admins:
+            await creer_notification(
+                tenant_id=tenant.id,
+                destinataire_id=superviseur["id"],
+                type="conge_demande",
+                titre="📅 Nouvelle demande de congé",
+                message=f"{demandeur_prenom} {demandeur_nom_complet} demande un congé ({demande.type_conge}) du {demande.date_debut} au {demande.date_fin}",
+                lien="/conges",
+                data={"demande_id": demande_obj.id}
+            )
+        
+        logger.info(f"📅 Nouvelle demande de congé créée par {current_user.email}: {demande.type_conge} du {demande.date_debut} au {demande.date_fin}")
     
     # Broadcaster la mise à jour
     asyncio.create_task(broadcast_conge_update(tenant_slug, "create", {
         "demande_id": demande_obj.id,
-        "demandeur": f"{current_user.prenom} {current_user.nom}",
+        "demandeur": f"{demandeur_prenom} {demandeur_nom_complet}",
         "type_conge": demande.type_conge,
         "date_debut": demande.date_debut,
-        "date_fin": demande.date_fin
+        "date_fin": demande.date_fin,
+        "auto_approuve": auto_approve
     }))
     
     return demande_obj

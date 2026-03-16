@@ -439,16 +439,50 @@ async def verifier_et_traiter_timeouts():
 
 @router.post("/{tenant_slug}/remplacements", response_model=DemandeRemplacement)
 async def create_demande_remplacement(tenant_slug: str, demande: DemandeRemplacementCreate, current_user: User = Depends(get_current_user)):
-    """Créer une demande de remplacement et lancer automatiquement la recherche"""
+    """Créer une demande de remplacement et lancer automatiquement la recherche.
+    
+    Si target_user_id est fourni et l'utilisateur courant a la permission 'remplacements.modifier',
+    la demande sera créée au nom de l'employé ciblé.
+    """
     try:
         send_push_notification_to_users = await get_send_push_notification()
         
         tenant = await get_tenant_from_slug(tenant_slug)
         
+        # Déterminer le demandeur effectif
+        demandeur_id = current_user.id
+        created_by_id = None
+        created_by_nom = None
+        
+        # Si target_user_id est fourni, vérifier la permission et utiliser cet utilisateur comme demandeur
+        if demande.target_user_id and demande.target_user_id != current_user.id:
+            # Vérifier que l'utilisateur courant a la permission de créer pour autrui
+            can_create_for_others = await user_has_module_action(tenant.id, current_user, "remplacements", "modifier")
+            if not can_create_for_others:
+                raise HTTPException(
+                    status_code=403, 
+                    detail="Vous n'avez pas la permission de créer des demandes de remplacement pour d'autres employés."
+                )
+            
+            # Vérifier que l'utilisateur cible existe et est actif
+            target_user = await db.users.find_one({
+                "id": demande.target_user_id, 
+                "tenant_id": tenant.id,
+                "actif": {"$ne": False}
+            })
+            if not target_user:
+                raise HTTPException(status_code=404, detail="Employé cible non trouvé ou inactif")
+            
+            demandeur_id = demande.target_user_id
+            created_by_id = current_user.id
+            created_by_nom = f"{current_user.prenom} {current_user.nom}"
+            
+            logger.info(f"📋 Création de demande pour {target_user.get('prenom')} {target_user.get('nom')} par {current_user.prenom} {current_user.nom}")
+        
         # ==================== VALIDATION: Vérifier que le demandeur est bien planifié ====================
         assignation_existante = await db.assignations.find_one({
             "tenant_id": tenant.id,
-            "user_id": current_user.id,
+            "user_id": demandeur_id,
             "date": demande.date,
             "type_garde_id": demande.type_garde_id
         })
@@ -458,24 +492,49 @@ async def create_demande_remplacement(tenant_slug: str, demande: DemandeRemplace
             type_garde = await db.types_garde.find_one({"id": demande.type_garde_id, "tenant_id": tenant.id})
             type_garde_nom = type_garde.get("nom", "ce type de garde") if type_garde else "ce type de garde"
             
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Vous n'êtes pas planifié sur '{type_garde_nom}' le {demande.date}. Veuillez vérifier votre planning."
-            )
+            # Message différent selon si c'est pour soi ou pour un autre
+            if demandeur_id != current_user.id:
+                target_user = await db.users.find_one({"id": demandeur_id, "tenant_id": tenant.id})
+                nom_employe = f"{target_user.get('prenom', '')} {target_user.get('nom', '')}" if target_user else "Cet employé"
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"{nom_employe} n'est pas planifié(e) sur '{type_garde_nom}' le {demande.date}. Veuillez vérifier le planning."
+                )
+            else:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Vous n'êtes pas planifié sur '{type_garde_nom}' le {demande.date}. Veuillez vérifier votre planning."
+                )
         # ==================== FIN VALIDATION ====================
         
         priorite = await calculer_priorite_demande(demande.date)
         
         demande_dict = demande.dict()
+        demande_dict.pop("target_user_id", None)  # Retirer le champ temporaire
         demande_dict["tenant_id"] = tenant.id
-        demande_dict["demandeur_id"] = current_user.id
+        demande_dict["demandeur_id"] = demandeur_id
         demande_dict["priorite"] = priorite
         demande_dict["statut"] = "en_attente"
+        
+        # Ajouter la traçabilité si créé par un autre utilisateur
+        if created_by_id:
+            demande_dict["created_by_id"] = created_by_id
+            demande_dict["created_by_nom"] = created_by_nom
         
         demande_obj = DemandeRemplacement(**demande_dict)
         await db.demandes_remplacement.insert_one(demande_obj.dict())
         
-        logger.info(f"✅ Demande de remplacement créée: {demande_obj.id} (priorité: {priorite})")
+        # Récupérer le nom du demandeur effectif pour les notifications
+        if demandeur_id != current_user.id:
+            demandeur_user = await db.users.find_one({"id": demandeur_id, "tenant_id": tenant.id})
+            demandeur_prenom = demandeur_user.get("prenom", "") if demandeur_user else ""
+            demandeur_nom = demandeur_user.get("nom", "") if demandeur_user else ""
+        else:
+            demandeur_prenom = current_user.prenom
+            demandeur_nom = current_user.nom
+        
+        logger.info(f"✅ Demande de remplacement créée: {demande_obj.id} (priorité: {priorite})" + 
+                   (f" - créée par {created_by_nom}" if created_by_nom else ""))
         
         superviseurs_admins = await db.users.find({
             "tenant_id": tenant.id,
@@ -489,7 +548,8 @@ async def create_demande_remplacement(tenant_slug: str, demande: DemandeRemplace
                 destinataire_id=user["id"],
                 type="remplacement_demande",
                 titre=f"{'🚨 ' if priorite == 'urgent' else ''}Recherche de remplacement en cours",
-                message=f"{current_user.prenom} {current_user.nom} cherche un remplaçant pour le {demande.date}",
+                message=f"{demandeur_prenom} {demandeur_nom} cherche un remplaçant pour le {demande.date}" + 
+                       (f" (créé par {created_by_nom})" if created_by_nom else ""),
                 lien="/remplacements",
                 data={"demande_id": demande_obj.id},
                 envoyer_email=False  # Pas d'email aux superviseurs, juste push
@@ -500,7 +560,7 @@ async def create_demande_remplacement(tenant_slug: str, demande: DemandeRemplace
             await send_push_notification_to_users(
                 user_ids=superviseur_ids,
                 title=f"{'🚨 ' if priorite == 'urgent' else ''}Recherche de remplacement",
-                body=f"{current_user.prenom} {current_user.nom} cherche un remplaçant pour le {demande.date}",
+                body=f"{demandeur_prenom} {demandeur_nom} cherche un remplaçant pour le {demande.date}",
                 data={
                     "type": "remplacement_demande",
                     "demande_id": demande_obj.id,
@@ -515,18 +575,22 @@ async def create_demande_remplacement(tenant_slug: str, demande: DemandeRemplace
         garde_nom = type_garde['nom'] if type_garde else 'garde'
         
         # Créer l'activité aussi en arrière-plan
+        description_activite = f"🔄 {demandeur_prenom} {demandeur_nom} cherche un remplaçant pour la {garde_nom} du {demande.date}"
+        if created_by_nom:
+            description_activite += f" (créé par {created_by_nom})"
+        
         asyncio.create_task(creer_activite(
             tenant_id=tenant.id,
             type_activite="remplacement_demande",
-            description=f"🔄 {current_user.prenom} {current_user.nom} cherche un remplaçant pour la {garde_nom} du {demande.date}",
-            user_id=current_user.id,
-            user_nom=f"{current_user.prenom} {current_user.nom}"
+            description=description_activite,
+            user_id=demandeur_id,
+            user_nom=f"{demandeur_prenom} {demandeur_nom}"
         ))
         
         # Broadcaster la mise à jour pour actualiser les pages des autres utilisateurs
         asyncio.create_task(broadcast_remplacement_update(tenant_slug, "nouvelle_demande", {
             "demande_id": demande_obj.id,
-            "demandeur_nom": f"{current_user.prenom} {current_user.nom}",
+            "demandeur_nom": f"{demandeur_prenom} {demandeur_nom}",
             "date": demande.date
         }))
         

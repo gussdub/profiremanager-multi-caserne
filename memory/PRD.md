@@ -258,6 +258,67 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 - Tests unitaires plus faciles à écrire
 
 
+### NEW - Création demandes congés/remplacements pour autrui (16 Mars 2026)
+**Statut:** ✅ TERMINÉ
+
+**Objectif:** Permettre aux admins (ou utilisateurs avec permission `remplacements.modifier`) de créer des demandes de congés ou de remplacement au nom d'un autre employé.
+
+**Fonctionnalités implémentées:**
+
+1. **Backend - Demandes de remplacement:**
+   - Nouveau champ optionnel `target_user_id` dans `DemandeRemplacementCreate`
+   - Vérification de la permission RBAC `remplacements.modifier`
+   - Validation que l'employé cible est bien planifié sur le type de garde demandé
+   - Champs de traçabilité: `created_by_id`, `created_by_nom`
+   - Messages d'erreur différenciés selon si c'est pour soi ou pour autrui
+
+2. **Backend - Demandes de congé:**
+   - Nouveau champ optionnel `target_user_id` dans `DemandeCongeCreate`
+   - **Auto-approbation** si créé par un admin pour un autre employé
+   - Suppression automatique des assignations de la période du congé
+   - Notification à l'employé: "Un congé a été créé pour vous par [Admin]"
+   - Champs de traçabilité: `created_by_id`, `created_by_nom`
+
+3. **Frontend - Modal Remplacement:**
+   - Sélecteur d'employé (visible uniquement si `canCreateForOthers = true`)
+   - Fond jaune avec avertissement de validation planning
+   - Liste des employés actifs uniquement (excluant l'utilisateur courant)
+
+4. **Frontend - Modal Congé:**
+   - Sélecteur d'employé (visible uniquement si `canCreateForOthers = true`)
+   - Fond vert avec indication "Auto-approuvé"
+   - Bouton "Créer et approuver" quand création pour autrui
+
+**Comportement:**
+| Type | Créé pour soi | Créé pour autrui |
+|------|---------------|------------------|
+| Remplacement | Workflow normal | Workflow normal + traçabilité |
+| Congé | En attente d'approbation | **Auto-approuvé** + traçabilité |
+
+**Fichiers modifiés:**
+- `/app/backend/routes/remplacements/models.py` - Champs traçabilité et target_user_id
+- `/app/backend/routes/remplacements_routes.py` - Logique création pour autrui
+- `/app/backend/routes/conges.py` - Logique auto-approbation
+- `/app/frontend/src/components/remplacements/CreateRemplacementModal.jsx` - Sélecteur employé
+- `/app/frontend/src/components/remplacements/CreateCongeModal.jsx` - Sélecteur employé + auto-approbation
+- `/app/frontend/src/components/Remplacements.jsx` - Passage des props
+
+### NEW - Fix Rapport d'heures exclut dernier jour du mois (16 Mars 2026)
+**Statut:** ✅ TERMINÉ
+
+**Problème:** Le rapport d'heures excluait le dernier jour du mois (ex: 30 avril) car le frontend envoyait `date_fin=2026-04-30` mais le backend utilisait `$lt` (strictement inférieur) au lieu de `$lte` (inférieur ou égal).
+
+**Exemple:** Guy Bachand affichait 36h au lieu de 42h (différence de 6h = 1 garde manquante le 30 avril).
+
+**Correction:** Modification de l'endpoint `get_rapport_heures` dans `/app/backend/routes/planning.py`:
+- Quand `date_debut` et `date_fin` sont fournis directement → utiliser `$lte`
+- Quand le mois est calculé (fin = 1er du mois suivant) → garder `$lt`
+
+**Fichiers modifiés:**
+- `/app/backend/routes/planning.py` - Logique de filtrage avec `use_lte` flag
+
+
+
 ### NEW - Gestion du Cycle de Vie des Employés (13 Mars 2026)
 - **Fonctionnalité:** Gestion complète des anciens employés avec archivage et réactivation
 - **Fin d'emploi:**

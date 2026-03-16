@@ -22,9 +22,19 @@ const CreateCongeModal = ({
   onClose,
   newConge,
   setNewConge,
-  onSubmit
+  onSubmit,
+  // Nouveaux props pour la création admin
+  canCreateForOthers = false,
+  users = [],
+  currentUserId = null
 }) => {
   if (!show) return null;
+
+  // Filtrer les utilisateurs actifs (exclure l'utilisateur courant si on veut créer pour quelqu'un d'autre)
+  const activeUsers = users.filter(u => u.actif !== false && u.id !== currentUserId);
+
+  // Vérifier si on crée pour quelqu'un d'autre
+  const isCreatingForOther = newConge.target_user_id && newConge.target_user_id !== currentUserId;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -34,6 +44,41 @@ const CreateCongeModal = ({
           <Button variant="ghost" onClick={onClose}>✕</Button>
         </div>
         <div className="modal-body">
+          {/* Sélecteur d'employé (visible uniquement pour les admins) */}
+          {canCreateForOthers && activeUsers.length > 0 && (
+            <div className="form-field" style={{ 
+              backgroundColor: '#DCFCE7', 
+              padding: '12px', 
+              borderRadius: '8px', 
+              marginBottom: '16px',
+              border: '1px solid #22C55E'
+            }}>
+              <Label htmlFor="target-user-conge" style={{ color: '#166534', fontWeight: '600' }}>
+                👤 Créer pour un autre employé (optionnel)
+              </Label>
+              <select
+                id="target-user-conge"
+                value={newConge.target_user_id || ''}
+                onChange={(e) => setNewConge({...newConge, target_user_id: e.target.value || null})}
+                className="form-select"
+                data-testid="select-target-user-conge"
+                style={{ marginTop: '8px' }}
+              >
+                <option value="">-- Pour moi-même --</option>
+                {activeUsers.map(user => (
+                  <option key={user.id} value={user.id}>
+                    {user.prenom} {user.nom} ({user.grade || 'N/A'})
+                  </option>
+                ))}
+              </select>
+              {isCreatingForOther && (
+                <p style={{ fontSize: '12px', color: '#166534', marginTop: '6px', marginBottom: 0, fontWeight: '500' }}>
+                  ✅ Le congé sera automatiquement approuvé et les assignations seront supprimées.
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="form-field">
             <Label htmlFor="type-conge">Type de congé *</Label>
             <select
@@ -112,7 +157,7 @@ const CreateCongeModal = ({
               Annuler
             </Button>
             <Button variant="default" onClick={onSubmit} data-testid="submit-conge-btn">
-              Créer la demande
+              {isCreatingForOther ? 'Créer et approuver' : 'Créer la demande'}
             </Button>
           </div>
         </div>

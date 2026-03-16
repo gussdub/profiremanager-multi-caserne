@@ -16,9 +16,16 @@ const CreateRemplacementModal = ({
   newDemande,
   setNewDemande,
   typesGarde,
-  onSubmit
+  onSubmit,
+  // Nouveaux props pour la création admin
+  canCreateForOthers = false,
+  users = [],
+  currentUserId = null
 }) => {
   if (!show) return null;
+
+  // Filtrer les utilisateurs actifs (exclure l'utilisateur courant si on veut créer pour quelqu'un d'autre)
+  const activeUsers = users.filter(u => u.actif !== false && u.id !== currentUserId);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -28,6 +35,39 @@ const CreateRemplacementModal = ({
           <Button variant="ghost" onClick={onClose}>✕</Button>
         </div>
         <div className="modal-body">
+          {/* Sélecteur d'employé (visible uniquement pour les admins) */}
+          {canCreateForOthers && activeUsers.length > 0 && (
+            <div className="form-field" style={{ 
+              backgroundColor: '#FEF3C7', 
+              padding: '12px', 
+              borderRadius: '8px', 
+              marginBottom: '16px',
+              border: '1px solid #F59E0B'
+            }}>
+              <Label htmlFor="target-user" style={{ color: '#92400E', fontWeight: '600' }}>
+                👤 Créer pour un autre employé (optionnel)
+              </Label>
+              <select
+                id="target-user"
+                value={newDemande.target_user_id || ''}
+                onChange={(e) => setNewDemande({...newDemande, target_user_id: e.target.value || null})}
+                className="form-select"
+                data-testid="select-target-user"
+                style={{ marginTop: '8px' }}
+              >
+                <option value="">-- Pour moi-même --</option>
+                {activeUsers.map(user => (
+                  <option key={user.id} value={user.id}>
+                    {user.prenom} {user.nom} ({user.grade || 'N/A'})
+                  </option>
+                ))}
+              </select>
+              <p style={{ fontSize: '12px', color: '#92400E', marginTop: '6px', marginBottom: 0 }}>
+                ⚠️ L'employé sélectionné doit être planifié sur le type de garde choisi à la date indiquée.
+              </p>
+            </div>
+          )}
+
           <div className="form-field">
             <Label htmlFor="type-garde">Type de garde *</Label>
             <select
