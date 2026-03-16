@@ -32,16 +32,31 @@ const HistoriqueInventairesVehicule = ({ vehicule, onClose }) => {
         const newData = await apiGet(tenantSlug, `/inspections-unifiees/vehicule/${vehicule.id}`);
         if (newData && Array.isArray(newData)) {
           // Convertir vers le format d'affichage
-          const converted = newData.map(i => ({
-            ...i,
-            source: 'unifie',
-            date_inventaire: i.date_inspection || i.created_at,
-            effectue_par: i.inspecteur_nom || i.inspecteur_email || 'Non spécifié',
-            modele_nom: i.formulaire_nom || 'Formulaire unifié',
-            statut_global: i.conforme ? 'conforme' : 'non_conforme',
-            items_manquants: i.alertes?.length || 0,
-            items_defectueux: 0
-          }));
+          const converted = newData.map(i => {
+            // Convertir les réponses en items_coches
+            let itemsCoches = [];
+            if (i.reponses && Array.isArray(i.reponses)) {
+              itemsCoches = i.reponses.map(r => ({
+                item_id: r.question_id || r.id,
+                nom: r.question || r.nom || r.label || 'Item',
+                valeur: r.valeur || r.reponse || r.value || '',
+                notes: r.notes || r.remarque || '',
+                section: r.section || ''
+              }));
+            }
+            
+            return {
+              ...i,
+              source: 'unifie',
+              date_inventaire: i.date_inspection || i.created_at,
+              effectue_par: i.inspecteur_nom || i.inspecteur_email || 'Non spécifié',
+              modele_nom: i.formulaire_nom || 'Formulaire unifié',
+              statut_global: i.conforme ? 'conforme' : 'non_conforme',
+              items_manquants: i.alertes?.length || 0,
+              items_defectueux: 0,
+              items_coches: itemsCoches
+            };
+          });
           allInventaires = [...allInventaires, ...converted];
         }
       } catch (e) {
