@@ -5,6 +5,7 @@
       {
         "appID": "B595367QA9.com.profiremanager.app",
         "paths": [
+          "/*/vehicule/*",
           "/*/remplacements*",
           "/*/planning*",
           "/*/personnel*",

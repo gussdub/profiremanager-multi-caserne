@@ -71,7 +71,30 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
         }
       }
       
-      // PRIORITÉ 2: Filtrer les formulaires pour véhicules
+      // PRIORITÉ 2: Chercher un formulaire dont le nom contient le nom/numéro du véhicule
+      const vehiculeNom = vehicule.nom || '';
+      const vehiculeNumero = vehiculeNom.replace(/[^0-9]/g, ''); // Extraire le numéro (ex: "291" de "Camion 291")
+      
+      if (vehiculeNumero) {
+        console.log('Recherche du formulaire par numéro de véhicule:', vehiculeNumero);
+        const matchingFormulaire = (allFormulaires || []).find(f => {
+          if (f.est_actif === false) return false;
+          // Chercher si le nom du formulaire contient le numéro du véhicule
+          const formulaireNom = (f.nom || '').toLowerCase();
+          return formulaireNom.includes(vehiculeNumero) && 
+                 (formulaireNom.includes('inventaire') || formulaireNom.includes('véhicule') || formulaireNom.includes('vehicule'));
+        });
+        
+        if (matchingFormulaire) {
+          console.log('Formulaire correspondant trouvé:', matchingFormulaire.nom);
+          const modeleConverti = convertFormulaire(matchingFormulaire);
+          setModeles([modeleConverti]);
+          handleSelectionModele(modeleConverti);
+          return;
+        }
+      }
+      
+      // PRIORITÉ 3: Filtrer les formulaires pour véhicules
       const vehiculeFormulaires = (allFormulaires || []).filter(f => {
         if (f.est_actif === false) return false;
         
