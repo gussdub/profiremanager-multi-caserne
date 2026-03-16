@@ -634,8 +634,17 @@ const Planning = () => {
     // Confirmer avec l'utilisateur
     const moisNoms = ["janvier", "février", "mars", "avril", "mai", "juin", 
                       "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
-    const dateObj = new Date(date_debut);
-    const moisTexte = `${moisNoms[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+    
+    // Calculer le mois correctement selon le mode de vue
+    let moisTexte;
+    if (viewMode === 'semaine') {
+      const dateObj = new Date(date_debut + 'T12:00:00'); // Ajouter l'heure pour éviter les problèmes de timezone
+      moisTexte = `${moisNoms[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+    } else {
+      // Mode mois - utiliser directement currentMonth qui est au format "YYYY-MM"
+      const [year, month] = currentMonth.split('-').map(Number);
+      moisTexte = `${moisNoms[month - 1]} ${year}`;
+    }
     
     const confirmed = await confirm({
       title: '📢 Publier le planning',
