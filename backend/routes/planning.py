@@ -3368,19 +3368,22 @@ async def process_attribution_auto_async(
         else:
             logging.info(f"🔍 [DEBUG] RESET MODE DÉSACTIVÉ - Pas de suppression")
         
-        # Pour une période complète (mois), traiter semaine par semaine
+        # Pour une période complète (mois), traiter par blocs de 7 jours
         start_date = datetime.strptime(semaine_debut, "%Y-%m-%d")
         end_date = datetime.strptime(semaine_fin, "%Y-%m-%d")
         
-        # Calculer le nombre total de semaines
-        total_weeks = ((end_date - start_date).days // 7) + 1
+        # Calculer le nombre total de jours et de "semaines" (blocs de 7 jours)
+        total_days = (end_date - start_date).days + 1
+        total_weeks = (total_days + 6) // 7  # Arrondi vers le haut
         progress.total_gardes = total_weeks
+        
+        logging.info(f"📅 [DEBUG] Période calendaire: {semaine_debut} → {semaine_fin} ({total_days} jours, {total_weeks} blocs)")
         
         total_assignations_creees = 0
         current_week_start = start_date
         week_number = 0
         
-        # Itérer sur toutes les semaines de la période
+        # Itérer sur toutes les semaines (blocs de 7 jours) de la période
         while current_week_start <= end_date:
             week_number += 1
             current_week_end = current_week_start + timedelta(days=6)

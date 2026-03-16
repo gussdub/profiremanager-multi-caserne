@@ -761,21 +761,15 @@ const Planning = () => {
         semaine_debut = monday.toISOString().split('T')[0];
         semaine_fin = sunday.toISOString().split('T')[0];
       } else {
-        // Pour un mois: calculer toutes les semaines du mois
+        // Pour un mois calendaire: du 1er au dernier jour du mois
+        // (même logique que le rapport d'heures)
         const [year, month] = autoAttributionConfig.date.split('-');
         const firstDay = new Date(parseInt(year), parseInt(month) - 1, 1);
         const lastDay = new Date(parseInt(year), parseInt(month), 0);
         
-        // Trouver le lundi de la première semaine du mois
-        const firstMonday = new Date(firstDay);
-        firstMonday.setDate(firstDay.getDate() - firstDay.getDay() + (firstDay.getDay() === 0 ? -6 : 1));
-        
-        // Trouver le dimanche de la dernière semaine du mois
-        const lastSunday = new Date(lastDay);
-        lastSunday.setDate(lastDay.getDate() + (7 - lastDay.getDay()) % 7);
-        
-        semaine_debut = firstMonday.toISOString().split('T')[0];
-        semaine_fin = lastSunday.toISOString().split('T')[0];
+        // Utiliser directement le mois calendaire complet
+        semaine_debut = firstDay.toISOString().split('T')[0];
+        semaine_fin = lastDay.toISOString().split('T')[0];
       }
       
       // Lancer l'attribution automatique avec le paramètre reset
