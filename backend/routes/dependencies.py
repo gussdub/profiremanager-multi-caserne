@@ -431,11 +431,11 @@ async def creer_activite(
     user_nom: Optional[str] = None,
     metadata: Optional[Dict] = None
 ):
-    """Crée une entrée d'activité/notification"""
+    """Crée une entrée d'activité dans le flux d'audit système"""
     activite = {
         "id": str(uuid.uuid4()),
         "tenant_id": tenant_id,
-        "type": type_activite,
+        "type_activite": type_activite,
         "description": description,
         "user_id": user_id,
         "user_nom": user_nom,
@@ -444,7 +444,8 @@ async def creer_activite(
         "lu": False
     }
     
-    await db.notifications.insert_one(activite)
+    # Insérer dans la collection 'activites' (pour le flux d'activité dashboard)
+    await db.activites.insert_one(activite)
     return activite
 
 

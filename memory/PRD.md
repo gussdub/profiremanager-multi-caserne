@@ -666,6 +666,30 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 - MongoDB
 - Collections principales: users, tenants, points_eau, parametres_equipes_garde, assignations, types_garde
 
+### NEW - Vérification Fil d'Activité Dashboard Admin (16 Mars 2026)
+**Statut:** ✅ VÉRIFIÉ - FONCTIONNE CORRECTEMENT
+
+**Contexte:** Une investigation a été menée pour vérifier si le fil d'actualité admin affichait correctement toutes les activités système.
+
+**Résultat de l'investigation:**
+1. La fonction `creer_activite` dans `/app/backend/routes/dependencies.py` écrit correctement dans la collection `activites` (ligne 448)
+2. L'endpoint `GET /dashboard/activites-systeme` dans `/app/backend/routes/dashboard.py` lit correctement depuis la collection `activites`
+3. Le test curl a confirmé que 46 activités sont présentes dans la base de données
+4. Les activités de type `planning` (nouvelles assignations) sont bien enregistrées et affichées
+5. Le composant `ActivitesRecentesCard` affiche correctement les activités récupérées
+
+**Types d'activités enregistrés:**
+- `planning` - Nouvelle assignation créée
+- `planning_suppression` - Assignation supprimée
+- `personnel_modification` - Modification de profil
+- `remplacement_demande` - Demande de remplacement
+- `remplacement_accepte` - Remplacement accepté
+- `disponibilite_suppression` - Indisponibilité supprimée
+- `disponibilite_generation_auto` - Indisponibilités auto-générées
+- Et autres...
+
+**Aucune correction nécessaire** - Le système fonctionne comme prévu.
+
 ## Pending Tasks
 
 ### P1
