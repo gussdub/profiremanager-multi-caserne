@@ -181,6 +181,7 @@ const BatimentForm = ({
   const [saving, setSaving] = useState(false);
   const [inspections, setInspections] = useState([]);
   const [nonConformites, setNonConformites] = useState([]);
+  const [dependancesCount, setDependancesCount] = useState(0);
   const autocompleteInputRef = useRef(null);
   const autocompleteRef = useRef(null);
   const [preventionnistes, setPreventionnistes] = useState([]);
@@ -268,6 +269,7 @@ const BatimentForm = ({
       setEditData({ ...batiment });
       fetchInspections();
       fetchNonConformites();
+      fetchDependancesCount();
       
       // Charger la photo si elle existe dans le bâtiment
       if (batiment.photo_url) {
@@ -282,6 +284,22 @@ const BatimentForm = ({
       }
     }
   }, [batiment]);
+
+  // Charger le nombre de dépendances
+  const fetchDependancesCount = async () => {
+    if (!batiment?.id) return;
+    try {
+      const token = getTenantToken();
+      const response = await axios.get(
+        buildApiUrl(tenantSlug, `/prevention/batiments/${batiment.id}/dependances`),
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setDependancesCount(response.data?.length || 0);
+    } catch (error) {
+      console.error('Erreur chargement dépendances:', error);
+      setDependancesCount(0);
+    }
+  };
 
   // Charger la liste des préventionnistes
   useEffect(() => {
@@ -1093,6 +1111,21 @@ const BatimentForm = ({
               gap: '0.75rem'
             }}>
               {isCreating ? '✚ Nouveau Bâtiment' : `🏢 ${editData.nom_etablissement || editData.adresse_civique || 'Bâtiment'}`}
+              {/* Badge dépendances */}
+              {!isCreating && dependancesCount > 0 && (
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  padding: '0.25rem 0.75rem',
+                  borderRadius: '999px',
+                  fontSize: '0.875rem',
+                  fontWeight: '600'
+                }}>
+                  🏚️ {dependancesCount} dépendance{dependancesCount > 1 ? 's' : ''}
+                </span>
+              )}
             </h2>
             {!isCreating && (
               <p style={{ opacity: 0.9, fontSize: '1rem' }}>
@@ -2388,7 +2421,7 @@ const BatimentForm = ({
                   batimentId={batiment.id}
                   batimentAdresse={batiment?.adresse_civique || batiment?.nom_etablissement || 'Adresse'}
                   preventionnisteId={batiment?.preventionniste_assigne_id}
-                  onUpdate={onUpdate}
+                  onUpdate={() => fetchDependancesCount()}
                   canEdit={true}
                 />
               </Card>

@@ -5,6 +5,27 @@ import { apiGet, apiPost, apiPut, apiDelete, buildApiUrl, getTenantToken } from 
 import imageCompression from 'browser-image-compression';
 import axios from 'axios';
 
+// Hook pour geler le scroll du body
+const useLockBodyScroll = (isLocked) => {
+  useEffect(() => {
+    if (isLocked) {
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      
+      return () => {
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [isLocked]);
+};
+
 // Couleurs selon le niveau de risque
 const getRisqueColor = (niveau) => {
   switch(niveau?.toLowerCase()) {
@@ -63,6 +84,9 @@ const DependancesBatiment = ({
   const [selectedDependance, setSelectedDependance] = useState(null);
   const [activeTab, setActiveTab] = useState('infos'); // infos, photos, inspections
   const [photoUploading, setPhotoUploading] = useState(false);
+  
+  // Geler le scroll quand un modal est ouvert
+  useLockBodyScroll(showForm || selectedDependance);
   
   const [formData, setFormData] = useState({
     nom: '',
@@ -163,10 +187,11 @@ const DependancesBatiment = ({
       
       await loadDependances();
       resetForm();
+      // Mettre à jour le compteur dans le parent
       if (onUpdate) onUpdate();
     } catch (error) {
       console.error('Erreur sauvegarde dépendance:', error);
-      alert('Erreur lors de la sauvegarde');
+      alert('Erreur lors de la sauvegarde de la dépendance');
     }
   };
 
@@ -189,7 +214,11 @@ const DependancesBatiment = ({
   const handlePhotoUpload = async (e, dependanceId) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    await uploadPhotoFile(file, dependanceId);
+  };
 
+  // Fonction commune pour upload une photo (file ou blob)
+  const uploadPhotoFile = async (file, dependanceId) => {
     try {
       setPhotoUploading(true);
       
@@ -235,6 +264,23 @@ const DependancesBatiment = ({
       alert('Erreur lors de l\'upload de la photo');
     } finally {
       setPhotoUploading(false);
+    }
+  };
+
+  // Gérer le CTRL+V pour coller une image
+  const handlePaste = async (e, dependanceId) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const blob = item.getAsFile();
+        if (blob) {
+          await uploadPhotoFile(blob, dependanceId);
+        }
+        break;
+      }
     }
   };
 
@@ -604,15 +650,23 @@ const DependancesBatiment = ({
             
             <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
               {/* Photo de couverture */}
-              <div style={{
-                width: '150px',
-                height: '100px',
-                borderRadius: '8px',
-                overflow: 'hidden',
-                backgroundColor: 'rgba(255,255,255,0.2)',
-                flexShrink: 0,
-                position: 'relative'
-              }}>
+              {/* Photo de couverture avec support CTRL+V */}
+              <div 
+                tabIndex={0}
+                onPaste={(e) => handlePaste(e, dep.id)}
+                style={{
+                  width: '150px',
+                  height: '100px',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  flexShrink: 0,
+                  position: 'relative',
+                  outline: 'none',
+                  cursor: canEdit ? 'pointer' : 'default'
+                }}
+                title={canEdit ? "Cliquez ou CTRL+V pour ajouter une photo" : ""}
+              >
                 {dep.photo_url ? (
                   <img 
                     src={dep.photo_url} 
@@ -624,11 +678,16 @@ const DependancesBatiment = ({
                     width: '100%', 
                     height: '100%', 
                     display: 'flex', 
+                    flexDirection: 'column',
                     alignItems: 'center', 
                     justifyContent: 'center',
-                    fontSize: '2rem'
+                    fontSize: '1.5rem',
+                    gap: '0.25rem'
                   }}>
                     🏚️
+                    {canEdit && (
+                      <span style={{ fontSize: '0.6rem', opacity: 0.7 }}>CTRL+V</span>
+                    )}
                   </div>
                 )}
                 {canEdit && (
@@ -651,6 +710,22 @@ const DependancesBatiment = ({
                       onChange={(e) => handlePhotoUpload(e, dep.id)}
                     />
                   </label>
+                )}
+                {photoUploading && (
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white'
+                  }}>
+                    ⏳
+                  </div>
                 )}
               </div>
               
