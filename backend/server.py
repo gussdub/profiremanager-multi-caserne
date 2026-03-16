@@ -6436,6 +6436,7 @@ async def apple_app_site_association():
                 {
                     "appID": "B595367QA9.com.profiremanager.app",
                     "paths": [
+                        "/*/vehicule/*",
                         "/*/remplacements*",
                         "/*/planning*",
                         "/*/personnel*",

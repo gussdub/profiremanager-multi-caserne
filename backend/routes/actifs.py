@@ -882,7 +882,7 @@ async def get_vehicule_public(tenant_slug: str, vehicule_id: str):
     
     vehicule = await db.vehicules.find_one(
         {"id": vehicule_id, "tenant_id": tenant.id},
-        {"_id": 0, "nom": 1, "type_vehicule": 1, "marque": 1, "modele": 1, "numero_plaque": 1, "id": 1}
+        {"_id": 0, "nom": 1, "type_vehicule": 1, "marque": 1, "modele": 1, "numero_plaque": 1, "id": 1, "modele_inventaire_id": 1}
     )
     
     if not vehicule:
