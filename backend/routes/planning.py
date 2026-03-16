@@ -3856,6 +3856,29 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         
         logging.info(f"📊 [ÉQUITÉ] Heures calculées pour {len(users)} utilisateurs sur la période")
         
+        # Fonction helper pour calculer les heures jusqu'à une date spécifique (pour l'audit)
+        # Cela donne les heures AVANT la date de l'assignation, ce qui correspond au rapport d'heures
+        def calculer_heures_jusqua_date(user_id: str, date_limite: str, est_externe_garde: bool) -> int:
+            """
+            Calcule les heures d'un utilisateur du début du mois jusqu'à la date limite (exclue).
+            Utilisé pour l'audit afin d'afficher les heures comme dans le rapport d'heures.
+            """
+            heures = 0
+            for assignation in assignations_periode:
+                if assignation["user_id"] != user_id:
+                    continue
+                # Ne compter que les assignations AVANT la date limite
+                if assignation.get("date", "") >= date_limite:
+                    continue
+                type_garde_assign = next((t for t in types_garde if t["id"] == assignation["type_garde_id"]), None)
+                if type_garde_assign:
+                    est_externe = type_garde_assign.get("est_garde_externe", False)
+                    # Pour l'audit d'une garde interne, compter les heures internes
+                    # Pour l'audit d'une garde externe, compter les heures externes
+                    if est_externe == est_externe_garde:
+                        heures += type_garde_assign.get("duree_heures", 8)
+            return heures
+        
         # ==================== RÉCUPÉRATION DES PARAMÈTRES ====================
         # Lire les paramètres de remplacement pour heures_supplementaires_activees
         params_remplacements = await db.parametres_remplacements.find_one({"tenant_id": tenant.id})
@@ -4423,7 +4446,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                 "nom_complet": user_name,
                                 "grade": user.get("grade", ""),
                                 "type_emploi": type_emploi,
-                                "heures_ce_mois": user_monthly_hours_internes.get(user_id, 0),
+                                "heures_ce_mois": calculer_heures_jusqua_date(user_id, date_str, est_externe),
                                 "raison_rejet": "Indisponibilité sur cette plage horaire"
                             })
                             continue
@@ -4504,7 +4527,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                 "nom_complet": user_name,
                                 "grade": user.get("grade", ""),
                                 "type_emploi": type_emploi,
-                                "heures_ce_mois": user_monthly_hours_internes.get(user_id, 0),
+                                "heures_ce_mois": calculer_heures_jusqua_date(user_id, date_str, est_externe),
                                 "heures_semaine": heures_travaillees,
                                 "heures_max": heures_max,
                                 "raison_rejet": raison_rejet
@@ -4541,7 +4564,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         other_candidates_list = []
                         for other in candidats_tries:
                             if other["id"] != user_id:
-                                other_heures = user_monthly_hours_internes.get(other["id"], 0)
+                                other_heures = calculer_heures_jusqua_date(other["id"], date_str, est_externe)
                                 other_candidates_list.append({
                                     "nom_complet": f"{other.get('prenom', '')} {other.get('nom', '')}",
                                     "grade": other.get("grade", ""),
@@ -4552,6 +4575,11 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         
                         # Ajouter les candidats rejetés
                         other_candidates_list.extend(candidats_rejetes[:10])  # Limiter à 10 pour l'espace
+                        
+                        # Calculer les heures AVANT cette assignation pour l'audit
+                        # Cela correspond à ce que l'utilisateur verra dans le rapport d'heures
+                        heures_audit_internes = calculer_heures_jusqua_date(user_id, date_str, False)
+                        heures_audit_externes = calculer_heures_jusqua_date(user_id, date_str, True)
                         
                         # Créer l'assignation
                         assignation = {
@@ -4573,8 +4601,8 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                     "grade": user.get("grade", ""),
                                     "type_emploi": user_type_emploi,
                                     "details": {
-                                        "heures_ce_mois": user_monthly_hours_internes.get(user_id, 0),
-                                        "heures_externes_ce_mois": user_monthly_hours_externes.get(user_id, 0),
+                                        "heures_ce_mois": heures_audit_internes,
+                                        "heures_externes_ce_mois": heures_audit_externes,
                                         "heures_semaine": user_heures_travaillees,
                                         "heures_max": user_heures_max,
                                         "est_officier": est_officier(user),
