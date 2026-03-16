@@ -6,6 +6,7 @@ import { useToast } from '../hooks/use-toast';
 import { useConfirmDialog } from './ui/ConfirmDialog';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import ConfigurationEmailsRondes from './ConfigurationEmailsRondes';
+import ConfigurationEmailsInventaires from './ConfigurationEmailsInventaires';
 import ConfigurationEmailsBornesSeches from './ConfigurationEmailsBornesSeches';
 import ConfigurationEmailsEPI from './ConfigurationEmailsEPI';
 import ParametresAlertesEquipements from './ParametresAlertesEquipements';
@@ -446,9 +447,21 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
           padding: 'clamp(12px, 3vw, 20px)', 
           borderRadius: '10px', 
           boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
-          border: '1px solid #e0e0e0'
+          border: '1px solid #e0e0e0',
+          marginBottom: '15px'
         }}>
           <ConfigurationEmailsRondes tenantSlug={tenantSlug} />
+        </div>
+
+        {/* Sous-section: Notifications Inventaires Véhicules */}
+        <div style={{ 
+          background: 'white', 
+          padding: 'clamp(12px, 3vw, 20px)', 
+          borderRadius: '10px', 
+          boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+          border: '1px solid #e0e0e0'
+        }}>
+          <ConfigurationEmailsInventaires tenantSlug={tenantSlug} />
         </div>
       </div>
       )}
