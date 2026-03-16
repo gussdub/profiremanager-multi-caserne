@@ -3803,32 +3803,50 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         periode_equite = params_planning.get("periode_equite", "mensuel") if params_planning else "mensuel"
         periode_equite_jours = params_planning.get("periode_equite_jours", 30) if params_planning else 30
         
-        # Calculer la date de début de la période d'équité
+        # Calculer la date de début et de fin de la période d'équité
+        # La période d'équité détermine sur quelle durée les heures sont comptabilisées
+        # pour assurer une répartition équitable des gardes
         start_date = datetime.strptime(semaine_debut, "%Y-%m-%d")
         end_date = datetime.strptime(semaine_fin, "%Y-%m-%d")
         date_debut_periode = start_date
+        date_fin_periode = end_date  # Par défaut, même fin que la période demandée
+        
         if periode_equite == "hebdomadaire":
-            # Début de la semaine (lundi)
+            # Équité sur la semaine : du lundi au dimanche de la semaine de start_date
             jours_depuis_lundi = date_debut_periode.weekday()
             date_debut_periode = date_debut_periode - timedelta(days=jours_depuis_lundi)
+            date_fin_periode = date_debut_periode + timedelta(days=7)  # Dimanche inclus
         elif periode_equite == "bi-hebdomadaire":
-            # Début de la bi-semaine (14 jours glissants)
-            date_debut_periode = start_date - timedelta(days=14)
+            # Équité sur 14 jours : du start_date jusqu'à start_date + 14 jours
+            date_debut_periode = start_date
+            date_fin_periode = start_date + timedelta(days=14)
+            # Ne pas dépasser la fin demandée
+            if date_fin_periode > end_date:
+                date_fin_periode = end_date
         elif periode_equite == "mensuel":
-            # Début du mois
-            date_debut_periode = date_debut_periode.replace(day=1)
+            # Équité sur le mois calendaire : du 1er au dernier jour du mois
+            date_debut_periode = start_date.replace(day=1)
+            # Fin du mois
+            if start_date.month == 12:
+                date_fin_periode = start_date.replace(year=start_date.year + 1, month=1, day=1)
+            else:
+                date_fin_periode = start_date.replace(month=start_date.month + 1, day=1)
         elif periode_equite == "personnalise":
-            # Période personnalisée en jours
-            date_debut_periode = start_date - timedelta(days=periode_equite_jours)
+            # Équité personnalisée : du start_date jusqu'à start_date + X jours
+            date_debut_periode = start_date
+            date_fin_periode = start_date + timedelta(days=periode_equite_jours)
+            # Ne pas dépasser la fin demandée
+            if date_fin_periode > end_date:
+                date_fin_periode = end_date
         
-        logging.info(f"📊 [ÉQUITÉ] Période: {periode_equite}, Début: {date_debut_periode}, Jours: {periode_equite_jours if periode_equite == 'personnalise' else 'N/A'}")
+        logging.info(f"📊 [ÉQUITÉ] Période: {periode_equite}, Début: {date_debut_periode.strftime('%Y-%m-%d')}, Fin: {date_fin_periode.strftime('%Y-%m-%d')}")
         
         # Récupérer les assignations de la période d'équité
         assignations_periode = await db.assignations.find({
             "tenant_id": tenant.id,
             "date": {
                 "$gte": date_debut_periode.strftime("%Y-%m-%d"),
-                "$lt": end_date.strftime("%Y-%m-%d")
+                "$lt": date_fin_periode.strftime("%Y-%m-%d")
             }
         }).to_list(length=None)
         
@@ -4601,7 +4619,18 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                 "candidates_acceptes": len(candidats),
                                 "candidates_rejetes": len(candidats_rejetes),
                                 "other_candidates": other_candidates_list,
-                                "raison": f"Niveau {niveau} - {user_type_emploi} - {user_heures_travaillees}h travaillées/{user_heures_max}h max"
+                                "raison": f"Niveau {niveau} - {user_type_emploi} - {user_heures_travaillees}h travaillées/{user_heures_max}h max",
+                                "periode_equite_info": {
+                                    "type": periode_equite,
+                                    "date_debut": date_debut_periode.strftime("%Y-%m-%d"),
+                                    "date_fin": date_fin_periode.strftime("%Y-%m-%d"),
+                                    "description": {
+                                        "hebdomadaire": f"Hebdomadaire (du {date_debut_periode.strftime('%d/%m')} au {(date_fin_periode - timedelta(days=1)).strftime('%d/%m/%Y')})",
+                                        "bi-hebdomadaire": f"Bi-hebdomadaire (du {date_debut_periode.strftime('%d/%m')} au {(date_fin_periode - timedelta(days=1)).strftime('%d/%m/%Y')})",
+                                        "mensuel": f"Mensuel (du {date_debut_periode.strftime('%d/%m')} au {(date_fin_periode - timedelta(days=1)).strftime('%d/%m/%Y')})",
+                                        "personnalise": f"Personnalisé {periode_equite_jours}j (du {date_debut_periode.strftime('%d/%m')} au {(date_fin_periode - timedelta(days=1)).strftime('%d/%m/%Y')})"
+                                    }.get(periode_equite, periode_equite)
+                                }
                             }
                         }
                         

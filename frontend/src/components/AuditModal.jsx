@@ -138,6 +138,27 @@ const AuditModal = ({
             </div>
           </div>
           
+          {/* ===== INFORMATION PÉRIODE D'ÉQUITÉ ===== */}
+          {justif.periode_equite_info && (
+            <div style={{ 
+              background: '#fef3c7', 
+              padding: '1rem', 
+              borderRadius: '8px', 
+              marginBottom: '1.5rem',
+              border: '1px solid #fcd34d'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#92400e' }}>
+                <span style={{ fontSize: '1.25rem' }}>⚖️</span>
+                <div>
+                  <strong>Période d'équité :</strong> {justif.periode_equite_info.description}
+                  <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.85 }}>
+                    Les heures affichées sont comptabilisées sur cette période pour assurer une répartition équitable.
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
           {/* ===== PARTIE 2: Tableau Comparatif ===== */}
           <div style={{ marginBottom: '1.5rem' }}>
             <h4 style={{ marginBottom: '1rem', color: '#1f2937', fontSize: '1.25rem' }}>

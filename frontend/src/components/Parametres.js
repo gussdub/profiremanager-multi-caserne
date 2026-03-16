@@ -1828,6 +1828,9 @@ const Parametres = ({ user, tenantSlug }) => {
               handleSaveHeuresSupParams={handleSaveHeuresSupParams}
               setHeuresSupParams={setHeuresSupParams}
               setRegroupementParams={setRegroupementParams}
+              validationParams={validationParams}
+              setValidationParams={setValidationParams}
+              handleSaveValidationParams={handleSaveValidationParams}
             />
           </Suspense>
         )}

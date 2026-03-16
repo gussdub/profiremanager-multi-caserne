@@ -12,7 +12,10 @@ const ParametresAttribution = ({
   handleSettingChange,
   handleSaveHeuresSupParams,
   setHeuresSupParams,
-  setRegroupementParams
+  setRegroupementParams,
+  validationParams,
+  setValidationParams,
+  handleSaveValidationParams
 }) => {
   return (
     <div className="attribution-tab" style={{ maxWidth: '1400px', margin: '0 auto' }}>
@@ -247,6 +250,116 @@ const ParametresAttribution = ({
               style={{ background: '#10b981' }}
             >
               💾 Enregistrer la configuration
+            </Button>
+          </div>
+        </div>
+
+        {/* CARTE 4: Période d'équité */}
+        <div style={{
+          background: 'white',
+          border: '2px solid #e5e7eb',
+          borderRadius: '12px',
+          padding: '24px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+        }}>
+          <h3 style={{ 
+            margin: '0 0 16px 0',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            fontSize: '1.25rem',
+            color: '#1e293b'
+          }}>
+            ⚖️ Période d'équité
+            <span 
+              title="Détermine sur quelle période les heures sont comptabilisées pour assurer une répartition équitable des gardes entre les employés."
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                background: '#3b82f6',
+                color: 'white',
+                fontSize: '0.75rem',
+                cursor: 'help',
+                fontWeight: 'bold'
+              }}
+            >
+              i
+            </span>
+          </h3>
+          
+          <div style={{
+            padding: '12px',
+            backgroundColor: '#fef3c7',
+            border: '1px solid #fcd34d',
+            borderRadius: '8px',
+            marginBottom: '20px',
+            fontSize: '0.875rem',
+            color: '#92400e'
+          }}>
+            ℹ️ L'équité détermine comment les heures sont comptabilisées lors de l'attribution automatique. 
+            Par exemple, avec "Mensuel", les heures du mois calendaire complet sont considérées pour prioriser les employés avec moins d'heures.
+          </div>
+
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1e293b' }}>
+              Type de période d'équité
+            </label>
+            <select
+              value={validationParams?.periode_equite || 'mensuel'}
+              onChange={(e) => setValidationParams({...validationParams, periode_equite: e.target.value})}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                border: '2px solid #e5e7eb',
+                borderRadius: '8px',
+                fontSize: '1rem',
+                background: 'white',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="hebdomadaire">Hebdomadaire (lundi au dimanche)</option>
+              <option value="bi-hebdomadaire">Bi-hebdomadaire (14 jours)</option>
+              <option value="mensuel">Mensuel (mois calendaire)</option>
+              <option value="personnalise">Personnalisé (nombre de jours)</option>
+            </select>
+          </div>
+
+          {validationParams?.periode_equite === 'personnalise' && (
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1e293b' }}>
+                Nombre de jours
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="365"
+                value={validationParams?.periode_equite_jours || 30}
+                onChange={(e) => setValidationParams({...validationParams, periode_equite_jours: parseInt(e.target.value) || 30})}
+                style={{
+                  width: '150px',
+                  padding: '10px 12px',
+                  border: '2px solid #e5e7eb',
+                  borderRadius: '8px',
+                  fontSize: '1rem'
+                }}
+              />
+              <small style={{ display: 'block', marginTop: '4px', color: '#64748b' }}>
+                Période personnalisée de {validationParams?.periode_equite_jours || 30} jours
+              </small>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <Button 
+              variant="default"
+              onClick={handleSaveValidationParams}
+              style={{ background: '#10b981' }}
+            >
+              💾 Enregistrer la période d'équité
             </Button>
           </div>
         </div>
