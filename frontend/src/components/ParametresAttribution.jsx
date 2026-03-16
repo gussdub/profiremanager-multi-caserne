@@ -1,5 +1,4 @@
 import React from "react";
-import { Button } from "./ui/button.jsx";
 
 /**
  * ParametresAttribution - Onglet de configuration du planning
@@ -17,6 +16,23 @@ const ParametresAttribution = ({
   setValidationParams,
   handleSaveValidationParams
 }) => {
+  
+  // Fonction pour modifier et sauvegarder automatiquement les heures sup
+  const handleHeuresSupChange = async (newValue) => {
+    const newParams = {...heuresSupParams, activer_gestion_heures_sup: newValue};
+    setHeuresSupParams(newParams);
+    // Sauvegarder automatiquement après un court délai
+    setTimeout(() => handleSaveHeuresSupParams(), 100);
+  };
+  
+  // Fonction pour modifier et sauvegarder automatiquement la période d'équité
+  const handleEquiteChange = async (field, value) => {
+    const newParams = {...validationParams, [field]: value};
+    setValidationParams(newParams);
+    // Sauvegarder automatiquement après un court délai
+    setTimeout(() => handleSaveValidationParams(), 100);
+  };
+  
   return (
     <div className="attribution-tab" style={{ maxWidth: '1400px', margin: '0 auto' }}>
       <div className="tab-header" style={{ marginBottom: '30px' }}>
@@ -237,20 +253,10 @@ const ParametresAttribution = ({
               <input
                 type="checkbox"
                 checked={heuresSupParams.activer_gestion_heures_sup}
-                onChange={(e) => setHeuresSupParams({...heuresSupParams, activer_gestion_heures_sup: e.target.checked})}
+                onChange={(e) => handleHeuresSupChange(e.target.checked)}
                 style={{ width: '20px', height: '20px', cursor: 'pointer' }}
               />
             </label>
-          </div>
-
-          <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-            <Button 
-              variant="default"
-              onClick={handleSaveHeuresSupParams}
-              style={{ background: '#10b981' }}
-            >
-              💾 Enregistrer la configuration
-            </Button>
           </div>
         </div>
 
@@ -310,7 +316,7 @@ const ParametresAttribution = ({
             </label>
             <select
               value={validationParams?.periode_equite || 'mensuel'}
-              onChange={(e) => setValidationParams({...validationParams, periode_equite: e.target.value})}
+              onChange={(e) => handleEquiteChange('periode_equite', e.target.value)}
               style={{
                 width: '100%',
                 padding: '10px 12px',
@@ -338,7 +344,7 @@ const ParametresAttribution = ({
                 min="1"
                 max="365"
                 value={validationParams?.periode_equite_jours || 30}
-                onChange={(e) => setValidationParams({...validationParams, periode_equite_jours: parseInt(e.target.value) || 30})}
+                onChange={(e) => handleEquiteChange('periode_equite_jours', parseInt(e.target.value) || 30)}
                 style={{
                   width: '150px',
                   padding: '10px 12px',
@@ -352,16 +358,6 @@ const ParametresAttribution = ({
               </small>
             </div>
           )}
-
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <Button 
-              variant="default"
-              onClick={handleSaveValidationParams}
-              style={{ background: '#10b981' }}
-            >
-              💾 Enregistrer la période d'équité
-            </Button>
-          </div>
         </div>
 
       </div>
