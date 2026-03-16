@@ -268,6 +268,26 @@ const VehiculeForm = ({ formData, handleChange, setFormData }) => {
             </select>
           </div>
         </div>
+        
+        {/* Type de système de freinage (Loi 430) */}
+        <div style={{ marginTop: '15px' }}>
+          <Label style={{ display: 'block', marginBottom: '4px', fontSize: '0.875rem' }}>
+            🛞 Système de freinage (Loi 430)
+          </Label>
+          <select
+            name="brake_system_type"
+            value={formData.brake_system_type || 'BOTH'}
+            onChange={handleChange}
+            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db' }}
+          >
+            <option value="BOTH">🔵 Hydraulique + Pneumatique</option>
+            <option value="HYDRAULIC">🟢 Hydraulique uniquement</option>
+            <option value="PNEUMATIC">🟣 Pneumatique uniquement</option>
+          </select>
+          <p style={{ margin: '4px 0 0', fontSize: '0.7rem', color: '#6b7280' }}>
+            Détermine les points de vérification 18/19 lors des rondes de sécurité SAAQ
+          </p>
+        </div>
       </div>
 
       {/* Section Vignette / PEP */}

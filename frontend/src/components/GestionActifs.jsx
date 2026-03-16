@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import InventairesTab from './GestionInventaires';
 import RondeSecurite from './RondeSecurite';
+import RondeSecuriteSAAQ from './RondeSecuriteSAAQ';
 import HistoriqueRondesSecurite from './HistoriqueRondesSecurite';
 import ContreSignatureModal from './ContreSignatureModal';
 import CarteApprovisionnementEau from './CarteApprovisionnementEau';

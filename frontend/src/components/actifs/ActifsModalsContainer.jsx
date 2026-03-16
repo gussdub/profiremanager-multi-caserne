@@ -1,5 +1,6 @@
 import React, { Suspense, lazy } from 'react';
 import RondeSecurite from '../RondeSecurite';
+import RondeSecuriteSAAQ from '../RondeSecuriteSAAQ';
 import HistoriqueRondesSecurite from '../HistoriqueRondesSecurite';
 import ContreSignatureModal from '../ContreSignatureModal';
 import InspectionBorneSecheModal from '../InspectionBorneSecheModal';
@@ -79,7 +80,7 @@ const ActifsModalsContainer = ({ context }) => {
       )}
 
       {showRondeSecuriteModal && selectedVehiculeForRonde && (
-        <RondeSecurite
+        <RondeSecuriteSAAQ
           vehicule={selectedVehiculeForRonde}
           user={user}
           onClose={() => {

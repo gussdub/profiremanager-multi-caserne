@@ -303,6 +303,20 @@ class Vehicule(BaseModel):
     poids_pnbv: Optional[float] = None  # Poids Nominal Brut du Véhicule (kg)
     classification_saaq: Optional[str] = None  # "urgence" ou "soutien"
     
+    # Type de système de freinage pour conformité SAAQ (Loi 430)
+    # HYDRAULIC = Freins hydrauliques uniquement (point 18)
+    # PNEUMATIC = Freins pneumatiques uniquement (point 19)
+    # BOTH = Les deux systèmes (points 18 et 19)
+    brake_system_type: Optional[str] = "BOTH"  # HYDRAULIC, PNEUMATIC, BOTH
+    
+    # Statut de disponibilité SAAQ (mis à jour après ronde de sécurité)
+    # disponible = Véhicule opérationnel
+    # reparation_requise = Défaut mineur détecté, réparation sous 48h
+    # hors_service = Défaut majeur détecté, véhicule inutilisable
+    disponibilite_saaq: Optional[str] = "disponible"  # disponible, reparation_requise, hors_service
+    date_derniere_ronde: Optional[str] = None
+    defauts_actifs: List[Dict[str, Any]] = []  # Liste des défauts non résolus
+    
     # Vignette / Inspection mécanique (PEP)
     vignette_numero: Optional[str] = None
     vignette_date_inspection: Optional[str] = None  # Date d'apposition
@@ -332,6 +346,8 @@ class VehiculeCreate(BaseModel):
     photos: List[str] = []
     documents: List[Dict[str, str]] = []
     notes: Optional[str] = None
+    # Type de système de freinage SAAQ
+    brake_system_type: Optional[str] = "BOTH"  # HYDRAULIC, PNEUMATIC, BOTH
     # Nouveaux champs SAAQ/PEP
     poids_pnbv: Optional[float] = None
     classification_saaq: Optional[str] = None
@@ -359,6 +375,10 @@ class VehiculeUpdate(BaseModel):
     photos: Optional[List[str]] = None
     documents: Optional[List[Dict[str, str]]] = None
     notes: Optional[str] = None
+    # Type de système de freinage SAAQ
+    brake_system_type: Optional[str] = None  # HYDRAULIC, PNEUMATIC, BOTH
+    disponibilite_saaq: Optional[str] = None  # disponible, reparation_requise, hors_service
+    defauts_actifs: Optional[List[Dict[str, Any]]] = None
     # Nouveaux champs SAAQ/PEP
     poids_pnbv: Optional[float] = None
     classification_saaq: Optional[str] = None
@@ -628,6 +648,9 @@ class RondeSecuriteCreate(BaseModel):
     defectuosites: Optional[str] = ""
     points_verification: Dict[str, str]
     signature_mandatee: str
+    # Nouveaux champs SAAQ
+    defauts_selectionnes: List[Dict[str, Any]] = []  # Liste des défauts SAAQ sélectionnés
+    severite_globale: Optional[str] = None  # Calculé automatiquement
 
 
 class RondeSecurite(BaseModel):
@@ -646,6 +669,11 @@ class RondeSecurite(BaseModel):
     contre_signatures: List[ContreSignature] = []
     created_by: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    # Nouveaux champs SAAQ
+    defauts_selectionnes: List[Dict[str, Any]] = []
+    severite_globale: str = "CONFORME"  # CONFORME, MINEUR, MAJEUR
+    rappel_48h_envoye: bool = False
+    date_rappel_48h: Optional[datetime] = None
 
 
 class ContreSignatureCreate(BaseModel):
@@ -2044,7 +2072,170 @@ async def delete_inspection_inventaire(
     return {"message": "Inspection supprimée avec succès"}
 
 
-# ==================== ROUTES - RONDES DE SÉCURITÉ ====================
+# ==================== ROUTES - RONDES DE SÉCURITÉ (SAAQ - Loi 430) ====================
+
+# Points de vérification SAAQ avec défauts prédéfinis
+POINTS_VERIFICATION_SAAQ = {
+    "1": {"id": "1", "label": "Attelage", "key": "attelage", "defects": [
+        {"id": "1.1", "desc": "Jeu excessif dans la sellette ou le crochet d'attelage", "severity": "MAJEUR"},
+        {"id": "1.2", "desc": "Fissure visible dans la sellette ou le crochet", "severity": "MAJEUR"},
+        {"id": "1.3", "desc": "Mécanisme de verrouillage défectueux", "severity": "MAJEUR"},
+        {"id": "1.4", "desc": "Usure anormale des composants", "severity": "MINEUR"}
+    ]},
+    "2": {"id": "2", "label": "Habitacle (siège conducteur)", "key": "habitacle", "defects": [
+        {"id": "2.1", "desc": "Siège du conducteur mal fixé ou instable", "severity": "MAJEUR"},
+        {"id": "2.2", "desc": "Ceinture de sécurité défectueuse ou manquante", "severity": "MAJEUR"},
+        {"id": "2.3", "desc": "Mécanisme de réglage du siège défaillant", "severity": "MINEUR"},
+        {"id": "2.4", "desc": "Appuie-tête manquant ou mal fixé", "severity": "MINEUR"}
+    ]},
+    "3": {"id": "3", "label": "Carrosserie", "key": "carrosserie", "defects": [
+        {"id": "3.1", "desc": "Panneau de carrosserie mal fixé", "severity": "MINEUR"},
+        {"id": "3.2", "desc": "Porte d'équipement mal fixée ou difficile à ouvrir", "severity": "MINEUR"},
+        {"id": "3.3", "desc": "Corrosion importante affectant la structure", "severity": "MAJEUR"},
+        {"id": "3.4", "desc": "Élément de carrosserie présentant un risque", "severity": "MAJEUR"}
+    ]},
+    "4": {"id": "4", "label": "Direction", "key": "direction", "defects": [
+        {"id": "4.1", "desc": "Jeu excessif dans le volant de direction", "severity": "MAJEUR"},
+        {"id": "4.2", "desc": "Fuite de liquide de direction assistée", "severity": "MAJEUR"},
+        {"id": "4.3", "desc": "Difficulté anormale à tourner le volant", "severity": "MAJEUR"},
+        {"id": "4.4", "desc": "Bruit anormal dans la colonne de direction", "severity": "MINEUR"}
+    ]},
+    "5": {"id": "5", "label": "Éclairage (Phares)", "key": "eclairage_phares", "defects": [
+        {"id": "5.1", "desc": "Un phare brûlé (circulation de jour)", "severity": "MINEUR"},
+        {"id": "5.2", "desc": "Aucun phare fonctionnel (circulation de nuit)", "severity": "MAJEUR"},
+        {"id": "5.3", "desc": "Phares mal alignés", "severity": "MINEUR"},
+        {"id": "5.4", "desc": "Verre de phare brisé ou opaque", "severity": "MINEUR"}
+    ]},
+    "6": {"id": "6", "label": "Essuie-glaces et lave-glace", "key": "essuie_glaces", "defects": [
+        {"id": "6.1", "desc": "Balai d'essuie-glace manquant ou défectueux", "severity": "MINEUR"},
+        {"id": "6.2", "desc": "Système d'essuie-glace ne fonctionne pas", "severity": "MAJEUR"},
+        {"id": "6.3", "desc": "Réservoir de lave-glace vide", "severity": "MINEUR"},
+        {"id": "6.4", "desc": "Gicleurs de lave-glace bouchés", "severity": "MINEUR"}
+    ]},
+    "7": {"id": "7", "label": "Matériel d'urgence", "key": "materiel_urgence", "defects": [
+        {"id": "7.1", "desc": "Extincteur vide ou manquant", "severity": "MINEUR"},
+        {"id": "7.2", "desc": "Trousse de premiers soins incomplète ou manquante", "severity": "MINEUR"},
+        {"id": "7.3", "desc": "Triangles de signalisation manquants", "severity": "MINEUR"},
+        {"id": "7.4", "desc": "Lampe de poche non fonctionnelle", "severity": "MINEUR"}
+    ]},
+    "8": {"id": "8", "label": "Phares et feux", "key": "phares_feux", "defects": [
+        {"id": "8.1", "desc": "Feu de position brûlé", "severity": "MINEUR"},
+        {"id": "8.2", "desc": "Aucun feu de freinage (stop) ne fonctionne", "severity": "MAJEUR"},
+        {"id": "8.3", "desc": "Feu de recul non fonctionnel", "severity": "MINEUR"},
+        {"id": "8.4", "desc": "Clignotant défectueux", "severity": "MINEUR"},
+        {"id": "8.5", "desc": "Gyrophare ou feu d'urgence non fonctionnel", "severity": "MINEUR"}
+    ]},
+    "9": {"id": "9", "label": "Pneus", "key": "pneus", "defects": [
+        {"id": "9.1", "desc": "Coupure profonde ou structure apparente", "severity": "MAJEUR"},
+        {"id": "9.2", "desc": "Usure excessive de la bande de roulement", "severity": "MAJEUR"},
+        {"id": "9.3", "desc": "Pression inadéquate", "severity": "MINEUR"},
+        {"id": "9.4", "desc": "Pneu dépareillé ou non conforme", "severity": "MINEUR"},
+        {"id": "9.5", "desc": "Renflement ou déformation du pneu", "severity": "MAJEUR"}
+    ]},
+    "10": {"id": "10", "label": "Portes et issues", "key": "portes_issues", "defects": [
+        {"id": "10.1", "desc": "Porte ne ferme pas correctement", "severity": "MAJEUR"},
+        {"id": "10.2", "desc": "Porte ne s'ouvre pas de l'intérieur", "severity": "MAJEUR"},
+        {"id": "10.3", "desc": "Serrure de porte défectueuse", "severity": "MINEUR"},
+        {"id": "10.4", "desc": "Issue de secours bloquée ou inaccessible", "severity": "MAJEUR"}
+    ]},
+    "11": {"id": "11", "label": "Rétroviseurs", "key": "retroviseurs", "defects": [
+        {"id": "11.1", "desc": "Miroir cassé ou fêlé", "severity": "MINEUR"},
+        {"id": "11.2", "desc": "Rétroviseur mal fixé ou instable", "severity": "MINEUR"},
+        {"id": "11.3", "desc": "Rétroviseur manquant", "severity": "MAJEUR"},
+        {"id": "11.4", "desc": "Visibilité insuffisante par les rétroviseurs", "severity": "MINEUR"}
+    ]},
+    "12": {"id": "12", "label": "Châssis", "key": "chassis", "defects": [
+        {"id": "12.1", "desc": "Élément de structure fissuré", "severity": "MAJEUR"},
+        {"id": "12.2", "desc": "Châssis affaissé ou déformé", "severity": "MAJEUR"},
+        {"id": "12.3", "desc": "Corrosion importante affectant la structure", "severity": "MAJEUR"},
+        {"id": "12.4", "desc": "Boulon ou rivet de châssis manquant", "severity": "MAJEUR"}
+    ]},
+    "13": {"id": "13", "label": "Suspension", "key": "suspension", "defects": [
+        {"id": "13.1", "desc": "Lame de ressort brisée", "severity": "MAJEUR"},
+        {"id": "13.2", "desc": "Fuite d'amortisseur", "severity": "MINEUR"},
+        {"id": "13.3", "desc": "Amortisseur inefficace", "severity": "MINEUR"},
+        {"id": "13.4", "desc": "Silentbloc usé ou endommagé", "severity": "MINEUR"},
+        {"id": "13.5", "desc": "Barre stabilisatrice défectueuse", "severity": "MINEUR"}
+    ]},
+    "14": {"id": "14", "label": "Système d'échappement", "key": "systeme_echappement", "defects": [
+        {"id": "14.1", "desc": "Fuite de gaz d'échappement vers l'habitacle", "severity": "MAJEUR"},
+        {"id": "14.2", "desc": "Silencieux percé ou bruyant", "severity": "MINEUR"},
+        {"id": "14.3", "desc": "Tuyau d'échappement mal fixé", "severity": "MINEUR"},
+        {"id": "14.4", "desc": "Émissions excessives de fumée", "severity": "MINEUR"}
+    ]},
+    "15": {"id": "15", "label": "Système d'alimentation en carburant", "key": "systeme_alimentation", "defects": [
+        {"id": "15.1", "desc": "Fuite de carburant (goutte à goutte)", "severity": "MAJEUR"},
+        {"id": "15.2", "desc": "Bouchon de réservoir manquant ou défectueux", "severity": "MINEUR"},
+        {"id": "15.3", "desc": "Odeur de carburant dans l'habitacle", "severity": "MAJEUR"},
+        {"id": "15.4", "desc": "Conduite de carburant endommagée", "severity": "MAJEUR"}
+    ]},
+    "16": {"id": "16", "label": "Roues et moyeux", "key": "roues_moyeux", "defects": [
+        {"id": "16.1", "desc": "Écrou de roue manquant", "severity": "MAJEUR"},
+        {"id": "16.2", "desc": "Jante fissurée ou déformée", "severity": "MAJEUR"},
+        {"id": "16.3", "desc": "Écrou de roue desserré", "severity": "MAJEUR"},
+        {"id": "16.4", "desc": "Roulement de roue bruyant ou usé", "severity": "MINEUR"}
+    ]},
+    "17": {"id": "17", "label": "Système de freins (général)", "key": "systeme_freins", "defects": [
+        {"id": "17.1", "desc": "Efficacité de freinage insuffisante", "severity": "MAJEUR"},
+        {"id": "17.2", "desc": "Frein de stationnement inefficace", "severity": "MAJEUR"},
+        {"id": "17.3", "desc": "Témoin de frein allumé au tableau de bord", "severity": "MAJEUR"},
+        {"id": "17.4", "desc": "Bruit anormal lors du freinage", "severity": "MINEUR"}
+    ]},
+    "18": {"id": "18", "label": "Freins hydrauliques", "key": "freins_hydrauliques", "requires_brake_type": ["HYDRAULIC", "BOTH"], "defects": [
+        {"id": "18.1", "desc": "Fuite de liquide de frein", "severity": "MAJEUR"},
+        {"id": "18.2", "desc": "Pédale de frein spongieuse", "severity": "MAJEUR"},
+        {"id": "18.3", "desc": "Niveau de liquide de frein bas", "severity": "MAJEUR"},
+        {"id": "18.4", "desc": "Maître-cylindre défectueux", "severity": "MAJEUR"},
+        {"id": "18.5", "desc": "Flexible de frein endommagé ou usé", "severity": "MAJEUR"}
+    ]},
+    "19": {"id": "19", "label": "Freins pneumatiques", "key": "freins_pneumatiques", "requires_brake_type": ["PNEUMATIC", "BOTH"], "defects": [
+        {"id": "19.1", "desc": "Fuite d'air audible", "severity": "MAJEUR"},
+        {"id": "19.2", "desc": "Chute de pression rapide dans le système", "severity": "MAJEUR"},
+        {"id": "19.3", "desc": "Compresseur d'air défaillant", "severity": "MAJEUR"},
+        {"id": "19.4", "desc": "Réservoir d'air corrodé ou endommagé", "severity": "MAJEUR"},
+        {"id": "19.5", "desc": "Valve de purge automatique défectueuse", "severity": "MINEUR"}
+    ]}
+}
+
+
+@router.get("/{tenant_slug}/actifs/rondes-securite/points-verification")
+async def get_points_verification_saaq(
+    tenant_slug: str,
+    vehicule_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Récupérer la liste des points de vérification SAAQ avec leurs défauts prédéfinis.
+    Si vehicule_id est fourni, filtre les points 18/19 selon le type de freins du véhicule.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Récupérer le type de freins du véhicule si spécifié
+    brake_system_type = "BOTH"  # Par défaut, afficher les deux
+    if vehicule_id:
+        vehicule = await db.vehicules.find_one(
+            {"id": vehicule_id, "tenant_id": tenant.id},
+            {"_id": 0, "brake_system_type": 1}
+        )
+        if vehicule:
+            brake_system_type = vehicule.get("brake_system_type", "BOTH")
+    
+    # Filtrer les points selon le type de freins
+    points_filtres = {}
+    for point_id, point_data in POINTS_VERIFICATION_SAAQ.items():
+        requires_brake_type = point_data.get("requires_brake_type")
+        
+        if requires_brake_type:
+            if brake_system_type in requires_brake_type:
+                points_filtres[point_id] = point_data
+        else:
+            points_filtres[point_id] = point_data
+    
+    return {
+        "brake_system_type": brake_system_type,
+        "points_verification": points_filtres
+    }
+
 
 @router.post("/{tenant_slug}/actifs/rondes-securite", response_model=RondeSecurite)
 async def create_ronde_securite(
@@ -2052,7 +2243,14 @@ async def create_ronde_securite(
     ronde_data: RondeSecuriteCreate,
     current_user: User = Depends(get_current_user)
 ):
-    """Créer une nouvelle ronde de sécurité SAAQ pour un véhicule"""
+    """
+    Créer une nouvelle ronde de sécurité SAAQ (Loi 430).
+    
+    Logique de sévérité:
+    - MAJEUR: Véhicule HORS SERVICE immédiatement, notification urgente
+    - MINEUR: Véhicule DISPONIBLE mais réparation requise sous 48h
+    - CONFORME: Véhicule opérationnel
+    """
     tenant = await get_tenant_from_slug(tenant_slug)
     
     if current_user.tenant_id != tenant.id:
@@ -2064,6 +2262,17 @@ async def create_ronde_securite(
     )
     if not vehicle:
         raise HTTPException(status_code=404, detail="Véhicule non trouvé")
+    
+    # Calculer la sévérité globale à partir des défauts sélectionnés
+    defauts = getattr(ronde_data, 'defauts_selectionnes', []) or []
+    severite_globale = "CONFORME"
+    defauts_majeurs = [d for d in defauts if d.get("severity") == "MAJEUR"]
+    defauts_mineurs = [d for d in defauts if d.get("severity") == "MINEUR"]
+    
+    if defauts_majeurs:
+        severite_globale = "MAJEUR"
+    elif defauts_mineurs:
+        severite_globale = "MINEUR"
     
     ronde = RondeSecurite(
         tenant_id=tenant.id,
@@ -2078,17 +2287,106 @@ async def create_ronde_securite(
         points_verification=ronde_data.points_verification,
         signature_mandatee=ronde_data.signature_mandatee,
         contre_signatures=[],
-        created_by=current_user.id
+        created_by=current_user.id,
+        defauts_selectionnes=defauts,
+        severite_globale=severite_globale
     )
+    
+    # Planifier rappel 48h si défaut MINEUR
+    if severite_globale == "MINEUR":
+        ronde.date_rappel_48h = datetime.now(timezone.utc) + timedelta(hours=48)
     
     await db.rondes_securite.insert_one(ronde.dict())
     
+    # Mettre à jour le véhicule
+    update_vehicule = {
+        "kilometrage": ronde_data.km if ronde_data.km > vehicle.get('kilometrage', 0) else vehicle.get('kilometrage', 0),
+        "derniere_inspection_date": ronde_data.date,
+        "date_derniere_ronde": ronde_data.date,
+        "defauts_actifs": defauts,
+        "updated_at": datetime.now(timezone.utc)
+    }
+    
+    # Mettre à jour la disponibilité selon la sévérité
+    if severite_globale == "MAJEUR":
+        update_vehicule["disponibilite_saaq"] = "hors_service"
+    elif severite_globale == "MINEUR":
+        update_vehicule["disponibilite_saaq"] = "reparation_requise"
+    else:
+        update_vehicule["disponibilite_saaq"] = "disponible"
+        update_vehicule["defauts_actifs"] = []
+    
     await db.vehicules.update_one(
         {"id": ronde_data.vehicule_id},
-        {"$set": {"derniere_inspection_date": ronde_data.date}}
+        {"$set": update_vehicule}
     )
     
-    # Envoi d'email en arrière-plan (géré par server.py pour l'instant)
+    # Envoyer les notifications selon la sévérité
+    parametres = tenant.parametres if hasattr(tenant, 'parametres') and tenant.parametres else {}
+    actifs_params = parametres.get('actifs', {})
+    destinataires_ids = actifs_params.get('emails_rondes', [])
+    
+    # Récupérer les IDs utilisateurs pour les notifications
+    recipient_user_ids = []
+    for item in destinataires_ids:
+        if '@' not in str(item):
+            user = await db.users.find_one({"id": item, "tenant_id": tenant.id}, {"_id": 0, "id": 1})
+            if user:
+                recipient_user_ids.append(user['id'])
+    
+    if severite_globale == "MAJEUR" and recipient_user_ids:
+        # Notification urgente HORS SERVICE
+        defauts_text = "\n".join([f"• {d.get('defect_id')}: {d.get('description')}" for d in defauts_majeurs])
+        from routes.notifications import creer_notification, send_push_notification_to_users
+        
+        for user_id in recipient_user_ids:
+            await creer_notification(
+                tenant_id=tenant.id,
+                destinataire_id=user_id,
+                type="vehicule_hors_service",
+                titre=f"🚨 VÉHICULE HORS SERVICE: {vehicle.get('nom')}",
+                message=f"Défaut(s) MAJEUR(S) détecté(s):\n{defauts_text}",
+                lien="/actifs",
+                data={"vehicule_id": vehicle.get('id'), "severite": "MAJEUR"},
+                envoyer_email=True
+            )
+        
+        try:
+            await send_push_notification_to_users(
+                user_ids=recipient_user_ids,
+                title=f"🚨 {vehicle.get('nom')} HORS SERVICE",
+                body=f"Défaut MAJEUR: {defauts_majeurs[0].get('description', 'Voir détails')}",
+                data={"type": "vehicule_hors_service", "vehicule_id": vehicle.get('id')}
+            )
+        except Exception as push_err:
+            logger.warning(f"Erreur push notification: {push_err}")
+    
+    elif severite_globale == "MINEUR" and recipient_user_ids:
+        # Notification réparation requise
+        defauts_text = "\n".join([f"• {d.get('defect_id')}: {d.get('description')}" for d in defauts_mineurs])
+        from routes.notifications import creer_notification, send_push_notification_to_users
+        
+        for user_id in recipient_user_ids:
+            await creer_notification(
+                tenant_id=tenant.id,
+                destinataire_id=user_id,
+                type="vehicule_reparation_requise",
+                titre=f"⚠️ Réparation requise: {vehicle.get('nom')}",
+                message=f"Défaut(s) mineur(s). Délai: 48h\n{defauts_text}",
+                lien="/actifs",
+                data={"vehicule_id": vehicle.get('id'), "severite": "MINEUR"},
+                envoyer_email=True
+            )
+        
+        try:
+            await send_push_notification_to_users(
+                user_ids=recipient_user_ids,
+                title=f"⚠️ {vehicle.get('nom')} - Réparation requise",
+                body="Défaut mineur détecté. Délai: 48h",
+                data={"type": "vehicule_reparation_requise", "vehicule_id": vehicle.get('id')}
+            )
+        except Exception as push_err:
+            logger.warning(f"Erreur push notification: {push_err}")
     
     return ronde
 
