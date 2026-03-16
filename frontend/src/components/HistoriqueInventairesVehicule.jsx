@@ -85,20 +85,52 @@ const HistoriqueInventairesVehicule = ({ vehicule, onClose }) => {
   };
 
   return (
-    <div style={{
+    <div className="historique-inventaires-overlay" style={{
       position: 'fixed',
       top: 0,
-      left: '250px',
+      left: 0,
       right: 0,
       bottom: 0,
       backgroundColor: 'rgba(0, 0, 0, 0.6)',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      zIndex: 1000,
-      padding: '20px'
+      zIndex: 100000,
+      padding: '12px'
     }}>
-      <div style={{
+      <style>{`
+        @media (max-width: 768px) {
+          .historique-inventaires-modal {
+            max-width: 100% !important;
+            margin: 0 !important;
+            border-radius: 8px !important;
+          }
+          .historique-inventaires-modal .modal-header {
+            padding: 16px !important;
+          }
+          .historique-inventaires-modal .modal-header h2 {
+            font-size: 18px !important;
+          }
+          .historique-inventaires-modal .modal-body {
+            padding: 12px !important;
+          }
+          .historique-inventaires-modal .modal-footer {
+            padding: 12px 16px !important;
+          }
+          .historique-inventaires-modal .inventaire-card {
+            padding: 12px !important;
+          }
+          .historique-inventaires-modal .item-row {
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+          }
+          .historique-inventaires-modal .item-status-badge {
+            font-size: 10px !important;
+            padding: 3px 6px !important;
+          }
+        }
+      `}</style>
+      <div className="historique-inventaires-modal" style={{
         backgroundColor: 'white',
         borderRadius: '12px',
         width: '100%',
@@ -110,24 +142,44 @@ const HistoriqueInventairesVehicule = ({ vehicule, onClose }) => {
         boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
       }}>
         {/* Header */}
-        <div style={{
-          padding: '24px',
+        <div className="modal-header" style={{
+          padding: '20px 24px',
           borderBottom: '2px solid #e9ecef',
-          backgroundColor: '#9b59b6'
+          backgroundColor: '#9b59b6',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start'
         }}>
-          <h2 style={{ margin: 0, color: 'white', fontSize: '24px', fontWeight: 'bold' }}>
-            📋 Historique des Inventaires
-          </h2>
-          <p style={{ margin: '8px 0 0 0', color: 'rgba(255,255,255,0.9)', fontSize: '14px' }}>
-            {vehicule.nom}
-          </p>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h2 style={{ margin: 0, color: 'white', fontSize: '20px', fontWeight: 'bold' }}>
+              📋 Historique des Inventaires
+            </h2>
+            <p style={{ margin: '8px 0 0 0', color: 'rgba(255,255,255,0.9)', fontSize: '14px', wordBreak: 'break-word' }}>
+              {vehicule.nom}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              backgroundColor: 'transparent',
+              border: 'none',
+              color: 'white',
+              fontSize: '1.5rem',
+              cursor: 'pointer',
+              padding: '0.25rem 0.5rem',
+              marginLeft: '8px',
+              flexShrink: 0
+            }}
+          >
+            ✕
+          </button>
         </div>
 
         {/* Body */}
-        <div style={{
+        <div className="modal-body" style={{
           flex: 1,
           overflowY: 'auto',
-          padding: '24px'
+          padding: '20px'
         }}>
           {loading ? (
             <div style={{ textAlign: 'center', padding: '40px', color: '#6c757d' }}>
@@ -157,8 +209,9 @@ const HistoriqueInventairesVehicule = ({ vehicule, onClose }) => {
                   <div
                     key={inv.id}
                     onClick={() => setSelectedInventaire(inv)}
+                    className="inventaire-card"
                     style={{
-                      padding: '20px',
+                      padding: '16px',
                       border: '2px solid #e9ecef',
                       borderRadius: '12px',
                       cursor: 'pointer',
@@ -174,22 +227,24 @@ const HistoriqueInventairesVehicule = ({ vehicule, onClose }) => {
                       e.currentTarget.style.boxShadow = 'none';
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
-                      <div>
-                        <h4 style={{ margin: 0, color: '#2c3e50', fontSize: '16px', marginBottom: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                      <div style={{ flex: 1, minWidth: '150px' }}>
+                        <h4 style={{ margin: 0, color: '#2c3e50', fontSize: '15px', marginBottom: '4px', wordBreak: 'break-word' }}>
                           {inv.modele_nom || 'Inventaire'}
                         </h4>
-                        <p style={{ margin: 0, color: '#6c757d', fontSize: '13px' }}>
+                        <p style={{ margin: 0, color: '#6c757d', fontSize: '12px' }}>
                           {formatDate(inv.date_inventaire || inv.created_at)}
                         </p>
                       </div>
                       <span style={{
-                        padding: '6px 12px',
+                        padding: '5px 10px',
                         borderRadius: '20px',
-                        fontSize: '12px',
+                        fontSize: '11px',
                         fontWeight: 'bold',
                         backgroundColor: statut.bg,
-                        color: statut.color
+                        color: statut.color,
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0
                       }}>
                         {statut.text}
                       </span>
@@ -289,32 +344,37 @@ const HistoriqueInventairesVehicule = ({ vehicule, onClose }) => {
                         return (
                           <div
                             key={idx}
+                            className="item-row"
                             style={{
-                              padding: '12px',
+                              padding: '10px 12px',
                               border: `2px solid ${isPresent ? '#27ae60' : isAbsent ? '#e74c3c' : '#f39c12'}`,
                               borderRadius: '8px',
                               backgroundColor: isPresent ? '#e8f5e9' : isAbsent ? '#fdecea' : '#fff3cd'
                             }}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span style={{ fontSize: '16px' }}>
+                            <div className="item-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: '16px', flexShrink: 0 }}>
                                 {isPresent ? '✅' : isAbsent ? '❌' : isDefectueux ? '⚠️' : '❓'}
                               </span>
                               <span style={{
                                 flex: 1,
-                                fontSize: '14px',
+                                fontSize: '13px',
                                 color: '#2c3e50',
-                                fontWeight: isPresent ? 'normal' : 'bold'
+                                fontWeight: isPresent ? 'normal' : 'bold',
+                                minWidth: '100px',
+                                wordBreak: 'break-word'
                               }}>
                                 {item.nom}
                               </span>
-                              <span style={{
+                              <span className="item-status-badge" style={{
                                 padding: '4px 8px',
                                 borderRadius: '12px',
-                                fontSize: '11px',
+                                fontSize: '10px',
                                 fontWeight: 'bold',
                                 backgroundColor: isPresent ? '#27ae60' : isAbsent ? '#e74c3c' : isDefectueux ? '#f39c12' : '#6c757d',
-                                color: 'white'
+                                color: 'white',
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0
                               }}>
                                 {item.valeur || 'N/A'}
                               </span>
@@ -341,8 +401,8 @@ const HistoriqueInventairesVehicule = ({ vehicule, onClose }) => {
         </div>
 
         {/* Footer */}
-        <div style={{
-          padding: '20px 24px',
+        <div className="modal-footer" style={{
+          padding: '16px 20px',
           borderTop: '1px solid #dee2e6',
           display: 'flex',
           justifyContent: 'flex-end'
@@ -350,7 +410,7 @@ const HistoriqueInventairesVehicule = ({ vehicule, onClose }) => {
           <button
             onClick={onClose}
             style={{
-              padding: '12px 24px',
+              padding: '10px 20px',
               backgroundColor: '#6c757d',
               color: 'white',
               border: 'none',

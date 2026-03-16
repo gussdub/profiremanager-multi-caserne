@@ -338,7 +338,7 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
   const estPremiereSection = sectionActuelle === 0;
 
   return (
-    <div style={{
+    <div className="inventaire-modal-overlay" style={{
       position: 'fixed',
       top: 0,
       left: 0,
@@ -349,9 +349,49 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
       justifyContent: 'center',
       alignItems: 'center',
       zIndex: 100000,
-      padding: '1rem'
+      padding: '10px'
     }}>
-      <div style={{
+      <style>{`
+        @media (max-width: 768px) {
+          .inventaire-modal-content {
+            max-width: 100% !important;
+            margin: 0 !important;
+            border-radius: 8px !important;
+            max-height: 95vh !important;
+          }
+          .inventaire-modal-header {
+            padding: 12px 16px !important;
+          }
+          .inventaire-modal-header h2 {
+            font-size: 1.1rem !important;
+          }
+          .inventaire-modal-body {
+            padding: 12px !important;
+          }
+          .inventaire-section-indicator {
+            padding: 10px !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 8px !important;
+          }
+          .inventaire-nav-buttons {
+            flex-direction: column !important;
+            gap: 8px !important;
+          }
+          .inventaire-nav-buttons button {
+            width: 100% !important;
+            padding: 12px !important;
+          }
+          .inventaire-item-card {
+            padding: 10px !important;
+          }
+          .inventaire-item-card textarea,
+          .inventaire-item-card input {
+            font-size: 16px !important; /* Évite le zoom sur iOS */
+          }
+        }
+      `}</style>
+      <div className="inventaire-modal-content" style={{
         backgroundColor: 'white',
         borderRadius: '12px',
         width: '100%',
@@ -363,21 +403,22 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
         boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
       }}>
         {/* Header */}
-        <div style={{
-          padding: '1.5rem',
+        <div className="inventaire-modal-header" style={{
+          padding: '1rem 1.25rem',
           borderBottom: '1px solid #e5e7eb',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           backgroundColor: '#8e44ad',
-          color: 'white'
+          color: 'white',
+          gap: '12px'
         }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '600', wordBreak: 'break-word' }}>
               📋 Inventaire - {vehicule.nom}
             </h2>
             {modeleSelectionne && (
-              <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.875rem', opacity: 0.9 }}>
+              <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem', opacity: 0.9, wordBreak: 'break-word' }}>
                 {modeleSelectionne.nom}
               </p>
             )}
@@ -390,7 +431,8 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
               color: 'white',
               fontSize: '1.5rem',
               cursor: 'pointer',
-              padding: '0.25rem 0.5rem'
+              padding: '0.25rem 0.5rem',
+              flexShrink: 0
             }}
           >
             ✕
@@ -400,10 +442,11 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
         {/* Content */}
         <div 
           ref={contentRef}
+          className="inventaire-modal-body"
           style={{
             flex: 1,
             overflow: 'auto',
-            padding: '1.5rem'
+            padding: '1rem'
           }}
         >
           {!modeleSelectionne ? (
@@ -470,14 +513,16 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
             // Formulaire d'inventaire avec navigation par section
             <div>
               {/* Indicateur de progression */}
-              <div style={{
-                marginBottom: '1.5rem',
-                padding: '1rem',
+              <div className="inventaire-section-indicator" style={{
+                marginBottom: '1rem',
+                padding: '0.75rem',
                 backgroundColor: '#f3e8ff',
                 borderRadius: '0.5rem',
                 display: 'flex',
                 justifyContent: 'space-between',
-                alignItems: 'center'
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '8px'
               }}>
                 <div>
                   <div style={{ fontSize: '0.875rem', color: '#6b21a8', fontWeight: '600' }}>
@@ -516,7 +561,7 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
                 height: '4px',
                 backgroundColor: '#e5e7eb',
                 borderRadius: '2px',
-                marginBottom: '1.5rem',
+                marginBottom: '1rem',
                 overflow: 'hidden'
               }}>
                 <div style={{
@@ -545,13 +590,13 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
               )}
 
               {/* Items de la section actuelle */}
-              <div style={{ marginBottom: '2rem' }}>
+              <div style={{ marginBottom: '1.5rem' }}>
                 {itemsSection.map(item => (
-                  <div key={item.index} style={{
-                    padding: '1rem',
+                  <div key={item.index} className="inventaire-item-card" style={{
+                    padding: '0.875rem',
                     backgroundColor: '#f9fafb',
                     borderRadius: '0.5rem',
-                    marginBottom: '1rem',
+                    marginBottom: '0.875rem',
                     border: '1px solid #e5e7eb'
                   }}>
                     {/* Photo de référence de l'item */}
@@ -761,9 +806,9 @@ const InventaireVehiculeModal = ({ vehicule, user, onClose, onSuccess }) => {
               )}
 
               {/* Boutons de navigation */}
-              <div style={{
+              <div className="inventaire-nav-buttons" style={{
                 display: 'flex',
-                gap: '1rem',
+                gap: '0.75rem',
                 justifyContent: 'space-between',
                 marginTop: '1rem'
               }}>

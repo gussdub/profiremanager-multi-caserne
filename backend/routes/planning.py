@@ -1140,33 +1140,46 @@ async def get_rapport_heures(
     await require_permission(tenant.id, current_user, "planning", "voir")
     
     # Calculer les dates de la période
+    # use_lte = True signifie qu'on utilise $lte (<=) pour la date de fin
+    # use_lte = False signifie qu'on utilise $lt (<) pour la date de fin (quand fin_str = premier jour du mois suivant)
+    use_lte = False
+    
     if date_debut and date_fin:
-        # Utiliser les dates fournies
+        # Utiliser les dates fournies directement
+        # Dans ce cas, date_fin est le DERNIER jour inclus (ex: 2026-04-30)
+        # Donc on utilise $lte pour inclure ce jour
         debut_str = date_debut
         fin_str = date_fin
+        use_lte = True
     elif mois:
         # Calculer les dates du mois
+        # fin_str sera le premier jour du mois suivant, donc on utilise $lt
         year, month = map(int, mois.split('-'))
         debut_str = f"{year}-{month:02d}-01"
         if month == 12:
             fin_str = f"{year + 1}-01-01"
         else:
             fin_str = f"{year}-{month + 1:02d}-01"
+        use_lte = False
     else:
         # Mois courant par défaut
+        # fin_str sera le premier jour du mois suivant, donc on utilise $lt
         now = datetime.now(timezone.utc)
         debut_str = f"{now.year}-{now.month:02d}-01"
         if now.month == 12:
             fin_str = f"{now.year + 1}-01-01"
         else:
             fin_str = f"{now.year}-{now.month + 1:02d}-01"
+        use_lte = False
     
     # Récupérer toutes les assignations de la période
+    # $lte inclut la date de fin, $lt l'exclut
+    date_filter = {"$lte": fin_str} if use_lte else {"$lt": fin_str}
     assignations = await db.assignations.find({
         "tenant_id": tenant.id,
         "date": {
             "$gte": debut_str,
-            "$lt": fin_str
+            **date_filter
         }
     }, {"_id": 0}).to_list(10000)
     
