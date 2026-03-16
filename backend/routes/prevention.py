@@ -190,6 +190,85 @@ class BatimentCreate(BaseModel):
     preventionniste_assigne_id: Optional[str] = None
 
 
+# ==================== MODÈLES DÉPENDANCES ====================
+
+class DependanceBatiment(BaseModel):
+    """Dépendance rattachée à un bâtiment principal (ex: poulailler, grange, hangar)"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    batiment_parent_id: str  # ID du bâtiment principal
+    nom: str  # Ex: "Poulailler", "Grange", "Hangar"
+    description: str = ""
+    photo_url: Optional[str] = ""
+    photos: List[Dict[str, Any]] = []  # Galerie de photos
+    # Classification
+    groupe_occupation: str = ""  # Catégorie (Agricole, Commercial, etc.)
+    sous_groupe: str = ""
+    niveau_risque: str = ""  # faible, moyen, élevé, très élevé
+    # Caractéristiques
+    valeur_fonciere: str = ""
+    annee_construction: str = ""
+    nombre_etages: str = "1"
+    superficie_m2: str = ""
+    materiaux_construction: str = ""
+    # Notes
+    notes: str = ""
+    notes_generales: str = ""
+    # Gestion
+    preventionniste_assigne_id: Optional[str] = None  # Si risque moyen+
+    statut: str = "actif"
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class DependanceCreate(BaseModel):
+    """Modèle pour la création d'une dépendance"""
+    nom: str
+    description: str = ""
+    photo_url: Optional[str] = ""
+    groupe_occupation: str = ""
+    sous_groupe: str = ""
+    niveau_risque: str = ""
+    valeur_fonciere: str = ""
+    annee_construction: str = ""
+    nombre_etages: str = "1"
+    superficie_m2: str = ""
+    materiaux_construction: str = ""
+    notes: str = ""
+    notes_generales: str = ""
+    preventionniste_assigne_id: Optional[str] = None
+
+
+class DependanceUpdate(BaseModel):
+    """Modèle pour la mise à jour d'une dépendance"""
+    nom: Optional[str] = None
+    description: Optional[str] = None
+    photo_url: Optional[str] = None
+    groupe_occupation: Optional[str] = None
+    sous_groupe: Optional[str] = None
+    niveau_risque: Optional[str] = None
+    valeur_fonciere: Optional[str] = None
+    annee_construction: Optional[str] = None
+    nombre_etages: Optional[str] = None
+    superficie_m2: Optional[str] = None
+    materiaux_construction: Optional[str] = None
+    notes: Optional[str] = None
+    notes_generales: Optional[str] = None
+    preventionniste_assigne_id: Optional[str] = None
+    statut: Optional[str] = None
+
+
+class PhotoBatiment(BaseModel):
+    """Photo stockée dans un bâtiment ou une dépendance"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    url: str
+    nom: str = ""
+    description: str = ""
+    date_ajout: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    ajoutee_par_id: Optional[str] = None
+    ajoutee_par_nom: Optional[str] = None
+
+
 class SecteurGeographique(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     tenant_id: str
@@ -1744,6 +1823,365 @@ async def delete_batiment_photo(
         raise HTTPException(status_code=404, detail="Bâtiment non trouvé")
     
     return {"message": "Photo supprimée avec succès"}
+
+
+# ==================== DÉPENDANCES DE BÂTIMENTS ====================
+
+@router.get("/{tenant_slug}/prevention/batiments/{batiment_id}/dependances")
+async def get_dependances_batiment(
+    tenant_slug: str,
+    batiment_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer toutes les dépendances d'un bâtiment"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "voir", "batiments")
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Vérifier que le bâtiment existe
+    batiment = await db.batiments.find_one({"id": batiment_id, "tenant_id": tenant.id})
+    if not batiment:
+        raise HTTPException(status_code=404, detail="Bâtiment non trouvé")
+    
+    # Récupérer les dépendances
+    dependances = await db.dependances_batiments.find({
+        "tenant_id": tenant.id,
+        "batiment_parent_id": batiment_id
+    }).to_list(100)
+    
+    return [clean_mongo_doc(d) for d in dependances]
+
+
+@router.get("/{tenant_slug}/prevention/dependances/{dependance_id}")
+async def get_dependance(
+    tenant_slug: str,
+    dependance_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer le détail d'une dépendance"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "voir", "batiments")
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    dependance = await db.dependances_batiments.find_one({
+        "id": dependance_id,
+        "tenant_id": tenant.id
+    })
+    
+    if not dependance:
+        raise HTTPException(status_code=404, detail="Dépendance non trouvée")
+    
+    return clean_mongo_doc(dependance)
+
+
+@router.post("/{tenant_slug}/prevention/batiments/{batiment_id}/dependances")
+async def create_dependance(
+    tenant_slug: str,
+    batiment_id: str,
+    data: DependanceCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer une nouvelle dépendance pour un bâtiment"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "creer", "batiments")
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Vérifier que le bâtiment parent existe
+    batiment = await db.batiments.find_one({"id": batiment_id, "tenant_id": tenant.id})
+    if not batiment:
+        raise HTTPException(status_code=404, detail="Bâtiment parent non trouvé")
+    
+    # Créer la dépendance
+    dependance = DependanceBatiment(
+        tenant_id=tenant.id,
+        batiment_parent_id=batiment_id,
+        **data.dict()
+    )
+    
+    await db.dependances_batiments.insert_one(dependance.dict())
+    
+    # Si risque moyen/élevé/très élevé et pas de préventionniste assigné,
+    # assigner le même que le bâtiment parent
+    if dependance.niveau_risque in ["moyen", "élevé", "tres_eleve", "très élevé"]:
+        if not dependance.preventionniste_assigne_id and batiment.get("preventionniste_assigne_id"):
+            await db.dependances_batiments.update_one(
+                {"id": dependance.id},
+                {"$set": {"preventionniste_assigne_id": batiment.get("preventionniste_assigne_id")}}
+            )
+    
+    logger.info(f"Dépendance '{data.nom}' créée pour le bâtiment {batiment_id}")
+    
+    return clean_mongo_doc(dependance.dict())
+
+
+@router.put("/{tenant_slug}/prevention/dependances/{dependance_id}")
+async def update_dependance(
+    tenant_slug: str,
+    dependance_id: str,
+    data: DependanceUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Mettre à jour une dépendance"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "modifier", "batiments")
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Vérifier que la dépendance existe
+    dependance = await db.dependances_batiments.find_one({
+        "id": dependance_id,
+        "tenant_id": tenant.id
+    })
+    if not dependance:
+        raise HTTPException(status_code=404, detail="Dépendance non trouvée")
+    
+    # Préparer les données de mise à jour
+    update_data = {k: v for k, v in data.dict().items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc)
+    
+    await db.dependances_batiments.update_one(
+        {"id": dependance_id, "tenant_id": tenant.id},
+        {"$set": update_data}
+    )
+    
+    # Récupérer la dépendance mise à jour
+    updated = await db.dependances_batiments.find_one({"id": dependance_id})
+    
+    return clean_mongo_doc(updated)
+
+
+@router.delete("/{tenant_slug}/prevention/dependances/{dependance_id}")
+async def delete_dependance(
+    tenant_slug: str,
+    dependance_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer une dépendance"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "supprimer", "batiments")
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Vérifier que la dépendance existe
+    dependance = await db.dependances_batiments.find_one({
+        "id": dependance_id,
+        "tenant_id": tenant.id
+    })
+    if not dependance:
+        raise HTTPException(status_code=404, detail="Dépendance non trouvée")
+    
+    # Supprimer les inspections liées à cette dépendance
+    await db.inspections_prevention.delete_many({
+        "dependance_id": dependance_id,
+        "tenant_id": tenant.id
+    })
+    
+    # Supprimer la dépendance
+    await db.dependances_batiments.delete_one({
+        "id": dependance_id,
+        "tenant_id": tenant.id
+    })
+    
+    logger.info(f"Dépendance {dependance_id} supprimée")
+    
+    return {"message": "Dépendance supprimée avec succès"}
+
+
+# ==================== GALERIE PHOTOS BÂTIMENTS & DÉPENDANCES ====================
+
+@router.get("/{tenant_slug}/prevention/batiments/{batiment_id}/photos")
+async def get_photos_batiment(
+    tenant_slug: str,
+    batiment_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer la galerie de photos d'un bâtiment"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "voir", "batiments")
+    
+    batiment = await db.batiments.find_one({"id": batiment_id, "tenant_id": tenant.id})
+    if not batiment:
+        raise HTTPException(status_code=404, detail="Bâtiment non trouvé")
+    
+    return batiment.get("photos", [])
+
+
+@router.post("/{tenant_slug}/prevention/batiments/{batiment_id}/photos")
+async def add_photo_batiment(
+    tenant_slug: str,
+    batiment_id: str,
+    photo: PhotoBatiment,
+    current_user: User = Depends(get_current_user)
+):
+    """Ajouter une photo à la galerie d'un bâtiment"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "modifier", "batiments")
+    
+    batiment = await db.batiments.find_one({"id": batiment_id, "tenant_id": tenant.id})
+    if not batiment:
+        raise HTTPException(status_code=404, detail="Bâtiment non trouvé")
+    
+    # Ajouter les infos de l'utilisateur
+    photo_data = photo.dict()
+    photo_data["ajoutee_par_id"] = current_user.id
+    photo_data["ajoutee_par_nom"] = f"{current_user.prenom} {current_user.nom}"
+    
+    # Ajouter à la galerie
+    await db.batiments.update_one(
+        {"id": batiment_id, "tenant_id": tenant.id},
+        {
+            "$push": {"photos": photo_data},
+            "$set": {"updated_at": datetime.now(timezone.utc)}
+        }
+    )
+    
+    return {"message": "Photo ajoutée avec succès", "photo": photo_data}
+
+
+@router.delete("/{tenant_slug}/prevention/batiments/{batiment_id}/photos/{photo_id}")
+async def delete_photo_from_galerie(
+    tenant_slug: str,
+    batiment_id: str,
+    photo_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer une photo de la galerie d'un bâtiment"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "modifier", "batiments")
+    
+    result = await db.batiments.update_one(
+        {"id": batiment_id, "tenant_id": tenant.id},
+        {
+            "$pull": {"photos": {"id": photo_id}},
+            "$set": {"updated_at": datetime.now(timezone.utc)}
+        }
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Bâtiment non trouvé")
+    
+    return {"message": "Photo supprimée avec succès"}
+
+
+@router.get("/{tenant_slug}/prevention/dependances/{dependance_id}/photos")
+async def get_photos_dependance(
+    tenant_slug: str,
+    dependance_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer la galerie de photos d'une dépendance"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "voir", "batiments")
+    
+    dependance = await db.dependances_batiments.find_one({
+        "id": dependance_id,
+        "tenant_id": tenant.id
+    })
+    if not dependance:
+        raise HTTPException(status_code=404, detail="Dépendance non trouvée")
+    
+    return dependance.get("photos", [])
+
+
+@router.post("/{tenant_slug}/prevention/dependances/{dependance_id}/photos")
+async def add_photo_dependance(
+    tenant_slug: str,
+    dependance_id: str,
+    photo: PhotoBatiment,
+    current_user: User = Depends(get_current_user)
+):
+    """Ajouter une photo à la galerie d'une dépendance"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "modifier", "batiments")
+    
+    dependance = await db.dependances_batiments.find_one({
+        "id": dependance_id,
+        "tenant_id": tenant.id
+    })
+    if not dependance:
+        raise HTTPException(status_code=404, detail="Dépendance non trouvée")
+    
+    # Ajouter les infos de l'utilisateur
+    photo_data = photo.dict()
+    photo_data["ajoutee_par_id"] = current_user.id
+    photo_data["ajoutee_par_nom"] = f"{current_user.prenom} {current_user.nom}"
+    
+    # Ajouter à la galerie
+    await db.dependances_batiments.update_one(
+        {"id": dependance_id, "tenant_id": tenant.id},
+        {
+            "$push": {"photos": photo_data},
+            "$set": {"updated_at": datetime.now(timezone.utc)}
+        }
+    )
+    
+    return {"message": "Photo ajoutée avec succès", "photo": photo_data}
+
+
+@router.delete("/{tenant_slug}/prevention/dependances/{dependance_id}/photos/{photo_id}")
+async def delete_photo_from_dependance(
+    tenant_slug: str,
+    dependance_id: str,
+    photo_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer une photo de la galerie d'une dépendance"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "modifier", "batiments")
+    
+    result = await db.dependances_batiments.update_one(
+        {"id": dependance_id, "tenant_id": tenant.id},
+        {
+            "$pull": {"photos": {"id": photo_id}},
+            "$set": {"updated_at": datetime.now(timezone.utc)}
+        }
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Dépendance non trouvée")
+    
+    return {"message": "Photo supprimée avec succès"}
+
+
+# ==================== INSPECTIONS DÉPENDANCES ====================
+
+@router.get("/{tenant_slug}/prevention/dependances/{dependance_id}/inspections")
+async def get_inspections_dependance(
+    tenant_slug: str,
+    dependance_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer l'historique des inspections d'une dépendance"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "voir", "inspections")
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Vérifier que la dépendance existe
+    dependance = await db.dependances_batiments.find_one({
+        "id": dependance_id,
+        "tenant_id": tenant.id
+    })
+    if not dependance:
+        raise HTTPException(status_code=404, detail="Dépendance non trouvée")
+    
+    # Récupérer les inspections
+    inspections = await db.inspections_prevention.find({
+        "tenant_id": tenant.id,
+        "dependance_id": dependance_id
+    }).sort("date_inspection", -1).to_list(100)
+    
+    return [clean_mongo_doc(i) for i in inspections]
+
 
 # ==================== SYMBOLES PERSONNALISÉS ====================
 

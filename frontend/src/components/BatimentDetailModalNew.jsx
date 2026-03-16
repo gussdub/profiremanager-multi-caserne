@@ -8,6 +8,8 @@ import HistoriqueInspections from './HistoriqueInspections';
 import InspectionDetailView from './InspectionDetailView';
 import PlanInterventionViewerNew from './PlanInterventionViewerNew';
 import RapportBatimentComplet from './RapportBatimentComplet';
+import DependancesBatiment from './DependancesBatiment';
+import GaleriePhotosBatiment from './GaleriePhotosBatiment';
 
 // Style pour l'animation de rotation
 const spinKeyframes = `
@@ -2377,6 +2379,31 @@ const BatimentForm = ({
                 </div>
               </div>
             </Card>
+
+            {/* ====== SECTION DÉPENDANCES ====== */}
+            {!isEditing && batiment?.id && (
+              <Card style={{ padding: '1.5rem' }}>
+                <DependancesBatiment
+                  tenantSlug={tenantSlug}
+                  batimentId={batiment.id}
+                  batimentAdresse={batiment?.adresse_civique || batiment?.nom_etablissement || 'Adresse'}
+                  preventionnisteId={batiment?.preventionniste_assigne_id}
+                  onUpdate={onUpdate}
+                  canEdit={true}
+                />
+              </Card>
+            )}
+
+            {/* ====== SECTION GALERIE PHOTOS ====== */}
+            {!isEditing && batiment?.id && (
+              <Card style={{ padding: '1.5rem' }}>
+                <GaleriePhotosBatiment
+                  tenantSlug={tenantSlug}
+                  batimentId={batiment.id}
+                  canEdit={true}
+                />
+              </Card>
+            )}
 
             {/* Historique des inspections (pour les bâtiments existants) */}
             {inspections.length > 0 && !isEditing && (
