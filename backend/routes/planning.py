@@ -816,11 +816,21 @@ async def publier_planning(
             if not user:
                 continue
             
-            # Récupérer les gardes de cet utilisateur
-            user_gardes = [a for a in brouillons if a.get("user_id") == user_id]
-            user_gardes.sort(key=lambda x: x.get("date", ""))
+            # Récupérer TOUTES les gardes de cet utilisateur pour la période (pas seulement les brouillons)
+            # Cela inclut les gardes déjà publiées + les nouvelles publiées
+            all_user_gardes = await db.assignations.find({
+                "tenant_id": tenant.id,
+                "user_id": user_id,
+                "date": {
+                    "$gte": date_debut,
+                    "$lte": date_fin
+                },
+                "publication_status": "publie"
+            }).to_list(1000)
             
-            nb_gardes = len(user_gardes)
+            all_user_gardes.sort(key=lambda x: x.get("date", ""))
+            
+            nb_gardes = len(all_user_gardes)
             
             # 1. Créer notification in-app
             try:
@@ -856,6 +866,11 @@ async def publier_planning(
                 user_name = f"{user.get('prenom', '')} {user.get('nom', '')}".strip()
                 
                 if user_email:
+                    # Récupérer les types de garde pour toutes les assignations de l'utilisateur
+                    all_type_garde_ids = list(set([a.get("type_garde_id") for a in all_user_gardes if a.get("type_garde_id")]))
+                    all_types_garde = await db.types_garde.find({"id": {"$in": all_type_garde_ids}}).to_list(100)
+                    all_types_garde_dict = {t["id"]: t for t in all_types_garde}
+                    
                     # Formatter la liste des gardes pour l'email
                     gardes_list = []
                     stats = {"par_type": {}, "heures_internes": 0, "heures_externes": 0, "total_gardes": nb_gardes}
@@ -865,8 +880,8 @@ async def publier_planning(
                         4: "Vendredi", 5: "Samedi", 6: "Dimanche"
                     }
                     
-                    for garde in user_gardes:
-                        type_garde = types_garde_dict.get(garde.get("type_garde_id"), {})
+                    for garde in all_user_gardes:
+                        type_garde = all_types_garde_dict.get(garde.get("type_garde_id"), {})
                         type_nom = type_garde.get("nom", "Garde")
                         duree = type_garde.get("duree_heures", 0) or 0
                         est_externe = type_garde.get("est_garde_externe", False)
@@ -887,13 +902,22 @@ async def publier_planning(
                         
                         horaire = f"{type_garde.get('heure_debut', '??:??')} - {type_garde.get('heure_fin', '??:??')}"
                         
-                        # Trouver les collègues pour cette garde
+                        # Trouver les collègues pour cette garde (parmi toutes les assignations publiées)
+                        collegues_gardes = await db.assignations.find({
+                            "tenant_id": tenant.id,
+                            "date": garde.get("date"),
+                            "type_garde_id": garde.get("type_garde_id"),
+                            "user_id": {"$ne": user_id},
+                            "publication_status": "publie"
+                        }).to_list(50)
+                        
                         collegues = []
-                        for a in brouillons:
-                            if a.get("date") == garde.get("date") and a.get("type_garde_id") == garde.get("type_garde_id") and a.get("user_id") != user_id:
-                                collegue = users_dict.get(a.get("user_id"))
-                                if collegue:
-                                    collegues.append(f"{collegue.get('prenom', '')} {collegue.get('nom', '')}".strip())
+                        for cg in collegues_gardes:
+                            collegue = users_dict.get(cg.get("user_id"))
+                            if not collegue:
+                                collegue = await db.users.find_one({"id": cg.get("user_id")}, {"_id": 0})
+                            if collegue:
+                                collegues.append(f"{collegue.get('prenom', '')} {collegue.get('nom', '')}".strip())
                         
                         gardes_list.append({
                             "date": garde.get("date", ""),
