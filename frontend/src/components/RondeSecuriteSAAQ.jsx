@@ -365,7 +365,9 @@ const RondeSecuriteSAAQ = ({ vehicule, user, onClose, onSuccess }) => {
                     color: 'white',
                     padding: '2px 8px',
                     borderRadius: '12px',
-                    fontSize: '12px'
+                    fontSize: '12px',
+                    whiteSpace: 'nowrap',
+                    display: 'inline-block'
                   }}>
                     {brakeSystemType === 'BOTH' ? 'Hydraul. + Pneum.' : brakeSystemType === 'HYDRAULIC' ? 'Hydrauliques' : 'Pneumatiques'}
                   </span>
