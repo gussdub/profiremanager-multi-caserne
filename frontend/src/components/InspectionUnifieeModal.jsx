@@ -63,7 +63,9 @@ const InspectionUnifieeModal = ({
               break;
             case 'inspecteur':
               // Auto-remplir avec le nom de l'utilisateur connecté
-              initialReponses[item.id] = `${user.prenom || ''} ${user.nom || ''}`.trim() || user.email;
+              const inspecteurNom = `${user?.prenom || ''} ${user?.nom || ''}`.trim();
+              initialReponses[item.id] = inspecteurNom || user?.email || 'Utilisateur';
+              console.log(`[INSPECTEUR] Auto-rempli: ${initialReponses[item.id]}, user:`, user);
               break;
             case 'lieu':
               initialReponses[item.id] = '';
@@ -88,8 +90,11 @@ const InspectionUnifieeModal = ({
               // Sera auto-rempli lors du rendu
               initialReponses[item.id] = null;
               break;
-            case 'texte':
             case 'date':
+              // Auto-remplir avec la date d'aujourd'hui
+              initialReponses[item.id] = new Date().toISOString().split('T')[0];
+              break;
+            case 'texte':
             case 'liste':
             default:
               initialReponses[item.id] = '';
@@ -554,12 +559,24 @@ const InspectionUnifieeModal = ({
       
       case 'date':
         return (
-          <Input
-            type="date"
-            value={value || ''}
-            onChange={(e) => handleReponseChange(item.id, e.target.value)}
-            style={{ fontSize: '16px' }}
-          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '1.25rem' }}>📅</span>
+            <input
+              type="date"
+              value={value || new Date().toISOString().split('T')[0]}
+              onChange={(e) => handleReponseChange(item.id, e.target.value)}
+              style={{ 
+                fontSize: '16px',
+                padding: '0.5rem 0.75rem',
+                border: '1px solid #e5e7eb',
+                borderRadius: '6px',
+                backgroundColor: '#f0fdf4',
+                color: '#166534',
+                fontWeight: '500',
+                cursor: 'pointer'
+              }}
+            />
+          </div>
         );
       
       case 'liste':
