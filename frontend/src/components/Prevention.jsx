@@ -801,10 +801,15 @@ const Prevention = () => {
                         const depCount = depInfo?.total || 0;
                         const depsParRisque = depInfo?.par_risque || {};
                         
-                        // Vérifier s'il y a des dépendances à risque élevé ou très élevé
-                        const depsRisqueEleve = (depsParRisque['élevé'] || 0) + (depsParRisque['eleve'] || 0) + 
-                                                (depsParRisque['très élevé'] || 0) + (depsParRisque['tres_eleve'] || 0) +
-                                                (depsParRisque['Élevé'] || 0) + (depsParRisque['Très élevé'] || 0);
+                        // Calculer les dépendances par niveau de risque (normaliser les clés)
+                        const getRisqueCount = (keys) => {
+                          return keys.reduce((sum, key) => sum + (depsParRisque[key] || 0), 0);
+                        };
+                        
+                        const depsTresEleve = getRisqueCount(['très élevé', 'tres_eleve', 'Très élevé', 'tres eleve']);
+                        const depsEleve = getRisqueCount(['élevé', 'eleve', 'Élevé', 'elevé']);
+                        const depsMoyen = getRisqueCount(['moyen', 'Moyen']);
+                        const depsFaible = getRisqueCount(['faible', 'Faible']);
                         
                         return (
                       <tr key={batiment.id} style={{borderBottom: '1px solid #e5e7eb', transition: 'background 0.2s'}} onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'} onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}>
@@ -833,7 +838,27 @@ const Prevention = () => {
                                 🏠 {depCount}
                               </span>
                             )}
-                            {depsRisqueEleve > 0 && (
+                            {/* Badge risque très élevé */}
+                            {depsTresEleve > 0 && (
+                              <span 
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.25rem',
+                                  padding: '0.2rem 0.5rem',
+                                  background: '#7f1d1d',
+                                  color: '#fff',
+                                  borderRadius: '10px',
+                                  fontSize: '0.7rem',
+                                  fontWeight: '600'
+                                }}
+                                title={`${depsTresEleve} dépendance${depsTresEleve > 1 ? 's' : ''} très élevé`}
+                              >
+                                🔴 {depsTresEleve} très élevé
+                              </span>
+                            )}
+                            {/* Badge risque élevé */}
+                            {depsEleve > 0 && (
                               <span 
                                 style={{
                                   display: 'inline-flex',
@@ -843,13 +868,53 @@ const Prevention = () => {
                                   background: '#fee2e2',
                                   color: '#991b1b',
                                   borderRadius: '10px',
-                                  fontSize: '0.75rem',
+                                  fontSize: '0.7rem',
                                   fontWeight: '600',
                                   border: '1px solid #fca5a5'
                                 }}
-                                title={`${depsRisqueEleve} dépendance${depsRisqueEleve > 1 ? 's' : ''} à risque élevé`}
+                                title={`${depsEleve} dépendance${depsEleve > 1 ? 's' : ''} élevé`}
                               >
-                                ⚠️ {depsRisqueEleve} risque élevé
+                                🟠 {depsEleve} élevé
+                              </span>
+                            )}
+                            {/* Badge risque moyen */}
+                            {depsMoyen > 0 && (
+                              <span 
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.25rem',
+                                  padding: '0.2rem 0.5rem',
+                                  background: '#fef9c3',
+                                  color: '#854d0e',
+                                  borderRadius: '10px',
+                                  fontSize: '0.7rem',
+                                  fontWeight: '600',
+                                  border: '1px solid #fde047'
+                                }}
+                                title={`${depsMoyen} dépendance${depsMoyen > 1 ? 's' : ''} moyen`}
+                              >
+                                🟡 {depsMoyen} moyen
+                              </span>
+                            )}
+                            {/* Badge risque faible */}
+                            {depsFaible > 0 && (
+                              <span 
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.25rem',
+                                  padding: '0.2rem 0.5rem',
+                                  background: '#dcfce7',
+                                  color: '#166534',
+                                  borderRadius: '10px',
+                                  fontSize: '0.7rem',
+                                  fontWeight: '600',
+                                  border: '1px solid #86efac'
+                                }}
+                                title={`${depsFaible} dépendance${depsFaible > 1 ? 's' : ''} faible`}
+                              >
+                                🟢 {depsFaible} faible
                               </span>
                             )}
                           </div>
