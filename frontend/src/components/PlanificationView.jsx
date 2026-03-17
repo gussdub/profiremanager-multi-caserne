@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from './ui/button';
 import CalendrierInspections from './CalendrierInspections';
 import CartePlanification from './CartePlanification';
-import { apiGet, apiPost, getTenantToken } from '../utils/api';
+import { apiGet, apiPost, apiPut, getTenantToken } from '../utils/api';
 import { useToast } from '../hooks/use-toast';
 
 const PlanificationView = ({ 
@@ -118,6 +118,7 @@ const PlanificationView = ({
             tenantSlug={tenantSlug}
             apiGet={apiGet}
             apiPost={apiPost}
+            apiPut={apiPut}
             user={user}
             toast={toast}
             setCurrentView={setCurrentView}

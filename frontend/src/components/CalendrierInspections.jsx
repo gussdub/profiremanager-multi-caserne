@@ -11,7 +11,7 @@ const formatDateLocalYMD = (date) => {
   return `${year}-${month}-${day}`;
 };
 
-const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openBatimentModal }) => {
+const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, apiPut, user, toast, openBatimentModal }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [inspections, setInspections] = useState([]);
   const [batiments, setBatiments] = useState([]);
@@ -24,6 +24,7 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [grilles, setGrilles] = useState([]);
+  const [editingInspection, setEditingInspection] = useState(null); // Inspection en cours d'édition (null = création)
   const [newInspection, setNewInspection] = useState({
     batiment_id: '',
     grille_inspection_id: '',
@@ -78,11 +79,40 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
     }
 
     setSelectedDate(date);
+    setEditingInspection(null); // Mode création (pas d'édition)
     setNewInspection({
       ...newInspection,
+      batiment_id: '',
+      grille_inspection_id: '',
+      preventionniste_id: '',
       date_inspection: formatDateLocalYMD(date),
-      preventionniste_id: '' // Vide par défaut - non assigné
+      heure_debut: '09:00',
+      type_inspection: 'reguliere'
     });
+    setShowCreateModal(true);
+  };
+
+  // Fonction pour ouvrir le modal en mode édition
+  const handleEditInspection = (inspection) => {
+    // Déterminer si c'est une dépendance ou un bâtiment
+    const isDependance = !!inspection.dependance_id;
+    const elementId = isDependance ? `dep_${inspection.dependance_id}` : `bat_${inspection.batiment_id}`;
+    
+    // Extraire la date et l'heure de date_inspection
+    const dateTime = inspection.date_inspection?.split('T') || ['', '09:00'];
+    const dateStr = dateTime[0];
+    const heureStr = dateTime[1]?.substring(0, 5) || '09:00';
+    
+    setEditingInspection(inspection);
+    setNewInspection({
+      batiment_id: elementId,
+      grille_inspection_id: inspection.grille_id || inspection.grille_inspection_id || '',
+      preventionniste_id: inspection.preventionniste_id || '',
+      date_inspection: dateStr,
+      heure_debut: heureStr,
+      type_inspection: inspection.type_inspection || 'reguliere'
+    });
+    setSelectedDate(new Date(dateStr));
     setShowCreateModal(true);
   };
 
@@ -110,7 +140,7 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
       const inspectionData = {
         batiment_id: isDependance ? '' : realId,
         dependance_id: isDependance ? realId : '',
-        grille_id: newInspection.grille_inspection_id,
+        grille_inspection_id: newInspection.grille_inspection_id,
         preventionniste_id: newInspection.preventionniste_id || '',
         preventionniste_nom: preventionnisteNom,
         date_inspection: newInspection.date_inspection + 'T' + (newInspection.heure_debut || '09:00') + ':00',
@@ -118,19 +148,29 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
         statut: 'planifiee'
       };
 
-      // Appeler l'endpoint approprié
-      if (isDependance) {
-        await apiPost(tenantSlug, `/prevention/dependances/${realId}/inspections`, inspectionData);
+      // Mode édition ou création
+      if (editingInspection) {
+        // Mode ÉDITION - Appeler PUT
+        await apiPut(tenantSlug, `/prevention/inspections/${editingInspection.id}`, inspectionData);
+        toast({
+          title: "Succès",
+          description: `Inspection modifiée avec succès`
+        });
       } else {
-        await apiPost(tenantSlug, '/prevention/inspections', inspectionData);
+        // Mode CRÉATION - Appeler POST
+        if (isDependance) {
+          await apiPost(tenantSlug, `/prevention/dependances/${realId}/inspections`, inspectionData);
+        } else {
+          await apiPost(tenantSlug, '/prevention/inspections', inspectionData);
+        }
+        toast({
+          title: "Succès",
+          description: `Inspection planifiée avec succès pour ${isDependance ? 'la dépendance' : 'le bâtiment'}`
+        });
       }
       
-      toast({
-        title: "Succès",
-        description: `Inspection planifiée avec succès pour ${isDependance ? 'la dépendance' : 'le bâtiment'}`
-      });
-      
       setShowCreateModal(false);
+      setEditingInspection(null);
       setNewInspection({
         batiment_id: '',
         grille_inspection_id: '',
@@ -143,10 +183,10 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
       // Recharger les inspections
       fetchData();
     } catch (error) {
-      console.error('Erreur création inspection:', error);
+      console.error('Erreur création/modification inspection:', error);
       toast({
         title: "Erreur",
-        description: "Impossible de créer l'inspection: " + (error.message || 'Erreur inconnue'),
+        description: "Impossible de " + (editingInspection ? "modifier" : "créer") + " l'inspection: " + (error.message || 'Erreur inconnue'),
         variant: "destructive"
       });
     }
@@ -502,9 +542,8 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
                         key={insp.id}
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (batiment && openBatimentModal) {
-                            openBatimentModal(batiment);
-                          }
+                          // Ouvrir le modal en mode édition pour cette inspection
+                          handleEditInspection(insp);
                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.opacity = '0.8';
@@ -514,7 +553,7 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
                           e.currentTarget.style.opacity = '1';
                           e.currentTarget.style.transform = 'scale(1)';
                         }}
-                        title={`${dependance ? '🏠 ' + dependance.nom : batiment?.nom_etablissement || 'Inspection'}\n${dependance ? 'Dépendance de: ' + (batiment?.adresse_civique || '') : batiment?.adresse_civique || ''}\nHeure: ${heure || 'Non définie'}\nStatut: ${insp.statut || 'À faire'}`}
+                        title={`${dependance ? '🏠 ' + dependance.nom : batiment?.nom_etablissement || 'Inspection'}\n${dependance ? 'Dépendance de: ' + (batiment?.adresse_civique || '') : batiment?.adresse_civique || ''}\nHeure: ${heure || 'Non définie'}\nStatut: ${insp.statut || 'À faire'}\n\nCliquez pour modifier`}
                         style={{
                           fontSize: '0.7rem',
                           padding: '2px 4px',
@@ -745,7 +784,7 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
         </div>
       </Card>
 
-      {/* Modal de création d'inspection */}
+      {/* Modal de création/édition d'inspection */}
       {showCreateModal && (
         <div style={{
           position: 'fixed',
@@ -758,7 +797,7 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 100000
-        }} onClick={() => setShowCreateModal(false)}>
+        }} onClick={() => { setShowCreateModal(false); setEditingInspection(null); }}>
           <div style={{
             background: 'white',
             borderRadius: '12px',
@@ -769,7 +808,7 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
             overflow: 'auto'
           }} onClick={(e) => e.stopPropagation()}>
             <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1.5rem', color: '#111827' }}>
-              📅 Planifier une inspection
+              {editingInspection ? '✏️ Modifier l\'inspection' : '📅 Planifier une inspection'}
             </h2>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -926,7 +965,7 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
             {/* Boutons */}
             <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
               <Button
-                onClick={() => setShowCreateModal(false)}
+                onClick={() => { setShowCreateModal(false); setEditingInspection(null); }}
                 style={{
                   flex: 1,
                   padding: '0.75rem',
@@ -941,11 +980,12 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
                 Annuler
               </Button>
               <Button
+                data-testid="save-inspection-btn"
                 onClick={handleCreateInspection}
                 style={{
                   flex: 1,
                   padding: '0.75rem',
-                  background: '#2563eb',
+                  background: editingInspection ? '#f59e0b' : '#2563eb',
                   color: 'white',
                   border: 'none',
                   borderRadius: '6px',
@@ -953,7 +993,7 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
                   fontWeight: '600'
                 }}
               >
-                ✅ Planifier
+                {editingInspection ? '💾 Enregistrer les modifications' : '✅ Planifier'}
               </Button>
             </div>
           </div>

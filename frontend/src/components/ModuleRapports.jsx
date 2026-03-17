@@ -11,7 +11,7 @@ const ModuleRapports = ({ setCurrentView }) => {
   const { toast } = useToast();
   const [tendances, setTendances] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [exporting, setExporting] = useState(false);
+  const [exportingType, setExportingType] = useState(null); // Stocke le type d'export en cours (null = aucun)
 
   useEffect(() => {
     const fetchTendances = async () => {
@@ -35,7 +35,7 @@ const ModuleRapports = ({ setCurrentView }) => {
 
   const handleExport = async (type) => {
     try {
-      setExporting(true);
+      setExportingType(type); // Stocke le type spécifique en cours d'export
       
       const response = await fetch(
         `${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/prevention/export-excel?type_export=${type}`,
@@ -70,7 +70,7 @@ const ModuleRapports = ({ setCurrentView }) => {
         variant: "destructive"
       });
     } finally {
-      setExporting(false);
+      setExportingType(null); // Réinitialise l'état
     }
   };
 
@@ -95,10 +95,11 @@ const ModuleRapports = ({ setCurrentView }) => {
             <h4>Inspections</h4>
             <p>Toutes les inspections avec dates, statuts, scores et non-conformités</p>
             <Button 
+              data-testid="export-inspections-btn"
               onClick={() => handleExport('inspections')}
-              disabled={exporting}
+              disabled={exportingType === 'inspections'}
             >
-              {exporting ? 'Export...' : 'Télécharger Excel'}
+              {exportingType === 'inspections' ? 'Export en cours...' : 'Télécharger Excel'}
             </Button>
           </div>
 
@@ -107,10 +108,11 @@ const ModuleRapports = ({ setCurrentView }) => {
             <h4>Bâtiments</h4>
             <p>Liste complète des bâtiments avec informations et historiques d'inspections</p>
             <Button 
+              data-testid="export-batiments-btn"
               onClick={() => handleExport('batiments')}
-              disabled={exporting}
+              disabled={exportingType === 'batiments'}
             >
-              {exporting ? 'Export...' : 'Télécharger Excel'}
+              {exportingType === 'batiments' ? 'Export en cours...' : 'Télécharger Excel'}
             </Button>
           </div>
 
@@ -119,10 +121,11 @@ const ModuleRapports = ({ setCurrentView }) => {
             <h4>Non-Conformités</h4>
             <p>Toutes les non-conformités détectées avec statuts et délais de correction</p>
             <Button 
+              data-testid="export-non-conformites-btn"
               onClick={() => handleExport('non_conformites')}
-              disabled={exporting}
+              disabled={exportingType === 'non_conformites'}
             >
-              {exporting ? 'Export...' : 'Télécharger Excel'}
+              {exportingType === 'non_conformites' ? 'Export en cours...' : 'Télécharger Excel'}
             </Button>
           </div>
         </div>
