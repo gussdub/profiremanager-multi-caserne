@@ -722,6 +722,10 @@ async def create_inspection(
     # Normaliser les données
     inspection_data = inspection.dict()
     
+    # Convertir resultats en dict si c'est une liste (compatibilité ancien format)
+    if isinstance(inspection_data.get('resultats'), list):
+        inspection_data['resultats'] = {}
+    
     # Si inspecteur_id est fourni mais pas preventionniste_id, les synchroniser
     if inspection_data.get('inspecteur_id') and not inspection_data.get('preventionniste_id'):
         inspection_data['preventionniste_id'] = inspection_data['inspecteur_id']
@@ -2155,6 +2159,10 @@ async def create_inspection_dependance(
     inspection_data = data.dict()
     inspection_data["dependance_id"] = dependance_id
     inspection_data["batiment_id"] = dependance.get("batiment_parent_id", "")
+    
+    # Convertir resultats en dict si c'est une liste (compatibilité ancien format)
+    if isinstance(inspection_data.get('resultats'), list):
+        inspection_data['resultats'] = {}
     
     inspection = Inspection(
         tenant_id=tenant.id,
