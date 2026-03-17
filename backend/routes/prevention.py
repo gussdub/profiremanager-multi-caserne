@@ -1859,26 +1859,50 @@ async def get_dependances_count_all(
     tenant_slug: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Récupérer le nombre de dépendances pour tous les bâtiments (optimisé pour la liste)"""
+    """Récupérer les informations sur les dépendances pour tous les bâtiments (optimisé pour la liste)
+    Retourne pour chaque bâtiment: le nombre total de dépendances et le détail par niveau de risque
+    """
     tenant = await get_tenant_from_slug(tenant_slug)
     await require_permission(tenant.id, current_user, "prevention", "voir", "batiments")
     
     if not tenant.parametres.get('module_prevention_active', False):
         raise HTTPException(status_code=403, detail="Module prévention non activé")
     
-    # Utiliser aggregation pour compter les dépendances par bâtiment parent
+    # Utiliser aggregation pour compter les dépendances par bâtiment parent et par niveau de risque
     pipeline = [
         {"$match": {"tenant_id": tenant.id}},
         {"$group": {
-            "_id": "$batiment_parent_id",
+            "_id": {
+                "batiment_id": "$batiment_parent_id",
+                "niveau_risque": "$niveau_risque"
+            },
             "count": {"$sum": 1}
         }}
     ]
     
     result = await db.dependances_batiments.aggregate(pipeline).to_list(1000)
     
-    # Retourner un dictionnaire {batiment_id: count}
-    return {item["_id"]: item["count"] for item in result if item["_id"]}
+    # Construire un dictionnaire structuré
+    # {batiment_id: {total: X, par_risque: {faible: X, moyen: X, eleve: X, tres_eleve: X}}}
+    batiments_deps = {}
+    for item in result:
+        if not item["_id"]["batiment_id"]:
+            continue
+        bat_id = item["_id"]["batiment_id"]
+        risque = (item["_id"]["niveau_risque"] or "").lower()
+        count = item["count"]
+        
+        if bat_id not in batiments_deps:
+            batiments_deps[bat_id] = {
+                "total": 0,
+                "par_risque": {}
+            }
+        
+        batiments_deps[bat_id]["total"] += count
+        if risque:
+            batiments_deps[bat_id]["par_risque"][risque] = count
+    
+    return batiments_deps
 
 
 @router.get("/{tenant_slug}/prevention/dependances/{dependance_id}")

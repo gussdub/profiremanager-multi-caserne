@@ -224,8 +224,25 @@ const Prevention = () => {
     }
 
     // Filtre par niveau de risque
+    // Inclut les bâtiments dont le niveau de risque correspond OU dont une dépendance a ce niveau
     if (filters.niveauRisque) {
-      filtered = filtered.filter(b => b.niveau_risque === filters.niveauRisque);
+      const risqueFilter = filters.niveauRisque.toLowerCase().replace('é', 'e').replace('è', 'e');
+      filtered = filtered.filter(b => {
+        // Le bâtiment lui-même correspond
+        if (b.niveau_risque === filters.niveauRisque) return true;
+        
+        // Une de ses dépendances correspond
+        const depInfo = dependancesCounts[b.id];
+        if (depInfo && depInfo.par_risque) {
+          // Vérifier si une dépendance a ce niveau de risque
+          for (const [risque, count] of Object.entries(depInfo.par_risque)) {
+            if (count > 0 && risque.toLowerCase().includes(risqueFilter.replace('très ', 'tres_'))) {
+              return true;
+            }
+          }
+        }
+        return false;
+      });
     }
 
     // Filtre par date de dernière inspection
@@ -257,7 +274,8 @@ const Prevention = () => {
     // Filtre par dépendances
     if (filters.dependances) {
       filtered = filtered.filter(b => {
-        const hasDependances = (dependancesCounts[b.id] || 0) > 0;
+        const depInfo = dependancesCounts[b.id];
+        const hasDependances = depInfo && depInfo.total > 0;
         return filters.dependances === 'avec' ? hasDependances : !hasDependances;
       });
     }
@@ -413,6 +431,24 @@ const Prevention = () => {
                 <div className="stat-content">
                   <div className="stat-number">{stats?.batiments?.total || batiments.length}</div>
                   <div className="stat-label">Bâtiments</div>
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-icon">🏠</div>
+                <div className="stat-content">
+                  <div className="stat-number">
+                    {Object.values(dependancesCounts).reduce((acc, dep) => acc + (dep?.total || 0), 0)}
+                  </div>
+                  <div className="stat-label">Dépendances</div>
+                </div>
+              </div>
+              <div className="stat-card" style={{background: '#fef3c7', borderColor: '#fcd34d'}}>
+                <div className="stat-icon">📊</div>
+                <div className="stat-content">
+                  <div className="stat-number">
+                    {(stats?.batiments?.total || batiments.length) + Object.values(dependancesCounts).reduce((acc, dep) => acc + (dep?.total || 0), 0)}
+                  </div>
+                  <div className="stat-label">Total visites à planifier</div>
                 </div>
               </div>
               <div className="stat-card">
@@ -761,11 +797,19 @@ const Prevention = () => {
                     </thead>
                     <tbody>
                       {filteredBatimentsList.map(batiment => {
-                        const depCount = dependancesCounts[batiment.id] || 0;
+                        const depInfo = dependancesCounts[batiment.id];
+                        const depCount = depInfo?.total || 0;
+                        const depsParRisque = depInfo?.par_risque || {};
+                        
+                        // Vérifier s'il y a des dépendances à risque élevé ou très élevé
+                        const depsRisqueEleve = (depsParRisque['élevé'] || 0) + (depsParRisque['eleve'] || 0) + 
+                                                (depsParRisque['très élevé'] || 0) + (depsParRisque['tres_eleve'] || 0) +
+                                                (depsParRisque['Élevé'] || 0) + (depsParRisque['Très élevé'] || 0);
+                        
                         return (
                       <tr key={batiment.id} style={{borderBottom: '1px solid #e5e7eb', transition: 'background 0.2s'}} onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'} onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}>
                         <td style={{padding: '1rem'}}>
-                          <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                          <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap'}}>
                             <div>
                               <div style={{fontWeight: '600', marginBottom: '0.25rem'}}>{batiment.nom_etablissement || batiment.adresse_civique}</div>
                               <div style={{fontSize: '0.813rem', color: '#6b7280'}}>{batiment.ville}</div>
@@ -787,6 +831,25 @@ const Prevention = () => {
                                 title={`${depCount} dépendance${depCount > 1 ? 's' : ''}`}
                               >
                                 🏠 {depCount}
+                              </span>
+                            )}
+                            {depsRisqueEleve > 0 && (
+                              <span 
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.25rem',
+                                  padding: '0.2rem 0.5rem',
+                                  background: '#fee2e2',
+                                  color: '#991b1b',
+                                  borderRadius: '10px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: '600',
+                                  border: '1px solid #fca5a5'
+                                }}
+                                title={`${depsRisqueEleve} dépendance${depsRisqueEleve > 1 ? 's' : ''} à risque élevé`}
+                              >
+                                ⚠️ {depsRisqueEleve} risque élevé
                               </span>
                             )}
                           </div>
@@ -1375,6 +1438,10 @@ const Prevention = () => {
             onClose={() => {
               setShowBatimentModal(false);
               setSelectedBatiment(null);
+              // Rafraîchir les données lors de la fermeture
+              fetchBatiments();
+              fetchDependancesCounts();
+              fetchStats();
               if (currentView === 'nouveau-batiment') {
                 setCurrentView('batiments');
               }
@@ -1382,6 +1449,7 @@ const Prevention = () => {
             onDependancesChange={() => {
               // Rafraîchir le comptage des dépendances quand elles sont modifiées
               fetchDependancesCounts();
+              fetchStats();
             }}
             onCreate={async (newBatimentData) => {
               try {
