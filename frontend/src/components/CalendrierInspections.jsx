@@ -587,9 +587,22 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
             fontSize: '0.813rem',
             fontWeight: '500'
           }}>
-            {filtreType === 'batiments' ? batiments.length : 
-             filtreType === 'dependances' ? dependances.length : 
-             batiments.length + dependances.length}
+            {(() => {
+              // Calculer le nombre d'éléments sans inspection planifiée
+              const batimentsSansPlanif = batiments.filter(bat => 
+                (filtreType === 'tous' || filtreType === 'batiments') &&
+                (filtreRisque === 'tous' || bat.niveau_risque === filtreRisque) &&
+                !inspections.some(insp => insp.batiment_id === bat.id && !insp.dependance_id && insp.statut === 'planifiee')
+              ).length;
+              const dependancesSansPlanif = dependances.filter(dep =>
+                (filtreType === 'tous' || filtreType === 'dependances') &&
+                (filtreRisque === 'tous' || dep.niveau_risque?.toLowerCase() === filtreRisque.toLowerCase()) &&
+                !inspections.some(insp => insp.dependance_id === dep.id && insp.statut === 'planifiee')
+              ).length;
+              return filtreType === 'batiments' ? batimentsSansPlanif : 
+                     filtreType === 'dependances' ? dependancesSansPlanif : 
+                     batimentsSansPlanif + dependancesSansPlanif;
+            })()}
           </span>
         </h3>
         
@@ -610,9 +623,10 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
               </tr>
             </thead>
             <tbody>
-              {/* Bâtiments */}
+              {/* Bâtiments sans inspection planifiée */}
               {(filtreType === 'tous' || filtreType === 'batiments') && batiments
                 .filter(bat => filtreRisque === 'tous' || bat.niveau_risque === filtreRisque)
+                .filter(bat => !inspections.some(insp => insp.batiment_id === bat.id && !insp.dependance_id && insp.statut === 'planifiee'))
                 .map(bat => (
                   <tr key={`bat-${bat.id}`} style={{ borderBottom: '1px solid #e5e7eb' }}>
                     <td style={{ padding: '0.75rem' }}>
@@ -667,9 +681,10 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
                   </tr>
                 ))}
               
-              {/* Dépendances */}
+              {/* Dépendances sans inspection planifiée */}
               {(filtreType === 'tous' || filtreType === 'dependances') && dependances
                 .filter(dep => filtreRisque === 'tous' || dep.niveau_risque?.toLowerCase() === filtreRisque.toLowerCase())
+                .filter(dep => !inspections.some(insp => insp.dependance_id === dep.id && insp.statut === 'planifiee'))
                 .map(dep => (
                   <tr key={`dep-${dep.id}`} style={{ borderBottom: '1px solid #e5e7eb', background: '#fffbeb' }}>
                     <td style={{ padding: '0.75rem' }}>
