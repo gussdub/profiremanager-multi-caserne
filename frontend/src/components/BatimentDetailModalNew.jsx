@@ -10,6 +10,7 @@ import PlanInterventionViewerNew from './PlanInterventionViewerNew';
 import RapportBatimentComplet from './RapportBatimentComplet';
 import DependancesBatiment from './DependancesBatiment';
 import GaleriePhotosBatiment from './GaleriePhotosBatiment';
+import { useModalScrollLock } from '../hooks/useModalScrollLock';
 
 // Style pour l'animation de rotation
 const spinKeyframes = `
@@ -119,6 +120,9 @@ const BatimentForm = ({
   currentUser,
   tenantSlug 
 }) => {
+  // Verrouiller le scroll du body quand le modal est ouvert
+  useModalScrollLock(true);
+  
   const isCreating = !batiment;
   const [isEditing, setIsEditing] = useState(isCreating);
   const [viewMode, setViewMode] = useState('form'); // 'form', 'history', 'inspection-detail', 'plan-intervention', 'rapport'

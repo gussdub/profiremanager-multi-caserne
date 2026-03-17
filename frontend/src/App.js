@@ -17,6 +17,7 @@ import { useTenant } from "./contexts/TenantContext";
 import { useAuth, AuthProvider } from "./contexts/AuthContext";
 import { getTenantToken, buildApiUrl } from "./utils/api";
 import { useInactivityLogout } from "./hooks/useInactivityLogout";
+import { useGlobalModalScrollLock } from "./hooks/useModalScrollLock";
 const SecteursMap = lazy(() => import("./components/SecteursMap"));
 import { apiGet, apiPost, apiPut, apiPatch, apiDelete, apiCall } from "./utils/api";
 import PushNotificationService from "./services/pushNotifications";
@@ -261,6 +262,9 @@ window.setTenantItem = (key, value) => {
 const AppLayout = () => {
   // Hook pour déconnexion automatique après 10 min d'inactivité (web uniquement)
   useInactivityLogout();
+  
+  // Hook pour verrouiller le scroll automatiquement quand un modal est ouvert
+  useGlobalModalScrollLock();
   
   // Persister la page active dans localStorage pour conserver après refresh
   const [currentPage, setCurrentPage] = useState(() => {

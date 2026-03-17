@@ -67,12 +67,28 @@ html {
 
 /* ==================== MODAL SCROLL LOCK ==================== */
 /* Empêche le scroll du body lorsqu'une modale est ouverte */
+/* Fonctionne sur Web, iOS Safari, Android Chrome */
+html.modal-open,
 body.modal-open {
   overflow: hidden !important;
   position: fixed !important;
   width: 100% !important;
   height: 100% !important;
   touch-action: none !important;
+  -webkit-overflow-scrolling: auto !important;
+  overscroll-behavior: none !important;
+}
+
+/* Assurez-vous que le html ne scroll pas non plus */
+html.modal-open {
+  height: 100vh !important;
+  height: -webkit-fill-available !important;
+}
+
+body.modal-open {
+  /* Position le body pour maintenir la position de scroll */
+  left: 0 !important;
+  right: 0 !important;
 }
 
 /* Overlay des modales - empêche la propagation du scroll */

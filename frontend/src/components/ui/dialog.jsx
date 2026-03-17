@@ -3,8 +3,35 @@ import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { lockBodyScroll, unlockBodyScroll } from "@/hooks/useModalScrollLock"
 
-const Dialog = DialogPrimitive.Root
+// Wrapper pour Dialog qui gère le scroll lock automatiquement
+const Dialog = ({ children, open, onOpenChange, ...props }) => {
+  const wasOpen = React.useRef(false);
+  
+  React.useEffect(() => {
+    if (open && !wasOpen.current) {
+      lockBodyScroll();
+      wasOpen.current = true;
+    } else if (!open && wasOpen.current) {
+      unlockBodyScroll();
+      wasOpen.current = false;
+    }
+    
+    return () => {
+      if (wasOpen.current) {
+        unlockBodyScroll();
+        wasOpen.current = false;
+      }
+    };
+  }, [open]);
+  
+  return (
+    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange} {...props}>
+      {children}
+    </DialogPrimitive.Root>
+  );
+};
 
 const DialogTrigger = DialogPrimitive.Trigger
 

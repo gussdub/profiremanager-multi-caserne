@@ -4,8 +4,35 @@ import { cva } from "class-variance-authority";
 import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { lockBodyScroll, unlockBodyScroll } from "@/hooks/useModalScrollLock"
 
-const Sheet = SheetPrimitive.Root
+// Wrapper pour Sheet qui gère le scroll lock automatiquement
+const Sheet = ({ children, open, onOpenChange, ...props }) => {
+  const wasOpen = React.useRef(false);
+  
+  React.useEffect(() => {
+    if (open && !wasOpen.current) {
+      lockBodyScroll();
+      wasOpen.current = true;
+    } else if (!open && wasOpen.current) {
+      unlockBodyScroll();
+      wasOpen.current = false;
+    }
+    
+    return () => {
+      if (wasOpen.current) {
+        unlockBodyScroll();
+        wasOpen.current = false;
+      }
+    };
+  }, [open]);
+  
+  return (
+    <SheetPrimitive.Root open={open} onOpenChange={onOpenChange} {...props}>
+      {children}
+    </SheetPrimitive.Root>
+  );
+};
 
 const SheetTrigger = SheetPrimitive.Trigger
 

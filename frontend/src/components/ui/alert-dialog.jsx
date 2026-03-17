@@ -3,8 +3,35 @@ import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog"
 
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
+import { lockBodyScroll, unlockBodyScroll } from "@/hooks/useModalScrollLock"
 
-const AlertDialog = AlertDialogPrimitive.Root
+// Wrapper pour AlertDialog qui gère le scroll lock automatiquement
+const AlertDialog = ({ children, open, onOpenChange, ...props }) => {
+  const wasOpen = React.useRef(false);
+  
+  React.useEffect(() => {
+    if (open && !wasOpen.current) {
+      lockBodyScroll();
+      wasOpen.current = true;
+    } else if (!open && wasOpen.current) {
+      unlockBodyScroll();
+      wasOpen.current = false;
+    }
+    
+    return () => {
+      if (wasOpen.current) {
+        unlockBodyScroll();
+        wasOpen.current = false;
+      }
+    };
+  }, [open]);
+  
+  return (
+    <AlertDialogPrimitive.Root open={open} onOpenChange={onOpenChange} {...props}>
+      {children}
+    </AlertDialogPrimitive.Root>
+  );
+};
 
 const AlertDialogTrigger = AlertDialogPrimitive.Trigger
 
