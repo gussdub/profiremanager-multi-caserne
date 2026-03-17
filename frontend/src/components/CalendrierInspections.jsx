@@ -15,8 +15,10 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
   const [currentDate, setCurrentDate] = useState(new Date());
   const [inspections, setInspections] = useState([]);
   const [batiments, setBatiments] = useState([]);
+  const [dependances, setDependances] = useState([]);
   const [filtreRisque, setFiltreRisque] = useState('tous');
   const [filtrePreventionniste, setFiltrePreventionniste] = useState('tous');
+  const [filtreType, setFiltreType] = useState('tous'); // 'tous', 'batiments', 'dependances'
   const [preventionnistes, setPreventionnistes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -43,15 +45,17 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [insp, bat, prev, gril] = await Promise.all([
+      const [insp, bat, deps, prev, gril] = await Promise.all([
         apiGet(tenantSlug, '/prevention/inspections'),
         apiGet(tenantSlug, '/prevention/batiments'),
+        apiGet(tenantSlug, '/prevention/dependances-all').catch(() => []),
         apiGet(tenantSlug, '/prevention/preventionnistes').catch(() => []),
         apiGet(tenantSlug, '/prevention/grilles-inspection').catch(() => [])
       ]);
       
       setInspections(insp);
       setBatiments(bat);
+      setDependances(deps);
       setPreventionnistes(prev);
       setGrilles(gril);
     } catch (error) {
@@ -303,22 +307,65 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
               </option>
             ))}
           </select>
+
+          <select
+            value={filtreType}
+            onChange={(e) => setFiltreType(e.target.value)}
+            style={{
+              padding: '0.5rem',
+              borderRadius: '6px',
+              border: filtreType !== 'tous' ? '2px solid #3b82f6' : '1px solid #d1d5db',
+              background: filtreType !== 'tous' ? '#eff6ff' : 'white',
+              fontSize: '0.875rem'
+            }}
+          >
+            <option value="tous">🏢 Bâtiments + Dépendances</option>
+            <option value="batiments">🏢 Bâtiments uniquement</option>
+            <option value="dependances">🏠 Dépendances uniquement</option>
+          </select>
         </div>
       </div>
 
       {/* Statistiques du mois */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
         gap: '1rem',
         marginBottom: '1.5rem'
       }}>
         <Card style={{ padding: '1rem', textAlign: 'center' }}>
           <div style={{ fontSize: '2rem', fontWeight: '700', color: '#2563eb' }}>
+            {batiments.length}
+          </div>
+          <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+            🏢 Bâtiments
+          </div>
+        </Card>
+
+        <Card style={{ padding: '1rem', textAlign: 'center', background: '#fef3c7' }}>
+          <div style={{ fontSize: '2rem', fontWeight: '700', color: '#92400e' }}>
+            {dependances.length}
+          </div>
+          <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+            🏠 Dépendances
+          </div>
+        </Card>
+
+        <Card style={{ padding: '1rem', textAlign: 'center' }}>
+          <div style={{ fontSize: '2rem', fontWeight: '700', color: '#10b981' }}>
+            {batiments.length + dependances.length}
+          </div>
+          <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+            📊 Total à planifier
+          </div>
+        </Card>
+
+        <Card style={{ padding: '1rem', textAlign: 'center' }}>
+          <div style={{ fontSize: '2rem', fontWeight: '700', color: '#2563eb' }}>
             {statsMonth.length}
           </div>
           <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-            Inspections ce mois
+            📅 Inspections ce mois
           </div>
         </Card>
 
@@ -327,16 +374,7 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
             {statsEnRetard.length}
           </div>
           <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-            En retard
-          </div>
-        </Card>
-
-        <Card style={{ padding: '1rem', textAlign: 'center' }}>
-          <div style={{ fontSize: '2rem', fontWeight: '700', color: '#10b981' }}>
-            {statsMonth.filter(i => i.statut_conformite === 'Conforme').length}
-          </div>
-          <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-            Conformes
+            ⏰ En retard
           </div>
         </Card>
       </div>
@@ -480,6 +518,151 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
         </div>
       </div>
 
+      {/* Liste des éléments à planifier (Bâtiments + Dépendances) */}
+      <Card style={{ padding: '1.5rem', marginTop: '1.5rem' }}>
+        <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          📋 Éléments à planifier
+          <span style={{ 
+            background: '#dbeafe', 
+            color: '#1e40af', 
+            padding: '0.25rem 0.75rem', 
+            borderRadius: '12px', 
+            fontSize: '0.813rem',
+            fontWeight: '500'
+          }}>
+            {filtreType === 'batiments' ? batiments.length : 
+             filtreType === 'dependances' ? dependances.length : 
+             batiments.length + dependances.length}
+          </span>
+        </h3>
+        
+        <div style={{ 
+          maxHeight: '400px', 
+          overflowY: 'auto',
+          border: '1px solid #e5e7eb',
+          borderRadius: '8px'
+        }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb', position: 'sticky', top: 0 }}>
+                <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: '0.813rem', fontWeight: '600' }}>Type</th>
+                <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: '0.813rem', fontWeight: '600' }}>Nom / Adresse</th>
+                <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: '0.813rem', fontWeight: '600' }}>Risque</th>
+                <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: '0.813rem', fontWeight: '600' }}>Dernière inspection</th>
+                <th style={{ padding: '0.75rem', textAlign: 'center', fontSize: '0.813rem', fontWeight: '600' }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {/* Bâtiments */}
+              {(filtreType === 'tous' || filtreType === 'batiments') && batiments
+                .filter(bat => filtreRisque === 'tous' || bat.niveau_risque === filtreRisque)
+                .map(bat => (
+                  <tr key={`bat-${bat.id}`} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                    <td style={{ padding: '0.75rem' }}>
+                      <span style={{ 
+                        background: '#dbeafe', 
+                        color: '#1e40af', 
+                        padding: '0.2rem 0.5rem', 
+                        borderRadius: '8px', 
+                        fontSize: '0.75rem',
+                        fontWeight: '600'
+                      }}>🏢 Bâtiment</span>
+                    </td>
+                    <td style={{ padding: '0.75rem' }}>
+                      <div style={{ fontWeight: '500' }}>{bat.nom_etablissement || bat.adresse_civique}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{bat.ville}</div>
+                    </td>
+                    <td style={{ padding: '0.75rem' }}>
+                      <span style={{ 
+                        padding: '0.2rem 0.5rem', 
+                        borderRadius: '8px', 
+                        fontSize: '0.75rem',
+                        fontWeight: '500',
+                        background: bat.niveau_risque?.toLowerCase().includes('élevé') ? '#fee2e2' : 
+                                   bat.niveau_risque?.toLowerCase() === 'moyen' ? '#fef9c3' : '#dcfce7',
+                        color: bat.niveau_risque?.toLowerCase().includes('élevé') ? '#991b1b' : 
+                               bat.niveau_risque?.toLowerCase() === 'moyen' ? '#854d0e' : '#166534'
+                      }}>
+                        {bat.niveau_risque || 'Non défini'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '0.75rem', fontSize: '0.813rem', color: '#6b7280' }}>
+                      {bat.derniere_inspection ? new Date(bat.derniere_inspection).toLocaleDateString('fr-FR') : 'Jamais'}
+                    </td>
+                    <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedDate(new Date());
+                          setNewInspection({...newInspection, batiment_id: `bat_${bat.id}`});
+                          setShowCreateModal(true);
+                        }}
+                      >
+                        📅 Planifier
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              
+              {/* Dépendances */}
+              {(filtreType === 'tous' || filtreType === 'dependances') && dependances
+                .filter(dep => filtreRisque === 'tous' || dep.niveau_risque?.toLowerCase() === filtreRisque.toLowerCase())
+                .map(dep => (
+                  <tr key={`dep-${dep.id}`} style={{ borderBottom: '1px solid #e5e7eb', background: '#fffbeb' }}>
+                    <td style={{ padding: '0.75rem' }}>
+                      <span style={{ 
+                        background: '#fef3c7', 
+                        color: '#92400e', 
+                        padding: '0.2rem 0.5rem', 
+                        borderRadius: '8px', 
+                        fontSize: '0.75rem',
+                        fontWeight: '600'
+                      }}>🏠 Dépendance</span>
+                    </td>
+                    <td style={{ padding: '0.75rem' }}>
+                      <div style={{ fontWeight: '500' }}>{dep.nom}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                        ↳ {dep.batiment_parent?.nom_etablissement || dep.batiment_parent?.adresse_civique || 'Bâtiment parent'}
+                      </div>
+                    </td>
+                    <td style={{ padding: '0.75rem' }}>
+                      <span style={{ 
+                        padding: '0.2rem 0.5rem', 
+                        borderRadius: '8px', 
+                        fontSize: '0.75rem',
+                        fontWeight: '500',
+                        background: dep.niveau_risque?.toLowerCase().includes('élevé') ? '#fee2e2' : 
+                                   dep.niveau_risque?.toLowerCase() === 'moyen' ? '#fef9c3' : '#dcfce7',
+                        color: dep.niveau_risque?.toLowerCase().includes('élevé') ? '#991b1b' : 
+                               dep.niveau_risque?.toLowerCase() === 'moyen' ? '#854d0e' : '#166534'
+                      }}>
+                        {dep.niveau_risque || 'Non défini'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '0.75rem', fontSize: '0.813rem', color: '#6b7280' }}>
+                      {dep.derniere_inspection ? new Date(dep.derniere_inspection).toLocaleDateString('fr-FR') : 'Jamais'}
+                    </td>
+                    <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedDate(new Date());
+                          setNewInspection({...newInspection, batiment_id: `dep_${dep.id}`});
+                          setShowCreateModal(true);
+                        }}
+                      >
+                        📅 Planifier
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
       {/* Modal de création d'inspection */}
       {showCreateModal && (
         <div style={{
@@ -512,10 +695,10 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {/* Bâtiment */}
+              {/* Bâtiment ou Dépendance */}
               <div>
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
-                  Bâtiment *
+                  Bâtiment / Dépendance *
                 </label>
                 <select
                   value={newInspection.batiment_id}
@@ -528,12 +711,23 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
                     fontSize: '0.875rem'
                   }}
                 >
-                  <option value="">Sélectionner un bâtiment</option>
-                  {batiments.map(bat => (
-                    <option key={bat.id} value={bat.id}>
-                      {bat.nom_etablissement} - {bat.adresse_civique}
-                    </option>
-                  ))}
+                  <option value="">Sélectionner un élément</option>
+                  <optgroup label="🏢 Bâtiments">
+                    {batiments.map(bat => (
+                      <option key={bat.id} value={`bat_${bat.id}`}>
+                        {bat.nom_etablissement || bat.adresse_civique} - {bat.ville}
+                      </option>
+                    ))}
+                  </optgroup>
+                  {dependances.length > 0 && (
+                    <optgroup label="🏠 Dépendances">
+                      {dependances.map(dep => (
+                        <option key={dep.id} value={`dep_${dep.id}`}>
+                          {dep.nom} ({dep.batiment_parent?.adresse_civique || 'Adresse inconnue'})
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
               </div>
 

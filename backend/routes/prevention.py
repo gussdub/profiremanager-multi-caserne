@@ -1905,6 +1905,53 @@ async def get_dependances_count_all(
     return batiments_deps
 
 
+@router.get("/{tenant_slug}/prevention/dependances-all")
+async def get_all_dependances(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer toutes les dépendances avec les informations du bâtiment parent
+    Utilisé pour la planification où les dépendances sont des entrées séparées
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "voir", "batiments")
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Récupérer toutes les dépendances
+    dependances = await db.dependances_batiments.find({
+        "tenant_id": tenant.id
+    }).to_list(1000)
+    
+    # Récupérer les bâtiments parents pour avoir leurs adresses
+    batiment_ids = list(set(d.get("batiment_parent_id") for d in dependances if d.get("batiment_parent_id")))
+    batiments = await db.batiments.find({
+        "id": {"$in": batiment_ids},
+        "tenant_id": tenant.id
+    }).to_list(1000)
+    
+    # Créer un mapping batiment_id -> batiment
+    batiments_map = {b["id"]: b for b in batiments}
+    
+    # Enrichir les dépendances avec les infos du bâtiment parent
+    result = []
+    for dep in dependances:
+        parent = batiments_map.get(dep.get("batiment_parent_id"), {})
+        dep_clean = clean_mongo_doc(dep)
+        dep_clean["batiment_parent"] = {
+            "id": parent.get("id"),
+            "nom_etablissement": parent.get("nom_etablissement"),
+            "adresse_civique": parent.get("adresse_civique"),
+            "ville": parent.get("ville")
+        }
+        # Ajouter un type pour différencier des bâtiments
+        dep_clean["type_element"] = "dependance"
+        result.append(dep_clean)
+    
+    return result
+
+
 @router.get("/{tenant_slug}/prevention/dependances/{dependance_id}")
 async def get_dependance(
     tenant_slug: str,

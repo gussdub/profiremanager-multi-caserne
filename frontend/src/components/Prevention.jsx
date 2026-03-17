@@ -84,6 +84,27 @@ const Prevention = () => {
   // État pour stocker le nombre de dépendances par bâtiment
   const [dependancesCounts, setDependancesCounts] = useState({});
 
+  // Mapping des codes de groupe d'occupation vers leurs noms complets
+  const GROUPES_OCCUPATION = {
+    'A': 'Groupe A - Établissements de Réunion',
+    'B': 'Groupe B - Soins et Détention',
+    'C': 'Groupe C - Habitations',
+    'D': 'Groupe D - Établissements d\'Affaires',
+    'E': 'Groupe E - Établissements Commerciaux',
+    'F': 'Groupe F - Établissements Industriels',
+    'I': 'Groupe I - Établissements Industriels à risques'
+  };
+
+  // Fonction pour formater le groupe d'occupation
+  const formatGroupeOccupation = (groupe) => {
+    if (!groupe) return 'Non défini';
+    // Si c'est déjà un format complet (contient "Groupe"), le retourner tel quel
+    if (groupe.includes('Groupe')) return groupe;
+    // Si c'est juste une lettre, chercher dans le mapping
+    const letter = groupe.charAt(0).toUpperCase();
+    return GROUPES_OCCUPATION[letter] || groupe;
+  };
+
   // Fonction pour ouvrir le modal d'un bâtiment
   const openBatimentModal = (batiment) => {
     setSelectedBatiment(batiment);
@@ -928,7 +949,7 @@ const Prevention = () => {
                             fontSize: '0.813rem',
                             fontWeight: '500'
                           }}>
-                            {batiment.groupe_occupation}
+                            {formatGroupeOccupation(batiment.groupe_occupation)}
                           </span>
                         </td>
                         <td style={{padding: '1rem', fontSize: '0.875rem', color: '#6b7280'}}>
