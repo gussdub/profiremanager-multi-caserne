@@ -116,6 +116,7 @@ const BatimentForm = ({
   onViewHistory,
   onGenerateReport,
   onDelete,
+  onDependancesChange,
   canEdit,
   currentUser,
   tenantSlug 
@@ -2425,7 +2426,13 @@ const BatimentForm = ({
                   batimentId={batiment.id}
                   batimentAdresse={batiment?.adresse_civique || batiment?.nom_etablissement || 'Adresse'}
                   preventionnisteId={batiment?.preventionniste_assigne_id}
-                  onUpdate={() => fetchDependancesCount()}
+                  onUpdate={() => {
+                    fetchDependancesCount();
+                    // Notifier le parent pour mettre à jour la liste principale
+                    if (onDependancesChange) {
+                      onDependancesChange();
+                    }
+                  }}
                   canEdit={true}
                 />
               </Card>

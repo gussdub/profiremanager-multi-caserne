@@ -1379,6 +1379,10 @@ const Prevention = () => {
                 setCurrentView('batiments');
               }
             }}
+            onDependancesChange={() => {
+              // Rafraîchir le comptage des dépendances quand elles sont modifiées
+              fetchDependancesCounts();
+            }}
             onCreate={async (newBatimentData) => {
               try {
                 await apiPost(tenantSlug, `/prevention/batiments`, newBatimentData);
