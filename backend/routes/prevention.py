@@ -1854,6 +1854,33 @@ async def get_dependances_batiment(
     return [clean_mongo_doc(d) for d in dependances]
 
 
+@router.get("/{tenant_slug}/prevention/dependances-count")
+async def get_dependances_count_all(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer le nombre de dépendances pour tous les bâtiments (optimisé pour la liste)"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "voir", "batiments")
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Utiliser aggregation pour compter les dépendances par bâtiment parent
+    pipeline = [
+        {"$match": {"tenant_id": tenant.id}},
+        {"$group": {
+            "_id": "$batiment_parent_id",
+            "count": {"$sum": 1}
+        }}
+    ]
+    
+    result = await db.dependances_batiments.aggregate(pipeline).to_list(1000)
+    
+    # Retourner un dictionnaire {batiment_id: count}
+    return {item["_id"]: item["count"] for item in result if item["_id"]}
+
+
 @router.get("/{tenant_slug}/prevention/dependances/{dependance_id}")
 async def get_dependance(
     tenant_slug: str,

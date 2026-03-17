@@ -76,9 +76,13 @@ const Prevention = () => {
     categorie: '', // '', 'A', 'B', 'C', 'D', 'E', 'F', 'I'
     preventionniste: '', // '', 'id_du_preventionniste'
     niveauRisque: '', // '', 'Faible', 'Moyen', 'Élevé', 'Très élevé'
-    derniereInspection: '' // '', 'jamais', '3mois', '6mois', '12mois'
+    derniereInspection: '', // '', 'jamais', '3mois', '6mois', '12mois'
+    dependances: '' // '', 'avec', 'sans'
   });
   const [preventionnistes, setPreventionnistes] = useState([]);
+  
+  // État pour stocker le nombre de dépendances par bâtiment
+  const [dependancesCounts, setDependancesCounts] = useState({});
 
   // Fonction pour ouvrir le modal d'un bâtiment
   const openBatimentModal = (batiment) => {
@@ -133,12 +137,23 @@ const Prevention = () => {
     }
   };
 
+  // Charger le comptage de dépendances pour tous les bâtiments
+  const fetchDependancesCounts = async () => {
+    try {
+      const data = await apiGet(tenantSlug, '/prevention/dependances-count');
+      setDependancesCounts(data || {});
+    } catch (error) {
+      console.error('Erreur chargement comptage dépendances:', error);
+    }
+  };
+
   useEffect(() => {
     fetchBatiments();
     fetchStats();
     fetchNotifications();
     fetchGrilles();
     fetchPreventionnistes();
+    fetchDependancesCounts();
   }, [tenantSlug]);
 
   const fetchPreventionnistes = async () => {
@@ -238,6 +253,14 @@ const Prevention = () => {
       });
     }
 
+    // Filtre par dépendances
+    if (filters.dependances) {
+      filtered = filtered.filter(b => {
+        const hasDependances = (dependancesCounts[b.id] || 0) > 0;
+        return filters.dependances === 'avec' ? hasDependances : !hasDependances;
+      });
+    }
+
     return filtered;
   };
 
@@ -250,7 +273,8 @@ const Prevention = () => {
       categorie: '',
       preventionniste: '',
       niveauRisque: '',
-      derniereInspection: ''
+      derniereInspection: '',
+      dependances: ''
     });
   };
 
@@ -669,6 +693,25 @@ const Prevention = () => {
                   <option value="6mois">📆 &gt; 6 mois</option>
                   <option value="12mois">📆 &gt; 12 mois</option>
                 </select>
+
+                {/* Filtre Dépendances */}
+                <select
+                  value={filters.dependances}
+                  onChange={(e) => setFilters({ ...filters, dependances: e.target.value })}
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    border: filters.dependances ? '2px solid #3b82f6' : '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '0.875rem',
+                    background: filters.dependances ? '#eff6ff' : 'white',
+                    cursor: 'pointer',
+                    minWidth: '140px'
+                  }}
+                >
+                  <option value="">🏠 Dépendances</option>
+                  <option value="avec">✅ Avec dépendances</option>
+                  <option value="sans">➖ Sans dépendance</option>
+                </select>
               </div>
             </div>
             
@@ -716,12 +759,35 @@ const Prevention = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredBatimentsList.map(batiment => (
+                      {filteredBatimentsList.map(batiment => {
+                        const depCount = dependancesCounts[batiment.id] || 0;
+                        return (
                       <tr key={batiment.id} style={{borderBottom: '1px solid #e5e7eb', transition: 'background 0.2s'}} onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'} onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}>
                         <td style={{padding: '1rem'}}>
-                          <div>
-                            <div style={{fontWeight: '600', marginBottom: '0.25rem'}}>{batiment.nom_etablissement || batiment.adresse_civique}</div>
-                            <div style={{fontSize: '0.813rem', color: '#6b7280'}}>{batiment.ville}</div>
+                          <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                            <div>
+                              <div style={{fontWeight: '600', marginBottom: '0.25rem'}}>{batiment.nom_etablissement || batiment.adresse_civique}</div>
+                              <div style={{fontSize: '0.813rem', color: '#6b7280'}}>{batiment.ville}</div>
+                            </div>
+                            {depCount > 0 && (
+                              <span 
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.25rem',
+                                  padding: '0.2rem 0.5rem',
+                                  background: '#fef3c7',
+                                  color: '#92400e',
+                                  borderRadius: '10px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: '600',
+                                  border: '1px solid #fcd34d'
+                                }}
+                                title={`${depCount} dépendance${depCount > 1 ? 's' : ''}`}
+                              >
+                                🏠 {depCount}
+                              </span>
+                            )}
                           </div>
                         </td>
                         <td style={{padding: '1rem'}}>
@@ -754,7 +820,8 @@ const Prevention = () => {
                           </div>
                         </td>
                       </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
