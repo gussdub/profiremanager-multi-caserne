@@ -544,6 +544,43 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 
 
 
+## Recent Fixes (March 2026)
+
+### Bug Fix - Boutons Export avec état de chargement partagé (17 Mars 2026)
+**Statut:** ✅ CORRIGÉ ET VALIDÉ
+
+**Problème:** Dans Prévention → Rapports, cliquer sur un bouton "Télécharger Excel" mettait TOUS les boutons en état "Export en cours..."
+
+**Cause:** Une seule variable d'état `exporting` (boolean) contrôlait tous les boutons.
+
+**Solution:** Remplacé par `exportingType` qui stocke le type d'export en cours (null, 'inspections', 'batiments', 'non_conformites'). Chaque bouton vérifie maintenant uniquement son propre état.
+
+**Fichier modifié:** `/app/frontend/src/components/ModuleRapports.jsx`
+
+### Bug Fix - Modification d'inspection créant des doublons (17 Mars 2026)
+**Statut:** ✅ CORRIGÉ ET VALIDÉ
+
+**Problème:** Cliquer sur une inspection existante dans le calendrier de planification puis la modifier créait une NOUVELLE inspection au lieu de mettre à jour l'existante.
+
+**Cause:** Le modal de planification n'avait qu'un mode "création" (POST). Il manquait un mode "édition" (PUT).
+
+**Solution:**
+1. Ajout d'un état `editingInspection` pour stocker l'inspection en cours d'édition
+2. Ajout de la fonction `handleEditInspection()` pour pré-remplir le formulaire
+3. Modification de `handleCreateInspection()` pour appeler PUT si en mode édition, POST sinon
+4. Mise à jour de l'UI du modal (titre et bouton changent selon le mode)
+5. Passage de `apiPut` en prop depuis `PlanificationView.jsx`
+
+**Corrections backend supplémentaires:**
+- Harmonisation du champ `grille_inspection_id` (au lieu de `grille_id`)
+- Ajout de valeurs par défaut pour `batiment_id` et `grille_inspection_id` dans le modèle `Inspection`
+- Conversion automatique de `resultats` de List vers Dict pour compatibilité
+
+**Fichiers modifiés:**
+- `/app/frontend/src/components/CalendrierInspections.jsx`
+- `/app/frontend/src/components/PlanificationView.jsx`
+- `/app/backend/routes/prevention.py`
+
 ## Recent Fixes (February 2026)
 
 ### NEW - Heures Silencieuses pour Remplacements (27 Feb 2026)
