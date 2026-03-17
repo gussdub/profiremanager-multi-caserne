@@ -181,6 +181,7 @@ const Prevention = () => {
         (b.adresse_civique || '').toLowerCase().includes(query) ||
         (b.ville || '').toLowerCase().includes(query) ||
         (b.nom || '').toLowerCase().includes(query) ||
+        (b.nom_etablissement || '').toLowerCase().includes(query) ||
         (b.code_postal || '').toLowerCase().includes(query)
       );
     }
