@@ -1137,9 +1137,9 @@ class Inspection(BaseModel):
     """Inspection réalisée sur un bâtiment"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     tenant_id: str
-    batiment_id: str
+    batiment_id: str = ""
     dependance_id: str = ""  # Si renseigné, l'inspection est pour une dépendance
-    grille_inspection_id: str
+    grille_inspection_id: str = ""
     preventionniste_id: str = ""  # ID de l'employé qui a fait l'inspection
     inspecteur_id: str = ""  # Alias de preventionniste_id (pour compatibilité frontend)
     
