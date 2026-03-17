@@ -334,10 +334,10 @@ class Inspection(BaseModel):
 
 
 class InspectionCreate(BaseModel):
-    batiment_id: str
+    batiment_id: str = ""
     dependance_id: str = ""  # Si renseigné, l'inspection est pour une dépendance
     grille_id: str = ""
-    preventionniste_id: str
+    preventionniste_id: str = ""
     preventionniste_nom: str = ""
     date_inspection: str
     type_inspection: str = "routine"
@@ -1138,6 +1138,7 @@ class Inspection(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     tenant_id: str
     batiment_id: str
+    dependance_id: str = ""  # Si renseigné, l'inspection est pour une dépendance
     grille_inspection_id: str
     preventionniste_id: str = ""  # ID de l'employé qui a fait l'inspection
     inspecteur_id: str = ""  # Alias de preventionniste_id (pour compatibilité frontend)
@@ -1173,7 +1174,8 @@ class Inspection(BaseModel):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class InspectionCreate(BaseModel):
-    batiment_id: str
+    batiment_id: str = ""
+    dependance_id: str = ""  # Si renseigné, l'inspection est pour une dépendance
     grille_inspection_id: str = ""
     preventionniste_id: str = ""
     inspecteur_id: str = ""  # Alias de preventionniste_id
