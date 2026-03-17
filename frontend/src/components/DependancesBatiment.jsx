@@ -84,6 +84,8 @@ const DependancesBatiment = ({
   const [selectedDependance, setSelectedDependance] = useState(null);
   const [activeTab, setActiveTab] = useState('infos'); // infos, photos, inspections
   const [photoUploading, setPhotoUploading] = useState(false);
+  const [inspections, setInspections] = useState([]);
+  const [loadingInspections, setLoadingInspections] = useState(false);
   
   // Geler le scroll quand un modal est ouvert
   useLockBodyScroll(showForm || selectedDependance);
@@ -123,6 +125,27 @@ const DependancesBatiment = ({
       loadDependances();
     }
   }, [batimentId, loadDependances]);
+
+  // Charger les inspections d'une dépendance
+  const loadInspections = useCallback(async (dependanceId) => {
+    try {
+      setLoadingInspections(true);
+      const data = await apiGet(tenantSlug, `/prevention/dependances/${dependanceId}/inspections`);
+      setInspections(data || []);
+    } catch (error) {
+      console.error('Erreur chargement inspections:', error);
+      setInspections([]);
+    } finally {
+      setLoadingInspections(false);
+    }
+  }, [tenantSlug]);
+
+  // Charger les inspections quand on sélectionne l'onglet inspections
+  useEffect(() => {
+    if (selectedDependance && activeTab === 'inspections') {
+      loadInspections(selectedDependance.id);
+    }
+  }, [selectedDependance, activeTab, loadInspections]);
 
   // Réinitialiser le formulaire
   const resetForm = () => {
@@ -895,10 +918,148 @@ const DependancesBatiment = ({
             )}
             
             {activeTab === 'inspections' && (
-              <div style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>
-                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔍</div>
-                <p>Historique des inspections à venir</p>
-                <p style={{ fontSize: '0.875rem' }}>Les inspections seront listées ici</p>
+              <div>
+                {/* Header avec bouton d'ajout */}
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  marginBottom: '1rem'
+                }}>
+                  <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>
+                    🔍 Historique des inspections
+                  </h4>
+                  <span style={{
+                    background: '#dbeafe',
+                    color: '#1e40af',
+                    padding: '0.25rem 0.75rem',
+                    borderRadius: '12px',
+                    fontSize: '0.813rem',
+                    fontWeight: '500'
+                  }}>
+                    {inspections.length} inspection{inspections.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+
+                {loadingInspections ? (
+                  <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
+                    Chargement des inspections...
+                  </div>
+                ) : inspections.length === 0 ? (
+                  <div style={{ 
+                    textAlign: 'center', 
+                    padding: '2rem', 
+                    color: '#9ca3af',
+                    background: '#f9fafb',
+                    borderRadius: '8px'
+                  }}>
+                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📋</div>
+                    <p style={{ fontWeight: '500', color: '#6b7280' }}>Aucune inspection enregistrée</p>
+                    <p style={{ fontSize: '0.875rem' }}>
+                      Cette dépendance n'a pas encore été inspectée
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {inspections.map((insp, idx) => (
+                      <div 
+                        key={insp.id || idx}
+                        style={{
+                          padding: '1rem',
+                          background: '#f9fafb',
+                          borderRadius: '8px',
+                          border: '1px solid #e5e7eb'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <div>
+                            <div style={{ 
+                              fontWeight: '600', 
+                              marginBottom: '0.25rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem'
+                            }}>
+                              📅 {new Date(insp.date_inspection).toLocaleDateString('fr-FR', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              })}
+                            </div>
+                            <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                              {insp.preventionniste_nom || 'Préventionniste non spécifié'}
+                            </div>
+                          </div>
+                          <span style={{
+                            padding: '0.25rem 0.75rem',
+                            borderRadius: '12px',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            background: insp.statut === 'completee' || insp.statut === 'complétée' ? '#dcfce7' : 
+                                       insp.statut === 'planifiee' || insp.statut === 'planifiée' ? '#dbeafe' : '#fef3c7',
+                            color: insp.statut === 'completee' || insp.statut === 'complétée' ? '#166534' : 
+                                  insp.statut === 'planifiee' || insp.statut === 'planifiée' ? '#1e40af' : '#92400e'
+                          }}>
+                            {insp.statut === 'completee' || insp.statut === 'complétée' ? '✅ Complétée' : 
+                             insp.statut === 'planifiee' || insp.statut === 'planifiée' ? '📅 Planifiée' : 
+                             '⏳ ' + (insp.statut || 'En cours')}
+                          </span>
+                        </div>
+                        
+                        {insp.type_inspection && (
+                          <div style={{ marginTop: '0.5rem', fontSize: '0.813rem' }}>
+                            <span style={{ color: '#6b7280' }}>Type: </span>
+                            <span style={{ fontWeight: '500' }}>{insp.type_inspection}</span>
+                          </div>
+                        )}
+                        
+                        {insp.notes && (
+                          <div style={{ 
+                            marginTop: '0.5rem', 
+                            padding: '0.5rem',
+                            background: 'white',
+                            borderRadius: '4px',
+                            fontSize: '0.875rem',
+                            color: '#374151'
+                          }}>
+                            {insp.notes}
+                          </div>
+                        )}
+                        
+                        {insp.anomalies && insp.anomalies.length > 0 && (
+                          <div style={{ marginTop: '0.5rem' }}>
+                            <span style={{ 
+                              fontSize: '0.75rem', 
+                              color: '#ef4444', 
+                              fontWeight: '600' 
+                            }}>
+                              ⚠️ {insp.anomalies.length} anomalie{insp.anomalies.length > 1 ? 's' : ''} détectée{insp.anomalies.length > 1 ? 's' : ''}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Info sur le cycle d'inspection */}
+                <div style={{
+                  marginTop: '1rem',
+                  padding: '1rem',
+                  background: '#eff6ff',
+                  borderRadius: '8px',
+                  border: '1px solid #bfdbfe'
+                }}>
+                  <div style={{ fontWeight: '600', color: '#1e40af', marginBottom: '0.5rem' }}>
+                    ℹ️ Cycle d'inspection indépendant
+                  </div>
+                  <p style={{ fontSize: '0.875rem', color: '#1e40af', margin: 0 }}>
+                    Cette dépendance possède son propre historique d'inspections, 
+                    indépendant du bâtiment principal. Planifiez ses inspections 
+                    depuis l'onglet "Planification" du module Prévention.
+                  </p>
+                </div>
               </div>
             )}
           </div>

@@ -313,6 +313,7 @@ class Inspection(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     tenant_id: str
     batiment_id: str
+    dependance_id: str = ""  # Si renseigné, l'inspection est pour une dépendance
     grille_id: str = ""
     preventionniste_id: str
     preventionniste_nom: str = ""
@@ -334,6 +335,7 @@ class Inspection(BaseModel):
 
 class InspectionCreate(BaseModel):
     batiment_id: str
+    dependance_id: str = ""  # Si renseigné, l'inspection est pour une dépendance
     grille_id: str = ""
     preventionniste_id: str
     preventionniste_nom: str = ""
@@ -2091,6 +2093,126 @@ async def delete_dependance(
     logger.info(f"Dépendance {dependance_id} supprimée")
     
     return {"message": "Dépendance supprimée avec succès"}
+
+
+# ==================== INSPECTIONS DÉPENDANCES ====================
+
+@router.get("/{tenant_slug}/prevention/dependances/{dependance_id}/inspections")
+async def get_inspections_dependance(
+    tenant_slug: str,
+    dependance_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer l'historique des inspections d'une dépendance"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "voir", "batiments")
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Vérifier que la dépendance existe
+    dependance = await db.dependances_batiments.find_one({
+        "id": dependance_id,
+        "tenant_id": tenant.id
+    })
+    if not dependance:
+        raise HTTPException(status_code=404, detail="Dépendance non trouvée")
+    
+    # Récupérer les inspections de cette dépendance
+    inspections = await db.inspections.find({
+        "dependance_id": dependance_id,
+        "tenant_id": tenant.id
+    }, {"_id": 0}).sort("date_inspection", -1).to_list(100)
+    
+    return inspections
+
+
+@router.post("/{tenant_slug}/prevention/dependances/{dependance_id}/inspections")
+async def create_inspection_dependance(
+    tenant_slug: str,
+    dependance_id: str,
+    data: InspectionCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Créer une inspection pour une dépendance"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "modifier", "batiments")
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Vérifier que la dépendance existe
+    dependance = await db.dependances_batiments.find_one({
+        "id": dependance_id,
+        "tenant_id": tenant.id
+    })
+    if not dependance:
+        raise HTTPException(status_code=404, detail="Dépendance non trouvée")
+    
+    # Créer l'inspection avec la référence à la dépendance
+    inspection_data = data.dict()
+    inspection_data["dependance_id"] = dependance_id
+    inspection_data["batiment_id"] = dependance.get("batiment_parent_id", "")
+    
+    inspection = Inspection(
+        tenant_id=tenant.id,
+        **inspection_data
+    )
+    
+    await db.inspections.insert_one(inspection.dict())
+    
+    # Mettre à jour la date de dernière inspection de la dépendance
+    await db.dependances_batiments.update_one(
+        {"id": dependance_id, "tenant_id": tenant.id},
+        {"$set": {
+            "derniere_inspection": data.date_inspection,
+            "updated_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    logger.info(f"Inspection créée pour la dépendance {dependance_id}")
+    
+    return clean_mongo_doc(inspection.dict())
+
+
+@router.get("/{tenant_slug}/prevention/dependances/{dependance_id}/stats")
+async def get_stats_dependance(
+    tenant_slug: str,
+    dependance_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer les statistiques d'une dépendance"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "voir", "batiments")
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Vérifier que la dépendance existe
+    dependance = await db.dependances_batiments.find_one({
+        "id": dependance_id,
+        "tenant_id": tenant.id
+    })
+    if not dependance:
+        raise HTTPException(status_code=404, detail="Dépendance non trouvée")
+    
+    # Compter les inspections
+    total_inspections = await db.inspections.count_documents({
+        "dependance_id": dependance_id,
+        "tenant_id": tenant.id
+    })
+    
+    # Dernière inspection
+    derniere = await db.inspections.find_one(
+        {"dependance_id": dependance_id, "tenant_id": tenant.id},
+        sort=[("date_inspection", -1)]
+    )
+    
+    return {
+        "total_inspections": total_inspections,
+        "derniere_inspection": derniere.get("date_inspection") if derniere else None,
+        "dernier_statut": derniere.get("statut") if derniere else None
+    }
 
 
 # ==================== GALERIE PHOTOS BÂTIMENTS & DÉPENDANCES ====================

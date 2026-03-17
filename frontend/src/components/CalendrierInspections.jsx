@@ -88,20 +88,46 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
 
   const handleCreateInspection = async () => {
     try {
-      if (!newInspection.batiment_id || !newInspection.grille_inspection_id) {
+      // Extraire le type (bat_ ou dep_) et l'ID
+      const elementId = newInspection.batiment_id;
+      const isDependance = elementId.startsWith('dep_');
+      const realId = elementId.replace(/^(bat_|dep_)/, '');
+      
+      if (!elementId || !newInspection.grille_inspection_id) {
         toast({
           title: "Erreur",
-          description: "Veuillez remplir tous les champs requis (Bâtiment et Grille)",
+          description: "Veuillez remplir tous les champs requis (Bâtiment/Dépendance et Grille)",
           variant: "destructive"
         });
         return;
       }
 
-      await apiPost(tenantSlug, '/prevention/inspections', newInspection);
+      // Trouver le nom du préventionniste
+      const selectedPrev = preventionnistes.find(p => p.id === newInspection.preventionniste_id);
+      const preventionnisteNom = selectedPrev ? `${selectedPrev.prenom} ${selectedPrev.nom}` : '';
+
+      // Construire l'objet inspection avec les bons champs
+      const inspectionData = {
+        batiment_id: isDependance ? '' : realId,
+        dependance_id: isDependance ? realId : '',
+        grille_id: newInspection.grille_inspection_id,
+        preventionniste_id: newInspection.preventionniste_id || '',
+        preventionniste_nom: preventionnisteNom,
+        date_inspection: newInspection.date_inspection + 'T' + (newInspection.heure_debut || '09:00') + ':00',
+        type_inspection: newInspection.type_inspection || 'reguliere',
+        statut: 'planifiee'
+      };
+
+      // Appeler l'endpoint approprié
+      if (isDependance) {
+        await apiPost(tenantSlug, `/prevention/dependances/${realId}/inspections`, inspectionData);
+      } else {
+        await apiPost(tenantSlug, '/prevention/inspections', inspectionData);
+      }
       
       toast({
         title: "Succès",
-        description: "Inspection planifiée avec succès"
+        description: `Inspection planifiée avec succès pour ${isDependance ? 'la dépendance' : 'le bâtiment'}`
       });
       
       setShowCreateModal(false);
@@ -169,18 +195,29 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
     return days;
   };
 
-  // Obtenir les inspections pour une date donnée
+  // Obtenir les inspections pour une date donnée (triées par heure)
   const getInspectionsForDay = (date) => {
     const dateStr = date.toISOString().split('T')[0];
     
-    return inspections.filter(insp => {
+    const filtered = inspections.filter(insp => {
       const inspDate = insp.date_inspection?.split('T')[0];
       if (inspDate !== dateStr) return false;
       
+      // Filtrer par type (bâtiment/dépendance)
+      if (filtreType === 'batiments' && insp.dependance_id) return false;
+      if (filtreType === 'dependances' && !insp.dependance_id) return false;
+      
       // Filtrer par risque
       if (filtreRisque !== 'tous') {
-        const batiment = batiments.find(b => b.id === insp.batiment_id);
-        if (!batiment || batiment.niveau_risque !== filtreRisque) return false;
+        if (insp.dependance_id) {
+          // Pour les dépendances, vérifier leur niveau de risque
+          const dependance = dependances.find(d => d.id === insp.dependance_id);
+          if (!dependance || dependance.niveau_risque?.toLowerCase() !== filtreRisque.toLowerCase()) return false;
+        } else {
+          // Pour les bâtiments
+          const batiment = batiments.find(b => b.id === insp.batiment_id);
+          if (!batiment || batiment.niveau_risque !== filtreRisque) return false;
+        }
       }
       
       // Filtrer par préventionniste
@@ -189,6 +226,13 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
       }
       
       return true;
+    });
+    
+    // Trier par heure croissante
+    return filtered.sort((a, b) => {
+      const timeA = a.date_inspection?.split('T')[1] || '00:00';
+      const timeB = b.date_inspection?.split('T')[1] || '00:00';
+      return timeA.localeCompare(timeB);
     });
   };
 
@@ -442,7 +486,16 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                   {dayInspections.slice(0, 3).map(insp => {
                     const batiment = batiments.find(b => b.id === insp.batiment_id);
+                    const dependance = insp.dependance_id ? dependances.find(d => d.id === insp.dependance_id) : null;
                     const couleur = getCouleurStatutInspection(insp);
+                    
+                    // Extraire l'heure de la date
+                    const heure = insp.date_inspection?.split('T')[1]?.substring(0, 5) || '';
+                    
+                    // Nom à afficher (dépendance ou bâtiment)
+                    const displayName = dependance 
+                      ? `🏠 ${dependance.nom}` 
+                      : (batiment?.nom_etablissement || 'Inspection');
                     
                     return (
                       <div
@@ -461,21 +514,25 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
                           e.currentTarget.style.opacity = '1';
                           e.currentTarget.style.transform = 'scale(1)';
                         }}
-                        title={`${batiment?.nom_etablissement || 'Inspection'}\n${batiment?.adresse_civique || ''}\nStatut: ${insp.statut || 'À faire'}`}
+                        title={`${dependance ? '🏠 ' + dependance.nom : batiment?.nom_etablissement || 'Inspection'}\n${dependance ? 'Dépendance de: ' + (batiment?.adresse_civique || '') : batiment?.adresse_civique || ''}\nHeure: ${heure || 'Non définie'}\nStatut: ${insp.statut || 'À faire'}`}
                         style={{
                           fontSize: '0.7rem',
                           padding: '2px 4px',
                           borderRadius: '3px',
-                          background: couleur,
+                          background: dependance ? '#f59e0b' : couleur,
                           color: 'white',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
                           cursor: 'pointer',
-                          transition: 'all 0.2s'
+                          transition: 'all 0.2s',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '2px'
                         }}
                       >
-                        {batiment?.nom_etablissement?.substring(0, 15) || 'Inspection'}
+                        {heure && <span style={{ fontWeight: '600' }}>{heure}</span>}
+                        <span>{displayName.substring(0, 12)}</span>
                       </div>
                     );
                   })}
@@ -594,8 +651,13 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
                         size="sm" 
                         variant="outline"
                         onClick={() => {
+                          const today = new Date().toISOString().split('T')[0];
                           setSelectedDate(new Date());
-                          setNewInspection({...newInspection, batiment_id: `bat_${bat.id}`});
+                          setNewInspection({
+                            ...newInspection, 
+                            batiment_id: `bat_${bat.id}`,
+                            date_inspection: today
+                          });
                           setShowCreateModal(true);
                         }}
                       >
@@ -648,8 +710,13 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
                         size="sm" 
                         variant="outline"
                         onClick={() => {
+                          const today = new Date().toISOString().split('T')[0];
                           setSelectedDate(new Date());
-                          setNewInspection({...newInspection, batiment_id: `dep_${dep.id}`});
+                          setNewInspection({
+                            ...newInspection, 
+                            batiment_id: `dep_${dep.id}`,
+                            date_inspection: today
+                          });
                           setShowCreateModal(true);
                         }}
                       >
@@ -689,12 +756,30 @@ const CalendrierInspections = ({ tenantSlug, apiGet, apiPost, user, toast, openB
             <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1.5rem', color: '#111827' }}>
               📅 Planifier une inspection
             </h2>
-            
-            <p style={{ color: '#6b7280', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
-              Date: <strong>{selectedDate?.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</strong>
-            </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {/* Date de l'inspection */}
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
+                  Date de l'inspection *
+                </label>
+                <input
+                  type="date"
+                  value={newInspection.date_inspection}
+                  onChange={(e) => {
+                    setNewInspection({...newInspection, date_inspection: e.target.value});
+                    setSelectedDate(new Date(e.target.value));
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    borderRadius: '6px',
+                    border: '1px solid #d1d5db',
+                    fontSize: '0.875rem'
+                  }}
+                />
+              </div>
+
               {/* Bâtiment ou Dépendance */}
               <div>
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
