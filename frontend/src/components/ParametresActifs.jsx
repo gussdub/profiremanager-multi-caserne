@@ -1003,25 +1003,31 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
               left: 0,
               right: 0,
               bottom: 0,
-              background: 'rgba(0,0,0,0.5)',
+              width: '100vw',
+              height: '100vh',
+              backgroundColor: 'rgba(0,0,0,0.5)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              zIndex: 100000,
-              padding: '20px'
+              zIndex: 9999,
+              padding: '20px',
+              boxSizing: 'border-box',
+              WebkitOverflowScrolling: 'touch'
             }}
             onClick={() => setShowTypeEPIModal(false)}
           >
             <div 
               style={{
-                background: 'white',
+                backgroundColor: 'white',
                 borderRadius: '12px',
                 padding: '24px',
                 width: '100%',
                 maxWidth: '550px',
                 maxHeight: '90vh',
-                overflow: 'auto',
-                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+                overflowY: 'auto',
+                WebkitOverflowScrolling: 'touch',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+                position: 'relative'
               }}
               onClick={e => e.stopPropagation()}
             >
