@@ -118,6 +118,15 @@ const ModuleEPI = ({ user }) => {
   const [filtreStatut, setFiltreStatut] = useState('');
   const [filtreKPI, setFiltreKPI] = useState('');
   
+  // État pour afficher/masquer les EPI retirés (persisté dans localStorage)
+  const [showRetiredEPI, setShowRetiredEPI] = useState(() => {
+    const saved = localStorage.getItem('epi_show_retired');
+    return saved === 'true';
+  });
+  
+  // Vérifier si l'utilisateur peut voir les EPI retirés (admin ou superviseur)
+  const canViewRetiredEPI = user?.role === 'admin' || user?.role === 'superviseur';
+  
   // États Phase 2 - Nettoyages
   const [nettoyages, setNettoyages] = useState([]);
   const [showNettoyageModal, setShowNettoyageModal] = useState(false);
@@ -219,6 +228,11 @@ const ModuleEPI = ({ user }) => {
       fetchTypesEPI();
     }
   }, [tenantSlug]);
+  
+  // Persister le choix "Afficher EPI retirés" dans localStorage
+  useEffect(() => {
+    localStorage.setItem('epi_show_retired', showRetiredEPI.toString());
+  }, [showRetiredEPI]);
   
   // Charger les formulaires d'inspection EPI (système unifié)
   useEffect(() => {
@@ -1104,6 +1118,14 @@ const ModuleEPI = ({ user }) => {
 
   // Filtrer les EPIs selon les critères
   const episFiltres = epis.filter(epi => {
+    // Masquer les EPI retirés par défaut (sauf si le toggle est activé ou si on filtre spécifiquement par "horsService")
+    if (epi.statut === 'Retiré') {
+      // Si l'utilisateur n'est pas admin/superviseur, toujours masquer les retirés
+      if (!canViewRetiredEPI) return false;
+      // Si admin/superviseur mais toggle désactivé et pas de filtre horsService, masquer
+      if (!showRetiredEPI && filtreKPI !== 'horsService') return false;
+    }
+    
     // Filtre par KPI/Statut
     if (filtreKPI === 'horsService') {
       if (epi.statut !== 'Hors service' && epi.statut !== 'Retiré') return false;
@@ -1534,6 +1556,23 @@ const ModuleEPI = ({ user }) => {
                 <option key={u.id} value={u.id}>👤 {u.prenom} {u.nom}</option>
               ))}
             </select>
+            
+            {/* Toggle pour afficher les EPI retirés - visible seulement pour admin/superviseur */}
+            {canViewRetiredEPI && (
+              <Button
+                variant={showRetiredEPI ? "default" : "outline"}
+                onClick={() => setShowRetiredEPI(!showRetiredEPI)}
+                style={{ 
+                  fontSize: '0.8rem',
+                  backgroundColor: showRetiredEPI ? '#6B7280' : 'transparent',
+                  color: showRetiredEPI ? 'white' : '#6B7280',
+                  borderColor: '#6B7280'
+                }}
+                data-testid="btn-toggle-retired"
+              >
+                {showRetiredEPI ? '👁️ Retirés visibles' : '👁️‍🗨️ Afficher retirés'}
+              </Button>
+            )}
             
             {/* Bouton pour effacer tous les filtres */}
             {(filtreRecherche || filtreTypeEPI || filtrePersonne || filtreKPI) && (
