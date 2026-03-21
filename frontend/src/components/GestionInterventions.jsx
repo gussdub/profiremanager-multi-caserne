@@ -36,6 +36,7 @@ import SectionProtection from './interventions/SectionProtection';
 import SectionMateriel from './interventions/SectionMateriel';
 import SectionPertes from './interventions/SectionPertes';
 import SectionNarratif from './interventions/SectionNarratif';
+import SectionPhotos from './interventions/SectionPhotos';
 import SectionRemisePropriete from './interventions/SectionRemisePropriete';
 import SectionFacturation from './interventions/SectionFacturation';
 import SectionRCCI from './interventions/SectionRCCI';
@@ -978,6 +979,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
     { id: 'sinistre', label: 'Sinistré & Assurance', icon: '🛡️', showIf: isFireIncident, employeeAccess: false },
     { id: 'rcci', label: 'RCCI (Enquête)', icon: '🔍', showIf: isFireIncident, employeeAccess: false },
     { id: 'narratif', label: 'Narratif', icon: '📝', employeeAccess: false },
+    { id: 'photos', label: 'Photos', icon: '📷', employeeAccess: true },
     { id: 'remise', label: 'Remise de propriété', icon: '📋', showIf: () => !isAlerteSante(), employeeAccess: false },
     { id: 'facturation', label: 'Facturation', icon: '🧾', showIf: () => canValidate && !isAlerteSante(), employeeAccess: false },
   ];
@@ -1160,6 +1162,19 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
               getToken={getToken}
               toast={toast}
               canEdit={canEdit && !isLocked && !readOnly}
+            />
+          )}
+          
+          {activeSection === 'photos' && (
+            <SectionPhotos
+              intervention={formData}
+              setIntervention={setFormData}
+              tenantSlug={tenantSlug}
+              user={user}
+              getToken={getToken}
+              toast={toast}
+              canEdit={canEdit && !isLocked}
+              readOnly={forceReadOnly}
             />
           )}
           
