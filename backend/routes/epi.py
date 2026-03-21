@@ -909,6 +909,37 @@ async def delete_type_epi(
 
 # ========== EPI CRUD ==========
 
+@router.get("/{tenant_slug}/epi/check-numero-serie")
+async def check_numero_serie(
+    tenant_slug: str,
+    numero_serie: str,
+    exclude_epi_id: str = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Vérifie si un numéro de série existe déjà"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    query = {
+        "numero_serie": numero_serie,
+        "tenant_id": tenant.id
+    }
+    
+    # Exclure un EPI spécifique (pour modification)
+    if exclude_epi_id:
+        query["id"] = {"$ne": exclude_epi_id}
+    
+    existing = await db.epis.find_one(query)
+    
+    if existing:
+        return {
+            "exists": True,
+            "message": f"Ce numéro de série est déjà utilisé par l'EPI {existing.get('type_epi', 'Type inconnu')} assigné à un autre employé.",
+            "existing_type": existing.get("type_epi"),
+            "existing_id": existing.get("id")
+        }
+    
+    return {"exists": False, "message": "Numéro de série disponible"}
+
 @router.post("/{tenant_slug}/epi", response_model=EPI)
 async def create_epi(tenant_slug: str, epi: EPICreate, current_user: User = Depends(get_current_user)):
     """Crée un nouvel équipement EPI"""
@@ -925,10 +956,33 @@ async def create_epi(tenant_slug: str, epi: EPICreate, current_user: User = Depe
     
     # Générer numéro de série automatique si vide
     if not epi_dict.get("numero_serie") or epi_dict["numero_serie"].strip() == "":
-        # Compter les EPI existants pour générer un numéro unique
-        count = await db.epis.count_documents({"tenant_id": tenant.id})
+        # Générer un numéro unique en vérifiant qu'il n'existe pas déjà
         annee = datetime.now(timezone.utc).year
-        epi_dict["numero_serie"] = f"EPI-{annee}-{count + 1:04d}"
+        count = await db.epis.count_documents({"tenant_id": tenant.id})
+        
+        # Boucle pour trouver un numéro disponible
+        numero_candidat = f"EPI-{annee}-{count + 1:04d}"
+        max_attempts = 100  # Limite de sécurité
+        attempts = 0
+        
+        while attempts < max_attempts:
+            existing = await db.epis.find_one({
+                "numero_serie": numero_candidat,
+                "tenant_id": tenant.id
+            })
+            if not existing:
+                break  # Numéro disponible
+            count += 1
+            numero_candidat = f"EPI-{annee}-{count + 1:04d}"
+            attempts += 1
+        
+        if attempts >= max_attempts:
+            raise HTTPException(
+                status_code=500,
+                detail="Impossible de générer un numéro de série unique. Veuillez en saisir un manuellement."
+            )
+        
+        epi_dict["numero_serie"] = numero_candidat
     else:
         # Vérifier que le numéro de série est unique
         existing_epi = await db.epis.find_one({
@@ -1652,6 +1706,19 @@ async def update_epi(
     # Préparer les champs à mettre à jour
     update_data = {k: v for k, v in epi_update.dict().items() if v is not None}
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    # Vérifier l'unicité du numéro de série si modifié
+    if "numero_serie" in update_data and update_data["numero_serie"] != epi.get("numero_serie"):
+        existing_epi = await db.epis.find_one({
+            "numero_serie": update_data["numero_serie"],
+            "tenant_id": tenant.id,
+            "id": {"$ne": epi_id}  # Exclure l'EPI actuel
+        })
+        if existing_epi:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Le numéro de série '{update_data['numero_serie']}' est déjà utilisé par un autre EPI (#{existing_epi.get('numero_serie')} - {existing_epi.get('type_epi', 'Type inconnu')})"
+            )
     
     # Vérifier si changement d'affectation (user_id)
     ancien_user_id = epi.get("user_id")

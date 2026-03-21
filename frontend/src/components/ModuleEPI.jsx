@@ -660,6 +660,22 @@ const ModuleEPI = ({ user }) => {
   // CRUD EPI
   const handleSaveEPI = async () => {
     try {
+      // Vérifier l'unicité du numéro de série si fourni
+      if (epiForm.numero_serie && epiForm.numero_serie.trim() !== '') {
+        const excludeId = selectedEPI ? selectedEPI.id : null;
+        const checkUrl = `/epi/check-numero-serie?numero_serie=${encodeURIComponent(epiForm.numero_serie)}${excludeId ? `&exclude_epi_id=${excludeId}` : ''}`;
+        const checkResult = await apiGet(tenantSlug, checkUrl);
+        
+        if (checkResult.exists) {
+          toast({
+            title: "Numéro de série déjà utilisé",
+            description: checkResult.message,
+            variant: "destructive"
+          });
+          return; // Arrêter la sauvegarde
+        }
+      }
+      
       if (selectedEPI) {
         await apiPut(tenantSlug, `/epi/${selectedEPI.id}`, epiForm);
         toast({ title: "Succès", description: "EPI modifié" });
@@ -673,7 +689,7 @@ const ModuleEPI = ({ user }) => {
     } catch (error) {
       toast({
         title: "Erreur",
-        description: error.response?.data?.detail || "Erreur",
+        description: error.response?.data?.detail || error.message || "Erreur lors de la sauvegarde",
         variant: "destructive"
       });
     }
