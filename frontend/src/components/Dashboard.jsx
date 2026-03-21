@@ -398,30 +398,32 @@ const Dashboard = ({ setCurrentPage }) => {
         currentUser={user}
       />
 
-      {/* Alertes Équipements */}
-      <EquipementAlertesSection alertesEquipements={alertesEquipements} formatDate={formatDate} onNavigate={(lien) => {
-        // Gérer les différents types de liens
-        let targetTab = 'materiel';
-        
-        if (lien === '/mes-epi') {
-          targetTab = 'epi';
-        } else if (lien && lien.includes('?tab=')) {
-          const match = lien.match(/\?tab=(\w+)/);
-          if (match) targetTab = match[1];
-        }
-        
-        // Stocker le tab cible et émettre un event pour forcer la navigation
-        localStorage.setItem('actifs_target_tab', targetTab);
-        
-        if (lien) {
-          const equipementMatch = lien.match(/equipements\/(.+)/);
-          if (equipementMatch) localStorage.setItem('actifs_target_equipement_id', equipementMatch[1]);
-        }
-        
-        // Émettre un event custom pour forcer le changement de tab
-        window.dispatchEvent(new CustomEvent('navigateToTab', { detail: { tab: targetTab } }));
-        setCurrentPage('actifs');
-      }} />
+      {/* Alertes Équipements - nécessite permission RBAC */}
+      {canViewAlertes && (
+        <EquipementAlertesSection alertesEquipements={alertesEquipements} formatDate={formatDate} onNavigate={(lien) => {
+          // Gérer les différents types de liens
+          let targetTab = 'materiel';
+          
+          if (lien === '/mes-epi') {
+            targetTab = 'epi';
+          } else if (lien && lien.includes('?tab=')) {
+            const match = lien.match(/\?tab=(\w+)/);
+            if (match) targetTab = match[1];
+          }
+          
+          // Stocker le tab cible et émettre un event pour forcer la navigation
+          localStorage.setItem('actifs_target_tab', targetTab);
+          
+          if (lien) {
+            const equipementMatch = lien.match(/equipements\/(.+)/);
+            if (equipementMatch) localStorage.setItem('actifs_target_equipement_id', equipementMatch[1]);
+          }
+          
+          // Émettre un event custom pour forcer le changement de tab
+          window.dispatchEvent(new CustomEvent('navigateToTab', { detail: { tab: targetTab } }));
+          setCurrentPage('actifs');
+        }} />
+      )}
 
       {/* Alertes Maintenance Véhicules */}
       <VehiculeAlertesSection 
@@ -537,7 +539,8 @@ const Dashboard = ({ setCurrentPage }) => {
           <FormationsAVenirCard formations={formationsInscrites} formatDate={formatDate} />
         </div>
 
-                {canViewAlertes && <EPIAlertesInline alertes={mesEPIAlerts} formatDate={formatDate} />}
+        {/* Alertes sur MES propres EPIs - toujours visibles pour l'utilisateur */}
+        {mesEPIAlerts.length > 0 && <EPIAlertesInline alertes={mesEPIAlerts} formatDate={formatDate} />}
       </div>
 
       {/* Section Admin */}
