@@ -537,7 +537,7 @@ const Dashboard = ({ setCurrentPage }) => {
           <FormationsAVenirCard formations={formationsInscrites} formatDate={formatDate} />
         </div>
 
-        <EPIAlertesInline alertes={mesEPIAlerts} formatDate={formatDate} />
+                {canViewAlertes && <EPIAlertesInline alertes={mesEPIAlerts} formatDate={formatDate} />}
       </div>
 
       {/* Section Admin */}
