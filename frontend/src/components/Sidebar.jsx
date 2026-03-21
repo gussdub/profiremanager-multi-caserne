@@ -508,6 +508,7 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
     { id: 'dashboard', label: 'Tableau de bord', icon: '📊', moduleId: 'dashboard', alwaysVisible: true },
     { id: 'personnel', label: 'Personnel', icon: '👥', moduleId: 'personnel' },
     { id: 'actifs', label: 'Gestion des Actifs', icon: '🚒', moduleId: 'actifs' },
+    { id: 'batiments', label: 'Bâtiments', icon: '🏢', moduleId: 'batiments' },
     { id: 'interventions', label: 'Interventions', icon: '🚨', moduleId: 'interventions' },
     { id: 'paie', label: 'Paie', icon: '💰', moduleId: 'paie' },
     { id: 'planning', label: 'Horaire', icon: '📅', moduleId: 'planning' },

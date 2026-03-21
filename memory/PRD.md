@@ -4,38 +4,56 @@
 Application de gestion des services d'incendie multi-tenant avec modules de planning, personnel, actifs, prévention et interventions.
 
 
-### NEW - Intégration Import Intelligent Bâtiments (21 Mars 2026)
+### NEW - Module Bâtiments Indépendant avec RBAC (21 Mars 2026)
 **Statut:** ✅ TERMINÉ
 
-**Objectif:** Intégrer le composant d'import intelligent de bâtiments dans les Paramètres d'Imports globaux et supprimer l'ancien bouton d'import des paramètres de Prévention.
+**Objectif:** Créer un module "Bâtiments" indépendant du module Prévention, avec contrôle RBAC pour les permissions voir/éditer.
 
 **Modifications effectuées:**
 
-1. **Frontend - ParametresImports.jsx:**
-   - Import du composant `ImportBatimentsIntelligent`
-   - Ajout de l'icône `Building` de lucide-react
-   - Nouvel onglet "Bâtiments" en première position (7 onglets au total)
-   - Onglet actif par défaut sur "Bâtiments"
-   - Grid passé de 6 à 7 colonnes
+1. **Backend - routes/batiments.py (NOUVEAU):**
+   - Routes indépendantes pour la gestion des bâtiments
+   - GET /batiments - Liste tous les bâtiments
+   - GET /batiments/search - Recherche de bâtiments
+   - GET /batiments/{id} - Détail d'un bâtiment
+   - POST /batiments - Créer un bâtiment
+   - PUT /batiments/{id} - Modifier un bâtiment
+   - DELETE /batiments/{id} - Supprimer un bâtiment
+   - GET /batiments/meta/categories - Catégories/groupes d'occupation
+   - GET /batiments/statistiques - Statistiques
 
-2. **Frontend - ParametresPrevention.jsx:**
-   - Suppression de l'onglet "Import Bâtiments" de la liste TABS (passé de 4 à 3 onglets)
-   - Suppression du cas 'import' dans le switch renderTabContent
-   - Nettoyage des imports inutilisés (Building2)
-   - Nettoyage des props et state inutilisés (showImportCSV, onRefreshBatiments, ImportBatimentsComponent)
-   - Grid passé de 4 à 3 colonnes
+2. **Backend - routes/access_types.py:**
+   - Ajout du module "batiments" dans les définitions de modules
+   - Permissions: voir, creer, modifier, supprimer, exporter
+   - Tabs: liste, carte, import
+   - Configuration RBAC pour les rôles admin, superviseur, employe
 
-3. **Frontend - Prevention.jsx:**
-   - Suppression des props inutilisés passés à ParametresPrevention
+3. **Backend - server.py:**
+   - Import et enregistrement du nouveau router batiments
 
-**Fichiers modifiés:**
-- `/app/frontend/src/components/ParametresImports.jsx`
-- `/app/frontend/src/components/ParametresPrevention.jsx`
-- `/app/frontend/src/components/Prevention.jsx`
+4. **Frontend - components/Batiments.jsx (NOUVEAU):**
+   - Composant complet de gestion des bâtiments
+   - Vue Liste avec tableau des bâtiments
+   - Vue Carte (lazy loaded)
+   - Filtres par risque, groupe d'occupation
+   - Recherche textuelle
+   - Statistiques en temps réel
+   - Modal de création/édition/visualisation
+   - RBAC intégré (canView, canEdit, canCreate, canDelete, canExport)
+
+5. **Frontend - components/Sidebar.jsx:**
+   - Ajout de l'entrée "Bâtiments" dans le menu avec icône 🏢
+
+6. **Frontend - App.js:**
+   - Import lazy du composant Batiments
+   - Case dans renderCurrentPage
+   - Mapping URL pour la navigation
 
 **Résultat:**
-- L'import intelligent de bâtiments est maintenant accessible via Paramètres > Imports CSV > Bâtiments
-- Les paramètres de Prévention ne contiennent plus que 3 onglets: Paramètres généraux, Référentiel Violations, Grilles d'inspection
+- Le module Bâtiments est maintenant accessible indépendamment du module Prévention
+- Les clients sans le module Prévention peuvent quand même gérer leurs bâtiments
+- Les permissions RBAC contrôlent qui peut voir/éditer/créer/supprimer
+
 
 ## Core Features Implemented
 

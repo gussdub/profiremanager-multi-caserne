@@ -39,6 +39,7 @@ const Dashboard = lazy(() => import("./components/Dashboard"));
 const Sidebar = lazy(() => import("./components/Sidebar"));
 const Rapports = lazy(() => import("./components/Rapports"));
 const Prevention = lazy(() => import("./components/Prevention"));
+const Batiments = lazy(() => import("./components/Batiments"));
 const ApprovisionnementEau = lazy(() => import("./components/ApprovisionnementEau"));
 const GestionPreventionnistes = lazy(() => import("./components/GestionPreventionnistes"));
 const ImportBatiments = lazy(() => import("./components/ImportBatiments"));
@@ -375,6 +376,8 @@ const AppLayout = () => {
             setCurrentPage('dashboard');
           } else if (pageName === 'planning' || url.includes('/planning')) {
             setCurrentPage('planning');
+          } else if (pageName === 'batiments' || url.includes('/batiments')) {
+            setCurrentPage('batiments');
           } else if (pageName === 'prevention' || url.includes('/prevention')) {
             setCurrentPage('prevention');
           }
@@ -412,6 +415,7 @@ const AppLayout = () => {
           'interventions': 'interventions',
           'formations': 'formations',
           'dashboard': 'dashboard',
+          'batiments': 'batiments',
           'prevention': 'prevention',
           'rapports': 'rapports'
         };
@@ -462,6 +466,12 @@ const AppLayout = () => {
         />;
       case 'formations':
         return <Formations />;
+      case 'batiments':
+        return (
+          <Suspense fallback={<LoadingComponent />}>
+            <Batiments />
+          </Suspense>
+        );
       case 'prevention':
         return (
           <Suspense fallback={<LoadingComponent />}>

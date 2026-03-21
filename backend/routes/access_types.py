@@ -178,6 +178,16 @@ MODULES_STRUCTURE = {
         },
         "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]
     },
+    "batiments": {
+        "label": "Bâtiments",
+        "icon": "🏢",
+        "tabs": {
+            "liste": {"label": "Liste des bâtiments", "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+            "carte": {"label": "Vue carte", "actions": ["voir"]},
+            "import": {"label": "Import CSV", "actions": ["creer"]}
+        },
+        "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]
+    },
     "actifs": {
         "label": "Gestion des Actifs",
         "icon": "🚒",
@@ -382,6 +392,15 @@ DEFAULT_PERMISSIONS = {
                     "parametres": {"access": True, "actions": ["voir", "modifier"]}
                 }
             },
+            "batiments": {
+                "access": True,
+                "actions": ["voir", "creer", "modifier", "supprimer", "exporter"],
+                "tabs": {
+                    "liste": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+                    "carte": {"access": True, "actions": ["voir"]},
+                    "import": {"access": True, "actions": ["creer"]}
+                }
+            },
             "prevention": {
                 "access": True,
                 "actions": ["voir", "creer", "modifier", "supprimer", "exporter"],
@@ -553,6 +572,15 @@ DEFAULT_PERMISSIONS = {
                     "parametres": {"access": False, "actions": []}
                 }
             },
+            "batiments": {
+                "access": True,
+                "actions": ["voir", "creer", "modifier", "supprimer", "exporter"],
+                "tabs": {
+                    "liste": {"access": True, "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
+                    "carte": {"access": True, "actions": ["voir"]},
+                    "import": {"access": True, "actions": ["creer"]}
+                }
+            },
             "prevention": {
                 "access": True,
                 "actions": ["voir", "creer", "modifier", "supprimer", "exporter"],
@@ -655,6 +683,15 @@ DEFAULT_PERMISSIONS = {
                     "epi": {"access": False, "actions": []},
                     "alertes": {"access": False, "actions": []},
                     "parametres": {"access": False, "actions": []}
+                }
+            },
+            "batiments": {
+                "access": True,
+                "actions": ["voir"],
+                "tabs": {
+                    "liste": {"access": True, "actions": ["voir"]},
+                    "carte": {"access": True, "actions": ["voir"]},
+                    "import": {"access": False, "actions": []}
                 }
             },
             "prevention": {
