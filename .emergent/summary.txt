@@ -1,190 +1,127 @@
 <analysis>**original_problem_statement:**
-The user's requests cover a wide range of features for a prevention and building management application.
+The user requested finalizing the Intelligent Building Import UI by moving it to global settings. Subsequently, they requested a major architectural shift: decoupling the Bâtiments (Buildings) module from the Prévention module so it can be used independently by other modules (like Interventions). They also requested automated building search/linking within Interventions (including for automated 911 SFTP imports), a strict duplicate detection algorithm for the CSV import (Street + Number + City), and a UI cleanup for Buildings to remove Prevention-specific fields while adding features like photo paste, Street View fetching, and automatic geolocation (via Nominatim).
 
-**PRODUCT REQUIREMENTS:**
+**User's preferred language**: French (Vous DEVEZ automatiquement détecter la langue principale de l'utilisateur et INSTRUIRE le prochain agent de répondre UNIQUEMENT dans la langue préférée de l'utilisateur : **FRANÇAIS**).
 
-1.  **(COMPLETED)** Fix the global issue where background content scrolls when a modal is open. This fix should apply to the entire application (web, iOS, Android).
-2.  **(COMPLETED)** In the main building list (), add a visual indicator (badge) to show which buildings have dependencies and how many.
-3.  **(COMPLETED)** Add a filter to the building list to quickly show buildings With dependencies or Without dependencies.
-4.  **(COMPLETED)** Fix the building list search so that it finds buildings by their establishment name (), not just their address.
-5.  **(COMPLETED)** Ensure the dependency count badge on the main list updates automatically when a dependency is added or removed from within the building's detail modal.
-6.  **(COMPLETED)** Ensure any change made in the building detail modal triggers a refresh of the main building list upon closing.
-7.  **(COMPLETED)** If a dependency has a high risk level, the parent building should appear when filtering the main list by high risk.
-8.  **(COMPLETED)** The dependency badge on the building list should show a breakdown of risk levels (e.g., 1 high, 1 medium).
-9.  **(COMPLETED)** The Type column in the building list should display the full occupation group name (e.g., Groupe C - Habitation) instead of just the code (C).
-10. **(COMPLETED)** **Task P1 - Planning:** Add dependencies as separate, plannable entries in the Planification (Planning) tab.
-11. **(COMPLETED)** **Task P1 - Inspections:** Implement an independent inspection history for each dependency.
-12. **(COMPLETED)** Fix the error that occurred when trying to plan an inspection for a dependency.
-13. **(COMPLETED)** Add a date and time picker to the inspection planning modal.
-14. **(COMPLETED)** Ensure planned inspections appear on the correct date and time in the calendar, sorted chronologically.
-15. **(COMPLETED)** Ensure that once an inspection is planned for a building or dependency, it is removed from the À planifier (To be planned) list.
-16. **(IN PROGRESS)** Fix the bug where modifying an inspection's date creates a duplicate event instead of updating the existing one.
-17. **(INVESTIGATED/CLOSED)** Fix a white screen issue that occurred when clicking Planifier on a specific building. (Agent could not reproduce, likely a temporary cache issue).
-18. **(PENDING)** Fix the UI bug in the  section where clicking one Export button incorrectly puts all export buttons into a loading state.
+**what currently exists?** 
+A robust Bâtiments module that is now completely independent from Prévention, accessible via strict RBAC. It includes a simplified UI with list/map views, manual creation with photo support, Google Street View integration, and automatic geolocation. The Interventions module and 911 SFTP service now automatically search and link addresses to existing buildings. An intelligent CSV import system is globally available with a strict duplicate detection algorithm (Number + Street + City).
 
-**User's preferred language**: French
+**Last working item**: 
+- **Last item agent was working:** The agent was testing the final execution step of the intelligent CSV import ( in ) using a newly created simple CSV. The preview step worked flawlessly, but the execution step returned 0 created, 0 updated via a CLI test script. The agent was inspecting backend logs to find why the execution silently skipped creating the buildings when the session ended.
+- **Status:** IN PROGRESS
+- **Agent Testing Done:** Y (via bash script, which revealed the bug)
+- **Which testing method agent to use?** Backend manual testing via python/curl script to fix the logic, followed by Frontend screenshot testing of the complete import flow.
+- **User Testing Done:** N
 
-**what currently exists?**
-The application is a full-stack React/FastAPI/MongoDB solution. A robust, app-wide scroll lock has been implemented for all modals. The Prévention module has been significantly enhanced: the main building list now features dynamic badges indicating dependency counts and their specific risk levels (e.g., 🟠 1 élevé). The filtering and search functionalities on this list have been improved to account for dependencies and establishment names.
+**All Pending/In progress Issue list**: 
+  - **Issue 1: Intelligent CSV Import Execution silently failing (P0)**
+     - **Attempted fixes:** Agent simplified the CSV mapping to remove Prevention-specific fields and added auto-geolocation to the backend import execution. Ran a test script, but it resulted in 0 creations.
+     - **Next debug checklist:** 
+       1. Check , specifically the  function.
+       2. Verify how  is being accessed and if the session is expiring or dropping data.
+       3. Check the  loop to see why it skips creating new buildings (e.g., payload mismatch between what the frontend sends and what the backend expects for create_new vs skip).
+     - **Why fix this issue and what will be achieved with the fix?** The import preview works perfectly, but users cannot actually save the imported data until the execution endpoint correctly processes the payload.
+     - **Status:** IN PROGRESS
+     - **Is recurring issue?** N
+     - **Should Test frontend/backend/both after fix?** Both.
+     - **Blocked on other issue:** None.
 
-A major overhaul of the Planification (Planning) module is complete. Dependencies are now treated as first-class citizens, appearing as separate, plannable entries in a new Éléments à planifier list and in statistics. The inspection creation flow has been fixed, and the modal now includes date/time pickers. Created inspections for both buildings and dependencies now appear correctly on the calendar. The backend and data models (, ) were patched to support these new features, resolving several data model duplication issues. The agent was about to address a minor UI bug on the reports page.
+**In progress Task List**: 
+None. All planned tasks were completed except the bug discovered in the final testing phase of the import.
 
-**Last working item**:
--   Last item agent was working: The user reported a UI bug in  where clicking one Export button sets all of them to a loading state (En cours...). The agent acknowledged the issue and was about to begin investigation.
--   Status: NOT STARTED
--   Agent Testing Done: N
--   Which testing method agent to use? Frontend testing agent. The test should navigate to the  page, click a single export button, and verify via screenshot that only the clicked button shows a loading state, while others remain unchanged.
--   User Testing Done: N
+**Upcoming and Future Tasks**:
+- **P2: Refactor  Pydantic Models**: Multiple overlapping definitions of  and  exist in . They should be consolidated into a single source of truth.
 
-**All Pending/In progress Issue list**:
--   **Issue 1: Shared loading state on Export buttons (P0)**
-    -   Description: On the  page, clicking any Export button causes all of them to display a loading state, providing incorrect user feedback.
-    -   Status: NOT STARTED
--   **Issue 2: Modifying an inspection creates a duplicate entry (P1)**
-    -   Description: When a user edits a planned inspection from the calendar (e.g., changes the date), the system creates a new inspection instead of updating the existing one. This leaves a ghost event on the original date.
-    -   Status: NOT STARTED
+**Completed work in this session**:
+- Integrated  into global  and removed from Prevention (DONE)
+- Extracted  into an independent module with its own backend routes and frontend UI (DONE)
+- Updated RBAC () to handle  independently for all roles (DONE)
+- Implemented automatic building search and linkage in  (Interventions) (DONE)
+- Implemented automatic building linkage for 911 SFTP imports in  (DONE)
+- Rewrote the duplicate detection algorithm () to strictly require matching Number + Street + City (DONE)
+- Cleaned up  UI (Removed Prevention fields like risks, categories, specific map markers) (DONE)
+- Added photo upload support via drag-drop/paste and Google Street View button (DONE)
+- Added automatic geolocation via Nominatim API for manual creation and CSV import (DONE)
 
-**Issues Detail:**
--   **Issue 1: Shared loading state on Export buttons**
-    -   Attempted fixes: None.
-    -   Next debug checklist:
-        1.  Locate the relevant React component for the  page.
-        2.  Identify the state variable controlling the loading status (e.g., ). It is likely a single boolean.
-        3.  Refactor the state to handle loading for individual items. For example, use an object like  or store the ID of the item being loaded, e.g., .
-        4.  Update the button's  and text logic to check against the specific item's loading state (e.g., ).
-    -   Why fix this issue and what will be achieved with the fix?: To correct a confusing UI/UX bug and provide accurate feedback to the user during an export operation.
-    -   Status: NOT STARTED
-    -   Is recurring issue? N
-    -   Should Test frontend/backend/both after fix? Frontend.
-    -   Blocked on other issue: None.
+**Earlier issues found/mentioned but not fixed**:
+   - Issue 1: Overlapping Pydantic Models in .
+   - Debug checklist: Search for  and . Consolidate them.
+   - Why to solve: Prevents subtle validation bugs.
+   - Should Test frontend/backend/both after fix: Backend.
+   - Is recurring issue? Y
 
--   **Issue 2: Modifying an inspection creates a duplicate entry**
-    -   Attempted fixes: The agent previously identified the root cause: the modal only sends  requests (create) and lacks an edit mode that would send a  request. The agent cleaned up the resulting duplicate data from the database but did not implement the edit functionality.
-    -   Next debug checklist:
-        1.  Create a  endpoint in  to handle updates.
-        2.  In , modify the logic so that clicking an existing inspection on the calendar opens the modal in an edit mode (e.g., by passing the inspection object).
-        3.  In the modal, if in edit mode, the Save button's  handler must call the new  endpoint with the inspection ID.
-        4.  Ensure the calendar data is correctly refreshed after the update to reflect the change and remove the old entry.
-        5.  Consider adding a Delete button to the modal, which would call a  endpoint.
-    -   Why fix this issue and what will be achieved with the fix?: This is a critical bug in core CRUD functionality. Without it, users cannot correctly manage or modify scheduled inspections.
-    -   Status: NOT STARTED
-    -   Is recurring issue? Y (The root cause has not been fixed).
-    -   Should Test frontend/backend/both after fix? Both.
-    -   Blocked on other issue: None.
+**Known issue recurrence from previous fork**:
+  - Issue recurrence in previous fork: Safari Stacking Context / Modal crashes. (If creating new modals, use React Portals / Shadcn Dialog).
+  - Recurrence count: 1
+  - Status: RESOLVED (Keep in mind for future).
 
-**In progress Task List**:
--   None.
-
-**Upcoming and Future Tasks**
--   **Upcoming Tasks:**
-    -   P1: Implement full Edit/Update/Delete functionality for inspections from the calendar modal (resolves pending Issue #2).
--   **Future Tasks:**
-    -   P2: Refactor  (over 5000 lines).
-    -   P2: Refactor  (over 2600 lines).
-    -   P2: Update the  document to reflect all the features completed in this session.
-
-**Completed work in this session**
--   **Global UI Fix: Modal Scroll Lock**
-    -   Implemented an application-wide, automatic solution to prevent background scrolling when any modal is open using custom hooks and a .
--   **Feature: Dependency Management in Building List ()**
-    -   Added dynamic badges to show dependency counts and risk levels (e.g., , ).
-    -   Added filters for buildings with/without dependencies and by dependency risk level.
-    -   Fixed building search to include establishment name.
-    -   Ensured the list automatically refreshes when dependencies are modified in the detail modal.
-    -   Fixed the Type column to display the full descriptive name.
--   **Feature: Planning Module Overhaul ()**
-    -   Integrated dependencies as separate, plannable entities.
-    -   Added dedicated statistics cards for Dépendances and Total à planifier.
-    -   Implemented a filter to show Buildings, Dependencies, or both.
-    -   Created a new Éléments à planifier list showing all plannable items.
-    -   Fixed the inspection creation flow for dependencies, including adding a date/time picker to the modal.
-    -   Ensured planned items are correctly displayed on the calendar and removed from the À planifier list.
--   **Feature: Independent Inspection History for Dependencies**
-    -   Updated the backend and frontend to support creating and viewing inspection histories for individual dependencies.
--   **Backend Refactoring:**
-    -   Patched several files (, ) to resolve duplicated Pydantic model definitions (, ) that were causing validation errors.
-
-**Earlier issues found/mentioned but not fixed**
--   None.
-
-**Known issue recurrence from previous fork**
--   None.
-
-**Code Architecture**
+**Code Architecture**:
 
 
-**Key Technical Concepts**
--   **Global UI Behavior with Hooks:** The use of a  within a custom React hook () to apply a UI behavior (scroll locking) across an entire application without needing to modify every single modal component is a powerful and scalable pattern.
--   **Backend Data Aggregation:** Using a MongoDB aggregation pipeline in the  endpoint to efficiently calculate and group data on the server, minimizing client-side processing and data transfer.
--   **State Lifting and Callbacks:** Passing callback functions () down through multiple component layers to allow a deeply nested child to trigger a data refresh in a top-level parent component.
--   **Composite UI from Multiple Sources:** Combining data from two distinct collections ( and ) into a single, unified UI list (), while maintaining visual distinction between the two types of entities.
--   **Defensive Coding/Debugging:** Identifying and patching duplicated Pydantic models in the backend, which was the root cause of persistent  validation errors.
+**Key Technical Concepts**:
+- Separation of Concerns (Decoupling Bâtiments from Prévention).
+- OpenStreetMap/Nominatim API for free, keyless Geocoding.
+- Fuzzy/Strict string matching () for address deduplication.
+- SFTP automated parsing and real-time database linkage.
 
-**key DB schema**
--   ****: The Pydantic models  and  were modified to include  and make . This allows an inspection to be linked to either a building or a dependency.
+**key DB schema**:
+  - : {nom_etablissement, adresse_civique, ville, latitude, longitude, contact_nom, photo_url}. Note: Prevention fields (risques, categories) have been decoupled from the primary creation flow.
+  - : Now relies on independent .
 
-**changes in tech stack**
--   None.
+**changes in tech stack**:
+  - Integration of  for Nominatim API calls (already present in environment).
 
-**All files of reference**
--    (or a similar file): Target file for fixing the shared Export button loading state.
--   : Component for implementing inspection edit/delete functionality.
--   : Backend file to add / inspection endpoints and fix model definitions.
--   : The main component for the building list view.
--   : The custom hook providing app-wide scroll lock.
+**All files of reference**: 
+1.  (Contains the failing  function)
+2.  (Frontend payload sender for execution)
+3.  (New main buildings interface)
 
-**Areas that need refactoring**:
--   ****: This file contains multiple, conflicting definitions for the  and  Pydantic models. The agent applied patches, but a proper refactor is needed to consolidate these into single, authoritative models to prevent future bugs.
--   ****: This component has become very large and complex, managing statistics, filters, a calendar, a list of items, and a modal. It should be broken down into smaller, more manageable child components.
+**Areas that need refactoring**: 
+-  (Pydantic models)
 
-**key api endpoints**
--   : **(Modified)** Now returns dependency counts grouped by risk level.
--   : **(New)** Fetches all dependencies with parent building information, used for the planning page.
--   : **(Modified)** Now correctly handles creating inspections for both buildings and dependencies.
--   : **(New)** Retrieves the inspection history for a specific dependency.
+**key api endpoints**:
+-  (Currently failing to create records)
+- 
+-  (Used for auto-linking in Interventions)
 
-**Critical Info for New Agent**
--   **YOU MUST COMMUNICATE IN FRENCH.**
--   Your first task is to fix the shared loading state on the Export buttons in .
--   Your next major task is to address the critical bug where editing an inspection creates a duplicate. This requires implementing an edit mode in the  modal and adding a corresponding  endpoint to the backend. This is a top user priority.
--   The backend file  is fragile due to duplicated Pydantic models. Be cautious when editing it, and consider refactoring it to have single sources of truth for the  and  models.
+**Critical Info for New Agent**: 
+- **LANGUAGE**: You MUST communicate in **French**.
+- **IMMEDIATE TASK**: Your first priority is fixing the  endpoint. The preview works, but executing the import results in 0 database insertions. Check the logic mapping the  payload to the backend session data.
+- The  module is now global and independent. Do NOT add Prevention-specific logic (risks, inspection status, occupation groups) back into the core Buildings UI.
 
-**documents and test reports created in this job**
--   None.
+**documents and test reports created in this job**: 
+  - 
 
-**Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Reports the shared loading state on Export buttons. (PENDING)
-2.  **User:** Reports a white screen when clicking Planifier for a specific building. (RESOLVED - Agent could not reproduce, likely a cache issue).
-3.  **User:** Happy with the fix for  list, and confirms that the duplicate issue in calendar is now solved. (COMPLETED).
-4.  **User:** Reports that planned items remain in the À planifier list and modifying an inspection creates a duplicate. (PARTIALLY RESOLVED - List fixed, duplication issue identified).
-5.  **User:** Confirms the inspection planning now works as expected. (COMPLETED)
-6.  **User:** Reports that after planning an inspection, it doesn't appear on the calendar and isn't removed from the to-do list. (RESOLVED).
-7.  **User:** Agrees to test the implementation and provides feedback that planning a visit in Test 2 fails with an error message and that the planning modal needs a date picker. (RESOLVED).
-8.  **User:** Agrees to test the implemented features and is given a step-by-step guide. (COMPLETED)
-9.  **User:** Asks the agent to continue with P1 tasks, specifically independent inspections for dependencies. (COMPLETED)
-10. **User:** Says ca fonctionne, continue (it works, continue) after the fix for the occupation group display. (COMPLETED)
+**Last 10 User Messages and any pending HUMAN messages**: 
+1. (COMPLETED) User asked to decouple Buildings from Prevention (Option A: Independent module).
+2. (COMPLETED) User asked to add automatic building search/fill to the Interventions module.
+3. (COMPLETED) User asked to extend the auto-search to automated 911 SFTP imports.
+4. (COMPLETED) User pointed out a flaw in the duplicate detection algorithm (false positives on street names) and requested the Execute button be usable.
+5. (COMPLETED) User defined strict duplicate rules: Same Street AND Same Number AND Same City.
+6. (COMPLETED) User asked to clean up the Batiments UI (remove Prevention filters) and add Photo pasting + Street View.
+7. (COMPLETED) User asked to add automatic geolocation.
+8. (COMPLETED) User asked if CSV import will also place data in the right places (without Prevention fields) and geo-locate automatically.
+9. (PENDING FIX) Agent tested the CSV import execution, but it failed to create records. The session ended before the agent could fix the backend execution route.
 
 **Project Health Check:**
--   **Broken:**
-    -   Editing a planned inspection creates a duplicate instead of updating the original. The core update functionality is missing.
-    -   The Export buttons on the  page share a single loading state, leading to a confusing UI.
--   **Mocked:** None.
+- Broken: CSV Import Execution ( endpoint).
+- Mocked: None.
 
-**3rd Party Integrations**
--   **Firebase:** Used for push notifications.
--   **Capacitor:** Used for building native iOS/Android apps.
+**3rd Party Integrations**: 
+- Nominatim (OpenStreetMap) Geocoding — free, no key required.
+- Resend (Emails) — API Key present in env.
+- Firebase (Push Notifications)
 
-**Testing status**
--   Testing agent used after significant changes: NO
--   Troubleshoot agent used after agent stuck in loop: NO
--   Test files created: None.
--   Known regressions: None.
+**Testing status**: 
+  - Testing agent used after significant changes: NO (Main agent used bash testing and Playwright screenshots extensively).
+  - Troubleshoot agent used after agent stuck in loop: NO.
+  - Test files created: , .
+  - Known regressions:  failing.
 
 **Credentials to test flow:**
--   **User:**  or 
--   **Password:** 
--   **Tenant:** 
+- Email: 
+- Password: 
+- Tenant: 
 
-**What agent forgot to execute**
--   The agent did not fully resolve the modification creates a duplicate issue. It cleaned up the data but did not implement the required  endpoint for editing, which is the root cause. This is captured in the pending issues.
--   The agent did not update  after completing a large number of new features and fixes.</analysis>
+**What agent forgot to execute**: 
+The agent noticed that the bash script testing  returned 0 creations, but ran out of time to debug the backend route before finishing the session.</analysis>

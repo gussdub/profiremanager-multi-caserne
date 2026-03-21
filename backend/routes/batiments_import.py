@@ -197,29 +197,25 @@ async def preview_import_batiments(
                 continue
             seen_addresses[address_key] = idx
             
-            # Préparer les données du nouveau bâtiment
+            # Préparer les données du nouveau bâtiment (champs de base uniquement)
+            # Les champs de Prévention (risque, groupe, gicleurs, etc.) sont gérés séparément
             new_data = {
                 "nom_etablissement": row.get('nom_etablissement', row.get('nom', '')),
                 "adresse_civique": address,
                 "ville": row.get('ville', ''),
                 "code_postal": row.get('code_postal', ''),
-                "proprietaire": row.get('proprietaire', ''),
-                "type_batiment": row.get('type_batiment', ''),
-                "usage_principal": row.get('usage_principal', row.get('usage', '')),
-                "groupe_occupation": row.get('groupe_occupation', ''),
-                "nombre_etages": row.get('nombre_etages', ''),
-                "nombre_logements": row.get('nombre_logements', ''),
-                "superficie": row.get('superficie', ''),
-                "annee_construction": row.get('annee_construction', ''),
-                "type_construction": row.get('type_construction', ''),
-                "gicleurs": row.get('gicleurs', ''),
-                "alarme_incendie": row.get('alarme_incendie', ''),
-                "niveau_risque": row.get('niveau_risque', ''),
-                "matricule": row.get('matricule', row.get('numero_matricule', '')),
-                "numero_lot": row.get('numero_lot', ''),
+                "province": row.get('province', 'Québec'),
+                # Coordonnées GPS (si présentes dans le CSV, sinon géolocalisation auto)
                 "latitude": row.get('latitude', ''),
                 "longitude": row.get('longitude', ''),
-                "notes": row.get('notes', '')
+                # Contact
+                "contact_nom": row.get('contact_nom', row.get('proprietaire', row.get('contact', ''))),
+                "contact_telephone": row.get('contact_telephone', row.get('telephone', '')),
+                "contact_email": row.get('contact_email', row.get('email', '')),
+                # Infos supplémentaires
+                "notes": row.get('notes', row.get('description', '')),
+                # Photo (URL si fournie)
+                "photo_url": row.get('photo_url', row.get('photo', '')),
             }
             
             # Chercher les correspondances avec la nouvelle logique stricte

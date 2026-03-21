@@ -55,7 +55,7 @@ import os
 class P1FeaturesTester:
     def __init__(self):
         # Utiliser l'URL depuis frontend/.env comme spécifié
-        self.base_url = "https://intelligent-import-1.preview.emergentagent.com/api"
+        self.base_url = "https://building-csv-exec.preview.emergentagent.com/api"
         self.headers = {}
         self.token = None
         self.tenant_slug = "shefford"

@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://intelligent-import-1.preview.emergentagent.com
+- **URL** : https://building-csv-exec.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://intelligent-import-1.preview.emergentagent.com"
+  "apiUrl": "https://building-csv-exec.preview.emergentagent.com"
 }
 ```
 
