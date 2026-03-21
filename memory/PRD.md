@@ -59,6 +59,12 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
    - Bouton "Réessayer la recherche auto"
    - Fonctionnalité "Délier" pour changer de bâtiment
 
+8. **Backend - services/sftp_service.py:**
+   - Ajout de la fonction `auto_link_batiment()` pour recherche automatique
+   - Algorithme de scoring identique au frontend (normalisation, accents, numéro civique)
+   - Les interventions arrivant du 911 sont automatiquement liées au bâtiment correspondant
+   - Nouveau champ `batiment_auto_linked: true` pour traçabilité
+
 **Résultat:**
 - Le module Bâtiments est maintenant accessible indépendamment du module Prévention
 - Les clients sans le module Prévention peuvent quand même gérer leurs bâtiments
@@ -793,15 +799,13 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 ## Pending Tasks
 
 ### P1
-- **Test flux complet Import Intelligent Bâtiments**: Tester le flux de bout en bout (upload CSV → détection conflits → fusion/archivage)
+- **Test complet Import Intelligent Bâtiments avec fichier CSV réel**: Uploader un CSV avec doublons pour tester la détection et fusion
 - **Vérification notifications push Android**: Tester les notifications avec la nouvelle config AndroidManifest.xml et build.gradle
-- **Déploiement deep linking**: Effectuer les dernières étapes pour activer Universal Links (iOS) et App Links (Android)
-- **Test complet notifications push**: Vérifier les notifications Firebase sur appareil réel (iOS/Android)
-- Adapter l'import d'inspections d'hydrants pour le nouveau champ "Cavitation durant le pompage"
 
 ### P2
 - **Refactoriser modèles Pydantic prevention.py**: Consolider les définitions dupliquées de `Inspection` et `InspectionCreate`
 - **Rebuild et déploiement apps natives**: Reconstruire avec Xcode/Android Studio puis soumettre aux stores
+- Adapter l'import d'inspections d'hydrants pour le nouveau champ "Cavitation durant le pompage"
 
 ### Refactoring recommandé
 - Le fichier `backend/routes/planning.py` dépasse 5000 lignes et devrait être découpé en modules plus petits

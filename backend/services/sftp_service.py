@@ -40,6 +40,94 @@ class SFTPService:
         )
         return config
     
+    async def auto_link_batiment(self, tenant_id: str, intervention_data: Dict) -> Optional[str]:
+        """
+        Recherche automatiquement un bâtiment correspondant à l'adresse de l'intervention.
+        Retourne l'ID du bâtiment si trouvé avec un score suffisant.
+        
+        Algorithme de scoring:
+        - Correspondance exacte adresse: 50 pts
+        - Correspondance partielle adresse: 30 pts
+        - Correspondance ville: 30 pts
+        - Numéro civique identique: 20 pts
+        """
+        import unicodedata
+        
+        def normalize(text):
+            if not text:
+                return ''
+            # Enlever accents et normaliser
+            text = unicodedata.normalize('NFD', str(text))
+            text = ''.join(c for c in text if unicodedata.category(c) != 'Mn')
+            return text.lower().replace(',', ' ').replace('.', ' ').replace('-', ' ').strip()
+        
+        # Extraire l'adresse de l'intervention
+        address = intervention_data.get('address_street') or intervention_data.get('address_full') or intervention_data.get('address') or ''
+        city = intervention_data.get('address_city') or intervention_data.get('municipalite') or ''
+        
+        if not address or len(address) < 3:
+            return None
+        
+        normalized_address = normalize(address)
+        normalized_city = normalize(city)
+        
+        # Extraire le numéro civique
+        address_num = None
+        num_match = re.match(r'^(\d+)', normalized_address)
+        if num_match:
+            address_num = num_match.group(1)
+        
+        try:
+            # Rechercher les bâtiments correspondants
+            batiments = await self.db.batiments.find(
+                {"tenant_id": tenant_id},
+                {"_id": 0, "id": 1, "adresse_civique": 1, "ville": 1, "nom_etablissement": 1}
+            ).to_list(500)
+            
+            best_match = None
+            best_score = 0
+            
+            for bat in batiments:
+                score = 0
+                bat_address = normalize(bat.get('adresse_civique', ''))
+                bat_city = normalize(bat.get('ville', ''))
+                
+                # Correspondance adresse
+                if bat_address == normalized_address:
+                    score += 50
+                elif bat_address in normalized_address or normalized_address in bat_address:
+                    score += 30
+                
+                # Correspondance ville
+                if bat_city == normalized_city:
+                    score += 30
+                elif bat_city in normalized_city or normalized_city in bat_city:
+                    score += 15
+                
+                # Numéro civique
+                bat_num = None
+                bat_num_match = re.match(r'^(\d+)', bat_address)
+                if bat_num_match:
+                    bat_num = bat_num_match.group(1)
+                
+                if address_num and bat_num and address_num == bat_num:
+                    score += 20
+                
+                if score > best_score:
+                    best_score = score
+                    best_match = bat
+            
+            # Seuil de 70 pour liaison automatique
+            if best_score >= 70 and best_match:
+                logger.info(f"Bâtiment auto-lié: {best_match.get('adresse_civique')} (score: {best_score})")
+                return best_match['id']
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Erreur recherche auto bâtiment: {e}")
+            return None
+    
     def _clean_host(self, host: str) -> str:
         """Nettoie le hostname en enlevant les protocoles et trailing slashes"""
         if not host:
@@ -281,6 +369,15 @@ class SFTPService:
         intervention_data["source_appel"] = source_appel  # 'cauca' ou 'urgence_sante'
         intervention_data["sftp_files"] = filenames
         intervention_data["sftp_remote_path"] = remote_path  # Pour traçabilité
+        
+        # RECHERCHE AUTOMATIQUE DE BÂTIMENT
+        # Tenter de lier automatiquement un bâtiment basé sur l'adresse
+        if not intervention_data.get("batiment_id"):
+            batiment_id = await self.auto_link_batiment(tenant_id, intervention_data)
+            if batiment_id:
+                intervention_data["batiment_id"] = batiment_id
+                intervention_data["batiment_auto_linked"] = True
+                logger.info(f"Bâtiment auto-lié pour intervention {card_number}: {batiment_id}")
         
         # Vérifier si l'intervention existe déjà
         external_id = intervention_data.get("external_call_id") or card_number
