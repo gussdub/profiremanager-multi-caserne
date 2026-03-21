@@ -2441,14 +2441,17 @@ const ModuleEPI = ({ user }) => {
                     </div>
 
                     <div className="form-group">
-                      <Label>Notes admin</Label>
+                      <Label>Message pour l'employé</Label>
                       <textarea 
                         id="notes-admin-remplacement"
                         className="form-control"
                         rows="3"
-                        placeholder="Notes sur le remplacement..."
-                        defaultValue="Remplacement approuvé et nouvel EPI attribué"
+                        placeholder="Ex: Je te laisse le nouvel EPI dans ton casier. / Passe me voir au bureau pour le récupérer..."
+                        defaultValue=""
                       />
+                      <small style={{ color: '#6b7280', marginTop: '4px', display: 'block' }}>
+                        Ce message sera visible par l'employé dans sa notification
+                      </small>
                     </div>
 
                     <div className="form-group">

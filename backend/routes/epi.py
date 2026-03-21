@@ -1579,20 +1579,26 @@ async def traiter_demande_remplacement(
 async def approuver_demande_remplacement_epi(
     tenant_slug: str,
     demande_id: str,
-    notes_admin: str = "",
+    body: dict = None,
     current_user: User = Depends(get_current_user)
 ):
     """Approuver une demande de remplacement EPI"""
+    notes_admin = ""
+    if body:
+        notes_admin = body.get("notes_admin", "")
     return await traiter_demande_remplacement(tenant_slug, demande_id, "Approuvée", notes_admin, current_user)
 
 @router.post("/{tenant_slug}/epi/demandes-remplacement/{demande_id}/refuser")
 async def refuser_demande_remplacement_epi(
     tenant_slug: str,
     demande_id: str,
-    notes_admin: str = "",
+    body: dict = None,
     current_user: User = Depends(get_current_user)
 ):
     """Refuser une demande de remplacement EPI"""
+    notes_admin = ""
+    if body:
+        notes_admin = body.get("notes_admin", "")
     return await traiter_demande_remplacement(tenant_slug, demande_id, "Refusée", notes_admin, current_user)
 
 # ==================== EPI PARAMETRES ENDPOINTS (doit être AVANT /{epi_id}) ====================
