@@ -1,7 +1,8 @@
 /**
  * SectionBatiment - Composant pour l'onglet Bâtiment dans le module Interventions
  * 
- * Affiche les informations du bâtiment et l'intégration avec le module Prévention
+ * Affiche les informations du bâtiment et l'intégration avec le module Bâtiments (indépendant)
+ * Utilise le nouveau module Bâtiments accessible à tous les tenants
  */
 
 import React, { useState, useEffect } from 'react';
@@ -13,71 +14,45 @@ const SectionBatiment = ({ formData, setFormData, editMode, referenceData, tenan
   const [searching, setSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [selectedBatiment, setSelectedBatiment] = useState(null);
-  const [preventionBatiment, setPreventionBatiment] = useState(null);
-  const [loadingPrevention, setLoadingPrevention] = useState(false);
-  const [modulePreventionActif, setModulePreventionActif] = useState(null); // null = en cours de chargement
+  const [linkedBatiment, setLinkedBatiment] = useState(null);
+  const [loadingBatiment, setLoadingBatiment] = useState(false);
 
   const API_URL = process.env.REACT_APP_BACKEND_URL;
 
-  // Vérifier si le module prévention est activé pour ce tenant
+  // Charger les détails du bâtiment si lié
   useEffect(() => {
-    const checkModulePrevention = async () => {
-      try {
-        const token = getToken ? getToken() : localStorage.getItem(`${tenantSlug}_token`);
-        const response = await fetch(
-          `${API_URL}/api/${tenantSlug}/tenant-info`,
-          { headers: { 'Authorization': `Bearer ${token}` } }
-        );
-        
-        if (response.ok) {
-          const data = await response.json();
-          setModulePreventionActif(data?.parametres?.module_prevention_active || false);
-        } else {
-          setModulePreventionActif(false);
-        }
-      } catch (error) {
-        console.error('Erreur vérification module prévention:', error);
-        setModulePreventionActif(false);
-      }
-    };
-    checkModulePrevention();
-  }, [tenantSlug, getToken, API_URL]);
-
-  // Charger les détails du bâtiment si lié au module prévention
-  useEffect(() => {
-    const loadPreventionBatiment = async () => {
-      if (!formData.batiment_prevention_id || !modulePreventionActif) {
-        setPreventionBatiment(null);
+    const loadLinkedBatiment = async () => {
+      if (!formData.batiment_id) {
+        setLinkedBatiment(null);
         return;
       }
 
-      setLoadingPrevention(true);
+      setLoadingBatiment(true);
       try {
         const token = getToken ? getToken() : localStorage.getItem(`${tenantSlug}_token`);
+        // Utiliser les nouvelles routes du module Bâtiments indépendant
         const response = await fetch(
-          `${API_URL}/api/${tenantSlug}/prevention/batiments/${formData.batiment_prevention_id}`,
+          `${API_URL}/api/${tenantSlug}/batiments/${formData.batiment_id}`,
           { headers: { 'Authorization': `Bearer ${token}` } }
         );
         
         if (response.ok) {
           const data = await response.json();
-          setPreventionBatiment(data);
+          setLinkedBatiment(data);
         }
       } catch (error) {
-        console.error('Erreur chargement bâtiment prévention:', error);
+        console.error('Erreur chargement bâtiment:', error);
       } finally {
-        setLoadingPrevention(false);
+        setLoadingBatiment(false);
       }
     };
     
-    if (modulePreventionActif !== null) {
-      loadPreventionBatiment();
-    }
-  }, [formData.batiment_prevention_id, modulePreventionActif, tenantSlug, getToken, API_URL]);
+    loadLinkedBatiment();
+  }, [formData.batiment_id, tenantSlug, getToken, API_URL]);
 
-  // Rechercher les bâtiments dans Prévention
+  // Rechercher les bâtiments (utilise le nouveau module Bâtiments)
   const handleSearch = async (query) => {
-    if (!query || query.length < 2 || !modulePreventionActif) {
+    if (!query || query.length < 2) {
       setSearchResults([]);
       return;
     }
@@ -85,8 +60,9 @@ const SectionBatiment = ({ formData, setFormData, editMode, referenceData, tenan
     setSearching(true);
     try {
       const token = getToken ? getToken() : localStorage.getItem(`${tenantSlug}_token`);
+      // Utiliser les nouvelles routes du module Bâtiments indépendant
       const response = await fetch(
-        `${API_URL}/api/${tenantSlug}/prevention/batiments/search?q=${encodeURIComponent(query)}`,
+        `${API_URL}/api/${tenantSlug}/batiments/search?q=${encodeURIComponent(query)}`,
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
       
@@ -105,65 +81,54 @@ const SectionBatiment = ({ formData, setFormData, editMode, referenceData, tenan
   // Appliquer les données du bâtiment sélectionné
   const handleSelectBatiment = (batiment) => {
     setSelectedBatiment(batiment);
-    setPreventionBatiment(batiment);
+    setLinkedBatiment(batiment);
     setShowResults(false);
     setSearchQuery(batiment.adresse_civique || batiment.nom_etablissement || '');
     
-    // Mapper les données de Prévention vers le formulaire d'intervention
+    // Mapper les données du bâtiment vers le formulaire d'intervention
     setFormData(prev => ({
       ...prev,
-      // Infos bâtiment
+      // ID du bâtiment lié
+      batiment_id: batiment.id,
+      // Pour rétrocompatibilité avec l'ancien champ
       batiment_prevention_id: batiment.id,
+      // Infos bâtiment
       building_name: batiment.nom_etablissement || '',
       building_floors: parseInt(batiment.nombre_etages) || prev.building_floors,
       building_year: parseInt(batiment.annee_construction) || prev.building_year,
-      building_area: batiment.superficie_totale_m2 || '',
+      building_area: batiment.superficie || '',
       building_category_code: batiment.groupe_occupation || prev.building_category_code,
-      // Propriétaire
-      owner_name: batiment.proprietaire_nom || '',
-      owner_phone: batiment.proprietaire_telephone || '',
-      // Risques identifiés
-      building_risks: batiment.risques_identifies || [],
+      // Contact
+      owner_name: batiment.contact_nom || '',
+      owner_phone: batiment.contact_telephone || '',
+      // Risques
       risk_level: batiment.niveau_risque || '',
       // Géolocalisation
       latitude: batiment.latitude || prev.latitude,
-      longitude: batiment.longitude || prev.longitude
+      longitude: batiment.longitude || prev.longitude,
+      // Adresse complète
+      address_street: batiment.adresse_civique || prev.address_street,
+      address_city: batiment.ville || prev.address_city,
+      address_postal: batiment.code_postal || prev.address_postal,
+      address_full: `${batiment.adresse_civique || ''}, ${batiment.ville || ''}`.trim()
     }));
   };
 
-  // Si le module prévention n'est pas activé
-  if (modulePreventionActif === false) {
-    return (
-      <div className="space-y-6">
-        <Card className="border-gray-200 bg-gray-50">
-          <CardHeader>
-            <CardTitle className="text-lg text-gray-600 flex items-center gap-2">
-              🏠 Module Prévention non disponible
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-500">
-              Le module Prévention n'est pas activé pour votre caserne. 
-              Contactez un administrateur pour activer ce module et accéder aux informations détaillées des bâtiments.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Chargement en cours
-  if (modulePreventionActif === null) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin h-8 w-8 border-4 border-orange-500 rounded-full border-t-transparent"></div>
-      </div>
-    );
-  }
+  // Délier le bâtiment
+  const handleUnlinkBatiment = () => {
+    setSelectedBatiment(null);
+    setLinkedBatiment(null);
+    setSearchQuery('');
+    setFormData(prev => ({
+      ...prev,
+      batiment_id: null,
+      batiment_prevention_id: null
+    }));
+  };
 
   return (
     <div className="space-y-6">
-      {/* Recherche bâtiment dans Prévention */}
+      {/* Recherche bâtiment */}
       {editMode && (
         <Card className="border-blue-200 bg-blue-50">
           <CardHeader className="pb-2">
@@ -173,7 +138,7 @@ const SectionBatiment = ({ formData, setFormData, editMode, referenceData, tenan
           </CardHeader>
           <CardContent>
             <p className="text-sm text-blue-700 mb-3">
-              Recherchez un bâtiment dans le module Prévention pour auto-remplir les informations.
+              Recherchez un bâtiment dans la base de données pour auto-remplir les informations.
             </p>
             <div className="relative">
               <input
@@ -237,44 +202,53 @@ const SectionBatiment = ({ formData, setFormData, editMode, referenceData, tenan
               
               {showResults && searchResults.length === 0 && searchQuery.length >= 2 && !searching && (
                 <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-gray-500 text-sm">
-                  Aucun bâtiment trouvé dans le module Prévention
+                  Aucun bâtiment trouvé
                 </div>
               )}
             </div>
             
-            {selectedBatiment && (
-              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+            {(selectedBatiment || linkedBatiment) && (
+              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
                 <div className="flex items-center gap-2 text-green-800">
                   <span>✅</span>
-                  <span className="font-medium">Bâtiment lié : {selectedBatiment.nom_etablissement || selectedBatiment.adresse_civique}</span>
+                  <span className="font-medium">
+                    Bâtiment lié : {(selectedBatiment || linkedBatiment)?.nom_etablissement || (selectedBatiment || linkedBatiment)?.adresse_civique}
+                  </span>
                 </div>
+                <button
+                  type="button"
+                  onClick={handleUnlinkBatiment}
+                  className="text-red-600 hover:text-red-800 text-sm"
+                >
+                  Délier
+                </button>
               </div>
             )}
           </CardContent>
         </Card>
       )}
 
-      {/* Infos du module Prévention (si bâtiment lié) */}
-      {(preventionBatiment || formData.batiment_prevention_id) && (
+      {/* Infos du bâtiment lié */}
+      {(linkedBatiment || formData.batiment_id) && (
         <Card className="border-orange-200 bg-orange-50">
           <CardHeader>
             <CardTitle className="text-lg text-orange-800 flex items-center gap-2">
-              📋 Informations du module Prévention
+              📋 Informations du bâtiment lié
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {loadingPrevention ? (
+            {loadingBatiment ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin h-6 w-6 border-2 border-orange-500 rounded-full border-t-transparent"></div>
               </div>
-            ) : preventionBatiment ? (
+            ) : linkedBatiment ? (
               <div className="space-y-4">
                 {/* Photo du bâtiment */}
-                {preventionBatiment.photo_url && (
+                {linkedBatiment.photo_url && (
                   <div>
                     <h4 className="font-medium text-gray-700 mb-2">📷 Photo du bâtiment</h4>
                     <img 
-                      src={preventionBatiment.photo_url} 
+                      src={linkedBatiment.photo_url} 
                       alt="Photo du bâtiment" 
                       className="max-w-md rounded-lg border shadow-sm"
                     />
@@ -287,25 +261,25 @@ const SectionBatiment = ({ formData, setFormData, editMode, referenceData, tenan
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="text-gray-500">Adresse :</span>
-                      <span className="ml-2 font-medium">{preventionBatiment.adresse_civique || 'N/A'}</span>
+                      <span className="ml-2 font-medium">{linkedBatiment.adresse_civique || 'N/A'}</span>
                     </div>
                     <div>
                       <span className="text-gray-500">Ville :</span>
-                      <span className="ml-2 font-medium">{preventionBatiment.ville || 'N/A'}</span>
+                      <span className="ml-2 font-medium">{linkedBatiment.ville || 'N/A'}</span>
                     </div>
-                    {preventionBatiment.latitude && preventionBatiment.longitude && (
+                    {linkedBatiment.latitude && linkedBatiment.longitude && (
                       <>
                         <div>
                           <span className="text-gray-500">Latitude :</span>
-                          <span className="ml-2 font-medium">{preventionBatiment.latitude}</span>
+                          <span className="ml-2 font-medium">{linkedBatiment.latitude}</span>
                         </div>
                         <div>
                           <span className="text-gray-500">Longitude :</span>
-                          <span className="ml-2 font-medium">{preventionBatiment.longitude}</span>
+                          <span className="ml-2 font-medium">{linkedBatiment.longitude}</span>
                         </div>
                         <div className="md:col-span-2">
                           <a 
-                            href={`https://www.google.com/maps?q=${preventionBatiment.latitude},${preventionBatiment.longitude}`}
+                            href={`https://www.google.com/maps?q=${linkedBatiment.latitude},${linkedBatiment.longitude}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 text-blue-600 hover:underline"
@@ -318,30 +292,30 @@ const SectionBatiment = ({ formData, setFormData, editMode, referenceData, tenan
                   </div>
                 </div>
 
-                {/* Propriétaire */}
-                {(preventionBatiment.proprietaire_nom || preventionBatiment.proprietaire_telephone) && (
+                {/* Contact */}
+                {(linkedBatiment.contact_nom || linkedBatiment.contact_telephone) && (
                   <div>
-                    <h4 className="font-medium text-gray-700 mb-2">👤 Propriétaire</h4>
+                    <h4 className="font-medium text-gray-700 mb-2">👤 Contact</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      {preventionBatiment.proprietaire_nom && (
+                      {linkedBatiment.contact_nom && (
                         <div>
                           <span className="text-gray-500">Nom :</span>
-                          <span className="ml-2 font-medium">{preventionBatiment.proprietaire_nom}</span>
+                          <span className="ml-2 font-medium">{linkedBatiment.contact_nom}</span>
                         </div>
                       )}
-                      {preventionBatiment.proprietaire_telephone && (
+                      {linkedBatiment.contact_telephone && (
                         <div>
                           <span className="text-gray-500">Téléphone :</span>
-                          <a href={`tel:${preventionBatiment.proprietaire_telephone}`} className="ml-2 font-medium text-blue-600 hover:underline">
-                            {preventionBatiment.proprietaire_telephone}
+                          <a href={`tel:${linkedBatiment.contact_telephone}`} className="ml-2 font-medium text-blue-600 hover:underline">
+                            {linkedBatiment.contact_telephone}
                           </a>
                         </div>
                       )}
-                      {preventionBatiment.proprietaire_email && (
+                      {linkedBatiment.contact_email && (
                         <div>
                           <span className="text-gray-500">Email :</span>
-                          <a href={`mailto:${preventionBatiment.proprietaire_email}`} className="ml-2 font-medium text-blue-600 hover:underline">
-                            {preventionBatiment.proprietaire_email}
+                          <a href={`mailto:${linkedBatiment.contact_email}`} className="ml-2 font-medium text-blue-600 hover:underline">
+                            {linkedBatiment.contact_email}
                           </a>
                         </div>
                       )}
@@ -349,56 +323,27 @@ const SectionBatiment = ({ formData, setFormData, editMode, referenceData, tenan
                   </div>
                 )}
 
-                {/* Plan d'intervention */}
-                {preventionBatiment.plan_intervention_url && (
-                  <div>
-                    <h4 className="font-medium text-gray-700 mb-2">📄 Plan d'intervention</h4>
-                    <a 
-                      href={preventionBatiment.plan_intervention_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                    >
-                      📥 Télécharger le plan d'intervention
-                    </a>
-                  </div>
-                )}
-
                 {/* Niveau de risque */}
-                {preventionBatiment.niveau_risque && (
+                {linkedBatiment.niveau_risque && (
                   <div>
                     <h4 className="font-medium text-gray-700 mb-2">⚠️ Niveau de risque</h4>
                     <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                      preventionBatiment.niveau_risque === 'Élevé' || preventionBatiment.niveau_risque === 'Très élevé'
+                      linkedBatiment.niveau_risque === 'Élevé' || linkedBatiment.niveau_risque === 'Très élevé'
                         ? 'bg-red-100 text-red-700'
-                        : preventionBatiment.niveau_risque === 'Moyen'
+                        : linkedBatiment.niveau_risque === 'Moyen'
                           ? 'bg-yellow-100 text-yellow-700'
                           : 'bg-green-100 text-green-700'
                     }`}>
-                      {preventionBatiment.niveau_risque}
+                      {linkedBatiment.niveau_risque}
                     </span>
                   </div>
                 )}
 
-                {/* Risques identifiés */}
-                {preventionBatiment.risques_identifies && preventionBatiment.risques_identifies.length > 0 && (
+                {/* Description */}
+                {linkedBatiment.description && (
                   <div>
-                    <h4 className="font-medium text-gray-700 mb-2">🔥 Risques identifiés</h4>
-                    <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-                      {preventionBatiment.risques_identifies.map((risque, idx) => (
-                        <li key={idx}>{risque}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Dernière inspection */}
-                {preventionBatiment.derniere_inspection && (
-                  <div>
-                    <h4 className="font-medium text-gray-700 mb-2">🔍 Dernière inspection</h4>
-                    <span className="text-sm text-gray-600">
-                      {new Date(preventionBatiment.derniere_inspection).toLocaleDateString('fr-CA')}
-                    </span>
+                    <h4 className="font-medium text-gray-700 mb-2">📝 Notes</h4>
+                    <p className="text-sm text-gray-600">{linkedBatiment.description}</p>
                   </div>
                 )}
               </div>

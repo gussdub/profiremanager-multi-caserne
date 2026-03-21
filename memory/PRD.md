@@ -7,7 +7,7 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 ### NEW - Module Bâtiments Indépendant avec RBAC (21 Mars 2026)
 **Statut:** ✅ TERMINÉ
 
-**Objectif:** Créer un module "Bâtiments" indépendant du module Prévention, avec contrôle RBAC pour les permissions voir/éditer.
+**Objectif:** Créer un module "Bâtiments" indépendant du module Prévention, avec contrôle RBAC pour les permissions voir/éditer, et intégrer la recherche de bâtiments dans le module Interventions.
 
 **Modifications effectuées:**
 
@@ -49,10 +49,17 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
    - Case dans renderCurrentPage
    - Mapping URL pour la navigation
 
+7. **Frontend - components/interventions/SectionBatiment.jsx:**
+   - Mis à jour pour utiliser les nouvelles routes `/api/{tenant_slug}/batiments`
+   - Supprimé la dépendance au module Prévention
+   - Ajout de la fonctionnalité "Délier" un bâtiment
+   - Auto-remplissage de l'adresse complète lors de la sélection
+
 **Résultat:**
 - Le module Bâtiments est maintenant accessible indépendamment du module Prévention
 - Les clients sans le module Prévention peuvent quand même gérer leurs bâtiments
 - Les permissions RBAC contrôlent qui peut voir/éditer/créer/supprimer
+- Les interventions peuvent être liées aux bâtiments via recherche
 
 
 ## Core Features Implemented
