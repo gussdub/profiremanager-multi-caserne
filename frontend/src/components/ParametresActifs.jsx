@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -13,6 +14,49 @@ import ParametresAlertesEquipements from './ParametresAlertesEquipements';
 import FormulairesInspectionConfig from './FormulairesInspectionConfig';
 import ImportCSVEquipements from './ImportCSVEquipements';
 import ImportCSVEPI from './ImportCSVEPI';
+
+// Composant Modal compatible Safari utilisant createPortal
+const SafariModal = ({ isOpen, onClose, children }) => {
+  if (!isOpen) return null;
+  
+  return createPortal(
+    <div 
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 9999,
+        padding: '20px',
+        boxSizing: 'border-box'
+      }}
+      onClick={onClose}
+    >
+      <div 
+        style={{
+          backgroundColor: 'white',
+          borderRadius: '12px',
+          padding: '24px',
+          width: '100%',
+          maxWidth: '550px',
+          maxHeight: '90vh',
+          overflowY: 'auto',
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+          position: 'relative'
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        {children}
+      </div>
+    </div>,
+    document.body
+  );
+};
 
 // ==================== ONGLET PARAMÈTRES ====================
 const ParametresActifsTab = ({ tenantSlug, user }) => {
@@ -994,43 +1038,8 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
           </div>
         </div>
 
-        {/* Modal création/édition type EPI */}
-        {showTypeEPIModal && (
-          <div 
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              width: '100vw',
-              height: '100vh',
-              backgroundColor: 'rgba(0,0,0,0.5)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 9999,
-              padding: '20px',
-              boxSizing: 'border-box',
-              WebkitOverflowScrolling: 'touch'
-            }}
-            onClick={() => setShowTypeEPIModal(false)}
-          >
-            <div 
-              style={{
-                backgroundColor: 'white',
-                borderRadius: '12px',
-                padding: '24px',
-                width: '100%',
-                maxWidth: '550px',
-                maxHeight: '90vh',
-                overflowY: 'auto',
-                WebkitOverflowScrolling: 'touch',
-                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
-                position: 'relative'
-              }}
-              onClick={e => e.stopPropagation()}
-            >
+        {/* Modal création/édition type EPI - Utilise SafariModal (createPortal) pour compatibilité Safari */}
+        <SafariModal isOpen={showTypeEPIModal} onClose={() => setShowTypeEPIModal(false)}>
               <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '20px', color: '#1f2937' }}>
                 {editingTypeEPI ? '✏️ Modifier le type d\'EPI' : '➕ Nouveau type d\'EPI'}
               </h3>
@@ -1282,9 +1291,7 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                   {typeEPILoading ? '⏳ Enregistrement...' : (editingTypeEPI ? 'Mettre à jour' : 'Créer')}
                 </Button>
               </div>
-            </div>
-          </div>
-        )}
+        </SafariModal>
 
         {/* Sous-section: Notifications Destinataires */}
         <div style={{ 
