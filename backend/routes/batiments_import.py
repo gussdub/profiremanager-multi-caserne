@@ -4,9 +4,11 @@ et rétro-liaison des interventions
 """
 import csv
 import uuid
+import httpx
+import asyncio
 from io import StringIO
 from datetime import datetime, timezone
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Body
 from pydantic import BaseModel, Field
 
@@ -29,6 +31,66 @@ from utils.address_utils import (
 )
 
 router = APIRouter()
+
+# ==================== GÉOLOCALISATION ====================
+
+async def geocode_address(address: str, city: str, province: str = "Québec", country: str = "Canada") -> Tuple[Optional[float], Optional[float]]:
+    """
+    Géolocalise une adresse en utilisant l'API Nominatim (OpenStreetMap).
+    Retourne (latitude, longitude) ou (None, None) si non trouvé.
+    """
+    if not address or not city:
+        return None, None
+    
+    try:
+        full_address = f"{address}, {city}, {province}, {country}"
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                "https://nominatim.openstreetmap.org/search",
+                params={
+                    "q": full_address,
+                    "format": "json",
+                    "limit": 1
+                },
+                headers={
+                    "User-Agent": "ProFireManager/1.0"
+                },
+                timeout=10.0
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data and len(data) > 0:
+                    lat = float(data[0]["lat"])
+                    lon = float(data[0]["lon"])
+                    return lat, lon
+    except Exception as e:
+        print(f"Erreur géocodage pour '{address}, {city}': {e}")
+    
+    return None, None
+
+
+async def geocode_batch(addresses: List[Dict[str, str]], delay: float = 1.0) -> List[Tuple[Optional[float], Optional[float]]]:
+    """
+    Géolocalise un lot d'adresses avec un délai entre chaque requête
+    pour respecter les limites de l'API Nominatim (1 req/sec).
+    """
+    results = []
+    for addr_data in addresses:
+        lat, lon = await geocode_address(
+            addr_data.get("address", ""),
+            addr_data.get("city", ""),
+            addr_data.get("province", "Québec"),
+            addr_data.get("country", "Canada")
+        )
+        results.append((lat, lon))
+        
+        # Respecter la limite de rate de Nominatim
+        if delay > 0:
+            await asyncio.sleep(delay)
+    
+    return results
 
 
 # ==================== MODÈLES ====================
@@ -248,6 +310,9 @@ async def execute_import_batiments(
     
     # Traiter les nouveaux bâtiments (sans conflit)
     if request.create_new_buildings:
+        # Collecter les bâtiments qui ont besoin de géolocalisation
+        batiments_to_geocode = []
+        
         for new_bat in session["new_batiments"]:
             try:
                 batiment_data = new_bat["data"]
@@ -256,16 +321,27 @@ async def execute_import_batiments(
                 batiment_data["created_at"] = datetime.now(timezone.utc).isoformat()
                 batiment_data["created_by"] = current_user.id
                 
-                await db.batiments.insert_one(batiment_data)
-                results["created"] += 1
-                
-                # Rétro-liaison des interventions
-                linked = await link_interventions_to_batiment(
-                    tenant.id, 
-                    batiment_data["id"], 
-                    batiment_data["adresse_civique"]
-                )
-                results["interventions_linked"] += linked
+                # Si pas de coordonnées, les géolocaliser automatiquement
+                if not batiment_data.get("latitude") or not batiment_data.get("longitude"):
+                    batiments_to_geocode.append({
+                        "index": len(batiments_to_geocode),
+                        "data": batiment_data,
+                        "address": batiment_data.get("adresse_civique", ""),
+                        "city": batiment_data.get("ville", ""),
+                        "province": batiment_data.get("province", "Québec")
+                    })
+                else:
+                    # Insérer directement si coordonnées déjà présentes
+                    await db.batiments.insert_one(batiment_data)
+                    results["created"] += 1
+                    
+                    # Rétro-liaison des interventions
+                    linked = await link_interventions_to_batiment(
+                        tenant.id, 
+                        batiment_data["id"], 
+                        batiment_data["adresse_civique"]
+                    )
+                    results["interventions_linked"] += linked
                 
             except Exception as e:
                 results["errors"].append({
@@ -273,6 +349,43 @@ async def execute_import_batiments(
                     "index": new_bat["import_index"],
                     "error": str(e)
                 })
+        
+        # Géolocaliser en batch les adresses sans coordonnées
+        if batiments_to_geocode:
+            geocode_results = await geocode_batch(
+                [{"address": b["address"], "city": b["city"], "province": b["province"]} 
+                 for b in batiments_to_geocode],
+                delay=1.0  # 1 seconde entre chaque requête (limite Nominatim)
+            )
+            
+            # Insérer les bâtiments avec leurs coordonnées
+            for i, bat_info in enumerate(batiments_to_geocode):
+                try:
+                    batiment_data = bat_info["data"]
+                    lat, lon = geocode_results[i]
+                    
+                    if lat and lon:
+                        batiment_data["latitude"] = round(lat, 6)
+                        batiment_data["longitude"] = round(lon, 6)
+                        batiment_data["geocoded_auto"] = True
+                    
+                    await db.batiments.insert_one(batiment_data)
+                    results["created"] += 1
+                    
+                    # Rétro-liaison des interventions
+                    linked = await link_interventions_to_batiment(
+                        tenant.id, 
+                        batiment_data["id"], 
+                        batiment_data["adresse_civique"]
+                    )
+                    results["interventions_linked"] += linked
+                    
+                except Exception as e:
+                    results["errors"].append({
+                        "type": "create_geocode",
+                        "address": bat_info["address"],
+                        "error": str(e)
+                    })
     
     # Traiter les conflits avec résolutions
     for conflict in session["conflicts"]:

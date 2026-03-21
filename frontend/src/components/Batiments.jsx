@@ -813,8 +813,11 @@ const BatimentModal = ({ batiment, mode, tenantSlug, canEdit, onClose, onSave, t
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium mb-1">Nom de l'établissement</label>
+                <label className="block text-sm font-medium mb-1" htmlFor="nom_etablissement">Nom de l'établissement</label>
                 <Input
+                  id="nom_etablissement"
+                  name="nom_etablissement"
+                  data-testid="input-nom-etablissement"
                   value={formData.nom_etablissement || ''}
                   onChange={(e) => handleChange('nom_etablissement', e.target.value)}
                   placeholder="Ex: Restaurant Le Gourmet, École St-Joseph..."
@@ -822,8 +825,11 @@ const BatimentModal = ({ batiment, mode, tenantSlug, canEdit, onClose, onSave, t
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium mb-1">Adresse civique *</label>
+                <label className="block text-sm font-medium mb-1" htmlFor="adresse_civique">Adresse civique *</label>
                 <Input
+                  id="adresse_civique"
+                  name="adresse_civique"
+                  data-testid="input-adresse-civique"
                   value={formData.adresse_civique || ''}
                   onChange={(e) => handleChange('adresse_civique', e.target.value)}
                   placeholder="Ex: 123 rue Principale"
@@ -832,8 +838,11 @@ const BatimentModal = ({ batiment, mode, tenantSlug, canEdit, onClose, onSave, t
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Ville *</label>
+                <label className="block text-sm font-medium mb-1" htmlFor="ville">Ville *</label>
                 <Input
+                  id="ville"
+                  name="ville"
+                  data-testid="input-ville"
                   value={formData.ville || ''}
                   onChange={(e) => handleChange('ville', e.target.value)}
                   required
@@ -841,8 +850,11 @@ const BatimentModal = ({ batiment, mode, tenantSlug, canEdit, onClose, onSave, t
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Code postal</label>
+                <label className="block text-sm font-medium mb-1" htmlFor="code_postal">Code postal</label>
                 <Input
+                  id="code_postal"
+                  name="code_postal"
+                  data-testid="input-code-postal"
                   value={formData.code_postal || ''}
                   onChange={(e) => handleChange('code_postal', e.target.value)}
                   placeholder="J0H 1A0"
