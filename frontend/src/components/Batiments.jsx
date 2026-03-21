@@ -534,11 +534,80 @@ const BatimentModal = ({ batiment, mode, tenantSlug, canEdit, onClose, onSave, t
   });
   const [saving, setSaving] = useState(false);
   const [loadingStreetView, setLoadingStreetView] = useState(false);
+  const [loadingGeocode, setLoadingGeocode] = useState(false);
   const pasteAreaRef = useRef(null);
   const isReadOnly = mode === 'view';
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Géolocalisation automatique basée sur l'adresse
+  const geocodeAddress = async () => {
+    if (!formData.adresse_civique || !formData.ville) {
+      toast({ 
+        title: "Erreur", 
+        description: "Entrez d'abord une adresse et une ville", 
+        variant: "destructive" 
+      });
+      return;
+    }
+    
+    setLoadingGeocode(true);
+    try {
+      // Construire l'adresse complète
+      const addressParts = [
+        formData.adresse_civique,
+        formData.ville,
+        formData.province || 'Québec',
+        'Canada'
+      ].filter(Boolean);
+      
+      const fullAddress = addressParts.join(', ');
+      const encodedAddress = encodeURIComponent(fullAddress);
+      
+      // Utiliser l'API Nominatim (OpenStreetMap) - gratuite
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodedAddress}&limit=1`,
+        {
+          headers: {
+            'User-Agent': 'ProFireManager/1.0'
+          }
+        }
+      );
+      
+      if (!response.ok) throw new Error('Erreur de géolocalisation');
+      
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        const result = data[0];
+        setFormData(prev => ({
+          ...prev,
+          latitude: parseFloat(result.lat).toFixed(6),
+          longitude: parseFloat(result.lon).toFixed(6)
+        }));
+        toast({ 
+          title: "Géolocalisation réussie", 
+          description: `Coordonnées trouvées: ${parseFloat(result.lat).toFixed(4)}, ${parseFloat(result.lon).toFixed(4)}`
+        });
+      } else {
+        toast({ 
+          title: "Adresse non trouvée", 
+          description: "Impossible de géolocaliser cette adresse. Vérifiez l'orthographe ou entrez les coordonnées manuellement.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Erreur géolocalisation:', error);
+      toast({ 
+        title: "Erreur", 
+        description: "Service de géolocalisation indisponible", 
+        variant: "destructive" 
+      });
+    } finally {
+      setLoadingGeocode(false);
+    }
   };
 
   // Gestion du copier-coller d'image
@@ -780,27 +849,61 @@ const BatimentModal = ({ batiment, mode, tenantSlug, canEdit, onClose, onSave, t
                   disabled={isReadOnly}
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Latitude</label>
-                <Input
-                  type="number"
-                  step="any"
-                  value={formData.latitude || ''}
-                  onChange={(e) => handleChange('latitude', e.target.value)}
-                  placeholder="45.4001"
-                  disabled={isReadOnly}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Longitude</label>
-                <Input
-                  type="number"
-                  step="any"
-                  value={formData.longitude || ''}
-                  onChange={(e) => handleChange('longitude', e.target.value)}
-                  placeholder="-72.7334"
-                  disabled={isReadOnly}
-                />
+              
+              {/* Coordonnées GPS avec bouton auto-géolocalisation */}
+              <div className="md:col-span-2 border rounded-lg p-3 bg-blue-50">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-blue-800">Coordonnées GPS</label>
+                  {!isReadOnly && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={geocodeAddress}
+                      disabled={loadingGeocode}
+                      className="text-blue-600 border-blue-300 hover:bg-blue-100"
+                    >
+                      <MapPin size={14} className="mr-1" />
+                      {loadingGeocode ? 'Recherche...' : 'Géolocaliser automatiquement'}
+                    </Button>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Latitude</label>
+                    <Input
+                      type="number"
+                      step="any"
+                      value={formData.latitude || ''}
+                      onChange={(e) => handleChange('latitude', e.target.value)}
+                      placeholder="45.4001"
+                      disabled={isReadOnly}
+                      className="bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Longitude</label>
+                    <Input
+                      type="number"
+                      step="any"
+                      value={formData.longitude || ''}
+                      onChange={(e) => handleChange('longitude', e.target.value)}
+                      placeholder="-72.7334"
+                      disabled={isReadOnly}
+                      className="bg-white"
+                    />
+                  </div>
+                </div>
+                {formData.latitude && formData.longitude && (
+                  <a
+                    href={`https://www.google.com/maps?q=${formData.latitude},${formData.longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-blue-600 hover:underline mt-2 inline-flex items-center gap-1"
+                  >
+                    <ExternalLink size={12} /> Voir sur Google Maps
+                  </a>
+                )}
               </div>
             </div>
           </div>
