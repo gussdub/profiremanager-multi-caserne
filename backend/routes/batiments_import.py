@@ -24,7 +24,8 @@ from utils.address_utils import (
     compare_building_fields,
     extract_civic_number,
     extract_postal_code,
-    generate_address_key
+    generate_address_key,
+    is_same_address
 )
 
 router = APIRouter()
@@ -77,7 +78,7 @@ import_sessions = {}
 async def preview_import_batiments(
     tenant_slug: str,
     file: UploadFile = File(...),
-    similarity_threshold: float = 0.85,
+    similarity_threshold: float = 0.92,  # Augmenté pour éviter les faux positifs
     current_user: User = Depends(get_current_user)
 ):
     """
@@ -159,8 +160,10 @@ async def preview_import_batiments(
                 "notes": row.get('notes', '')
             }
             
-            # Chercher les correspondances
-            matches = find_matching_address(address, existing_batiments, similarity_threshold)
+            # Chercher les correspondances avec la nouvelle logique stricte
+            # (même numéro + même rue + même ville = doublon)
+            city = row.get('ville', '')
+            matches = find_matching_address(address, city, existing_batiments, similarity_threshold)
             
             if matches:
                 # Conflit trouvé - prendre la meilleure correspondance

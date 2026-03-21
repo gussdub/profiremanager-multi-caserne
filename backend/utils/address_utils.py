@@ -151,44 +151,138 @@ def extract_postal_code(address: str) -> Optional[str]:
     return None
 
 
-def calculate_address_similarity(addr1: str, addr2: str) -> float:
+def extract_street_name(address: str) -> str:
     """
-    Calcule un score de similarité entre deux adresses (0.0 à 1.0).
-    Utilise la normalisation et SequenceMatcher.
+    Extrait le nom de rue d'une adresse (sans le numéro civique).
+    Ex: "123 Rue Principale" → "rue principale"
     """
+    if not address:
+        return ""
+    
+    # Normaliser d'abord
+    normalized = normalize_address(address)
+    
+    # Enlever le numéro civique au début
+    street = re.sub(r'^\d+[\-\/]?\d*[a-zA-Z]?\s*', '', normalized).strip()
+    
+    return street
+
+
+def is_same_address(addr1: str, city1: str, addr2: str, city2: str) -> Tuple[bool, Dict]:
+    """
+    Vérifie si deux adresses sont identiques avec une logique stricte:
+    1. Même rue ? → Si non, pas de doublon
+    2. Même numéro civique ? → Si non, pas de doublon
+    3. Même ville ? → Si non, pas de doublon
+    
+    Returns:
+        Tuple (is_duplicate: bool, details: Dict avec les comparaisons)
+    """
+    details = {
+        'civic_match': False,
+        'street_match': False,
+        'city_match': False,
+        'civic1': None,
+        'civic2': None,
+        'street1': None,
+        'street2': None,
+        'city1': None,
+        'city2': None
+    }
+    
     if not addr1 or not addr2:
-        return 0.0
+        return False, details
     
-    norm1 = normalize_address(addr1)
-    norm2 = normalize_address(addr2)
-    
-    if norm1 == norm2:
-        return 1.0
-    
-    # Utiliser SequenceMatcher pour la similarité
-    ratio = SequenceMatcher(None, norm1, norm2).ratio()
-    
-    # Bonus si le numéro civique correspond
+    # Extraire les composants
     civic1 = extract_civic_number(addr1)
     civic2 = extract_civic_number(addr2)
+    street1 = extract_street_name(addr1)
+    street2 = extract_street_name(addr2)
+    norm_city1 = normalize_address(city1) if city1 else ""
+    norm_city2 = normalize_address(city2) if city2 else ""
     
+    details['civic1'] = civic1
+    details['civic2'] = civic2
+    details['street1'] = street1
+    details['street2'] = street2
+    details['city1'] = norm_city1
+    details['city2'] = norm_city2
+    
+    # 1. Même numéro civique ?
     if civic1 and civic2 and civic1 == civic2:
-        ratio = min(1.0, ratio + 0.2)
+        details['civic_match'] = True
+    else:
+        return False, details
     
-    return ratio
+    # 2. Même rue ? (avec tolérance pour petites variations)
+    if street1 and street2:
+        street_ratio = SequenceMatcher(None, street1, street2).ratio()
+        if street_ratio >= 0.85:  # 85% de similarité minimum pour les noms de rue
+            details['street_match'] = True
+        else:
+            return False, details
+    else:
+        return False, details
+    
+    # 3. Même ville ?
+    if norm_city1 and norm_city2:
+        city_ratio = SequenceMatcher(None, norm_city1, norm_city2).ratio()
+        if city_ratio >= 0.85:  # 85% de similarité pour les villes
+            details['city_match'] = True
+        else:
+            return False, details
+    elif not norm_city1 and not norm_city2:
+        # Si aucune ville spécifiée, on considère comme match
+        details['city_match'] = True
+    else:
+        # Une ville spécifiée, l'autre non - pas de match
+        return False, details
+    
+    # Si on arrive ici, c'est un doublon !
+    return True, details
+
+
+def calculate_address_similarity(addr1: str, addr2: str, city1: str = "", city2: str = "") -> float:
+    """
+    Calcule un score de similarité entre deux adresses.
+    
+    Logique stricte:
+    - Score 1.0 si même numéro + même rue + même ville
+    - Score 0.0 si l'un des trois critères ne correspond pas
+    """
+    is_duplicate, details = is_same_address(addr1, city1, addr2, city2)
+    
+    if is_duplicate:
+        return 1.0
+    
+    # Si pas de doublon, retourner un score bas basé sur ce qui matche
+    score = 0.0
+    if details['civic_match']:
+        score += 0.2
+    if details['street_match']:
+        score += 0.3
+    if details['city_match']:
+        score += 0.2
+    
+    return score
 
 
 def find_matching_address(
     address: str,
+    city: str,
     existing_addresses: List[Dict],
-    threshold: float = 0.85
+    threshold: float = 0.92
 ) -> List[Tuple[Dict, float]]:
     """
     Trouve les adresses correspondantes dans une liste existante.
     
+    Utilise la logique stricte:
+    - Même numéro civique + Même rue + Même ville = doublon
+    
     Args:
         address: L'adresse à rechercher
-        existing_addresses: Liste de dicts avec au moins une clé 'adresse' ou 'adresse_civique'
+        city: La ville de l'adresse
+        existing_addresses: Liste de dicts avec au moins 'adresse_civique' et 'ville'
         threshold: Seuil minimum de similarité (0.0 à 1.0)
     
     Returns:
@@ -204,16 +298,18 @@ def find_matching_address(
             existing.get('adresse_complete') or
             ""
         )
+        existing_city = existing.get('ville', '')
         
         if not existing_addr:
             continue
         
-        score = calculate_address_similarity(address, existing_addr)
+        # Utiliser la nouvelle fonction stricte
+        is_duplicate, details = is_same_address(address, city, existing_addr, existing_city)
         
-        if score >= threshold:
-            matches.append((existing, score))
+        if is_duplicate:
+            matches.append((existing, 1.0))
     
-    # Trier par score décroissant
+    # Trier par score décroissant (tous les doublons ont score 1.0)
     matches.sort(key=lambda x: x[1], reverse=True)
     
     return matches
