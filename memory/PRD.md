@@ -50,10 +50,14 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
    - Mapping URL pour la navigation
 
 7. **Frontend - components/interventions/SectionBatiment.jsx:**
-   - Mis à jour pour utiliser les nouvelles routes `/api/{tenant_slug}/batiments`
-   - Supprimé la dépendance au module Prévention
-   - Ajout de la fonctionnalité "Délier" un bâtiment
-   - Auto-remplissage de l'adresse complète lors de la sélection
+   - **REFONTE COMPLÈTE** avec recherche automatique intelligente
+   - Recherche auto déclenchée dès l'ouverture de l'onglet basée sur l'adresse de l'intervention
+   - Algorithme de scoring pour matcher les adresses (normalisation, accents, numéro civique)
+   - Si score >= 70 : liaison automatique du bâtiment
+   - Si plusieurs résultats avec scores moyens : proposition de sélection
+   - Si aucune correspondance : bascule automatique vers recherche manuelle
+   - Bouton "Réessayer la recherche auto"
+   - Fonctionnalité "Délier" pour changer de bâtiment
 
 **Résultat:**
 - Le module Bâtiments est maintenant accessible indépendamment du module Prévention
