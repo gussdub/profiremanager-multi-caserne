@@ -5,13 +5,15 @@ import ImportCSVPersonnel from "./ImportCSVPersonnel.jsx";
 import ImportCSVRapports from "./ImportCSVRapports.jsx";
 import ImportCSVDisponibilites from "./ImportCSVDisponibilites.jsx";
 import ImportHydrants from "./ImportHydrants.jsx";
+import ImportBatimentsIntelligent from "./ImportBatimentsIntelligent.jsx";
 import { 
   Shield, 
   Wrench, 
   Users, 
   FileText, 
   Calendar, 
-  Droplets
+  Droplets,
+  Building
 } from "lucide-react";
 
 /**
@@ -19,10 +21,15 @@ import {
  * Design avec onglets style cartes (comme Gestion des Actifs)
  */
 const ParametresImports = ({ tenantSlug, toast }) => {
-  const [activeTab, setActiveTab] = useState('hydrants');
+  const [activeTab, setActiveTab] = useState('batiments');
 
   // Configuration des onglets d'import
   const importTabs = [
+    {
+      id: 'batiments',
+      label: 'Bâtiments',
+      icon: Building
+    },
     {
       id: 'hydrants',
       label: 'Hydrants',
@@ -58,6 +65,21 @@ const ParametresImports = ({ tenantSlug, toast }) => {
   // Rendu du contenu selon l'onglet actif
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'batiments':
+        return (
+          <div className="import-content-wrapper">
+            <ImportBatimentsIntelligent 
+              tenantSlug={tenantSlug}
+              onImportComplete={(results) => {
+                toast({
+                  title: "Import terminé",
+                  description: `${results.created || 0} bâtiment(s) créé(s), ${results.updated || 0} mis à jour, ${results.skipped || 0} ignoré(s)`,
+                  variant: results.errors?.length > 0 ? "warning" : "success"
+                });
+              }}
+            />
+          </div>
+        );
       case 'hydrants':
         return (
           <ImportHydrants 
@@ -156,7 +178,7 @@ const ParametresImports = ({ tenantSlug, toast }) => {
       {/* Navigation par onglets - Style cartes comme Gestion des Actifs */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(6, 1fr)',
+        gridTemplateColumns: 'repeat(7, 1fr)',
         gap: '0',
         marginBottom: '1.5rem',
         background: '#f1f5f9',

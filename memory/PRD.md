@@ -3,6 +3,40 @@
 ## Application Overview
 Application de gestion des services d'incendie multi-tenant avec modules de planning, personnel, actifs, prévention et interventions.
 
+
+### NEW - Intégration Import Intelligent Bâtiments (21 Mars 2026)
+**Statut:** ✅ TERMINÉ
+
+**Objectif:** Intégrer le composant d'import intelligent de bâtiments dans les Paramètres d'Imports globaux et supprimer l'ancien bouton d'import des paramètres de Prévention.
+
+**Modifications effectuées:**
+
+1. **Frontend - ParametresImports.jsx:**
+   - Import du composant `ImportBatimentsIntelligent`
+   - Ajout de l'icône `Building` de lucide-react
+   - Nouvel onglet "Bâtiments" en première position (7 onglets au total)
+   - Onglet actif par défaut sur "Bâtiments"
+   - Grid passé de 6 à 7 colonnes
+
+2. **Frontend - ParametresPrevention.jsx:**
+   - Suppression de l'onglet "Import Bâtiments" de la liste TABS (passé de 4 à 3 onglets)
+   - Suppression du cas 'import' dans le switch renderTabContent
+   - Nettoyage des imports inutilisés (Building2)
+   - Nettoyage des props et state inutilisés (showImportCSV, onRefreshBatiments, ImportBatimentsComponent)
+   - Grid passé de 4 à 3 colonnes
+
+3. **Frontend - Prevention.jsx:**
+   - Suppression des props inutilisés passés à ParametresPrevention
+
+**Fichiers modifiés:**
+- `/app/frontend/src/components/ParametresImports.jsx`
+- `/app/frontend/src/components/ParametresPrevention.jsx`
+- `/app/frontend/src/components/Prevention.jsx`
+
+**Résultat:**
+- L'import intelligent de bâtiments est maintenant accessible via Paramètres > Imports CSV > Bâtiments
+- Les paramètres de Prévention ne contiennent plus que 3 onglets: Paramètres généraux, Référentiel Violations, Grilles d'inspection
+
 ## Core Features Implemented
 
 ### Module Planning
@@ -730,12 +764,14 @@ Application de gestion des services d'incendie multi-tenant avec modules de plan
 ## Pending Tasks
 
 ### P1
+- **Test flux complet Import Intelligent Bâtiments**: Tester le flux de bout en bout (upload CSV → détection conflits → fusion/archivage)
 - **Vérification notifications push Android**: Tester les notifications avec la nouvelle config AndroidManifest.xml et build.gradle
 - **Déploiement deep linking**: Effectuer les dernières étapes pour activer Universal Links (iOS) et App Links (Android)
 - **Test complet notifications push**: Vérifier les notifications Firebase sur appareil réel (iOS/Android)
 - Adapter l'import d'inspections d'hydrants pour le nouveau champ "Cavitation durant le pompage"
 
 ### P2
+- **Refactoriser modèles Pydantic prevention.py**: Consolider les définitions dupliquées de `Inspection` et `InspectionCreate`
 - **Rebuild et déploiement apps natives**: Reconstruire avec Xcode/Android Studio puis soumettre aux stores
 
 ### Refactoring recommandé

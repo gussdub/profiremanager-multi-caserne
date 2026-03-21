@@ -1181,8 +1181,6 @@ const Prevention = () => {
           <ParametresPrevention 
             tenantSlug={tenantSlug} 
             currentUser={user}
-            onRefreshBatiments={fetchBatiments}
-            ImportBatimentsComponent={ImportBatiments}
           />
         );
       

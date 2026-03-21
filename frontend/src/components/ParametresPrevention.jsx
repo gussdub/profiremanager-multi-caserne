@@ -3,7 +3,7 @@ import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { apiGet, apiPut, apiPost, apiDelete } from '../utils/api';
 import { 
-  Settings, FileText, Building2, Calendar, Users, BookOpen, 
+  Settings, FileText, Calendar, Users, BookOpen, 
   Save, RefreshCw, Plus, Edit2, Trash2, Clock, Search, Filter, AlertTriangle, ClipboardList
 } from 'lucide-react';
 
@@ -15,11 +15,10 @@ const GrillesInspection = lazy(() => import('./GrillesInspectionComponents'));
  * ParametresPrevention - Paramètres du module prévention
  * Style avec onglets rouges comme dans les autres paramètres de l'application
  */
-const ParametresPrevention = ({ tenantSlug, currentUser, onRefreshBatiments, ImportBatimentsComponent, toast: toastProp }) => {
+const ParametresPrevention = ({ tenantSlug, currentUser, toast: toastProp }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
-  const [showImportCSV, setShowImportCSV] = useState(false);
   
   // Paramètres généraux
   const [parametres, setParametres] = useState({
@@ -50,7 +49,6 @@ const ParametresPrevention = ({ tenantSlug, currentUser, onRefreshBatiments, Imp
     { id: 'general', label: 'Paramètres généraux', icon: Settings, description: 'Configuration de base' },
     { id: 'referentiel', label: 'Référentiel Violations', icon: BookOpen, description: 'Articles de loi CNPI' },
     { id: 'grilles', label: 'Grilles d\'inspection', icon: ClipboardList, description: 'Modèles de formulaires' },
-    { id: 'import', label: 'Import Bâtiments', icon: Building2, description: 'Import CSV bâtiments' },
   ];
 
   useEffect(() => {
@@ -270,37 +268,6 @@ const ParametresPrevention = ({ tenantSlug, currentUser, onRefreshBatiments, Imp
           </Suspense>
         );
 
-      case 'import':
-        return (
-          <Card>
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <Building2 className="w-5 h-5" />
-                Import de Bâtiments
-              </h3>
-              
-              <p className="text-gray-600 mb-4">
-                Importez vos bâtiments en masse via un fichier CSV. Le fichier doit contenir les colonnes :
-                adresse_civique, ville, code_postal, nom_etablissement...
-              </p>
-              
-              {ImportBatimentsComponent ? (
-                <ImportBatimentsComponent 
-                  tenantSlug={tenantSlug}
-                  onImportComplete={() => {
-                    toast({ title: "Import terminé", description: "Les bâtiments ont été importés" });
-                    if (onRefreshBatiments) onRefreshBatiments();
-                  }}
-                />
-              ) : (
-                <Button onClick={() => setShowImportCSV(true)}>
-                  📥 Ouvrir l'outil d'import CSV
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        );
-
       case 'grilles':
         return (
           <Suspense fallback={
@@ -341,7 +308,7 @@ const ParametresPrevention = ({ tenantSlug, currentUser, onRefreshBatiments, Imp
       </div>
 
       {/* Navigation par onglets - Style onglets rouges */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-3 gap-4 mb-6">
         {TABS.map(tab => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
