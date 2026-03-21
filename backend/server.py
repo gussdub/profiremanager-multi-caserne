@@ -92,6 +92,7 @@ from routes.avis_non_conformite import router as avis_non_conformite_router
 from routes.broadcast import router as broadcast_router
 from routes.import_inspections_bornes import router as import_inspections_bornes_router
 from routes.export_map import router as export_map_router
+from routes.batiments_import import router as batiments_import_router
 from io import BytesIO
 import base64
 from PIL import Image as PILImage
@@ -6791,6 +6792,7 @@ app.include_router(horaires_personnalises_router, prefix="/api")  # Module Horai
 app.include_router(broadcast_router, prefix="/api")  # Module Diffusion de messages
 app.include_router(import_inspections_bornes_router, prefix="/api")  # Module Import Inspections Bornes
 app.include_router(export_map_router, prefix="/api")  # Module Export Carte Statique
+app.include_router(batiments_import_router, prefix="/api")  # Module Import Bâtiments Intelligent
 app.include_router(delegations_router, prefix="/api")  # Module Délégations de responsabilités
 app.include_router(api_router)  # Routes principales (server.py) - DOIT être avant auth_router pour que /admin/auth/login soit traité avant /{tenant_slug}/auth/login
 app.include_router(auth_router, prefix="/api")  # Module Auth (tenant routes)
