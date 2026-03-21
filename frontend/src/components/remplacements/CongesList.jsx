@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '../ui/button';
-import { AlertTriangle, FileSpreadsheet, Clock, CheckCircle, BarChart3, CalendarDays } from 'lucide-react';
+import { AlertTriangle, FileSpreadsheet, Clock, CheckCircle, BarChart3, CalendarDays, List } from 'lucide-react';
+import CongesCalendar from './CongesCalendar';
 
 const typesConge = [
   { value: 'maladie', label: '🏥 Maladie', description: 'Arrêt maladie avec justificatif' },
@@ -20,6 +21,7 @@ const CongesList = ({
   conges,
   filteredConges,
   user,
+  users,
   isAdminOrSuperviseur,
   loadingImpact,
   filterStatut,
@@ -34,6 +36,8 @@ const CongesList = ({
   onShowImpact,
   onApprouverConge
 }) => {
+  const [viewMode, setViewMode] = useState('liste'); // 'liste' ou 'calendrier'
+
   return (
     <div className="conges-content">
       {/* En-tête de gestion toujours visible pour admin/superviseur */}
@@ -55,6 +59,24 @@ const CongesList = ({
       {/* Boutons d'actions rapides pour admin/superviseur */}
       {isAdminOrSuperviseur && (
         <div className="management-actions">
+          <div style={{ display: 'flex', gap: '8px', marginRight: 'auto' }}>
+            <Button 
+              variant={viewMode === 'liste' ? 'default' : 'outline'}
+              size="sm" 
+              onClick={() => setViewMode('liste')}
+              className="flex items-center gap-1"
+            >
+              <List size={14} /> Liste
+            </Button>
+            <Button 
+              variant={viewMode === 'calendrier' ? 'default' : 'outline'}
+              size="sm" 
+              onClick={() => setViewMode('calendrier')}
+              className="flex items-center gap-1"
+            >
+              <CalendarDays size={14} /> Calendrier global
+            </Button>
+          </div>
           <Button 
             variant="outline" 
             size="sm" 
@@ -106,7 +128,19 @@ const CongesList = ({
         </div>
       </div>
 
+      {/* Vue Calendrier Global */}
+      {isAdminOrSuperviseur && viewMode === 'calendrier' && (
+        <CongesCalendar
+          conges={conges}
+          users={users}
+          getUserName={getUserName}
+          onApprouverConge={onApprouverConge}
+          isAdminOrSuperviseur={isAdminOrSuperviseur}
+        />
+      )}
+
       {/* Liste des demandes de congé */}
+      {viewMode === 'liste' && (
       <div className="conges-list">
         {filteredConges.length > 0 ? (
           filteredConges.map(conge => (
@@ -240,6 +274,7 @@ const CongesList = ({
           </div>
         )}
       </div>
+      )}
     </div>
   );
 };

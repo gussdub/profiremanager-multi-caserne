@@ -396,6 +396,7 @@ const Remplacements = () => {
             conges={mesConges}
             filteredConges={filteredConges}
             user={user}
+            users={users}
             isAdminOrSuperviseur={isAdminOrSuperviseur}
             loadingImpact={loadingImpact}
             filterStatut={filters.filterStatut}
