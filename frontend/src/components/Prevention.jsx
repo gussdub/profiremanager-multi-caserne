@@ -578,8 +578,8 @@ const Prevention = () => {
             </div>
             
             <ImportBatiments onImportComplete={() => {
-              setCurrentView('batiments');
-              fetchBatiments();
+              // Rediriger vers le module Bâtiments après import
+              window.location.href = `/${tenantSlug}/batiments`;
             }} />
           </div>
         );
