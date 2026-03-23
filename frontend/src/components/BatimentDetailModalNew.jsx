@@ -173,6 +173,7 @@ const BatimentForm = ({
     nombre_etages: '',
     annee_construction: '',
     superficie_totale_m2: '',
+    nombre_logements: '',
     description_activite: '',
     notes: ''
   } : {});
@@ -2292,6 +2293,26 @@ const BatimentForm = ({
                     value={editData.superficie_totale_m2 || ''}
                     onChange={(e) => handleChange('superficie_totale_m2', e.target.value)}
                     disabled={!isEditing || !canEditAll}
+                    style={{
+                      width: '100%',
+                      padding: '0.625rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '0.875rem',
+                      backgroundColor: (!canEditAll && isEditing) ? '#f3f4f6' : 'white'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontWeight: '500', fontSize: '0.875rem', color: '#6b7280', display: 'block', marginBottom: '0.5rem' }}>
+                    Nombre de logements
+                  </label>
+                  <input
+                    type="number"
+                    value={editData.nombre_logements || ''}
+                    onChange={(e) => handleChange('nombre_logements', e.target.value)}
+                    disabled={!isEditing || !canEditAll}
+                    placeholder="0"
                     style={{
                       width: '100%',
                       padding: '0.625rem',

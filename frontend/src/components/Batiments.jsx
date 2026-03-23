@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Suspense, lazy } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -24,11 +24,15 @@ import {
   Image,
   Camera,
   Clipboard,
-  ExternalLink
+  ExternalLink,
+  Home
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+
+// Lazy load du modal de détail (partagé avec Prevention)
+const BatimentDetailModal = lazy(() => import('./BatimentDetailModalNew'));
 
 // Fix pour les icônes Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -84,13 +88,13 @@ const LoadingComponent = () => (
 
 /**
  * Module Bâtiments - Gestion centralisée des adresses et bâtiments
- * INDÉPENDANT du module Prévention (pas de filtres risque/groupe/inspection)
+ * Utilise le même modal que Prévention avec onglets conditionnels
  */
 const Batiments = () => {
   const { tenantSlug } = useTenant();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { hasModuleAction } = usePermissions(tenantSlug, user);
+  const { hasModuleAction, hasModuleAccess } = usePermissions(tenantSlug, user);
   
   // États
   const [batiments, setBatiments] = useState([]);
@@ -102,12 +106,19 @@ const Batiments = () => {
   const [modalMode, setModalMode] = useState('view');
   const [exporting, setExporting] = useState(false);
   
-  // Permissions
+  // Permissions Bâtiments
   const canView = hasModuleAction('batiments', 'voir');
   const canCreate = hasModuleAction('batiments', 'creer');
   const canEdit = hasModuleAction('batiments', 'modifier');
   const canDelete = hasModuleAction('batiments', 'supprimer');
   const canExport = hasModuleAction('batiments', 'exporter');
+  
+  // Permissions Prévention (pour onglets conditionnels)
+  const hasPreventionAccess = hasModuleAccess('prevention');
+
+  // Récupérer l'ID du bâtiment depuis l'URL si présent
+  const urlParams = new URLSearchParams(window.location.search);
+  const batimentIdFromUrl = urlParams.get('id');
 
   // Chargement des données
   useEffect(() => {
@@ -115,6 +126,20 @@ const Batiments = () => {
       fetchBatiments();
     }
   }, [tenantSlug, canView]);
+
+  // Ouvrir automatiquement le modal si un ID est dans l'URL
+  useEffect(() => {
+    if (batimentIdFromUrl && batiments.length > 0) {
+      const batiment = batiments.find(b => b.id === batimentIdFromUrl);
+      if (batiment) {
+        setSelectedBatiment(batiment);
+        setModalMode('view');
+        setShowModal(true);
+        // Nettoyer l'URL après ouverture
+        window.history.replaceState({}, '', `/${tenantSlug}/batiments`);
+      }
+    }
+  }, [batimentIdFromUrl, batiments, tenantSlug]);
 
   const fetchBatiments = async () => {
     try {
@@ -489,502 +514,70 @@ const Batiments = () => {
         </Card>
       )}
 
-      {/* Modal */}
+      {/* Modal - Utilise le même composant que Prévention */}
       {showModal && (
-        <BatimentModal
-          batiment={selectedBatiment}
-          mode={modalMode}
-          tenantSlug={tenantSlug}
-          canEdit={canEdit}
-          onClose={() => {
-            setShowModal(false);
-            setSelectedBatiment(null);
-          }}
-          onSave={() => {
-            setShowModal(false);
-            setSelectedBatiment(null);
-            fetchBatiments();
-          }}
-          toast={toast}
-        />
+        <Suspense fallback={<LoadingComponent />}>
+          <BatimentDetailModal
+            batiment={modalMode === 'create' ? null : selectedBatiment}
+            onClose={() => {
+              setShowModal(false);
+              setSelectedBatiment(null);
+            }}
+            onUpdate={async (updatedBatiment) => {
+              // Mise à jour via l'API batiments (pas prevention)
+              try {
+                await apiPut(tenantSlug, `/batiments/${updatedBatiment.id}`, updatedBatiment);
+                toast({ title: "Succès", description: "Bâtiment modifié" });
+                fetchBatiments();
+              } catch (error) {
+                toast({ title: "Erreur", description: error.message, variant: "destructive" });
+              }
+            }}
+            onCreate={async (newBatiment) => {
+              // Création via l'API batiments (pas prevention)
+              try {
+                await apiPost(tenantSlug, '/batiments', newBatiment);
+                toast({ title: "Succès", description: "Bâtiment créé" });
+                setShowModal(false);
+                setSelectedBatiment(null);
+                fetchBatiments();
+              } catch (error) {
+                toast({ title: "Erreur", description: error.message, variant: "destructive" });
+              }
+            }}
+            onDelete={canDelete ? async (batimentId) => {
+              if (window.confirm('Êtes-vous sûr de vouloir supprimer ce bâtiment ?')) {
+                try {
+                  await apiDelete(tenantSlug, `/batiments/${batimentId}`);
+                  toast({ title: "Succès", description: "Bâtiment supprimé" });
+                  setShowModal(false);
+                  setSelectedBatiment(null);
+                  fetchBatiments();
+                } catch (error) {
+                  toast({ title: "Erreur", description: error.message, variant: "destructive" });
+                }
+              }
+            } : null}
+            // Callbacks de Prévention - CONDITIONNELS au module actif
+            onInspect={hasPreventionAccess ? (bat) => {
+              // Rediriger vers le module Prévention pour inspecter
+              window.location.href = `/${tenantSlug}/prevention?action=inspecter&batiment=${bat.id}`;
+            } : null}
+            onCreatePlan={hasPreventionAccess ? (bat) => {
+              // Rediriger vers le module Prévention pour créer un plan
+              window.location.href = `/${tenantSlug}/prevention?action=plan&batiment=${bat.id}`;
+            } : null}
+            onViewHistory={true}  // L'historique est toujours disponible
+            onGenerateReport={hasPreventionAccess ? (bat) => {
+              // Rediriger vers le module Prévention pour le rapport
+              window.location.href = `/${tenantSlug}/prevention?action=rapport&batiment=${bat.id}`;
+            } : null}
+            canEdit={canEdit}
+            currentUser={user}
+            tenantSlug={tenantSlug}
+          />
+        </Suspense>
       )}
-    </div>
-  );
-};
-
-/**
- * Modal pour créer/éditer/voir un bâtiment
- * Simplifié - sans les champs de Prévention
- * Avec support copier-coller photo et Street View
- */
-const BatimentModal = ({ batiment, mode, tenantSlug, canEdit, onClose, onSave, toast }) => {
-  const [formData, setFormData] = useState(batiment || {
-    adresse_civique: '',
-    ville: '',
-    code_postal: '',
-    province: 'Québec',
-    nom_etablissement: '',
-    latitude: '',
-    longitude: '',
-    contact_nom: '',
-    contact_telephone: '',
-    contact_email: '',
-    notes: '',
-    photo_url: ''
-  });
-  const [saving, setSaving] = useState(false);
-  const [loadingStreetView, setLoadingStreetView] = useState(false);
-  const [loadingGeocode, setLoadingGeocode] = useState(false);
-  const pasteAreaRef = useRef(null);
-  const isReadOnly = mode === 'view';
-
-  const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  // Géolocalisation automatique basée sur l'adresse
-  const geocodeAddress = async () => {
-    if (!formData.adresse_civique || !formData.ville) {
-      toast({ 
-        title: "Erreur", 
-        description: "Entrez d'abord une adresse et une ville", 
-        variant: "destructive" 
-      });
-      return;
-    }
-    
-    setLoadingGeocode(true);
-    try {
-      // Construire l'adresse complète
-      const addressParts = [
-        formData.adresse_civique,
-        formData.ville,
-        formData.province || 'Québec',
-        'Canada'
-      ].filter(Boolean);
-      
-      const fullAddress = addressParts.join(', ');
-      const encodedAddress = encodeURIComponent(fullAddress);
-      
-      // Utiliser l'API Nominatim (OpenStreetMap) - gratuite
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodedAddress}&limit=1`,
-        {
-          headers: {
-            'User-Agent': 'ProFireManager/1.0'
-          }
-        }
-      );
-      
-      if (!response.ok) throw new Error('Erreur de géolocalisation');
-      
-      const data = await response.json();
-      
-      if (data && data.length > 0) {
-        const result = data[0];
-        setFormData(prev => ({
-          ...prev,
-          latitude: parseFloat(result.lat).toFixed(6),
-          longitude: parseFloat(result.lon).toFixed(6)
-        }));
-        toast({ 
-          title: "Géolocalisation réussie", 
-          description: `Coordonnées trouvées: ${parseFloat(result.lat).toFixed(4)}, ${parseFloat(result.lon).toFixed(4)}`
-        });
-      } else {
-        toast({ 
-          title: "Adresse non trouvée", 
-          description: "Impossible de géolocaliser cette adresse. Vérifiez l'orthographe ou entrez les coordonnées manuellement.",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error('Erreur géolocalisation:', error);
-      toast({ 
-        title: "Erreur", 
-        description: "Service de géolocalisation indisponible", 
-        variant: "destructive" 
-      });
-    } finally {
-      setLoadingGeocode(false);
-    }
-  };
-
-  // Gestion du copier-coller d'image
-  const handlePaste = useCallback((e) => {
-    const items = e.clipboardData?.items;
-    if (!items) return;
-    
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].type.indexOf('image') !== -1) {
-        const blob = items[i].getAsFile();
-        const reader = new FileReader();
-        
-        reader.onload = (event) => {
-          const base64 = event.target.result;
-          setFormData(prev => ({ ...prev, photo_url: base64 }));
-          toast({ title: "Photo collée", description: "L'image a été ajoutée" });
-        };
-        
-        reader.readAsDataURL(blob);
-        break;
-      }
-    }
-  }, [toast]);
-
-  // Écouter le paste sur la zone dédiée
-  useEffect(() => {
-    const area = pasteAreaRef.current;
-    if (area && !isReadOnly) {
-      area.addEventListener('paste', handlePaste);
-      return () => area.removeEventListener('paste', handlePaste);
-    }
-  }, [handlePaste, isReadOnly]);
-
-  // Upload d'image classique
-  const handleImageUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "Erreur", description: "Image trop grande (max 5MB)", variant: "destructive" });
-      return;
-    }
-    
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setFormData(prev => ({ ...prev, photo_url: event.target.result }));
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // Récupérer l'image Street View
-  const fetchStreetView = async () => {
-    if (!formData.adresse_civique || !formData.ville) {
-      toast({ title: "Erreur", description: "Entrez d'abord une adresse et une ville", variant: "destructive" });
-      return;
-    }
-    
-    setLoadingStreetView(true);
-    try {
-      const address = encodeURIComponent(`${formData.adresse_civique}, ${formData.ville}, ${formData.province || 'Québec'}, Canada`);
-      
-      // Utiliser l'API Google Street View Static (nécessite une clé API)
-      // Pour l'instant, on utilise une image placeholder ou on ouvre Street View dans un nouvel onglet
-      
-      // Ouvrir Google Maps Street View dans un nouvel onglet
-      window.open(`https://www.google.com/maps?q=${address}&layer=c`, '_blank');
-      
-      toast({ 
-        title: "Street View", 
-        description: "Google Street View s'ouvre dans un nouvel onglet. Faites une capture d'écran et collez-la ici (Ctrl+V)."
-      });
-    } catch (error) {
-      toast({ title: "Erreur", description: "Impossible d'ouvrir Street View", variant: "destructive" });
-    } finally {
-      setLoadingStreetView(false);
-    }
-  };
-
-  // Supprimer la photo
-  const removePhoto = () => {
-    setFormData(prev => ({ ...prev, photo_url: '' }));
-  };
-
-  // Soumettre le formulaire
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (isReadOnly) return;
-    
-    if (!formData.adresse_civique || !formData.ville) {
-      toast({ title: "Erreur", description: "L'adresse et la ville sont obligatoires", variant: "destructive" });
-      return;
-    }
-    
-    try {
-      setSaving(true);
-      
-      if (mode === 'create') {
-        await apiPost(tenantSlug, '/batiments', formData);
-        toast({ title: "Succès", description: "Bâtiment créé" });
-      } else {
-        await apiPut(tenantSlug, `/batiments/${batiment.id}`, formData);
-        toast({ title: "Succès", description: "Bâtiment modifié" });
-      }
-      
-      onSave();
-    } catch (error) {
-      toast({ 
-        title: "Erreur", 
-        description: error.message || "Impossible de sauvegarder", 
-        variant: "destructive" 
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center z-10">
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <Building2 className="text-blue-600" />
-            {mode === 'create' ? 'Nouveau bâtiment' : mode === 'edit' ? 'Modifier le bâtiment' : 'Détail du bâtiment'}
-          </h2>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X size={20} />
-          </Button>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* SECTION PHOTO */}
-          <div className="border rounded-lg p-4 bg-gray-50">
-            <h3 className="font-medium mb-3 flex items-center gap-2">
-              <Camera size={18} /> Photo du bâtiment
-            </h3>
-            
-            {formData.photo_url ? (
-              <div className="relative">
-                <img 
-                  src={formData.photo_url} 
-                  alt="Bâtiment" 
-                  className="w-full max-h-48 object-cover rounded-lg border"
-                />
-                {!isReadOnly && (
-                  <button
-                    type="button"
-                    onClick={removePhoto}
-                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
-              </div>
-            ) : !isReadOnly ? (
-              <div
-                ref={pasteAreaRef}
-                tabIndex={0}
-                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 focus:border-blue-500 focus:outline-none transition-colors"
-                onClick={() => document.getElementById('photo-upload')?.click()}
-              >
-                <Image className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-600 mb-2">
-                  Cliquez pour télécharger une image
-                </p>
-                <p className="text-sm text-gray-400 mb-3">
-                  ou <strong>Ctrl+V</strong> pour coller une capture d'écran
-                </p>
-                <div className="flex justify-center gap-2">
-                  <input
-                    type="file"
-                    id="photo-upload"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      fetchStreetView();
-                    }}
-                    disabled={loadingStreetView}
-                  >
-                    <ExternalLink size={14} className="mr-1" />
-                    {loadingStreetView ? 'Chargement...' : 'Ouvrir Street View'}
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center text-gray-400 py-8">
-                <Building2 className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                Aucune photo
-              </div>
-            )}
-          </div>
-
-          {/* SECTION ADRESSE */}
-          <div>
-            <h3 className="font-medium mb-3 flex items-center gap-2">
-              <MapPin size={18} /> Adresse
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium mb-1" htmlFor="nom_etablissement">Nom de l'établissement</label>
-                <Input
-                  id="nom_etablissement"
-                  name="nom_etablissement"
-                  data-testid="input-nom-etablissement"
-                  value={formData.nom_etablissement || ''}
-                  onChange={(e) => handleChange('nom_etablissement', e.target.value)}
-                  placeholder="Ex: Restaurant Le Gourmet, École St-Joseph..."
-                  disabled={isReadOnly}
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium mb-1" htmlFor="adresse_civique">Adresse civique *</label>
-                <Input
-                  id="adresse_civique"
-                  name="adresse_civique"
-                  data-testid="input-adresse-civique"
-                  value={formData.adresse_civique || ''}
-                  onChange={(e) => handleChange('adresse_civique', e.target.value)}
-                  placeholder="Ex: 123 rue Principale"
-                  required
-                  disabled={isReadOnly}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1" htmlFor="ville">Ville *</label>
-                <Input
-                  id="ville"
-                  name="ville"
-                  data-testid="input-ville"
-                  value={formData.ville || ''}
-                  onChange={(e) => handleChange('ville', e.target.value)}
-                  required
-                  disabled={isReadOnly}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1" htmlFor="code_postal">Code postal</label>
-                <Input
-                  id="code_postal"
-                  name="code_postal"
-                  data-testid="input-code-postal"
-                  value={formData.code_postal || ''}
-                  onChange={(e) => handleChange('code_postal', e.target.value)}
-                  placeholder="J0H 1A0"
-                  disabled={isReadOnly}
-                />
-              </div>
-              
-              {/* Coordonnées GPS avec bouton auto-géolocalisation */}
-              <div className="md:col-span-2 border rounded-lg p-3 bg-blue-50">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-blue-800">Coordonnées GPS</label>
-                  {!isReadOnly && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={geocodeAddress}
-                      disabled={loadingGeocode}
-                      className="text-blue-600 border-blue-300 hover:bg-blue-100"
-                    >
-                      <MapPin size={14} className="mr-1" />
-                      {loadingGeocode ? 'Recherche...' : 'Géolocaliser automatiquement'}
-                    </Button>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Latitude</label>
-                    <Input
-                      type="number"
-                      step="any"
-                      value={formData.latitude || ''}
-                      onChange={(e) => handleChange('latitude', e.target.value)}
-                      placeholder="45.4001"
-                      disabled={isReadOnly}
-                      className="bg-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Longitude</label>
-                    <Input
-                      type="number"
-                      step="any"
-                      value={formData.longitude || ''}
-                      onChange={(e) => handleChange('longitude', e.target.value)}
-                      placeholder="-72.7334"
-                      disabled={isReadOnly}
-                      className="bg-white"
-                    />
-                  </div>
-                </div>
-                {formData.latitude && formData.longitude && (
-                  <a
-                    href={`https://www.google.com/maps?q=${formData.latitude},${formData.longitude}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-blue-600 hover:underline mt-2 inline-flex items-center gap-1"
-                  >
-                    <ExternalLink size={12} /> Voir sur Google Maps
-                  </a>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* SECTION CONTACT */}
-          <div>
-            <h3 className="font-medium mb-3">Contact</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Nom</label>
-                <Input
-                  value={formData.contact_nom || ''}
-                  onChange={(e) => handleChange('contact_nom', e.target.value)}
-                  disabled={isReadOnly}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Téléphone</label>
-                <Input
-                  value={formData.contact_telephone || ''}
-                  onChange={(e) => handleChange('contact_telephone', e.target.value)}
-                  disabled={isReadOnly}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Email</label>
-                <Input
-                  type="email"
-                  value={formData.contact_email || ''}
-                  onChange={(e) => handleChange('contact_email', e.target.value)}
-                  disabled={isReadOnly}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* NOTES */}
-          <div>
-            <label className="block text-sm font-medium mb-1">Notes</label>
-            <textarea
-              value={formData.notes || ''}
-              onChange={(e) => handleChange('notes', e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg resize-none"
-              rows={3}
-              disabled={isReadOnly}
-              placeholder="Informations supplémentaires..."
-            />
-          </div>
-
-          {/* Boutons */}
-          <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onClose}>
-              {isReadOnly ? 'Fermer' : 'Annuler'}
-            </Button>
-            {!isReadOnly && (
-              <Button type="submit" disabled={saving}>
-                {saving ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin mr-2" />
-                    Enregistrement...
-                  </>
-                ) : (
-                  mode === 'create' ? 'Créer' : 'Enregistrer'
-                )}
-              </Button>
-            )}
-          </div>
-        </form>
-      </div>
     </div>
   );
 };

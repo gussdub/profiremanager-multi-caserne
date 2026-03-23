@@ -43,6 +43,7 @@ class BatimentBase(BaseModel):
     groupe_occupation: Optional[str] = None  # A, B, C, D, E, F, I
     sous_type_batiment: Optional[str] = None
     nombre_etages: Optional[int] = None
+    nombre_logements: Optional[int] = None  # Nombre de logements/unités
     superficie: Optional[float] = None
     annee_construction: Optional[int] = None
     latitude: Optional[float] = None
@@ -71,6 +72,7 @@ class BatimentUpdate(BaseModel):
     groupe_occupation: Optional[str] = None
     sous_type_batiment: Optional[str] = None
     nombre_etages: Optional[int] = None
+    nombre_logements: Optional[int] = None
     superficie: Optional[float] = None
     annee_construction: Optional[int] = None
     latitude: Optional[float] = None
@@ -91,6 +93,98 @@ class Batiment(BatimentBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
     created_by: Optional[str] = None
+
+
+class BatimentHistorique(BaseModel):
+    """Historique des modifications d'un bâtiment"""
+    id: str
+    tenant_id: str
+    batiment_id: str
+    action: str  # create, update, delete, import_xml, import_csv
+    source: str  # manual, xml, csv, sftp, api
+    user_id: Optional[str] = None
+    user_name: Optional[str] = None
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    changes: Optional[dict] = None  # Champs modifiés avec anciennes/nouvelles valeurs
+    description: Optional[str] = None
+
+
+# ======================== FONCTIONS UTILITAIRES ========================
+
+async def log_batiment_history(
+    db,
+    tenant_id: str,
+    batiment_id: str,
+    action: str,
+    source: str,
+    user_id: Optional[str] = None,
+    user_name: Optional[str] = None,
+    changes: Optional[dict] = None,
+    description: Optional[str] = None
+):
+    """
+    Enregistre une entrée dans l'historique des modifications d'un bâtiment.
+    
+    Args:
+        db: Instance de la base de données
+        tenant_id: ID du tenant
+        batiment_id: ID du bâtiment
+        action: Type d'action (create, update, delete, import_xml, import_csv)
+        source: Source de la modification (manual, xml, csv, sftp, api)
+        user_id: ID de l'utilisateur (optionnel)
+        user_name: Nom de l'utilisateur (optionnel)
+        changes: Dictionnaire des changements {field: {old: x, new: y}}
+        description: Description textuelle du changement
+    """
+    history_entry = BatimentHistorique(
+        id=str(uuid.uuid4()),
+        tenant_id=tenant_id,
+        batiment_id=batiment_id,
+        action=action,
+        source=source,
+        user_id=user_id,
+        user_name=user_name,
+        timestamp=datetime.now(timezone.utc),
+        changes=changes,
+        description=description
+    )
+    
+    await db.batiments_historique.insert_one(history_entry.dict())
+    return history_entry
+
+
+def compute_changes(old_data: dict, new_data: dict) -> dict:
+    """
+    Compare deux dictionnaires et retourne les différences.
+    
+    Returns:
+        dict: {field_name: {"old": old_value, "new": new_value}}
+    """
+    changes = {}
+    
+    # Champs à comparer (exclure les champs système)
+    exclude_fields = {'id', 'tenant_id', 'created_at', 'created_by', 'updated_at', '_id'}
+    
+    all_keys = set(old_data.keys()) | set(new_data.keys())
+    
+    for key in all_keys:
+        if key in exclude_fields:
+            continue
+            
+        old_val = old_data.get(key)
+        new_val = new_data.get(key)
+        
+        # Ignorer si les deux sont None/vides
+        if (old_val is None or old_val == '') and (new_val is None or new_val == ''):
+            continue
+            
+        if old_val != new_val:
+            changes[key] = {
+                "old": old_val,
+                "new": new_val
+            }
+    
+    return changes
 
 
 # ======================== ROUTES ========================
@@ -275,6 +369,19 @@ async def create_batiment(
     
     await db.batiments.insert_one(batiment_obj.dict())
     
+    # Enregistrer dans l'historique
+    user_name = f"{current_user.prenom} {current_user.nom}" if hasattr(current_user, 'prenom') else current_user.email
+    await log_batiment_history(
+        db=db,
+        tenant_id=tenant.id,
+        batiment_id=batiment_obj.id,
+        action="create",
+        source="manual",
+        user_id=current_user.id,
+        user_name=user_name,
+        description=f"Création du bâtiment: {batiment.adresse_civique}, {batiment.ville}"
+    )
+    
     return {"message": "Bâtiment créé", "id": batiment_obj.id}
 
 
@@ -297,6 +404,9 @@ async def update_batiment(
     update_data = {k: v for k, v in data.dict().items() if v is not None}
     update_data["updated_at"] = datetime.now(timezone.utc)
     
+    # Calculer les changements pour l'historique
+    changes = compute_changes(existing, update_data)
+    
     await db.batiments.update_one(
         {"id": batiment_id, "tenant_id": tenant.id},
         {"$set": update_data}
@@ -306,6 +416,22 @@ async def update_batiment(
         {"id": batiment_id, "tenant_id": tenant.id}, 
         {"_id": 0}
     )
+    
+    # Enregistrer dans l'historique si des changements ont été faits
+    if changes:
+        user_name = f"{current_user.prenom} {current_user.nom}" if hasattr(current_user, 'prenom') else current_user.email
+        changed_fields = list(changes.keys())
+        await log_batiment_history(
+            db=db,
+            tenant_id=tenant.id,
+            batiment_id=batiment_id,
+            action="update",
+            source="manual",
+            user_id=current_user.id,
+            user_name=user_name,
+            changes=changes,
+            description=f"Modification des champs: {', '.join(changed_fields)}"
+        )
     
     return updated
 
@@ -325,8 +451,20 @@ async def delete_batiment(
     if not existing:
         raise HTTPException(status_code=404, detail="Bâtiment non trouvé")
     
-    # Vérifier si le bâtiment a des dépendances (inspections, interventions, etc.)
-    # Pour l'instant, on permet la suppression mais on pourrait ajouter une vérification
+    # Enregistrer dans l'historique AVANT la suppression
+    user_name = f"{current_user.prenom} {current_user.nom}" if hasattr(current_user, 'prenom') else current_user.email
+    adresse = existing.get('adresse_civique', '')
+    ville = existing.get('ville', '')
+    await log_batiment_history(
+        db=db,
+        tenant_id=tenant.id,
+        batiment_id=batiment_id,
+        action="delete",
+        source="manual",
+        user_id=current_user.id,
+        user_name=user_name,
+        description=f"Suppression du bâtiment: {adresse}, {ville}"
+    )
     
     await db.batiments.delete_one({"id": batiment_id, "tenant_id": tenant.id})
     
@@ -367,3 +505,111 @@ async def upload_batiment_photo(
     )
     
     return {"message": "Photo uploadée", "photo_url": photo_url}
+
+
+
+@router.get("/{tenant_slug}/batiments/{batiment_id}/historique")
+async def get_batiment_historique(
+    tenant_slug: str,
+    batiment_id: str,
+    limit: int = 50,
+    current_user = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    """
+    Récupère l'historique des modifications d'un bâtiment.
+    Inclut les modifications manuelles, imports XML/CSV, et mises à jour SFTP.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "batiments", "voir", "liste")
+    
+    # Vérifier que le bâtiment existe
+    existing = await db.batiments.find_one({"id": batiment_id, "tenant_id": tenant.id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Bâtiment non trouvé")
+    
+    # Récupérer l'historique des modifications
+    historique = await db.batiments_historique.find(
+        {"batiment_id": batiment_id, "tenant_id": tenant.id},
+        {"_id": 0}
+    ).sort("timestamp", -1).limit(limit).to_list(limit)
+    
+    return historique
+
+
+@router.get("/{tenant_slug}/batiments/{batiment_id}/complet")
+async def get_batiment_complet(
+    tenant_slug: str,
+    batiment_id: str,
+    current_user = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    """
+    Récupère un bâtiment avec toutes ses informations associées:
+    - Données de base du bâtiment
+    - Historique des modifications
+    - Si module Prévention actif: inspections, plans d'intervention, préventionniste assigné
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "batiments", "voir", "liste")
+    
+    # Récupérer le bâtiment
+    batiment = await db.batiments.find_one(
+        {"id": batiment_id, "tenant_id": tenant.id},
+        {"_id": 0}
+    )
+    
+    if not batiment:
+        raise HTTPException(status_code=404, detail="Bâtiment non trouvé")
+    
+    # Récupérer l'historique des modifications (les 10 plus récentes)
+    historique = await db.batiments_historique.find(
+        {"batiment_id": batiment_id, "tenant_id": tenant.id},
+        {"_id": 0}
+    ).sort("timestamp", -1).limit(10).to_list(10)
+    
+    result = {
+        **batiment,
+        "historique_modifications": historique
+    }
+    
+    # Vérifier si le tenant a le module Prévention actif
+    tenant_data = await db.tenants.find_one({"id": tenant.id}, {"_id": 0})
+    modules_actifs = tenant_data.get("modules_actifs", []) if tenant_data else []
+    
+    has_prevention = "prevention" in modules_actifs
+    
+    if has_prevention:
+        # Récupérer les inspections liées à ce bâtiment
+        inspections = await db.inspections.find(
+            {"batiment_id": batiment_id, "tenant_id": tenant.id},
+            {"_id": 0}
+        ).sort("date_planifiee", -1).limit(10).to_list(10)
+        
+        # Récupérer les plans d'intervention
+        plans = await db.plans_intervention.find(
+            {"batiment_id": batiment_id, "tenant_id": tenant.id},
+            {"_id": 0}
+        ).sort("date_creation", -1).limit(5).to_list(5)
+        
+        # Récupérer le préventionniste assigné (depuis le bâtiment ou les affectations)
+        preventionniste_id = batiment.get("preventionniste_id")
+        preventionniste = None
+        if preventionniste_id:
+            preventionniste = await db.utilisateurs.find_one(
+                {"id": preventionniste_id},
+                {"_id": 0, "id": 1, "nom": 1, "prenom": 1, "email": 1}
+            )
+        
+        result["prevention"] = {
+            "inspections": inspections,
+            "plans_intervention": plans,
+            "preventionniste": preventionniste,
+            "derniere_inspection": inspections[0] if inspections else None,
+            "nb_inspections": len(inspections),
+            "nb_plans": len(plans)
+        }
+    
+    result["has_prevention_module"] = has_prevention
+    
+    return result

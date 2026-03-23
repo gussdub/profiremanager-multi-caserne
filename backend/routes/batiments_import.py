@@ -1,12 +1,15 @@
 """
 Routes pour l'import intelligent de bâtiments avec détection de conflits
-et rétro-liaison des interventions
+et rétro-liaison des interventions.
+Supporte les formats CSV et XML (Rôle d'évaluation foncière du Québec).
 """
 import csv
 import uuid
 import httpx
 import asyncio
-from io import StringIO
+import xml.etree.ElementTree as ET
+import re
+from io import StringIO, BytesIO
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any, Tuple
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Body
@@ -19,6 +22,7 @@ from routes.dependencies import (
     User,
     require_permission
 )
+from routes.batiments import log_batiment_history, compute_changes
 from utils.address_utils import (
     normalize_address,
     calculate_address_similarity,
@@ -31,6 +35,217 @@ from utils.address_utils import (
 )
 
 router = APIRouter()
+
+# ==================== PARSEUR XML - RÔLE D'ÉVALUATION FONCIÈRE ====================
+
+# Mapping des types de rue pour reconstruire l'adresse
+TYPE_RUE_MAPPING = {
+    'RU': 'Rue',
+    'RUE': 'Rue',
+    'CH': 'Chemin',
+    'CHEM': 'Chemin',
+    'AV': 'Avenue',
+    'AVE': 'Avenue',
+    'BOUL': 'Boulevard',
+    'BD': 'Boulevard',
+    'RT': 'Route',
+    'RTE': 'Route',
+    'PL': 'Place',
+    'RG': 'Rang',
+    'RANG': 'Rang',
+    'MT': 'Montée',
+    'MONT': 'Montée',
+    'CRS': 'Cours',
+    'ALL': 'Allée',
+    'IMP': 'Impasse',
+    'PARC': 'Parc',
+    'PRIV': 'Privé',
+    'TERR': 'Terrasse',
+    'PASS': 'Passage',
+    'COTE': 'Côte',
+    'PTE': 'Pointe',
+    'CR': 'Croissant',
+    'CIR': 'Cercle',
+    '': ''
+}
+
+
+def parse_xml_role_evaluation(xml_content: bytes) -> List[Dict[str, Any]]:
+    """
+    Parse un fichier XML du Rôle d'évaluation foncière du Québec (format CEFX).
+    Extrait les informations d'adresse, propriétaire et bâtiment.
+    
+    Structure XML réelle:
+    <CEx>
+      <CE02>
+        <CE0201>
+          <CE0201x>
+            <CE0201Ax>322</CE0201Ax>       # Numéro civique
+            <CE0201Gx>3E AVENUE</CE0201Gx> # Nom de rue
+          </CE0201x>
+        </CE0201>
+        <CE0208>
+          <CE0208x>
+            <CE0208Ax>NOM</CE0208Ax>       # Nom propriétaire
+            <CE0208Bx>PRENOM</CE0208Bx>    # Prénom propriétaire
+            <CE0208Dx>VILLE</CE0208Dx>     # Ville
+            <CE0208Ex>CODE_POSTAL</CE0208Ex>
+          </CE0208x>
+        </CE0208>
+        <CE0211A>2</CE0211A>               # Logements
+        <CE0215A>1980</CE0215A>            # Année construction
+        <CE0216A>83.2</CE0216A>            # Superficie
+        <CE0219A>1</CE0219A>               # Étages
+      </CE02>
+    </CEx>
+    """
+    batiments = []
+    
+    try:
+        # Nettoyer le XML si nécessaire (BOM, encoding)
+        if xml_content.startswith(b'\xef\xbb\xbf'):
+            xml_content = xml_content[3:]
+        
+        # Parser avec gestion de l'encodage ISO-8859-1
+        try:
+            root = ET.fromstring(xml_content)
+        except ET.ParseError:
+            # Essayer avec décodage explicite
+            xml_text = xml_content.decode('iso-8859-1', errors='replace')
+            root = ET.fromstring(xml_text.encode('utf-8'))
+        
+        # Chercher tous les éléments CEx (unités d'évaluation)
+        for cex in root.iter('CEx'):
+            # Chercher les blocs CE02 ou CE03 (données d'unité)
+            for ce_block in list(cex.findall('.//CE02')) + list(cex.findall('.//CE03')):
+                batiment_data = extract_batiment_from_ce_block(ce_block)
+                if batiment_data and batiment_data.get('adresse_civique'):
+                    batiments.append(batiment_data)
+        
+        # Si aucun bâtiment trouvé avec CEx, essayer une approche directe
+        if not batiments:
+            for ce_block in list(root.findall('.//CE02')) + list(root.findall('.//CE03')):
+                batiment_data = extract_batiment_from_ce_block(ce_block)
+                if batiment_data and batiment_data.get('adresse_civique'):
+                    batiments.append(batiment_data)
+        
+        print(f"✅ XML parsé: {len(batiments)} bâtiment(s) extrait(s)")
+        
+    except ET.ParseError as e:
+        print(f"Erreur parsing XML: {e}")
+        raise HTTPException(status_code=400, detail=f"Fichier XML invalide: {str(e)}")
+    except Exception as e:
+        print(f"Erreur extraction XML: {e}")
+        raise HTTPException(status_code=400, detail=f"Erreur lors du traitement du XML: {str(e)}")
+    
+    return batiments
+
+
+def extract_batiment_from_ce_block(ce_block) -> Optional[Dict[str, Any]]:
+    """
+    Extrait les données d'un bâtiment depuis un bloc CE02 ou CE03.
+    """
+    data = {}
+    
+    # Helper pour trouver un texte dans l'arbre
+    def find_text(element, *paths):
+        for path in paths:
+            found = element.find(path)
+            if found is not None and found.text:
+                return found.text.strip()
+        return ''
+    
+    # Numéro civique - dans CE0201/CE0201x/CE0201Ax ou CE0301/...
+    numero_civique = (
+        find_text(ce_block, './/CE0201x/CE0201Ax', './/CE0301x/CE0301Ax') or
+        find_text(ce_block, './/CE0201Ax', './/CE0301Ax')
+    )
+    
+    # Type de rue - CE0201Ex/CE0301Ex (optionnel dans certains fichiers)
+    type_rue_code = (
+        find_text(ce_block, './/CE0201x/CE0201Ex', './/CE0301x/CE0301Ex') or
+        find_text(ce_block, './/CE0201Ex', './/CE0301Ex')
+    ).upper()
+    type_rue = TYPE_RUE_MAPPING.get(type_rue_code, type_rue_code)
+    
+    # Nom de rue - CE0201Gx/CE0301Gx
+    nom_rue = (
+        find_text(ce_block, './/CE0201x/CE0201Gx', './/CE0301x/CE0301Gx') or
+        find_text(ce_block, './/CE0201Gx', './/CE0301Gx')
+    ).strip()
+    
+    # Construire l'adresse complète
+    if numero_civique and nom_rue:
+        if type_rue:
+            adresse = f"{numero_civique} {type_rue} {nom_rue}"
+        else:
+            adresse = f"{numero_civique} {nom_rue}"
+        data['adresse_civique'] = adresse.strip()
+    else:
+        return None  # Pas d'adresse valide
+    
+    # Ville - CE0208Dx ou CE0308Dx
+    data['ville'] = (
+        find_text(ce_block, './/CE0208x/CE0208Dx', './/CE0308x/CE0308Dx') or
+        find_text(ce_block, './/CE0208Dx', './/CE0308Dx')
+    ).strip()
+    
+    # Code postal - CE0208Ex ou CE0308Ex
+    data['code_postal'] = (
+        find_text(ce_block, './/CE0208x/CE0208Ex', './/CE0308x/CE0308Ex') or
+        find_text(ce_block, './/CE0208Ex', './/CE0308Ex')
+    ).strip()
+    
+    # Propriétaire (contact) - CE0208Ax (nom) + CE0208Bx (prénom)
+    nom_proprio = (
+        find_text(ce_block, './/CE0208x/CE0208Ax', './/CE0308x/CE0308Ax') or
+        find_text(ce_block, './/CE0208Ax', './/CE0308Ax')
+    ).strip()
+    prenom_proprio = (
+        find_text(ce_block, './/CE0208x/CE0208Bx', './/CE0308x/CE0308Bx') or
+        find_text(ce_block, './/CE0208Bx', './/CE0308Bx')
+    ).strip()
+    
+    if nom_proprio or prenom_proprio:
+        data['contact_nom'] = f"{prenom_proprio} {nom_proprio}".strip()
+    
+    # Année de construction - CE0215A ou CE0315A
+    annee = find_text(ce_block, './/CE0215A', './/CE0315A')
+    if annee and annee.isdigit() and len(annee) == 4:
+        data['annee_construction'] = int(annee)
+    
+    # Nombre d'étages - CE0219A ou CE0319A
+    etages = find_text(ce_block, './/CE0219A', './/CE0319A')
+    if etages:
+        try:
+            data['nombre_etages'] = int(float(etages))
+        except ValueError:
+            pass
+    
+    # Superficie (m²) - CE0216A ou CE0316A
+    superficie = find_text(ce_block, './/CE0216A', './/CE0316A')
+    if superficie:
+        try:
+            data['superficie'] = float(superficie.replace(',', '.'))
+        except ValueError:
+            pass
+    
+    # Nombre de logements - CE0211A ou CE0311A
+    logements = find_text(ce_block, './/CE0211A', './/CE0311A')
+    if logements:
+        try:
+            data['nombre_logements'] = int(logements)
+        except ValueError:
+            pass
+    
+    # Générer le nom d'établissement (adresse + ville)
+    if data.get('adresse_civique') and data.get('ville'):
+        data['nom_etablissement'] = f"{data['adresse_civique']}, {data['ville']}"
+    
+    data['province'] = 'Québec'
+    
+    return data
+
 
 # ==================== GÉOLOCALISATION ====================
 
@@ -145,20 +360,40 @@ async def preview_import_batiments(
 ):
     """
     Prévisualise un import de bâtiments et détecte les conflits.
+    Supporte les formats CSV et XML (Rôle d'évaluation foncière).
     Retourne les conflits à résoudre avant l'import final.
     """
     tenant = await get_tenant_from_slug(tenant_slug)
     await require_permission(tenant.id, current_user, "prevention", "creer", "batiments")
     
-    # Lire le fichier CSV
+    # Lire le fichier
     contents = await file.read()
-    try:
-        csv_text = contents.decode('utf-8')
-    except UnicodeDecodeError:
-        csv_text = contents.decode('latin-1')
+    filename = file.filename.lower() if file.filename else ''
     
-    csv_reader = csv.DictReader(StringIO(csv_text))
-    rows = list(csv_reader)
+    # Détecter le format (CSV ou XML)
+    is_xml = filename.endswith('.xml') or contents.strip().startswith(b'<?xml') or contents.strip().startswith(b'<')
+    
+    rows = []
+    
+    if is_xml:
+        # Parser le XML du Rôle d'évaluation
+        try:
+            xml_batiments = parse_xml_role_evaluation(contents)
+            # Convertir en format compatible avec le traitement CSV
+            rows = xml_batiments
+            print(f"📄 Import XML: {len(rows)} bâtiments extraits du fichier")
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Erreur parsing XML: {str(e)}")
+    else:
+        # Parser le CSV
+        try:
+            csv_text = contents.decode('utf-8')
+        except UnicodeDecodeError:
+            csv_text = contents.decode('latin-1')
+        
+        csv_reader = csv.DictReader(StringIO(csv_text))
+        rows = list(csv_reader)
+        print(f"📄 Import CSV: {len(rows)} lignes dans le fichier")
     
     # Charger tous les bâtiments existants
     existing_batiments = await db.batiments.find(
@@ -179,7 +414,7 @@ async def preview_import_batiments(
             
             if not address:
                 errors.append({
-                    "row": idx + 2,  # +2 car header + index 0
+                    "row": idx + 2 if not is_xml else idx + 1,  # XML: pas de header
                     "error": "Adresse manquante",
                     "data": row
                 })
@@ -190,25 +425,25 @@ async def preview_import_batiments(
             if address_key in seen_addresses:
                 duplicates_in_file += 1
                 errors.append({
-                    "row": idx + 2,
-                    "error": f"Doublon dans le fichier (même adresse que ligne {seen_addresses[address_key] + 2})",
+                    "row": idx + 2 if not is_xml else idx + 1,
+                    "error": f"Doublon dans le fichier (même adresse que ligne {seen_addresses[address_key] + (2 if not is_xml else 1)})",
                     "data": row
                 })
                 continue
             seen_addresses[address_key] = idx
             
-            # Préparer les données du nouveau bâtiment (champs de base uniquement)
-            # Les champs de Prévention (risque, groupe, gicleurs, etc.) sont gérés séparément
+            # Préparer les données du nouveau bâtiment
+            # Pour XML, les champs sont déjà formatés correctement par le parseur
             new_data = {
                 "nom_etablissement": row.get('nom_etablissement', row.get('nom', '')),
                 "adresse_civique": address,
                 "ville": row.get('ville', ''),
                 "code_postal": row.get('code_postal', ''),
                 "province": row.get('province', 'Québec'),
-                # Coordonnées GPS (si présentes dans le CSV, sinon géolocalisation auto)
+                # Coordonnées GPS (si présentes)
                 "latitude": row.get('latitude', ''),
                 "longitude": row.get('longitude', ''),
-                # Contact
+                # Contact (propriétaire pour XML)
                 "contact_nom": row.get('contact_nom', row.get('proprietaire', row.get('contact', ''))),
                 "contact_telephone": row.get('contact_telephone', row.get('telephone', '')),
                 "contact_email": row.get('contact_email', row.get('email', '')),
@@ -216,7 +451,15 @@ async def preview_import_batiments(
                 "notes": row.get('notes', row.get('description', '')),
                 # Photo (URL si fournie)
                 "photo_url": row.get('photo_url', row.get('photo', '')),
+                # Champs spécifiques XML (Rôle d'évaluation)
+                "annee_construction": row.get('annee_construction'),
+                "nombre_etages": row.get('nombre_etages'),
+                "superficie": row.get('superficie'),
+                "nombre_logements": row.get('nombre_logements'),
             }
+            
+            # Nettoyer les valeurs None ou vides
+            new_data = {k: v for k, v in new_data.items() if v is not None and v != ''}
             
             # Chercher les correspondances avec la nouvelle logique stricte
             # (même numéro + même rue + même ville = doublon)
@@ -256,6 +499,7 @@ async def preview_import_batiments(
         "tenant_id": tenant.id,
         "user_id": current_user.id,
         "created_at": datetime.now(timezone.utc).isoformat(),
+        "is_xml": is_xml,  # Sauvegarder le format pour l'historique
         "rows": rows,
         "new_batiments": new_batiments,
         "conflicts": [c.dict() for c in conflicts],
@@ -291,6 +535,9 @@ async def execute_import_batiments(
     
     if session["tenant_id"] != tenant.id:
         raise HTTPException(status_code=403, detail="Session non autorisée pour ce tenant")
+    
+    # Récupérer le format d'import (XML ou CSV)
+    is_xml = session.get("is_xml", False)
     
     results = {
         "created": 0,
@@ -367,6 +614,20 @@ async def execute_import_batiments(
                     
                     await db.batiments.insert_one(batiment_data)
                     results["created"] += 1
+                    
+                    # Enregistrer dans l'historique (import XML ou CSV)
+                    source = "xml" if is_xml else "csv"
+                    user_name = f"{current_user.prenom} {current_user.nom}" if hasattr(current_user, 'prenom') else current_user.email
+                    await log_batiment_history(
+                        db=db,
+                        tenant_id=tenant.id,
+                        batiment_id=batiment_data["id"],
+                        action=f"import_{source}",
+                        source=source,
+                        user_id=current_user.id,
+                        user_name=user_name,
+                        description=f"Import {source.upper()}: {batiment_data.get('adresse_civique', '')}, {batiment_data.get('ville', '')}"
+                    )
                     
                     # Rétro-liaison des interventions
                     linked = await link_interventions_to_batiment(

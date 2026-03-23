@@ -371,7 +371,7 @@ const ImportBatimentsIntelligent = ({ tenantSlug, user, onImportComplete }) => {
         <div>
           <h2 className="text-xl font-bold">Import intelligent de bâtiments</h2>
           <p className="text-sm text-gray-500">
-            Import avec détection des doublons et rétro-liaison automatique des interventions
+            Import CSV ou XML (Rôle d'évaluation) avec détection des doublons et géolocalisation automatique
           </p>
         </div>
       </div>
@@ -389,7 +389,7 @@ const ImportBatimentsIntelligent = ({ tenantSlug, user, onImportComplete }) => {
             <div className="flex items-center gap-4">
               <input
                 type="file"
-                accept=".csv"
+                accept=".csv,.xml"
                 onChange={handleFileChange}
                 className="hidden"
                 id="csv-upload"
@@ -399,7 +399,7 @@ const ImportBatimentsIntelligent = ({ tenantSlug, user, onImportComplete }) => {
                 className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors"
               >
                 <FileText size={20} />
-                {file ? file.name : 'Choisir un fichier CSV'}
+                {file ? file.name : 'Choisir un fichier CSV ou XML'}
               </label>
               
               {file && !previewData && (

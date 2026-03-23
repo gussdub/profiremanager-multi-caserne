@@ -4,7 +4,53 @@
 Application de gestion des services d'incendie multi-tenant avec modules de planning, personnel, actifs, prévention et interventions.
 
 
-### NEW - Module Bâtiments Indépendant avec RBAC (21 Mars 2026)
+### NEW - Module Bâtiments avec Historique et Import XML (23 Mars 2026)
+**Statut:** ✅ TERMINÉ ET TESTÉ
+
+**Objectif:** 
+1. Ajouter le support d'import XML (Rôle d'évaluation foncière du Québec) aux côtés du CSV existant
+2. Créer un système d'historique des modifications (qui a modifié quoi, quand, source: XML/CSV/manuel)
+3. Supprimer complètement l'onglet "Bâtiments" du module Prévention
+4. Le module Bâtiments devient le module de base accessible à tous
+5. Les liens depuis Prévention redirigent vers le module Bâtiments
+
+**Modifications effectuées:**
+
+1. **Backend - routes/batiments.py:**
+   - Ajout du champ `nombre_logements` aux modèles Batiment
+   - Nouveau modèle `BatimentHistorique` pour tracker les modifications
+   - Fonction `log_batiment_history()` pour enregistrer l'historique
+   - Fonction `compute_changes()` pour calculer les différences
+   - Historique automatique sur create/update/delete
+   - Nouvel endpoint GET `/batiments/{id}/historique`
+   - Nouvel endpoint GET `/batiments/{id}/complet` (avec infos Prévention si module actif)
+
+2. **Backend - routes/batiments_import.py:**
+   - Support du format XML (Rôle d'évaluation foncière du Québec CEFX)
+   - Parseur XML avec extraction des champs: adresse, ville, code postal, propriétaire, année construction, étages, superficie, logements
+   - Détection automatique du format (CSV vs XML)
+   - Historique d'import enregistré automatiquement (source: xml/csv)
+
+3. **Frontend - components/Batiments.jsx:**
+   - Utilise `BatimentDetailModalNew` (partagé avec Prévention)
+   - Onglets conditionnels selon modules actifs du tenant
+   - Support URL parameter `?id=xxx` pour ouvrir directement un bâtiment
+   - Champ `nombre_logements` ajouté
+
+4. **Frontend - components/Prevention.jsx:**
+   - Suppression complète du bouton/onglet "Bâtiments"
+   - Suppression du case 'batiments' et 'nouveau-batiment'
+   - Fonction `openBatimentModal()` redirige vers le module Bâtiments
+
+5. **Frontend - components/ImportBatimentsIntelligent.jsx:**
+   - Accepte maintenant les fichiers CSV et XML
+   - Description mise à jour
+
+6. **Frontend - components/BatimentDetailModalNew.jsx:**
+   - Ajout du champ "Nombre de logements" à côté de "Superficie"
+
+
+### NEW - Import CSV Bâtiments Corrigé (21 Mars 2026)
 **Statut:** ✅ TERMINÉ
 
 **Objectif:** Créer un module "Bâtiments" indépendant du module Prévention, avec contrôle RBAC pour les permissions voir/éditer, et intégrer la recherche de bâtiments dans le module Interventions.
