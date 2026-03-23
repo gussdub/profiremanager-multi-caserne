@@ -62,7 +62,8 @@ from routes.dependencies import (
     User,
     creer_notification,
     require_permission,
-    user_has_module_action
+    user_has_module_action,
+    creer_activite
 )
 
 # Import des helpers PDF partagés
@@ -269,14 +270,17 @@ class PhotoBatiment(BaseModel):
     ajoutee_par_nom: Optional[str] = None
 
 
+# ==================== MODÈLES PRINCIPAUX ====================
+# (Définis tôt dans le fichier pour être utilisés par les endpoints)
+
 class SecteurGeographique(BaseModel):
+    """Secteur géographique pour l'assignation des préventionnistes"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     tenant_id: str
     nom: str
     description: str = ""
-    couleur: str = "#3B82F6"
-    coordonnees: List[Dict[str, float]] = []
-    geometry: Optional[Dict[str, Any]] = None  # Format GeoJSON alternatif
+    couleur: str = "#3b82f6"
+    geometry: Dict[str, Any] = {}
     preventionniste_assigne_id: Optional[str] = None
     actif: bool = True
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -284,73 +288,112 @@ class SecteurGeographique(BaseModel):
 
 
 class SecteurGeographiqueCreate(BaseModel):
+    """Modèle pour la création d'un secteur géographique"""
     nom: str
     description: str = ""
-    couleur: str = "#3B82F6"
-    coordonnees: List[Dict[str, float]] = []
-    geometry: Optional[Dict[str, Any]] = None  # Format GeoJSON alternatif
+    couleur: str = "#3b82f6"
+    geometry: Dict[str, Any]
     preventionniste_assigne_id: Optional[str] = None
     actif: bool = True
+    
+    class Config:
+        extra = "ignore"
 
 
 class GrilleInspection(BaseModel):
+    """Template de grille d'inspection selon le groupe d'occupation"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     tenant_id: str
     nom: str
+    groupe_occupation: str = ""
     description: str = ""
     sections: List[Dict[str, Any]] = []
+    actif: bool = True
+    version: str = "1.0"
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class GrilleInspectionCreate(BaseModel):
     nom: str
+    groupe_occupation: str = ""
     description: str = ""
     sections: List[Dict[str, Any]] = []
+    actif: bool = True
+    version: str = "1.0"
 
 
 class Inspection(BaseModel):
+    """Inspection réalisée sur un bâtiment"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     tenant_id: str
-    batiment_id: str
-    dependance_id: str = ""  # Si renseigné, l'inspection est pour une dépendance
-    grille_id: str = ""
-    preventionniste_id: str
+    batiment_id: str = ""
+    dependance_id: str = ""
+    grille_inspection_id: str = ""
+    grille_id: str = ""  # Alias pour compatibilité
+    preventionniste_id: str = ""
     preventionniste_nom: str = ""
-    date_inspection: str
-    type_inspection: str = "routine"
+    inspecteur_id: str = ""
+    inspecteur_nom: str = ""
+    inspection_realisee_par: str = ""
+    grille_nom: str = ""
+    date_inspection: str = ""
+    heure_debut: str = ""
+    heure_fin: str = ""
+    type_inspection: str = "reguliere"
     statut: str = "planifiee"
-    resultats: List[Dict[str, Any]] = []
-    photos: List[str] = []
+    resultats: Dict[str, Any] = {}
+    statut_global: str = "conforme"
+    score_conformite: float = 100.0
+    photos: Any = []
     anomalies: List[Dict[str, Any]] = []
-    recommandations: str = ""
     notes: str = ""
+    notes_inspection: str = ""
+    recommandations: str = ""
     signature_preventionniste: str = ""
+    signature_proprietaire: Optional[str] = None
     signature_responsable: str = ""
+    nom_representant: str = ""
     date_signature_responsable: str = ""
     prochaine_inspection: str = ""
+    rapport_pdf_url: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class InspectionCreate(BaseModel):
     batiment_id: str = ""
-    dependance_id: str = ""  # Si renseigné, l'inspection est pour une dépendance
+    dependance_id: str = ""
+    grille_inspection_id: str = ""
     grille_id: str = ""
     preventionniste_id: str = ""
     preventionniste_nom: str = ""
+    inspecteur_id: str = ""
+    inspecteur_nom: str = ""
+    inspection_realisee_par: str = ""
+    grille_nom: str = ""
     date_inspection: str
-    type_inspection: str = "routine"
+    heure_debut: str = ""
+    heure_fin: str = ""
+    type_inspection: str = "reguliere"
     statut: str = "planifiee"
-    resultats: List[Dict[str, Any]] = []
-    photos: List[str] = []
+    resultats: Dict[str, Any] = {}
+    statut_global: str = "conforme"
+    score_conformite: float = 100.0
+    photos: Any = []
     anomalies: List[Dict[str, Any]] = []
-    recommandations: str = ""
     notes: str = ""
+    notes_inspection: str = ""
+    recommandations: str = ""
     signature_preventionniste: str = ""
+    signature_proprietaire: Optional[str] = None
     signature_responsable: str = ""
+    nom_representant: str = ""
     date_signature_responsable: str = ""
     prochaine_inspection: str = ""
+    
+    class Config:
+        extra = "ignore"
 
 
 # ==================== DONNÉES DE RÉFÉRENCE ====================
@@ -937,6 +980,15 @@ async def dupliquer_grille_inspection(
 
 # ==================== ROUTES SECTEURS ====================
 
+@router.get("/{tenant_slug}/prevention/secteurs-geographiques")
+async def get_secteurs_geographiques_alias(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Alias pour récupérer tous les secteurs géographiques (compatibilité frontend)"""
+    return await get_secteurs(tenant_slug, current_user)
+
+
 @router.get("/{tenant_slug}/prevention/secteurs")
 async def get_secteurs(
     tenant_slug: str,
@@ -1063,38 +1115,6 @@ class BatimentPhotoUpload(BaseModel):
     """Modèle pour l'upload de photo de bâtiment en base64"""
     photo_base64: str  # Data URL base64 (ex: data:image/jpeg;base64,...)
 
-class SecteurGeographique(BaseModel):
-    """Secteur géographique pour l'assignation des préventionnistes"""
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    tenant_id: str
-    
-    # Informations du secteur
-    nom: str  # Ex: "Secteur Nord", "Zone industrielle Est"
-    description: str = ""
-    couleur: str = "#3b82f6"  # Couleur d'affichage sur la carte (hex)
-    
-    # Géométrie (polygone GeoJSON)
-    geometry: Dict[str, Any]  # Format GeoJSON: {"type": "Polygon", "coordinates": [[[lng, lat], ...]]}
-    
-    # Assignation
-    preventionniste_assigne_id: Optional[str] = None  # ID de l'employé préventionniste
-    
-    # Métadonnées
-    actif: bool = True
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class SecteurGeographiqueCreate(BaseModel):
-    """Modèle pour la création d'un secteur géographique"""
-    nom: str
-    description: str = ""
-    couleur: str = "#3b82f6"
-    geometry: Dict[str, Any]
-    preventionniste_assigne_id: Optional[str] = None
-    actif: bool = True
-    
-    class Config:
-        extra = "ignore"
 
 class SymbolePersonnalise(BaseModel):
     """Symbole personnalisé pour les plans d'intervention"""
@@ -1107,6 +1127,7 @@ class SymbolePersonnalise(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     created_by: str  # ID de l'utilisateur qui a créé
 
+
 class SymbolePersonnaliseCreate(BaseModel):
     """Modèle pour la création d'un symbole personnalisé"""
     nom: str
@@ -1117,91 +1138,6 @@ class SymbolePersonnaliseCreate(BaseModel):
     class Config:
         extra = "ignore"
 
-
-class GrilleInspection(BaseModel):
-    """Template de grille d'inspection selon le groupe d'occupation"""
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    tenant_id: str
-    nom: str  # Ex: "Grille Groupe C - Résidentiel"
-    groupe_occupation: str  # C, E, F, I, etc.
-    sections: List[Dict[str, Any]] = []  # Structure JSON des sections et questions
-    actif: bool = True
-    version: str = "1.0"
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class GrilleInspectionCreate(BaseModel):
-    nom: str
-    groupe_occupation: str
-    sections: List[Dict[str, Any]] = []
-    actif: bool = True
-    version: str = "1.0"
-
-class Inspection(BaseModel):
-    """Inspection réalisée sur un bâtiment"""
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    tenant_id: str
-    batiment_id: str = ""
-    dependance_id: str = ""  # Si renseigné, l'inspection est pour une dépendance
-    grille_inspection_id: str = ""
-    preventionniste_id: str = ""  # ID de l'employé qui a fait l'inspection
-    inspecteur_id: str = ""  # Alias de preventionniste_id (pour compatibilité frontend)
-    
-    # Traçabilité de l'inspecteur
-    inspecteur_nom: str = ""  # Nom complet de l'inspecteur
-    inspection_realisee_par: str = ""  # Champ dédié pour le suivi ("Inspection réalisée par: Jean Dupont")
-    
-    # Métadonnées inspection
-    grille_nom: str = ""  # Nom de la grille utilisée
-    date_inspection: str = ""  # YYYY-MM-DD
-    heure_debut: str = ""
-    heure_fin: str = ""
-    type_inspection: str = "reguliere"  # reguliere, suivi, urgence, plainte
-    statut: str = "planifiee"  # planifiee, en_cours, en_attente_validation, validee, non_conforme
-    
-    # Résultats
-    resultats: Dict[str, Any] = {}  # Réponses JSON de la grille
-    statut_global: str = "conforme"  # conforme, non_conforme, partiellement_conforme
-    score_conformite: float = 100.0  # Pourcentage de conformité
-    
-    # Documentation
-    photos: Any = []  # URLs des photos ou dict avec photos par question
-    notes_inspection: str = ""
-    recommandations: str = ""
-    
-    # Signature et validation
-    signature_proprietaire: Optional[str] = None  # Signature numérique base64
-    nom_representant: str = ""
-    rapport_pdf_url: Optional[str] = None
-    
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class InspectionCreate(BaseModel):
-    batiment_id: str = ""
-    dependance_id: str = ""  # Si renseigné, l'inspection est pour une dépendance
-    grille_inspection_id: str = ""
-    preventionniste_id: str = ""
-    inspecteur_id: str = ""  # Alias de preventionniste_id
-    inspecteur_nom: str = ""  # Nom complet pour traçabilité
-    inspection_realisee_par: str = ""  # Champ dédié pour le suivi
-    grille_nom: str = ""
-    date_inspection: str
-    heure_debut: str = ""
-    heure_fin: str = ""
-    type_inspection: str = "reguliere"
-    statut: str = "planifiee"
-    resultats: Dict[str, Any] = {}
-    statut_global: str = "conforme"
-    score_conformite: float = 100.0
-    photos: Any = []  # Peut être une liste ou un dict
-    notes_inspection: str = ""
-    recommandations: str = ""
-    signature_proprietaire: Optional[str] = None
-    nom_representant: str = ""
-    
-    class Config:
-        extra = "ignore"  # Ignorer les champs supplémentaires
 
 class NonConformite(BaseModel):
     """Non-conformité identifiée lors d'une inspection ou créée manuellement"""
@@ -2381,38 +2317,6 @@ async def delete_photo_from_dependance(
     return {"message": "Photo supprimée avec succès"}
 
 
-# ==================== INSPECTIONS DÉPENDANCES ====================
-
-@router.get("/{tenant_slug}/prevention/dependances/{dependance_id}/inspections")
-async def get_inspections_dependance(
-    tenant_slug: str,
-    dependance_id: str,
-    current_user: User = Depends(get_current_user)
-):
-    """Récupérer l'historique des inspections d'une dépendance"""
-    tenant = await get_tenant_from_slug(tenant_slug)
-    await require_permission(tenant.id, current_user, "prevention", "voir", "inspections")
-    
-    if not tenant.parametres.get('module_prevention_active', False):
-        raise HTTPException(status_code=403, detail="Module prévention non activé")
-    
-    # Vérifier que la dépendance existe
-    dependance = await db.dependances_batiments.find_one({
-        "id": dependance_id,
-        "tenant_id": tenant.id
-    })
-    if not dependance:
-        raise HTTPException(status_code=404, detail="Dépendance non trouvée")
-    
-    # Récupérer les inspections
-    inspections = await db.inspections_prevention.find({
-        "tenant_id": tenant.id,
-        "dependance_id": dependance_id
-    }).sort("date_inspection", -1).to_list(100)
-    
-    return [clean_mongo_doc(i) for i in inspections]
-
-
 # ==================== SYMBOLES PERSONNALISÉS ====================
 
 @router.get("/{tenant_slug}/prevention/symboles-personnalises")
@@ -2559,6 +2463,14 @@ async def delete_symbole_personnalise(
 
 async def generer_rapport_inspection_pdf(inspection_id: str, tenant_id: str) -> BytesIO:
     """Générer un rapport PDF pour une inspection"""
+    # Imports ReportLab (lazy loading)
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib import colors
+    from reportlab.lib.units import inch
+    from reportlab.platypus import Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_CENTER
+    
     # Récupérer le tenant
     tenant = await db.tenants.find_one({"id": tenant_id}, {"_id": 0})
     

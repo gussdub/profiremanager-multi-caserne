@@ -27,56 +27,13 @@ import {
   ExternalLink,
   Home
 } from 'lucide-react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 // Lazy load du modal de détail (partagé avec Prevention)
 const BatimentDetailModal = lazy(() => import('./BatimentDetailModalNew'));
 
-// Fix pour les icônes Leaflet
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-});
-
-// Icône personnalisée pour les bâtiments
-const batimentIcon = L.divIcon({
-  className: 'custom-marker',
-  html: `<div style="
-    background-color: #3b82f6;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    border: 3px solid white;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.35);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  "><span style="font-size: 14px;">🏢</span></div>`,
-  iconSize: [28, 28],
-  iconAnchor: [14, 14],
-  popupAnchor: [0, -14]
-});
-
-// Composant pour ajuster la vue de la carte
-const MapBounds = ({ batiments }) => {
-  const map = useMap();
-  
-  useEffect(() => {
-    if (batiments && batiments.length > 0) {
-      const validBatiments = batiments.filter(b => b.latitude && b.longitude);
-      if (validBatiments.length > 0) {
-        const bounds = validBatiments.map(b => [parseFloat(b.latitude), parseFloat(b.longitude)]);
-        map.fitBounds(bounds, { padding: [50, 50] });
-      }
-    }
-  }, [batiments, map]);
-  
-  return null;
-};
+// Lazy load de la carte avec secteurs
+const CarteBatiments = lazy(() => import('./CarteBatiments'));
 
 // Composant de chargement
 const LoadingComponent = () => (
@@ -115,6 +72,10 @@ const Batiments = () => {
   
   // Permissions Prévention (pour onglets conditionnels)
   const hasPreventionAccess = hasModuleAccess('prevention');
+  
+  // États pour les secteurs (si Prévention actif)
+  const [secteurs, setSecteurs] = useState([]);
+  const [preventionnistes, setPreventionnistes] = useState([]);
 
   // Récupérer l'ID du bâtiment depuis l'URL si présent
   const urlParams = new URLSearchParams(window.location.search);
@@ -124,8 +85,13 @@ const Batiments = () => {
   useEffect(() => {
     if (canView) {
       fetchBatiments();
+      // Charger les secteurs et préventionnistes si Prévention actif
+      if (hasPreventionAccess) {
+        fetchSecteurs();
+        fetchPreventionnistes();
+      }
     }
-  }, [tenantSlug, canView]);
+  }, [tenantSlug, canView, hasPreventionAccess]);
 
   // Ouvrir automatiquement le modal si un ID est dans l'URL
   useEffect(() => {
@@ -155,6 +121,24 @@ const Batiments = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSecteurs = async () => {
+    try {
+      const data = await apiGet(tenantSlug, '/prevention/secteurs-geographiques');
+      setSecteurs(data || []);
+    } catch (error) {
+      console.error('Erreur chargement secteurs:', error);
+    }
+  };
+
+  const fetchPreventionnistes = async () => {
+    try {
+      const data = await apiGet(tenantSlug, '/prevention/preventionnistes');
+      setPreventionnistes(data || []);
+    } catch (error) {
+      console.error('Erreur chargement préventionnistes:', error);
     }
   };
 
@@ -446,10 +430,10 @@ const Batiments = () => {
           </div>
         </Card>
       ) : (
-        /* Vue Carte */
-        <Card className="h-[600px] overflow-hidden">
-          {batimentsAvecCoords.length === 0 ? (
-            <div className="h-full flex items-center justify-center">
+        /* Vue Carte avec secteurs */
+        <Card className="overflow-hidden">
+          {batimentsAvecCoords.length === 0 && secteurs.length === 0 ? (
+            <div className="h-[600px] flex items-center justify-center">
               <div className="text-center p-8">
                 <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <h3 className="font-semibold text-gray-700 mb-2">Aucun bâtiment géolocalisé</h3>
@@ -459,57 +443,15 @@ const Batiments = () => {
               </div>
             </div>
           ) : (
-            <MapContainer
-              center={[45.4, -72.7]}
-              zoom={10}
-              className="h-full w-full"
-              scrollWheelZoom={true}
-            >
-              <TileLayer
-                attribution='&copy; OpenStreetMap'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            <Suspense fallback={<div className="h-[600px] flex items-center justify-center"><LoadingComponent /></div>}>
+              <CarteBatiments
+                batiments={filteredBatiments}
+                batimentsAvecPlan={new Set()}
+                onBatimentClick={(batiment) => openModal(batiment, 'view')}
+                secteurs={secteurs}
+                preventionnistes={preventionnistes}
               />
-              <MapBounds batiments={batimentsAvecCoords} />
-              {batimentsAvecCoords.map(batiment => (
-                <Marker
-                  key={batiment.id}
-                  position={[parseFloat(batiment.latitude), parseFloat(batiment.longitude)]}
-                  icon={batimentIcon}
-                >
-                  <Popup>
-                    <div className="min-w-[200px]">
-                      {batiment.photo_url && (
-                        <img 
-                          src={batiment.photo_url} 
-                          alt="Bâtiment" 
-                          className="w-full h-24 object-cover rounded mb-2"
-                        />
-                      )}
-                      <div className="font-semibold">
-                        {batiment.nom_etablissement || batiment.adresse_civique}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        {batiment.adresse_civique}, {batiment.ville}
-                      </div>
-                      {batiment.contact_telephone && (
-                        <a 
-                          href={`tel:${batiment.contact_telephone}`}
-                          className="text-sm text-blue-600 block mt-1"
-                        >
-                          {batiment.contact_telephone}
-                        </a>
-                      )}
-                      <button
-                        onClick={() => openModal(batiment, 'view')}
-                        className="mt-2 px-3 py-1 bg-blue-600 text-white rounded text-sm w-full"
-                      >
-                        Voir détails
-                      </button>
-                    </div>
-                  </Popup>
-                </Marker>
-              ))}
-            </MapContainer>
+            </Suspense>
           )}
         </Card>
       )}

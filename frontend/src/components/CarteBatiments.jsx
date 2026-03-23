@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Tooltip, useMap, LayersControl } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Tooltip, useMap, LayersControl, Polygon, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-const { BaseLayer } = LayersControl;
+const { BaseLayer, Overlay } = LayersControl;
 
 // Fix pour les icônes par défaut de Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -109,8 +109,9 @@ const getStatutLabel = (batiment, batimentsAvecPlan) => {
   return '⚪ Statut inconnu';
 };
 
-const CarteBatiments = ({ batiments, batimentsAvecPlan, onBatimentClick }) => {
+const CarteBatiments = ({ batiments, batimentsAvecPlan, onBatimentClick, secteurs = [], preventionnistes = [] }) => {
   const [stats, setStats] = useState({ rouge: 0, orange: 0, vert: 0, bleu: 0 });
+  const [showSecteurs, setShowSecteurs] = useState(true);
 
   useEffect(() => {
     // Calculer les statistiques
@@ -121,6 +122,27 @@ const CarteBatiments = ({ batiments, batimentsAvecPlan, onBatimentClick }) => {
     const bleu = batimentsAvecCoords.filter(b => (batimentsAvecPlan && batimentsAvecPlan.has(b.id)) || b.plan_intervention_id || b.has_plan_intervention).length;
     setStats({ rouge, orange, vert, bleu });
   }, [batiments, batimentsAvecPlan]);
+
+  // Trouver le préventionniste par ID
+  const getPreventionniste = (id) => {
+    return preventionnistes.find(p => p.id === id);
+  };
+
+  // Convertir la géométrie GeoJSON en coordonnées Leaflet
+  const getPolygonCoords = (secteur) => {
+    if (!secteur.geometry) return null;
+    
+    try {
+      const geometry = secteur.geometry;
+      if (geometry.type === 'Polygon' && geometry.coordinates) {
+        // GeoJSON utilise [lng, lat], Leaflet utilise [lat, lng]
+        return geometry.coordinates[0].map(([lng, lat]) => [lat, lng]);
+      }
+    } catch (e) {
+      console.error('Erreur parsing géométrie secteur:', e);
+    }
+    return null;
+  };
 
   // Centre par défaut (Québec)
   const defaultCenter = [45.5, -73.5];
@@ -180,7 +202,55 @@ const CarteBatiments = ({ batiments, batimentsAvecPlan, onBatimentClick }) => {
           <span style={{ fontSize: '1.1rem' }}>📋</span>
           <span style={{ fontSize: '0.875rem' }}>Avec plan ({stats.bleu})</span>
         </div>
+        {secteurs.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: 'auto' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer' }}>
+              <input 
+                type="checkbox" 
+                checked={showSecteurs} 
+                onChange={(e) => setShowSecteurs(e.target.checked)}
+                style={{ cursor: 'pointer' }}
+              />
+              <span style={{ fontSize: '0.875rem' }}>🗺️ Secteurs ({secteurs.length})</span>
+            </label>
+          </div>
+        )}
       </div>
+
+      {/* Légende des secteurs si activée */}
+      {showSecteurs && secteurs.length > 0 && (
+        <div style={{
+          display: 'flex',
+          gap: '1rem',
+          padding: '0.5rem 1rem',
+          background: '#f0f9ff',
+          borderBottom: '1px solid #e5e7eb',
+          flexWrap: 'wrap',
+          fontSize: '0.8rem'
+        }}>
+          <span style={{ fontWeight: '600', color: '#0369a1' }}>Secteurs:</span>
+          {secteurs.map(secteur => {
+            const prev = getPreventionniste(secteur.preventionniste_assigne_id);
+            return (
+              <div key={secteur.id} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <span style={{
+                  width: '12px',
+                  height: '12px',
+                  borderRadius: '3px',
+                  background: secteur.couleur || '#3b82f6',
+                  border: '1px solid rgba(0,0,0,0.2)'
+                }} />
+                <span>{secteur.nom}</span>
+                {prev && (
+                  <span style={{ color: '#6b7280' }}>
+                    ({prev.prenom} {prev.nom})
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Carte */}
       <div style={{ height: '500px' }}>
@@ -205,6 +275,81 @@ const CarteBatiments = ({ batiments, batimentsAvecPlan, onBatimentClick }) => {
           </LayersControl>
 
           <MapBounds batiments={batimentsAvecCoords} />
+
+          {/* Affichage des secteurs géographiques (polygones) */}
+          {showSecteurs && secteurs.map(secteur => {
+            const coords = getPolygonCoords(secteur);
+            if (!coords) return null;
+            
+            const prev = getPreventionniste(secteur.preventionniste_assigne_id);
+            
+            return (
+              <Polygon
+                key={secteur.id}
+                positions={coords}
+                pathOptions={{
+                  color: secteur.couleur || '#3b82f6',
+                  weight: 2,
+                  opacity: 0.8,
+                  fillColor: secteur.couleur || '#3b82f6',
+                  fillOpacity: 0.15
+                }}
+              >
+                <Popup>
+                  <div style={{ minWidth: '200px' }}>
+                    <div style={{ 
+                      fontWeight: '600', 
+                      fontSize: '1rem',
+                      marginBottom: '0.5rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}>
+                      <span style={{
+                        width: '16px',
+                        height: '16px',
+                        borderRadius: '4px',
+                        background: secteur.couleur || '#3b82f6'
+                      }} />
+                      {secteur.nom}
+                    </div>
+                    {secteur.description && (
+                      <p style={{ color: '#6b7280', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+                        {secteur.description}
+                      </p>
+                    )}
+                    <div style={{ 
+                      borderTop: '1px solid #e5e7eb', 
+                      paddingTop: '0.5rem',
+                      marginTop: '0.5rem'
+                    }}>
+                      {prev ? (
+                        <div style={{ fontSize: '0.875rem' }}>
+                          <span style={{ fontWeight: '500' }}>👤 Préventionniste:</span>
+                          <div style={{ color: '#374151' }}>
+                            {prev.prenom} {prev.nom}
+                          </div>
+                          {prev.telephone && (
+                            <div style={{ color: '#6b7280', fontSize: '0.8rem' }}>
+                              📞 {prev.telephone}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div style={{ 
+                          fontSize: '0.875rem', 
+                          color: '#9ca3af',
+                          fontStyle: 'italic'
+                        }}>
+                          Aucun préventionniste assigné
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Popup>
+              </Polygon>
+            );
+          })}
 
           {batimentsAvecCoords.map(batiment => (
             <Marker
