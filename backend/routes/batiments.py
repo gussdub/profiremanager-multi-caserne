@@ -512,29 +512,154 @@ async def upload_batiment_photo(
 async def get_batiment_historique(
     tenant_slug: str,
     batiment_id: str,
-    limit: int = 50,
+    limit: int = 100,
     current_user = Depends(get_current_user),
     db = Depends(get_db)
 ):
     """
-    Récupère l'historique des modifications d'un bâtiment.
-    Inclut les modifications manuelles, imports XML/CSV, et mises à jour SFTP.
+    Récupère l'historique unifié d'un bâtiment :
+    - Modifications manuelles et imports (batiments_historique)
+    - Inspections de prévention (inspections)
+    - Non-conformités (non_conformites)
+    - Interventions reliées par adresse (interventions)
     """
     tenant = await get_tenant_from_slug(tenant_slug)
     await require_permission(tenant.id, current_user, "batiments", "voir", "liste")
     
-    # Vérifier que le bâtiment existe
     existing = await db.batiments.find_one({"id": batiment_id, "tenant_id": tenant.id})
     if not existing:
         raise HTTPException(status_code=404, detail="Bâtiment non trouvé")
     
-    # Récupérer l'historique des modifications
+    timeline = []
+    
+    # 1. Modifications (batiments_historique)
     historique = await db.batiments_historique.find(
         {"batiment_id": batiment_id, "tenant_id": tenant.id},
         {"_id": 0}
     ).sort("timestamp", -1).limit(limit).to_list(limit)
     
-    return historique
+    for h in historique:
+        ts = h.get("timestamp")
+        if isinstance(ts, datetime):
+            ts = ts.isoformat()
+        timeline.append({
+            "type": "modification",
+            "timestamp": ts or "",
+            "action": h.get("action", "update"),
+            "source": h.get("source", "manual"),
+            "user_name": h.get("user_name"),
+            "description": h.get("description"),
+            "changes": h.get("changes"),
+            "id": h.get("id")
+        })
+    
+    # 2. Inspections de prévention
+    inspections = await db.inspections.find(
+        {"batiment_id": batiment_id, "tenant_id": tenant.id},
+        {"_id": 0}
+    ).sort("date_creation", -1).limit(limit).to_list(limit)
+    
+    for insp in inspections:
+        inspecteur = None
+        if insp.get("inspecteur_id"):
+            user_doc = await db.users.find_one({"id": insp["inspecteur_id"]}, {"_id": 0, "prenom": 1, "nom": 1})
+            if user_doc:
+                inspecteur = f"{user_doc.get('prenom', '')} {user_doc.get('nom', '')}".strip()
+        
+        ts = insp.get("date_creation") or insp.get("date_inspection") or ""
+        if isinstance(ts, datetime):
+            ts = ts.isoformat()
+        
+        statut = insp.get("statut", "")
+        statut_conformite = insp.get("statut_conformite", "")
+        
+        timeline.append({
+            "type": "inspection",
+            "timestamp": ts,
+            "id": insp.get("id"),
+            "statut": statut,
+            "statut_conformite": statut_conformite,
+            "inspecteur": inspecteur,
+            "date_inspection": insp.get("date_inspection", ""),
+            "type_inspection": insp.get("type_inspection", "reguliere"),
+            "observations": insp.get("observations", ""),
+            "grille_utilisee": insp.get("grille_utilisee", "")
+        })
+    
+    # 3. Non-conformités
+    non_conformites = await db.non_conformites.find(
+        {"batiment_id": batiment_id, "tenant_id": tenant.id},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(limit).to_list(limit)
+    
+    for nc in non_conformites:
+        ts = nc.get("created_at") or nc.get("date_identification") or ""
+        if isinstance(ts, datetime):
+            ts = ts.isoformat()
+        
+        timeline.append({
+            "type": "non_conformite",
+            "timestamp": ts,
+            "id": nc.get("id"),
+            "titre": nc.get("titre", ""),
+            "description": nc.get("description", ""),
+            "gravite": nc.get("gravite", "moyen"),
+            "statut": nc.get("statut", "ouverte"),
+            "categorie": nc.get("categorie", ""),
+            "est_manuel": nc.get("est_manuel", False),
+            "inspection_id": nc.get("inspection_id"),
+            "delai_correction": nc.get("delai_correction"),
+            "articles_codes": nc.get("articles_codes", [])
+        })
+    
+    # 4. Interventions reliées par adresse
+    adresse_civique = existing.get("adresse_civique", "")
+    if adresse_civique:
+        import re
+        # Extraire le numéro civique et le début du nom de rue
+        parts = adresse_civique.strip().split()
+        if len(parts) >= 2:
+            numero = parts[0]
+            rue = " ".join(parts[1:3])  # Premiers mots de la rue
+            
+            interventions = await db.interventions.find({
+                "tenant_id": tenant.id,
+                "$or": [
+                    {"address_civic": {"$regex": f"^{re.escape(numero)}$", "$options": "i"},
+                     "address_street": {"$regex": re.escape(rue), "$options": "i"}},
+                    {"adresse": {"$regex": re.escape(adresse_civique[:20]), "$options": "i"}}
+                ]
+            }, {"_id": 0}).sort("xml_time_call_received", -1).limit(50).to_list(50)
+            
+            for inter in interventions:
+                ts = inter.get("xml_time_call_received") or inter.get("created_at") or ""
+                if isinstance(ts, datetime):
+                    ts = ts.isoformat()
+                
+                adresse_inter = f"{inter.get('address_civic', '')} {inter.get('address_street', '')}".strip()
+                
+                timeline.append({
+                    "type": "intervention",
+                    "timestamp": ts,
+                    "id": inter.get("id") or inter.get("external_call_id"),
+                    "type_intervention": inter.get("type_intervention", ""),
+                    "code_feu": inter.get("code_feu", ""),
+                    "niveau_risque": inter.get("niveau_risque", ""),
+                    "adresse": adresse_inter or inter.get("adresse", ""),
+                    "no_sequentiel": inter.get("no_sequentiel", ""),
+                    "officer_in_charge": inter.get("officer_in_charge_xml", "")
+                })
+    
+    # Trier toute la timeline par date (plus récent en premier)
+    def sort_key(item):
+        ts = item.get("timestamp", "")
+        if not ts:
+            return ""
+        return ts
+    
+    timeline.sort(key=sort_key, reverse=True)
+    
+    return timeline
 
 
 @router.get("/{tenant_slug}/batiments/{batiment_id}/complet")

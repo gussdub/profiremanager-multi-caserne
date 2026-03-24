@@ -10,6 +10,7 @@ import PlanInterventionViewerNew from './PlanInterventionViewerNew';
 import RapportBatimentComplet from './RapportBatimentComplet';
 import DependancesBatiment from './DependancesBatiment';
 import GaleriePhotosBatiment from './GaleriePhotosBatiment';
+import HistoriqueModifications from './HistoriqueModifications';
 import { useModalScrollLock } from '../hooks/useModalScrollLock';
 
 // Style pour l'animation de rotation
@@ -952,6 +953,49 @@ const BatimentForm = ({
     );
   }
 
+  // Gestion de l'historique complet (modifications, inspections, NC, interventions)
+  if (viewMode === 'full-history') {
+    return (
+      <>
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: '280px',
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 100000,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center'
+          }}
+          onClick={onClose}
+        >
+          <div 
+            style={{
+              width: '90%',
+              maxWidth: '1000px',
+              maxHeight: '90vh',
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <HistoriqueModifications
+              batiment={batiment}
+              tenantSlug={tenantSlug}
+              onBack={() => setViewMode('form')}
+            />
+          </div>
+        </div>
+      </>
+    );
+  }
+
   // Gestion de la navigation historique/inspection
   if (viewMode === 'history') {
     return (
@@ -1371,9 +1415,12 @@ const BatimentForm = ({
                 )}
                 {onViewHistory && (
                   <Button variant="outline" onClick={() => setViewMode('history')}>
-                    📜 Historique
+                    📜 Historique inspections
                   </Button>
                 )}
+                <Button variant="outline" onClick={() => setViewMode('full-history')} data-testid="btn-full-history">
+                  🕐 Historique complet
+                </Button>
                 {onGenerateReport && (
                   <Button variant="outline" onClick={() => setViewMode('rapport')}>
                     📄 Rapport
