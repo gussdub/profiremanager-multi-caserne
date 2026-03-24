@@ -30,9 +30,11 @@ const useRemplacementsHandlers = (tenantSlug, toast, refetch, permissions = {}) 
       refetch();
       return true;
     } catch (error) {
+      const detail = error?.message || '';
+      const isDuplicate = detail.includes('identique') || detail.includes('existe déjà');
       toast({
-        title: "Erreur",
-        description: "Impossible de créer la demande",
+        title: isDuplicate ? "Demande déjà existante" : "Erreur",
+        description: detail || "Impossible de créer la demande",
         variant: "destructive"
       });
       return false;

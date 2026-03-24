@@ -507,6 +507,22 @@ async def create_demande_remplacement(tenant_slug: str, demande: DemandeRemplace
                 )
         # ==================== FIN VALIDATION ====================
         
+        # ==================== ANTI-DOUBLON: Vérifier qu'une demande identique n'existe pas déjà ====================
+        demande_existante = await db.demandes_remplacement.find_one({
+            "tenant_id": tenant.id,
+            "demandeur_id": demandeur_id,
+            "date": demande.date,
+            "type_garde_id": demande.type_garde_id,
+            "statut": {"$in": ["en_attente", "en_cours"]}
+        })
+        
+        if demande_existante:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Une demande de remplacement identique existe déjà pour cette date et ce type de garde (statut: {demande_existante['statut']})"
+            )
+        # ==================== FIN ANTI-DOUBLON ====================
+        
         priorite = await calculer_priorite_demande(demande.date)
         
         demande_dict = demande.dict()
@@ -541,32 +557,42 @@ async def create_demande_remplacement(tenant_slug: str, demande: DemandeRemplace
             "role": {"$in": ["superviseur", "admin"]}
         }).to_list(100)
         
-        superviseur_ids = []
-        for user in superviseurs_admins:
-            await creer_notification(
-                tenant_id=tenant.id,
-                destinataire_id=user["id"],
-                type="remplacement_demande",
-                titre=f"{'🚨 ' if priorite == 'urgent' else ''}Recherche de remplacement en cours",
-                message=f"{demandeur_prenom} {demandeur_nom} cherche un remplaçant pour le {demande.date}" + 
-                       (f" (créé par {created_by_nom})" if created_by_nom else ""),
-                lien="/remplacements",
-                data={"demande_id": demande_obj.id},
-                envoyer_email=False  # Pas d'email aux superviseurs, juste push
-            )
-            superviseur_ids.append(user["id"])
+        superviseur_ids = [u["id"] for u in superviseurs_admins]
         
-        if superviseur_ids:
-            await send_push_notification_to_users(
-                user_ids=superviseur_ids,
-                title=f"{'🚨 ' if priorite == 'urgent' else ''}Recherche de remplacement",
-                body=f"{demandeur_prenom} {demandeur_nom} cherche un remplaçant pour le {demande.date}",
-                data={
-                    "type": "remplacement_demande",
-                    "demande_id": demande_obj.id,
-                    "lien": "/remplacements"
-                }
-            )
+        # Notifications aux superviseurs en arrière-plan (non bloquant)
+        async def notifier_superviseurs():
+            for user in superviseurs_admins:
+                try:
+                    await creer_notification(
+                        tenant_id=tenant.id,
+                        destinataire_id=user["id"],
+                        type="remplacement_demande",
+                        titre=f"{'🚨 ' if priorite == 'urgent' else ''}Recherche de remplacement en cours",
+                        message=f"{demandeur_prenom} {demandeur_nom} cherche un remplaçant pour le {demande.date}" + 
+                               (f" (créé par {created_by_nom})" if created_by_nom else ""),
+                        lien="/remplacements",
+                        data={"demande_id": demande_obj.id},
+                        envoyer_email=False
+                    )
+                except Exception as e:
+                    logger.warning(f"⚠️ Erreur notification superviseur: {e}")
+            
+            if superviseur_ids:
+                try:
+                    await send_push_notification_to_users(
+                        user_ids=superviseur_ids,
+                        title=f"{'🚨 ' if priorite == 'urgent' else ''}Recherche de remplacement",
+                        body=f"{demandeur_prenom} {demandeur_nom} cherche un remplaçant pour le {demande.date}",
+                        data={
+                            "type": "remplacement_demande",
+                            "demande_id": demande_obj.id,
+                            "lien": "/remplacements"
+                        }
+                    )
+                except Exception as e:
+                    logger.warning(f"⚠️ Erreur push superviseurs: {e}")
+        
+        asyncio.create_task(notifier_superviseurs())
         
         # Lancer la recherche de remplaçant EN ARRIÈRE-PLAN pour une réponse plus rapide
         asyncio.create_task(lancer_recherche_remplacant(demande_obj.id, tenant.id))

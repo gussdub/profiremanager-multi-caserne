@@ -17,6 +17,7 @@ const CreateRemplacementModal = ({
   setNewDemande,
   typesGarde,
   onSubmit,
+  isSubmitting = false,
   // Nouveaux props pour la création admin
   canCreateForOthers = false,
   users = [],
@@ -129,11 +130,17 @@ const CreateRemplacementModal = ({
           </div>
 
           <div className="modal-actions">
-            <Button variant="outline" onClick={onClose}>
+            <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
               Annuler
             </Button>
-            <Button variant="default" onClick={onSubmit} data-testid="submit-replacement-btn">
-              Créer la demande
+            <Button 
+              variant="default" 
+              onClick={onSubmit} 
+              disabled={isSubmitting}
+              data-testid="submit-replacement-btn"
+              style={isSubmitting ? { opacity: 0.7, cursor: 'not-allowed' } : {}}
+            >
+              {isSubmitting ? 'Création en cours...' : 'Créer la demande'}
             </Button>
           </div>
         </div>

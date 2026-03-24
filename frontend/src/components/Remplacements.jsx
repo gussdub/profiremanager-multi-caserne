@@ -112,6 +112,7 @@ const Remplacements = () => {
   const [showImpactModal, setShowImpactModal] = useState(false);
   const [impactData, setImpactData] = useState(null);
   const [loadingImpact, setLoadingImpact] = useState(false);
+  const [isSubmittingRemplacement, setIsSubmittingRemplacement] = useState(false);
 
   const [newDemande, setNewDemande] = useState({
     type_garde_id: '', date: getLocalDateString(), raison: '', priorite: 'normale', target_user_id: null
@@ -190,10 +191,16 @@ const Remplacements = () => {
 
   // Handlers de création
   const onCreateRemplacement = async () => {
-    const success = await handlers.handleCreateRemplacement(newDemande, () => {
-      setShowCreateRemplacementModal(false);
-      setNewDemande({ type_garde_id: '', date: getLocalDateString(), raison: '', priorite: 'normale', target_user_id: null });
-    });
+    if (isSubmittingRemplacement) return;
+    setIsSubmittingRemplacement(true);
+    try {
+      const success = await handlers.handleCreateRemplacement(newDemande, () => {
+        setShowCreateRemplacementModal(false);
+        setNewDemande({ type_garde_id: '', date: getLocalDateString(), raison: '', priorite: 'normale', target_user_id: null });
+      });
+    } finally {
+      setIsSubmittingRemplacement(false);
+    }
   };
 
   const onCreateConge = async () => {
@@ -425,6 +432,7 @@ const Remplacements = () => {
         setNewDemande={setNewDemande}
         typesGarde={typesGarde}
         onSubmit={onCreateRemplacement}
+        isSubmitting={isSubmittingRemplacement}
         canCreateForOthers={permissions.canCreateForOthers}
         users={users}
         currentUserId={user?.id}
