@@ -1,14 +1,39 @@
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 
-const niveauxPriorite = [
-  { value: 'urgente', label: '🚨 Urgente', color: '#EF4444', description: 'Traitement immédiat requis' },
-  { value: 'haute', label: '🔥 Haute', color: '#F59E0B', description: 'Traitement prioritaire dans 24h' },
-  { value: 'normale', label: '📋 Normale', color: '#3B82F6', description: 'Traitement dans délai standard' },
-  { value: 'faible', label: '📝 Faible', color: '#6B7280', description: 'Traitement différé possible' }
-];
+const API = process.env.REACT_APP_BACKEND_URL;
+
+const prioriteConfig = {
+  urgent:  { label: 'Urgente',  color: '#EF4444', bg: '#FEF2F2', border: '#FECACA', icon: '🚨', desc: 'Moins de 24h', delaiKey: 'delai_attente_urgente', delaiDefault: 5 },
+  haute:   { label: 'Haute',    color: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A', icon: '🔥', desc: '24h à 48h',    delaiKey: 'delai_attente_haute',   delaiDefault: 15 },
+  normal:  { label: 'Normale',  color: '#3B82F6', bg: '#EFF6FF', border: '#BFDBFE', icon: '📋', desc: '48h à 7 jours', delaiKey: 'delai_attente_normale', delaiDefault: 60 },
+  faible:  { label: 'Faible',   color: '#6B7280', bg: '#F9FAFB', border: '#E5E7EB', icon: '📝', desc: 'Plus de 7 jours', delaiKey: 'delai_attente_faible', delaiDefault: 120 }
+};
+
+const formatDelai = (minutes) => {
+  if (!minutes && minutes !== 0) return '';
+  if (minutes < 60) return `${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m > 0 ? `${h}h${m.toString().padStart(2, '0')}` : `${h}h`;
+};
+
+const calculerPriorite = (dateStr) => {
+  if (!dateStr) return null;
+  try {
+    const dateGarde = new Date(dateStr + 'T00:00:00Z');
+    const now = new Date();
+    const heures = (dateGarde - now) / (1000 * 60 * 60);
+    if (heures <= 24) return 'urgent';
+    if (heures <= 48) return 'haute';
+    if (heures <= 168) return 'normal';
+    return 'faible';
+  } catch {
+    return null;
+  }
+};
 
 const CreateRemplacementModal = ({
   show,
@@ -18,25 +43,45 @@ const CreateRemplacementModal = ({
   typesGarde,
   onSubmit,
   isSubmitting = false,
-  // Nouveaux props pour la création admin
+  tenantSlug,
   canCreateForOthers = false,
   users = [],
   currentUserId = null
 }) => {
+  const [parametres, setParametres] = useState(null);
+
+  useEffect(() => {
+    if (show && tenantSlug) {
+      const token = localStorage.getItem(`${tenantSlug}_token`);
+      fetch(`${API}/api/${tenantSlug}/parametres/remplacements`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => { if (data) setParametres(data); })
+        .catch(() => {});
+    }
+  }, [show, tenantSlug]);
+
+  const prioriteCalculee = useMemo(() => calculerPriorite(newDemande.date), [newDemande.date]);
+  const config = prioriteCalculee ? prioriteConfig[prioriteCalculee] : null;
+
+  const getDelai = (key, defaut) => {
+    if (parametres && parametres[key] !== undefined) return parametres[key];
+    return defaut;
+  };
+
   if (!show) return null;
 
-  // Filtrer les utilisateurs actifs (exclure l'utilisateur courant si on veut créer pour quelqu'un d'autre)
   const activeUsers = users.filter(u => u.actif !== false && u.id !== currentUserId);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()} data-testid="create-replacement-modal">
         <div className="modal-header">
-          <h3>🔄 Nouvelle demande de remplacement</h3>
-          <Button variant="ghost" onClick={onClose}>✕</Button>
+          <h3>Nouvelle demande de remplacement</h3>
+          <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>&#10005;</Button>
         </div>
         <div className="modal-body">
-          {/* Sélecteur d'employé (visible uniquement pour les admins) */}
           {canCreateForOthers && activeUsers.length > 0 && (
             <div className="form-field" style={{ 
               backgroundColor: '#FEF3C7', 
@@ -46,7 +91,7 @@ const CreateRemplacementModal = ({
               border: '1px solid #F59E0B'
             }}>
               <Label htmlFor="target-user" style={{ color: '#92400E', fontWeight: '600' }}>
-                👤 Créer pour un autre employé (optionnel)
+                Créer pour un autre employé (optionnel)
               </Label>
               <select
                 id="target-user"
@@ -64,7 +109,7 @@ const CreateRemplacementModal = ({
                 ))}
               </select>
               <p style={{ fontSize: '12px', color: '#92400E', marginTop: '6px', marginBottom: 0 }}>
-                ⚠️ L'employé sélectionné doit être planifié sur le type de garde choisi à la date indiquée.
+                L'employé sélectionné doit être planifié sur le type de garde choisi à la date indiquée.
               </p>
             </div>
           )}
@@ -99,22 +144,45 @@ const CreateRemplacementModal = ({
             />
           </div>
 
-          <div className="form-field">
-            <Label htmlFor="priorite">Priorité</Label>
-            <select
-              id="priorite"
-              value={newDemande.priorite}
-              onChange={(e) => setNewDemande({...newDemande, priorite: e.target.value})}
-              className="form-select"
-              data-testid="select-priority"
-            >
-              {niveauxPriorite.map(niveau => (
-                <option key={niveau.value} value={niveau.value}>
-                  {niveau.label} - {niveau.description}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Priorité auto-calculée */}
+          {config && (
+            <div className="form-field" data-testid="priority-indicator">
+              <Label>Priorité (automatique)</Label>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                marginTop: '6px',
+                padding: '12px 16px',
+                borderRadius: '8px',
+                backgroundColor: config.bg,
+                border: `1.5px solid ${config.border}`
+              }}>
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  backgroundColor: config.color,
+                  color: 'white',
+                  fontSize: '18px',
+                  flexShrink: 0
+                }}>
+                  {config.icon}
+                </span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: '600', color: config.color, fontSize: '15px' }}>
+                    {config.label}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '1px' }}>
+                    {config.desc} — Délai de réponse : <strong>{formatDelai(getDelai(config.delaiKey, config.delaiDefault))}</strong> par contact
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="form-field">
             <Label htmlFor="raison">Raison du remplacement *</Label>

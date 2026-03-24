@@ -10,18 +10,26 @@ logger = logging.getLogger(__name__)
 
 async def calculer_priorite_demande(date_garde: str) -> str:
     """
-    Calcule la priorité d'une demande de remplacement
-    - urgent: Si la garde est dans 24h ou moins
-    - normal: Si la garde est dans plus de 24h
+    Calcule la priorité d'une demande de remplacement selon le délai avant la garde.
+    - urgent: < 24h
+    - haute: 24h à 48h
+    - normal: 48h à 7 jours
+    - faible: > 7 jours
     """
     try:
         date_garde_obj = datetime.strptime(date_garde, "%Y-%m-%d").replace(tzinfo=timezone.utc)
         maintenant = datetime.now(timezone.utc)
         delta = date_garde_obj - maintenant
+        heures = delta.total_seconds() / 3600
         
-        if delta.total_seconds() <= 86400:  # 24 heures en secondes
+        if heures <= 24:
             return "urgent"
-        return "normal"
+        elif heures <= 48:
+            return "haute"
+        elif heures <= 168:  # 7 jours
+            return "normal"
+        else:
+            return "faible"
     except Exception as e:
         logger.error(f"Erreur calcul priorité: {e}")
         return "normal"

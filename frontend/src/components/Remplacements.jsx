@@ -115,7 +115,7 @@ const Remplacements = () => {
   const [isSubmittingRemplacement, setIsSubmittingRemplacement] = useState(false);
 
   const [newDemande, setNewDemande] = useState({
-    type_garde_id: '', date: getLocalDateString(), raison: '', priorite: 'normale', target_user_id: null
+    type_garde_id: '', date: getLocalDateString(), raison: '', target_user_id: null
   });
   const [newConge, setNewConge] = useState({
     type_conge: '', date_debut: getLocalDateString(), date_fin: getLocalDateString(), raison: '', priorite: 'normale', target_user_id: null
@@ -196,7 +196,7 @@ const Remplacements = () => {
     try {
       const success = await handlers.handleCreateRemplacement(newDemande, () => {
         setShowCreateRemplacementModal(false);
-        setNewDemande({ type_garde_id: '', date: getLocalDateString(), raison: '', priorite: 'normale', target_user_id: null });
+        setNewDemande({ type_garde_id: '', date: getLocalDateString(), raison: '', target_user_id: null });
       });
     } finally {
       setIsSubmittingRemplacement(false);
@@ -426,13 +426,14 @@ const Remplacements = () => {
         show={showCreateRemplacementModal}
         onClose={() => {
           setShowCreateRemplacementModal(false);
-          setNewDemande({ type_garde_id: '', date: getLocalDateString(), raison: '', priorite: 'normale', target_user_id: null });
+          setNewDemande({ type_garde_id: '', date: getLocalDateString(), raison: '', target_user_id: null });
         }}
         newDemande={newDemande}
         setNewDemande={setNewDemande}
         typesGarde={typesGarde}
         onSubmit={onCreateRemplacement}
         isSubmitting={isSubmittingRemplacement}
+        tenantSlug={tenantSlug}
         canCreateForOthers={permissions.canCreateForOthers}
         users={users}
         currentUserId={user?.id}

@@ -7,6 +7,13 @@ import React from 'react';
 import { Button } from '../ui/button';
 import { ClipboardList } from 'lucide-react';
 
+const prioriteConfig = {
+  urgent:  { label: 'Urgente',  color: '#EF4444', bg: '#FEF2F2', icon: '🚨' },
+  haute:   { label: 'Haute',    color: '#F59E0B', bg: '#FFFBEB', icon: '🔥' },
+  normal:  { label: 'Normale',  color: '#3B82F6', bg: '#EFF6FF', icon: '📋' },
+  faible:  { label: 'Faible',   color: '#6B7280', bg: '#F9FAFB', icon: '📝' }
+};
+
 const DemandeCard = ({
   demande,
   user,
@@ -22,6 +29,7 @@ const DemandeCard = ({
   canApproveRemplacement
 }) => {
   const isAdminOrSuperviseur = canApproveRemplacement || !['employe', 'pompier'].includes(user?.role);
+  const pConfig = prioriteConfig[demande.priorite] || prioriteConfig.normal;
   
   return (
     <div className="demande-card" data-testid={`replacement-${demande.id}`}>
@@ -29,8 +37,9 @@ const DemandeCard = ({
         <div className="demande-info">
           {/* Badge de priorité */}
           <span 
+            data-testid={`priority-badge-${demande.id}`}
             style={{ 
-              backgroundColor: demande.priorite === 'urgent' ? '#EF4444' : '#3B82F6',
+              backgroundColor: pConfig.color,
               color: 'white',
               padding: '4px 10px',
               borderRadius: '12px',
@@ -40,7 +49,7 @@ const DemandeCard = ({
               display: 'inline-block'
             }}
           >
-            {demande.priorite === 'urgent' ? '🚨 Urgent' : '📋 Normal'}
+            {pConfig.icon} {pConfig.label}
           </span>
           <h3>{getTypeGardeName(demande.type_garde_id)}</h3>
           <span className="demande-date">{parseDateLocal(demande.date).toLocaleDateString('fr-FR')}</span>
