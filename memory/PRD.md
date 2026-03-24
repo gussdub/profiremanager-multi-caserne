@@ -1,71 +1,55 @@
-# PRD.md — ProFireManager
+# PRD.md — ProFire SaaS
 
-## Énoncé original
-Application SaaS multi-tenant de gestion de caserne de pompiers (ProFireManager). Modules : Planning, Interventions, Prévention incendie, Bâtiments, Remplacements, Paie, etc.
+## Problème original
+Application SaaS de gestion pour services d'incendie. Modules : Planning, Prévention, Personnel, Types de garde, Équipes de garde, Horaires personnalisés.
+
+## Fonctionnalités core
+- Authentification multi-tenant
+- Gestion du personnel (temps plein / temps partiel)
+- Planning avec attribution automatique intelligente (N1 → N1.1 → N2-N5)
+- Module prévention (Bâtiments, Grilles, Inspections, Non-conformités, Rapports)
+- Rotation des équipes de garde (temps plein + temps partiel)
+- Templates d'horaires personnalisés (24h, 12h, 6h segments AM/PM)
+- Exports (PDF, Excel, iCal)
 
 ## Architecture
-- **Frontend** : React + Shadcn/UI + Leaflet (cartes)
-- **Backend** : FastAPI + Motor (MongoDB Atlas)
-- **Base de données** : MongoDB Atlas
-- **Intégrations** : Nominatim (géocodage), Resend (emails), Firebase (push), Twilio (SMS)
+```
+Backend: FastAPI + MongoDB
+Frontend: React + Shadcn/UI
+Intégrations: Resend (emails), Twilio (SMS)
+```
 
-## Fonctionnalités implémentées
+## Dernière mise à jour : 2026-03-24
 
-### Sessions précédentes
-- Import CSV & XML (CEFX) des bâtiments
-- Module Prévention complet (inspections, plans, non-conformités)
-- Modal bâtiment unifié, historique modifications
-- Polygones secteurs géographiques
-- Remplacements (timeout, anti-doublon, priorité auto)
-- Responsive mobile Bâtiments
+### Travail complété cette session
 
-### Session 24 mars 2026 — Refactorisation prevention.py
-- `prevention.py` réduit de **5315 → 1630 lignes** (69%)
-- 7 fichiers : prevention.py (51 routes), _plans (15), _reports (6), _nc (8), _media (8), _inspections_visuelles (12), _config (11) + _models (48 modèles)
-- 111 endpoints intacts, tests 100% (iteration_16.json)
+#### P0 COMPLÉTÉ — Intégration rotation temps plein dans le planning
+- **Fichier modifié** : `/app/backend/routes/planning.py`
+- **Logique N1.1** : Nouvelle étape dans `traiter_semaine_attribution_auto` qui insère automatiquement les employés temps plein de l'équipe de garde du jour dans les gardes internes
+- **Hiérarchie** : `N1 (Manuel) → N1.1 (Rotation TP) → N2-N5 (Auto-comblement)`
+- **Fonctionnalités** :
+  - Respect de la date d'activation (pas de rotation avant)
+  - Support templates standards (Montréal, Québec, Longueuil) et personnalisés (Shefford, etc.)
+  - Matching segment ↔ type_garde par chevauchement horaire
+  - Employés absents ignorés → trous comblés par N2-N5
+  - Suppression/recréation lors du re-run (reset=true)
+  - Frontend affiche badge "🔄 Rotation" pour les assignations N1.1
+- **Tests** : 9/10 backend passés (1 skip - pas de garde externe), 100% frontend
 
-### Session 24 mars 2026 — Rotation des équipes (en cours)
-- **Step 1 DONE** : Fix UI — équipes synchronisées depuis le template (ex: Shefford = 2 équipes au lieu de 4 hardcodées)
-- **Step 2 DONE** : Heures AM/PM éditables dans le template de rotation (6h_demi_quarts) + heures début/fin pour le mode 24h
-- **Step 3 DONE** : Champ "Date d'entrée en vigueur" ajouté pour la rotation temps plein
-- **Step 4 TODO** : Logique N1.1 — insertion automatique des temps plein dans le planning selon la rotation
+### Travail complété sessions précédentes
+- Refactorisation complète de `prevention.py` (5315→1630 lignes, 6 nouveaux fichiers)
+- Fix UI rotation équipes (nombre dynamique selon template)
+- Configuration heures de quart (AM/PM, 24h) dans templates
+- Ajout date d'activation pour rotation temps plein
 
-## Logique de rotation — conception validée par l'utilisateur
+## Backlog
 
-### Hiérarchie d'attribution des gardes
-1. **N1 — Manuel** : Assignations faites à la main par le gestionnaire
-2. **N1.1 — Rotation temps plein** : Les membres de l'équipe de garde du jour sont automatiquement insérés dans les types de garde correspondants
-3. **N2 — Attribution obligatoire** : Comble les trous restants (temps partiel, équité, ancienneté)
+### P2 - Tests de régression
+- Écrire des tests pytest pour le module `prevention` refactorisé
 
-### Règles métier
-- Chaque template de rotation a des **heures de début/fin** par segment (AM: 6h-12h, PM: 12h-18h, 24h: 7h-7h, Jour: 7h-19h, Nuit: 19h-7h)
-- La rotation s'applique **à partir de la date d'activation** — les gardes validées avant ne changent pas
-- L'association employé ↔ équipe se fait par `equipe_garde` (1 → Dany, 2 → Pierre)
-- L'insertion dans le planning prend une **place dans le type de garde existant** (ex: si 4 requis et 1 temps plein, il cherche 3 de plus)
-- Si un membre est absent → trou comblé par temps partiel via N2
-- Génération **en lot** lors de la génération du planning
+### P3 - Améliorations UX
+- Améliorer l'UX de la carte des secteurs
+- Lazy loading pour le tableau des bâtiments
 
-## Tests
-- `iteration_14.json` : Backend 93%, Frontend 100%
-- `iteration_15.json` : Backend 100% (11/11) — refactorisation phases 2-3
-- `iteration_16.json` : Backend 100% (17/17) — refactorisation phase 4
-
-## Backlog priorité
-- **P0** : Step 4 — Logique N1.1 (insertion automatique rotation dans le planning)
-- **P2** : Tests de régression automatisés complets
-- **P3** : Améliorations UX carte des secteurs
-- **P3** : Optimisations de performance (lazy loading)
-
-## Architecture des fichiers Prévention
-
-| Fichier | Lignes | Routes |
-|---|---|---|
-| `prevention.py` | 1630 | 51 |
-| `prevention_models.py` | 937 | — |
-| `prevention_plans.py` | 1122 | 15 |
-| `prevention_reports.py` | 940 | 6 |
-| `prevention_nc.py` | 336 | 8 |
-| `prevention_media.py` | 250 | 8 |
-| `prevention_inspections_visuelles.py` | 484 | 12 |
-| `prevention_config.py` | 630 | 11 |
-| **Total** | **6329** | **111** |
+### Refactorisation future
+- `planning.py` (~5300 lignes) pourrait être découpé comme `prevention.py`
