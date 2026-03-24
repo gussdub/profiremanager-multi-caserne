@@ -4,6 +4,33 @@
 Application de gestion des services d'incendie multi-tenant avec modules de planning, personnel, actifs, prévention et interventions.
 
 
+### NEW - Refactorisation Module Prévention & Carte Secteurs (23 Mars 2026)
+**Statut:** ✅ TERMINÉ ET TESTÉ (100% tests passent)
+
+**P2 - Refactorisation Modèles Pydantic:**
+- Consolidation des modèles dupliqués dans `prevention.py` :
+  - `Inspection`, `InspectionCreate` → Version complète gardée
+  - `SecteurGeographique`, `SecteurGeographiqueCreate` → Version complète gardée
+  - `GrilleInspection`, `GrilleInspectionCreate` → Version complète gardée
+- Import de `creer_activite` depuis `dependencies.py`
+- Ajout des imports ReportLab dans la fonction `generer_rapport_inspection_pdf`
+
+**Backlog - Carte Secteurs:**
+- `CarteBatiments.jsx` : Affiche maintenant les secteurs géographiques (polygones)
+  - Checkbox pour afficher/masquer les secteurs
+  - Légende des secteurs avec couleurs et préventionnistes assignés
+  - Popup au clic sur un secteur avec nom, description, préventionniste
+- `Batiments.jsx` : Charge les secteurs et préventionnistes si module Prévention actif
+  - Vue carte utilise `CarteBatiments` avec secteurs
+- `prevention.py` : Ajout alias `/prevention/secteurs-geographiques`
+
+**Tests effectués:**
+- Module Prévention : Tous onglets fonctionnels (Dashboard, À valider, Préventionnistes, etc.)
+- Onglet Bâtiments : Confirmé supprimé
+- Module Bâtiments : Carte avec secteurs fonctionne
+- 12 endpoints API testés : Tous 200 OK
+
+
 ### NEW - Module Bâtiments avec Historique et Import XML (23 Mars 2026)
 **Statut:** ✅ TERMINÉ ET TESTÉ
 

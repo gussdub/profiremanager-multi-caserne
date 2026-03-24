@@ -1,111 +1,101 @@
 <analysis>**original_problem_statement:**
-The user requested finalizing the Intelligent Building Import UI by moving it to global settings. Subsequently, they requested a major architectural shift: decoupling the Bâtiments (Buildings) module from the Prévention module so it can be used independently by other modules (like Interventions). They also requested automated building search/linking within Interventions (including for automated 911 SFTP imports), a strict duplicate detection algorithm for the CSV import (Street + Number + City), and a UI cleanup for Buildings to remove Prevention-specific fields while adding features like photo paste, Street View fetching, and automatic geolocation (via Nominatim).
+L'utilisateur a demandé de corriger le bug d'exécution de l'import CSV silencieux. Ensuite, il a demandé l'ajout du support d'importation de fichiers XML (format CEFX du Rôle d'évaluation foncière du Québec) avec la même logique de détection de doublons que le CSV. Il a également demandé de supprimer complètement l'onglet Bâtiments du module Prévention, tout en s'assurant que les liens vers les bâtiments dans Prévention redirigent vers le module global Bâtiments. Le modal de détail du bâtiment doit être unifié et afficher conditionnellement les onglets liés à la prévention (Inspecter, Plan d'intervention, etc.) selon que le module Prévention est actif ou non pour le tenant. Enfin, l'utilisateur a demandé d'ajouter un historique des modifications des bâtiments (manuel vs import), de nettoyer les modèles Pydantic en double dans  (Tâche P2), et d'afficher les secteurs géographiques sur la carte globale des bâtiments.
 
 **User's preferred language**: French (Vous DEVEZ automatiquement détecter la langue principale de l'utilisateur et INSTRUIRE le prochain agent de répondre UNIQUEMENT dans la langue préférée de l'utilisateur : **FRANÇAIS**).
 
 **what currently exists?** 
-A robust Bâtiments module that is now completely independent from Prévention, accessible via strict RBAC. It includes a simplified UI with list/map views, manual creation with photo support, Google Street View integration, and automatic geolocation. The Interventions module and 911 SFTP service now automatically search and link addresses to existing buildings. An intelligent CSV import system is globally available with a strict duplicate detection algorithm (Number + Street + City).
+Un module Bâtiments global, robuste et indépendant. L'import intelligent supporte désormais les fichiers CSV et XML (Rôle d'évaluation) avec géolocalisation Nominatim automatique et détection de conflits. Le module Prévention est entièrement expurgé de sa gestion interne des bâtiments ; toute interaction redirige vers le module global. Le modal  est partagé et conditionnel (affiche les options de prévention uniquement si le tenant a le module actif). La base de données tracke l'historique de chaque modification de bâtiment. Les modèles Pydantic du backend ont été dédupliqués. La carte globale affiche désormais les polygones des secteurs géographiques de prévention.
 
 **Last working item**: 
-- **Last item agent was working:** The agent was testing the final execution step of the intelligent CSV import ( in ) using a newly created simple CSV. The preview step worked flawlessly, but the execution step returned 0 created, 0 updated via a CLI test script. The agent was inspecting backend logs to find why the execution silently skipped creating the buildings when the session ended.
-- **Status:** IN PROGRESS
-- **Agent Testing Done:** Y (via bash script, which revealed the bug)
-- **Which testing method agent to use?** Backend manual testing via python/curl script to fix the logic, followed by Frontend screenshot testing of the complete import flow.
-- **User Testing Done:** N
+- **Last item agent was working:** Exécution des tests complets du module Prévention et du module Bâtiments via le  après la refactorisation majeure des modèles Pydantic et l'ajout des secteurs géographiques sur la carte Leaflet ().
+- **Status:** COMPLETED
+- **Agent Testing Done:** Y (12/12 tests backend passés, Frontend 100% fonctionnel reporté dans ).
+- **Which testing method agent to use?** NA (testing is already done).
+- **User Testing Done:** N (L'utilisateur a mentionné qu'il testerait plus tard).
 
 **All Pending/In progress Issue list**: 
-  - **Issue 1: Intelligent CSV Import Execution silently failing (P0)**
-     - **Attempted fixes:** Agent simplified the CSV mapping to remove Prevention-specific fields and added auto-geolocation to the backend import execution. Ran a test script, but it resulted in 0 creations.
-     - **Next debug checklist:** 
-       1. Check , specifically the  function.
-       2. Verify how  is being accessed and if the session is expiring or dropping data.
-       3. Check the  loop to see why it skips creating new buildings (e.g., payload mismatch between what the frontend sends and what the backend expects for create_new vs skip).
-     - **Why fix this issue and what will be achieved with the fix?** The import preview works perfectly, but users cannot actually save the imported data until the execution endpoint correctly processes the payload.
-     - **Status:** IN PROGRESS
-     - **Is recurring issue?** N
-     - **Should Test frontend/backend/both after fix?** Both.
-     - **Blocked on other issue:** None.
+Aucun problème critique en cours. Tous les tests sont au vert.
 
 **In progress Task List**: 
-None. All planned tasks were completed except the bug discovered in the final testing phase of the import.
+Aucune tâche en cours.
 
 **Upcoming and Future Tasks**:
-- **P2: Refactor  Pydantic Models**: Multiple overlapping definitions of  and  exist in . They should be consolidated into a single source of truth.
+- **P1: UI pour l'Historique des Bâtiments** : Le backend tracke désormais l'historique des modifications (via la collection  et l'endpoint ), mais l'onglet UI Historique suggéré à la fin de la session dans le  reste à implémenter pour afficher qui a modifié quoi et quand.
+- **P2: Refactorisation de ** : Bien que les modèles Pydantic aient été nettoyés et les doublons résolus, le fichier fait plus de 6200 lignes. Il serait judicieux de le scinder en plusieurs routeurs (ex: , , ).
 
 **Completed work in this session**:
-- Integrated  into global  and removed from Prevention (DONE)
-- Extracted  into an independent module with its own backend routes and frontend UI (DONE)
-- Updated RBAC () to handle  independently for all roles (DONE)
-- Implemented automatic building search and linkage in  (Interventions) (DONE)
-- Implemented automatic building linkage for 911 SFTP imports in  (DONE)
-- Rewrote the duplicate detection algorithm () to strictly require matching Number + Street + City (DONE)
-- Cleaned up  UI (Removed Prevention fields like risks, categories, specific map markers) (DONE)
-- Added photo upload support via drag-drop/paste and Google Street View button (DONE)
-- Added automatic geolocation via Nominatim API for manual creation and CSV import (DONE)
+- Correction du bug d'exécution de l'import CSV () (DONE)
+- Implémentation du parsing XML CEFX pour le Rôle d'évaluation du Québec dans  (DONE)
+- Ajout du champ  dans l'UI et la BDD (DONE)
+- Création du système de tracking d'historique  (Backend) (DONE)
+- Suppression complète de l'onglet Bâtiments dans  et nettoyage massif du code orphelin (switch cases) (DONE)
+- Unification du modal :  utilise désormais  avec des onglets conditionnels selon les permissions/modules actifs (DONE)
+- Redirection via URL params () depuis Prévention vers Bâtiments (DONE)
+- Résolution complète des doublons Pydantic (P2) dans  (DONE)
+- Intégration des polygones des secteurs géographiques dans  (DONE)
 
 **Earlier issues found/mentioned but not fixed**:
-   - Issue 1: Overlapping Pydantic Models in .
-   - Debug checklist: Search for  and . Consolidate them.
-   - Why to solve: Prevents subtle validation bugs.
-   - Should Test frontend/backend/both after fix: Backend.
-   - Is recurring issue? Y
+Aucun. Tous les problèmes mentionnés (F811, F821 lint errors, code orphelin) ont été corrigés.
 
 **Known issue recurrence from previous fork**:
-  - Issue recurrence in previous fork: Safari Stacking Context / Modal crashes. (If creating new modals, use React Portals / Shadcn Dialog).
-  - Recurrence count: 1
-  - Status: RESOLVED (Keep in mind for future).
+- Issue recurrence in previous fork: Modal stacking context crashes (Safari). 
+- Recurrence count: 1
+- Status: RESOLVED (À garder à l'esprit lors de l'ajout du futur onglet Historique).
 
 **Code Architecture**:
 
 
 **Key Technical Concepts**:
-- Separation of Concerns (Decoupling Bâtiments from Prévention).
-- OpenStreetMap/Nominatim API for free, keyless Geocoding.
-- Fuzzy/Strict string matching () for address deduplication.
-- SFTP automated parsing and real-time database linkage.
+- Parsing XML personnalisé pour des structures imbriquées complexes (CEFX du Québec).
+- Architecture modulaire stricte : Le module Prévention ne possède plus les Bâtiments. Les Bâtiments agissent comme un registre central avec des Greffons (tabs) de prévention injectés dynamiquement ().
+- Tracking d'audit NoSQL (Collection  enregistrant les diffs).
 
 **key DB schema**:
-  - : {nom_etablissement, adresse_civique, ville, latitude, longitude, contact_nom, photo_url}. Note: Prevention fields (risques, categories) have been decoupled from the primary creation flow.
-  - : Now relies on independent .
+  - : Ajout du champ .
+  -  (NOUVEAU): .
 
 **changes in tech stack**:
-  - Integration of  for Nominatim API calls (already present in environment).
+  - Utilisation du module  standard Python pour le parsing CEFX.
 
 **All files of reference**: 
-1.  (Contains the failing  function)
-2.  (Frontend payload sender for execution)
-3.  (New main buildings interface)
+1.  (Logique de parsing XML et exécution avec flag )
+2.  (Nouvelle logique d'historique)
+3.  (Fichier de +6200 lignes, modèles Pydantic réorganisés au début du fichier)
+4.  (Point d'entrée principal pour la visualisation, incluant la carte)
+5.  (Gestion de la carte avec polygones Leaflet pour les secteurs)
+6.  (Modal partagé)
 
 **Areas that need refactoring**: 
--  (Pydantic models)
+-  : Bien que corrigé, le fichier est beaucoup trop grand (6200+ lignes). Une séparation des routes (Grilles, Inspections, Secteurs, etc.) est fortement recommandée pour la maintenabilité.
 
 **key api endpoints**:
--  (Currently failing to create records)
-- 
--  (Used for auto-linking in Interventions)
+-  (Accepte CSV et XML)
+-  (NOUVEAU)
+-  (Utilisé pour afficher les secteurs sur la carte)
 
 **Critical Info for New Agent**: 
-- **LANGUAGE**: You MUST communicate in **French**.
-- **IMMEDIATE TASK**: Your first priority is fixing the  endpoint. The preview works, but executing the import results in 0 database insertions. Check the logic mapping the  payload to the backend session data.
-- The  module is now global and independent. Do NOT add Prevention-specific logic (risks, inspection status, occupation groups) back into the core Buildings UI.
+- **LANGUE**: Vous DEVEZ communiquer en **Français**.
+- La séparation entre  et  est maintenant totale côté frontend. Ne réintroduisez pas de composants de gestion de bâtiments dans .
+- Le modèle de données Pydantic dans  a été déplacé en haut du fichier pour éviter les erreurs .
+- La logique de la carte des secteurs a été déplacée vers  pour être centralisée.
 
 **documents and test reports created in this job**: 
+  -  (Mis à jour avec le statut du tracking XML et historique)
   - 
+  -  (Validation finale à 100%)
 
 **Last 10 User Messages and any pending HUMAN messages**: 
-1. (COMPLETED) User asked to decouple Buildings from Prevention (Option A: Independent module).
-2. (COMPLETED) User asked to add automatic building search/fill to the Interventions module.
-3. (COMPLETED) User asked to extend the auto-search to automated 911 SFTP imports.
-4. (COMPLETED) User pointed out a flaw in the duplicate detection algorithm (false positives on street names) and requested the Execute button be usable.
-5. (COMPLETED) User defined strict duplicate rules: Same Street AND Same Number AND Same City.
-6. (COMPLETED) User asked to clean up the Batiments UI (remove Prevention filters) and add Photo pasting + Street View.
-7. (COMPLETED) User asked to add automatic geolocation.
-8. (COMPLETED) User asked if CSV import will also place data in the right places (without Prevention fields) and geo-locate automatically.
-9. (PENDING FIX) Agent tested the CSV import execution, but it failed to create records. The session ended before the agent could fix the backend execution route.
+1. User confirmed plan to fix CSV bug.
+2. User provided XML samples (Rôle d'évaluation) and requested XML import support mimicking CSV behavior.
+3. User provided UI feedback (photo2) for the unified building modal, requesting conditional rendering of Prevention tabs based on tenant capabilities.
+4. User clarified: Module Prevention should have NO building buttons/tabs. Everything building-related must redirect to the independent Batiments module, but retain Prevention context if the tenant has the module active. Added request to track historical changes (XML/Manual).
+5. User confirmed understanding: UI redirects to Batiments with all info, historical DB tracking is a good idea, and geographical sectors should appear on the main map.
+6. User approved the current progress and instructed the agent to complete the P2 task (Pydantic refactor), backlog (Sectors map), and run a full Prevention module test.
 
 **Project Health Check:**
-- Broken: CSV Import Execution ( endpoint).
+- Broken: None.
 - Mocked: None.
+- Status: Excellent (Backend 12/12 tests passing, Frontend E2E tests passing).
 
 **3rd Party Integrations**: 
 - Nominatim (OpenStreetMap) Geocoding — free, no key required.
@@ -113,10 +103,10 @@ None. All planned tasks were completed except the bug discovered in the final te
 - Firebase (Push Notifications)
 
 **Testing status**: 
-  - Testing agent used after significant changes: NO (Main agent used bash testing and Playwright screenshots extensively).
-  - Troubleshoot agent used after agent stuck in loop: NO.
-  - Test files created: , .
-  - Known regressions:  failing.
+  - Testing agent used after significant changes: YES ( & )
+  - Troubleshoot agent used after agent stuck in loop: NO
+  - Test files created: , 
+  - Known regressions: None.
 
 **Credentials to test flow:**
 - Email: 
@@ -124,4 +114,4 @@ None. All planned tasks were completed except the bug discovered in the final te
 - Tenant: 
 
 **What agent forgot to execute**: 
-The agent noticed that the bash script testing  returned 0 creations, but ran out of time to debug the backend route before finishing the session.</analysis>
+L'agent a créé le backend pour enregistrer et consulter l'historique des modifications des bâtiments (), mais n'a pas eu le temps de créer l'onglet/UI Historique dans le  pour afficher ces données à l'utilisateur final. Il l'a suggéré comme prochaine étape à la fin de sa session.</analysis>

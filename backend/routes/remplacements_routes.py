@@ -697,8 +697,29 @@ async def get_propositions_remplacement(tenant_slug: str, current_user: User = D
         "remplacants_contactes_ids": current_user.id
     }).to_list(1000)
     
+    maintenant = datetime.now(timezone.utc)
     propositions = []
     for demande in demandes:
+        # Filtrer les demandes dont le temps alloué est dépassé
+        date_prochaine = demande.get("date_prochaine_tentative")
+        if date_prochaine:
+            try:
+                if isinstance(date_prochaine, str):
+                    date_prochaine = datetime.fromisoformat(date_prochaine.replace('Z', '+00:00'))
+                if maintenant > date_prochaine:
+                    continue  # Temps dépassé, ne pas afficher
+            except Exception:
+                pass
+        
+        # Vérifier si la tentative du user est marquée comme expirée
+        tentative_expiree = False
+        for tentative in demande.get("tentatives_historique", []):
+            if tentative.get("user_id") == current_user.id and tentative.get("statut") == "expired":
+                tentative_expiree = True
+                break
+        if tentative_expiree:
+            continue
+        
         demandeur = await db.users.find_one({"id": demande["demandeur_id"]})
         type_garde = await db.types_garde.find_one({"id": demande["type_garde_id"]})
         
@@ -1119,6 +1140,9 @@ async def nettoyer_anciennes_demandes(
         "message": f"{result.deleted_count} demande(s) supprimée(s)",
         "deleted_count": result.deleted_count
     }
+
+
+@router.get("/remplacement-action/{token}/{action}")
 async def action_remplacement_via_email(token: str, action: str):
     """Traite une action de remplacement via le lien email"""
     frontend_url = os.environ.get('FRONTEND_URL', 'https://www.profiremanager.ca')
@@ -1164,7 +1188,42 @@ async def action_remplacement_via_email(token: str, action: str):
                 "approuve_manuellement": "déjà approuvée"
             }.get(demande_data["statut"], demande_data["statut"])
             return RedirectResponse(
-                url=f"{frontend_url}/remplacement-resultat?status=info&message=Cette demande est {status_label}",
+                url=f"{frontend_url}/remplacement-resultat?status=erreur&message=Cette demande est {status_label}",
+                status_code=302
+            )
+        
+        # Vérifier si le temps alloué au remplaçant est écoulé
+        temps_depasse = False
+        
+        # 1. Vérifier si le remplaçant est encore dans la liste des contactés
+        if remplacant_id not in demande_data.get("remplacants_contactes_ids", []):
+            temps_depasse = True
+            logger.info(f"⏱️ Remplaçant {remplacant_id} n'est plus dans les contactés pour demande {demande_id}")
+        
+        # 2. Vérifier si la tentative du remplaçant est marquée comme expirée
+        if not temps_depasse:
+            for tentative in demande_data.get("tentatives_historique", []):
+                if tentative.get("user_id") == remplacant_id and tentative.get("statut") == "expired":
+                    temps_depasse = True
+                    logger.info(f"⏱️ Tentative expirée pour remplaçant {remplacant_id} dans demande {demande_id}")
+                    break
+        
+        # 3. Vérifier si date_prochaine_tentative est dépassée (le batch a expiré)
+        if not temps_depasse and demande_data.get("date_prochaine_tentative"):
+            try:
+                date_prochaine = demande_data["date_prochaine_tentative"]
+                if isinstance(date_prochaine, str):
+                    date_prochaine = datetime.fromisoformat(date_prochaine.replace('Z', '+00:00'))
+                if datetime.now(timezone.utc) > date_prochaine:
+                    temps_depasse = True
+                    logger.info(f"⏱️ date_prochaine_tentative dépassée pour demande {demande_id}")
+            except Exception as e:
+                logger.warning(f"⚠️ Erreur parsing date_prochaine_tentative: {e}")
+        
+        if temps_depasse:
+            msg = "Temps dépassé, impossible de choisir"
+            return RedirectResponse(
+                url=f"{frontend_url}/remplacement-resultat?status=erreur&message={msg}",
                 status_code=302
             )
         
@@ -1278,3 +1337,74 @@ async def annuler_demande_remplacement(
     }
 
 
+
+
+@router.get("/remplacement-check-token/{token}")
+async def check_remplacement_token(token: str):
+    """Vérifie si un token de remplacement est encore valide (temps non dépassé)"""
+    try:
+        token_data = await db.tokens_remplacement.find_one({"token": token})
+        
+        if not token_data:
+            return {"valid": False, "reason": "Token invalide ou expiré"}
+        
+        # Vérifier expiration du token (48h)
+        expiration = datetime.fromisoformat(token_data["expiration"].replace('Z', '+00:00'))
+        if datetime.now(timezone.utc) > expiration:
+            return {"valid": False, "reason": "Ce lien a expiré"}
+        
+        if token_data.get("utilise"):
+            return {"valid": False, "reason": "Cette action a déjà été traitée"}
+        
+        demande_id = token_data["demande_id"]
+        remplacant_id = token_data["remplacant_id"]
+        tenant_id = token_data["tenant_id"]
+        
+        demande_data = await db.demandes_remplacement.find_one({"id": demande_id, "tenant_id": tenant_id})
+        if not demande_data:
+            return {"valid": False, "reason": "Demande non trouvée"}
+        
+        if demande_data["statut"] not in ["en_cours", "en_attente"]:
+            status_label = {
+                "accepte": "déjà acceptée",
+                "expiree": "expirée",
+                "annulee": "annulée",
+                "approuve_manuellement": "déjà approuvée"
+            }.get(demande_data["statut"], demande_data["statut"])
+            return {"valid": False, "reason": f"Cette demande est {status_label}"}
+        
+        # Vérifier si le temps alloué est écoulé
+        if remplacant_id not in demande_data.get("remplacants_contactes_ids", []):
+            return {"valid": False, "reason": "Temps dépassé, impossible de choisir"}
+        
+        for tentative in demande_data.get("tentatives_historique", []):
+            if tentative.get("user_id") == remplacant_id and tentative.get("statut") == "expired":
+                return {"valid": False, "reason": "Temps dépassé, impossible de choisir"}
+        
+        if demande_data.get("date_prochaine_tentative"):
+            try:
+                date_prochaine = demande_data["date_prochaine_tentative"]
+                if isinstance(date_prochaine, str):
+                    date_prochaine = datetime.fromisoformat(date_prochaine.replace('Z', '+00:00'))
+                if datetime.now(timezone.utc) > date_prochaine:
+                    return {"valid": False, "reason": "Temps dépassé, impossible de choisir"}
+            except Exception:
+                pass
+        
+        # Récupérer les infos pour affichage
+        demandeur = await db.users.find_one({"id": demande_data["demandeur_id"]})
+        type_garde = await db.types_garde.find_one({"id": demande_data["type_garde_id"]})
+        
+        return {
+            "valid": True,
+            "demandeur_nom": f"{demandeur.get('prenom', '')} {demandeur.get('nom', '')}" if demandeur else "Inconnu",
+            "date": demande_data.get("date", ""),
+            "type_garde_nom": type_garde.get("nom", "Garde") if type_garde else "Garde",
+            "heure_debut": type_garde.get("heure_debut", "") if type_garde else "",
+            "heure_fin": type_garde.get("heure_fin", "") if type_garde else "",
+            "raison": demande_data.get("raison", "")
+        }
+        
+    except Exception as e:
+        logger.error(f"Erreur vérification token remplacement: {e}", exc_info=True)
+        return {"valid": False, "reason": "Une erreur est survenue"}
