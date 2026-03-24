@@ -44,6 +44,8 @@ from routes.actifs import router as actifs_router
 from routes.formations import router as formations_router
 from routes.equipements import router as equipements_router
 from routes.prevention import router as prevention_router
+from routes.prevention_plans import router as prevention_plans_router
+from routes.prevention_reports import router as prevention_reports_router
 from routes.planning import router as planning_router
 from routes.sftp import router as sftp_router
 from routes.websocket import router as websocket_router
@@ -6750,6 +6752,8 @@ app.include_router(actifs_router, prefix="/api")  # Module Actifs (véhicules, b
 app.include_router(formations_router, prefix="/api")  # Module Formations (CRUD + inscriptions)
 app.include_router(equipements_router, prefix="/api")  # Module Équipements (CRUD + maintenance + alertes)
 app.include_router(prevention_router, prefix="/api")  # Module Prévention (bâtiments, inspections, grilles, secteurs)
+app.include_router(prevention_plans_router, prefix="/api")  # Module Prévention - Plans d'intervention
+app.include_router(prevention_reports_router, prefix="/api")  # Module Prévention - Rapports, stats, exports
 app.include_router(avis_non_conformite_router, prefix="/api")  # Module Avis Non-Conformité
 app.include_router(planning_router, prefix="/api")  # Module Planning (assignations, rapports heures)
 app.include_router(sftp_router, prefix="/api")  # Module SFTP (cartes d'appel 911, WebSocket)

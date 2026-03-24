@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://batiments-history.preview.emergentagent.com
+- **URL** : https://prevention-cleanup.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://batiments-history.preview.emergentagent.com"
+  "apiUrl": "https://prevention-cleanup.preview.emergentagent.com"
 }
 ```
 
