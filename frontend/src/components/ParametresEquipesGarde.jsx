@@ -157,6 +157,84 @@ const ParametresEquipesGarde = ({ tenantSlug, toast }) => {
     });
   };
 
+  // Quand un template est sélectionné, synchroniser les équipes depuis le template
+  const syncEquipesFromTemplate = (type, templateId) => {
+    // Templates prédéfinis : toujours 4 équipes
+    const predefinis = {
+      montreal: { nombre_equipes: 4, duree_cycle: 28, equipes: [
+        { numero: 1, nom: "Vert", couleur: "#22C55E" },
+        { numero: 2, nom: "Bleu", couleur: "#3B82F6" },
+        { numero: 3, nom: "Jaune", couleur: "#EAB308" },
+        { numero: 4, nom: "Rouge", couleur: "#EF4444" }
+      ]},
+      quebec: { nombre_equipes: 4, duree_cycle: 28, equipes: [
+        { numero: 1, nom: "Vert", couleur: "#22C55E" },
+        { numero: 2, nom: "Bleu", couleur: "#3B82F6" },
+        { numero: 3, nom: "Jaune", couleur: "#EAB308" },
+        { numero: 4, nom: "Rouge", couleur: "#EF4444" }
+      ]},
+      longueuil: { nombre_equipes: 4, duree_cycle: 28, equipes: [
+        { numero: 1, nom: "Vert", couleur: "#22C55E" },
+        { numero: 2, nom: "Bleu", couleur: "#3B82F6" },
+        { numero: 3, nom: "Jaune", couleur: "#EAB308" },
+        { numero: 4, nom: "Rouge", couleur: "#EF4444" }
+      ]}
+    };
+
+    if (predefinis[templateId]) {
+      const tpl = predefinis[templateId];
+      setParams(prev => ({
+        ...prev,
+        [type]: {
+          ...prev[type],
+          type_rotation: templateId,
+          nombre_equipes: tpl.nombre_equipes,
+          duree_cycle: tpl.duree_cycle,
+          equipes_config: tpl.equipes
+        }
+      }));
+      return;
+    }
+
+    // Templates personnalisés : chercher dans horairesPersonnalises
+    const horaire = horairesPersonnalises.find(h => h.id === templateId);
+    if (horaire) {
+      const equipes = (horaire.equipes || []).map((eq, idx) => ({
+        numero: eq.numero || idx + 1,
+        nom: eq.nom || `Équipe ${idx + 1}`,
+        couleur: eq.couleur || "#6B7280"
+      }));
+      setParams(prev => ({
+        ...prev,
+        [type]: {
+          ...prev[type],
+          type_rotation: templateId,
+          nombre_equipes: horaire.nombre_equipes || equipes.length,
+          duree_cycle: horaire.duree_cycle || 28,
+          equipes_config: equipes
+        }
+      }));
+      return;
+    }
+
+    // Fallback (personnalisee ou inconnu) : juste changer le type
+    setParams(prev => ({
+      ...prev,
+      [type]: { ...prev[type], type_rotation: templateId }
+    }));
+  };
+
+  const handleRotationTypeChange = (type, value) => {
+    if (value === "personnalisee") {
+      // Mode manuel : garder les équipes actuelles
+      const updateFn = type === "temps_plein" ? updateTempsPlein : updateTempsPartiel;
+      updateFn("type_rotation", value);
+    } else {
+      // Template sélectionné : synchroniser les équipes
+      syncEquipesFromTemplate(type, value);
+    }
+  };
+
   const updateNombreEquipes = (type, newCount) => {
     const currentConfig = params[type].equipes_config;
     let newConfig = [...currentConfig];
@@ -260,7 +338,7 @@ const ParametresEquipesGarde = ({ tenantSlug, toast }) => {
                     <Label>Type de rotation</Label>
                     <Select
                       value={params.temps_plein.type_rotation}
-                      onValueChange={(value) => updateTempsPlein("type_rotation", value)}
+                      onValueChange={(value) => handleRotationTypeChange("temps_plein", value)}
                     >
                       <SelectTrigger data-testid="select-rotation-temps-plein">
                         <SelectValue />
@@ -284,6 +362,7 @@ const ParametresEquipesGarde = ({ tenantSlug, toast }) => {
                     </p>
                   </div>
 
+                  {/* Champs manuels uniquement pour "personnalisee" */}
                   {params.temps_plein.type_rotation === "personnalisee" && (
                     <>
                       <div>
@@ -387,25 +466,55 @@ const ParametresEquipesGarde = ({ tenantSlug, toast }) => {
                     </>
                   )}
 
+                  {/* Date d'activation de la rotation */}
+                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <Label className="text-blue-800 font-medium mb-1 block">Date d&apos;entrée en vigueur</Label>
+                    <p className="text-xs text-blue-600 mb-2">La rotation s&apos;appliquera à partir de cette date. Les gardes déjà validées avant cette date ne seront pas affectées.</p>
+                    <Input
+                      type="date"
+                      value={params.temps_plein.date_activation || ""}
+                      onChange={(e) => updateTempsPlein("date_activation", e.target.value)}
+                      data-testid="input-date-activation-tp"
+                    />
+                    {params.temps_plein.date_activation && (
+                      <p className="text-xs text-blue-700 mt-1 font-medium">
+                        La rotation débutera le {new Date(params.temps_plein.date_activation + 'T12:00:00').toLocaleDateString('fr-CA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                      </p>
+                    )}
+                  </div>
+
                   <div className="bg-gray-50 p-3 rounded-lg">
-                    <Label className="mb-2 block">Configuration des équipes</Label>
+                    <Label className="mb-2 block">Configuration des équipes ({params.temps_plein.equipes_config.length})</Label>
+                    {params.temps_plein.type_rotation !== "personnalisee" && (
+                      <p className="text-xs text-amber-600 mb-2">Équipes définies par le template — modifiables dans l&apos;onglet Horaires</p>
+                    )}
                     <div className="space-y-2">
                       {params.temps_plein.equipes_config.map((equipe, idx) => (
                         <div key={idx} className="flex items-center gap-2">
-                          <input
-                            type="color"
-                            value={equipe.couleur}
-                            onChange={(e) => updateEquipeConfig("temps_plein", idx, "couleur", e.target.value)}
-                            className="w-8 h-8 rounded cursor-pointer"
-                            data-testid={`color-equipe-tp-${idx}`}
+                          <div
+                            className="w-8 h-8 rounded flex-shrink-0 border"
+                            style={{ backgroundColor: equipe.couleur }}
                           />
-                          <Input
-                            value={equipe.nom}
-                            onChange={(e) => updateEquipeConfig("temps_plein", idx, "nom", e.target.value)}
-                            className="flex-1"
-                            placeholder={`Équipe ${idx + 1}`}
-                            data-testid={`input-nom-equipe-tp-${idx}`}
-                          />
+                          {params.temps_plein.type_rotation === "personnalisee" ? (
+                            <>
+                              <input
+                                type="color"
+                                value={equipe.couleur}
+                                onChange={(e) => updateEquipeConfig("temps_plein", idx, "couleur", e.target.value)}
+                                className="w-8 h-8 rounded cursor-pointer"
+                                data-testid={`color-equipe-tp-${idx}`}
+                              />
+                              <Input
+                                value={equipe.nom}
+                                onChange={(e) => updateEquipeConfig("temps_plein", idx, "nom", e.target.value)}
+                                className="flex-1"
+                                placeholder={`Équipe ${idx + 1}`}
+                                data-testid={`input-nom-equipe-tp-${idx}`}
+                              />
+                            </>
+                          ) : (
+                            <span className="text-sm font-medium" data-testid={`label-equipe-tp-${idx}`}>{equipe.nom}</span>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -451,7 +560,7 @@ const ParametresEquipesGarde = ({ tenantSlug, toast }) => {
                     <Label>Type de rotation</Label>
                     <Select
                       value={params.temps_partiel.type_rotation}
-                      onValueChange={(value) => updateTempsPartiel("type_rotation", value)}
+                      onValueChange={(value) => handleRotationTypeChange("temps_partiel", value)}
                     >
                       <SelectTrigger data-testid="select-rotation-temps-partiel">
                         <SelectValue />
@@ -582,24 +691,37 @@ const ParametresEquipesGarde = ({ tenantSlug, toast }) => {
                   )}
 
                   <div className="bg-gray-50 p-3 rounded-lg">
-                    <Label className="mb-2 block">Configuration des équipes</Label>
+                    <Label className="mb-2 block">Configuration des équipes ({params.temps_partiel.equipes_config.length})</Label>
+                    {params.temps_partiel.type_rotation !== "personnalisee" && (
+                      <p className="text-xs text-amber-600 mb-2">Équipes définies par le template — modifiables dans l&apos;onglet Horaires</p>
+                    )}
                     <div className="space-y-2">
                       {params.temps_partiel.equipes_config.map((equipe, idx) => (
                         <div key={idx} className="flex items-center gap-2">
-                          <input
-                            type="color"
-                            value={equipe.couleur}
-                            onChange={(e) => updateEquipeConfig("temps_partiel", idx, "couleur", e.target.value)}
-                            className="w-8 h-8 rounded cursor-pointer"
-                            data-testid={`color-equipe-tpa-${idx}`}
+                          <div
+                            className="w-8 h-8 rounded flex-shrink-0 border"
+                            style={{ backgroundColor: equipe.couleur }}
                           />
-                          <Input
-                            value={equipe.nom}
-                            onChange={(e) => updateEquipeConfig("temps_partiel", idx, "nom", e.target.value)}
-                            className="flex-1"
-                            placeholder={`Équipe ${idx + 1}`}
-                            data-testid={`input-nom-equipe-tpa-${idx}`}
-                          />
+                          {params.temps_partiel.type_rotation === "personnalisee" ? (
+                            <>
+                              <input
+                                type="color"
+                                value={equipe.couleur}
+                                onChange={(e) => updateEquipeConfig("temps_partiel", idx, "couleur", e.target.value)}
+                                className="w-8 h-8 rounded cursor-pointer"
+                                data-testid={`color-equipe-tpa-${idx}`}
+                              />
+                              <Input
+                                value={equipe.nom}
+                                onChange={(e) => updateEquipeConfig("temps_partiel", idx, "nom", e.target.value)}
+                                className="flex-1"
+                                placeholder={`Équipe ${idx + 1}`}
+                                data-testid={`input-nom-equipe-tpa-${idx}`}
+                              />
+                            </>
+                          ) : (
+                            <span className="text-sm font-medium" data-testid={`label-equipe-tpa-${idx}`}>{equipe.nom}</span>
+                          )}
                         </div>
                       ))}
                     </div>

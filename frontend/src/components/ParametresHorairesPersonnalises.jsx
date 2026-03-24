@@ -40,7 +40,13 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
       jour_debut: "07:00",
       jour_fin: "19:00",
       nuit_debut: "19:00",
-      nuit_fin: "07:00"
+      nuit_fin: "07:00",
+      am_debut: "06:00",
+      am_fin: "12:00",
+      pm_debut: "12:00",
+      pm_fin: "18:00",
+      h24_debut: "07:00",
+      h24_fin: "07:00"
     },
     equipes: []
   });
@@ -189,7 +195,13 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
         jour_debut: "07:00",
         jour_fin: "19:00",
         nuit_debut: "19:00",
-        nuit_fin: "07:00"
+        nuit_fin: "07:00",
+        am_debut: "06:00",
+        am_fin: "12:00",
+        pm_debut: "12:00",
+        pm_fin: "18:00",
+        h24_debut: "07:00",
+        h24_fin: "07:00"
       },
       equipes: horaire.equipes || []
     });
@@ -1132,6 +1144,38 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
         </div>
       </div>
       
+      {/* Configuration des heures si 24h */}
+      {formData.type_quart === '24h' && (
+        <div className="grid grid-cols-2 gap-4 p-4 bg-green-50 rounded-lg border border-green-200">
+          <div>
+            <Label className="text-xs flex items-center gap-1"><Clock className="w-3 h-3" /> Début du quart (24h)</Label>
+            <Input
+              type="time"
+              value={formData.heures_quart.h24_debut || "07:00"}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                heures_quart: { ...prev.heures_quart, h24_debut: e.target.value }
+              }))}
+            />
+          </div>
+          <div>
+            <Label className="text-xs flex items-center gap-1"><Clock className="w-3 h-3" /> Fin du quart (24h)</Label>
+            <Input
+              type="time"
+              value={formData.heures_quart.h24_fin || "07:00"}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                heures_quart: { ...prev.heures_quart, h24_fin: e.target.value }
+              }))}
+            />
+          </div>
+          <div className="col-span-2 text-sm text-green-600 flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            <span>Les heures de début et fin définissent le quart de garde de 24h continu.</span>
+          </div>
+        </div>
+      )}
+
       {/* Configuration des heures si jour/nuit */}
       {formData.type_quart === '12h_jour_nuit' && (
         <div className="grid grid-cols-4 gap-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
@@ -1217,23 +1261,63 @@ const ParametresHorairesPersonnalises = ({ tenantSlug, toast }) => {
       {/* Configuration des heures si demi-quarts */}
       {formData.type_quart === '6h_demi_quarts' && (
         <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-          <div className="grid grid-cols-2 gap-4 mb-3">
-            <div className="p-3 bg-orange-100 rounded-lg">
+          <div className="grid grid-cols-4 gap-4 mb-3">
+            <div>
               <Label className="text-xs flex items-center gap-1 text-orange-700 font-medium">
-                <Sun className="w-3 h-3" /> Segment AM (matin)
+                <Sun className="w-3 h-3" /> Début AM
               </Label>
-              <div className="text-sm font-bold text-orange-800 mt-1">6h00 - 12h00</div>
+              <Input
+                type="time"
+                value={formData.heures_quart.am_debut || "06:00"}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  heures_quart: { ...prev.heures_quart, am_debut: e.target.value }
+                }))}
+              />
             </div>
-            <div className="p-3 bg-amber-100 rounded-lg">
-              <Label className="text-xs flex items-center gap-1 text-amber-700 font-medium">
-                <Sun className="w-3 h-3" /> Segment PM (après-midi)
+            <div>
+              <Label className="text-xs flex items-center gap-1 text-orange-700 font-medium">
+                <Sun className="w-3 h-3" /> Fin AM
               </Label>
-              <div className="text-sm font-bold text-amber-800 mt-1">12h00 - 18h00</div>
+              <Input
+                type="time"
+                value={formData.heures_quart.am_fin || "12:00"}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  heures_quart: { ...prev.heures_quart, am_fin: e.target.value }
+                }))}
+              />
+            </div>
+            <div>
+              <Label className="text-xs flex items-center gap-1 text-amber-700 font-medium">
+                <Sun className="w-3 h-3" /> Début PM
+              </Label>
+              <Input
+                type="time"
+                value={formData.heures_quart.pm_debut || "12:00"}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  heures_quart: { ...prev.heures_quart, pm_debut: e.target.value }
+                }))}
+              />
+            </div>
+            <div>
+              <Label className="text-xs flex items-center gap-1 text-amber-700 font-medium">
+                <Sun className="w-3 h-3" /> Fin PM
+              </Label>
+              <Input
+                type="time"
+                value={formData.heures_quart.pm_fin || "18:00"}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  heures_quart: { ...prev.heures_quart, pm_fin: e.target.value }
+                }))}
+              />
             </div>
           </div>
           <div className="text-sm text-purple-600 flex items-center gap-2">
             <Clock className="w-4 h-4" />
-            <span><strong>Astuce:</strong> Pour un quart de 12h, assignez la même équipe aux segments AM et PM. Les cases vides deviennent des postes vacants pour l'attribution automatique.</span>
+            <span><strong>Astuce:</strong> Pour un quart de 12h, assignez la même équipe aux segments AM et PM. Les cases vides deviennent des postes vacants pour l&apos;attribution automatique.</span>
           </div>
         </div>
       )}

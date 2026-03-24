@@ -246,6 +246,7 @@ async def get_parametres_equipes_garde(tenant_slug: str, current_user: User = De
                 "rotation_active": False,
                 "type_rotation": "aucun",
                 "date_reference": None,
+                "date_activation": None,
                 "nombre_equipes": 4,
                 "duree_cycle": 28,
                 "pattern_mode": "hebdomadaire",
