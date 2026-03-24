@@ -292,7 +292,7 @@ const Batiments = () => {
         </Card>
         <Card>
           <CardContent className="p-3 md:p-4 text-center">
-            <div className="text-2xl md:text-3xl font-bold text-green-600">{batimentsAvecCoords.length}</div>
+            <div className="text-2xl md:text-3xl font-bold text-green-600">{batiments.filter(b => b.latitude && b.longitude).length}</div>
             <div className="text-xs md:text-sm text-gray-500">Géolocalisés</div>
           </CardContent>
         </Card>
