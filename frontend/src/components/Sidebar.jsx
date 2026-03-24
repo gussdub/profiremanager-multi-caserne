@@ -549,15 +549,21 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
       {showNotifications && (
         <div 
           className="notifications-overlay"
-          onClick={() => setShowNotifications(false)}
-          onTouchStart={() => setShowNotifications(false)}
+          onClick={() => {
+            setShowNotifications(false);
+            setIsMobileMenuOpen(false);
+          }}
+          onTouchStart={() => {
+            setShowNotifications(false);
+            setIsMobileMenuOpen(false);
+          }}
           style={{
             position: 'fixed',
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            zIndex: 998,
+            zIndex: 10000,
             WebkitTapHighlightColor: 'transparent'
           }}
         />
@@ -565,7 +571,7 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
 
       {showNotifications && (
         <div className="notifications-dropdown" style={{ 
-          zIndex: 999,
+          zIndex: 10001,
           position: 'fixed',
           bottom: '80px',
           left: '20px',
