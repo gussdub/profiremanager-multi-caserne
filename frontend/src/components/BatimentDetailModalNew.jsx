@@ -125,6 +125,44 @@ const BatimentForm = ({
   // Verrouiller le scroll du body quand le modal est ouvert
   useModalScrollLock(true);
   
+  // Responsive: détecter mobile/tablette
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
+  const modalOverlayStyle = {
+    position: 'fixed',
+    top: 0,
+    left: isMobile ? 0 : '280px',
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 100000,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: isMobile ? 'flex-end' : 'center',
+    padding: isMobile ? 0 : undefined
+  };
+  
+  const modalContentStyle = {
+    width: isMobile ? '100%' : '90%',
+    maxWidth: isMobile ? '100%' : '1200px',
+    maxHeight: isMobile ? '95vh' : '90vh',
+    backgroundColor: 'white',
+    borderRadius: isMobile ? '16px 16px 0 0' : '12px',
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column'
+  };
+  
+  const modalContentSmallStyle = {
+    ...modalContentStyle,
+    maxWidth: isMobile ? '100%' : '1000px'
+  };
+  
   const isCreating = !batiment;
   const [isEditing, setIsEditing] = useState(isCreating);
   const [viewMode, setViewMode] = useState('form'); // 'form', 'history', 'inspection-detail', 'plan-intervention', 'rapport'
@@ -871,7 +909,7 @@ const BatimentForm = ({
           style={{
             position: 'fixed',
             top: 0,
-            left: '280px',
+            left: isMobile ? 0 : '280px',
             right: 0,
             bottom: 0,
             backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -884,11 +922,11 @@ const BatimentForm = ({
         >
           <div 
             style={{
-              width: '90%',
-              maxWidth: '1200px',
-              height: '90vh',
+              width: isMobile ? '100%' : '90%',
+              maxWidth: isMobile ? '100%' : '1200px',
+              height: isMobile ? '95vh' : '90vh',
               backgroundColor: 'white',
-              borderRadius: '12px',
+              borderRadius: isMobile ? '16px 16px 0 0' : '12px',
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column'
@@ -914,7 +952,7 @@ const BatimentForm = ({
           style={{
             position: 'fixed',
             top: 0,
-            left: '280px',
+            left: isMobile ? 0 : '280px',
             right: 0,
             bottom: 0,
             backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -927,11 +965,11 @@ const BatimentForm = ({
         >
           <div 
             style={{
-              width: '90%',
-              maxWidth: '1200px',
-              height: '90vh',
+              width: isMobile ? '100%' : '90%',
+              maxWidth: isMobile ? '100%' : '1200px',
+              height: isMobile ? '95vh' : '90vh',
               backgroundColor: 'white',
-              borderRadius: '12px',
+              borderRadius: isMobile ? '16px 16px 0 0' : '12px',
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column'
@@ -957,34 +995,8 @@ const BatimentForm = ({
   if (viewMode === 'full-history') {
     return (
       <>
-        <div 
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: '280px',
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            zIndex: 100000,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center'
-          }}
-          onClick={onClose}
-        >
-          <div 
-            style={{
-              width: '90%',
-              maxWidth: '1000px',
-              maxHeight: '90vh',
-              backgroundColor: 'white',
-              borderRadius: '12px',
-              overflow: 'hidden',
-              display: 'flex',
-              flexDirection: 'column'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div style={modalOverlayStyle} onClick={onClose}>
+          <div style={modalContentSmallStyle} onClick={(e) => e.stopPropagation()}>
             <HistoriqueModifications
               batiment={batiment}
               tenantSlug={tenantSlug}
@@ -1004,7 +1016,7 @@ const BatimentForm = ({
           style={{
             position: 'fixed',
             top: 0,
-            left: '280px',
+            left: isMobile ? 0 : '280px',
             right: 0,
             bottom: 0,
             backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -1017,11 +1029,11 @@ const BatimentForm = ({
         >
           <div 
             style={{
-              width: '90%',
-              maxWidth: '1000px',
-              maxHeight: '90vh',
+              width: isMobile ? '100%' : '90%',
+              maxWidth: isMobile ? '100%' : '1000px',
+              maxHeight: isMobile ? '95vh' : '90vh',
               backgroundColor: 'white',
-              borderRadius: '12px',
+              borderRadius: isMobile ? '16px 16px 0 0' : '12px',
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column'
@@ -1050,7 +1062,7 @@ const BatimentForm = ({
           style={{
             position: 'fixed',
             top: 0,
-            left: '280px',
+            left: isMobile ? 0 : '280px',
             right: 0,
             bottom: 0,
             backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -1063,11 +1075,11 @@ const BatimentForm = ({
         >
           <div 
             style={{
-              width: '90%',
-              maxWidth: '1000px',
-              maxHeight: '90vh',
+              width: isMobile ? '100%' : '90%',
+              maxWidth: isMobile ? '100%' : '1000px',
+              maxHeight: isMobile ? '95vh' : '90vh',
               backgroundColor: 'white',
-              borderRadius: '12px',
+              borderRadius: isMobile ? '16px 16px 0 0' : '12px',
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column'
@@ -1115,25 +1127,25 @@ const BatimentForm = ({
         style={{
           position: 'fixed',
           top: 0,
-          left: '280px', // Décalage pour éviter la sidebar
+          left: isMobile ? 0 : '280px',
           right: 0,
           bottom: 0,
           backgroundColor: 'rgba(0, 0, 0, 0.6)',
           display: 'flex',
-          alignItems: 'center',
+          alignItems: isMobile ? 'flex-end' : 'center',
           justifyContent: 'center',
           zIndex: 100000,
-          padding: '2rem'
+          padding: isMobile ? 0 : '2rem'
         }}
         onClick={handleCloseWithSave}
       >
       <div 
         style={{
           backgroundColor: 'white',
-          borderRadius: '16px',
+          borderRadius: isMobile ? '16px 16px 0 0' : '16px',
           width: '100%',
-          maxWidth: '1200px',
-          maxHeight: '90vh',
+          maxWidth: isMobile ? '100%' : '1200px',
+          maxHeight: isMobile ? '95vh' : '90vh',
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
@@ -1144,16 +1156,17 @@ const BatimentForm = ({
         {/* Header avec Street View */}
         <div style={{
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          padding: '2rem',
+          padding: isMobile ? '1rem' : '2rem',
           color: 'white',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'flex-start',
-          gap: '2rem'
+          gap: isMobile ? '0.5rem' : '2rem',
+          flexDirection: isMobile ? 'column' : 'row'
         }}>
           <div style={{ flex: 1 }}>
             <h2 style={{ 
-              fontSize: '1.875rem', 
+              fontSize: isMobile ? '1.25rem' : '1.875rem', 
               fontWeight: '700', 
               marginBottom: '0.5rem',
               display: 'flex',
@@ -1343,11 +1356,13 @@ const BatimentForm = ({
         {/* Actions Bar */}
         {!isCreating && (
           <div style={{
-            padding: '1rem 2rem',
+            padding: isMobile ? '0.75rem' : '1rem 2rem',
             borderBottom: '1px solid #e5e7eb',
             display: 'flex',
-            gap: '0.75rem',
-            flexWrap: 'wrap',
+            gap: isMobile ? '0.5rem' : '0.75rem',
+            flexWrap: 'nowrap',
+            overflowX: 'auto',
+            WebkitOverflowScrolling: 'touch',
             alignItems: 'center',
             backgroundColor: '#f9fafb'
           }}>

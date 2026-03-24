@@ -61,6 +61,13 @@ const HistoriqueModifications = ({ batiment, tenantSlug, onBack }) => {
     non_conformite: true,
     intervention: true
   });
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     const fetchHistorique = async () => {
@@ -251,19 +258,19 @@ const HistoriqueModifications = ({ batiment, tenantSlug, onBack }) => {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '4px',
-                  padding: '4px 10px',
+                  padding: isMobile ? '3px 8px' : '4px 10px',
                   borderRadius: '16px',
                   border: `1.5px solid ${active ? cfg.color : '#D1D5DB'}`,
                   background: active ? cfg.bg : '#F9FAFB',
                   color: active ? cfg.color : '#9CA3AF',
-                  fontSize: '12px',
+                  fontSize: isMobile ? '11px' : '12px',
                   fontWeight: '600',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',
                   opacity: active ? 1 : 0.6
                 }}
               >
-                {cfg.label}
+                {isMobile ? cfg.label.substring(0, 6) : cfg.label}
                 <span style={{
                   background: active ? cfg.color : '#D1D5DB',
                   color: 'white',

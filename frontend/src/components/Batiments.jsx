@@ -62,6 +62,13 @@ const Batiments = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState('view');
   const [exporting, setExporting] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   
   // Permissions Bâtiments
   const canView = hasModuleAction('batiments', 'voir');
@@ -276,33 +283,33 @@ const Batiments = () => {
       </div>
 
       {/* Statistiques simples */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-4 md:mb-6">
         <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-3xl font-bold text-blue-600">{batiments.length}</div>
-            <div className="text-sm text-gray-500">Total</div>
+          <CardContent className="p-3 md:p-4 text-center">
+            <div className="text-2xl md:text-3xl font-bold text-blue-600">{batiments.length}</div>
+            <div className="text-xs md:text-sm text-gray-500">Total</div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-3xl font-bold text-green-600">{batimentsAvecCoords.length}</div>
-            <div className="text-sm text-gray-500">Géolocalisés</div>
+          <CardContent className="p-3 md:p-4 text-center">
+            <div className="text-2xl md:text-3xl font-bold text-green-600">{batimentsAvecCoords.length}</div>
+            <div className="text-xs md:text-sm text-gray-500">Géolocalisés</div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-3xl font-bold text-purple-600">
+          <CardContent className="p-3 md:p-4 text-center">
+            <div className="text-2xl md:text-3xl font-bold text-purple-600">
               {batiments.filter(b => b.photo_url).length}
             </div>
-            <div className="text-sm text-gray-500">Avec photo</div>
+            <div className="text-xs md:text-sm text-gray-500">Avec photo</div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-3xl font-bold text-orange-600">
+          <CardContent className="p-3 md:p-4 text-center">
+            <div className="text-2xl md:text-3xl font-bold text-orange-600">
               {new Set(batiments.map(b => b.ville).filter(Boolean)).size}
             </div>
-            <div className="text-sm text-gray-500">Villes</div>
+            <div className="text-xs md:text-sm text-gray-500">Villes</div>
           </CardContent>
         </Card>
       </div>
@@ -334,6 +341,51 @@ const Batiments = () => {
         /* Vue Liste */
         <Card>
           <div className="overflow-x-auto">
+            {isMobile ? (
+              /* Vue Cards Mobile */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px' }}>
+                {filteredBatiments.length === 0 ? (
+                  <div className="px-4 py-8 text-center text-gray-500">
+                    {searchQuery ? 'Aucun bâtiment ne correspond à la recherche' : 'Aucun bâtiment enregistré'}
+                  </div>
+                ) : filteredBatiments.map(batiment => (
+                  <div
+                    key={batiment.id}
+                    data-testid={`batiment-card-${batiment.id}`}
+                    onClick={() => openModal(batiment, 'view')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '12px',
+                      borderRadius: '10px',
+                      border: '1px solid #E5E7EB',
+                      background: 'white',
+                      cursor: 'pointer',
+                      transition: 'background 0.15s'
+                    }}
+                  >
+                    {batiment.photo_url ? (
+                      <img src={batiment.photo_url} alt="" style={{ width: '56px', height: '42px', objectFit: 'cover', borderRadius: '6px', flexShrink: 0 }} />
+                    ) : (
+                      <div style={{ width: '56px', height: '42px', background: '#F3F4F6', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Building2 size={20} className="text-gray-400" />
+                      </div>
+                    )}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: '600', fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {batiment.nom_etablissement || batiment.adresse_civique}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {batiment.adresse_civique}{batiment.ville ? `, ${batiment.ville}` : ''}
+                      </div>
+                    </div>
+                    <Eye size={18} className="text-gray-400" style={{ flexShrink: 0 }} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+            /* Vue Table Desktop */
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 border-b">
@@ -427,6 +479,7 @@ const Batiments = () => {
                 )}
               </tbody>
             </table>
+            )}
           </div>
         </Card>
       ) : (
