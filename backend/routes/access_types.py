@@ -861,7 +861,16 @@ async def list_access_types(
         {"_id": 0}
     ).to_list(MAX_ACCESS_TYPES)
     
-    # Construire la réponse avec les rôles de base
+    # Récupérer les overrides de rôles système
+    role_overrides = {}
+    overrides_cursor = db.role_overrides.find(
+        {"tenant_id": tenant.id},
+        {"_id": 0}
+    )
+    async for override in overrides_cursor:
+        role_overrides[override["role"]] = override.get("permissions")
+    
+    # Construire la réponse avec les rôles de base (+ overrides éventuels)
     base_roles = [
         {
             "id": "admin",
@@ -878,8 +887,9 @@ async def list_access_types(
             "description": "Gestion du personnel, planning et opérations quotidiennes",
             "role_base": None,
             "is_system": True,
-            "is_editable": True,  # On peut voir/modifier les permissions détaillées
-            "permissions": DEFAULT_PERMISSIONS["superviseur"]
+            "is_editable": True,
+            "has_overrides": "superviseur" in role_overrides,
+            "permissions": role_overrides.get("superviseur", DEFAULT_PERMISSIONS["superviseur"])
         },
         {
             "id": "employe",
@@ -888,7 +898,8 @@ async def list_access_types(
             "role_base": None,
             "is_system": True,
             "is_editable": True,
-            "permissions": DEFAULT_PERMISSIONS["employe"]
+            "has_overrides": "employe" in role_overrides,
+            "permissions": role_overrides.get("employe", DEFAULT_PERMISSIONS["employe"])
         }
     ]
     
@@ -1008,7 +1019,7 @@ async def update_access_type(
     data: AccessTypeUpdate,
     current_user: User = Depends(get_current_user)
 ):
-    """Met à jour un type d'accès personnalisé"""
+    """Met à jour un type d'accès personnalisé ou les permissions d'un rôle système éditable"""
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
@@ -1016,13 +1027,40 @@ async def update_access_type(
     # RBAC: Vérifier permission de modification sur le module parametres
     await require_parametres_permission(tenant.id, current_user, "modifier")
     
-    # Les rôles de base ne peuvent pas être modifiés directement
-    if access_type_id in ["admin", "superviseur", "employe"]:
+    # L'admin ne peut jamais être modifié
+    if access_type_id == "admin":
         raise HTTPException(
             status_code=400, 
-            detail="Les rôles de base ne peuvent pas être modifiés. Créez un type personnalisé."
+            detail="Le rôle administrateur ne peut pas être modifié."
         )
     
+    # Rôles système éditables (superviseur, employe) : stocker les overrides en DB
+    if access_type_id in ["superviseur", "employe"]:
+        if data.permissions is None:
+            raise HTTPException(status_code=400, detail="Les permissions sont requises")
+        
+        permissions_to_store = data.permissions
+        # Si le format inclut "modules", le garder tel quel
+        # Sinon, on fait confiance au frontend qui envoie le bon format
+        
+        # Upsert dans la collection role_overrides
+        await db.role_overrides.update_one(
+            {"tenant_id": tenant.id, "role": access_type_id},
+            {"$set": {
+                "tenant_id": tenant.id,
+                "role": access_type_id,
+                "permissions": permissions_to_store,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_by": current_user.email
+            }},
+            upsert=True
+        )
+        
+        logger.info(f"Permissions du rôle système '{access_type_id}' mises à jour par {current_user.email} pour tenant {tenant.id}")
+        
+        return {"success": True, "message": f"Permissions du rôle {access_type_id} mises à jour"}
+    
+    # Types personnalisés : logique existante
     access_type = await db.access_types.find_one({
         "id": access_type_id,
         "tenant_id": tenant.id
@@ -1067,6 +1105,31 @@ async def update_access_type(
     logger.info(f"Type d'accès mis à jour: {access_type_id} par {current_user.email}")
     
     return {"success": True, "access_type": updated}
+
+
+
+@router.delete("/{tenant_slug}/access-types/role-override/{role}")
+async def reset_role_override(
+    tenant_slug: str,
+    role: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Remet les permissions d'un rôle système aux valeurs par défaut"""
+    if role not in ["superviseur", "employe"]:
+        raise HTTPException(status_code=400, detail="Seuls les rôles superviseur et employe peuvent être réinitialisés")
+    
+    tenant = await get_tenant_from_slug(tenant_slug)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    await require_parametres_permission(tenant.id, current_user, "modifier")
+    
+    result = await db.role_overrides.delete_one({"tenant_id": tenant.id, "role": role})
+    
+    logger.info(f"Override du rôle '{role}' supprimé par {current_user.email}")
+    
+    return {"success": True, "message": f"Permissions du rôle {role} réinitialisées aux valeurs par défaut"}
+
 
 
 @router.delete("/{tenant_slug}/access-types/{access_type_id}")

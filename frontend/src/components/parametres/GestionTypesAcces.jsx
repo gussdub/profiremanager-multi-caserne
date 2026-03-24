@@ -4,7 +4,7 @@ import { Input } from '../ui/input';
 import { 
   Plus, Edit, Trash2, Users, Shield, ChevronDown, ChevronRight, 
   Check, X, Eye, PenLine, FilePlus, FileX, Download, FileSignature,
-  CheckCircle, ThumbsUp, ThumbsDown
+  CheckCircle, ThumbsUp, ThumbsDown, ArrowLeft
 } from 'lucide-react';
 import { apiGet, apiPost, apiPut, apiDelete } from '../../utils/api';
 
@@ -139,7 +139,9 @@ const GestionTypesAcces = ({ tenantSlug, toast }) => {
 
   // Sauvegarder les modifications
   const handleSave = async () => {
-    if (!selectedType || selectedType.is_system) return;
+    if (!selectedType) return;
+    // Bloquer uniquement l'admin
+    if (selectedType.id === 'admin') return;
 
     try {
       await apiPut(tenantSlug, `/access-types/${selectedType.id}`, {
@@ -147,7 +149,10 @@ const GestionTypesAcces = ({ tenantSlug, toast }) => {
         description: formData.description,
         permissions: formData.permissions
       });
-      toast({ title: "Succès", description: "Type d'accès mis à jour" });
+      toast({ title: "Succès", description: selectedType.is_system 
+        ? `Permissions du rôle ${selectedType.nom} mises à jour` 
+        : "Type d'accès mis à jour" 
+      });
       setIsEditing(false);
       loadData();
     } catch (error) {
@@ -156,6 +161,19 @@ const GestionTypesAcces = ({ tenantSlug, toast }) => {
         description: error.response?.data?.detail || "Impossible de sauvegarder",
         variant: "destructive"
       });
+    }
+  };
+
+  // Réinitialiser un rôle système aux valeurs par défaut
+  const handleResetOverride = async (role) => {
+    if (!window.confirm(`Réinitialiser les permissions du rôle "${role}" aux valeurs par défaut ?`)) return;
+    try {
+      await apiDelete(tenantSlug, `/access-types/role-override/${role}`);
+      toast({ title: "Succès", description: "Permissions réinitialisées" });
+      setIsEditing(false);
+      loadData();
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible de réinitialiser", variant: "destructive" });
     }
   };
 
@@ -338,16 +356,27 @@ const GestionTypesAcces = ({ tenantSlug, toast }) => {
   }
 
   return (
-    <div style={{ display: 'flex', gap: '24px', minHeight: '600px' }}>
+    <div>
+      <style>{`
+        .acces-layout { display: flex; gap: 24px; min-height: 600px; }
+        .acces-sidebar { width: 320px; min-width: 280px; flex-shrink: 0; background: white; border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; }
+        .acces-detail { flex: 1; background: white; border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; min-width: 0; }
+        .acces-detail-header { padding: 16px 20px; border-bottom: 1px solid #e5e7eb; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+        .acces-module-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+        @media (max-width: 900px) {
+          .acces-layout { flex-direction: column; }
+          .acces-sidebar { width: 100%; min-width: unset; }
+          .acces-detail { width: 100%; }
+          .acces-detail-header { flex-direction: column; align-items: flex-start; }
+        }
+        @media (max-width: 640px) {
+          .acces-module-actions { flex-direction: column; }
+          .acces-module-actions > label { width: 100%; }
+        }
+      `}</style>
+      <div className="acces-layout">
       {/* Liste des types d'accès */}
-      <div style={{ 
-        width: '320px', 
-        flexShrink: 0,
-        background: 'white',
-        borderRadius: '12px',
-        border: '1px solid #e5e7eb',
-        overflow: 'hidden'
-      }}>
+      <div className="acces-sidebar">
         <div style={{ 
           padding: '16px', 
           borderBottom: '1px solid #e5e7eb',
@@ -468,24 +497,11 @@ const GestionTypesAcces = ({ tenantSlug, toast }) => {
       </div>
 
       {/* Panneau de détail/édition */}
-      <div style={{ 
-        flex: 1,
-        background: 'white',
-        borderRadius: '12px',
-        border: '1px solid #e5e7eb',
-        overflow: 'hidden'
-      }}>
+      <div className="acces-detail">
         {selectedType ? (
           <>
             {/* Header */}
-            <div style={{ 
-              padding: '16px 20px', 
-              borderBottom: '1px solid #e5e7eb',
-              background: '#f8fafc',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
+            <div className="acces-detail-header">
               <div>
                 <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '600' }}>
                   {selectedType.is_system ? (
@@ -528,7 +544,32 @@ const GestionTypesAcces = ({ tenantSlug, toast }) => {
                 </div>
               )}
               
-              {selectedType.is_system && selectedType.id !== 'admin' && (
+              {selectedType.is_system && selectedType.is_editable && (
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  {isEditing ? (
+                    <>
+                      <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
+                        <X size={14} /> Annuler
+                      </Button>
+                      {selectedType.has_overrides && (
+                        <Button variant="outline" size="sm" onClick={() => handleResetOverride(selectedType.id)}
+                          style={{ color: '#f59e0b', borderColor: '#f59e0b' }}>
+                          Réinitialiser
+                        </Button>
+                      )}
+                      <Button size="sm" onClick={handleSave}>
+                        <Check size={14} /> Enregistrer
+                      </Button>
+                    </>
+                  ) : (
+                    <Button size="sm" onClick={() => setIsEditing(true)}>
+                      <Edit size={14} /> Modifier les permissions
+                    </Button>
+                  )}
+                </div>
+              )}
+              
+              {selectedType.is_system && !selectedType.is_editable && (
                 <div style={{ 
                   padding: '6px 12px', 
                   background: '#fef3c7', 
@@ -580,7 +621,7 @@ const GestionTypesAcces = ({ tenantSlug, toast }) => {
                       const hasAccess = modulePerms?.access || false;
                       const hasTabs = Object.keys(moduleConfig.tabs || {}).length > 0;
                       const isExpanded = expandedModules[moduleId];
-                      const canEdit = isEditing && !selectedType.is_system;
+                      const canEdit = isEditing && (selectedType.is_editable || !selectedType.is_system);
 
                       return (
                         <div 
@@ -784,6 +825,8 @@ const GestionTypesAcces = ({ tenantSlug, toast }) => {
           </div>
         )}
       </div>
+
+      </div>{/* fin acces-layout */}
 
       {/* Modal de création */}
       {showCreateModal && (
