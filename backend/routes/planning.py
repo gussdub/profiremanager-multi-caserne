@@ -29,8 +29,8 @@ from io import BytesIO
 import uuid
 import logging
 
-# Import de la fonction de calcul d'équipe de garde
-from routes.equipes_garde import get_equipe_garde_du_jour_sync
+# Import des fonctions de calcul d'équipe de garde
+from routes.equipes_garde import get_equipe_garde_du_jour_sync, get_equipe_garde_rotation_standard, get_equipe_from_horaire_personnalise
 import json
 import asyncio
 import time
@@ -3358,7 +3358,7 @@ async def process_attribution_auto_async(
                     "$lte": semaine_fin
                 },
                 "$or": [
-                    {"assignation_type": {"$in": ["auto", "automatique"]}},
+                    {"assignation_type": {"$in": ["auto", "automatique", "rotation_temps_plein"]}},
                     {"assignation_type": {"$exists": False}},  # Assignations sans type (anciennes)
                     {"assignation_type": None}  # Assignations avec type null
                 ]
@@ -3658,6 +3658,40 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
             privilegier_equipe_garde_tp = config_temps_partiel.get("privilegier_equipe_garde", False)
         
         logging.info(f"📊 [EQUIPE GARDE] Actif: {equipes_garde_actif}, Prioriser équipe de garde: {privilegier_equipe_garde_tp}")
+        
+        # === CHARGEMENT ROTATION TEMPS PLEIN (N1.1) ===
+        rotation_tp_active = False
+        rotation_tp_date_activation = None
+        horaire_tp_template = None
+        config_temps_plein = {}
+        rotation_tp_users_by_equipe = {}  # {equipe_num: [user_ids]}
+        
+        if equipes_garde_actif and params_equipes_garde:
+            config_temps_plein = params_equipes_garde.get("temps_plein", {})
+            if config_temps_plein.get("rotation_active", False):
+                rotation_tp_date_activation = config_temps_plein.get("date_activation")
+                if rotation_tp_date_activation:
+                    rotation_tp_active = True
+                    type_rotation_tp = config_temps_plein.get("type_rotation", "aucun")
+                    
+                    # Charger le template horaire si c'est un UUID (pas un preset standard)
+                    if type_rotation_tp not in ["aucun", "montreal", "quebec", "longueuil", "personnalisee"]:
+                        horaire_tp_template = await db.horaires_personnalises.find_one({
+                            "tenant_id": tenant.id,
+                            "id": type_rotation_tp
+                        })
+                        if horaire_tp_template:
+                            logging.info(f"🔄 [ROTATION TP] Template chargé: {horaire_tp_template.get('nom')}")
+                    
+                    # Pré-indexer les utilisateurs temps plein par équipe de garde
+                    for user in users:
+                        if user.get("type_emploi") == "temps_plein" and user.get("equipe_garde"):
+                            eq_num = user.get("equipe_garde")
+                            if eq_num not in rotation_tp_users_by_equipe:
+                                rotation_tp_users_by_equipe[eq_num] = []
+                            rotation_tp_users_by_equipe[eq_num].append(user["id"])
+        
+        logging.info(f"🔄 [ROTATION TP] Active: {rotation_tp_active}, Date activation: {rotation_tp_date_activation}, Équipes: {list(rotation_tp_users_by_equipe.keys())}, Membres: {sum(len(v) for v in rotation_tp_users_by_equipe.values())}")
         
         # CORRECTION CRITIQUE: Charger les paramètres des niveaux d'attribution
         niveaux_actifs = {
@@ -4189,6 +4223,96 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
             
             return sorted(candidats, key=sort_key)
         
+        # ==================== HELPER: ROTATION TEMPS PLEIN (N1.1) ====================
+        def get_rotation_tp_membres_pour_garde(date_str, heure_debut_garde, heure_fin_garde):
+            """
+            Retourne la liste des user_ids temps plein de rotation qui doivent
+            travailler cette garde ce jour-là, basé sur le template de rotation.
+            """
+            if not rotation_tp_active:
+                return []
+            
+            type_rotation_tp = config_temps_plein.get("type_rotation", "aucun")
+            
+            # Rotations standards (montreal, quebec, longueuil): une équipe par jour, couvre tout le jour
+            if type_rotation_tp in ["montreal", "quebec", "longueuil"]:
+                equipe_num = get_equipe_garde_rotation_standard(type_rotation_tp, "", date_str)
+                return list(rotation_tp_users_by_equipe.get(equipe_num, []))
+            
+            # Rotation personnalisée simple (non basée sur template)
+            elif type_rotation_tp == "personnalisee":
+                date_reference = config_temps_plein.get("date_reference")
+                if not date_reference:
+                    return []
+                equipe_num = get_equipe_garde_du_jour_sync(
+                    type_rotation=type_rotation_tp,
+                    date_reference=date_reference,
+                    date_cible=date_str,
+                    nombre_equipes=config_temps_plein.get("nombre_equipes", 4),
+                    pattern_mode=config_temps_plein.get("pattern_mode", "hebdomadaire"),
+                    pattern_personnalise=config_temps_plein.get("pattern_personnalise", []),
+                    duree_cycle=config_temps_plein.get("duree_cycle", 28),
+                    jour_rotation=config_temps_plein.get("jour_rotation") or "monday",
+                    heure_rotation=config_temps_plein.get("heure_rotation") or "08:00",
+                    heure_actuelle="12:00"
+                )
+                return list(rotation_tp_users_by_equipe.get(equipe_num, []))
+            
+            # Template personnalisé (UUID) avec segments potentiels
+            elif horaire_tp_template:
+                date_ref_str = horaire_tp_template.get("date_reference")
+                if not date_ref_str:
+                    return []
+                
+                date_ref = datetime.strptime(date_ref_str, "%Y-%m-%d").date()
+                date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
+                duree_cycle = horaire_tp_template.get("duree_cycle", 28)
+                
+                # Calculer le jour dans le cycle (1-based)
+                jours_depuis_ref = (date_obj - date_ref).days
+                if jours_depuis_ref < 0:
+                    jour_cycle = duree_cycle - ((-jours_depuis_ref - 1) % duree_cycle)
+                else:
+                    jour_cycle = (jours_depuis_ref % duree_cycle) + 1
+                
+                # Heures de chaque segment depuis le template
+                heures_quart = horaire_tp_template.get("heures_quart", {})
+                segment_heures = {
+                    "24h": (heures_quart.get("h24_debut", "07:00"), heures_quart.get("h24_fin", "07:00")),
+                    "jour": (heures_quart.get("jour_debut", "07:00"), heures_quart.get("jour_fin", "19:00")),
+                    "nuit": (heures_quart.get("nuit_debut", "19:00"), heures_quart.get("nuit_fin", "07:00")),
+                    "am": (heures_quart.get("am_debut", "06:00"), heures_quart.get("am_fin", "12:00")),
+                    "pm": (heures_quart.get("pm_debut", "12:00"), heures_quart.get("pm_fin", "18:00")),
+                }
+                
+                # Pour chaque équipe, vérifier si elle a un segment ce jour qui chevauche la garde
+                membres = []
+                equipes_deja_ajoutees = set()
+                for equipe in horaire_tp_template.get("equipes", []):
+                    eq_num = equipe.get("numero")
+                    if eq_num in equipes_deja_ajoutees:
+                        continue
+                    
+                    for jt in equipe.get("jours_travail", []):
+                        if isinstance(jt, int):
+                            # Format simple: jour entier → chevauche toute garde
+                            if jt == jour_cycle:
+                                membres.extend(rotation_tp_users_by_equipe.get(eq_num, []))
+                                equipes_deja_ajoutees.add(eq_num)
+                                break
+                        elif isinstance(jt, dict):
+                            if jt.get("jour") == jour_cycle:
+                                seg = jt.get("segment", "24h")
+                                seg_debut, seg_fin = segment_heures.get(seg, ("00:00", "23:59"))
+                                if plages_se_chevauchent(seg_debut, seg_fin, heure_debut_garde, heure_fin_garde):
+                                    membres.extend(rotation_tp_users_by_equipe.get(eq_num, []))
+                                    equipes_deja_ajoutees.add(eq_num)
+                                    break  # Cette équipe est déjà incluse
+                
+                return list(set(membres))  # Dédupliquer
+            
+            return []
+        
         # ==================== INITIALISATION ====================
         nouvelles_assignations = []
         
@@ -4301,6 +4425,91 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         u = users_map.get(uid)
                         if u:
                             logging.info(f"   - {u.get('prenom')} {u.get('nom')} bloqué")
+                
+                # ==================== N1.1: ROTATION TEMPS PLEIN ====================
+                # Insérer automatiquement les membres de l'équipe de garde temps plein
+                # AVANT l'attribution automatique N2-N5. Si un membre est absent,
+                # le trou sera comblé par N2-N5.
+                rotation_tp_assignes = 0
+                if rotation_tp_active and not est_externe and date_str >= rotation_tp_date_activation:
+                    rotation_membres = get_rotation_tp_membres_pour_garde(date_str, heure_debut, heure_fin)
+                    
+                    for rm_user_id in rotation_membres:
+                        if rotation_tp_assignes >= places_restantes:
+                            break
+                        
+                        # Déjà assigné manuellement (N1) à cette garde ?
+                        if rm_user_id in users_assignes_cette_garde:
+                            logging.info(f"🔄 [N1.1] {users_map.get(rm_user_id, {}).get('prenom', '')} déjà assigné manuellement à {type_garde_nom}")
+                            continue
+                        
+                        # Déjà assigné à une garde chevauchante ?
+                        if rm_user_id in users_assignes_ce_jour:
+                            continue
+                        
+                        # Indisponible (absent, vacances) ? → laisser un trou pour N2
+                        if a_indisponibilite_bloquante(rm_user_id, date_str, heure_debut, heure_fin):
+                            user_info = users_map.get(rm_user_id, {})
+                            logging.info(f"🔄 [N1.1] {user_info.get('prenom', '')} {user_info.get('nom', '')} absent le {date_str} → trou pour N2")
+                            continue
+                        
+                        rm_user = users_map.get(rm_user_id)
+                        if not rm_user:
+                            continue
+                        
+                        # Créer l'assignation de rotation temps plein
+                        assignation = {
+                            "id": str(uuid.uuid4()),
+                            "tenant_id": tenant.id,
+                            "user_id": rm_user_id,
+                            "type_garde_id": type_garde_id,
+                            "date": date_str,
+                            "statut": "assigne",
+                            "auto_attribue": True,
+                            "assignation_type": "rotation_temps_plein",
+                            "publication_status": "brouillon",
+                            "niveau_attribution": 1,
+                            "created_at": datetime.now(timezone.utc).isoformat(),
+                            "justification": {
+                                "assigned_user": {
+                                    "nom_complet": f"{rm_user.get('prenom', '')} {rm_user.get('nom', '')}",
+                                    "grade": rm_user.get("grade", ""),
+                                    "type_emploi": "temps_plein",
+                                    "details": {
+                                        "equipe_garde": rm_user.get("equipe_garde"),
+                                        "rotation_template": horaire_tp_template.get("nom", "") if horaire_tp_template else config_temps_plein.get("type_rotation", "")
+                                    }
+                                },
+                                "type_garde_info": {
+                                    "nom": type_garde_nom,
+                                    "heure_debut": heure_debut,
+                                    "heure_fin": heure_fin,
+                                    "duree_heures": duree_garde,
+                                    "est_externe": est_externe
+                                },
+                                "niveau": 1.1,
+                                "niveau_description": "Rotation automatique temps plein",
+                                "raison": f"Rotation temps plein - Équipe {rm_user.get('equipe_garde')} de garde"
+                            }
+                        }
+                        
+                        await db.assignations.insert_one(assignation)
+                        nouvelles_assignations.append(assignation)
+                        existing_assignations.append(assignation)
+                        users_assignes_ce_jour.add(rm_user_id)
+                        users_assignes_cette_garde.add(rm_user_id)
+                        
+                        # Mise à jour des heures mensuelles
+                        user_monthly_hours_internes[rm_user_id] = user_monthly_hours_internes.get(rm_user_id, 0) + duree_garde
+                        
+                        rotation_tp_assignes += 1
+                        logging.info(f"🔄 [N1.1 ROTATION] {rm_user.get('prenom', '')} {rm_user.get('nom', '')} → {type_garde_nom} le {date_str}")
+                    
+                    if rotation_tp_assignes > 0:
+                        places_restantes -= rotation_tp_assignes
+                        logging.info(f"🔄 [N1.1] {rotation_tp_assignes} assignation(s) rotation TP pour {type_garde_nom} le {date_str}. Reste: {places_restantes}")
+                        if places_restantes <= 0:
+                            continue  # Garde complète après rotation → type_garde suivant
                 
                 # Récupérer les disponibilités pour ce jour/type_garde
                 # IMPORTANT: Inclure aussi les disponibilités générales (type_garde_id = None)

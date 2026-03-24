@@ -2828,11 +2828,13 @@ const Planning = () => {
                           <span className="assignment-method">
                             {selectedGardeDetails.assignations[index]?.assignation_type === 'auto' 
                               ? '🤖 Auto' 
-                              : selectedGardeDetails.assignations[index]?.est_remplacement 
-                                ? '🔄 Remplacement' 
-                                : '👤 Manuel'}
+                              : selectedGardeDetails.assignations[index]?.assignation_type === 'rotation_temps_plein'
+                                ? '🔄 Rotation'
+                                : selectedGardeDetails.assignations[index]?.est_remplacement 
+                                  ? '🔄 Remplacement' 
+                                  : '👤 Manuel'}
                           </span>
-                          {canEditPlanning && selectedGardeDetails.assignations[index]?.assignation_type === 'auto' && (
+                          {canEditPlanning && (selectedGardeDetails.assignations[index]?.assignation_type === 'auto' || selectedGardeDetails.assignations[index]?.assignation_type === 'rotation_temps_plein') && (
                             <Button 
                               variant="outline" 
                               size="sm" 
