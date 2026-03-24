@@ -46,6 +46,10 @@ from routes.equipements import router as equipements_router
 from routes.prevention import router as prevention_router
 from routes.prevention_plans import router as prevention_plans_router
 from routes.prevention_reports import router as prevention_reports_router
+from routes.prevention_nc import router as prevention_nc_router
+from routes.prevention_media import router as prevention_media_router
+from routes.prevention_inspections_visuelles import router as prevention_inspvis_router
+from routes.prevention_config import router as prevention_config_router
 from routes.planning import router as planning_router
 from routes.sftp import router as sftp_router
 from routes.websocket import router as websocket_router
@@ -6751,9 +6755,14 @@ app.include_router(personnel_router, prefix="/api")  # Module Personnel (GET/PUT
 app.include_router(actifs_router, prefix="/api")  # Module Actifs (véhicules, bornes, inventaires, rondes)
 app.include_router(formations_router, prefix="/api")  # Module Formations (CRUD + inscriptions)
 app.include_router(equipements_router, prefix="/api")  # Module Équipements (CRUD + maintenance + alertes)
-app.include_router(prevention_router, prefix="/api")  # Module Prévention (bâtiments, inspections, grilles, secteurs)
-app.include_router(prevention_plans_router, prefix="/api")  # Module Prévention - Plans d'intervention
-app.include_router(prevention_reports_router, prefix="/api")  # Module Prévention - Rapports, stats, exports
+# Prevention module routers - ORDER MATTERS: specific routes before generic {id} routes
+app.include_router(prevention_config_router, prefix="/api")  # Carte, préventionnistes, paramètres (includes /batiments/map)
+app.include_router(prevention_plans_router, prefix="/api")  # Plans d'intervention
+app.include_router(prevention_reports_router, prefix="/api")  # Rapports, stats, exports
+app.include_router(prevention_nc_router, prefix="/api")  # Non-conformités
+app.include_router(prevention_media_router, prefix="/api")  # Photos & icônes
+app.include_router(prevention_inspvis_router, prefix="/api")  # Inspections visuelles
+app.include_router(prevention_router, prefix="/api")  # Module Prévention core (bâtiments, inspections, grilles, secteurs)
 app.include_router(avis_non_conformite_router, prefix="/api")  # Module Avis Non-Conformité
 app.include_router(planning_router, prefix="/api")  # Module Planning (assignations, rapports heures)
 app.include_router(sftp_router, prefix="/api")  # Module SFTP (cartes d'appel 911, WebSocket)
