@@ -12,6 +12,7 @@ import DependancesBatiment from './DependancesBatiment';
 import GaleriePhotosBatiment from './GaleriePhotosBatiment';
 import HistoriqueModifications from './HistoriqueModifications';
 import { useModalScrollLock } from '../hooks/useModalScrollLock';
+import { Pencil, ClipboardCheck, Map, ScrollText, Clock, FileText, Trash2, Save, X } from 'lucide-react';
 
 // Style pour l'animation de rotation
 const spinKeyframes = `
@@ -1390,9 +1391,9 @@ const BatimentForm = ({
             ) : (
               <>
                 {[
-                  canEdit && { label: 'Modifier', action: () => setIsEditing(true), primary: true },
-                  onInspect && { label: 'Inspecter', action: () => onInspect(batiment) },
-                  onCreatePlan && { label: 'Plan', action: async () => {
+                  canEdit && { label: 'Modifier', icon: Pencil, action: () => setIsEditing(true), primary: true },
+                  onInspect && { label: 'Inspecter', icon: ClipboardCheck, action: () => onInspect(batiment) },
+                  onCreatePlan && { label: 'Plan', icon: Map, action: async () => {
                     try {
                       const token = getTenantToken();
                       const response = await axios.get(
@@ -1411,10 +1412,10 @@ const BatimentForm = ({
                       onCreatePlan(batiment);
                     }
                   }},
-                  onViewHistory && { label: 'Inspections', action: () => setViewMode('history') },
-                  { label: 'Historique', action: () => setViewMode('full-history'), testid: 'btn-full-history' },
-                  onGenerateReport && { label: 'Rapport', action: () => setViewMode('rapport') },
-                  canEdit && onDelete && { label: 'Supprimer', action: () => onDelete(batiment), danger: true },
+                  onViewHistory && { label: 'Inspections', icon: ScrollText, action: () => setViewMode('history') },
+                  { label: 'Historique', icon: Clock, action: () => setViewMode('full-history'), testid: 'btn-full-history' },
+                  onGenerateReport && { label: 'Rapport', icon: FileText, action: () => setViewMode('rapport') },
+                  canEdit && onDelete && { label: 'Supprimer', icon: Trash2, action: () => onDelete(batiment), danger: true },
                 ].filter(Boolean).map((item, idx) => (
                   <button
                     key={idx}
@@ -1430,6 +1431,8 @@ const BatimentForm = ({
                       fontWeight: 500,
                       cursor: 'pointer',
                       lineHeight: '1.5',
+                      display: 'inline-flex',
+                      alignItems: 'center',
                       boxShadow: item.primary ? '0 1px 3px rgba(99,102,241,0.3)' : '0 1px 2px rgba(0,0,0,0.04)',
                       transition: 'all 0.15s ease',
                     }}
@@ -1454,6 +1457,7 @@ const BatimentForm = ({
                       }
                     }}
                   >
+                    {item.icon && <item.icon size={14} style={{ marginRight: '0.35rem', flexShrink: 0 }} />}
                     {item.label}
                   </button>
                 ))}
