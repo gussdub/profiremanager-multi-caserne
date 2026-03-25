@@ -1008,33 +1008,6 @@ const BatimentForm = ({
     );
   }
 
-  // Gestion de la galerie photos
-  if (viewMode === 'photos') {
-    return (
-      <>
-        <div style={modalOverlayStyle} onClick={onClose}>
-          <div style={modalContentSmallStyle} onClick={(e) => e.stopPropagation()}>
-            <div style={{ padding: '1.5rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600 }}>
-                  {batiment?.adresse_civique || batiment?.adresse || 'Bâtiment'}
-                </h2>
-                <Button variant="outline" size="sm" onClick={() => setViewMode('form')}>
-                  Retour
-                </Button>
-              </div>
-              <GaleriePhotosBatiment
-                tenantSlug={tenantSlug}
-                batimentId={batiment?.id}
-                canEdit={canEdit}
-              />
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  }
-
   // Gestion de la navigation historique/inspection
   if (viewMode === 'history') {
     return (
@@ -1382,60 +1355,45 @@ const BatimentForm = ({
 
         {/* Actions Bar */}
         {!isCreating && (
-          <div className="batiment-actions-bar" style={{
-            padding: isMobile ? '0.5rem 0.75rem' : '0.75rem 1.5rem',
-            borderBottom: '1px solid #e5e7eb',
+          <div style={{
+            padding: '0 1rem',
+            borderBottom: '1px solid #e2e8f0',
             display: 'flex',
-            gap: isMobile ? '0.375rem' : '0.5rem',
-            flexWrap: 'nowrap',
-            overflowX: 'auto',
-            WebkitOverflowScrolling: 'touch',
             alignItems: 'center',
-            backgroundColor: '#f9fafb',
+            backgroundColor: '#f8fafc',
             position: 'sticky',
             top: 0,
             zIndex: 10,
-            scrollbarWidth: 'thin',
+            overflowX: 'auto',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+            minHeight: '42px',
           }}>
-            <style>{`.batiment-actions-bar > button, .batiment-actions-bar > div > button { flex-shrink: 0; white-space: nowrap; }`}</style>
             {isEditing ? (
-              <>
+              <div style={{ display: 'flex', gap: '0.5rem', padding: '0.5rem 0', alignItems: 'center' }}>
                 <Button 
+                  size="sm"
                   onClick={handleSave} 
                   disabled={saving}
-                  style={{
-                    backgroundColor: '#16a34a',
-                    color: 'white'
-                  }}
+                  style={{ backgroundColor: '#16a34a', color: 'white' }}
                 >
-                  {saving ? '💾 Sauvegarde...' : '💾 Sauvegarder'}
+                  {saving ? 'Sauvegarde...' : 'Sauvegarder'}
                 </Button>
                 <Button 
+                  size="sm"
                   variant="outline" 
-                  onClick={() => {
-                    setEditData(batiment || {});
-                    setIsEditing(false);
-                  }}
+                  onClick={() => { setEditData(batiment || {}); setIsEditing(false); }}
                   disabled={saving}
                 >
-                  ❌ Annuler
+                  Annuler
                 </Button>
-              </>
+              </div>
             ) : (
               <>
-                {canEdit && (
-                  <Button onClick={() => setIsEditing(true)}>
-                    ✏️ Modifier
-                  </Button>
-                )}
-                {onInspect && (
-                  <Button variant="outline" onClick={() => onInspect(batiment)}>
-                    📋 Inspecter
-                  </Button>
-                )}
-                {onCreatePlan && (
-                  <Button variant="outline" onClick={async () => {
-                    // Vérifier si un plan existe déjà pour ce bâtiment
+                {[
+                  canEdit && { label: 'Modifier', action: () => setIsEditing(true), primary: true },
+                  onInspect && { label: 'Inspecter', action: () => onInspect(batiment) },
+                  onCreatePlan && { label: 'Plan', action: async () => {
                     try {
                       const token = getTenantToken();
                       const response = await axios.get(
@@ -1443,48 +1401,50 @@ const BatimentForm = ({
                         { headers: { Authorization: `Bearer ${token}` } }
                       );
                       const planExistant = response.data.find(p => p.batiment_id === batiment.id);
-                      
                       if (planExistant) {
-                        // Ouvrir le viewer
                         setSelectedPlanId(planExistant.id);
                         setViewMode('plan-intervention');
                       } else {
-                        // Créer un nouveau plan
                         onCreatePlan(batiment);
                       }
                     } catch (error) {
                       console.error('Erreur vérification plan:', error);
                       onCreatePlan(batiment);
                     }
-                  }}>
-                    🗺️ Plan d'intervention
-                  </Button>
-                )}
-                {onViewHistory && (
-                  <Button variant="outline" onClick={() => setViewMode('history')}>
-                    📜 Historique inspections
-                  </Button>
-                )}
-                <Button variant="outline" onClick={() => setViewMode('full-history')} data-testid="btn-full-history">
-                  🕐 Historique complet
-                </Button>
-                <Button variant="outline" onClick={() => setViewMode('photos')} data-testid="btn-photos-gallery">
-                  📸 Photos
-                </Button>
-                {onGenerateReport && (
-                  <Button variant="outline" onClick={() => setViewMode('rapport')}>
-                    📄 Rapport
-                  </Button>
-                )}
-                {canEdit && onDelete && (
-                  <Button 
-                    variant="destructive" 
-                    onClick={() => onDelete(batiment)}
-                    style={{ flexShrink: 0 }}
+                  }},
+                  onViewHistory && { label: 'Inspections', action: () => setViewMode('history') },
+                  { label: 'Historique', action: () => setViewMode('full-history'), testid: 'btn-full-history' },
+                  onGenerateReport && { label: 'Rapport', action: () => setViewMode('rapport') },
+                  canEdit && onDelete && { label: 'Supprimer', action: () => onDelete(batiment), danger: true },
+                ].filter(Boolean).map((item, idx) => (
+                  <button
+                    key={idx}
+                    onClick={item.action}
+                    data-testid={item.testid}
+                    style={{
+                      padding: '0.55rem 0.9rem',
+                      border: 'none',
+                      borderRadius: '6px',
+                      margin: '4px 2px',
+                      background: item.primary ? '#1e293b' : item.danger ? '#fef2f2' : 'transparent',
+                      color: item.danger ? '#dc2626' : item.primary ? 'white' : '#334155',
+                      fontSize: '0.8rem',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                      transition: 'background 0.15s ease',
+                    }}
+                    onMouseOver={(e) => {
+                      if (!item.primary) e.currentTarget.style.background = item.danger ? '#fee2e2' : '#e2e8f0';
+                    }}
+                    onMouseOut={(e) => {
+                      if (!item.primary) e.currentTarget.style.background = item.danger ? '#fef2f2' : 'transparent';
+                    }}
                   >
-                    🗑️ Supprimer
-                  </Button>
-                )}
+                    {item.label}
+                  </button>
+                ))}
               </>
             )}
           </div>
