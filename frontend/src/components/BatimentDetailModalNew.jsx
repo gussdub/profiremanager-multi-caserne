@@ -1356,12 +1356,12 @@ const BatimentForm = ({
         {/* Actions Bar */}
         {!isCreating && (
           <div style={{
-            padding: '0.4rem 1rem',
+            padding: '0.6rem 1.25rem',
             borderBottom: '1px solid #e2e8f0',
             display: 'flex',
             flexWrap: 'wrap',
             alignItems: 'center',
-            gap: '4px',
+            gap: '0.5rem',
             backgroundColor: '#f8fafc',
             position: 'sticky',
             top: 0,
@@ -1373,7 +1373,7 @@ const BatimentForm = ({
                   size="sm"
                   onClick={handleSave} 
                   disabled={saving}
-                  style={{ backgroundColor: '#16a34a', color: 'white' }}
+                  style={{ backgroundColor: '#16a34a', color: 'white', borderRadius: '8px' }}
                 >
                   {saving ? 'Sauvegarde...' : 'Sauvegarder'}
                 </Button>
@@ -1382,6 +1382,7 @@ const BatimentForm = ({
                   variant="outline" 
                   onClick={() => { setEditData(batiment || {}); setIsEditing(false); }}
                   disabled={saving}
+                  style={{ borderRadius: '8px' }}
                 >
                   Annuler
                 </Button>
@@ -1420,15 +1421,37 @@ const BatimentForm = ({
                     onClick={item.action}
                     data-testid={item.testid}
                     style={{
-                      padding: '0.4rem 0.75rem',
-                      border: item.primary ? 'none' : '1px solid #cbd5e1',
-                      borderRadius: '6px',
-                      background: item.primary ? '#1e293b' : item.danger ? 'white' : 'white',
-                      color: item.danger ? '#dc2626' : item.primary ? 'white' : '#334155',
-                      fontSize: '0.78rem',
+                      padding: '0.45rem 1rem',
+                      border: item.primary ? 'none' : item.danger ? '1px solid #fca5a5' : '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      background: item.primary ? 'linear-gradient(135deg, #3b82f6, #6366f1)' : item.danger ? '#fff5f5' : 'white',
+                      color: item.danger ? '#dc2626' : item.primary ? 'white' : '#475569',
+                      fontSize: '0.82rem',
                       fontWeight: 500,
                       cursor: 'pointer',
-                      lineHeight: '1.4',
+                      lineHeight: '1.5',
+                      boxShadow: item.primary ? '0 1px 3px rgba(99,102,241,0.3)' : '0 1px 2px rgba(0,0,0,0.04)',
+                      transition: 'all 0.15s ease',
+                    }}
+                    onMouseOver={(e) => {
+                      if (item.primary) {
+                        e.currentTarget.style.boxShadow = '0 2px 6px rgba(99,102,241,0.4)';
+                      } else if (item.danger) {
+                        e.currentTarget.style.background = '#fee2e2';
+                      } else {
+                        e.currentTarget.style.background = '#f1f5f9';
+                        e.currentTarget.style.borderColor = '#cbd5e1';
+                      }
+                    }}
+                    onMouseOut={(e) => {
+                      if (item.primary) {
+                        e.currentTarget.style.boxShadow = '0 1px 3px rgba(99,102,241,0.3)';
+                      } else if (item.danger) {
+                        e.currentTarget.style.background = '#fff5f5';
+                      } else {
+                        e.currentTarget.style.background = 'white';
+                        e.currentTarget.style.borderColor = '#e2e8f0';
+                      }
                     }}
                   >
                     {item.label}
