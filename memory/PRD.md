@@ -20,10 +20,14 @@ ProFireManager est un système de gestion de service incendie complet, couvrant 
 
 ### Phase 2 - Imports et Object Storage (Mars 2026)
 - **Import ZIP (ProFireManager)**: Import de fichiers .zip contenant CSV + photos/documents. Extraction automatique, parsing CSV, upload des médias vers Object Storage, association aux bâtiments par proximité d'ID.
-- **Object Storage**: Stockage de fichiers (photos, PDFs) via Emergent Object Storage (`/app/backend/utils/object_storage.py`).
+- **Object Storage**: Stockage de fichiers (photos, PDFs) via Emergent Object Storage.
 - **Onglet Photos**: Bouton "Photos" dans le modal bâtiment affichant les photos importées depuis Object Storage + photos legacy.
-- **Import Historique Interventions**: Nouvel onglet dans Paramètres/Import CSV supportant CSV, XML et ZIP.
+- **Import Historique Interventions**: Nouvel onglet (8e) dans Paramètres/Import CSV supportant CSV, XML et ZIP.
 - **File Storage API**: Upload, download (avec auth query param pour img tags), liste par entité, suppression soft.
+
+### Bug Fixes (Mars 2026)
+- Corrigé JWT_SECRET mismatch dans file_storage.py (photos non visibles)
+- Corrigé overflow des boutons du modal bâtiment (flexWrap: 'wrap' + sticky)
 
 ## Endpoints Clés Ajoutés
 - `POST /{tenant}/batiments/import/zip/preview` - Prévisualise import ZIP
@@ -35,19 +39,9 @@ ProFireManager est un système de gestion de service incendie complet, couvrant 
 - `POST /{tenant}/interventions/import-history/preview` - Prévisualise import interventions
 - `POST /{tenant}/interventions/import-history/execute` - Exécute import interventions
 
-## Fichiers Clés Modifiés/Créés
-- `/app/backend/utils/object_storage.py` (NOUVEAU)
-- `/app/backend/routes/file_storage.py` (NOUVEAU)
-- `/app/backend/routes/import_interventions.py` (NOUVEAU)
-- `/app/backend/routes/batiments_import.py` (MODIFIÉ - ajout ZIP)
-- `/app/frontend/src/components/ImportBatimentsIntelligent.jsx` (MODIFIÉ - .zip)
-- `/app/frontend/src/components/ImportInterventions.jsx` (NOUVEAU)
-- `/app/frontend/src/components/ParametresImports.jsx` (MODIFIÉ - 8 onglets)
-- `/app/frontend/src/components/BatimentDetailModalNew.jsx` (MODIFIÉ - Photos)
-- `/app/frontend/src/components/GaleriePhotosBatiment.jsx` (MODIFIÉ - Object Storage)
-
 ## Backlog
 - P3: Améliorer UX carte des secteurs
 - P3: Lazy loading tableau bâtiments
 - Refactorisation: planning.py (~5300 lignes), Parametres.js (~2600 lignes)
 - Historique modifications permissions
+- Drag & drop pour réassigner les photos entre bâtiments

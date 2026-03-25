@@ -1383,15 +1383,16 @@ const BatimentForm = ({
         {/* Actions Bar */}
         {!isCreating && (
           <div style={{
-            padding: isMobile ? '0.75rem' : '1rem 2rem',
+            padding: isMobile ? '0.5rem 0.75rem' : '0.75rem 2rem',
             borderBottom: '1px solid #e5e7eb',
             display: 'flex',
-            gap: isMobile ? '0.5rem' : '0.75rem',
-            flexWrap: 'nowrap',
-            overflowX: 'auto',
-            WebkitOverflowScrolling: 'touch',
+            gap: isMobile ? '0.375rem' : '0.5rem',
+            flexWrap: 'wrap',
             alignItems: 'center',
-            backgroundColor: '#f9fafb'
+            backgroundColor: '#f9fafb',
+            position: 'sticky',
+            top: 0,
+            zIndex: 10,
           }}>
             {isEditing ? (
               <>

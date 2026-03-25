@@ -22,7 +22,7 @@ from utils.object_storage import put_object, get_object, get_content_type, gener
 router = APIRouter(tags=["File Storage"])
 logger = logging.getLogger(__name__)
 
-JWT_SECRET = os.environ.get("JWT_SECRET", "super_secret_jwt_key_change_me")
+JWT_SECRET = os.environ.get("JWT_SECRET", "your-secret-key-here")
 JWT_ALGORITHM = "HS256"
 
 
