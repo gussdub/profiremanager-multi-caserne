@@ -1382,18 +1382,22 @@ const BatimentForm = ({
 
         {/* Actions Bar */}
         {!isCreating && (
-          <div style={{
-            padding: isMobile ? '0.5rem 0.75rem' : '0.75rem 2rem',
+          <div className="batiment-actions-bar" style={{
+            padding: isMobile ? '0.5rem 0.75rem' : '0.75rem 1.5rem',
             borderBottom: '1px solid #e5e7eb',
             display: 'flex',
             gap: isMobile ? '0.375rem' : '0.5rem',
-            flexWrap: 'wrap',
+            flexWrap: 'nowrap',
+            overflowX: 'auto',
+            WebkitOverflowScrolling: 'touch',
             alignItems: 'center',
             backgroundColor: '#f9fafb',
             position: 'sticky',
             top: 0,
             zIndex: 10,
+            scrollbarWidth: 'thin',
           }}>
+            <style>{`.batiment-actions-bar > button, .batiment-actions-bar > div > button { flex-shrink: 0; white-space: nowrap; }`}</style>
             {isEditing ? (
               <>
                 <Button 
@@ -1476,7 +1480,7 @@ const BatimentForm = ({
                   <Button 
                     variant="destructive" 
                     onClick={() => onDelete(batiment)}
-                    style={{ marginLeft: 'auto' }}
+                    style={{ flexShrink: 0 }}
                   >
                     🗑️ Supprimer
                   </Button>
