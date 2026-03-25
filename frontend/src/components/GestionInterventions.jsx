@@ -85,14 +85,39 @@ const SortableNarratifSection = ({ section, index, children }) => {
 
 // ==================== HISTORIQUE DES RÉVISIONS (collapsible) ====================
 
-const RevisionHistory = ({ logs, defaultOpen = false }) => {
-  const [isOpen, setIsOpen] = React.useState(defaultOpen);
+const RevisionHistory = ({ logs, defaultOpen = false, interventionId }) => {
+  const storageKey = `revision_read_${interventionId}`;
+  
+  // Vérifier s'il y a des révisions non lues
+  const lastReadTime = localStorage.getItem(storageKey);
+  const latestRevisionTime = logs.length > 0 
+    ? Math.max(...logs.map(l => new Date(l.timestamp).getTime() || 0))
+    : 0;
+  const hasUnread = !lastReadTime || latestRevisionTime > parseInt(lastReadTime, 10);
+  
+  const [isOpen, setIsOpen] = React.useState(hasUnread);
+  
+  // Marquer comme lu quand on ouvre la section
+  const handleToggle = () => {
+    const next = !isOpen;
+    setIsOpen(next);
+    if (next) {
+      localStorage.setItem(storageKey, Date.now().toString());
+    }
+  };
+  
+  // Marquer comme lu au premier affichage si ouvert par défaut
+  React.useEffect(() => {
+    if (isOpen && hasUnread) {
+      localStorage.setItem(storageKey, Date.now().toString());
+    }
+  }, []);
   
   return (
     <div className="bg-yellow-50 border-t border-yellow-200">
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggle}
         className="w-full flex items-center justify-between p-3 hover:bg-yellow-100 transition-colors"
         data-testid="revision-history-toggle"
       >
@@ -108,7 +133,7 @@ const RevisionHistory = ({ logs, defaultOpen = false }) => {
           }}>
             {logs.length}
           </span>
-          {defaultOpen && (
+          {hasUnread && (
             <span style={{
               background: '#dc2626',
               color: 'white',
@@ -1478,7 +1503,7 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
           if (revisionLogs.length === 0) return null;
           const hasNewRevision = formData.status === 'revision';
           return (
-            <RevisionHistory logs={revisionLogs} defaultOpen={hasNewRevision} />
+            <RevisionHistory logs={revisionLogs} interventionId={formData.id} />
           );
         })()}
 
