@@ -31,10 +31,14 @@ const SectionIdentification = ({ formData, setFormData, editMode, formatDateTime
         return;
       }
       
-      let lat = formData.coordinates?.lat || formData.latitude;
-      let lon = formData.coordinates?.lon || formData.longitude;
+      let lat = formData.coordinates?.lat || formData.latitude || formData.xml_latitude;
+      let lon = formData.coordinates?.lon || formData.longitude || formData.xml_longitude;
       
-      // Si pas de coordonnées, essayer de les obtenir via geocoding de l'adresse
+      // Coordonnées par défaut de la caserne (Québec) si disponibles dans le tenant
+      const DEFAULT_LAT = formData.caserne_lat || 45.40;
+      const DEFAULT_LON = formData.caserne_lon || -72.14;
+      
+      // Si pas de coordonnées, essayer de les obtenir via geocoding (proxy backend)
       if (!lat || !lon) {
         const addressToGeocode = [
           formData.address_full,
@@ -45,17 +49,16 @@ const SectionIdentification = ({ formData, setFormData, editMode, formatDateTime
         if (!addressToGeocode || addressToGeocode === 'Québec, Canada') return;
         
         try {
-          // Utiliser Nominatim pour le geocoding
           const geoResponse = await fetch(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressToGeocode)}&limit=1`,
-            { headers: { 'Accept': 'application/json' } }
+            `${BACKEND_URL}/api/${tenantSlug}/interventions/geocode?address=${encodeURIComponent(addressToGeocode)}`,
+            { headers: { 'Authorization': `Bearer ${getToken()}` } }
           );
           if (geoResponse.ok) {
             const geoData = await geoResponse.json();
-            if (geoData && geoData.length > 0) {
-              lat = parseFloat(geoData[0].lat);
-              lon = parseFloat(geoData[0].lon);
-              console.log('📍 Coordonnées trouvées pour météo:', lat, lon);
+            if (geoData.lat && geoData.lon) {
+              lat = geoData.lat;
+              lon = geoData.lon;
+              console.log('Coordonnées trouvées pour météo:', lat, lon);
             }
           }
         } catch (e) {
@@ -63,7 +66,14 @@ const SectionIdentification = ({ formData, setFormData, editMode, formatDateTime
         }
       }
       
-      // Si on a maintenant des coordonnées, charger la météo
+      // Fallback : utiliser les coordonnées par défaut de la caserne si geocoding échoue
+      if (!lat || !lon) {
+        lat = DEFAULT_LAT;
+        lon = DEFAULT_LON;
+        console.log('Utilisation des coordonnées par défaut pour météo:', lat, lon);
+      }
+
+      // Charger la météo
       if (lat && lon) {
         try {
           const response = await fetch(

@@ -992,6 +992,30 @@ async def get_facture_entraide(
 
 # ==================== MÉTÉO AUTOMATIQUE ====================
 
+@router.get("/{tenant_slug}/interventions/geocode")
+async def geocode_for_intervention(
+    tenant_slug: str,
+    address: str,
+    current_user: User = Depends(get_current_user),
+):
+    """Proxy de geocoding Nominatim pour éviter les problèmes CORS côté frontend."""
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(
+                "https://nominatim.openstreetmap.org/search",
+                params={"format": "json", "q": address, "limit": 1},
+                headers={"User-Agent": "ProFireManager/1.0"},
+            )
+            if response.status_code == 200:
+                data = response.json()
+                if data:
+                    return {"lat": float(data[0]["lat"]), "lon": float(data[0]["lon"])}
+            return {"lat": None, "lon": None}
+    except Exception as e:
+        logger.error(f"Erreur geocoding: {e}")
+        return {"lat": None, "lon": None}
+
 @router.get("/{tenant_slug}/interventions/weather")
 async def get_weather_for_intervention(
     tenant_slug: str,
