@@ -408,6 +408,8 @@ const Batiments = () => {
                     <tr 
                       key={batiment.id} 
                       className="border-b hover:bg-gray-50 transition-colors"
+                      onClick={() => openModal(batiment, 'view')}
+                      style={{ cursor: 'pointer' }}
                     >
                       <td className="px-4 py-3">
                         {batiment.photo_url ? (
@@ -439,20 +441,13 @@ const Batiments = () => {
                           <div className="text-sm">{batiment.contact_nom}</div>
                         )}
                         {batiment.contact_telephone && (
-                          <a href={`tel:${batiment.contact_telephone}`} className="text-sm text-blue-600">
+                          <a href={`tel:${batiment.contact_telephone}`} className="text-sm text-blue-600" onClick={(e) => e.stopPropagation()}>
                             {batiment.contact_telephone}
                           </a>
                         )}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-center gap-1">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => openModal(batiment, 'view')}
-                          >
-                            <Eye size={16} />
-                          </Button>
                           {canEdit && (
                             <Button 
                               variant="ghost" 

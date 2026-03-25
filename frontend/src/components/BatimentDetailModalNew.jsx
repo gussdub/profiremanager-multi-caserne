@@ -169,6 +169,7 @@ const BatimentForm = ({
   const [viewMode, setViewMode] = useState('form'); // 'form', 'history', 'inspection-detail', 'plan-intervention', 'rapport'
   const [selectedInspection, setSelectedInspection] = useState(null);
   const [selectedPlanId, setSelectedPlanId] = useState(null);
+  const [hasPlan, setHasPlan] = useState(false);
   
   // Permissions granulaires
   // Les préventionnistes et admins peuvent tout modifier
@@ -233,6 +234,31 @@ const BatimentForm = ({
   const [preventionnistes, setPreventionnistes] = useState([]);
 
   // Types de bâtiment avec sous-catégories
+  // Vérifier si un plan d'intervention existe pour ce bâtiment
+  useEffect(() => {
+    if (!batiment?.id || !tenantSlug) return;
+    const checkPlan = async () => {
+      try {
+        const token = getTenantToken();
+        const response = await axios.get(
+          buildApiUrl(tenantSlug, `/prevention/plans-intervention`),
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const plan = response.data.find(p => p.batiment_id === batiment.id);
+        if (plan) {
+          setHasPlan(true);
+          setSelectedPlanId(plan.id);
+        } else {
+          setHasPlan(false);
+          setSelectedPlanId(null);
+        }
+      } catch {
+        setHasPlan(false);
+      }
+    };
+    checkPlan();
+  }, [batiment?.id, tenantSlug]);
+
   const typesBatiment = {
     'Résidentiel': ['Unifamiliale', 'Bifamiliale', 'Multifamiliale (3-8 logements)', 'Multifamiliale (9+ logements)', 'Copropriété', 'Maison mobile'],
     'Industriel': ['Manufacture légère', 'Manufacture lourde', 'Entrepôt', 'Usine', 'Atelier'],
@@ -1393,25 +1419,7 @@ const BatimentForm = ({
                 {[
                   canEdit && { label: 'Modifier', icon: Pencil, action: () => setIsEditing(true), primary: true },
                   onInspect && { label: 'Inspecter', icon: ClipboardCheck, action: () => onInspect(batiment) },
-                  onCreatePlan && { label: 'Plan', icon: Map, action: async () => {
-                    try {
-                      const token = getTenantToken();
-                      const response = await axios.get(
-                        buildApiUrl(tenantSlug, `/prevention/plans-intervention`),
-                        { headers: { Authorization: `Bearer ${token}` } }
-                      );
-                      const planExistant = response.data.find(p => p.batiment_id === batiment.id);
-                      if (planExistant) {
-                        setSelectedPlanId(planExistant.id);
-                        setViewMode('plan-intervention');
-                      } else {
-                        onCreatePlan(batiment);
-                      }
-                    } catch (error) {
-                      console.error('Erreur vérification plan:', error);
-                      onCreatePlan(batiment);
-                    }
-                  }},
+                  onCreatePlan && hasPlan && { label: 'Plan', icon: Map, action: () => setViewMode('plan-intervention') },
                   onViewHistory && { label: 'Inspections', icon: ScrollText, action: () => setViewMode('history') },
                   { label: 'Historique', icon: Clock, action: () => setViewMode('full-history'), testid: 'btn-full-history' },
                   onGenerateReport && { label: 'Rapport', icon: FileText, action: () => setViewMode('rapport') },
