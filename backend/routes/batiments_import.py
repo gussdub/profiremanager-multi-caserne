@@ -1,7 +1,7 @@
 """
 Routes pour l'import intelligent de bâtiments avec détection de conflits
 et rétro-liaison des interventions.
-Supporte les formats CSV et XML (Rôle d'évaluation foncière du Québec).
+Supporte les formats CSV, XML (Rôle d'évaluation foncière du Québec) et ZIP (ProFireManager).
 """
 import csv
 import uuid
@@ -9,6 +9,10 @@ import httpx
 import asyncio
 import xml.etree.ElementTree as ET
 import re
+import zipfile
+import json
+import os
+import tempfile
 from io import StringIO, BytesIO
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any, Tuple
@@ -33,6 +37,10 @@ from utils.address_utils import (
     generate_address_key,
     is_same_address
 )
+from utils.object_storage import put_object, get_content_type, generate_storage_path
+
+import logging
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -792,7 +800,408 @@ async def link_all_interventions_to_batiments(
     }
 
 
-# ==================== FONCTIONS UTILITAIRES ====================
+# ==================== IMPORT ZIP (ProFireManager) ====================
+
+def parse_profiremanager_csv(csv_text: str) -> List[Dict[str, Any]]:
+    """Parse un CSV exporté de ProFireManager et convertit en format bâtiment."""
+    reader = csv.DictReader(StringIO(csv_text))
+    rows = list(reader)
+    batiments = []
+
+    for row in rows:
+        adresse = row.get("Adresse", "").strip()
+        if not adresse:
+            continue
+
+        bat = {
+            "adresse_civique": adresse,
+            "cadastre_matricule": row.get("Matricule", ""),
+            "annee_construction": None,
+            "nombre_etages": None,
+            "nombre_logements": None,
+            "notes": row.get("Note", ""),
+            "raison_sociale": row.get("Raison sociale", ""),
+            "pfm_id": row.get("ID", ""),
+        }
+
+        # Année construction
+        annee = row.get("Année construction", "")
+        if annee and annee.isdigit() and len(annee) == 4:
+            bat["annee_construction"] = int(annee)
+
+        # Nombre d'étages
+        etages = row.get("Nbr etage", "")
+        if etages:
+            try:
+                val = int(etages)
+                if val > 0:
+                    bat["nombre_etages"] = val
+            except ValueError:
+                pass
+
+        # Nombre de logements
+        logements = row.get("Nbr logement", "")
+        if logements:
+            try:
+                val = int(logements)
+                if val > 0:
+                    bat["nombre_logements"] = val
+            except ValueError:
+                pass
+
+        # Nombre de sous-sols
+        sous_sols = row.get("Nbr sous sol", "")
+        if sous_sols:
+            try:
+                val = int(sous_sols)
+                if val > 0:
+                    bat["nombre_sous_sols"] = val
+            except ValueError:
+                pass
+
+        # Valeur
+        valeur = row.get("Valeur", "")
+        if valeur:
+            try:
+                bat["valeur_fonciere"] = float(valeur)
+            except ValueError:
+                pass
+
+        # Extraire la ville de l'adresse si format "123 rue NOM, Ville"
+        if "," in adresse:
+            parts = adresse.rsplit(",", 1)
+            bat["ville"] = parts[1].strip().lstrip("*")
+
+        # Nom d'établissement
+        if bat.get("raison_sociale"):
+            bat["nom_etablissement"] = f"{bat['raison_sociale']} - {adresse}"
+        else:
+            bat["nom_etablissement"] = adresse
+
+        batiments.append(bat)
+
+    return batiments
+
+
+@router.post("/{tenant_slug}/batiments/import/zip/preview")
+async def preview_zip_import(
+    tenant_slug: str,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Prévisualise un import ZIP de ProFireManager.
+    Extrait le CSV, parse les bâtiments et liste les fichiers média.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "creer", "batiments")
+
+    contents = await file.read()
+    if not file.filename.lower().endswith(".zip"):
+        raise HTTPException(status_code=400, detail="Seuls les fichiers .zip sont acceptés")
+
+    try:
+        zf = zipfile.ZipFile(BytesIO(contents))
+    except zipfile.BadZipFile:
+        raise HTTPException(status_code=400, detail="Fichier ZIP invalide")
+
+    # Trouver le CSV/XML de données
+    csv_content = None
+    manifest = None
+    media_files = []
+
+    for name in zf.namelist():
+        lower = name.lower()
+        if lower.endswith(".csv"):
+            csv_content = zf.read(name)
+        elif lower == "manifest.json":
+            manifest = json.loads(zf.read(name))
+        elif lower.startswith("files/") and not lower.endswith("/"):
+            ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
+            is_image = ext in ("jpg", "jpeg", "png", "gif", "webp")
+            media_files.append({
+                "zip_path": name,
+                "filename": os.path.basename(name),
+                "file_id": os.path.basename(name).rsplit(".", 1)[0],
+                "extension": ext,
+                "is_image": is_image,
+                "size": zf.getinfo(name).file_size,
+            })
+
+    if not csv_content:
+        raise HTTPException(status_code=400, detail="Aucun fichier CSV trouvé dans l'archive")
+
+    # Parser le CSV
+    try:
+        csv_text = csv_content.decode("utf-8")
+    except UnicodeDecodeError:
+        csv_text = csv_content.decode("latin-1")
+
+    batiments = parse_profiremanager_csv(csv_text)
+
+    # Charger les bâtiments existants pour détecter les conflits
+    existing_batiments = await db.batiments.find(
+        {"tenant_id": tenant.id}, {"_id": 0}
+    ).to_list(length=None)
+
+    conflicts = []
+    new_batiments = []
+    errors = []
+
+    for idx, bat in enumerate(batiments):
+        address = bat.get("adresse_civique", "")
+        city = bat.get("ville", "")
+        matches = find_matching_address(address, city, existing_batiments, 0.85)
+
+        if matches:
+            best_match, score = matches[0]
+            differences = compare_building_fields(bat, best_match)
+            conflicts.append({
+                "import_index": idx,
+                "new_data": bat,
+                "existing_batiment": best_match,
+                "similarity_score": score,
+                "differences": differences,
+                "suggested_action": "replace" if score >= 0.95 else "review",
+            })
+        else:
+            new_batiments.append({"import_index": idx, "data": bat})
+
+    # Stocker la session
+    session_id = str(uuid.uuid4())
+    import_sessions[session_id] = {
+        "tenant_id": tenant.id,
+        "user_id": current_user.id,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "is_zip": True,
+        "rows": batiments,
+        "new_batiments": new_batiments,
+        "conflicts": conflicts,
+        "errors": errors,
+        "zip_data": contents,
+        "media_files": media_files,
+    }
+
+    return {
+        "session_id": session_id,
+        "total_rows": len(batiments),
+        "new_batiments": len(new_batiments),
+        "conflicts": conflicts,
+        "media_files_count": len(media_files),
+        "media_files_images": len([m for m in media_files if m["is_image"]]),
+        "media_files_documents": len([m for m in media_files if not m["is_image"]]),
+        "manifest": manifest,
+        "errors": errors[:20],
+    }
+
+
+@router.post("/{tenant_slug}/batiments/import/zip/execute")
+async def execute_zip_import(
+    tenant_slug: str,
+    request: ImportExecuteRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Exécute l'import ZIP : crée les bâtiments et upload les médias vers Object Storage.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "creer", "batiments")
+
+    session = import_sessions.get(request.session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session d'import expirée ou invalide")
+    if session["tenant_id"] != tenant.id:
+        raise HTTPException(status_code=403, detail="Session non autorisée")
+
+    results = {
+        "created": 0,
+        "updated": 0,
+        "skipped": 0,
+        "archived": 0,
+        "photos_uploaded": 0,
+        "documents_uploaded": 0,
+        "interventions_linked": 0,
+        "errors": [],
+    }
+
+    resolutions_map = {r.import_index: r for r in request.resolutions}
+    created_batiment_ids = {}  # pfm_id -> batiment_id
+
+    # 1. Créer les bâtiments nouveaux
+    if request.create_new_buildings:
+        batiments_to_geocode = []
+        for new_bat in session["new_batiments"]:
+            try:
+                batiment_data = dict(new_bat["data"])
+                bat_id = str(uuid.uuid4())
+                batiment_data["id"] = bat_id
+                batiment_data["tenant_id"] = tenant.id
+                batiment_data["created_at"] = datetime.now(timezone.utc).isoformat()
+                batiment_data["created_by"] = current_user.id
+                pfm_id = batiment_data.pop("pfm_id", "")
+
+                batiments_to_geocode.append({
+                    "data": batiment_data,
+                    "address": batiment_data.get("adresse_civique", ""),
+                    "city": batiment_data.get("ville", ""),
+                    "province": "Québec",
+                    "pfm_id": pfm_id,
+                })
+            except Exception as e:
+                results["errors"].append({"type": "prepare", "error": str(e)})
+
+        # Géolocaliser et insérer
+        if batiments_to_geocode:
+            geocode_results = await geocode_batch(
+                [{"address": b["address"], "city": b["city"], "province": b["province"]}
+                 for b in batiments_to_geocode],
+                delay=1.0,
+            )
+            for i, bat_info in enumerate(batiments_to_geocode):
+                try:
+                    batiment_data = bat_info["data"]
+                    lat, lon = geocode_results[i]
+                    if lat and lon:
+                        batiment_data["latitude"] = round(lat, 6)
+                        batiment_data["longitude"] = round(lon, 6)
+                        batiment_data["geocoded_auto"] = True
+
+                    await db.batiments.insert_one(batiment_data)
+                    results["created"] += 1
+                    if bat_info["pfm_id"]:
+                        created_batiment_ids[bat_info["pfm_id"]] = batiment_data["id"]
+
+                    linked = await link_interventions_to_batiment(
+                        tenant.id, batiment_data["id"], batiment_data["adresse_civique"]
+                    )
+                    results["interventions_linked"] += linked
+                except Exception as e:
+                    results["errors"].append({"type": "create", "error": str(e)})
+
+    # 2. Traiter les conflits
+    for conflict in session["conflicts"]:
+        idx = conflict["import_index"]
+        resolution = resolutions_map.get(idx)
+        if not resolution:
+            results["skipped"] += 1
+            continue
+        try:
+            if resolution.action == "skip":
+                results["skipped"] += 1
+            elif resolution.action == "replace":
+                existing = conflict["existing_batiment"]
+                await archive_batiment(existing, current_user.id, "replaced_by_zip_import")
+                results["archived"] += 1
+                new_data = dict(conflict["new_data"])
+                pfm_id = new_data.pop("pfm_id", "")
+                new_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+                new_data["updated_by"] = current_user.id
+                await db.batiments.update_one(
+                    {"id": existing["id"], "tenant_id": tenant.id},
+                    {"$set": new_data},
+                )
+                results["updated"] += 1
+                if pfm_id:
+                    created_batiment_ids[pfm_id] = existing["id"]
+            elif resolution.action == "create_new":
+                new_data = dict(conflict["new_data"])
+                pfm_id = new_data.pop("pfm_id", "")
+                new_data["id"] = str(uuid.uuid4())
+                new_data["tenant_id"] = tenant.id
+                new_data["created_at"] = datetime.now(timezone.utc).isoformat()
+                new_data["created_by"] = current_user.id
+                await db.batiments.insert_one(new_data)
+                results["created"] += 1
+                if pfm_id:
+                    created_batiment_ids[pfm_id] = new_data["id"]
+        except Exception as e:
+            results["errors"].append({"type": resolution.action, "error": str(e)})
+
+    # 3. Upload des médias depuis le ZIP
+    zip_data = session.get("zip_data")
+    media_files = session.get("media_files", [])
+
+    if zip_data and media_files:
+        try:
+            zf = zipfile.ZipFile(BytesIO(zip_data))
+
+            # Associer les fichiers aux bâtiments par proximité d'ID
+            pfm_ids_sorted = sorted(
+                [(pfm_id, bat_id) for pfm_id, bat_id in created_batiment_ids.items() if pfm_id],
+                key=lambda x: int(x[0]) if x[0].isdigit() else 0,
+            )
+
+            def find_closest_batiment(file_id_str):
+                """Trouve le bâtiment le plus proche par ID numérique."""
+                if not file_id_str.isdigit() or not pfm_ids_sorted:
+                    return None
+                file_num = int(file_id_str)
+                best = None
+                for pfm_id, bat_id in pfm_ids_sorted:
+                    if not pfm_id.isdigit():
+                        continue
+                    pfm_num = int(pfm_id)
+                    if pfm_num <= file_num:
+                        best = bat_id
+                    else:
+                        break
+                return best
+
+            for mf in media_files:
+                try:
+                    file_data = zf.read(mf["zip_path"])
+                    content_type = get_content_type(mf["filename"])
+                    storage_path = generate_storage_path(tenant.id, "batiments", mf["filename"])
+                    result = put_object(storage_path, file_data, content_type)
+
+                    # Trouver le bâtiment associé
+                    associated_bat_id = find_closest_batiment(mf["file_id"])
+
+                    file_doc = {
+                        "id": str(uuid.uuid4()),
+                        "tenant_id": tenant.id,
+                        "storage_path": result["path"],
+                        "original_filename": mf["filename"],
+                        "content_type": content_type,
+                        "size": result.get("size", len(file_data)),
+                        "category": "batiments",
+                        "entity_type": "batiment",
+                        "entity_id": associated_bat_id,
+                        "pfm_file_id": mf["file_id"],
+                        "uploaded_by": current_user.id,
+                        "uploaded_at": datetime.now(timezone.utc).isoformat(),
+                        "is_deleted": False,
+                        "import_session_id": request.session_id,
+                    }
+                    await db.stored_files.insert_one(file_doc)
+
+                    if mf["is_image"]:
+                        results["photos_uploaded"] += 1
+                    else:
+                        results["documents_uploaded"] += 1
+                except Exception as e:
+                    results["errors"].append({
+                        "type": "media_upload",
+                        "file": mf["filename"],
+                        "error": str(e),
+                    })
+
+            zf.close()
+        except Exception as e:
+            results["errors"].append({"type": "zip_processing", "error": str(e)})
+
+    # Nettoyer la session (enlever les données volumineuses)
+    del import_sessions[request.session_id]
+
+    return {
+        "success": True,
+        "results": results,
+        "message": (
+            f"Import terminé: {results['created']} créés, {results['updated']} mis à jour, "
+            f"{results['skipped']} ignorés, {results['photos_uploaded']} photos, "
+            f"{results['documents_uploaded']} documents"
+        ),
+    }
 
 async def archive_batiment(batiment: Dict, user_id: str, reason: str):
     """

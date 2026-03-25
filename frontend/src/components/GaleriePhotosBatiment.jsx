@@ -21,8 +21,33 @@ const GaleriePhotosBatiment = ({
   const loadPhotos = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await apiGet(tenantSlug, `/prevention/batiments/${batimentId}/photos`);
-      setPhotos(data || []);
+      // Charger les photos existantes (ancien système)
+      let existingPhotos = [];
+      try {
+        const data = await apiGet(tenantSlug, `/prevention/batiments/${batimentId}/photos`);
+        existingPhotos = (data || []).map(p => ({ ...p, source: 'legacy' }));
+      } catch {
+        existingPhotos = [];
+      }
+
+      // Charger les photos importées (Object Storage)
+      let importedPhotos = [];
+      try {
+        const data = await apiGet(tenantSlug, `/files/by-entity/batiment/${batimentId}`);
+        importedPhotos = (data?.files || [])
+          .filter(f => f.content_type && f.content_type.startsWith('image/'))
+          .map(f => ({
+            id: f.id,
+            nom: f.original_filename,
+            url: buildApiUrl(tenantSlug, `/files/${f.id}/download`) + `?auth=${getTenantToken()}`,
+            source: 'imported',
+            uploaded_at: f.uploaded_at,
+          }));
+      } catch {
+        importedPhotos = [];
+      }
+
+      setPhotos([...existingPhotos, ...importedPhotos]);
     } catch (error) {
       console.error('Erreur chargement photos:', error);
       setPhotos([]);

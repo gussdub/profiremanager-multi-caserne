@@ -99,6 +99,8 @@ from routes.broadcast import router as broadcast_router
 from routes.import_inspections_bornes import router as import_inspections_bornes_router
 from routes.export_map import router as export_map_router
 from routes.batiments_import import router as batiments_import_router
+from routes.file_storage import router as file_storage_router
+from routes.import_interventions import router as import_interventions_router
 from routes.batiments import router as batiments_router
 from io import BytesIO
 import base64
@@ -427,6 +429,14 @@ async def startup_event():
     
     # Démarrer le nettoyage périodique des tâches SSE expirées
     asyncio.create_task(cleanup_expired_tasks())
+    
+    # Initialiser Object Storage
+    try:
+        from utils.object_storage import init_storage
+        init_storage()
+        logger.info("Object Storage initialisé")
+    except Exception as e:
+        logger.warning(f"Object Storage init échoué (non bloquant): {e}")
     
     logger.info("✅ Application démarrée avec succès")
 
@@ -6807,6 +6817,8 @@ app.include_router(broadcast_router, prefix="/api")  # Module Diffusion de messa
 app.include_router(import_inspections_bornes_router, prefix="/api")  # Module Import Inspections Bornes
 app.include_router(export_map_router, prefix="/api")  # Module Export Carte Statique
 app.include_router(batiments_import_router, prefix="/api")  # Module Import Bâtiments Intelligent
+app.include_router(file_storage_router, prefix="/api")  # Module File Storage (Object Storage)
+app.include_router(import_interventions_router, prefix="/api")  # Module Import Historique Interventions
 app.include_router(batiments_router, prefix="/api")  # Module Bâtiments (indépendant)
 app.include_router(delegations_router, prefix="/api")  # Module Délégations de responsabilités
 app.include_router(api_router)  # Routes principales (server.py) - DOIT être avant auth_router pour que /admin/auth/login soit traité avant /{tenant_slug}/auth/login

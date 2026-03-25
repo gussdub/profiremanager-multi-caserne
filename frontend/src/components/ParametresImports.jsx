@@ -6,6 +6,7 @@ import ImportCSVRapports from "./ImportCSVRapports.jsx";
 import ImportCSVDisponibilites from "./ImportCSVDisponibilites.jsx";
 import ImportHydrants from "./ImportHydrants.jsx";
 import ImportBatimentsIntelligent from "./ImportBatimentsIntelligent.jsx";
+import ImportInterventions from "./ImportInterventions.jsx";
 import { 
   Shield, 
   Wrench, 
@@ -13,7 +14,8 @@ import {
   FileText, 
   Calendar, 
   Droplets,
-  Building
+  Building,
+  Siren
 } from "lucide-react";
 
 /**
@@ -59,6 +61,11 @@ const ParametresImports = ({ tenantSlug, toast }) => {
       id: 'disponibilites',
       label: 'Disponibilités',
       icon: Calendar
+    },
+    {
+      id: 'interventions',
+      label: 'Historique Interventions',
+      icon: Siren
     }
   ];
 
@@ -168,6 +175,21 @@ const ParametresImports = ({ tenantSlug, toast }) => {
             />
           </div>
         );
+      case 'interventions':
+        return (
+          <div className="import-content-wrapper">
+            <ImportInterventions 
+              tenantSlug={tenantSlug}
+              onImportComplete={(results) => {
+                toast({
+                  title: "Import terminé",
+                  description: `${results.created || 0} intervention(s) importée(s)`,
+                  variant: results.errors?.length > 0 ? "warning" : "success"
+                });
+              }}
+            />
+          </div>
+        );
       default:
         return null;
     }
@@ -178,7 +200,7 @@ const ParametresImports = ({ tenantSlug, toast }) => {
       {/* Navigation par onglets - Style cartes comme Gestion des Actifs */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(7, 1fr)',
+        gridTemplateColumns: 'repeat(8, 1fr)',
         gap: '0',
         marginBottom: '1.5rem',
         background: '#f1f5f9',

@@ -15,7 +15,10 @@ import {
   Trash2,
   Plus,
   FileText,
-  Building
+  Building,
+  Archive,
+  Image,
+  FileIcon
 } from 'lucide-react';
 
 const ImportBatimentsIntelligent = ({ tenantSlug, user, onImportComplete }) => {
@@ -23,6 +26,7 @@ const ImportBatimentsIntelligent = ({ tenantSlug, user, onImportComplete }) => {
   
   // États
   const [file, setFile] = useState(null);
+  const [isZip, setIsZip] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [previewData, setPreviewData] = useState(null);
   const [currentConflictIndex, setCurrentConflictIndex] = useState(0);
@@ -34,7 +38,9 @@ const ImportBatimentsIntelligent = ({ tenantSlug, user, onImportComplete }) => {
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
+      const isZipFile = selectedFile.name.toLowerCase().endsWith('.zip');
       setFile(selectedFile);
+      setIsZip(isZipFile);
       setPreviewData(null);
       setResolutions({});
       setResults(null);
@@ -50,8 +56,12 @@ const ImportBatimentsIntelligent = ({ tenantSlug, user, onImportComplete }) => {
       const formData = new FormData();
       formData.append('file', file);
 
+      const endpoint = isZip
+        ? `/batiments/import/zip/preview`
+        : `/batiments/import/preview?similarity_threshold=0.85`;
+
       const response = await fetch(
-        `${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/batiments/import/preview?similarity_threshold=0.85`,
+        `${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}${endpoint}`,
         {
           method: 'POST',
           headers: {
@@ -80,10 +90,11 @@ const ImportBatimentsIntelligent = ({ tenantSlug, user, onImportComplete }) => {
       });
       setResolutions(defaultResolutions);
 
-      toast({
-        title: "Prévisualisation terminée",
-        description: `${data.new_batiments} nouveaux, ${data.conflicts.length} conflits détectés`
-      });
+      const desc = isZip
+        ? `${data.new_batiments} nouveaux, ${data.conflicts.length} conflits, ${data.media_files_count || 0} fichiers média`
+        : `${data.new_batiments} nouveaux, ${data.conflicts.length} conflits détectés`;
+
+      toast({ title: "Prévisualisation terminée", description: desc });
     } catch (error) {
       toast({
         title: "Erreur",
@@ -116,7 +127,11 @@ const ImportBatimentsIntelligent = ({ tenantSlug, user, onImportComplete }) => {
         merge_preferences: res.mergePreferences
       }));
 
-      const response = await apiPost(tenantSlug, '/batiments/import/execute', {
+      const endpoint = isZip
+        ? '/batiments/import/zip/execute'
+        : '/batiments/import/execute';
+
+      const response = await apiPost(tenantSlug, endpoint, {
         session_id: previewData.session_id,
         resolutions: resolutionsList,
         create_new_buildings: true
@@ -343,6 +358,26 @@ const ImportBatimentsIntelligent = ({ tenantSlug, user, onImportComplete }) => {
           </div>
         </div>
         
+        {/* Résultats médias (ZIP) */}
+        {(results.photos_uploaded > 0 || results.documents_uploaded > 0) && (
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            <div className="bg-indigo-50 p-4 rounded-lg text-center flex items-center justify-center gap-3">
+              <Image size={20} className="text-indigo-600" />
+              <div>
+                <div className="text-2xl font-bold text-indigo-600">{results.photos_uploaded}</div>
+                <div className="text-sm text-gray-600">Photos importées</div>
+              </div>
+            </div>
+            <div className="bg-orange-50 p-4 rounded-lg text-center flex items-center justify-center gap-3">
+              <FileIcon size={20} className="text-orange-600" />
+              <div>
+                <div className="text-2xl font-bold text-orange-600">{results.documents_uploaded}</div>
+                <div className="text-sm text-gray-600">Documents importés</div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {results.archived > 0 && (
           <div className="mt-4 p-3 bg-yellow-50 rounded-lg text-sm">
             <span className="font-medium">{results.archived}</span> version(s) archivée(s) dans l'historique
@@ -352,6 +387,7 @@ const ImportBatimentsIntelligent = ({ tenantSlug, user, onImportComplete }) => {
         <div className="mt-6 flex justify-center">
           <Button onClick={() => {
             setFile(null);
+            setIsZip(false);
             setPreviewData(null);
             setResults(null);
             setResolutions({});
@@ -371,7 +407,7 @@ const ImportBatimentsIntelligent = ({ tenantSlug, user, onImportComplete }) => {
         <div>
           <h2 className="text-xl font-bold">Import intelligent de bâtiments</h2>
           <p className="text-sm text-gray-500">
-            Import CSV ou XML (Rôle d'évaluation) avec détection des doublons et géolocalisation automatique
+            Import CSV, XML (Rôle d'évaluation) ou ZIP (ProFireManager) avec détection des doublons et géolocalisation automatique
           </p>
         </div>
       </div>
@@ -386,24 +422,26 @@ const ImportBatimentsIntelligent = ({ tenantSlug, user, onImportComplete }) => {
             <CardTitle>1. Sélectionner le fichier</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 flex-wrap">
               <input
                 type="file"
-                accept=".csv,.xml"
+                accept=".csv,.xml,.zip"
                 onChange={handleFileChange}
                 className="hidden"
                 id="csv-upload"
+                data-testid="import-file-input"
               />
               <label
                 htmlFor="csv-upload"
                 className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors"
+                data-testid="import-file-label"
               >
-                <FileText size={20} />
-                {file ? file.name : 'Choisir un fichier CSV ou XML'}
+                {isZip ? <Archive size={20} className="text-purple-600" /> : <FileText size={20} />}
+                {file ? file.name : 'Choisir un fichier CSV, XML ou ZIP'}
               </label>
               
               {file && !previewData && (
-                <Button onClick={handlePreview} disabled={uploading}>
+                <Button onClick={handlePreview} disabled={uploading} data-testid="import-preview-btn">
                   {uploading ? (
                     <>
                       <RefreshCw className="animate-spin mr-2" size={16} />
@@ -418,6 +456,12 @@ const ImportBatimentsIntelligent = ({ tenantSlug, user, onImportComplete }) => {
                 </Button>
               )}
             </div>
+            {isZip && file && (
+              <div className="mt-3 p-3 bg-purple-50 rounded-lg text-sm text-purple-800 flex items-center gap-2">
+                <Archive size={16} />
+                Archive ZIP détectée - les données et les photos/documents seront importés automatiquement
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -452,7 +496,27 @@ const ImportBatimentsIntelligent = ({ tenantSlug, user, onImportComplete }) => {
 
               {previewData.duplicates_in_file > 0 && (
                 <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg text-sm">
-                  ⚠️ <span className="font-medium">{previewData.duplicates_in_file}</span> doublon(s) détecté(s) dans le fichier (ignorés)
+                  <AlertTriangle size={14} className="inline mr-1" /> <span className="font-medium">{previewData.duplicates_in_file}</span> doublon(s) détecté(s) dans le fichier (ignorés)
+                </div>
+              )}
+
+              {/* Médias ZIP */}
+              {previewData.media_files_count > 0 && (
+                <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg text-sm flex items-center gap-4">
+                  <Archive size={18} className="text-purple-600 flex-shrink-0" />
+                  <div>
+                    <span className="font-medium">{previewData.media_files_count}</span> fichier(s) média détecté(s) :
+                    {previewData.media_files_images > 0 && (
+                      <span className="ml-2 inline-flex items-center gap-1 text-indigo-700">
+                        <Image size={14} /> {previewData.media_files_images} photo(s)
+                      </span>
+                    )}
+                    {previewData.media_files_documents > 0 && (
+                      <span className="ml-2 inline-flex items-center gap-1 text-orange-700">
+                        <FileIcon size={14} /> {previewData.media_files_documents} document(s)
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
             </CardContent>

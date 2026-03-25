@@ -1008,6 +1008,33 @@ const BatimentForm = ({
     );
   }
 
+  // Gestion de la galerie photos
+  if (viewMode === 'photos') {
+    return (
+      <>
+        <div style={modalOverlayStyle} onClick={onClose}>
+          <div style={modalContentSmallStyle} onClick={(e) => e.stopPropagation()}>
+            <div style={{ padding: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600 }}>
+                  {batiment?.adresse_civique || batiment?.adresse || 'Bâtiment'}
+                </h2>
+                <Button variant="outline" size="sm" onClick={() => setViewMode('form')}>
+                  Retour
+                </Button>
+              </div>
+              <GaleriePhotosBatiment
+                tenantSlug={tenantSlug}
+                batimentId={batiment?.id}
+                canEdit={canEdit}
+              />
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   // Gestion de la navigation historique/inspection
   if (viewMode === 'history') {
     return (
@@ -1435,6 +1462,9 @@ const BatimentForm = ({
                 )}
                 <Button variant="outline" onClick={() => setViewMode('full-history')} data-testid="btn-full-history">
                   🕐 Historique complet
+                </Button>
+                <Button variant="outline" onClick={() => setViewMode('photos')} data-testid="btn-photos-gallery">
+                  📸 Photos
                 </Button>
                 {onGenerateReport && (
                   <Button variant="outline" onClick={() => setViewMode('rapport')}>
