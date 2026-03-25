@@ -83,6 +83,83 @@ const SortableNarratifSection = ({ section, index, children }) => {
   );
 };
 
+// ==================== HISTORIQUE DES RÉVISIONS (collapsible) ====================
+
+const RevisionHistory = ({ logs, defaultOpen = false }) => {
+  const [isOpen, setIsOpen] = React.useState(defaultOpen);
+  
+  return (
+    <div className="bg-yellow-50 border-t border-yellow-200">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between p-3 hover:bg-yellow-100 transition-colors"
+        data-testid="revision-history-toggle"
+      >
+        <span className="font-medium text-yellow-800 flex items-center gap-2">
+          Historique des révisions
+          <span style={{
+            background: '#92400e',
+            color: 'white',
+            padding: '0.05rem 0.45rem',
+            borderRadius: '999px',
+            fontSize: '0.7rem',
+            fontWeight: 600,
+          }}>
+            {logs.length}
+          </span>
+          {defaultOpen && (
+            <span style={{
+              background: '#dc2626',
+              color: 'white',
+              padding: '0.1rem 0.5rem',
+              borderRadius: '999px',
+              fontSize: '0.65rem',
+              fontWeight: 600,
+            }}>
+              Nouveau
+            </span>
+          )}
+        </span>
+        <svg
+          width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+          style={{
+            color: '#92400e',
+            transition: 'transform 0.2s ease',
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+          }}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+      {isOpen && (
+        <div className="px-3 pb-3 space-y-2 max-h-40 overflow-y-auto">
+          {logs.map((log, i) => {
+            let formattedDate = log.timestamp;
+            try {
+              const date = new Date(log.timestamp);
+              formattedDate = date.toLocaleString('fr-CA', {
+                timeZone: 'America/Montreal',
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit',
+              });
+            } catch {}
+            return (
+              <div key={i} className="text-sm bg-white p-2 rounded border border-yellow-200">
+                <span className="text-gray-500">{formattedDate}</span>
+                <span className="mx-2">-</span>
+                <span className="font-medium">{log.user_name}:</span>
+                <span className="ml-1">{log.comment}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ==================== COMPOSANT PRINCIPAL ====================
 
 const GestionInterventions = ({ user, tenantSlug }) => {
@@ -1395,40 +1472,15 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
           </div>
         </div>
 
-        {/* Historique des commentaires de révision */}
-        {formData.audit_log && formData.audit_log.length > 0 && (
-          <div className="bg-yellow-50 border-t border-yellow-200 p-3">
-            <p className="font-medium text-yellow-800 mb-2">📋 Historique des révisions:</p>
-            <div className="space-y-2 max-h-32 overflow-y-auto">
-              {formData.audit_log
-                .filter(log => log.action === 'return_for_revision')
-                .map((log, i) => {
-                  // Formater la date en fuseau horaire local (Eastern Canada)
-                  let formattedDate = log.timestamp;
-                  try {
-                    const date = new Date(log.timestamp);
-                    formattedDate = date.toLocaleString('fr-CA', { 
-                      timeZone: 'America/Montreal',
-                      year: 'numeric',
-                      month: '2-digit',
-                      day: '2-digit',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    });
-                  } catch (e) {}
-                  
-                  return (
-                    <div key={i} className="text-sm bg-white p-2 rounded border border-yellow-200">
-                      <span className="text-gray-500">{formattedDate}</span>
-                      <span className="mx-2">-</span>
-                      <span className="font-medium">{log.user_name}:</span>
-                      <span className="ml-1">{log.comment}</span>
-                    </div>
-                  );
-                })}
-            </div>
-          </div>
-        )}
+        {/* Historique des commentaires de révision - collapsible */}
+        {formData.audit_log && formData.audit_log.length > 0 && (() => {
+          const revisionLogs = formData.audit_log.filter(log => log.action === 'return_for_revision');
+          if (revisionLogs.length === 0) return null;
+          const hasNewRevision = formData.status === 'revision';
+          return (
+            <RevisionHistory logs={revisionLogs} defaultOpen={hasNewRevision} />
+          );
+        })()}
 
         {/* Modal pour retourner pour révision */}
         {showSubmitModal && createPortal(
