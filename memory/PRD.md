@@ -1,55 +1,53 @@
-# PRD.md — ProFire SaaS
+# PRD.md — ProFireManager
 
-## Problème original
-Application SaaS de gestion pour services d'incendie. Modules : Planning, Prévention, Personnel, Types de garde, Équipes de garde, Horaires personnalisés.
-
-## Fonctionnalités core
-- Authentification multi-tenant
-- Gestion du personnel (temps plein / temps partiel)
-- Planning avec attribution automatique intelligente (N1 → N1.1 → N2-N5)
-- Module prévention (Bâtiments, Grilles, Inspections, Non-conformités, Rapports)
-- Rotation des équipes de garde (temps plein + temps partiel)
-- Templates d'horaires personnalisés (24h, 12h, 6h segments AM/PM)
-- Exports (PDF, Excel, iCal)
+## Vision
+ProFireManager est un système de gestion de service incendie complet, couvrant le planning, la prévention, les interventions, les EPI, les équipements et la formation.
 
 ## Architecture
-```
-Backend: FastAPI + MongoDB
-Frontend: React + Shadcn/UI
-Intégrations: Resend (emails), Twilio (SMS)
-```
+- **Backend**: FastAPI (Python), MongoDB
+- **Frontend**: React
+- **3rd-party**: Resend (emails), Twilio (SMS), Object Storage (Emergent)
 
-## Dernière mise à jour : 2026-03-24
+## Fonctionnalités Complétées
 
-### Travail complété cette session
+### Phase 1 - Core
+- Module Planning (gardes, remplacements, disponibilités)
+- Module Prévention (bâtiments, inspections, conformités)
+- Module Interventions (import XML 911, rapports, primes)
+- Module EPI, Équipements, Formations
+- RBAC avec types d'accès personnalisés
+- Rotation temps plein N1.1
 
-#### P0 COMPLÉTÉ — Intégration rotation temps plein dans le planning
-- **Fichier modifié** : `/app/backend/routes/planning.py`
-- **Logique N1.1** : Nouvelle étape dans `traiter_semaine_attribution_auto` qui insère automatiquement les employés temps plein de l'équipe de garde du jour dans les gardes internes
-- **Hiérarchie** : `N1 (Manuel) → N1.1 (Rotation TP) → N2-N5 (Auto-comblement)`
-- **Fonctionnalités** :
-  - Respect de la date d'activation (pas de rotation avant)
-  - Support templates standards (Montréal, Québec, Longueuil) et personnalisés (Shefford, etc.)
-  - Matching segment ↔ type_garde par chevauchement horaire
-  - Employés absents ignorés → trous comblés par N2-N5
-  - Suppression/recréation lors du re-run (reset=true)
-  - Frontend affiche badge "🔄 Rotation" pour les assignations N1.1
-- **Tests** : 9/10 backend passés (1 skip - pas de garde externe), 100% frontend
+### Phase 2 - Imports et Object Storage (Mars 2026)
+- **Import ZIP (ProFireManager)**: Import de fichiers .zip contenant CSV + photos/documents. Extraction automatique, parsing CSV, upload des médias vers Object Storage, association aux bâtiments par proximité d'ID.
+- **Object Storage**: Stockage de fichiers (photos, PDFs) via Emergent Object Storage (`/app/backend/utils/object_storage.py`).
+- **Onglet Photos**: Bouton "Photos" dans le modal bâtiment affichant les photos importées depuis Object Storage + photos legacy.
+- **Import Historique Interventions**: Nouvel onglet dans Paramètres/Import CSV supportant CSV, XML et ZIP.
+- **File Storage API**: Upload, download (avec auth query param pour img tags), liste par entité, suppression soft.
 
-### Travail complété sessions précédentes
-- Refactorisation complète de `prevention.py` (5315→1630 lignes, 6 nouveaux fichiers)
-- Fix UI rotation équipes (nombre dynamique selon template)
-- Configuration heures de quart (AM/PM, 24h) dans templates
-- Ajout date d'activation pour rotation temps plein
+## Endpoints Clés Ajoutés
+- `POST /{tenant}/batiments/import/zip/preview` - Prévisualise import ZIP
+- `POST /{tenant}/batiments/import/zip/execute` - Exécute import ZIP + upload médias
+- `POST /{tenant}/files/upload` - Upload fichier vers Object Storage
+- `GET /{tenant}/files/{id}/download?auth=TOKEN` - Télécharge fichier
+- `GET /{tenant}/files/by-entity/{type}/{id}` - Liste fichiers par entité
+- `DELETE /{tenant}/files/{id}` - Suppression soft
+- `POST /{tenant}/interventions/import-history/preview` - Prévisualise import interventions
+- `POST /{tenant}/interventions/import-history/execute` - Exécute import interventions
+
+## Fichiers Clés Modifiés/Créés
+- `/app/backend/utils/object_storage.py` (NOUVEAU)
+- `/app/backend/routes/file_storage.py` (NOUVEAU)
+- `/app/backend/routes/import_interventions.py` (NOUVEAU)
+- `/app/backend/routes/batiments_import.py` (MODIFIÉ - ajout ZIP)
+- `/app/frontend/src/components/ImportBatimentsIntelligent.jsx` (MODIFIÉ - .zip)
+- `/app/frontend/src/components/ImportInterventions.jsx` (NOUVEAU)
+- `/app/frontend/src/components/ParametresImports.jsx` (MODIFIÉ - 8 onglets)
+- `/app/frontend/src/components/BatimentDetailModalNew.jsx` (MODIFIÉ - Photos)
+- `/app/frontend/src/components/GaleriePhotosBatiment.jsx` (MODIFIÉ - Object Storage)
 
 ## Backlog
-
-### P2 - Tests de régression
-- Écrire des tests pytest pour le module `prevention` refactorisé
-
-### P3 - Améliorations UX
-- Améliorer l'UX de la carte des secteurs
-- Lazy loading pour le tableau des bâtiments
-
-### Refactorisation future
-- `planning.py` (~5300 lignes) pourrait être découpé comme `prevention.py`
+- P3: Améliorer UX carte des secteurs
+- P3: Lazy loading tableau bâtiments
+- Refactorisation: planning.py (~5300 lignes), Parametres.js (~2600 lignes)
+- Historique modifications permissions
