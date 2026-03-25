@@ -1356,21 +1356,19 @@ const BatimentForm = ({
         {/* Actions Bar */}
         {!isCreating && (
           <div style={{
-            padding: '0 1rem',
+            padding: '0.4rem 1rem',
             borderBottom: '1px solid #e2e8f0',
             display: 'flex',
+            flexWrap: 'wrap',
             alignItems: 'center',
+            gap: '4px',
             backgroundColor: '#f8fafc',
             position: 'sticky',
             top: 0,
             zIndex: 10,
-            overflowX: 'auto',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-            minHeight: '42px',
           }}>
             {isEditing ? (
-              <div style={{ display: 'flex', gap: '0.5rem', padding: '0.5rem 0', alignItems: 'center' }}>
+              <>
                 <Button 
                   size="sm"
                   onClick={handleSave} 
@@ -1387,7 +1385,7 @@ const BatimentForm = ({
                 >
                   Annuler
                 </Button>
-              </div>
+              </>
             ) : (
               <>
                 {[
@@ -1422,24 +1420,15 @@ const BatimentForm = ({
                     onClick={item.action}
                     data-testid={item.testid}
                     style={{
-                      padding: '0.55rem 0.9rem',
-                      border: 'none',
+                      padding: '0.4rem 0.75rem',
+                      border: item.primary ? 'none' : '1px solid #cbd5e1',
                       borderRadius: '6px',
-                      margin: '4px 2px',
-                      background: item.primary ? '#1e293b' : item.danger ? '#fef2f2' : 'transparent',
+                      background: item.primary ? '#1e293b' : item.danger ? 'white' : 'white',
                       color: item.danger ? '#dc2626' : item.primary ? 'white' : '#334155',
-                      fontSize: '0.8rem',
+                      fontSize: '0.78rem',
                       fontWeight: 500,
                       cursor: 'pointer',
-                      whiteSpace: 'nowrap',
-                      flexShrink: 0,
-                      transition: 'background 0.15s ease',
-                    }}
-                    onMouseOver={(e) => {
-                      if (!item.primary) e.currentTarget.style.background = item.danger ? '#fee2e2' : '#e2e8f0';
-                    }}
-                    onMouseOut={(e) => {
-                      if (!item.primary) e.currentTarget.style.background = item.danger ? '#fef2f2' : 'transparent';
+                      lineHeight: '1.4',
                     }}
                   >
                     {item.label}
