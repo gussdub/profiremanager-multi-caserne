@@ -19,6 +19,7 @@ from routes.dependencies import (
     db,
     get_current_user,
     get_tenant_from_slug,
+    invalidate_tenant_cache,
     User,
     require_permission,
     user_has_module_action
@@ -90,6 +91,8 @@ async def update_personnalisation(
             {"id": tenant.id},
             {"$set": update_data}
         )
+        # Invalider le cache pour que les prochaines lectures reflètent la mise à jour
+        invalidate_tenant_cache(tenant_slug)
         logger.info(f"🎨 Personnalisation mise à jour pour {tenant_slug}: {list(update_data.keys())}")
     
     return {
@@ -125,6 +128,8 @@ async def upload_logo(
         {"id": tenant.id},
         {"$set": {"logo_url": logo_base64}}
     )
+    # Invalider le cache pour que les prochaines lectures reflètent la mise à jour
+    invalidate_tenant_cache(tenant_slug)
     
     logger.info(f"🖼️ Logo uploadé pour {tenant_slug}")
     

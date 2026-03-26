@@ -176,6 +176,20 @@ _tenant_cache_ttl: Dict[str, float] = {}
 TENANT_CACHE_DURATION = 300  # 5 minutes
 
 
+def invalidate_tenant_cache(tenant_slug: str = None):
+    """
+    Invalide le cache tenant.
+    Si tenant_slug est fourni, invalide seulement ce tenant.
+    Sinon, invalide tout le cache.
+    """
+    if tenant_slug:
+        _tenant_cache.pop(tenant_slug, None)
+        _tenant_cache_ttl.pop(tenant_slug, None)
+    else:
+        _tenant_cache.clear()
+        _tenant_cache_ttl.clear()
+
+
 # ==================== FONCTIONS UTILITAIRES ====================
 
 def clean_mongo_doc(doc: dict) -> dict:
