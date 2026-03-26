@@ -2237,7 +2237,7 @@ async def get_points_verification_saaq(
     }
 
 
-@router.post("/{tenant_slug}/actifs/rondes-securite", response_model=RondeSecurite)
+@router.post("/{tenant_slug}/actifs/rondes-securite")
 async def create_ronde_securite(
     tenant_slug: str,
     ronde_data: RondeSecuriteCreate,
@@ -2296,99 +2296,111 @@ async def create_ronde_securite(
     if severite_globale == "MINEUR":
         ronde.date_rappel_48h = datetime.now(timezone.utc) + timedelta(hours=48)
     
-    await db.rondes_securite.insert_one(ronde.dict())
+    ronde_dict = ronde.dict()
+    await db.rondes_securite.insert_one(ronde_dict)
+    
+    # Préparer la réponse AVANT les opérations post-save (pour garantir le retour)
+    # Convertir les datetimes en ISO strings pour éviter les erreurs de sérialisation
+    ronde_response = {k: v for k, v in ronde_dict.items() if k != '_id'}
+    for key in ('created_at', 'date_rappel_48h'):
+        if key in ronde_response and isinstance(ronde_response[key], datetime):
+            ronde_response[key] = ronde_response[key].isoformat()
     
     # Mettre à jour le véhicule
-    update_vehicule = {
-        "kilometrage": ronde_data.km if ronde_data.km > vehicle.get('kilometrage', 0) else vehicle.get('kilometrage', 0),
-        "derniere_inspection_date": ronde_data.date,
-        "date_derniere_ronde": ronde_data.date,
-        "defauts_actifs": defauts,
-        "updated_at": datetime.now(timezone.utc)
-    }
-    
-    # Mettre à jour la disponibilité selon la sévérité
-    if severite_globale == "MAJEUR":
-        update_vehicule["disponibilite_saaq"] = "hors_service"
-    elif severite_globale == "MINEUR":
-        update_vehicule["disponibilite_saaq"] = "reparation_requise"
-    else:
-        update_vehicule["disponibilite_saaq"] = "disponible"
-        update_vehicule["defauts_actifs"] = []
-    
-    await db.vehicules.update_one(
-        {"id": ronde_data.vehicule_id},
-        {"$set": update_vehicule}
-    )
-    
-    # Envoyer les notifications selon la sévérité
-    parametres = tenant.parametres if hasattr(tenant, 'parametres') and tenant.parametres else {}
-    actifs_params = parametres.get('actifs', {})
-    destinataires_ids = actifs_params.get('emails_rondes', [])
-    
-    # Récupérer les IDs utilisateurs pour les notifications
-    recipient_user_ids = []
-    for item in destinataires_ids:
-        if '@' not in str(item):
-            user = await db.users.find_one({"id": item, "tenant_id": tenant.id}, {"_id": 0, "id": 1})
-            if user:
-                recipient_user_ids.append(user['id'])
-    
-    if severite_globale == "MAJEUR" and recipient_user_ids:
-        # Notification urgente HORS SERVICE
-        defauts_text = "\n".join([f"• {d.get('defect_id')}: {d.get('description')}" for d in defauts_majeurs])
-        from routes.notifications import creer_notification, send_push_notification_to_users
+    try:
+        update_vehicule = {
+            "kilometrage": ronde_data.km if ronde_data.km > vehicle.get('kilometrage', 0) else vehicle.get('kilometrage', 0),
+            "derniere_inspection_date": ronde_data.date,
+            "date_derniere_ronde": ronde_data.date,
+            "defauts_actifs": defauts,
+            "updated_at": datetime.now(timezone.utc)
+        }
         
-        for user_id in recipient_user_ids:
-            await creer_notification(
-                tenant_id=tenant.id,
-                destinataire_id=user_id,
-                type="vehicule_hors_service",
-                titre=f"🚨 VÉHICULE HORS SERVICE: {vehicle.get('nom')}",
-                message=f"Défaut(s) MAJEUR(S) détecté(s):\n{defauts_text}",
-                lien="/actifs",
-                data={"vehicule_id": vehicle.get('id'), "severite": "MAJEUR"},
-                envoyer_email=True
-            )
+        # Mettre à jour la disponibilité selon la sévérité
+        if severite_globale == "MAJEUR":
+            update_vehicule["disponibilite_saaq"] = "hors_service"
+        elif severite_globale == "MINEUR":
+            update_vehicule["disponibilite_saaq"] = "reparation_requise"
+        else:
+            update_vehicule["disponibilite_saaq"] = "disponible"
+            update_vehicule["defauts_actifs"] = []
         
-        try:
-            await send_push_notification_to_users(
-                user_ids=recipient_user_ids,
-                title=f"🚨 {vehicle.get('nom')} HORS SERVICE",
-                body=f"Défaut MAJEUR: {defauts_majeurs[0].get('description', 'Voir détails')}",
-                data={"type": "vehicule_hors_service", "vehicule_id": vehicle.get('id')}
-            )
-        except Exception as push_err:
-            logger.warning(f"Erreur push notification: {push_err}")
+        await db.vehicules.update_one(
+            {"id": ronde_data.vehicule_id},
+            {"$set": update_vehicule}
+        )
+    except Exception as veh_err:
+        logger.error(f"Erreur mise à jour véhicule après ronde: {veh_err}")
     
-    elif severite_globale == "MINEUR" and recipient_user_ids:
-        # Notification réparation requise
-        defauts_text = "\n".join([f"• {d.get('defect_id')}: {d.get('description')}" for d in defauts_mineurs])
-        from routes.notifications import creer_notification, send_push_notification_to_users
+    # Envoyer les notifications selon la sévérité (en arrière-plan, ne bloque jamais la réponse)
+    try:
+        parametres = tenant.parametres if hasattr(tenant, 'parametres') and tenant.parametres else {}
+        actifs_params = parametres.get('actifs', {})
+        destinataires_ids = actifs_params.get('emails_rondes', [])
         
-        for user_id in recipient_user_ids:
-            await creer_notification(
-                tenant_id=tenant.id,
-                destinataire_id=user_id,
-                type="vehicule_reparation_requise",
-                titre=f"⚠️ Réparation requise: {vehicle.get('nom')}",
-                message=f"Défaut(s) mineur(s). Délai: 48h\n{defauts_text}",
-                lien="/actifs",
-                data={"vehicule_id": vehicle.get('id'), "severite": "MINEUR"},
-                envoyer_email=True
-            )
+        # Récupérer les IDs utilisateurs pour les notifications
+        recipient_user_ids = []
+        for item in destinataires_ids:
+            if '@' not in str(item):
+                user = await db.users.find_one({"id": item, "tenant_id": tenant.id}, {"_id": 0, "id": 1})
+                if user:
+                    recipient_user_ids.append(user['id'])
         
-        try:
-            await send_push_notification_to_users(
-                user_ids=recipient_user_ids,
-                title=f"⚠️ {vehicle.get('nom')} - Réparation requise",
-                body="Défaut mineur détecté. Délai: 48h",
-                data={"type": "vehicule_reparation_requise", "vehicule_id": vehicle.get('id')}
-            )
-        except Exception as push_err:
-            logger.warning(f"Erreur push notification: {push_err}")
+        if severite_globale == "MAJEUR" and recipient_user_ids:
+            defauts_text = "\n".join([f"- {d.get('defect_id')}: {d.get('description')}" for d in defauts_majeurs])
+            from routes.notifications import send_push_notification_to_users
+            
+            for user_id in recipient_user_ids:
+                await creer_notification(
+                    tenant_id=tenant.id,
+                    destinataire_id=user_id,
+                    type="vehicule_hors_service",
+                    titre=f"VEHICULE HORS SERVICE: {vehicle.get('nom')}",
+                    message=f"Defaut(s) MAJEUR(S) detecte(s):\n{defauts_text}",
+                    lien="/actifs",
+                    data={"vehicule_id": vehicle.get('id'), "severite": "MAJEUR"},
+                    envoyer_email=True
+                )
+            
+            try:
+                await send_push_notification_to_users(
+                    user_ids=recipient_user_ids,
+                    title=f"{vehicle.get('nom')} HORS SERVICE",
+                    body=f"Defaut MAJEUR: {defauts_majeurs[0].get('description', 'Voir details')}",
+                    data={"type": "vehicule_hors_service", "vehicule_id": vehicle.get('id')}
+                )
+            except Exception as push_err:
+                logger.warning(f"Erreur push notification: {push_err}")
+        
+        elif severite_globale == "MINEUR" and recipient_user_ids:
+            defauts_text = "\n".join([f"- {d.get('defect_id')}: {d.get('description')}" for d in defauts_mineurs])
+            from routes.notifications import send_push_notification_to_users
+            
+            for user_id in recipient_user_ids:
+                await creer_notification(
+                    tenant_id=tenant.id,
+                    destinataire_id=user_id,
+                    type="vehicule_reparation_requise",
+                    titre=f"Reparation requise: {vehicle.get('nom')}",
+                    message=f"Defaut(s) mineur(s). Delai: 48h\n{defauts_text}",
+                    lien="/actifs",
+                    data={"vehicule_id": vehicle.get('id'), "severite": "MINEUR"},
+                    envoyer_email=True
+                )
+            
+            try:
+                await send_push_notification_to_users(
+                    user_ids=recipient_user_ids,
+                    title=f"{vehicle.get('nom')} - Reparation requise",
+                    body="Defaut mineur detecte. Delai: 48h",
+                    data={"type": "vehicule_reparation_requise", "vehicule_id": vehicle.get('id')}
+                )
+            except Exception as push_err:
+                logger.warning(f"Erreur push notification: {push_err}")
+    except Exception as notif_err:
+        logger.error(f"Erreur notifications ronde securite: {notif_err}")
     
-    return ronde
+    return ronde_response
 
 
 @router.get("/{tenant_slug}/actifs/rondes-securite", response_model=List[RondeSecurite])
