@@ -29,6 +29,7 @@ ProFireManager est un système de gestion de service incendie complet, couvrant 
 - Corrigé JWT_SECRET mismatch dans file_storage.py (photos non visibles)
 - Corrigé overflow des boutons du modal bâtiment (flexWrap: 'wrap' + sticky)
 - Corrigé bug Personnalisation : le nom du service ne se sauvegardait pas (cache tenant non invalidé après PUT). Ajout de `invalidate_tenant_cache()` dans `dependencies.py`, appelé après chaque mise à jour dans `personnalisation.py`.
+- Notifications planning conditionnelles : les notifications (in-app, push, email) ne sont plus envoyées lors d'assignations manuelles pré-publication. Elles ne sont déclenchées que si le planning du mois est déjà publié (existence d'assignations "publie").
 
 ## Endpoints Clés Ajoutés
 - `POST /{tenant}/batiments/import/zip/preview` - Prévisualise import ZIP
