@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://tenant-save-issue.preview.emergentagent.com
+- **URL** : https://caserne-workflow.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://tenant-save-issue.preview.emergentagent.com"
+  "apiUrl": "https://caserne-workflow.preview.emergentagent.com"
 }
 ```
 

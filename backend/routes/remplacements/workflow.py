@@ -137,16 +137,18 @@ async def accepter_remplacement_workflow(
             await db.notifications.insert_one({
                 "id": str(uuid.uuid4()),
                 "tenant_id": tenant_id,
-                "user_id": demande_data["demandeur_id"],
+                "destinataire_id": demande_data["demandeur_id"],
                 "type": "remplacement_accepte",
-                "titre": "✅ Remplacement trouvé!",
-                "message": f"{remplacant.get('prenom', '')} {remplacant.get('nom', '')} a accepté de vous remplacer le {demande_data['date']}.",
+                "titre": "Remplacement trouve!",
+                "message": f"{remplacant.get('prenom', '')} {remplacant.get('nom', '')} a accepte de vous remplacer le {demande_data['date']}.",
+                "statut": "non_lu",
                 "lu": False,
                 "data": {"demande_id": demande_id, "remplacant_id": remplacant_id},
+                "date_creation": datetime.now(timezone.utc).isoformat(),
                 "created_at": datetime.now(timezone.utc).isoformat()
             })
         except Exception as notif_error:
-            logger.warning(f"⚠️ Erreur insertion notification demandeur: {notif_error}")
+            logger.warning(f"Erreur insertion notification demandeur: {notif_error}")
         
         # Email au demandeur
         if envoyer_email_remplacement_trouve:

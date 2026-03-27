@@ -256,12 +256,14 @@ async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
                 await db.notifications.insert_one({
                     "id": str(uuid.uuid4()),
                     "tenant_id": tenant_id,
-                    "user_id": demandeur_id,
+                    "destinataire_id": demandeur_id,
                     "type": "remplacement_expiree",
-                    "titre": "❌ Demande de remplacement expirée",
-                    "message": f"Aucun remplaçant n'a été trouvé pour votre demande du {demande_data['date']}.",
+                    "titre": "Demande de remplacement expiree",
+                    "message": f"Aucun remplacant n'a ete trouve pour votre demande du {demande_data['date']}.",
+                    "statut": "non_lu",
                     "lu": False,
                     "data": {"demande_id": demande_id},
+                    "date_creation": datetime.now(timezone.utc).isoformat(),
                     "created_at": datetime.now(timezone.utc).isoformat()
                 })
                 
