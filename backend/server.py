@@ -1135,83 +1135,51 @@ async def job_verifier_alertes_equipements():
                 # Préparer le contenu de l'email
                 subject = f"⚠️ Alertes Équipements - {tenant_nom}"
                 
-                html_content = f"""
-                <html>
-                <head>
-                    <style>
-                        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
-                        .header {{ background-color: #EF4444; color: white; padding: 20px; text-align: center; }}
-                        .content {{ padding: 20px; }}
-                        .alert-box {{ 
-                            border-left: 4px solid #EF4444;
-                            background-color: #FEE2E2;
-                            padding: 15px;
-                            margin: 15px 0;
-                        }}
-                        .alert-title {{ font-weight: bold; color: #DC2626; margin-bottom: 10px; }}
-                        .alert-count {{ font-size: 24px; font-weight: bold; color: #991B1B; }}
-                        .footer {{ margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 12px; }}
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
-                        <h1>⚠️ Rapport d'Alertes Équipements</h1>
-                        <p>{tenant_nom}</p>
-                        <p>{today.strftime("%d/%m/%Y")}</p>
-                    </div>
-                    <div class="content">
-                        <p>Bonjour,</p>
-                        <p>Voici le rapport quotidien des alertes pour vos équipements :</p>
+                html_content = build_email(
+                    title=f"Rapport d'Alertes Equipements",
+                    body_html=f"""
+                        <p style="font-size: 15px; color: #374151;">Bonjour,</p>
+                        <p style="font-size: 15px; color: #374151;">Voici le rapport quotidien des alertes pour vos equipements ({today.strftime("%d/%m/%Y")}) :</p>
                         
                         {f'''
-                        <div class="alert-box">
-                            <div class="alert-title">🔧 Maintenance à venir</div>
-                            <div class="alert-count">{alertes_count["maintenance"]} équipement(s)</div>
-                            <p>Maintenance requise dans les {jours_maintenance} prochains jours</p>
-                        </div>
+                        {email_alert_card(
+                            f"Maintenance a venir — {alertes_count['maintenance']} equipement(s)",
+                            f"Maintenance requise dans les {jours_maintenance} prochains jours",
+                            "#EF4444", "#FEE2E2", "#991B1B"
+                        )}
                         ''' if alertes_count["maintenance"] > 0 else ''}
                         
                         {f'''
-                        <div class="alert-box">
-                            <div class="alert-title">⏰ Expirations à venir</div>
-                            <div class="alert-count">{alertes_count["expiration"]} équipement(s)</div>
-                            <p>Expiration dans les {jours_expiration} prochains jours</p>
-                        </div>
+                        {email_alert_card(
+                            f"Expirations a venir — {alertes_count['expiration']} equipement(s)",
+                            f"Expiration dans les {jours_expiration} prochains jours",
+                            "#EF4444", "#FEE2E2", "#991B1B"
+                        )}
                         ''' if alertes_count["expiration"] > 0 else ''}
                         
                         {f'''
-                        <div class="alert-box">
-                            <div class="alert-title">🚨 Fin de vie approche</div>
-                            <div class="alert-count">{alertes_count["fin_vie"]} équipement(s)</div>
-                            <p>Fin de vie dans les {jours_fin_vie} prochains jours</p>
-                        </div>
+                        {email_alert_card(
+                            f"Fin de vie approche — {alertes_count['fin_vie']} equipement(s)",
+                            f"Fin de vie dans les {jours_fin_vie} prochains jours",
+                            "#EF4444", "#FEE2E2", "#991B1B"
+                        )}
                         ''' if alertes_count["fin_vie"] > 0 else ''}
                         
                         {f'''
-                        <div class="alert-box">
-                            <div class="alert-title">🔨 Réparations nécessaires</div>
-                            <div class="alert-count">{alertes_count["reparation"]} équipement(s)</div>
-                            <p>Équipements en attente de réparation</p>
-                        </div>
+                        {email_alert_card(
+                            f"Reparations necessaires — {alertes_count['reparation']} equipement(s)",
+                            "Equipements en attente de reparation",
+                            "#EF4444", "#FEE2E2", "#991B1B"
+                        )}
                         ''' if alertes_count["reparation"] > 0 else ''}
                         
                         {inspections_dues_html}
                         
-                        <p style="margin-top: 30px;">
-                            <strong>Total des alertes : {total_alertes}</strong>
-                        </p>
-                        
-                        <p style="margin-top: 20px;">
-                            Connectez-vous à votre tableau de bord pour plus de détails et pour gérer ces équipements.
-                        </p>
-                    </div>
-                    <div class="footer">
-                        <p>Cet email a été envoyé automatiquement par le système ProFireManager.</p>
-                        <p>Pour modifier vos préférences de notifications, accédez aux paramètres du module Matériel & Équipements.</p>
-                    </div>
-                </body>
-                </html>
-                """
+                        <p style="font-size: 15px; color: #374151; margin-top: 20px;"><strong>Total des alertes : {total_alertes}</strong></p>
+                    """,
+                    accent_color="#EF4444",
+                    footer_text="Pour modifier vos preferences de notifications, accedez aux parametres du module Materiel & Equipements."
+                )
                 
                 # Envoyer l'email au résumé général (si des destinataires configurés)
                 resend.api_key = os.environ.get("RESEND_API_KEY")
@@ -1271,33 +1239,30 @@ async def job_verifier_alertes_equipements():
                         for eq in cat_data["equipements"]
                     ])
                     
-                    html_pr = f"""
-                    <html>
-                    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                        <div style="background: linear-gradient(135deg, #F59E0B, #D97706); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-                            <h2>{cat_data['icone']} Inspections dues - {cat_data['nom']}</h2>
-                        </div>
-                        <div style="padding: 20px; background: #FFFBEB; border: 1px solid #F59E0B; border-radius: 0 0 8px 8px;">
-                            <p>Bonjour,</p>
-                            <p>En tant que personne ressource pour la catégorie <strong>{cat_data['nom']}</strong>, vous êtes notifié(e) que <strong>{cat_data['count']} équipement(s)</strong> nécessitent une inspection.</p>
-                            
-                            <p><strong>Fréquence d'inspection :</strong> {cat_data['frequence']}</p>
-                            
-                            <h4>Équipements concernés :</h4>
-                            <ul style="background: white; padding: 15px 30px; border-radius: 8px; border: 1px solid #E5E7EB;">
-                                {equipements_list_html}
-                            </ul>
-                            
-                            <p style="margin-top: 20px;">
-                                Connectez-vous à ProFireManager pour effectuer ces inspections.
+                    html_pr = build_email(
+                        title=f"Inspections dues - {cat_data['nom']}",
+                        body_html=f"""
+                            <p style="font-size: 15px; color: #374151;">Bonjour,</p>
+                            <p style="font-size: 15px; color: #374151;">
+                                En tant que personne ressource pour la categorie <strong>{cat_data['nom']}</strong>, 
+                                vous etes notifie(e) que <strong>{cat_data['count']} equipement(s)</strong> necessitent une inspection.
                             </p>
-                        </div>
-                        <p style="color: #666; font-size: 12px; margin-top: 20px;">
-                            Cet email a été envoyé automatiquement. Vous recevez ce message car vous êtes désigné comme personne ressource.
-                        </p>
-                    </body>
-                    </html>
-                    """
+                            <p style="font-size: 14px; color: #374151;"><strong>Frequence d'inspection :</strong> {cat_data['frequence']}</p>
+                            
+                            {email_card(f'''
+                                <h4 style="color: #1e293b; margin: 0 0 12px; font-size: 15px;">Equipements concernes :</h4>
+                                <ul style="margin: 0; padding-left: 20px; line-height: 2; color: #374151;">
+                                    {equipements_list_html}
+                                </ul>
+                            ''')}
+                            
+                            <p style="font-size: 14px; color: #374151; margin-top: 16px;">
+                                Connectez-vous a ProFireManager pour effectuer ces inspections.
+                            </p>
+                        """,
+                        accent_color="#F59E0B",
+                        footer_text="Vous recevez ce message car vous etes designe comme personne ressource."
+                    )
                     
                     # Envoyer à chaque personne ressource
                     for email_pr in emails_pr:
@@ -1466,27 +1431,23 @@ async def job_rappel_inspection_epi_mensuelle():
                                         "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
                             mois_nom = mois_noms[mois_actuel]
                             
-                            html_content = f'''
-                            <html>
-                            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                                <div style="background: linear-gradient(135deg, #1e3a5f, #2d5a87); color: white; padding: 20px; border-radius: 10px 10px 0 0; text-align: center;">
-                                    <h1 style="margin: 0;">🔔 Rappel d'inspection</h1>
-                                </div>
-                                <div style="background: #f8fafc; padding: 20px; border: 1px solid #e2e8f0; border-radius: 0 0 10px 10px;">
-                                    <p>Bonjour {pompier.get('prenom', '')},</p>
-                                    <p>Ceci est un rappel automatique: <strong>vous n'avez pas encore effectué votre inspection mensuelle des EPI pour le mois de {mois_nom} {annee_actuelle}</strong>.</p>
-                                    <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0;">
-                                        <strong>📦 Vous avez {nb_epi} EPI à inspecter</strong>
-                                    </div>
-                                    <p>Veuillez vous connecter à l'application pour effectuer votre inspection dans la section "Mes EPI".</p>
-                                    <p style="color: #64748b; font-size: 0.9em; margin-top: 30px;">
-                                        Cet email a été envoyé automatiquement par ProFireManager.<br>
-                                        {tenant_nom}
+                            html_content = build_email(
+                                title="Rappel d'inspection EPI",
+                                body_html=f"""
+                                    <p style="font-size: 15px; color: #374151;">Bonjour {pompier.get('prenom', '')},</p>
+                                    <p style="font-size: 15px; color: #374151;">
+                                        Ceci est un rappel automatique: <strong>vous n'avez pas encore effectue votre inspection mensuelle des EPI pour le mois de {mois_nom} {annee_actuelle}</strong>.
                                     </p>
-                                </div>
-                            </body>
-                            </html>
-                            '''
+                                    
+                                    {email_alert_card(
+                                        f"Vous avez {nb_epi} EPI a inspecter",
+                                        "Veuillez vous connecter a l'application pour effectuer votre inspection dans la section Mes EPI.",
+                                        "#F59E0B", "#FEF3C7", "#92400E"
+                                    )}
+                                """,
+                                accent_color="#1e3a5f",
+                                footer_text=f"Cet email a ete envoye automatiquement par ProFireManager. {tenant_nom}"
+                            )
                             
                             params = {
                                 "from": "ProFireManager <notifications@profiremanager.ca>",
@@ -1966,51 +1927,33 @@ async def job_verifier_rappels_disponibilites():
                         try:
                             resend.api_key = resend_api_key
                             
-                            html_content = f"""
-                            <!DOCTYPE html>
-                            <html>
-                            <head>
-                                <meta charset="utf-8">
-                                <style>
-                                    body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
-                                    .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                                    .header {{ background-color: #1E40AF; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
-                                    .content {{ background-color: #f8f9fa; padding: 30px; border-radius: 0 0 8px 8px; }}
-                                    .alert {{ background-color: {'#FEF3C7' if jours_restants > 1 else '#FEE2E2'}; border-left: 4px solid {'#F59E0B' if jours_restants > 1 else '#EF4444'}; padding: 15px; margin: 20px 0; }}
-                                    .btn {{ display: inline-block; background-color: #1E40AF; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin-top: 20px; }}
-                                    .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
-                                </style>
-                            </head>
-                            <body>
-                                <div class="container">
-                                    <div class="header">
-                                        <h1>📅 Rappel Disponibilités</h1>
-                                    </div>
-                                    <div class="content">
-                                        <p>Bonjour {user_prenom},</p>
-                                        
-                                        <div class="alert">
-                                            <strong>{'⚠️ Attention' if jours_restants <= 1 else '📢 Rappel'}</strong><br>
-                                            Vous n'avez pas encore saisi vos disponibilités pour le mois de <strong>{mois_suivant_texte} {next_month_year}</strong>.
-                                        </div>
-                                        
-                                        <p>La date limite de saisie est le <strong>{jour_blocage} {['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'][current_month - 1]}</strong>.</p>
-                                        
-                                        <p>Il vous reste <strong>{jours_restants} jour(s)</strong> pour soumettre vos disponibilités. Passé cette date, vous ne pourrez plus modifier vos disponibilités pour {mois_suivant_texte}.</p>
-                                        
-                                        <center>
-                                            <a href="{app_url}/disponibilites" class="btn">Saisir mes disponibilités</a>
-                                        </center>
-                                        
-                                        <p style="margin-top: 30px;">Cordialement,<br>L'équipe {tenant_nom}</p>
-                                    </div>
-                                    <div class="footer">
-                                        <p>Ceci est un message automatique. Merci de ne pas y répondre.</p>
-                                    </div>
-                                </div>
-                            </body>
-                            </html>
-                            """
+                            html_content = build_email(
+                                title="Rappel Disponibilites",
+                                body_html=f"""
+                                    <p style="font-size: 15px; color: #374151;">Bonjour {user_prenom},</p>
+                                    
+                                    {email_alert_card(
+                                        "{'Attention' if jours_restants <= 1 else 'Rappel'}",
+                                        f"Vous n'avez pas encore saisi vos disponibilites pour le mois de {mois_suivant_texte} {next_month_year}.",
+                                        "{'#EF4444' if jours_restants <= 1 else '#F59E0B'}",
+                                        "{'#FEE2E2' if jours_restants <= 1 else '#FEF3C7'}",
+                                        "{'#991B1B' if jours_restants <= 1 else '#92400E'}"
+                                    )}
+                                    
+                                    <p style="font-size: 15px; color: #374151;">
+                                        La date limite de saisie est le <strong>{jour_blocage} {['janvier', 'fevrier', 'mars', 'avril', 'mai', 'juin', 'juillet', 'aout', 'septembre', 'octobre', 'novembre', 'decembre'][current_month - 1]}</strong>.
+                                    </p>
+                                    <p style="font-size: 15px; color: #374151;">
+                                        Il vous reste <strong>{jours_restants} jour(s)</strong> pour soumettre vos disponibilites.
+                                    </p>
+                                    
+                                    <p style="color: #64748b; margin-top: 24px;">Cordialement,<br><strong>L'equipe {tenant_nom}</strong></p>
+                                """,
+                                accent_color="#1E40AF",
+                                cta_text="Saisir mes disponibilites",
+                                cta_url=f"{app_url}/disponibilites",
+                                footer_text="Ceci est un message automatique. Merci de ne pas y repondre."
+                            )
                             
                             params = {
                                 "from": f"{tenant_nom} <{sender_email}>",
@@ -2804,92 +2747,44 @@ def send_super_admin_welcome_email(user_email: str, user_name: str, temp_passwor
         
         subject = "Bienvenue en tant que Super Admin - ProFireManager"
         
-        html_content = f"""
-        <html>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                <div style="text-align: center; margin-bottom: 30px;">
-                    <img src="https://customer-assets.emergentagent.com/job_fireshift-manager/artifacts/6vh2i9cz_05_Icone_Flamme_Rouge_Bordure_D9072B_VISIBLE.png" 
-                         alt="ProFireManager" 
-                         width="60" 
-                         height="60"
-                         style="width: 60px; height: 60px; margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
-                    <h1 style="color: #dc2626; margin: 0;">ProFireManager v2.0</h1>
-                    <p style="color: #666; margin: 5px 0;">Système de gestion des services d'incendie</p>
-                </div>
-                
-                <h2 style="color: #1e293b;">Bonjour {user_name},</h2>
-                
-                <p>Votre compte <strong>Super Administrateur</strong> a été créé avec succès dans ProFireManager v2.0.</p>
-                
-                <div style="background: #fef3c7; border: 2px solid #fcd34d; border-radius: 8px; padding: 20px; margin: 20px 0;">
-                    <h3 style="color: #92400e; margin-top: 0;">👑 Privilèges de Super Admin</h3>
-                    <p style="color: #92400e; margin: 10px 0;">
-                        En tant que Super Admin, vous avez accès à:
-                    </p>
-                    <ul style="color: #78350f; margin: 10px 0;">
-                        <li><strong>Tous les tenants/casernes</strong> de la plateforme</li>
-                        <li><strong>Interface d'administration</strong> globale</li>
-                        <li><strong>Gestion des autres super admins</strong></li>
-                        <li><strong>Création et configuration</strong> des tenants</li>
-                        <li><strong>Statistiques</strong> multi-tenant</li>
-                    </ul>
-                </div>
-                
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0;">
-                    <h3 style="color: #dc2626; margin-top: 0;">🔑 Informations de connexion :</h3>
-                    <p><strong>Email :</strong> {user_email}</p>
-                    <p><strong>Mot de passe temporaire :</strong> {temp_password}</p>
-                    <p style="color: #dc2626; font-weight: bold;">⚠️ Veuillez modifier votre mot de passe lors de votre première connexion</p>
-                </div>
-                
-                <div style="text-align: center; margin: 30px 0;">
-                    <a href="{admin_url}" 
-                       style="background: #dc2626; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px;">
-                        👑 Accéder à l'interface Super Admin
-                    </a>
-                    <p style="font-size: 12px; color: #666; margin-top: 10px;">
-                        💡 Ajoutez ce lien à vos favoris pour un accès rapide
-                    </p>
-                </div>
-                
-                <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;">
-                    <h4 style="color: #1e40af; margin-top: 0;">📋 Fonctionnalités disponibles :</h4>
-                    <ul style="color: #1e40af; margin: 0;">
-                        <li>Gestion multi-tenant (création, édition, suppression)</li>
-                        <li>Statistiques globales de la plateforme</li>
-                        <li>Gestion des super administrateurs</li>
-                        <li>Configuration des tenants</li>
-                        <li>Surveillance des performances</li>
-                    </ul>
-                </div>
-                
-                <div style="background: #fee2e2; border: 2px solid #dc2626; border-radius: 8px; padding: 20px; margin: 20px 0;">
-                    <h4 style="color: #991b1b; margin-top: 0;">🔒 IMPORTANT - Sécurité :</h4>
-                    <p style="color: #991b1b; font-weight: bold; margin: 10px 0;">
-                        ⚠️ Changez votre mot de passe temporaire IMMÉDIATEMENT !
-                    </p>
-                    <p style="color: #7f1d1d; margin: 10px 0;">
-                        En tant que Super Admin, vous avez un accès complet au système. Utilisez des mots de passe forts et ne partagez jamais vos identifiants.
-                    </p>
-                </div>
-                
-                <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
-                
-                <p style="color: #666; font-size: 14px; text-align: center;">
-                    Cet email a été envoyé automatiquement par ProFireManager v2.0.<br>
-                    Si vous n'avez pas demandé ce compte, contactez immédiatement l'administrateur système.
+        body = f"""
+            <h2 style="color: #1e293b; margin: 0 0 16px; font-size: 20px;">Bonjour {user_name},</h2>
+            <p style="color: #374151; font-size: 15px; line-height: 1.6;">
+                Votre compte <strong>Super Administrateur</strong> a ete cree avec succes.
+            </p>
+            
+            {email_alert_card(
+                "Privileges Super Admin",
+                "Tous les tenants/casernes, interface d'administration globale, gestion des super admins, creation et configuration des tenants, statistiques multi-tenant.",
+                "#F59E0B", "#FEF3C7", "#92400E"
+            )}
+            
+            {email_card(f'''
+                <h3 style="color: #dc2626; margin: 0 0 16px; font-size: 16px;">Informations de connexion</h3>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                    {email_detail_row("Email", user_email)}
+                    {email_detail_row("Mot de passe temporaire", f"<code style='background: #fee2e2; padding: 4px 10px; border-radius: 4px; font-size: 15px; color: #991b1b;'>{temp_password}</code>")}
+                </table>
+                <p style="color: #dc2626; font-weight: 600; margin: 16px 0 0; font-size: 13px;">
+                    Changez ce mot de passe des votre premiere connexion.
                 </p>
-                
-                <div style="text-align: center; margin-top: 20px;">
-                    <p style="color: #999; font-size: 12px;">
-                        ProFireManager v2.0 - Système de gestion des services d'incendie du Canada
-                    </p>
-                </div>
-            </div>
-        </body>
-        </html>
+            ''')}
+            
+            {email_alert_card(
+                "Securite",
+                "En tant que Super Admin, vous avez un acces complet au systeme. Utilisez des mots de passe forts et ne partagez jamais vos identifiants.",
+                "#dc2626", "#FEE2E2", "#991B1B"
+            )}
         """
+        
+        html_content = build_email(
+            title="Bienvenue Super Admin",
+            body_html=body,
+            accent_color="#dc2626",
+            cta_text="Acceder a l'interface Super Admin",
+            cta_url=admin_url,
+            footer_text="Si vous n'avez pas demande ce compte, contactez immediatement l'administrateur systeme."
+        )
         
         # Envoyer l'email via Resend
         resend_api_key = os.environ.get('RESEND_API_KEY')
@@ -3057,60 +2952,31 @@ def send_gardes_notification_email(user_email: str, user_name: str, gardes_list:
                 </tr>
             """
         
-        html_content = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 650px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
-            
-            <!-- Header -->
-            <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
-                <h1 style="margin: 0; font-size: 24px;">📅 Planning Validé</h1>
-                <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 16px;">{mois_texte}</p>
-            </div>
-            
-            <!-- Content -->
-            <div style="background: white; padding: 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        html_content = build_email(
+            title=f"Planning Valide - {mois_texte}",
+            body_html=f"""
+                <p style="font-size: 15px; color: #374151;">Bonjour <strong>{user_name}</strong>,</p>
+                <p style="font-size: 15px; color: #374151; margin: 0 0 24px;">
+                    Votre planning pour le mois de <strong>{mois_texte}</strong> a ete valide par votre administrateur.
+                </p>
                 
-                <p style="font-size: 16px;">Bonjour <strong>{user_name}</strong>,</p>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #EFF6FF; border-radius: 12px; padding: 24px; margin: 20px 0; text-align: center;">
+                    <tr>
+                        <td style="padding: 20px;">
+                            <div style="font-size: 42px; font-weight: bold; color: #dc2626; margin-bottom: 4px;">{nb_gardes}</div>
+                            <div style="color: #64748b; font-size: 14px; margin-bottom: 16px;">garde(s) assignee(s)</div>
+                            <div>{resume_types_html}</div>
+                            {heures_html}
+                        </td>
+                    </tr>
+                </table>
                 
-                <p>Votre planning pour le mois de <strong>{mois_texte}</strong> a été validé par votre administrateur.</p>
-                
-                <!-- Récapitulatif -->
-                <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 12px; padding: 25px; margin: 25px 0; text-align: center;">
-                    <h3 style="color: #1e40af; margin: 0 0 20px 0;">📊 Récapitulatif</h3>
-                    
-                    <!-- Nombre de gardes -->
-                    <div style="margin-bottom: 20px;">
-                        <span style="font-size: 42px; font-weight: bold; color: #dc2626;">{nb_gardes}</span>
-                        <br>
-                        <span style="color: #64748b; font-size: 14px;">garde(s) assignée(s)</span>
-                    </div>
-                    
-                    <!-- Résumé par type -->
-                    <div style="margin-bottom: 15px;">
-                        {resume_types_html}
-                    </div>
-                    
-                    <!-- Heures -->
-                    {heures_html}
-                </div>
-                
-                <!-- Message principal -->
-                <div style="background: #f0fdf4; border-left: 4px solid #22c55e; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0;">
-                    <strong style="color: #166534;">✅ Vos gardes pour {mois_texte} :</strong>
-                </div>
-                
-                <!-- Tableau des gardes -->
-                <table style="width: 100%; border-collapse: collapse; margin: 20px 0; background: #fafafa; border-radius: 8px; overflow: hidden;">
+                <table style="width: 100%; border-collapse: collapse; margin: 16px 0; background: #fafafa; border-radius: 8px; overflow: hidden;">
                     <thead>
                         <tr style="background: #f1f5f9;">
-                            <th style="padding: 12px; text-align: left; color: #475569; font-weight: 600;">Jour</th>
-                            <th style="padding: 12px; text-align: left; color: #475569; font-weight: 600;">Type de garde</th>
-                            <th style="padding: 12px; text-align: left; color: #475569; font-weight: 600;">Collègues</th>
+                            <th style="padding: 12px; text-align: left; color: #475569; font-weight: 600; font-size: 13px;">Jour</th>
+                            <th style="padding: 12px; text-align: left; color: #475569; font-weight: 600; font-size: 13px;">Type de garde</th>
+                            <th style="padding: 12px; text-align: left; color: #475569; font-weight: 600; font-size: 13px;">Collegues</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -3118,39 +2984,22 @@ def send_gardes_notification_email(user_email: str, user_name: str, gardes_list:
                     </tbody>
                 </table>
                 
-                <!-- Notes importantes -->
-                <div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 15px; margin: 25px 0;">
-                    <h4 style="color: #92400e; margin: 0 0 10px 0;">📢 Rappels importants :</h4>
-                    <ul style="color: #78350f; margin: 0; padding-left: 20px;">
-                        <li>Ce planning a été validé par votre administrateur</li>
-                        <li>Des ajustements peuvent survenir en cas de remplacements</li>
-                        <li>Consultez régulièrement l'application pour les mises à jour</li>
-                        <li>En cas d'absence imprévue, signalez-le immédiatement</li>
-                    </ul>
-                </div>
+                {email_alert_card(
+                    "Rappels importants",
+                    "Ce planning a ete valide par votre administrateur. Des ajustements peuvent survenir en cas de remplacements. Consultez regulierement l'application.",
+                    "#F59E0B", "#FEF3C7", "#92400E"
+                )}
                 
-                <!-- Bouton -->
-                <div style="text-align: center; margin: 30px 0;">
-                    <a href="{planning_url}" 
-                       style="background: #dc2626; color: white; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px;">
-                        Consulter mon planning
-                    </a>
-                </div>
-                
-                <p style="color: #64748b; margin-top: 30px;">
+                <p style="color: #64748b; margin-top: 24px;">
                     Cordialement,<br>
-                    <strong>L'équipe {caserne_nom}</strong>
+                    <strong>L'equipe {caserne_nom}</strong>
                 </p>
-            </div>
-            
-            <!-- Footer -->
-            <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
-                <p style="margin: 0;">Ceci est un message automatique de ProFireManager.</p>
-                <p style="margin: 5px 0 0 0;">© {datetime.now().year} {caserne_nom}</p>
-            </div>
-        </body>
-        </html>
-        """
+            """,
+            accent_color="#dc2626",
+            cta_text="Consulter mon planning",
+            cta_url=planning_url,
+            footer_text="Ceci est un message automatique de ProFireManager."
+        )
         
         # Configurer Resend
         resend.api_key = resend_api_key
@@ -3458,68 +3307,34 @@ def send_debogage_notification_email(super_admins_emails: List[str], type_notifi
         # Créer l'URL de l'interface admin
         admin_url = f"{os.environ.get('FRONTEND_URL', 'http://localhost:3000')}/admin"
         
-        html_content = f"""
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-    <div style="max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8fafc;">
-        <!-- Header -->
-        <div style="background: linear-gradient(135deg, {color} 0%, {color}dd 100%); padding: 30px; border-radius: 16px 16px 0 0; text-align: center;">
-            <h1 style="margin: 0; color: white; font-size: 24px; font-weight: 600;">
-                {type_label}
-            </h1>
-        </div>
-        
-        <!-- Content -->
-        <div style="background-color: white; padding: 30px; border-radius: 0 0 16px 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-            <!-- Titre -->
-            <div style="margin-bottom: 20px;">
-                <h2 style="margin: 0 0 10px 0; color: #1e293b; font-size: 20px; font-weight: 600;">
-                    {titre}
-                </h2>
-                <div style="display: inline-block; padding: 4px 12px; background-color: {priorite_color}; color: white; border-radius: 12px; font-size: 12px; font-weight: 600; text-transform: uppercase;">
-                    Priorité: {priorite}
+        html_content = build_email(
+            title=type_label,
+            body_html=f"""
+                <h2 style="color: #1e293b; margin: 0 0 16px; font-size: 20px;">{titre}</h2>
+                <div style="display: inline-block; padding: 4px 12px; background-color: {priorite_color}; color: white; border-radius: 12px; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 16px;">
+                    Priorite: {priorite}
                 </div>
-            </div>
-            
-            <!-- Description -->
-            <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid {color};">
-                <p style="margin: 0; color: #475569; line-height: 1.6;">
-                    {description[:200]}{'...' if len(description) > 200 else ''}
-                </p>
-            </div>
-            
-            <!-- Info supplémentaires -->
-            <div style="margin-bottom: 25px; padding: 15px; background-color: #eff6ff; border-radius: 8px;">
-                <p style="margin: 0 0 8px 0; color: #64748b; font-size: 14px;">
-                    <strong>Créé par:</strong> {created_by}
-                </p>
-                <p style="margin: 0; color: #64748b; font-size: 14px;">
-                    <strong>ID:</strong> {item_id[:8]}...
-                </p>
-            </div>
-            
-            <!-- Call to Action -->
-            <div style="text-align: center; margin-top: 30px;">
-                <a href="{admin_url}" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, {color} 0%, {color}dd 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    Voir dans l'Interface Admin
-                </a>
-            </div>
-        </div>
-        
-        <!-- Footer -->
-        <div style="text-align: center; padding: 20px; color: #94a3b8; font-size: 12px;">
-            <p style="margin: 0;">ProFireManager - Système de Gestion de Sécurité Incendie</p>
-            <p style="margin: 5px 0 0 0;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
-        </div>
-    </div>
-</body>
-</html>
-"""
+                
+                {email_card(f'''
+                    <p style="margin: 0; color: #475569; line-height: 1.6;">
+                        {description[:200]}{'...' if len(description) > 200 else ''}
+                    </p>
+                ''', color)}
+                
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #eff6ff; border-radius: 8px; padding: 15px; margin: 16px 0;">
+                    <tr>
+                        <td style="padding: 12px;">
+                            <p style="margin: 0 0 8px; color: #64748b; font-size: 14px;"><strong>Cree par:</strong> {created_by}</p>
+                            <p style="margin: 0; color: #64748b; font-size: 14px;"><strong>ID:</strong> {item_id[:8]}...</p>
+                        </td>
+                    </tr>
+                </table>
+            """,
+            accent_color=color,
+            cta_text="Voir dans l'Interface Admin",
+            cta_url=admin_url,
+            footer_text="Cet email a ete envoye automatiquement, merci de ne pas y repondre."
+        )
         
         # Envoyer l'email à tous les super-admins avec Resend
         for admin_email in super_admins_emails:

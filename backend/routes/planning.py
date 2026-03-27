@@ -68,6 +68,7 @@ logger = logging.getLogger(__name__)
 
 import os
 import resend
+from services.email_builder import build_email, email_card, email_alert_card, email_detail_row
 
 
 def send_planning_notification_email(user_email: str, user_name: str, gardes_list: list, tenant_slug: str, periode: str, tenant_nom: str = None, stats: dict = None):

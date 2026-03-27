@@ -17,6 +17,8 @@ import re
 
 logger = logging.getLogger(__name__)
 
+from services.email_builder import build_email, email_card, email_detail_row, email_alert_card
+
 
 def formater_numero_telephone(numero: str) -> Optional[str]:
     """
@@ -78,7 +80,7 @@ async def envoyer_email_remplacement(
         
         resend_api_key = os.environ.get('RESEND_API_KEY')
         if not resend_api_key:
-            logger.warning(f"RESEND_API_KEY non configurée - Email non envoyé")
+            logger.warning("RESEND_API_KEY non configurée - Email non envoyé")
             return False
         
         resend.api_key = resend_api_key
@@ -112,116 +114,49 @@ async def envoyer_email_remplacement(
         lien_accepter = f"{backend_url}/api/remplacement-action/{token}/accepter"
         lien_refuser = f"{backend_url}/api/remplacement-action/{token}/refuser"
         
-        html_content = f"""
-        <!DOCTYPE html>
-        <html lang="fr">
-        <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6;">
-                <tr>
-                    <td align="center" style="padding: 40px 20px;">
-                        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; width: 100%;">
-                            
-                            <!-- Header -->
-                            <tr>
-                                <td style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 16px 16px 0 0; padding: 32px 40px; text-align: center;">
-                                    <img src="https://customer-assets.emergentagent.com/job_fireshift-manager/artifacts/6vh2i9cz_05_Icone_Flamme_Rouge_Bordure_D9072B_VISIBLE.png" alt="ProFireManager" width="52" height="52" style="width: 52px; height: 52px; margin-bottom: 12px; display: block; margin-left: auto; margin-right: auto;">
-                                    <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700;">ProFireManager</h1>
-                                    <p style="color: #94a3b8; margin: 4px 0 0; font-size: 13px;">Gestion des services d'incendie</p>
-                                </td>
-                            </tr>
-                            
-                            <!-- Body -->
-                            <tr>
-                                <td style="background-color: #ffffff; padding: 0;">
-                                    <div style="height: 4px; background-color: #3B82F6;"></div>
-                                    <div style="padding: 36px 40px;">
-                                        
-                                        <p style="color: #6b7280; font-size: 15px; margin: 0 0 8px;">Bonjour {remplacant_prenom},</p>
-                                        <p style="color: #374151; font-size: 15px; margin: 0 0 24px;"><strong>{demandeur_nom}</strong> vous sollicite pour un remplacement.</p>
-                                        
-                                        <!-- Details Card -->
-                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden;">
-                                            <tr>
-                                                <td style="padding: 24px;">
-                                                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                                                        <tr>
-                                                            <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
-                                                                <span style="color: #6b7280; font-size: 14px;">Date</span><br>
-                                                                <span style="color: #111827; font-weight: 600; font-size: 15px;">{date_garde}</span>
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
-                                                                <span style="color: #6b7280; font-size: 14px;">Horaire</span><br>
-                                                                <span style="color: #111827; font-weight: 600; font-size: 15px;">{heure_debut} - {heure_fin}</span>
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
-                                                                <span style="color: #6b7280; font-size: 14px;">Type de garde</span><br>
-                                                                <span style="color: #111827; font-weight: 600; font-size: 15px;">{type_garde_nom}</span>
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td style="padding: 10px 0;">
-                                                                <span style="color: #6b7280; font-size: 14px;">Raison</span><br>
-                                                                <span style="color: #111827; font-weight: 600; font-size: 15px;">{raison}</span>
-                                                            </td>
-                                                        </tr>
-                                                    </table>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                        
-                                        <!-- Action Buttons -->
-                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 32px 0 16px;">
-                                            <tr>
-                                                <td align="center">
-                                                    <a href="{lien_accepter}" 
-                                                       style="display: inline-block; background-color: #10B981; color: #ffffff; 
-                                                              padding: 14px 36px; text-decoration: none; border-radius: 10px; 
-                                                              font-weight: 600; font-size: 15px; margin-right: 12px;
-                                                              box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);">
-                                                        Accepter
-                                                    </a>
-                                                    <a href="{lien_refuser}" 
-                                                       style="display: inline-block; background-color: #EF4444; color: #ffffff; 
-                                                              padding: 14px 36px; text-decoration: none; border-radius: 10px; 
-                                                              font-weight: 600; font-size: 15px;
-                                                              box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);">
-                                                        Refuser
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                        
-                                        <p style="color: #9ca3af; font-size: 13px; text-align: center; margin: 0 0 24px;">Ce lien expire dans 48 heures.</p>
-                                        
-                                        <p style="color: #374151; font-size: 14px; margin: 0;">Cordialement,<br><strong>L'equipe {tenant_nom}</strong></p>
-                                    </div>
-                                </td>
-                            </tr>
-                            
-                            <!-- Footer -->
-                            <tr>
-                                <td style="background-color: #f8fafc; border-radius: 0 0 16px 16px; border-top: 1px solid #e2e8f0; padding: 24px 40px; text-align: center;">
-                                    <p style="color: #9ca3af; font-size: 12px; margin: 0;">
-                                        Ceci est un message automatique. Merci de ne pas y repondre.
-                                    </p>
-                                </td>
-                            </tr>
-                            
-                        </table>
-                    </td>
-                </tr>
-            </table>
-        </body>
-        </html>
-        """
+        html_content = build_email(
+            title="Demande de remplacement",
+            body_html=f"""
+                <p style="color: #6b7280; font-size: 15px; margin: 0 0 8px;">Bonjour {remplacant_prenom},</p>
+                <p style="color: #374151; font-size: 15px; margin: 0 0 24px;"><strong>{demandeur_nom}</strong> vous sollicite pour un remplacement.</p>
+                
+                {email_card(f'''
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                        {email_detail_row("Date", date_garde)}
+                        {email_detail_row("Horaire", f"{heure_debut} - {heure_fin}")}
+                        {email_detail_row("Type de garde", type_garde_nom)}
+                        {email_detail_row("Raison", raison)}
+                    </table>
+                ''')}
+                
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 32px 0 16px;">
+                    <tr>
+                        <td align="center">
+                            <a href="{lien_accepter}" 
+                               style="display: inline-block; background-color: #10B981; color: #ffffff; 
+                                      padding: 14px 36px; text-decoration: none; border-radius: 10px; 
+                                      font-weight: 600; font-size: 15px; margin-right: 12px;
+                                      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);">
+                                Accepter
+                            </a>
+                            <a href="{lien_refuser}" 
+                               style="display: inline-block; background-color: #EF4444; color: #ffffff; 
+                                      padding: 14px 36px; text-decoration: none; border-radius: 10px; 
+                                      font-weight: 600; font-size: 15px;
+                                      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);">
+                                Refuser
+                            </a>
+                        </td>
+                    </tr>
+                </table>
+                
+                <p style="color: #9ca3af; font-size: 13px; text-align: center; margin: 0 0 24px;">Ce lien expire dans 48 heures.</p>
+                
+                <p style="color: #374151; font-size: 14px; margin: 0;">Cordialement,<br><strong>L'equipe {tenant_nom}</strong></p>
+            """,
+            accent_color="#3B82F6",
+            footer_text="Ceci est un message automatique. Merci de ne pas y repondre."
+        )
         
         params = {
             "from": f"{tenant_nom} <{sender_email}>",
@@ -272,7 +207,7 @@ async def envoyer_email_remplacement_trouve(
         
         resend_api_key = os.environ.get('RESEND_API_KEY')
         if not resend_api_key:
-            logger.warning(f"RESEND_API_KEY non configurée - Email non envoyé")
+            logger.warning("RESEND_API_KEY non configurée - Email non envoyé")
             return False
         
         resend.api_key = resend_api_key
@@ -297,114 +232,38 @@ async def envoyer_email_remplacement_trouve(
         sender_email = os.environ.get('SENDER_EMAIL', 'noreply@profiremanager.ca')
         frontend_url = os.environ.get('FRONTEND_URL', 'https://www.profiremanager.ca')
         
-        html_content = f"""
-        <!DOCTYPE html>
-        <html lang="fr">
-        <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6;">
-                <tr>
-                    <td align="center" style="padding: 40px 20px;">
-                        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; width: 100%;">
-                            
-                            <!-- Header -->
-                            <tr>
-                                <td style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 16px 16px 0 0; padding: 32px 40px; text-align: center;">
-                                    <img src="https://customer-assets.emergentagent.com/job_fireshift-manager/artifacts/6vh2i9cz_05_Icone_Flamme_Rouge_Bordure_D9072B_VISIBLE.png" alt="ProFireManager" width="52" height="52" style="width: 52px; height: 52px; margin-bottom: 12px; display: block; margin-left: auto; margin-right: auto;">
-                                    <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700;">ProFireManager</h1>
-                                    <p style="color: #94a3b8; margin: 4px 0 0; font-size: 13px;">Gestion des services d'incendie</p>
-                                </td>
-                            </tr>
-                            
-                            <!-- Body -->
-                            <tr>
-                                <td style="background-color: #ffffff; padding: 0;">
-                                    <div style="height: 4px; background-color: #10B981;"></div>
-                                    <div style="padding: 36px 40px;">
-                                        
-                                        <p style="color: #6b7280; font-size: 15px; margin: 0 0 24px;">Bonjour {demandeur_prenom},</p>
-                                        
-                                        <!-- Success Card -->
-                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                                            <tr>
-                                                <td style="background-color: #ECFDF5; border-radius: 12px; border-left: 4px solid #10B981; padding: 24px 28px; text-align: center;">
-                                                    <h2 style="color: #065F46; margin: 0 0 8px; font-size: 20px; font-weight: 700;">Remplacant trouve !</h2>
-                                                    <p style="color: #047857; margin: 0; font-size: 15px;">
-                                                        <strong>{remplacant_nom}</strong> a accepte de vous remplacer.
-                                                    </p>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                        
-                                        <!-- Details -->
-                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; margin: 24px 0;">
-                                            <tr>
-                                                <td style="padding: 24px;">
-                                                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                                                        <tr>
-                                                            <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
-                                                                <span style="color: #6b7280; font-size: 14px;">Date</span><br>
-                                                                <span style="color: #111827; font-weight: 600; font-size: 15px;">{date_garde}</span>
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
-                                                                <span style="color: #6b7280; font-size: 14px;">Type de garde</span><br>
-                                                                <span style="color: #111827; font-weight: 600; font-size: 15px;">{type_garde_nom}</span>
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td style="padding: 10px 0;">
-                                                                <span style="color: #6b7280; font-size: 14px;">Remplacant</span><br>
-                                                                <span style="color: #111827; font-weight: 600; font-size: 15px;">{remplacant_nom}</span>
-                                                            </td>
-                                                        </tr>
-                                                    </table>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                        
-                                        <p style="color: #374151; font-size: 14px; margin: 0 0 24px;">Le planning a ete mis a jour automatiquement.</p>
-                                        
-                                        <!-- CTA -->
-                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                                            <tr>
-                                                <td align="center">
-                                                    <a href="{frontend_url}/remplacements" 
-                                                       style="display: inline-block; background-color: #10B981; color: #ffffff; 
-                                                              padding: 14px 36px; text-decoration: none; border-radius: 10px; 
-                                                              font-weight: 600; font-size: 15px;
-                                                              box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);">
-                                                        Voir mes remplacements
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                        
-                                        <p style="color: #374151; font-size: 14px; margin: 32px 0 0;">Cordialement,<br><strong>L'equipe {tenant_nom}</strong></p>
-                                    </div>
-                                </td>
-                            </tr>
-                            
-                            <!-- Footer -->
-                            <tr>
-                                <td style="background-color: #f8fafc; border-radius: 0 0 16px 16px; border-top: 1px solid #e2e8f0; padding: 24px 40px; text-align: center;">
-                                    <p style="color: #9ca3af; font-size: 12px; margin: 0;">
-                                        Ceci est un message automatique. Merci de ne pas y repondre.
-                                    </p>
-                                </td>
-                            </tr>
-                            
-                        </table>
-                    </td>
-                </tr>
-            </table>
-        </body>
-        </html>
-        """
+        details_card = email_card(
+            '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">'
+            + email_detail_row("Date", date_garde)
+            + email_detail_row("Type de garde", type_garde_nom)
+            + email_detail_row("Remplacant", remplacant_nom)
+            + '</table>'
+        )
+        
+        alert_card = email_alert_card(
+            "Remplacant trouve !",
+            f"{remplacant_nom} a accepte de vous remplacer.",
+            "#10B981", "#ECFDF5", "#065F46"
+        )
+        
+        html_content = build_email(
+            title="Remplacant trouve !",
+            body_html=f"""
+                <p style="color: #6b7280; font-size: 15px; margin: 0 0 24px;">Bonjour {demandeur_prenom},</p>
+                
+                {alert_card}
+                
+                {details_card}
+                
+                <p style="color: #374151; font-size: 14px; margin: 0 0 24px;">Le planning a ete mis a jour automatiquement.</p>
+                
+                <p style="color: #374151; font-size: 14px; margin: 32px 0 0;">Cordialement,<br><strong>L'equipe {tenant_nom}</strong></p>
+            """,
+            accent_color="#10B981",
+            cta_text="Voir mes remplacements",
+            cta_url=f"{frontend_url}/remplacements",
+            footer_text="Ceci est un message automatique. Merci de ne pas y repondre."
+        )
         
         params = {
             "from": f"{tenant_nom} <{sender_email}>",
@@ -455,7 +314,7 @@ async def envoyer_email_remplacement_non_trouve(
         
         resend_api_key = os.environ.get('RESEND_API_KEY')
         if not resend_api_key:
-            logger.warning(f"RESEND_API_KEY non configurée - Email non envoyé")
+            logger.warning("RESEND_API_KEY non configurée - Email non envoyé")
             return False
         
         resend.api_key = resend_api_key
@@ -479,116 +338,40 @@ async def envoyer_email_remplacement_non_trouve(
         sender_email = os.environ.get('SENDER_EMAIL', 'noreply@profiremanager.ca')
         frontend_url = os.environ.get('FRONTEND_URL', 'https://www.profiremanager.ca')
         
-        html_content = f"""
-        <!DOCTYPE html>
-        <html lang="fr">
-        <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6;">
-                <tr>
-                    <td align="center" style="padding: 40px 20px;">
-                        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; width: 100%;">
-                            
-                            <!-- Header -->
-                            <tr>
-                                <td style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 16px 16px 0 0; padding: 32px 40px; text-align: center;">
-                                    <img src="https://customer-assets.emergentagent.com/job_fireshift-manager/artifacts/6vh2i9cz_05_Icone_Flamme_Rouge_Bordure_D9072B_VISIBLE.png" alt="ProFireManager" width="52" height="52" style="width: 52px; height: 52px; margin-bottom: 12px; display: block; margin-left: auto; margin-right: auto;">
-                                    <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700;">ProFireManager</h1>
-                                    <p style="color: #94a3b8; margin: 4px 0 0; font-size: 13px;">Gestion des services d'incendie</p>
-                                </td>
-                            </tr>
-                            
-                            <!-- Body -->
-                            <tr>
-                                <td style="background-color: #ffffff; padding: 0;">
-                                    <div style="height: 4px; background-color: #F59E0B;"></div>
-                                    <div style="padding: 36px 40px;">
-                                        
-                                        <p style="color: #6b7280; font-size: 15px; margin: 0 0 24px;">Bonjour {demandeur_prenom},</p>
-                                        
-                                        <!-- Alert Card -->
-                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                                            <tr>
-                                                <td style="background-color: #FEF3C7; border-radius: 12px; border-left: 4px solid #F59E0B; padding: 24px 28px; text-align: center;">
-                                                    <h2 style="color: #92400E; margin: 0 0 8px; font-size: 20px; font-weight: 700;">Quart ouvert a tous</h2>
-                                                    <p style="color: #A16207; margin: 0; font-size: 15px;">
-                                                        Aucun remplacant n'a ete trouve automatiquement. Votre quart est maintenant visible par tous les employes.
-                                                    </p>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                        
-                                        <!-- Details -->
-                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; margin: 24px 0;">
-                                            <tr>
-                                                <td style="padding: 24px;">
-                                                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                                                        <tr>
-                                                            <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
-                                                                <span style="color: #6b7280; font-size: 14px;">Date</span><br>
-                                                                <span style="color: #111827; font-weight: 600; font-size: 15px;">{date_garde}</span>
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
-                                                                <span style="color: #6b7280; font-size: 14px;">Type de garde</span><br>
-                                                                <span style="color: #111827; font-weight: 600; font-size: 15px;">{type_garde_nom}</span>
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td style="padding: 10px 0;">
-                                                                <span style="color: #6b7280; font-size: 14px;">Statut</span><br>
-                                                                <span style="color: #F59E0B; font-weight: 600; font-size: 15px;">Ouvert a tous les employes</span>
-                                                            </td>
-                                                        </tr>
-                                                    </table>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                        
-                                        <p style="color: #374151; font-size: 14px; margin: 0 0 24px; line-height: 1.6;">
-                                            Tous les employes ont ete notifies. Le premier volontaire prendra votre quart. Vous serez informe des que quelqu'un se porte volontaire.
-                                        </p>
-                                        
-                                        <!-- CTA -->
-                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                                            <tr>
-                                                <td align="center">
-                                                    <a href="{frontend_url}/remplacements" 
-                                                       style="display: inline-block; background-color: #F59E0B; color: #ffffff; 
-                                                              padding: 14px 36px; text-decoration: none; border-radius: 10px; 
-                                                              font-weight: 600; font-size: 15px;
-                                                              box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3);">
-                                                        Voir mes demandes
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                        
-                                        <p style="color: #374151; font-size: 14px; margin: 32px 0 0;">Cordialement,<br><strong>L'equipe {tenant_nom}</strong></p>
-                                    </div>
-                                </td>
-                            </tr>
-                            
-                            <!-- Footer -->
-                            <tr>
-                                <td style="background-color: #f8fafc; border-radius: 0 0 16px 16px; border-top: 1px solid #e2e8f0; padding: 24px 40px; text-align: center;">
-                                    <p style="color: #9ca3af; font-size: 12px; margin: 0;">
-                                        Ceci est un message automatique. Merci de ne pas y repondre.
-                                    </p>
-                                </td>
-                            </tr>
-                            
-                        </table>
-                    </td>
-                </tr>
-            </table>
-        </body>
-        </html>
-        """
+        alert_card = email_alert_card(
+            "Quart ouvert a tous",
+            "Aucun remplacant n'a ete trouve automatiquement. Votre quart est maintenant visible par tous les employes.",
+            "#F59E0B", "#FEF3C7", "#92400E"
+        )
+        
+        details_card = email_card(
+            '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">'
+            + email_detail_row("Date", date_garde)
+            + email_detail_row("Type de garde", type_garde_nom)
+            + email_detail_row("Statut", '<span style="color: #F59E0B; font-weight: 600;">Ouvert a tous les employes</span>')
+            + '</table>'
+        )
+        
+        html_content = build_email(
+            title="Quart ouvert a tous",
+            body_html=f"""
+                <p style="color: #6b7280; font-size: 15px; margin: 0 0 24px;">Bonjour {demandeur_prenom},</p>
+                
+                {alert_card}
+                
+                {details_card}
+                
+                <p style="color: #374151; font-size: 14px; margin: 0 0 24px; line-height: 1.6;">
+                    Tous les employes ont ete notifies. Le premier volontaire prendra votre quart. Vous serez informe des que quelqu'un se porte volontaire.
+                </p>
+                
+                <p style="color: #374151; font-size: 14px; margin: 32px 0 0;">Cordialement,<br><strong>L'equipe {tenant_nom}</strong></p>
+            """,
+            accent_color="#F59E0B",
+            cta_text="Voir mes demandes",
+            cta_url=f"{frontend_url}/remplacements",
+            footer_text="Ceci est un message automatique. Merci de ne pas y repondre."
+        )
         
         params = {
             "from": f"{tenant_nom} <{sender_email}>",
