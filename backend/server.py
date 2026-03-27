@@ -102,6 +102,7 @@ from routes.batiments_import import router as batiments_import_router
 from routes.file_storage import router as file_storage_router
 from routes.import_interventions import router as import_interventions_router
 from routes.batiments import router as batiments_router
+from routes.casernes import router as casernes_router
 from io import BytesIO
 import base64
 from PIL import Image as PILImage
@@ -6820,6 +6821,7 @@ app.include_router(batiments_import_router, prefix="/api")  # Module Import Bât
 app.include_router(file_storage_router, prefix="/api")  # Module File Storage (Object Storage)
 app.include_router(import_interventions_router, prefix="/api")  # Module Import Historique Interventions
 app.include_router(batiments_router, prefix="/api")  # Module Bâtiments (indépendant)
+app.include_router(casernes_router, prefix="/api")  # Module Multi-Casernes
 app.include_router(delegations_router, prefix="/api")  # Module Délégations de responsabilités
 app.include_router(api_router)  # Routes principales (server.py) - DOIT être avant auth_router pour que /admin/auth/login soit traité avant /{tenant_slug}/auth/login
 app.include_router(auth_router, prefix="/api")  # Module Auth (tenant routes)

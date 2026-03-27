@@ -5,6 +5,7 @@ import { Input } from "./ui/input.jsx";
 import { Label } from "./ui/label.jsx";
 import { useToast } from "../hooks/use-toast";
 import { buildApiUrl } from "../utils/api";
+import { apiGet, apiPost, apiPut, apiDelete } from "../utils/api";
 import { useConfirmDialog } from "./ui/ConfirmDialog";
 import Personnalisation from "./Personnalisation.jsx";
 
@@ -18,6 +19,7 @@ const ParametresEquipesGarde = lazy(() => import("./ParametresEquipesGarde.jsx")
 const ParametresFacturation = lazy(() => import("./ParametresFacturation.jsx"));
 const ParametresHorairesPersonnalises = lazy(() => import("./ParametresHorairesPersonnalises.jsx"));
 const EmailsHistory = lazy(() => import("./EmailsHistory.jsx"));
+const CasernesSettings = lazy(() => import("./CasernesSettings.jsx"));
 const ParametresSecteurs = lazy(() => import("./ParametresSecteurs.jsx"));
 const GestionTypesAcces = lazy(() => import("./parametres/GestionTypesAcces.jsx"));
 const ParametresGrades = lazy(() => import("./ParametresGrades.jsx"));
@@ -595,7 +597,8 @@ const Parametres = ({ user, tenantSlug }) => {
       duree_heures: 8,
       couleur: '#3B82F6',
       jours_application: [],
-      officier_obligatoire: false
+      officier_obligatoire: false,
+      mode_caserne: 'global'
     });
   };
 
@@ -689,7 +692,8 @@ const Parametres = ({ user, tenantSlug }) => {
       est_garde_externe: type.est_garde_externe || false,
       taux_horaire_externe: type.taux_horaire_externe || null,
       montant_garde: type.montant_garde || null,
-      competences_requises: type.competences_requises || []
+      competences_requises: type.competences_requises || [],
+      mode_caserne: type.mode_caserne || 'global'
     });
     setShowEditTypeModal(true);
   };
@@ -1404,6 +1408,7 @@ const Parametres = ({ user, tenantSlug }) => {
           { id: 'formations', icon: '📚', title: 'Formations', desc: 'NFPA 1500' },
           { id: 'personnalisation', icon: '🎨', title: 'Personnalisation', desc: 'Logo et branding' },
           { id: 'secteurs', icon: '📍', title: 'Secteurs', desc: 'Zones géographiques' },
+          { id: 'casernes', icon: '🏢', title: 'Casernes', desc: 'Multi-casernes' },
           { id: 'imports', icon: '📥', title: 'Imports CSV', desc: 'Import en masse' },
           // Onglets admin uniquement
           ...(user?.role === 'admin' ? [
@@ -1492,7 +1497,8 @@ const Parametres = ({ user, tenantSlug }) => {
                         <span>⏰ {type.heure_debut} - {type.heure_fin}</span>
                         <span>👥 {type.personnel_requis} personnel</span>
                         {type.officier_obligatoire && <span>🎖️ Officier requis</span>}
-                        {type.est_garde_externe && <span className="badge-externe">🏠 Garde Externe</span>}
+                        {type.est_garde_externe && <span className="badge-externe">Garde Externe</span>}
+                        {type.mode_caserne === 'par_caserne' && <span style={{ background: '#dbeafe', color: '#1d4ed8', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 500 }}>Par caserne</span>}
                       </div>
                     </div>
                     <div className="type-actions">
@@ -1685,6 +1691,23 @@ const Parametres = ({ user, tenantSlug }) => {
                   </div>
                 )}
                 
+                {/* Section Mode Caserne (Multi-Casernes) */}
+                <div style={{ padding: '12px', background: '#f0f9ff', borderRadius: '8px', border: '1px solid #bae6fd' }}>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>Mode caserne</label>
+                  <p style={{ fontSize: '0.8rem', color: '#6b7280', marginBottom: '8px' }}>
+                    Visible uniquement si le multi-casernes est actif dans les param&egrave;tres.
+                  </p>
+                  <select
+                    data-testid="mode-caserne-select"
+                    value={editForm.mode_caserne || 'global'}
+                    onChange={(e) => setEditForm({ ...editForm, mode_caserne: e.target.value })}
+                    style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white' }}
+                  >
+                    <option value="global">Global - Tous les employ&eacute;s ensemble (comportement standard)</option>
+                    <option value="par_caserne">Par caserne - Planning s&eacute;par&eacute; par caserne</option>
+                  </select>
+                </div>
+
                 {/* Section Compétences Requises */}
                 <div>
                   <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>📜 Compétences requises pour cette garde</label>
@@ -1918,6 +1941,12 @@ const Parametres = ({ user, tenantSlug }) => {
           </Suspense>
         )}
 
+        {activeTab === 'casernes' && (
+          <Suspense fallback={<div style={{ textAlign: 'center', padding: '40px' }}>Chargement...</div>}>
+            <CasernesSettings tenantSlug={tenantSlug} toast={toast} apiGet={apiGet} apiPost={apiPost} apiPut={apiPut} apiDelete={apiDelete} />
+          </Suspense>
+        )}
+
         {activeTab === 'facturation' && user?.role === 'admin' && (
           <Suspense fallback={<div style={{ textAlign: 'center', padding: '40px' }}>Chargement...</div>}>
             <ParametresFacturation user={user} tenantSlug={tenantSlug} />
@@ -2081,6 +2110,22 @@ const Parametres = ({ user, tenantSlug }) => {
                 </div>
               )}
               
+              {/* Section Mode Caserne */}
+              <div style={{ padding: '12px', background: '#f0f9ff', borderRadius: '8px', border: '1px solid #bae6fd' }}>
+                <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>Mode caserne</label>
+                <p style={{ fontSize: '0.8rem', color: '#6b7280', marginBottom: '8px' }}>
+                  D&eacute;finit si cette garde est g&eacute;r&eacute;e globalement ou par caserne (si multi-casernes actif).
+                </p>
+                <select
+                  value={createForm.mode_caserne || 'global'}
+                  onChange={(e) => setCreateForm({ ...createForm, mode_caserne: e.target.value })}
+                  style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white' }}
+                >
+                  <option value="global">Global - Tous les employ&eacute;s ensemble</option>
+                  <option value="par_caserne">Par caserne - Planning s&eacute;par&eacute; par caserne</option>
+                </select>
+              </div>
+
               {/* Section Compétences requises */}
               <div style={{ padding: '12px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>📜 Compétences requises</label>

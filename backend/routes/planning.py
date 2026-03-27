@@ -418,6 +418,7 @@ class Assignation(BaseModel):
     statut: str = "planifie"  # planifie, confirme, remplacement_demande
     assignation_type: str = "auto"  # auto, manuel, manuel_avance
     publication_status: str = "publie"  # brouillon, publie - pour le mode test/preview
+    caserne_id: Optional[str] = None  # ID de la caserne (si mode multi-casernes actif et type_garde par_caserne)
     justification: Optional[Dict[str, Any]] = None
     notes_admin: Optional[str] = None
     justification_historique: Optional[List[Dict[str, Any]]] = None
@@ -428,6 +429,7 @@ class AssignationCreate(BaseModel):
     type_garde_id: str
     date: str
     assignation_type: str = "manuel"
+    caserne_id: Optional[str] = None
     notes_admin: Optional[str] = None
 
 
@@ -588,6 +590,7 @@ async def create_assignation(
         type_garde_id=assignation_data.type_garde_id,
         date=assignation_data.date,
         assignation_type=assignation_data.assignation_type,
+        caserne_id=assignation_data.caserne_id,
         notes_admin=assignation_data.notes_admin
     )
     

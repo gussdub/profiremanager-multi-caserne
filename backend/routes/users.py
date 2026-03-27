@@ -59,6 +59,7 @@ class UserCreate(BaseModel):
     accepte_gardes_externes: bool = True
     est_preventionniste: bool = False
     equipe_garde: Optional[int] = None
+    caserne_ids: List[str] = []
     mot_de_passe: str = "TempPass123!"
 
 class UserUpdate(BaseModel):
@@ -81,6 +82,7 @@ class UserUpdate(BaseModel):
     accepte_gardes_externes: Optional[bool] = None
     est_preventionniste: Optional[bool] = None
     equipe_garde: Optional[int] = None
+    caserne_ids: Optional[List[str]] = None
     photo_profil: Optional[str] = None
     tailles_epi: Optional[Dict[str, str]] = None
     mot_de_passe: Optional[str] = None

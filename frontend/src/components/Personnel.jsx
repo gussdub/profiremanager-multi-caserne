@@ -117,6 +117,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     date_fin: ''
   });
   const [editingEPIId, setEditingEPIId] = useState(null);
+  const [casernesList, setCasernesList] = useState([]);
   const [newEPI, setNewEPI] = useState({
     type_epi: '',
     taille: '',
@@ -144,6 +145,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     taux_horaire: 0,
     formations: [],
     accepte_gardes_externes: true, // True par défaut
+    caserne_ids: [],
     mot_de_passe: '',
     // Tailles EPI (optionnelles)
     taille_casque: '',
@@ -187,11 +189,12 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       if (!tenantSlug) return;
       
       try {
-        const [usersData, competencesData, gradesData, equipesGardeData] = await Promise.all([
+        const [usersData, competencesData, gradesData, equipesGardeData, casernesData] = await Promise.all([
           apiGet(tenantSlug, '/users'),
           apiGet(tenantSlug, '/competences'),
           apiGet(tenantSlug, '/grades'),
-          apiGet(tenantSlug, '/parametres/equipes-garde').catch(() => null)
+          apiGet(tenantSlug, '/parametres/equipes-garde').catch(() => null),
+          apiGet(tenantSlug, '/casernes').catch(() => [])
         ]);
         setUsers(usersData);
         setFormations(competencesData);
@@ -199,6 +202,9 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
         setGrades(gradesData);
         if (equipesGardeData) {
           setEquipesGardeParams(equipesGardeData);
+        }
+        if (casernesData) {
+          setCasernesList(casernesData);
         }
       } catch (error) {
         console.error('Erreur lors du chargement des données:', error);
@@ -600,6 +606,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       heures_max_semaine: user.heures_max_semaine || 40,
       formations: user.formations || [],
       accepte_gardes_externes: user.accepte_gardes_externes !== false,
+      caserne_ids: user.caserne_ids || [],
       tailles_epi: user.tailles_epi || {},
       mot_de_passe: ''
     });
@@ -1876,6 +1883,50 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                     </div>
                   )}
 
+                  {/* Sélection casernes (multi-casernes) - Modal Création */}
+                  {casernesList.length > 0 && (
+                    <div className="form-field">
+                      <Label>Casernes</Label>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
+                        {casernesList.map(caserne => (
+                          <label
+                            key={caserne.id}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: '6px',
+                              padding: '4px 10px', borderRadius: '6px', cursor: 'pointer',
+                              background: (newUser.caserne_ids || []).includes(caserne.id) ? caserne.couleur + '20' : '#f3f4f6',
+                              border: (newUser.caserne_ids || []).includes(caserne.id) ? `2px solid ${caserne.couleur}` : '1px solid #d1d5db',
+                              fontSize: '0.85rem', transition: 'all 0.2s'
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={(newUser.caserne_ids || []).includes(caserne.id)}
+                              onChange={(e) => {
+                                const ids = newUser.caserne_ids || [];
+                                setNewUser({
+                                  ...newUser,
+                                  caserne_ids: e.target.checked
+                                    ? [...ids, caserne.id]
+                                    : ids.filter(id => id !== caserne.id)
+                                });
+                              }}
+                              style={{ accentColor: caserne.couleur }}
+                            />
+                            <span style={{
+                              width: '10px', height: '10px', borderRadius: '50%',
+                              background: caserne.couleur, display: 'inline-block'
+                            }} />
+                            {caserne.nom}
+                          </label>
+                        ))}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Rattachez cet employé à une ou plusieurs casernes
+                      </p>
+                    </div>
+                  )}
+
                   {/* Option fonction supérieur pour les pompiers */}
                   {['Pompier', 'Lieutenant', 'Capitaine', 'Chef de division'].includes(newUser.grade) && (
                     <div className="form-field">
@@ -3053,6 +3104,50 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       </select>
                       <p className="text-xs text-gray-500 mt-1">
                         Équipe de garde pour le planning automatique
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Sélection casernes (multi-casernes) */}
+                  {casernesList.length > 0 && (
+                    <div className="form-field" data-testid="edit-user-casernes-section">
+                      <Label>Casernes</Label>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
+                        {casernesList.map(caserne => (
+                          <label
+                            key={caserne.id}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: '6px',
+                              padding: '4px 10px', borderRadius: '6px', cursor: 'pointer',
+                              background: (newUser.caserne_ids || []).includes(caserne.id) ? caserne.couleur + '20' : '#f3f4f6',
+                              border: (newUser.caserne_ids || []).includes(caserne.id) ? `2px solid ${caserne.couleur}` : '1px solid #d1d5db',
+                              fontSize: '0.85rem', transition: 'all 0.2s'
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={(newUser.caserne_ids || []).includes(caserne.id)}
+                              onChange={(e) => {
+                                const ids = newUser.caserne_ids || [];
+                                setNewUser({
+                                  ...newUser,
+                                  caserne_ids: e.target.checked
+                                    ? [...ids, caserne.id]
+                                    : ids.filter(id => id !== caserne.id)
+                                });
+                              }}
+                              style={{ accentColor: caserne.couleur }}
+                            />
+                            <span style={{
+                              width: '10px', height: '10px', borderRadius: '50%',
+                              background: caserne.couleur, display: 'inline-block'
+                            }} />
+                            {caserne.nom}
+                          </label>
+                        ))}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Rattachez cet employé à une ou plusieurs casernes
                       </p>
                     </div>
                   )}

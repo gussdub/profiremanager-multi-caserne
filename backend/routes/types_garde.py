@@ -50,6 +50,7 @@ class TypeGarde(BaseModel):
     est_garde_externe: bool = False  # True si c'est une garde externe (astreinte à domicile)
     taux_horaire_externe: Optional[float] = None  # Taux horaire spécifique pour garde externe
     montant_garde: Optional[float] = None  # Montant fixe de la garde (prime)
+    mode_caserne: str = "global"  # "global" = tout le monde ensemble, "par_caserne" = planning separe par caserne
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -66,6 +67,7 @@ class TypeGardeCreate(BaseModel):
     est_garde_externe: bool = False
     taux_horaire_externe: Optional[float] = None
     montant_garde: Optional[float] = None  # Montant fixe de la garde (prime)
+    mode_caserne: str = "global"  # "global" ou "par_caserne"
 
 
 # ==================== HELPERS ====================
