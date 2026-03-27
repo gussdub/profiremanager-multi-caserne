@@ -51,6 +51,9 @@ from routes.prevention_media import router as prevention_media_router
 from routes.prevention_inspections_visuelles import router as prevention_inspvis_router
 from routes.prevention_config import router as prevention_config_router
 from routes.planning import router as planning_router
+from routes.planning_exports import router as planning_exports_router
+from routes.planning_auto import router as planning_auto_router
+from routes.planning_audit import router as planning_audit_router
 from routes.sftp import router as sftp_router
 from routes.websocket import router as websocket_router
 from routes.billing import router as billing_router
@@ -6476,7 +6479,10 @@ app.include_router(prevention_media_router, prefix="/api")  # Photos & icônes
 app.include_router(prevention_inspvis_router, prefix="/api")  # Inspections visuelles
 app.include_router(prevention_router, prefix="/api")  # Module Prévention core (bâtiments, inspections, grilles, secteurs)
 app.include_router(avis_non_conformite_router, prefix="/api")  # Module Avis Non-Conformité
-app.include_router(planning_router, prefix="/api")  # Module Planning (assignations, rapports heures)
+app.include_router(planning_exports_router, prefix="/api")  # Module Planning - Exports (PDF, Excel, iCal)
+app.include_router(planning_auto_router, prefix="/api")  # Module Planning - Auto-attribution
+app.include_router(planning_audit_router, prefix="/api")  # Module Planning - Rapports d'audit
+app.include_router(planning_router, prefix="/api")  # Module Planning (assignations, rapports heures) - DOIT ETRE EN DERNIER (route catch-all {semaine_debut})
 app.include_router(sftp_router, prefix="/api")  # Module SFTP (cartes d'appel 911, WebSocket)
 app.include_router(websocket_router)  # WebSocket temps réel (pas de prefix /api)
 app.include_router(billing_router, prefix="/api")  # Module Billing (Stripe, facturation)
