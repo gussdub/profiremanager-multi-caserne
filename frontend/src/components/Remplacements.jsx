@@ -58,7 +58,8 @@ const getStatutColor = (statut) => {
     'approuve': '#10B981', 'accepte': '#10B981', 'approuve_manuellement': '#10B981',
     'refuse': '#EF4444', 'refusee': '#EF4444', 'annulee': '#EF4444',
     'expiree': '#9CA3AF',
-    'ouvert': '#F59E0B'
+    'ouvert': '#F59E0B',
+    'en_attente_approbation': '#8B5CF6'
   };
   return colors[statut] || '#6B7280';
 };
@@ -68,7 +69,8 @@ const getStatutLabel = (statut) => {
     'en_cours': 'En cours', 'en_attente': 'En attente',
     'approuve': 'Acceptee', 'accepte': 'Acceptee', 'approuve_manuellement': 'Approuvee manuellement',
     'refuse': 'Refusee', 'refusee': 'Refusee', 'annulee': 'Annulee', 'expiree': 'Expiree',
-    'ouvert': 'Quart ouvert'
+    'ouvert': 'Quart ouvert',
+    'en_attente_approbation': 'Attente approbation'
   };
   return labels[statut] || statut;
 };
@@ -181,7 +183,7 @@ const Remplacements = () => {
 
   // KPIs
   const totalDemandes = mesDemandes.length;
-  const enAttente = mesDemandes.filter(d => ['en_cours', 'en_attente', 'ouvert'].includes(d.statut)).length;
+  const enAttente = mesDemandes.filter(d => ['en_cours', 'en_attente', 'ouvert', 'en_attente_approbation'].includes(d.statut)).length;
   const acceptees = mesDemandes.filter(d => ['approuve', 'accepte', 'approuve_manuellement'].includes(d.statut)).length;
   const refusees = mesDemandes.filter(d => ['refuse', 'refusee', 'annulee', 'expiree'].includes(d.statut)).length;
   const remplacementsTrouves = mesDemandes.filter(d => ['approuve', 'accepte', 'approuve_manuellement'].includes(d.statut) && d.remplacant_id).length;
@@ -218,12 +220,50 @@ const Remplacements = () => {
     try {
       const result = await apiPut(tenantSlug, `/remplacements/${demandeId}/prendre`, {});
       toast({
-        title: "Quart pris !",
-        description: result.message || "Vous avez pris ce quart avec succes.",
+        title: result.approbation_requise ? "Candidature envoyee !" : "Quart pris !",
+        description: result.message,
       });
       refetch();
     } catch (error) {
       const detail = error?.response?.data?.detail || error?.message || "Impossible de prendre ce quart";
+      toast({
+        title: "Erreur",
+        description: detail,
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Handler pour approuver un quart en attente (admin)
+  const handleApprouverQuart = async (demandeId) => {
+    try {
+      const result = await apiPut(tenantSlug, `/remplacements/${demandeId}/approuver-quart`, {});
+      toast({
+        title: "Quart approuve !",
+        description: result.message,
+      });
+      refetch();
+    } catch (error) {
+      const detail = error?.response?.data?.detail || error?.message || "Erreur lors de l'approbation";
+      toast({
+        title: "Erreur",
+        description: detail,
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Handler pour refuser un quart en attente (admin)
+  const handleRefuserQuart = async (demandeId) => {
+    try {
+      const result = await apiPut(tenantSlug, `/remplacements/${demandeId}/refuser-quart`, {});
+      toast({
+        title: "Candidature refusee",
+        description: result.message,
+      });
+      refetch();
+    } catch (error) {
+      const detail = error?.response?.data?.detail || error?.message || "Erreur lors du refus";
       toast({
         title: "Erreur",
         description: detail,
@@ -403,7 +443,10 @@ const Remplacements = () => {
             getTypeGardeName={getTypeGardeName}
             parseDateLocal={parseDateLocal}
             onPrendreQuart={handlePrendreQuart}
+            onApprouverQuart={handleApprouverQuart}
+            onRefuserQuart={handleRefuserQuart}
             currentUserId={user?.id}
+            currentUserRole={user?.role}
           />
         )}
 

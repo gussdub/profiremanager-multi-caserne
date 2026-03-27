@@ -24,7 +24,7 @@ class DemandeRemplacement(BaseModel):
     type_garde_id: str
     date: str  # Date de la garde à remplacer (format: YYYY-MM-DD)
     raison: str
-    statut: str = "en_attente"  # en_attente, en_cours, accepte, expiree, annulee, ouvert, approuve_manuellement
+    statut: str = "en_attente"  # en_attente, en_cours, accepte, expiree, annulee, ouvert, en_attente_approbation, approuve_manuellement
     priorite: str = "normal"  # urgent (≤24h), normal (>24h) - calculé automatiquement
     remplacant_id: Optional[str] = None
     tentatives_historique: List[Dict[str, Any]] = []
@@ -99,3 +99,5 @@ class ParametresRemplacements(BaseModel):
     heures_silencieuses_actif: bool = True
     heure_debut_silence: str = "21:00"  # Format HH:MM
     heure_fin_silence: str = "07:00"    # Format HH:MM
+    # Quarts ouverts
+    quart_ouvert_approbation_requise: bool = False  # Si True, un admin doit approuver avant confirmation

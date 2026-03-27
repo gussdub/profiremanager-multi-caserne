@@ -668,7 +668,8 @@ const Parametres = ({ user, tenantSlug }) => {
           ...prev,
           mode_notification: paramsRemplacementsResponse.data.mode_notification || 'simultane',
           delai_attente_minutes: delaiMinutes || 1440,
-          max_personnes_contact: maxContacts || 5
+          max_personnes_contact: maxContacts || 5,
+          quart_ouvert_approbation_requise: paramsRemplacementsResponse.data.quart_ouvert_approbation_requise || false
         }));
       }
     } catch (error) {
@@ -1098,7 +1099,7 @@ const Parametres = ({ user, tenantSlug }) => {
         });
       } else if (['mode_notification', 'nombre_simultane', 'delai_relance', 'delai_expiration', 
                   'privilegier_disponibles', 'competences_egales', 'auto_attribution',
-                  'delai_attente_minutes', 'max_personnes_contact'].includes(setting)) {
+                  'delai_attente_minutes', 'max_personnes_contact', 'quart_ouvert_approbation_requise'].includes(setting)) {
         // Paramètres de remplacement - convertir les noms de champs pour le backend
         let backendData = {};
         if (setting === 'delai_attente_minutes') {

@@ -722,7 +722,7 @@ async def get_quarts_ouverts(tenant_slug: str, current_user: User = Depends(get_
     
     demandes = await db.demandes_remplacement.find({
         "tenant_id": tenant.id,
-        "statut": "ouvert",
+        "statut": {"$in": ["ouvert", "en_attente_approbation"]},
         "date": {"$gte": today}
     }).to_list(100)
     
@@ -741,6 +741,12 @@ async def get_quarts_ouverts(tenant_slug: str, current_user: User = Depends(get_
             cleaned["type_garde_nom"] = type_garde.get("nom", "")
             cleaned["type_garde_heure_debut"] = type_garde.get("heure_debut", "")
             cleaned["type_garde_heure_fin"] = type_garde.get("heure_fin", "")
+        
+        # Enrichir avec le nom du volontaire si en attente d'approbation
+        if cleaned.get("volontaire_id"):
+            volontaire = await db.users.find_one({"id": cleaned["volontaire_id"]}, {"prenom": 1, "nom": 1})
+            if volontaire:
+                cleaned["volontaire_nom"] = f"{volontaire.get('prenom', '')} {volontaire.get('nom', '')}".strip()
         
         quarts.append(cleaned)
     
@@ -775,6 +781,89 @@ async def prendre_quart_ouvert(
     
     maintenant = datetime.now(timezone.utc)
     
+    # Vérifier le paramètre d'approbation
+    parametres = await db.parametres_remplacements.find_one({"tenant_id": tenant.id})
+    approbation_requise = parametres.get("quart_ouvert_approbation_requise", False) if parametres else False
+    
+    remplacant_nom = f"{current_user.prenom} {current_user.nom}"
+    demandeur = await db.users.find_one({"id": demande_data["demandeur_id"]})
+    demandeur_nom = f"{demandeur.get('prenom', '')} {demandeur.get('nom', '')}" if demandeur else "le demandeur"
+    demandeur_id = demande_data["demandeur_id"]
+    type_garde = await db.types_garde.find_one({"id": demande_data["type_garde_id"], "tenant_id": tenant.id})
+    type_garde_nom = type_garde.get("nom", "une garde") if type_garde else "une garde"
+    
+    if approbation_requise:
+        # Mode avec approbation : statut "en_attente_approbation"
+        await db.demandes_remplacement.update_one(
+            {"id": demande_id},
+            {
+                "$set": {
+                    "statut": "en_attente_approbation",
+                    "volontaire_id": current_user.id,
+                    "volontaire_nom": remplacant_nom,
+                    "pris_via_quart_ouvert": True,
+                    "updated_at": maintenant
+                }
+            }
+        )
+        
+        # Notifier les superviseurs pour approbation
+        superviseurs = await db.users.find({
+            "tenant_id": tenant.id,
+            "role": {"$in": ["superviseur", "admin"]}
+        }).to_list(100)
+        
+        for sup in superviseurs:
+            await creer_notification(
+                tenant_id=tenant.id,
+                destinataire_id=sup["id"],
+                type="quart_attente_approbation",
+                titre="Quart ouvert : approbation requise",
+                message=f"{remplacant_nom} souhaite prendre le quart de {type_garde_nom} ({demandeur_nom}) du {demande_data['date']}. Approbation requise.",
+                lien="/remplacements",
+                data={"demande_id": demande_id, "volontaire_id": current_user.id},
+                envoyer_email=True
+            )
+        
+        await send_push_notification_to_users(
+            user_ids=[s["id"] for s in superviseurs],
+            title="Quart ouvert : approbation requise",
+            body=f"{remplacant_nom} veut prendre le quart de {demandeur_nom} ({type_garde_nom}) du {demande_data['date']}",
+            data={"type": "quart_attente_approbation", "demande_id": demande_id}
+        )
+        
+        # Notifier le volontaire
+        await db.notifications.insert_one({
+            "id": str(uuid.uuid4()),
+            "tenant_id": tenant.id,
+            "destinataire_id": current_user.id,
+            "type": "quart_en_attente",
+            "titre": "Candidature envoyee",
+            "message": f"Votre candidature pour le quart de {type_garde_nom} ({demandeur_nom}) du {demande_data['date']} est en attente d'approbation.",
+            "statut": "non_lu",
+            "lu": False,
+            "data": {"demande_id": demande_id},
+            "date_creation": maintenant.isoformat(),
+            "created_at": maintenant.isoformat()
+        })
+        
+        asyncio.create_task(broadcast_remplacement_update(tenant_slug, "quart_attente_approbation", {
+            "demande_id": demande_id,
+            "volontaire_id": current_user.id,
+            "volontaire_nom": remplacant_nom,
+            "demandeur_nom": demandeur_nom,
+            "date": demande_data["date"]
+        }))
+        
+        logger.info(f"Quart ouvert candidature: {remplacant_nom} pour le quart de {demandeur_nom} ({demande_id}) - attente approbation")
+        
+        return {
+            "message": f"Candidature envoyee ! Un superviseur doit approuver avant confirmation.",
+            "demande_id": demande_id,
+            "approbation_requise": True
+        }
+    
+    # Mode automatique (premier arrivé, premier servi)
     # Mettre à jour la demande
     await db.demandes_remplacement.update_one(
         {"id": demande_id},
@@ -809,16 +898,9 @@ async def prendre_quart_ouvert(
                 }
             }
         )
-        logger.info(f"Planning mis a jour: {current_user.prenom} {current_user.nom} prend l'assignation {assignation['id']}")
-    
-    remplacant_nom = f"{current_user.prenom} {current_user.nom}"
-    demandeur = await db.users.find_one({"id": demande_data["demandeur_id"]})
-    demandeur_nom = f"{demandeur.get('prenom', '')} {demandeur.get('nom', '')}" if demandeur else "le demandeur"
-    type_garde = await db.types_garde.find_one({"id": demande_data["type_garde_id"], "tenant_id": tenant.id})
-    type_garde_nom = type_garde.get("nom", "une garde") if type_garde else "une garde"
+        logger.info(f"Planning mis a jour: {remplacant_nom} prend l'assignation {assignation['id']}")
     
     # Notifier le demandeur
-    demandeur_id = demande_data["demandeur_id"]
     await send_push_notification_to_users(
         user_ids=[demandeur_id],
         title="Remplacant trouve !",
@@ -879,8 +961,208 @@ async def prendre_quart_ouvert(
     
     return {
         "message": f"Quart pris avec succes ! Vous remplacez {demandeur_nom} le {demande_data['date']}.",
-        "demande_id": demande_id
+        "demande_id": demande_id,
+        "approbation_requise": False
     }
+
+
+@router.put("/{tenant_slug}/remplacements/{demande_id}/approuver-quart")
+async def approuver_quart_ouvert(
+    tenant_slug: str,
+    demande_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Permet à un admin/superviseur d'approuver un volontaire pour un quart ouvert"""
+    send_push_notification_to_users = await get_send_push_notification()
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Vérifier permission admin/superviseur
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Seuls les superviseurs peuvent approuver")
+    
+    demande_data = await db.demandes_remplacement.find_one({"id": demande_id, "tenant_id": tenant.id})
+    if not demande_data:
+        raise HTTPException(status_code=404, detail="Demande non trouvee")
+    
+    if demande_data["statut"] != "en_attente_approbation":
+        raise HTTPException(status_code=400, detail="Cette demande n'est pas en attente d'approbation")
+    
+    volontaire_id = demande_data.get("volontaire_id")
+    if not volontaire_id:
+        raise HTTPException(status_code=400, detail="Aucun volontaire associe")
+    
+    maintenant = datetime.now(timezone.utc)
+    
+    # Approuver : passer en "accepte" et assigner le remplaçant
+    await db.demandes_remplacement.update_one(
+        {"id": demande_id},
+        {
+            "$set": {
+                "statut": "accepte",
+                "remplacant_id": volontaire_id,
+                "approuve_par_id": current_user.id,
+                "date_approbation": maintenant.isoformat(),
+                "updated_at": maintenant
+            }
+        }
+    )
+    
+    # Mettre à jour le planning
+    assignation = await db.assignations.find_one({
+        "tenant_id": tenant.id,
+        "user_id": demande_data["demandeur_id"],
+        "date": demande_data["date"],
+        "type_garde_id": demande_data["type_garde_id"]
+    })
+    
+    if assignation:
+        await db.assignations.update_one(
+            {"id": assignation["id"]},
+            {
+                "$set": {
+                    "user_id": volontaire_id,
+                    "est_remplacement": True,
+                    "demandeur_original_id": demande_data["demandeur_id"],
+                    "pris_via_quart_ouvert": True,
+                    "updated_at": maintenant
+                }
+            }
+        )
+    
+    volontaire = await db.users.find_one({"id": volontaire_id})
+    volontaire_nom = demande_data.get("volontaire_nom", f"{volontaire.get('prenom', '')} {volontaire.get('nom', '')}" if volontaire else "Volontaire")
+    demandeur = await db.users.find_one({"id": demande_data["demandeur_id"]})
+    demandeur_nom = f"{demandeur.get('prenom', '')} {demandeur.get('nom', '')}" if demandeur else "le demandeur"
+    type_garde = await db.types_garde.find_one({"id": demande_data["type_garde_id"], "tenant_id": tenant.id})
+    type_garde_nom = type_garde.get("nom", "une garde") if type_garde else "une garde"
+    
+    # Notifier le volontaire
+    await send_push_notification_to_users(
+        user_ids=[volontaire_id],
+        title="Candidature approuvee !",
+        body=f"Votre candidature pour le quart de {type_garde_nom} du {demande_data['date']} a ete approuvee.",
+        data={"type": "quart_approuve", "demande_id": demande_id}
+    )
+    await db.notifications.insert_one({
+        "id": str(uuid.uuid4()),
+        "tenant_id": tenant.id,
+        "destinataire_id": volontaire_id,
+        "type": "quart_approuve",
+        "titre": "Candidature approuvee !",
+        "message": f"Votre candidature pour le quart de {type_garde_nom} ({demandeur_nom}) du {demande_data['date']} a ete approuvee par {current_user.prenom} {current_user.nom}.",
+        "statut": "non_lu",
+        "lu": False,
+        "data": {"demande_id": demande_id},
+        "date_creation": maintenant.isoformat(),
+        "created_at": maintenant.isoformat()
+    })
+    
+    # Notifier le demandeur
+    demandeur_id = demande_data["demandeur_id"]
+    await db.notifications.insert_one({
+        "id": str(uuid.uuid4()),
+        "tenant_id": tenant.id,
+        "destinataire_id": demandeur_id,
+        "type": "quart_pris",
+        "titre": "Remplacant trouve !",
+        "message": f"{volontaire_nom} a ete approuve pour votre quart de {type_garde_nom} du {demande_data['date']}.",
+        "statut": "non_lu",
+        "lu": False,
+        "data": {"demande_id": demande_id, "remplacant_id": volontaire_id},
+        "date_creation": maintenant.isoformat(),
+        "created_at": maintenant.isoformat()
+    })
+    
+    # Activité
+    await creer_activite(
+        tenant_id=tenant.id,
+        type_activite="quart_ouvert_approuve",
+        description=f"{current_user.prenom} {current_user.nom} a approuve {volontaire_nom} pour le quart de {type_garde_nom} ({demandeur_nom}) du {demande_data['date']}",
+        user_id=current_user.id,
+        user_nom=f"{current_user.prenom} {current_user.nom}"
+    )
+    
+    asyncio.create_task(broadcast_remplacement_update(tenant_slug, "quart_approuve", {
+        "demande_id": demande_id,
+        "volontaire_nom": volontaire_nom,
+        "demandeur_nom": demandeur_nom,
+        "date": demande_data["date"]
+    }))
+    
+    return {"message": f"Quart approuve ! {volontaire_nom} remplace {demandeur_nom} le {demande_data['date']}."}
+
+
+@router.put("/{tenant_slug}/remplacements/{demande_id}/refuser-quart")
+async def refuser_quart_ouvert(
+    tenant_slug: str,
+    demande_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Permet à un admin/superviseur de refuser un volontaire et remettre le quart en 'ouvert'"""
+    send_push_notification_to_users = await get_send_push_notification()
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if current_user.role not in ["admin", "superviseur"]:
+        raise HTTPException(status_code=403, detail="Seuls les superviseurs peuvent refuser")
+    
+    demande_data = await db.demandes_remplacement.find_one({"id": demande_id, "tenant_id": tenant.id})
+    if not demande_data:
+        raise HTTPException(status_code=404, detail="Demande non trouvee")
+    
+    if demande_data["statut"] != "en_attente_approbation":
+        raise HTTPException(status_code=400, detail="Cette demande n'est pas en attente d'approbation")
+    
+    volontaire_id = demande_data.get("volontaire_id")
+    maintenant = datetime.now(timezone.utc)
+    
+    # Remettre en "ouvert"
+    await db.demandes_remplacement.update_one(
+        {"id": demande_id},
+        {
+            "$set": {
+                "statut": "ouvert",
+                "updated_at": maintenant
+            },
+            "$unset": {
+                "volontaire_id": "",
+                "volontaire_nom": ""
+            }
+        }
+    )
+    
+    # Notifier le volontaire
+    if volontaire_id:
+        volontaire = await db.users.find_one({"id": volontaire_id})
+        volontaire_nom = f"{volontaire.get('prenom', '')} {volontaire.get('nom', '')}" if volontaire else "Volontaire"
+        type_garde = await db.types_garde.find_one({"id": demande_data["type_garde_id"], "tenant_id": tenant.id})
+        type_garde_nom = type_garde.get("nom", "une garde") if type_garde else "une garde"
+        
+        await send_push_notification_to_users(
+            user_ids=[volontaire_id],
+            title="Candidature refusee",
+            body=f"Votre candidature pour le quart du {demande_data['date']} n'a pas ete retenue.",
+            data={"type": "quart_refuse", "demande_id": demande_id}
+        )
+        await db.notifications.insert_one({
+            "id": str(uuid.uuid4()),
+            "tenant_id": tenant.id,
+            "destinataire_id": volontaire_id,
+            "type": "quart_refuse",
+            "titre": "Candidature non retenue",
+            "message": f"Votre candidature pour le quart de {type_garde_nom} du {demande_data['date']} n'a pas ete retenue. Le quart est a nouveau ouvert.",
+            "statut": "non_lu",
+            "lu": False,
+            "data": {"demande_id": demande_id},
+            "date_creation": maintenant.isoformat(),
+            "created_at": maintenant.isoformat()
+        })
+    
+    asyncio.create_task(broadcast_remplacement_update(tenant_slug, "quart_refuse", {
+        "demande_id": demande_id,
+        "date": demande_data["date"]
+    }))
+    
+    return {"message": "Candidature refusee. Le quart est a nouveau ouvert."}
 
 
 @router.get("/{tenant_slug}/remplacements", response_model=List[DemandeRemplacement])

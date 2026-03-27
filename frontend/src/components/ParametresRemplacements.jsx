@@ -313,7 +313,80 @@ const ParametresRemplacements = ({
                 fontSize: '0.85rem',
                 color: '#92400E'
               }}>
-                <strong>ℹ️ Note:</strong> Les demandes Urgentes et Hautes ne sont pas affectées par les heures silencieuses et seront traitées immédiatement.
+                <strong>Note:</strong> Les demandes Urgentes et Hautes ne sont pas affectees par les heures silencieuses et seront traitees immediatement.
+              </div>
+            </div>
+          </div>
+
+          {/* Quarts Ouverts */}
+          <div className="settings-column">
+            <h4 className="compact-title">Quarts ouverts</h4>
+            <p>Lorsque l'algorithme ne trouve aucun remplacant, le quart est ouvert a tous les employes</p>
+            
+            <div className="setting-inputs-compact" style={{ marginTop: '1rem' }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '1rem',
+                background: '#f9fafb',
+                borderRadius: '10px',
+                border: '1px solid #e5e7eb'
+              }}>
+                <div>
+                  <Label style={{ fontWeight: '600', display: 'block', marginBottom: '0.25rem' }}>
+                    Approbation requise
+                  </Label>
+                  <small style={{ color: '#6b7280' }}>
+                    {systemSettings.quart_ouvert_approbation_requise 
+                      ? "Un superviseur doit approuver avant que le quart soit confirme"
+                      : "Premier arrive, premier servi (automatique)"}
+                  </small>
+                </div>
+                <label style={{ position: 'relative', display: 'inline-block', width: '52px', height: '28px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={systemSettings.quart_ouvert_approbation_requise || false}
+                    onChange={(e) => handleSettingChange('quart_ouvert_approbation_requise', e.target.checked)}
+                    data-testid="quart-ouvert-approbation-toggle"
+                    style={{ opacity: 0, width: 0, height: 0 }}
+                  />
+                  <span style={{
+                    position: 'absolute',
+                    cursor: 'pointer',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: systemSettings.quart_ouvert_approbation_requise ? '#8B5CF6' : '#d1d5db',
+                    transition: 'background-color 0.3s',
+                    borderRadius: '28px'
+                  }}>
+                    <span style={{
+                      position: 'absolute',
+                      content: '""',
+                      height: '22px',
+                      width: '22px',
+                      left: systemSettings.quart_ouvert_approbation_requise ? '27px' : '3px',
+                      bottom: '3px',
+                      backgroundColor: 'white',
+                      transition: 'left 0.3s',
+                      borderRadius: '50%'
+                    }} />
+                  </span>
+                </label>
+              </div>
+              
+              <div style={{ 
+                marginTop: '12px', 
+                padding: '10px 14px', 
+                background: systemSettings.quart_ouvert_approbation_requise ? '#EDE9FE' : '#ECFDF5',
+                borderRadius: '8px',
+                border: `1px solid ${systemSettings.quart_ouvert_approbation_requise ? '#C4B5FD' : '#A7F3D0'}`,
+                fontSize: '0.85rem',
+                color: systemSettings.quart_ouvert_approbation_requise ? '#5B21B6' : '#065F46'
+              }}>
+                <strong>Mode actuel :</strong>{' '}
+                {systemSettings.quart_ouvert_approbation_requise 
+                  ? "Avec approbation — un employe se porte volontaire, un superviseur approuve ou refuse."
+                  : "Automatique — le premier employe qui clique prend le quart immediatement."}
               </div>
             </div>
           </div>
