@@ -56,6 +56,7 @@ Application de gestion complète pour les services d'incendie canadiens. Multi-t
   - planning.py: send_planning_notification_email
   - remplacements/notifications.py: envoyer_email_remplacement, envoyer_email_remplacement_trouve, envoyer_email_remplacement_non_trouve
 - ✅ Lazy loading bâtiments + carte secteurs améliorée
+- ✅ **Fix bug audit modal** : le bouton Audit affichait le mauvais audit car `assignations[index]` ne correspondait pas à `personnelAssigne[index]`. Remplacé par `assignations.find(a => a.user_id === person.id)` pour un matching fiable.
 
 ## Backlog
 - P1: Tester rigoureusement l'import d'historique d'interventions (CSV/XML/ZIP)

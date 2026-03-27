@@ -2878,7 +2878,9 @@ const Planning = () => {
                 <h4>👥 Personnel assigné</h4>
                 {selectedGardeDetails.personnelAssigne.length > 0 ? (
                   <div className="personnel-list">
-                    {selectedGardeDetails.personnelAssigne.map((person, index) => (
+                    {selectedGardeDetails.personnelAssigne.map((person) => {
+                      const personAssignation = selectedGardeDetails.assignations.find(a => a.user_id === person.id);
+                      return (
                       <div key={person.id} className="personnel-item">
                         <div className="personnel-info">
                           <div className="personnel-avatar">
@@ -2892,21 +2894,21 @@ const Planning = () => {
                         </div>
                         <div className="personnel-actions">
                           <span className="assignment-method">
-                            {selectedGardeDetails.assignations[index]?.assignation_type === 'auto' 
+                            {personAssignation?.assignation_type === 'auto' 
                               ? '🤖 Auto' 
-                              : selectedGardeDetails.assignations[index]?.assignation_type === 'rotation_temps_plein'
+                              : personAssignation?.assignation_type === 'rotation_temps_plein'
                                 ? '🔄 Rotation'
-                                : selectedGardeDetails.assignations[index]?.est_remplacement 
+                                : personAssignation?.est_remplacement 
                                   ? '🔄 Remplacement' 
                                   : '👤 Manuel'}
                           </span>
-                          {canEditPlanning && (selectedGardeDetails.assignations[index]?.assignation_type === 'auto' || selectedGardeDetails.assignations[index]?.assignation_type === 'rotation_temps_plein') && (
+                          {canEditPlanning && (personAssignation?.assignation_type === 'auto' || personAssignation?.assignation_type === 'rotation_temps_plein') && (
                             <Button 
                               variant="outline" 
                               size="sm" 
                               onClick={() => {
-                                console.log('Bouton Audit cliqué', selectedGardeDetails.assignations[index]);
-                                openAuditModal(selectedGardeDetails.assignations[index], person);
+                                console.log('Bouton Audit cliqué', personAssignation);
+                                openAuditModal(personAssignation, person);
                               }}
                               style={{ marginLeft: '8px' }}
                             >
@@ -2925,7 +2927,8 @@ const Planning = () => {
                           )}
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="no-personnel">
