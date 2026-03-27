@@ -106,6 +106,8 @@ from routes.casernes import router as casernes_router
 from io import BytesIO
 import base64
 from PIL import Image as PILImage
+from services.email_service import get_email_template as build_email_template
+from services.email_builder import build_email, email_card, email_alert_card, email_detail_row
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -2566,97 +2568,54 @@ def send_welcome_email(user_email: str, user_name: str, user_role: str, temp_pas
         }.get(user_role, 'Utilisateur')
         
         user_modules = modules_by_role.get(user_role, modules_by_role['employe'])
-        modules_html = ''.join([f'<li style="margin-bottom: 8px;">{module}</li>' for module in user_modules])
+        modules_html = ''.join([f'<li style="margin-bottom: 8px; color: #374151;">{module}</li>' for module in user_modules])
         
-        subject = f"Bienvenue dans ProFireManager v2.0 - Votre compte {role_name}"
+        subject = f"Bienvenue dans ProFireManager - Votre compte {role_name}"
         
-        html_content = f"""
-        <html>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                <div style="text-align: center; margin-bottom: 30px;">
-                    <img src="https://customer-assets.emergentagent.com/job_fireshift-manager/artifacts/6vh2i9cz_05_Icone_Flamme_Rouge_Bordure_D9072B_VISIBLE.png" 
-                         alt="ProFireManager" 
-                         width="60" 
-                         height="60"
-                         style="width: 60px; height: 60px; margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
-                    <h1 style="color: #dc2626; margin: 0;">ProFireManager v2.0</h1>
-                    <p style="color: #666; margin: 5px 0;">Système de gestion des services d'incendie</p>
-                </div>
-                
-                <h2 style="color: #1e293b;">Bonjour {user_name},</h2>
-                
-                <p>Votre compte <strong>{role_name}</strong> a été créé avec succès dans ProFireManager v2.0, le système de gestion des horaires et remplacements automatisés pour les services d'incendie du Canada.</p>
-                
-                <p style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 12px; margin: 15px 0;">
-                    🏢 <strong>Votre caserne :</strong> {tenant_slug.title() if tenant_slug else 'Non spécifiée'}
+        caserne_display = tenant_slug.title() if tenant_slug else 'Non specifiee'
+        login_url = f"https://www.profiremanager.ca/{tenant_slug}" if tenant_slug else "https://www.profiremanager.ca"
+        
+        body = f"""
+            <h2 style="color: #1e293b; margin: 0 0 16px; font-size: 20px;">Bonjour {user_name},</h2>
+            <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 20px;">
+                Votre compte <strong>{role_name}</strong> a ete cree avec succes dans ProFireManager.
+            </p>
+            
+            {email_alert_card("Votre caserne", caserne_display, "#3B82F6", "#EFF6FF", "#1E40AF")}
+            
+            {email_card(f'''
+                <h3 style="color: #dc2626; margin: 0 0 16px; font-size: 16px;">Informations de connexion</h3>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                    {email_detail_row("Email", user_email)}
+                    {email_detail_row("Mot de passe temporaire", f"<code style='background: #fee2e2; padding: 4px 10px; border-radius: 4px; font-size: 15px; color: #991b1b;'>{temp_password}</code>")}
+                </table>
+                <p style="color: #dc2626; font-weight: 600; margin: 16px 0 0; font-size: 13px;">
+                    Veuillez modifier votre mot de passe lors de votre premiere connexion.
                 </p>
-                
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0;">
-                    <h3 style="color: #dc2626; margin-top: 0;">🔑 Informations de connexion :</h3>
-                    <p><strong>Email :</strong> {user_email}</p>
-                    <p><strong>Mot de passe temporaire :</strong> {temp_password}</p>
-                    <p style="color: #dc2626; font-weight: bold;">⚠️ Veuillez modifier votre mot de passe lors de votre première connexion</p>
-                </div>
-                
-                <div style="text-align: center; margin: 30px 0;">
-                    <a href="https://www.profiremanager.ca/{tenant_slug}" 
-                       style="background: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-                        🚒 Accéder à ProFireManager
-                    </a>
-                    <p style="font-size: 12px; color: #666; margin-top: 10px;">
-                        💡 Conseil : Ajoutez ce lien à vos favoris pour un accès rapide à votre caserne
-                    </p>
-                </div>
-                
-                <h3 style="color: #1e293b;">📋 Modules disponibles pour votre rôle ({role_name}) :</h3>
-                <ul style="background: #f0fdf4; border-left: 4px solid #10b981; padding: 15px 20px; margin: 15px 0;">
+            ''')}
+            
+            {email_card(f'''
+                <h3 style="color: #1e293b; margin: 0 0 12px; font-size: 16px;">Modules disponibles ({role_name})</h3>
+                <ul style="margin: 0; padding-left: 20px; line-height: 2;">
                     {modules_html}
                 </ul>
-                
-                <div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 15px; margin: 20px 0;">
-                    <h4 style="color: #92400e; margin-top: 0;">🔒 Sécurité de votre compte :</h4>
-                    <p style="color: #92400e; font-weight: bold; margin: 10px 0;">
-                        ⚠️ IMPORTANT : Changez votre mot de passe temporaire dès maintenant !
-                    </p>
-                    <p style="color: #78350f; margin: 10px 0;">
-                        <strong>📍 Comment changer votre mot de passe :</strong>
-                    </p>
-                    <ol style="color: #78350f; margin: 10px 0;">
-                        <li>Connectez-vous à ProFireManager avec le mot de passe temporaire ci-dessus</li>
-                        <li>Cliquez sur <strong>"Mon Profil"</strong> dans le menu de gauche</li>
-                        <li>Descendez en <strong>bas de la page</strong></li>
-                        <li>Trouvez la section <strong>"Modifier le mot de passe"</strong></li>
-                        <li>Entrez votre nouveau mot de passe (8 caractères min, 1 majuscule, 1 chiffre, 1 caractère spécial)</li>
-                        <li>Cliquez sur <strong>"Enregistrer"</strong></li>
-                    </ol>
-                    <p style="color: #78350f; margin: 10px 0;">
-                        💡 <strong>Conseils de sécurité :</strong>
-                    </p>
-                    <ul style="color: #78350f; margin: 10px 0;">
-                        <li>Utilisez un mot de passe unique et complexe</li>
-                        <li>Ne partagez jamais vos identifiants</li>
-                        <li>Déconnectez-vous après chaque session</li>
-                    </ul>
-                </div>
-                
-                <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
-                
-                <p style="color: #666; font-size: 14px; text-align: center;">
-                    Cet email a été envoyé automatiquement par ProFireManager v2.0.<br>
-                    Si vous avez des questions, contactez votre administrateur système.
-                </p>
-                
-                <div style="text-align: center; margin-top: 20px;">
-                    <p style="color: #999; font-size: 12px;">
-                        ProFireManager v2.0 - Système de gestion des services d'incendie du Canada<br>
-                        Développé pour optimiser la gestion des horaires et remplacements automatisés
-                    </p>
-                </div>
-            </div>
-        </body>
-        </html>
+            ''', "#d1fae5", "#ecfdf5")}
+            
+            {email_alert_card(
+                "Securite",
+                "Changez votre mot de passe temporaire des votre premiere connexion. Allez dans Mon Profil, puis Modifier le mot de passe.",
+                "#F59E0B", "#FEF3C7", "#92400E"
+            )}
         """
+        
+        html_content = build_email(
+            title=f"Bienvenue {user_name}",
+            body_html=body,
+            accent_color="#dc2626",
+            cta_text="Acceder a ProFireManager",
+            cta_url=login_url,
+            footer_text="Si vous avez des questions, contactez votre administrateur systeme."
+        )
         
         # Envoyer l'email via Resend
         resend_api_key = os.environ.get('RESEND_API_KEY')
@@ -2694,87 +2653,47 @@ def send_temporary_password_email(user_email: str, user_name: str, temp_password
     Envoie un email avec le mot de passe temporaire suite à une réinitialisation par l'administrateur
     """
     try:
-        subject = "Réinitialisation de votre mot de passe - ProFireManager"
+        subject = "Reinitialisation de votre mot de passe - ProFireManager"
         
-        html_content = f"""
-        <html>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                <div style="text-align: center; margin-bottom: 30px;">
-                    <img src="https://customer-assets.emergentagent.com/job_fireshift-manager/artifacts/6vh2i9cz_05_Icone_Flamme_Rouge_Bordure_D9072B_VISIBLE.png" 
-                         alt="ProFireManager" 
-                         width="60" 
-                         height="60"
-                         style="width: 60px; height: 60px; margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
-                    <h1 style="color: #dc2626; margin: 0;">ProFireManager v2.0</h1>
-                    <p style="color: #666; margin: 5px 0;">Système de gestion des services d'incendie</p>
-                </div>
-                
-                <h2 style="color: #1e293b;">Bonjour {user_name},</h2>
-                
-                <p>Suite à votre demande, votre mot de passe a été réinitialisé par un administrateur.</p>
-                
-                <div style="background: #fef3c7; border: 2px solid #fcd34d; border-radius: 8px; padding: 20px; margin: 20px 0;">
-                    <h3 style="color: #92400e; margin-top: 0;">⚠️ IMPORTANT - Sécurité de votre compte</h3>
-                    <p style="color: #92400e; font-weight: bold; margin: 10px 0;">
-                        Si vous n'avez jamais demandé ce changement, veuillez communiquer avec votre administrateur le plus rapidement possible.
-                    </p>
-                </div>
-                
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0;">
-                    <h3 style="color: #dc2626; margin-top: 0;">🔑 Votre nouveau mot de passe temporaire :</h3>
-                    <p style="background: white; padding: 12px; border: 2px dashed #dc2626; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 16px; font-weight: bold; text-align: center;">
-                        {temp_password}
-                    </p>
-                </div>
-                
-                <div style="text-align: center; margin: 30px 0;">
-                    <a href="https://www.profiremanager.ca/{tenant_slug}" 
-                       style="background: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-                        🚒 Se connecter à ProFireManager
-                    </a>
-                </div>
-                
-                <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;">
-                    <h4 style="color: #1e3a8a; margin-top: 0;">📍 Procédure pour changer votre mot de passe :</h4>
-                    <ol style="color: #1e3a8a; margin: 10px 0;">
-                        <li>Connectez-vous à ProFireManager avec le mot de passe temporaire ci-dessus</li>
-                        <li>Cliquez sur <strong>"Mon Profil"</strong> dans le menu de gauche</li>
-                        <li>Descendez en <strong>bas de la page</strong></li>
-                        <li>Trouvez la section <strong>"Modifier le mot de passe"</strong></li>
-                        <li>Entrez votre <strong>mot de passe actuel</strong> (le mot de passe temporaire)</li>
-                        <li>Entrez votre <strong>nouveau mot de passe</strong> (8 caractères min, 1 majuscule, 1 chiffre, 1 caractère spécial)</li>
-                        <li>Confirmez votre nouveau mot de passe</li>
-                        <li>Cliquez sur <strong>"Enregistrer les modifications"</strong></li>
-                    </ol>
-                    <p style="color: #1e3a8a; margin: 10px 0;">
-                        💡 <strong>Conseils de sécurité :</strong>
-                    </p>
-                    <ul style="color: #1e3a8a; margin: 10px 0;">
-                        <li>Utilisez un mot de passe unique et complexe</li>
-                        <li>Ne partagez jamais vos identifiants</li>
-                        <li>Déconnectez-vous après chaque session</li>
-                        <li>Changez votre mot de passe immédiatement</li>
-                    </ul>
-                </div>
-                
-                <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
-                
-                <p style="color: #666; font-size: 14px; text-align: center;">
-                    Cet email a été envoyé automatiquement par ProFireManager v2.0.<br>
-                    Si vous avez des questions, contactez votre administrateur système.
+        login_url = f"https://www.profiremanager.ca/{tenant_slug}" if tenant_slug else "https://www.profiremanager.ca"
+        
+        body = f"""
+            <h2 style="color: #1e293b; margin: 0 0 16px; font-size: 20px;">Bonjour {user_name},</h2>
+            <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 20px;">
+                Suite a votre demande, votre mot de passe a ete reinitialise par un administrateur.
+            </p>
+            
+            {email_alert_card(
+                "Securite",
+                "Si vous n'avez jamais demande ce changement, veuillez communiquer avec votre administrateur le plus rapidement possible.",
+                "#F59E0B", "#FEF3C7", "#92400E"
+            )}
+            
+            {email_card(f'''
+                <h3 style="color: #dc2626; margin: 0 0 16px; font-size: 16px;">Nouveau mot de passe temporaire</h3>
+                <p style="text-align: center; margin: 0;">
+                    <code style="display: inline-block; background: #fee2e2; padding: 12px 24px; border-radius: 8px; font-size: 18px; font-weight: 700; color: #991b1b; letter-spacing: 1px;">{temp_password}</code>
                 </p>
-                
-                <div style="text-align: center; margin-top: 20px;">
-                    <p style="color: #999; font-size: 12px;">
-                        ProFireManager v2.0 - Système de gestion des services d'incendie du Canada<br>
-                        Développé pour optimiser la gestion des horaires et remplacements automatisés
-                    </p>
-                </div>
-            </div>
-        </body>
-        </html>
+                <p style="color: #dc2626; font-weight: 600; margin: 16px 0 0; font-size: 13px; text-align: center;">
+                    Changez ce mot de passe des votre connexion.
+                </p>
+            ''')}
+            
+            {email_alert_card(
+                "Comment changer votre mot de passe",
+                "Connectez-vous > Mon Profil > Modifier le mot de passe > Entrez le mot de passe temporaire, puis votre nouveau mot de passe.",
+                "#3B82F6", "#EFF6FF", "#1E40AF"
+            )}
         """
+        
+        html_content = build_email(
+            title="Reinitialisation mot de passe",
+            body_html=body,
+            accent_color="#F59E0B",
+            cta_text="Se connecter a ProFireManager",
+            cta_url=login_url,
+            footer_text="Si vous avez des questions, contactez votre administrateur systeme."
+        )
         
         # Envoyer l'email via Resend
         resend_api_key = os.environ.get('RESEND_API_KEY')
@@ -2815,67 +2734,34 @@ def send_password_reset_email(user_email: str, user_name: str, reset_token: str,
         frontend_url = os.environ.get('FRONTEND_URL', 'https://www.profiremanager.ca')
         reset_link = f"{frontend_url}/{tenant_slug}/reset-password?token={reset_token}"
         
-        subject = "Réinitialisation de votre mot de passe - ProFireManager"
+        subject = "Reinitialisation de votre mot de passe - ProFireManager"
         
-        html_content = f"""
-        <html>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                <div style="text-align: center; margin-bottom: 30px;">
-                    <img src="https://customer-assets.emergentagent.com/job_fireshift-manager/artifacts/6vh2i9cz_05_Icone_Flamme_Rouge_Bordure_D9072B_VISIBLE.png" 
-                         alt="ProFireManager" 
-                         width="60" 
-                         height="60"
-                         style="width: 60px; height: 60px; margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
-                    <h1 style="color: #dc2626; margin: 0;">ProFireManager v2.0</h1>
-                    <p style="color: #666; margin: 5px 0;">Système de gestion des services d'incendie</p>
-                </div>
-                
-                <h2 style="color: #1e293b;">Bonjour {user_name},</h2>
-                
-                <p>Nous avons reçu une demande de réinitialisation de mot de passe pour votre compte ProFireManager.</p>
-                
-                <div style="background: #fef3c7; border: 2px solid #fcd34d; border-radius: 8px; padding: 20px; margin: 20px 0;">
-                    <h3 style="color: #92400e; margin-top: 0;">⚠️ IMPORTANT - Sécurité</h3>
-                    <p style="color: #92400e; font-weight: bold; margin: 10px 0;">
-                        Si vous n'avez pas demandé cette réinitialisation, ignorez cet email. Votre mot de passe actuel reste inchangé.
-                    </p>
-                    <p style="color: #78350f; margin: 10px 0;">
-                        Ce lien est valide pendant <strong>1 heure</strong> seulement.
-                    </p>
-                </div>
-                
-                <div style="text-align: center; margin: 30px 0;">
-                    <a href="{reset_link}" 
-                       style="background: #dc2626; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px;">
-                        🔐 Réinitialiser mon mot de passe
-                    </a>
-                </div>
-                
-                <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;">
-                    <p style="color: #1e3a8a; margin: 0; font-size: 14px;">
-                        💡 <strong>Le lien ne fonctionne pas?</strong><br>
-                        Copiez et collez cette adresse dans votre navigateur :<br>
-                        <span style="font-family: 'Courier New', monospace; font-size: 12px; word-break: break-all;">{reset_link}</span>
-                    </p>
-                </div>
-                
-                <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
-                
-                <p style="color: #666; font-size: 14px; text-align: center;">
-                    Cet email a été envoyé automatiquement par ProFireManager v2.0.<br>
-                    Pour des questions de sécurité, contactez votre administrateur.
-                </p>
-                
-                <div style="text-align: center; margin-top: 20px;">
-                    <p style="color: #999; font-size: 12px;">
-                        ProFireManager v2.0 - Système de gestion des services d'incendie du Canada
-                    </p>
-                </div>
-            </div>
-        </body>
-        </html>
+        body = f"""
+            <h2 style="color: #1e293b; margin: 0 0 16px; font-size: 20px;">Bonjour {user_name},</h2>
+            <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 20px;">
+                Nous avons recu une demande de reinitialisation de mot de passe pour votre compte ProFireManager.
+            </p>
+            
+            {email_alert_card(
+                "Securite",
+                "Si vous n'avez pas demande cette reinitialisation, ignorez cet email. Votre mot de passe actuel reste inchange. Ce lien est valide pendant 1 heure seulement.",
+                "#F59E0B", "#FEF3C7", "#92400E"
+            )}
+            
+            <p style="color: #6b7280; font-size: 13px; text-align: center; margin: 8px 0 0;">
+                Le lien ne fonctionne pas ? Copiez cette adresse :<br>
+                <span style="font-size: 11px; word-break: break-all; color: #9ca3af;">{reset_link}</span>
+            </p>
         """
+        
+        html_content = build_email(
+            title="Reinitialisation mot de passe",
+            body_html=body,
+            accent_color="#dc2626",
+            cta_text="Reinitialiser mon mot de passe",
+            cta_url=reset_link,
+            footer_text="Pour des questions de securite, contactez votre administrateur."
+        )
         
         # Envoyer l'email via Resend
         resend_api_key = os.environ.get('RESEND_API_KEY')

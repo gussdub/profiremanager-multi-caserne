@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://caserne-workflow.preview.emergentagent.com
+- **URL** : https://planning-notif-test.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://caserne-workflow.preview.emergentagent.com"
+  "apiUrl": "https://planning-notif-test.preview.emergentagent.com"
 }
 ```
 

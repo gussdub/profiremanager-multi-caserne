@@ -58,6 +58,7 @@ const Batiments = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('liste');
+  const [visibleCount, setVisibleCount] = useState(50);
   const [selectedBatiment, setSelectedBatiment] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState('view');
@@ -218,6 +219,8 @@ const Batiments = () => {
 
   const filteredBatiments = getFilteredBatiments();
   const batimentsAvecCoords = filteredBatiments.filter(b => b.latitude && b.longitude);
+  const visibleBatiments = filteredBatiments.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredBatiments.length;
 
   // Vérification des permissions
   if (!canView) {
@@ -323,7 +326,7 @@ const Batiments = () => {
               <Input
                 placeholder="Rechercher par adresse, ville, nom..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => { setSearchQuery(e.target.value); setVisibleCount(50); }}
                 className="pl-10"
               />
             </div>
@@ -348,7 +351,7 @@ const Batiments = () => {
                   <div className="px-4 py-8 text-center text-gray-500">
                     {searchQuery ? 'Aucun bâtiment ne correspond à la recherche' : 'Aucun bâtiment enregistré'}
                   </div>
-                ) : filteredBatiments.map(batiment => (
+                ) : visibleBatiments.map(batiment => (
                   <div
                     key={batiment.id}
                     data-testid={`batiment-card-${batiment.id}`}
@@ -404,7 +407,7 @@ const Batiments = () => {
                     </td>
                   </tr>
                 ) : (
-                  filteredBatiments.map(batiment => (
+                  visibleBatiments.map(batiment => (
                     <tr 
                       key={batiment.id} 
                       className="border-b hover:bg-gray-50 transition-colors"
@@ -476,6 +479,17 @@ const Batiments = () => {
             </table>
             )}
           </div>
+          {hasMore && (
+            <div style={{ padding: '16px', textAlign: 'center', borderTop: '1px solid #e5e7eb' }}>
+              <Button 
+                variant="outline" 
+                onClick={() => setVisibleCount(prev => prev + 50)}
+                data-testid="load-more-batiments"
+              >
+                Charger plus ({filteredBatiments.length - visibleCount} restants)
+              </Button>
+            </div>
+          )}
         </Card>
       ) : (
         /* Vue Carte avec secteurs */

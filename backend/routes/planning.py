@@ -191,52 +191,39 @@ def send_planning_notification_email(user_email: str, user_name: str, gardes_lis
                 </tr>
             """
         
-        html_content = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 650px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
-            
-            <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
-                <h1 style="margin: 0; font-size: 24px;">📅 Planning Validé</h1>
-                <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 16px;">{mois_texte}</p>
-            </div>
-            
-            <div style="background: white; padding: 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        html_content = build_email(
+            title=f"Planning Valide - {mois_texte}",
+            body_html=f"""
+                <p style="font-size: 15px; color: #374151;">Bonjour <strong>{user_name}</strong>,</p>
+                <p style="font-size: 15px; color: #374151; margin: 0 0 24px;">
+                    Votre planning pour le mois de <strong>{mois_texte}</strong> a ete valide par votre administrateur.
+                </p>
                 
-                <p style="font-size: 16px;">Bonjour <strong>{user_name}</strong>,</p>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #EFF6FF; border-radius: 12px; padding: 24px; margin: 20px 0; text-align: center;">
+                    <tr>
+                        <td style="padding: 20px;">
+                            <div style="font-size: 42px; font-weight: bold; color: #dc2626; margin-bottom: 4px;">{nb_gardes}</div>
+                            <div style="color: #64748b; font-size: 14px; margin-bottom: 16px;">garde(s) assignee(s)</div>
+                            <div>{resume_types_html}</div>
+                            {heures_html}
+                        </td>
+                    </tr>
+                </table>
                 
-                <p>Votre planning pour le mois de <strong>{mois_texte}</strong> a été validé par votre administrateur.</p>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #ECFDF5; border-radius: 12px; border-left: 4px solid #10B981; margin: 20px 0;">
+                    <tr>
+                        <td style="padding: 14px 20px;">
+                            <strong style="color: #065F46;">Vos gardes pour {mois_texte}</strong>
+                        </td>
+                    </tr>
+                </table>
                 
-                <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 12px; padding: 25px; margin: 25px 0; text-align: center;">
-                    <h3 style="color: #1e40af; margin: 0 0 20px 0;">📊 Récapitulatif</h3>
-                    
-                    <div style="margin-bottom: 20px;">
-                        <span style="font-size: 42px; font-weight: bold; color: #dc2626;">{nb_gardes}</span>
-                        <br>
-                        <span style="color: #64748b; font-size: 14px;">garde(s) assignée(s)</span>
-                    </div>
-                    
-                    <div style="margin-bottom: 15px;">
-                        {resume_types_html}
-                    </div>
-                    
-                    {heures_html}
-                </div>
-                
-                <div style="background: #f0fdf4; border-left: 4px solid #22c55e; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0;">
-                    <strong style="color: #166534;">✅ Vos gardes pour {mois_texte} :</strong>
-                </div>
-                
-                <table style="width: 100%; border-collapse: collapse; margin: 20px 0; background: #fafafa; border-radius: 8px; overflow: hidden;">
+                <table style="width: 100%; border-collapse: collapse; margin: 16px 0; background: #fafafa; border-radius: 8px; overflow: hidden;">
                     <thead>
                         <tr style="background: #f1f5f9;">
-                            <th style="padding: 12px; text-align: left; color: #475569; font-weight: 600;">Jour</th>
-                            <th style="padding: 12px; text-align: left; color: #475569; font-weight: 600;">Type de garde</th>
-                            <th style="padding: 12px; text-align: left; color: #475569; font-weight: 600;">Collègues</th>
+                            <th style="padding: 12px; text-align: left; color: #475569; font-weight: 600; font-size: 13px;">Jour</th>
+                            <th style="padding: 12px; text-align: left; color: #475569; font-weight: 600; font-size: 13px;">Type de garde</th>
+                            <th style="padding: 12px; text-align: left; color: #475569; font-weight: 600; font-size: 13px;">Collegues</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -244,36 +231,29 @@ def send_planning_notification_email(user_email: str, user_name: str, gardes_lis
                     </tbody>
                 </table>
                 
-                <div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 15px; margin: 25px 0;">
-                    <h4 style="color: #92400e; margin: 0 0 10px 0;">📢 Rappels importants :</h4>
-                    <ul style="color: #78350f; margin: 0; padding-left: 20px;">
-                        <li>Ce planning a été validé par votre administrateur</li>
-                        <li>Des ajustements peuvent survenir en cas de remplacements</li>
-                        <li>Consultez régulièrement l'application pour les mises à jour</li>
-                        <li>En cas d'absence imprévue, signalez-le immédiatement</li>
-                    </ul>
-                </div>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #FEF3C7; border-radius: 12px; border-left: 4px solid #F59E0B; margin: 20px 0;">
+                    <tr>
+                        <td style="padding: 20px;">
+                            <strong style="color: #92400E; display: block; margin-bottom: 8px;">Rappels importants</strong>
+                            <ul style="color: #78350f; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.8;">
+                                <li>Ce planning a ete valide par votre administrateur</li>
+                                <li>Des ajustements peuvent survenir en cas de remplacements</li>
+                                <li>Consultez regulierement l'application pour les mises a jour</li>
+                            </ul>
+                        </td>
+                    </tr>
+                </table>
                 
-                <div style="text-align: center; margin: 30px 0;">
-                    <a href="{planning_url}" 
-                       style="background: #dc2626; color: white; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px;">
-                        Consulter mon planning
-                    </a>
-                </div>
-                
-                <p style="color: #64748b; margin-top: 30px;">
+                <p style="color: #64748b; margin-top: 24px;">
                     Cordialement,<br>
-                    <strong>L'équipe {caserne_nom}</strong>
+                    <strong>L'equipe {caserne_nom}</strong>
                 </p>
-            </div>
-            
-            <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
-                <p style="margin: 0;">Ceci est un message automatique de ProFireManager.</p>
-                <p style="margin: 5px 0 0 0;">© {datetime.now().year} {caserne_nom}</p>
-            </div>
-        </body>
-        </html>
-        """
+            """,
+            accent_color="#dc2626",
+            cta_text="Consulter mon planning",
+            cta_url=planning_url,
+            footer_text="Ceci est un message automatique de ProFireManager."
+        )
         
         resend.api_key = resend_api_key
         

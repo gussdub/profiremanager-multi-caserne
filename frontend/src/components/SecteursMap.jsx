@@ -102,7 +102,7 @@ const SecteursMap = ({
   };
 
   return (
-    <div style={{ width: '100%', height: '100%', minHeight: '500px', borderRadius: '8px', overflow: 'hidden', position: 'relative' }}>
+    <div style={{ width: '100%', height: '100%', minHeight: '500px', borderRadius: '12px', overflow: 'hidden', position: 'relative' }}>
       {/* Toggle Vue Carte / Satellite */}
       <div style={{ 
         position: 'absolute', 
@@ -110,43 +110,116 @@ const SecteursMap = ({
         left: '10px', 
         zIndex: 100000,
         display: 'flex',
-        flexDirection: 'column',
-        gap: '5px',
+        gap: '2px',
         backgroundColor: 'white',
-        padding: '5px',
-        borderRadius: '8px',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+        padding: '3px',
+        borderRadius: '10px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
       }}>
         <button
           onClick={() => setMapType('street')}
           style={{
-            padding: '6px 12px',
-            backgroundColor: mapType === 'street' ? '#2563eb' : '#fff',
-            color: mapType === 'street' ? '#fff' : '#333',
-            border: '1px solid #d1d5db',
-            borderRadius: '4px',
+            padding: '8px 14px',
+            backgroundColor: mapType === 'street' ? '#1e293b' : '#fff',
+            color: mapType === 'street' ? '#fff' : '#64748b',
+            border: 'none',
+            borderRadius: '8px',
             cursor: 'pointer',
-            fontSize: '12px',
-            fontWeight: mapType === 'street' ? 'bold' : 'normal'
+            fontSize: '13px',
+            fontWeight: '600',
+            transition: 'all 0.2s'
           }}
         >
-          🗺️ Carte
+          Carte
         </button>
         <button
           onClick={() => setMapType('satellite')}
           style={{
-            padding: '6px 12px',
-            backgroundColor: mapType === 'satellite' ? '#2563eb' : '#fff',
-            color: mapType === 'satellite' ? '#fff' : '#333',
-            border: '1px solid #d1d5db',
-            borderRadius: '4px',
+            padding: '8px 14px',
+            backgroundColor: mapType === 'satellite' ? '#1e293b' : '#fff',
+            color: mapType === 'satellite' ? '#fff' : '#64748b',
+            border: 'none',
+            borderRadius: '8px',
             cursor: 'pointer',
-            fontSize: '12px',
-            fontWeight: mapType === 'satellite' ? 'bold' : 'normal'
+            fontSize: '13px',
+            fontWeight: '600',
+            transition: 'all 0.2s'
           }}
         >
-          🛰️ Satellite
+          Satellite
         </button>
+      </div>
+
+      {/* Légende des secteurs */}
+      {secteurs && secteurs.length > 0 && (
+        <div style={{ 
+          position: 'absolute', 
+          bottom: '16px', 
+          left: '16px', 
+          zIndex: 100000,
+          backgroundColor: 'rgba(255,255,255,0.95)',
+          backdropFilter: 'blur(8px)',
+          padding: '14px 18px',
+          borderRadius: '12px',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+          maxWidth: '260px',
+          maxHeight: '200px',
+          overflowY: 'auto'
+        }}>
+          <h4 style={{ margin: '0 0 10px', fontSize: '13px', color: '#374151', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            Secteurs
+          </h4>
+          {secteurs.map(s => {
+            const count = batiments.filter(b => b.secteur_id === s.id).length;
+            return (
+              <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', cursor: 'pointer' }}
+                onClick={() => onSecteurClick && onSecteurClick(s)}
+              >
+                <div style={{ 
+                  width: '14px', height: '14px', borderRadius: '4px', flexShrink: 0,
+                  backgroundColor: s.couleur || '#3b82f6',
+                  border: '2px solid ' + (s.couleur || '#3b82f6'),
+                  opacity: 0.8
+                }} />
+                <span style={{ fontSize: '13px', color: '#374151', flex: 1 }}>{s.nom}</span>
+                <span style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '600' }}>{count}</span>
+              </div>
+            );
+          })}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #e5e7eb' }}>
+            <div style={{ width: '14px', height: '14px', borderRadius: '4px', flexShrink: 0, backgroundColor: '#9ca3af', opacity: 0.5 }} />
+            <span style={{ fontSize: '13px', color: '#9ca3af' }}>Sans secteur</span>
+            <span style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '600' }}>
+              {batiments.filter(b => !b.secteur_id).length}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Stats rapides */}
+      <div style={{
+        position: 'absolute',
+        top: '10px',
+        right: '10px',
+        zIndex: 100000,
+        backgroundColor: 'rgba(255,255,255,0.95)',
+        backdropFilter: 'blur(8px)',
+        padding: '10px 16px',
+        borderRadius: '10px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+        display: 'flex',
+        gap: '16px',
+        fontSize: '13px'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontWeight: '700', color: '#1e293b', fontSize: '16px' }}>{batiments.filter(b => b.latitude && b.longitude).length}</div>
+          <div style={{ color: '#9ca3af', fontSize: '11px' }}>sur la carte</div>
+        </div>
+        <div style={{ width: '1px', backgroundColor: '#e5e7eb' }} />
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontWeight: '700', color: '#1e293b', fontSize: '16px' }}>{secteurs.length}</div>
+          <div style={{ color: '#9ca3af', fontSize: '11px' }}>secteurs</div>
+        </div>
       </div>
 
       <MapContainer
@@ -184,8 +257,9 @@ const SecteursMap = ({
               pathOptions={{
                 color: secteur.couleur || '#3b82f6',
                 fillColor: secteur.couleur || '#3b82f6',
-                fillOpacity: 0.2,
-                weight: 2
+                fillOpacity: 0.25,
+                weight: 3,
+                dashArray: editMode ? '5, 10' : null
               }}
               secteurId={secteur.id}
               eventHandlers={{
@@ -197,23 +271,35 @@ const SecteursMap = ({
               }}
             >
               <Popup>
-                <div style={{ padding: '5px', maxWidth: '250px' }}>
-                  <h3 style={{ margin: '0 0 10px 0', fontSize: '15px', fontWeight: 'bold' }}>
-                    📍 {secteur.nom}
-                  </h3>
+                <div style={{ padding: '4px', maxWidth: '260px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: secteur.couleur || '#3b82f6' }} />
+                    <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>
+                      {secteur.nom}
+                    </h3>
+                  </div>
                   {secteur.description && (
-                    <p style={{ margin: '5px 0', fontSize: '13px' }}>
+                    <p style={{ margin: '0 0 8px', fontSize: '13px', color: '#6b7280', lineHeight: '1.4' }}>
                       {secteur.description}
                     </p>
                   )}
+                  <div style={{ fontSize: '13px', color: '#374151', marginBottom: '4px' }}>
+                    <strong>{batiments.filter(b => b.secteur_id === secteur.id).length}</strong> batiment(s)
+                  </div>
                   {secteur.preventionniste_assigne_nom ? (
-                    <p style={{ margin: '5px 0', fontSize: '13px', color: 'green' }}>
-                      <strong>👨‍🚒 {secteur.preventionniste_assigne_nom}</strong>
-                    </p>
+                    <div style={{ 
+                      display: 'inline-block', padding: '4px 10px', borderRadius: '6px', fontSize: '12px',
+                      backgroundColor: '#ecfdf5', color: '#065f46', fontWeight: '600', marginTop: '4px'
+                    }}>
+                      {secteur.preventionniste_assigne_nom}
+                    </div>
                   ) : (
-                    <p style={{ margin: '5px 0', fontSize: '13px', color: 'orange' }}>
-                      <strong>⚠ Sans préventionniste</strong>
-                    </p>
+                    <div style={{ 
+                      display: 'inline-block', padding: '4px 10px', borderRadius: '6px', fontSize: '12px',
+                      backgroundColor: '#fef3c7', color: '#92400e', fontWeight: '600', marginTop: '4px'
+                    }}>
+                      Sans preventionniste
+                    </div>
                   )}
                 </div>
               </Popup>
@@ -266,27 +352,37 @@ const SecteursMap = ({
             }}
           >
             <Popup>
-              <div style={{ padding: '5px', maxWidth: '250px' }}>
-                <h3 style={{ margin: '0 0 10px 0', fontSize: '15px', fontWeight: 'bold' }}>
+              <div style={{ padding: '4px', maxWidth: '260px' }}>
+                <h3 style={{ margin: '0 0 8px', fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>
                   {batiment.nom_etablissement || 'Sans nom'}
                 </h3>
-                <p style={{ margin: '5px 0', fontSize: '13px' }}>
-                  <strong>Adresse:</strong> {batiment.adresse_civique || 'N/A'}
-                </p>
-                <p style={{ margin: '5px 0', fontSize: '13px' }}>
-                  <strong>Ville:</strong> {batiment.ville || 'N/A'}
-                </p>
-                <p style={{ margin: '5px 0', fontSize: '13px' }}>
-                  <strong>Groupe:</strong> {batiment.groupe_occupation || 'N/A'}
-                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '13px' }}>
+                  <div style={{ color: '#374151' }}>
+                    <span style={{ color: '#9ca3af' }}>Adresse : </span>{batiment.adresse_civique || 'N/A'}
+                  </div>
+                  <div style={{ color: '#374151' }}>
+                    <span style={{ color: '#9ca3af' }}>Ville : </span>{batiment.ville || 'N/A'}
+                  </div>
+                  {batiment.groupe_occupation && (
+                    <div style={{ color: '#374151' }}>
+                      <span style={{ color: '#9ca3af' }}>Groupe : </span>{batiment.groupe_occupation}
+                    </div>
+                  )}
+                </div>
                 {batiment.preventionniste_assigne_id ? (
-                  <p style={{ margin: '5px 0', fontSize: '13px', color: 'green' }}>
-                    <strong>✓ Préventionniste assigné</strong>
-                  </p>
+                  <div style={{ 
+                    display: 'inline-block', padding: '4px 10px', borderRadius: '6px', fontSize: '12px',
+                    backgroundColor: '#ecfdf5', color: '#065f46', fontWeight: '600', marginTop: '8px'
+                  }}>
+                    Preventionniste assigne
+                  </div>
                 ) : (
-                  <p style={{ margin: '5px 0', fontSize: '13px', color: 'orange' }}>
-                    <strong>⚠ Sans préventionniste</strong>
-                  </p>
+                  <div style={{ 
+                    display: 'inline-block', padding: '4px 10px', borderRadius: '6px', fontSize: '12px',
+                    backgroundColor: '#fef3c7', color: '#92400e', fontWeight: '600', marginTop: '8px'
+                  }}>
+                    Sans preventionniste
+                  </div>
                 )}
               </div>
             </Popup>
