@@ -64,6 +64,11 @@ const Planning = () => {
   const [users, setUsers] = useState([]);
   const [grades, setGrades] = useState([]);  // Pour vérifier si un utilisateur est officier
   const [loading, setLoading] = useState(true);
+  
+  // Multi-casernes
+  const [casernesList, setCasernesList] = useState([]);
+  const [multiCasernesActif, setMultiCasernesActif] = useState(false);
+  const [caserneFilter, setCaserneFilter] = useState('toutes'); // 'toutes' ou caserne_id
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showGardeDetailsModal, setShowGardeDetailsModal] = useState(false);
   const [showAdvancedAssignModal, setShowAdvancedAssignModal] = useState(false);
@@ -142,6 +147,23 @@ const Planning = () => {
   // Calculer le nombre de brouillons dans les assignations actuelles
   const brouillonsCount = assignations.filter(a => a.publication_status === 'brouillon').length;
   const hasBrouillons = brouillonsCount > 0;
+
+  // Filtre multi-casernes : filtrer les assignations selon la caserne sélectionnée
+  const filteredAssignations = React.useMemo(() => {
+    if (!multiCasernesActif || caserneFilter === 'toutes') return assignations;
+    
+    // Récupérer les types de garde "par_caserne" pour savoir quels types filtrer
+    const typesCaserneIds = new Set(
+      typesGarde.filter(t => t.mode_caserne === 'par_caserne').map(t => t.id)
+    );
+    
+    return assignations.filter(a => {
+      // Si le type de garde est "global", toujours afficher
+      if (!typesCaserneIds.has(a.type_garde_id)) return true;
+      // Si le type est "par_caserne", filtrer par caserne_id
+      return a.caserne_id === caserneFilter;
+    });
+  }, [assignations, caserneFilter, multiCasernesActif, typesGarde]);
 
   // Fonction utilitaire pour vérifier si un utilisateur est officier
   // Considère Lieutenant, Capitaine, Directeur comme officiers par défaut
@@ -398,12 +420,14 @@ const Planning = () => {
         `${currentMonth}-01` : // Premier jour du mois
         currentWeek;
         
-      const [typesData, assignationsData, usersData, gradesData, equipesGardeData] = await Promise.all([
+      const [typesData, assignationsData, usersData, gradesData, equipesGardeData, casernesConfig, casernesData] = await Promise.all([
         apiGet(tenantSlug, '/types-garde'),
         apiGet(tenantSlug, `/planning/assignations/${dateRange}?mode=${viewMode}`),
-        apiGet(tenantSlug, '/users'), // Tous les rôles peuvent voir les users (lecture seule)
-        apiGet(tenantSlug, '/grades'), // Pour vérifier si un utilisateur est officier
-        apiGet(tenantSlug, '/parametres/equipes-garde').catch(() => null)
+        apiGet(tenantSlug, '/users'),
+        apiGet(tenantSlug, '/grades'),
+        apiGet(tenantSlug, '/parametres/equipes-garde').catch(() => null),
+        apiGet(tenantSlug, '/casernes/config').catch(() => ({ multi_casernes_actif: false })),
+        apiGet(tenantSlug, '/casernes').catch(() => [])
       ]);
       
       setTypesGarde(typesData);
@@ -411,6 +435,8 @@ const Planning = () => {
       setUsers(usersData);
       setGrades(gradesData || []);
       setEquipesGardeParams(equipesGardeData);
+      setMultiCasernesActif(casernesConfig?.multi_casernes_actif || false);
+      setCasernesList(casernesData || []);
       
       // Charger les équipes de garde du jour si le système est actif
       if (equipesGardeData?.actif) {
@@ -463,7 +489,7 @@ const Planning = () => {
 
   const getGardeCoverage = (date, typeGarde) => {
     const dateStr = date.toISOString().split('T')[0];
-    const gardeAssignations = assignations.filter(a => 
+    const gardeAssignations = filteredAssignations.filter(a => 
       a.date === dateStr && a.type_garde_id === typeGarde.id
     );
     
@@ -1234,7 +1260,7 @@ const Planning = () => {
 
   const openGardeDetails = (date, typeGarde) => {
     const dateStr = date.toISOString().split('T')[0];
-    const gardeAssignations = assignations.filter(a => 
+    const gardeAssignations = filteredAssignations.filter(a => 
       a.date === dateStr && a.type_garde_id === typeGarde.id
     );
     
@@ -1398,7 +1424,7 @@ const Planning = () => {
     const monthLabel = targetMonthStart.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
     
     // Filtrer les assignations du mois cible
-    const monthAssignations = assignations.filter(a => {
+    const monthAssignations = filteredAssignations.filter(a => {
       const assignDate = new Date(a.date);
       return assignDate >= targetMonthStart && assignDate <= targetMonthEnd;
     });
@@ -1963,6 +1989,46 @@ const Planning = () => {
             </button>
           </div>
 
+          {/* Filtre Multi-Casernes */}
+          {multiCasernesActif && casernesList.length > 0 && (
+            <div data-testid="caserne-filter-bar" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <button
+                data-testid="caserne-filter-toutes"
+                onClick={() => setCaserneFilter('toutes')}
+                style={{
+                  padding: '6px 12px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 500,
+                  border: caserneFilter === 'toutes' ? '2px solid #3B82F6' : '1px solid #d1d5db',
+                  background: caserneFilter === 'toutes' ? '#EFF6FF' : 'white',
+                  color: caserneFilter === 'toutes' ? '#1D4ED8' : '#6B7280',
+                  cursor: 'pointer', transition: 'all 0.2s'
+                }}
+              >
+                Toutes
+              </button>
+              {casernesList.map(caserne => (
+                <button
+                  key={caserne.id}
+                  data-testid={`caserne-filter-${caserne.id}`}
+                  onClick={() => setCaserneFilter(caserne.id)}
+                  style={{
+                    padding: '6px 12px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 500,
+                    border: caserneFilter === caserne.id ? `2px solid ${caserne.couleur}` : '1px solid #d1d5db',
+                    background: caserneFilter === caserne.id ? caserne.couleur + '15' : 'white',
+                    color: caserneFilter === caserne.id ? caserne.couleur : '#6B7280',
+                    cursor: 'pointer', transition: 'all 0.2s',
+                    display: 'flex', alignItems: 'center', gap: '5px'
+                  }}
+                >
+                  <span style={{
+                    width: '8px', height: '8px', borderRadius: '50%',
+                    background: caserne.couleur, display: 'inline-block'
+                  }} />
+                  {caserne.code || caserne.nom}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Imprimer Planning */}
           <Button 
             variant="outline" 
@@ -2015,14 +2081,14 @@ const Planning = () => {
                 // Si un utilisateur spécifique a été sélectionné
                 if (selectedUserId) {
                   const selectedUser = getUserById(selectedUserId);
-                  const userAssignations = assignations.filter(a => a.user_id === selectedUserId);
+                  const userAssignations = filteredAssignations.filter(a => a.user_id === selectedUserId);
                   return selectedUser 
                     ? `${selectedUser.prenom} ${selectedUser.nom} - ${userAssignations.length} assignation(s) pour cette période`
                     : `Utilisateur sélectionné - ${userAssignations.length} assignation(s)`;
                 }
                 
                 // Sinon recherche générale
-                const matchingAssignations = assignations.filter(a => {
+                const matchingAssignations = filteredAssignations.filter(a => {
                   const u = getUserById(a.user_id);
                   if (!u) return false;
                   const searchLower = searchFilter.toLowerCase();
@@ -2257,7 +2323,7 @@ const Planning = () => {
                 {/* Cartes de garde pour ce jour */}
                 {gardesOfDay.map(typeGarde => {
                   const dateStr = date.toISOString().split('T')[0];
-                  const gardeAssignations = assignations.filter(a => 
+                  const gardeAssignations = filteredAssignations.filter(a => 
                     a.date === dateStr && a.type_garde_id === typeGarde.id
                   );
                   const assignedUsers = gardeAssignations.map(a => getUserById(a.user_id)).filter(Boolean);
@@ -2495,7 +2561,7 @@ const Planning = () => {
                     {gardesJour.map(typeGarde => {
                       const coverage = getGardeCoverage(date, typeGarde);
                       const dateStr = date.toISOString().split('T')[0];
-                      const gardeAssignations = assignations.filter(a => 
+                      const gardeAssignations = filteredAssignations.filter(a => 
                         a.date === dateStr && a.type_garde_id === typeGarde.id
                       );
                       const assignedUsers = gardeAssignations.map(a => getUserById(a.user_id)).filter(Boolean);

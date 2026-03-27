@@ -43,7 +43,6 @@ ProFireManager est un système de gestion de service incendie complet, couvrant 
 - `POST /{tenant}/interventions/import-history/execute` - Exécute import interventions
 
 ## Backlog
-- **Multi-Casernes Phase 5**: Filtre/onglets caserne dans la vue planning
 - **Multi-Casernes Phase 6**: Tests approfondis de non-régression
 - P3: Améliorer UX carte des secteurs
 - P3: Lazy loading tableau bâtiments
@@ -73,3 +72,10 @@ ProFireManager est un système de gestion de service incendie complet, couvrant 
 - Lookup du `caserne_id` depuis l'assignation originale
 - Fallback sur `caserne_ids` du demandeur si pas d'assignation trouvée
 - Types "global" : aucun filtrage caserne, logique inchangée
+
+### Phase 5: Filtre caserne dans la vue planning
+- Barre de filtres caserne (pills) dans la toolbar du planning (Toutes / C1 / C2 / ...)
+- `filteredAssignations` memo qui filtre les assignations par caserne sélectionnée
+- Types "global" toujours visibles quel que soit le filtre caserne sélectionné
+- Types "par_caserne" filtrés par caserne_id de l'assignation
+- Filtre visible uniquement si multi_casernes_actif et casernes configurées
