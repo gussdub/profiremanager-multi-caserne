@@ -60,5 +60,16 @@ Application de gestion complète pour les services d'incendie canadiens. Multi-t
 
 ## Backlog
 - P1: Tester rigoureusement l'import d'historique d'interventions (CSV/XML/ZIP)
-- P2: Refactorisation de `planning.py` (~5300 lignes) et `Parametres.js` (~2600 lignes)
 - P2: Drag & drop pour réassigner les photos entre bâtiments après import
+
+## Refactoring Status (completed 2026-03-27)
+### Backend: planning.py split
+- `planning.py`: 5361 → 2131 lignes (CRUD, publication, rapports heures)
+- `planning_exports.py`: 1101 lignes (exports PDF/Excel/iCal)
+- `planning_auto.py`: 1995 lignes (auto-attribution)
+- `planning_audit.py`: 275 lignes (rapports d'audit)
+- Router registration order in server.py: sub-routers BEFORE main (catch-all route)
+
+### Frontend: Parametres.js split
+- `Parametres.js`: 2639 → 2138 lignes
+- `ParametresTypesGarde.jsx`: 554 lignes (types de garde tab + modals)
