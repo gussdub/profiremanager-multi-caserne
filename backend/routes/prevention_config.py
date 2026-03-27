@@ -449,12 +449,14 @@ async def assigner_batiment_preventionniste(
         notification = {
             "id": str(uuid.uuid4()),
             "tenant_id": tenant.id,
-            "user_id": preventionniste_id,
+            "destinataire_id": preventionniste_id,
             "type": "assignation_batiment",
             "titre": "Nouveau bâtiment assigné",
             "message": f"Le bâtiment '{batiment.get('nom_etablissement') or batiment.get('adresse_civique')}' vous a été assigné.",
-            "lue": False,
+            "statut": "non_lu",
+            "lu": False,
             "created_at": datetime.now(timezone.utc).isoformat(),
+            "date_creation": datetime.now(timezone.utc).isoformat(),
             "data": {
                 "batiment_id": batiment_id,
                 "batiment_nom": batiment.get('nom_etablissement') or batiment.get('adresse_civique')
@@ -555,12 +557,14 @@ async def assigner_secteur_preventionniste(
         notification = {
             "id": str(uuid.uuid4()),
             "tenant_id": tenant.id,
-            "user_id": preventionniste_id,
+            "destinataire_id": preventionniste_id,
             "type": "assignation_secteur",
             "titre": "Nouveau secteur assigné",
             "message": f"Le secteur '{secteur['nom']}' vous a été assigné" + (f" avec {nb_batiments_assignes} bâtiments." if assigner_batiments else "."),
-            "lue": False,
+            "statut": "non_lu",
+            "lu": False,
             "created_at": datetime.now(timezone.utc).isoformat(),
+            "date_creation": datetime.now(timezone.utc).isoformat(),
             "data": {
                 "secteur_id": secteur_id,
                 "secteur_nom": secteur['nom'],

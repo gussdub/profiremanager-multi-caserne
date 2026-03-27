@@ -683,12 +683,14 @@ async def resolve_disponibilite_conflict(
             notification = {
                 "id": str(uuid.uuid4()),
                 "tenant_id": tenant.id,
-                "user_id": affected_user_id,
+                "destinataire_id": affected_user_id,
                 "titre": "Indisponibilités modifiées",
                 "message": f"{len(conflict_ids)} indisponibilité(s) supprimée(s) en raison d'un conflit avec une nouvelle disponibilité",
                 "type": "disponibilite",
-                "lue": False,
-                "created_at": datetime.now(timezone.utc).isoformat()
+                "statut": "non_lu",
+                "lu": False,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "date_creation": datetime.now(timezone.utc).isoformat()
             }
             await db.notifications.insert_one(notification)
     

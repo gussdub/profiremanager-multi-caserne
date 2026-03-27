@@ -117,10 +117,11 @@ async def publier_message(
         notification = {
             "id": str(uuid.uuid4()),
             "tenant_id": tenant.id,
-            "user_id": user.get("id"),
+            "destinataire_id": user.get("id"),
             "type": "broadcast",
             "titre": priorite_labels.get(message.priorite, "Nouveau message"),
             "message": message.contenu[:100] + "..." if len(message.contenu) > 100 else message.contenu,
+            "statut": "non_lu",
             "broadcast_id": message_id,
             "priorite": message.priorite,
             "lu": False,

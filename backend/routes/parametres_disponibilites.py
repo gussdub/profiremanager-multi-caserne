@@ -286,16 +286,18 @@ async def trigger_rappels_disponibilites(
         await db.notifications.insert_one({
             "id": str(uuid.uuid4()),
             "tenant_id": tenant.id,
-            "user_id": user_id,
+            "destinataire_id": user_id,
             "type": "rappel_disponibilites",
             "titre": titre_notification,
             "message": message_notification,
+            "statut": "non_lu",
             "lu": False,
             "urgent": jours_restants <= 1,
             "data": {
                 "lien": "/disponibilites",
                 "mois_cible": f"{next_month_year}-{str(next_month).zfill(2)}"
             },
+            "date_creation": datetime.now(timezone.utc).isoformat(),
             "created_at": datetime.now(timezone.utc).isoformat()
         })
         notifications_envoyees += 1

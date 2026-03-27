@@ -349,16 +349,18 @@ async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
             await db.notifications.insert_one({
                 "id": str(uuid.uuid4()),
                 "tenant_id": tenant_id,
-                "user_id": remplacant_id,
+                "destinataire_id": remplacant_id,
                 "type": "remplacement_proposition",
-                "titre": "🚨 Demande de remplacement urgente",
+                "titre": "Demande de remplacement urgente",
                 "message": f"{demandeur_nom} cherche un remplaçant pour {type_garde_nom} le {demande_data['date']}. Répondez rapidement !",
+                "statut": "non_lu",
                 "lu": False,
                 "urgent": True,
                 "data": {
                     "demande_id": demande_id,
                     "lien": "/remplacements"
                 },
+                "date_creation": datetime.now(timezone.utc).isoformat(),
                 "created_at": datetime.now(timezone.utc).isoformat()
             })
         
@@ -1006,12 +1008,14 @@ async def arreter_demande_remplacement(
             await db.notifications.insert_one({
                 "id": str(uuid.uuid4()),
                 "tenant_id": tenant.id,
-                "user_id": demandeur_id,
+                "destinataire_id": demandeur_id,
                 "type": "remplacement_arrete",
-                "titre": "🛑 Processus arrêté",
-                "message": f"Le processus de remplacement du {demande_data['date']} a été arrêté par {current_user.prenom} {current_user.nom}.",
+                "titre": "Processus arrete",
+                "message": f"Le processus de remplacement du {demande_data['date']} a ete arrete par {current_user.prenom} {current_user.nom}.",
+                "statut": "non_lu",
                 "lu": False,
                 "data": {"demande_id": demande_id},
+                "date_creation": maintenant.isoformat(),
                 "created_at": maintenant.isoformat()
             })
         except Exception as e:

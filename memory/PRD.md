@@ -42,6 +42,12 @@ ProFireManager est un système de gestion de service incendie complet, couvrant 
 - `POST /{tenant}/interventions/import-history/preview` - Prévisualise import interventions
 - `POST /{tenant}/interventions/import-history/execute` - Exécute import interventions
 
+### Bug Fix: Notifications in-app manquantes (Mars 2026)
+- **Cause racine**: Les insertions directes dans `db.notifications` utilisaient `user_id` au lieu de `destinataire_id` et manquaient le champ `statut: "non_lu"`. L'endpoint GET filtre par `destinataire_id`, donc ces notifications étaient invisibles.
+- **Fichiers corrigés**: `remplacements_routes.py`, `workflow.py`, `prevention_config.py`, `broadcast.py`, `disponibilites.py`, `parametres_disponibilites.py`
+- **Migration**: 113 anciennes notifications en base corrigées (ajout `destinataire_id` depuis `user_id`)
+- **Test**: `/app/backend/tests/test_notif_remplacements.py` — 6/6 tests OK
+
 ## Backlog
 - P3: Améliorer UX carte des secteurs
 - P3: Lazy loading tableau bâtiments
