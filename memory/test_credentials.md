@@ -4,5 +4,7 @@
 - **Slug**: `demo`
 - **Email admin**: `gussdub@gmail.com`
 - **Email employé test**: `info@profiremanager.ca`
-
-Note: Les mots de passe sont gérés par l'utilisateur final. Utiliser le tenant slug `demo` pour les routes API.
+- **Login field**: `mot_de_passe` (not `password`)
+- **Token field**: `access_token`
+- **JWT Secret**: `your-secret-key-here` (default)
+- **Login endpoint**: `POST /api/demo/auth/login`

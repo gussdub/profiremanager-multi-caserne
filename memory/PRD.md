@@ -42,6 +42,14 @@ ProFireManager est un système de gestion de service incendie complet, couvrant 
 - `POST /{tenant}/interventions/import-history/preview` - Prévisualise import interventions
 - `POST /{tenant}/interventions/import-history/execute` - Exécute import interventions
 
+### Feature: Quarts Ouverts (Mars 2026)
+- Quand l'algorithme de remplacement ne trouve personne, la demande passe en statut `ouvert` au lieu de `expiree`
+- **Broadcast** : Tous les employés actifs reçoivent une notification push + in-app
+- **Endpoint GET** `/remplacements/quarts-ouverts` : retourne les quarts ouverts (dates futures)
+- **Endpoint PUT** `/remplacements/{id}/prendre` : premier arrivé, premier servi — prend le quart, met à jour le planning, notifie le demandeur + admins
+- **Frontend** : Onglet "Quarts disponibles" (ambre) dans TabsBar, composant `QuartsOuverts.jsx`
+- **Sécurités** : Bloque auto-prise (son propre quart), double-prise, dates passées
+
 ### Bug Fix: Notifications in-app manquantes (Mars 2026)
 - **Cause racine**: Les insertions directes dans `db.notifications` utilisaient `user_id` au lieu de `destinataire_id` et manquaient le champ `statut: "non_lu"`. L'endpoint GET filtre par `destinataire_id`, donc ces notifications étaient invisibles.
 - **Fichiers corrigés**: `remplacements_routes.py`, `workflow.py`, `prevention_config.py`, `broadcast.py`, `disponibilites.py`, `parametres_disponibilites.py`
