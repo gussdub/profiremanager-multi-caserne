@@ -114,68 +114,111 @@ async def envoyer_email_remplacement(
         
         html_content = f"""
         <!DOCTYPE html>
-        <html>
+        <html lang="fr">
         <head>
             <meta charset="utf-8">
-            <style>
-                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }}
-                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }}
-                .header h1 {{ margin: 0; font-size: 24px; }}
-                .content {{ background-color: #f8f9fa; padding: 30px; border-radius: 0 0 8px 8px; }}
-                .details {{ background-color: white; border-radius: 8px; padding: 20px; margin: 20px 0; }}
-                .details-row {{ display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }}
-                .details-row:last-child {{ border-bottom: none; }}
-                .details-label {{ color: #6B7280; }}
-                .details-value {{ font-weight: 600; color: #111827; }}
-                .buttons {{ text-align: center; margin: 30px 0; }}
-                .btn {{ display: inline-block; padding: 14px 30px; text-decoration: none; border-radius: 8px; margin: 0 10px; font-weight: 600; }}
-                .btn-accept {{ background-color: #10B981; color: white; }}
-                .btn-refuse {{ background-color: #EF4444; color: white; }}
-                .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
-            </style>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
         </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>🚒 Demande de remplacement</h1>
-                </div>
-                <div class="content">
-                    <p>Bonjour {remplacant_prenom},</p>
-                    <p><strong>{demandeur_nom}</strong> vous sollicite pour un remplacement.</p>
-                    
-                    <div class="details">
-                        <div class="details-row">
-                            <span class="details-label">📅 Date:</span>
-                            <span class="details-value">{date_garde}</span>
-                        </div>
-                        <div class="details-row">
-                            <span class="details-label">⏰ Horaire:</span>
-                            <span class="details-value">{heure_debut} - {heure_fin}</span>
-                        </div>
-                        <div class="details-row">
-                            <span class="details-label">🚒 Type:</span>
-                            <span class="details-value">{type_garde_nom}</span>
-                        </div>
-                        <div class="details-row">
-                            <span class="details-label">📝 Raison:</span>
-                            <span class="details-value">{raison}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="buttons">
-                        <a href="{lien_accepter}" class="btn btn-accept">✅ Accepter</a>
-                        <a href="{lien_refuser}" class="btn btn-refuse">❌ Refuser</a>
-                    </div>
-                    
-                    <p style="color: #6B7280; font-size: 0.9rem;">Ce lien expire dans 48 heures.</p>
-                    
-                    <p>Cordialement,<br>L'équipe {tenant_nom}</p>
-                </div>
-                <div class="footer">
-                    <p>Ceci est un message automatique. Merci de ne pas y répondre.</p>
-                </div>
-            </div>
+        <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6;">
+                <tr>
+                    <td align="center" style="padding: 40px 20px;">
+                        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; width: 100%;">
+                            
+                            <!-- Header -->
+                            <tr>
+                                <td style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 16px 16px 0 0; padding: 32px 40px; text-align: center;">
+                                    <img src="https://customer-assets.emergentagent.com/job_fireshift-manager/artifacts/6vh2i9cz_05_Icone_Flamme_Rouge_Bordure_D9072B_VISIBLE.png" alt="ProFireManager" width="52" height="52" style="width: 52px; height: 52px; margin-bottom: 12px; display: block; margin-left: auto; margin-right: auto;">
+                                    <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700;">ProFireManager</h1>
+                                    <p style="color: #94a3b8; margin: 4px 0 0; font-size: 13px;">Gestion des services d'incendie</p>
+                                </td>
+                            </tr>
+                            
+                            <!-- Body -->
+                            <tr>
+                                <td style="background-color: #ffffff; padding: 0;">
+                                    <div style="height: 4px; background-color: #3B82F6;"></div>
+                                    <div style="padding: 36px 40px;">
+                                        
+                                        <p style="color: #6b7280; font-size: 15px; margin: 0 0 8px;">Bonjour {remplacant_prenom},</p>
+                                        <p style="color: #374151; font-size: 15px; margin: 0 0 24px;"><strong>{demandeur_nom}</strong> vous sollicite pour un remplacement.</p>
+                                        
+                                        <!-- Details Card -->
+                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden;">
+                                            <tr>
+                                                <td style="padding: 24px;">
+                                                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                                                        <tr>
+                                                            <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
+                                                                <span style="color: #6b7280; font-size: 14px;">Date</span><br>
+                                                                <span style="color: #111827; font-weight: 600; font-size: 15px;">{date_garde}</span>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
+                                                                <span style="color: #6b7280; font-size: 14px;">Horaire</span><br>
+                                                                <span style="color: #111827; font-weight: 600; font-size: 15px;">{heure_debut} - {heure_fin}</span>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
+                                                                <span style="color: #6b7280; font-size: 14px;">Type de garde</span><br>
+                                                                <span style="color: #111827; font-weight: 600; font-size: 15px;">{type_garde_nom}</span>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="padding: 10px 0;">
+                                                                <span style="color: #6b7280; font-size: 14px;">Raison</span><br>
+                                                                <span style="color: #111827; font-weight: 600; font-size: 15px;">{raison}</span>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        
+                                        <!-- Action Buttons -->
+                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 32px 0 16px;">
+                                            <tr>
+                                                <td align="center">
+                                                    <a href="{lien_accepter}" 
+                                                       style="display: inline-block; background-color: #10B981; color: #ffffff; 
+                                                              padding: 14px 36px; text-decoration: none; border-radius: 10px; 
+                                                              font-weight: 600; font-size: 15px; margin-right: 12px;
+                                                              box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);">
+                                                        Accepter
+                                                    </a>
+                                                    <a href="{lien_refuser}" 
+                                                       style="display: inline-block; background-color: #EF4444; color: #ffffff; 
+                                                              padding: 14px 36px; text-decoration: none; border-radius: 10px; 
+                                                              font-weight: 600; font-size: 15px;
+                                                              box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);">
+                                                        Refuser
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        
+                                        <p style="color: #9ca3af; font-size: 13px; text-align: center; margin: 0 0 24px;">Ce lien expire dans 48 heures.</p>
+                                        
+                                        <p style="color: #374151; font-size: 14px; margin: 0;">Cordialement,<br><strong>L'equipe {tenant_nom}</strong></p>
+                                    </div>
+                                </td>
+                            </tr>
+                            
+                            <!-- Footer -->
+                            <tr>
+                                <td style="background-color: #f8fafc; border-radius: 0 0 16px 16px; border-top: 1px solid #e2e8f0; padding: 24px 40px; text-align: center;">
+                                    <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+                                        Ceci est un message automatique. Merci de ne pas y repondre.
+                                    </p>
+                                </td>
+                            </tr>
+                            
+                        </table>
+                    </td>
+                </tr>
+            </table>
         </body>
         </html>
         """
@@ -256,69 +299,109 @@ async def envoyer_email_remplacement_trouve(
         
         html_content = f"""
         <!DOCTYPE html>
-        <html>
+        <html lang="fr">
         <head>
             <meta charset="utf-8">
-            <style>
-                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }}
-                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }}
-                .header h1 {{ margin: 0; font-size: 24px; }}
-                .content {{ background-color: #f8f9fa; padding: 30px; border-radius: 0 0 8px 8px; }}
-                .success-box {{ background-color: #D1FAE5; border: 1px solid #10B981; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center; }}
-                .success-box .icon {{ font-size: 48px; margin-bottom: 10px; }}
-                .details {{ background-color: white; border-radius: 8px; padding: 20px; margin: 20px 0; }}
-                .details-row {{ display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }}
-                .details-row:last-child {{ border-bottom: none; }}
-                .details-label {{ color: #6B7280; }}
-                .details-value {{ font-weight: 600; color: #111827; }}
-                .btn {{ display: inline-block; background-color: #10B981; color: white; padding: 14px 30px; text-decoration: none; border-radius: 8px; margin-top: 20px; font-weight: 600; }}
-                .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
-            </style>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
         </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>✅ Remplaçant trouvé!</h1>
-                </div>
-                <div class="content">
-                    <p>Bonjour {demandeur_prenom},</p>
-                    
-                    <div class="success-box">
-                        <div class="icon">🎉</div>
-                        <strong style="font-size: 18px; color: #059669;">Bonne nouvelle!</strong>
-                        <p style="margin: 10px 0 0 0; color: #065F46;">
-                            <strong>{remplacant_nom}</strong> a accepté de vous remplacer.
-                        </p>
-                    </div>
-                    
-                    <div class="details">
-                        <div class="details-row">
-                            <span class="details-label">📅 Date:</span>
-                            <span class="details-value">{date_garde}</span>
-                        </div>
-                        <div class="details-row">
-                            <span class="details-label">🚒 Type de garde:</span>
-                            <span class="details-value">{type_garde_nom}</span>
-                        </div>
-                        <div class="details-row">
-                            <span class="details-label">👤 Remplaçant:</span>
-                            <span class="details-value">{remplacant_nom}</span>
-                        </div>
-                    </div>
-                    
-                    <p>Votre demande de remplacement a été traitée avec succès. Le planning a été mis à jour automatiquement.</p>
-                    
-                    <center>
-                        <a href="{frontend_url}/remplacements" class="btn">Voir mes remplacements</a>
-                    </center>
-                    
-                    <p style="margin-top: 30px;">Cordialement,<br>L'équipe {tenant_nom}</p>
-                </div>
-                <div class="footer">
-                    <p>Ceci est un message automatique. Merci de ne pas y répondre.</p>
-                </div>
-            </div>
+        <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6;">
+                <tr>
+                    <td align="center" style="padding: 40px 20px;">
+                        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; width: 100%;">
+                            
+                            <!-- Header -->
+                            <tr>
+                                <td style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 16px 16px 0 0; padding: 32px 40px; text-align: center;">
+                                    <img src="https://customer-assets.emergentagent.com/job_fireshift-manager/artifacts/6vh2i9cz_05_Icone_Flamme_Rouge_Bordure_D9072B_VISIBLE.png" alt="ProFireManager" width="52" height="52" style="width: 52px; height: 52px; margin-bottom: 12px; display: block; margin-left: auto; margin-right: auto;">
+                                    <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700;">ProFireManager</h1>
+                                    <p style="color: #94a3b8; margin: 4px 0 0; font-size: 13px;">Gestion des services d'incendie</p>
+                                </td>
+                            </tr>
+                            
+                            <!-- Body -->
+                            <tr>
+                                <td style="background-color: #ffffff; padding: 0;">
+                                    <div style="height: 4px; background-color: #10B981;"></div>
+                                    <div style="padding: 36px 40px;">
+                                        
+                                        <p style="color: #6b7280; font-size: 15px; margin: 0 0 24px;">Bonjour {demandeur_prenom},</p>
+                                        
+                                        <!-- Success Card -->
+                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                                            <tr>
+                                                <td style="background-color: #ECFDF5; border-radius: 12px; border-left: 4px solid #10B981; padding: 24px 28px; text-align: center;">
+                                                    <h2 style="color: #065F46; margin: 0 0 8px; font-size: 20px; font-weight: 700;">Remplacant trouve !</h2>
+                                                    <p style="color: #047857; margin: 0; font-size: 15px;">
+                                                        <strong>{remplacant_nom}</strong> a accepte de vous remplacer.
+                                                    </p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        
+                                        <!-- Details -->
+                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; margin: 24px 0;">
+                                            <tr>
+                                                <td style="padding: 24px;">
+                                                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                                                        <tr>
+                                                            <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
+                                                                <span style="color: #6b7280; font-size: 14px;">Date</span><br>
+                                                                <span style="color: #111827; font-weight: 600; font-size: 15px;">{date_garde}</span>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
+                                                                <span style="color: #6b7280; font-size: 14px;">Type de garde</span><br>
+                                                                <span style="color: #111827; font-weight: 600; font-size: 15px;">{type_garde_nom}</span>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="padding: 10px 0;">
+                                                                <span style="color: #6b7280; font-size: 14px;">Remplacant</span><br>
+                                                                <span style="color: #111827; font-weight: 600; font-size: 15px;">{remplacant_nom}</span>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        
+                                        <p style="color: #374151; font-size: 14px; margin: 0 0 24px;">Le planning a ete mis a jour automatiquement.</p>
+                                        
+                                        <!-- CTA -->
+                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                                            <tr>
+                                                <td align="center">
+                                                    <a href="{frontend_url}/remplacements" 
+                                                       style="display: inline-block; background-color: #10B981; color: #ffffff; 
+                                                              padding: 14px 36px; text-decoration: none; border-radius: 10px; 
+                                                              font-weight: 600; font-size: 15px;
+                                                              box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);">
+                                                        Voir mes remplacements
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        
+                                        <p style="color: #374151; font-size: 14px; margin: 32px 0 0;">Cordialement,<br><strong>L'equipe {tenant_nom}</strong></p>
+                                    </div>
+                                </td>
+                            </tr>
+                            
+                            <!-- Footer -->
+                            <tr>
+                                <td style="background-color: #f8fafc; border-radius: 0 0 16px 16px; border-top: 1px solid #e2e8f0; padding: 24px 40px; text-align: center;">
+                                    <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+                                        Ceci est un message automatique. Merci de ne pas y repondre.
+                                    </p>
+                                </td>
+                            </tr>
+                            
+                        </table>
+                    </td>
+                </tr>
+            </table>
         </body>
         </html>
         """
@@ -398,75 +481,111 @@ async def envoyer_email_remplacement_non_trouve(
         
         html_content = f"""
         <!DOCTYPE html>
-        <html>
+        <html lang="fr">
         <head>
             <meta charset="utf-8">
-            <style>
-                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }}
-                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }}
-                .header h1 {{ margin: 0; font-size: 24px; }}
-                .content {{ background-color: #f8f9fa; padding: 30px; border-radius: 0 0 8px 8px; }}
-                .alert-box {{ background-color: #FEE2E2; border: 1px solid #EF4444; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center; }}
-                .alert-box .icon {{ font-size: 48px; margin-bottom: 10px; }}
-                .details {{ background-color: white; border-radius: 8px; padding: 20px; margin: 20px 0; }}
-                .details-row {{ display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }}
-                .details-row:last-child {{ border-bottom: none; }}
-                .details-label {{ color: #6B7280; }}
-                .details-value {{ font-weight: 600; color: #111827; }}
-                .action-box {{ background-color: #FEF3C7; border: 1px solid #F59E0B; border-radius: 8px; padding: 15px; margin: 20px 0; }}
-                .btn {{ display: inline-block; background-color: #DC2626; color: white; padding: 14px 30px; text-decoration: none; border-radius: 8px; margin-top: 20px; font-weight: 600; }}
-                .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
-            </style>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
         </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>❌ Aucun remplaçant trouvé</h1>
-                </div>
-                <div class="content">
-                    <p>Bonjour {demandeur_prenom},</p>
-                    
-                    <div class="alert-box">
-                        <div class="icon">😔</div>
-                        <strong style="font-size: 18px; color: #DC2626;">Demande expirée</strong>
-                        <p style="margin: 10px 0 0 0; color: #991B1B;">
-                            Malheureusement, aucun remplaçant n'a pu être trouvé pour votre demande.
-                        </p>
-                    </div>
-                    
-                    <div class="details">
-                        <div class="details-row">
-                            <span class="details-label">📅 Date:</span>
-                            <span class="details-value">{date_garde}</span>
-                        </div>
-                        <div class="details-row">
-                            <span class="details-label">🚒 Type de garde:</span>
-                            <span class="details-value">{type_garde_nom}</span>
-                        </div>
-                        <div class="details-row">
-                            <span class="details-label">📊 Statut:</span>
-                            <span class="details-value" style="color: #DC2626;">Expirée - Aucun remplaçant</span>
-                        </div>
-                    </div>
-                    
-                    <div class="action-box">
-                        <strong>⚠️ Action requise</strong>
-                        <p style="margin: 10px 0 0 0;">
-                            Veuillez contacter votre superviseur pour trouver une solution alternative.
-                        </p>
-                    </div>
-                    
-                    <center>
-                        <a href="{frontend_url}/remplacements" class="btn">Voir mes demandes</a>
-                    </center>
-                    
-                    <p style="margin-top: 30px;">Cordialement,<br>L'équipe {tenant_nom}</p>
-                </div>
-                <div class="footer">
-                    <p>Ceci est un message automatique. Merci de ne pas y répondre.</p>
-                </div>
-            </div>
+        <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6;">
+                <tr>
+                    <td align="center" style="padding: 40px 20px;">
+                        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; width: 100%;">
+                            
+                            <!-- Header -->
+                            <tr>
+                                <td style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 16px 16px 0 0; padding: 32px 40px; text-align: center;">
+                                    <img src="https://customer-assets.emergentagent.com/job_fireshift-manager/artifacts/6vh2i9cz_05_Icone_Flamme_Rouge_Bordure_D9072B_VISIBLE.png" alt="ProFireManager" width="52" height="52" style="width: 52px; height: 52px; margin-bottom: 12px; display: block; margin-left: auto; margin-right: auto;">
+                                    <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700;">ProFireManager</h1>
+                                    <p style="color: #94a3b8; margin: 4px 0 0; font-size: 13px;">Gestion des services d'incendie</p>
+                                </td>
+                            </tr>
+                            
+                            <!-- Body -->
+                            <tr>
+                                <td style="background-color: #ffffff; padding: 0;">
+                                    <div style="height: 4px; background-color: #F59E0B;"></div>
+                                    <div style="padding: 36px 40px;">
+                                        
+                                        <p style="color: #6b7280; font-size: 15px; margin: 0 0 24px;">Bonjour {demandeur_prenom},</p>
+                                        
+                                        <!-- Alert Card -->
+                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                                            <tr>
+                                                <td style="background-color: #FEF3C7; border-radius: 12px; border-left: 4px solid #F59E0B; padding: 24px 28px; text-align: center;">
+                                                    <h2 style="color: #92400E; margin: 0 0 8px; font-size: 20px; font-weight: 700;">Quart ouvert a tous</h2>
+                                                    <p style="color: #A16207; margin: 0; font-size: 15px;">
+                                                        Aucun remplacant n'a ete trouve automatiquement. Votre quart est maintenant visible par tous les employes.
+                                                    </p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        
+                                        <!-- Details -->
+                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; margin: 24px 0;">
+                                            <tr>
+                                                <td style="padding: 24px;">
+                                                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                                                        <tr>
+                                                            <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
+                                                                <span style="color: #6b7280; font-size: 14px;">Date</span><br>
+                                                                <span style="color: #111827; font-weight: 600; font-size: 15px;">{date_garde}</span>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
+                                                                <span style="color: #6b7280; font-size: 14px;">Type de garde</span><br>
+                                                                <span style="color: #111827; font-weight: 600; font-size: 15px;">{type_garde_nom}</span>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="padding: 10px 0;">
+                                                                <span style="color: #6b7280; font-size: 14px;">Statut</span><br>
+                                                                <span style="color: #F59E0B; font-weight: 600; font-size: 15px;">Ouvert a tous les employes</span>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        
+                                        <p style="color: #374151; font-size: 14px; margin: 0 0 24px; line-height: 1.6;">
+                                            Tous les employes ont ete notifies. Le premier volontaire prendra votre quart. Vous serez informe des que quelqu'un se porte volontaire.
+                                        </p>
+                                        
+                                        <!-- CTA -->
+                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                                            <tr>
+                                                <td align="center">
+                                                    <a href="{frontend_url}/remplacements" 
+                                                       style="display: inline-block; background-color: #F59E0B; color: #ffffff; 
+                                                              padding: 14px 36px; text-decoration: none; border-radius: 10px; 
+                                                              font-weight: 600; font-size: 15px;
+                                                              box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3);">
+                                                        Voir mes demandes
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        
+                                        <p style="color: #374151; font-size: 14px; margin: 32px 0 0;">Cordialement,<br><strong>L'equipe {tenant_nom}</strong></p>
+                                    </div>
+                                </td>
+                            </tr>
+                            
+                            <!-- Footer -->
+                            <tr>
+                                <td style="background-color: #f8fafc; border-radius: 0 0 16px 16px; border-top: 1px solid #e2e8f0; padding: 24px 40px; text-align: center;">
+                                    <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+                                        Ceci est un message automatique. Merci de ne pas y repondre.
+                                    </p>
+                                </td>
+                            </tr>
+                            
+                        </table>
+                    </td>
+                </tr>
+            </table>
         </body>
         </html>
         """

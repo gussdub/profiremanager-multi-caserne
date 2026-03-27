@@ -22,40 +22,58 @@ LOGO_URL = "https://customer-assets.emergentagent.com/job_fireshift-manager/arti
 def get_email_template(content: str, title: str = None) -> str:
     """
     Génère un template d'email uniforme avec le design ProFireManager.
-    
-    Args:
-        content: Le contenu HTML du corps de l'email
-        title: Titre optionnel affiché sous le logo
-    
-    Returns:
-        Template HTML complet avec header et footer
     """
-    title_html = f'<h2 style="color: #1f2937; margin-top: 10px;">{title}</h2>' if title else ''
+    title_html = f'<h2 style="color: #1e293b; margin: 0 0 20px; font-size: 20px; font-weight: 700;">{title}</h2>' if title else ''
     
     return f"""
-    <html>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="text-align: center; margin-bottom: 30px;">
-                <img src="{LOGO_URL}" 
-                     alt="ProFireManager" 
-                     width="60" 
-                     height="60"
-                     style="width: 60px; height: 60px; margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
-                <h1 style="color: #dc2626; margin: 0;">ProFireManager v2.0</h1>
-                <p style="color: #666; margin: 5px 0;">Système de gestion des services d'incendie</p>
-            </div>
-            
-            {title_html}
-            {content}
-            
-            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
-            
-            <div style="text-align: center; color: #9ca3af; font-size: 12px;">
-                © {datetime.now().year} ProFireManager - Gestion des services d'incendie<br>
-                <small>Cet email a été envoyé automatiquement par ProFireManager v2.0</small>
-            </div>
-        </div>
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6;">
+            <tr>
+                <td align="center" style="padding: 40px 20px;">
+                    <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; width: 100%;">
+                        
+                        <!-- Header -->
+                        <tr>
+                            <td style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 16px 16px 0 0; padding: 32px 40px; text-align: center;">
+                                <img src="{LOGO_URL}" alt="ProFireManager" width="52" height="52" style="width: 52px; height: 52px; margin-bottom: 12px; display: block; margin-left: auto; margin-right: auto;">
+                                <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.3px;">ProFireManager</h1>
+                                <p style="color: #94a3b8; margin: 4px 0 0; font-size: 13px;">Gestion des services d'incendie</p>
+                            </td>
+                        </tr>
+                        
+                        <!-- Body -->
+                        <tr>
+                            <td style="background-color: #ffffff; padding: 0;">
+                                <div style="height: 4px; background-color: #dc2626;"></div>
+                                <div style="padding: 36px 40px;">
+                                    {title_html}
+                                    {content}
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- Footer -->
+                        <tr>
+                            <td style="background-color: #f8fafc; border-radius: 0 0 16px 16px; border-top: 1px solid #e2e8f0; padding: 24px 40px; text-align: center;">
+                                <p style="color: #9ca3af; font-size: 12px; margin: 0 0 4px; line-height: 1.5;">
+                                    &copy; {datetime.now().year} ProFireManager &mdash; Tous droits reserves
+                                </p>
+                                <p style="color: #d1d5db; font-size: 11px; margin: 0;">
+                                    Cet email a ete envoye automatiquement par ProFireManager.
+                                </p>
+                            </td>
+                        </tr>
+                        
+                    </table>
+                </td>
+            </tr>
+        </table>
     </body>
     </html>
     """
