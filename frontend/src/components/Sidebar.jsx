@@ -549,13 +549,21 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
       {showNotifications && (
         <div 
           className="notifications-overlay"
-          onClick={() => {
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
             setShowNotifications(false);
             setIsMobileMenuOpen(false);
           }}
-          onTouchStart={() => {
+          onTouchStart={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
             setShowNotifications(false);
             setIsMobileMenuOpen(false);
+          }}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
           }}
           style={{
             position: 'fixed',
