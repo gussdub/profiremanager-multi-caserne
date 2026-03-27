@@ -3666,6 +3666,20 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         # Créer un dictionnaire pour lookup rapide des utilisateurs par ID
         users_dict = {u["id"]: u for u in users}
         
+        # ==================== MULTI-CASERNES ====================
+        # Charger la config multi-casernes du tenant
+        tenant_doc = await db.tenants.find_one({"id": tenant.id}, {"_id": 0, "multi_casernes_actif": 1})
+        multi_casernes_actif = tenant_doc.get("multi_casernes_actif", False) if tenant_doc else False
+        
+        casernes_list = []
+        casernes_map = {}
+        if multi_casernes_actif:
+            casernes_list = await db.casernes.find({"tenant_id": tenant.id, "actif": True}, {"_id": 0}).to_list(100)
+            casernes_map = {c["id"]: c for c in casernes_list}
+            logging.info(f"🏢 [MULTI-CASERNES] Actif. {len(casernes_list)} caserne(s): {[c['nom'] for c in casernes_list]}")
+        else:
+            logging.info(f"🏢 [MULTI-CASERNES] Desactive - mode standard")
+        
         # Récupérer les paramètres de remplacements (incluant gestion heures sup)
         parametres = await db.parametres_remplacements.find_one({"tenant_id": tenant.id})
         if not parametres:
@@ -4376,6 +4390,22 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
             # N0: Priorisation des types de garde (par priorité intrinsèque)
             types_garde_tries = sorted(types_garde, key=lambda t: t.get("priorite", 99))
             
+            # ==================== MULTI-CASERNES: EXPANSION ====================
+            # Pour les types de garde "par_caserne", créer une entrée virtuelle par caserne
+            # Cela permet de traiter chaque caserne séparément sans modifier la logique existante
+            if multi_casernes_actif and casernes_list:
+                types_garde_expanded = []
+                for tg in types_garde_tries:
+                    if tg.get("mode_caserne") == "par_caserne":
+                        for caserne in casernes_list:
+                            tg_copy = dict(tg)
+                            tg_copy["_caserne_filter"] = caserne["id"]
+                            tg_copy["_caserne_nom"] = caserne.get("nom", "")
+                            types_garde_expanded.append(tg_copy)
+                    else:
+                        types_garde_expanded.append(tg)
+                types_garde_tries = types_garde_expanded
+            
             for type_garde in types_garde_tries:
                 type_garde_id = type_garde["id"]
                 type_garde_nom = type_garde.get("nom", "Garde")
@@ -4388,6 +4418,12 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 heure_debut = type_garde.get("heure_debut", "00:00")
                 heure_fin = type_garde.get("heure_fin", "23:59")
                 
+                # Multi-casernes: caserne cible pour cette itération
+                caserne_filter_id = type_garde.get("_caserne_filter")
+                caserne_filter_nom = type_garde.get("_caserne_nom", "")
+                if caserne_filter_id:
+                    logging.info(f"🏢 [CASERNE] {type_garde_nom} → Caserne: {caserne_filter_nom}")
+                
                 # Vérifier si ce type de garde s'applique ce jour
                 jours_app = type_garde.get("jours_application", [])
                 if jours_app and len(jours_app) > 0 and day_name not in jours_app:
@@ -4397,6 +4433,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 existing_this_garde = [
                     a for a in existing_assignations
                     if a.get("date") == date_str and a.get("type_garde_id") == type_garde_id
+                    and (not caserne_filter_id or a.get("caserne_id") == caserne_filter_id)
                 ]
                 existing_count = len(existing_this_garde)
                 
@@ -4496,6 +4533,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             "auto_attribue": True,
                             "assignation_type": "rotation_temps_plein",
                             "publication_status": "brouillon",
+                            "caserne_id": caserne_filter_id,
                             "niveau_attribution": 1,
                             "created_at": datetime.now(timezone.utc).isoformat(),
                             "justification": {
@@ -4560,6 +4598,16 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                     u for u in users 
                     if user_a_competences_requises(u, competences_requises)
                 ]
+                
+                # ==================== N0-caserne: FILTRE PAR CASERNE ====================
+                # Si mode par_caserne, ne garder que les utilisateurs rattachés à cette caserne
+                if caserne_filter_id:
+                    nb_avant_caserne = len(users_avec_competences)
+                    users_avec_competences = [
+                        u for u in users_avec_competences
+                        if caserne_filter_id in (u.get("caserne_ids") or [])
+                    ]
+                    logging.info(f"  🏢 Filtre caserne '{caserne_filter_nom}': {len(users_avec_competences)}/{nb_avant_caserne} candidats")
                 
                 # Log si peu de candidats avec les compétences requises
                 if competences_requises and len(users_avec_competences) < len(users) // 2:
@@ -4819,6 +4867,7 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                             "auto_attribue": True,
                             "assignation_type": "auto",
                             "publication_status": "brouillon",  # Mode brouillon par défaut
+                            "caserne_id": caserne_filter_id,
                             "niveau_attribution": niveau,
                             "created_at": datetime.now(timezone.utc).isoformat(),
                             # Données d'audit/justification pour traçabilité (format attendu par le frontend)

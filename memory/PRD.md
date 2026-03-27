@@ -43,7 +43,6 @@ ProFireManager est un système de gestion de service incendie complet, couvrant 
 - `POST /{tenant}/interventions/import-history/execute` - Exécute import interventions
 
 ## Backlog
-- **Multi-Casernes Phase 3**: Attribution automatique respectant le mode_caserne
 - **Multi-Casernes Phase 4**: Remplacements filtrés par caserne si mode par_caserne
 - **Multi-Casernes Phase 5**: Filtre/onglets caserne dans la vue planning
 - **Multi-Casernes Phase 6**: Tests approfondis de non-régression
@@ -53,7 +52,8 @@ ProFireManager est un système de gestion de service incendie complet, couvrant 
 - Historique modifications permissions
 - Drag & drop pour réassigner les photos entre bâtiments
 
-## Multi-Casernes (Phase 1-2 DONE - Mars 2026)
+## Multi-Casernes (Phase 1-3 DONE - Mars 2026)
+### Phase 1-2: Fondations + UI
 - Collection `casernes` avec CRUD API complet
 - Toggle `multi_casernes_actif` sur le tenant
 - Champ `mode_caserne` ("global" / "par_caserne") sur les types de garde
@@ -62,3 +62,9 @@ ProFireManager est un système de gestion de service incendie complet, couvrant 
 - Onglet "Casernes" dans Paramètres avec gestion CRUD visuel
 - Sélecteur mode_caserne dans les formulaires de types de garde
 - Sélecteur casernes dans les formulaires employés
+
+### Phase 3: Attribution automatique
+- Types "par_caserne" expandés en copies virtuelles (une par caserne) avant attribution
+- Pool de candidats filtré par `caserne_ids` de chaque utilisateur
+- `caserne_id` automatiquement assigné à chaque assignation créée
+- Types "global" : logique existante préservée intégralement
