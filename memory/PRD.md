@@ -43,7 +43,6 @@ ProFireManager est un système de gestion de service incendie complet, couvrant 
 - `POST /{tenant}/interventions/import-history/execute` - Exécute import interventions
 
 ## Backlog
-- **Multi-Casernes Phase 4**: Remplacements filtrés par caserne si mode par_caserne
 - **Multi-Casernes Phase 5**: Filtre/onglets caserne dans la vue planning
 - **Multi-Casernes Phase 6**: Tests approfondis de non-régression
 - P3: Améliorer UX carte des secteurs
@@ -68,3 +67,9 @@ ProFireManager est un système de gestion de service incendie complet, couvrant 
 - Pool de candidats filtré par `caserne_ids` de chaque utilisateur
 - `caserne_id` automatiquement assigné à chaque assignation créée
 - Types "global" : logique existante préservée intégralement
+
+### Phase 4: Remplacements filtrés par caserne
+- `trouver_remplacants_potentiels` dans `/app/backend/routes/remplacements/search.py` filtre les candidats par caserne
+- Lookup du `caserne_id` depuis l'assignation originale
+- Fallback sur `caserne_ids` du demandeur si pas d'assignation trouvée
+- Types "global" : aucun filtrage caserne, logique inchangée

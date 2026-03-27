@@ -207,8 +207,45 @@ async def trouver_remplacants_potentiels(
         })
         users_list = await users_cursor.to_list(length=None)
         
-        logger.info(f"🔍 Recherche remplaçants pour date={date_garde}, type_garde={type_garde_id}")
-        logger.info(f"🔍 {len(users_list)} employés actifs (excluant {len(exclus_ids)} déjà contactés + demandeur)")
+        # ==================== FILTRE MULTI-CASERNES ====================
+        # Si le type de garde est "par_caserne" et que le multi-casernes est actif,
+        # ne chercher des remplacants que parmi les employes de la meme caserne
+        mode_caserne = type_garde_data.get("mode_caserne", "global")
+        if mode_caserne == "par_caserne":
+            tenant_mc = await db.tenants.find_one({"id": tenant_id}, {"_id": 0, "multi_casernes_actif": 1})
+            if tenant_mc and tenant_mc.get("multi_casernes_actif", False):
+                # Trouver la caserne de l'assignation originale
+                assignation_originale = await db.assignations.find_one({
+                    "tenant_id": tenant_id,
+                    "user_id": demandeur_id,
+                    "type_garde_id": type_garde_id,
+                    "date": date_garde
+                }, {"_id": 0, "caserne_id": 1})
+                
+                caserne_id_filtre = assignation_originale.get("caserne_id") if assignation_originale else None
+                
+                if caserne_id_filtre:
+                    nb_avant = len(users_list)
+                    users_list = [
+                        u for u in users_list
+                        if caserne_id_filtre in (u.get("caserne_ids") or [])
+                    ]
+                    caserne_info = await db.casernes.find_one({"id": caserne_id_filtre}, {"_id": 0, "nom": 1})
+                    caserne_nom = caserne_info.get("nom", caserne_id_filtre[:8]) if caserne_info else caserne_id_filtre[:8]
+                    logger.info(f"🏢 [MULTI-CASERNES] Remplacements filtres par caserne '{caserne_nom}': {len(users_list)}/{nb_avant} candidats")
+                else:
+                    # Fallback: utiliser les casernes du demandeur
+                    demandeur_casernes = demandeur.get("caserne_ids", []) if demandeur else []
+                    if demandeur_casernes:
+                        nb_avant = len(users_list)
+                        users_list = [
+                            u for u in users_list
+                            if any(cid in (u.get("caserne_ids") or []) for cid in demandeur_casernes)
+                        ]
+                        logger.info(f"🏢 [MULTI-CASERNES] Remplacements filtres par casernes du demandeur: {len(users_list)}/{nb_avant} candidats")
+        
+        logger.info(f"🔍 Recherche remplacants pour date={date_garde}, type_garde={type_garde_id}")
+        logger.info(f"🔍 {len(users_list)} employes actifs (excluant {len(exclus_ids)} deja contactes + demandeur)")
         if exclus_ids:
             logger.info(f"🔍 IDs exclus (déjà contactés): {exclus_ids}")
         
