@@ -129,7 +129,21 @@ async def get_notifications(
     }).sort("date_creation", -1).limit(50).to_list(50)
     
     cleaned_notifications = [clean_mongo_doc(notif) for notif in notifications]
-    return [Notification(**notif) for notif in cleaned_notifications]
+    
+    # Filter out invalid notifications (missing required fields)
+    valid_notifications = []
+    for notif in cleaned_notifications:
+        # Ensure required fields exist with defaults if missing
+        if "titre" not in notif or not notif["titre"]:
+            notif["titre"] = notif.get("type", "Notification")
+        if "message" not in notif or not notif["message"]:
+            notif["message"] = ""
+        try:
+            valid_notifications.append(Notification(**notif))
+        except Exception as e:
+            logger.warning(f"Skipping invalid notification {notif.get('id')}: {e}")
+    
+    return valid_notifications
 
 
 @router.get("/{tenant_slug}/notifications/non-lues/count")

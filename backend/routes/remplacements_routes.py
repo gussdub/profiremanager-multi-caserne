@@ -195,16 +195,24 @@ async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
             logger.info(f"  - {r.get('nom_complet')} (priorité {r.get('priorite')}, {r.get('raison')})")
         
         if not remplacants:
-            logger.warning(f"⚠️ Aucun remplaçant trouvé pour la demande {demande_id}")
+            logger.warning(f"⚠️ Aucun remplaçant trouvé pour la demande {demande_id} — passage en quart ouvert")
+            
+            # Passer en statut "ouvert" au lieu de "expiree"
             await db.demandes_remplacement.update_one(
                 {"id": demande_id},
                 {
                     "$set": {
-                        "statut": "expiree",
+                        "statut": "ouvert",
+                        "date_ouverture": datetime.now(timezone.utc).isoformat(),
                         "updated_at": datetime.now(timezone.utc)
                     }
                 }
             )
+            
+            demandeur = await db.users.find_one({"id": demande_data["demandeur_id"]})
+            demandeur_nom = f"{demandeur.get('prenom', '')} {demandeur.get('nom', '')}" if demandeur else "Un employe"
+            type_garde = await db.types_garde.find_one({"id": demande_data["type_garde_id"], "tenant_id": tenant_id})
+            type_garde_nom = type_garde.get("nom", "une garde") if type_garde else "une garde"
             
             # Notifier superviseurs
             superviseurs = await db.users.find({
@@ -214,31 +222,26 @@ async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
             
             superviseur_ids = [s["id"] for s in superviseurs]
             if superviseur_ids:
-                demandeur = await db.users.find_one({"id": demande_data["demandeur_id"]})
-                demandeur_nom = f"{demandeur.get('prenom', '')} {demandeur.get('nom', '')}" if demandeur else "Un employé"
-                
-                # Push notification
                 await send_push_notification_to_users(
                     user_ids=superviseur_ids,
-                    title="❌ Aucun remplaçant trouvé",
-                    body=f"Aucun remplaçant disponible pour {demandeur_nom} le {demande_data['date']}",
+                    title="Quart ouvert",
+                    body=f"Aucun remplacant trouve pour {demandeur_nom} le {demande_data['date']}. Le quart est maintenant ouvert a tous.",
                     data={
-                        "type": "remplacement_expiree",
+                        "type": "quart_ouvert",
                         "demande_id": demande_id
                     }
                 )
                 
-                # Notification in-app + email pour chaque superviseur
                 for sup in superviseurs:
                     await creer_notification(
                         tenant_id=tenant_id,
                         destinataire_id=sup["id"],
-                        type="remplacement_expiree",
-                        titre="❌ Aucun remplaçant trouvé",
-                        message=f"Aucun remplaçant disponible pour {demandeur_nom} le {demande_data['date']}. Une intervention manuelle est requise.",
+                        type="quart_ouvert",
+                        titre="Quart ouvert a tous",
+                        message=f"Aucun remplacant trouve pour {demandeur_nom} le {demande_data['date']}. Le quart ({type_garde_nom}) est maintenant ouvert a tous les employes.",
                         lien="/remplacements",
                         data={"demande_id": demande_id},
-                        envoyer_email=True  # Email aux superviseurs quand demande expirée
+                        envoyer_email=True
                     )
             
             # Notifier le demandeur
@@ -246,10 +249,10 @@ async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
             if demandeur_id:
                 await send_push_notification_to_users(
                     user_ids=[demandeur_id],
-                    title="❌ Demande de remplacement expirée",
-                    body=f"Aucun remplaçant n'a été trouvé pour votre demande du {demande_data['date']}. Contactez votre superviseur.",
+                    title="Quart ouvert a tous",
+                    body=f"Aucun remplacant n'a ete trouve automatiquement pour votre {type_garde_nom} du {demande_data['date']}. Le quart est maintenant ouvert a tous les employes.",
                     data={
-                        "type": "remplacement_expiree",
+                        "type": "quart_ouvert",
                         "demande_id": demande_id
                     }
                 )
@@ -257,30 +260,80 @@ async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
                     "id": str(uuid.uuid4()),
                     "tenant_id": tenant_id,
                     "destinataire_id": demandeur_id,
-                    "type": "remplacement_expiree",
-                    "titre": "Demande de remplacement expiree",
-                    "message": f"Aucun remplacant n'a ete trouve pour votre demande du {demande_data['date']}.",
+                    "type": "quart_ouvert",
+                    "titre": "Quart ouvert a tous",
+                    "message": f"Aucun remplacant n'a ete trouve automatiquement pour votre {type_garde_nom} du {demande_data['date']}. Le quart est maintenant ouvert a tous les employes.",
                     "statut": "non_lu",
                     "lu": False,
                     "data": {"demande_id": demande_id},
                     "date_creation": datetime.now(timezone.utc).isoformat(),
                     "created_at": datetime.now(timezone.utc).isoformat()
                 })
+            
+            # Broadcast à TOUS les employés actifs (sauf le demandeur)
+            tous_employes = await db.users.find({
+                "tenant_id": tenant_id,
+                "actif": {"$ne": False},
+                "id": {"$ne": demande_data["demandeur_id"]}
+            }).to_list(None)
+            
+            employe_ids = [e["id"] for e in tous_employes]
+            if employe_ids:
+                await send_push_notification_to_users(
+                    user_ids=employe_ids,
+                    title="Quart disponible",
+                    body=f"Un quart de {type_garde_nom} le {demande_data['date']} est disponible. Premier arrive, premier servi !",
+                    data={
+                        "type": "quart_ouvert",
+                        "demande_id": demande_id,
+                        "lien": "/remplacements"
+                    }
+                )
                 
-                # Envoyer un email au demandeur pour l'informer qu'aucun remplaçant n'a été trouvé
-                try:
-                    tenant = await db.tenants.find_one({"id": tenant_id})
-                    type_garde = await db.types_garde.find_one({"id": demande_data["type_garde_id"], "tenant_id": tenant_id})
-                    await envoyer_email_remplacement_non_trouve(
-                        db=db,
-                        demande_data=demande_data,
-                        demandeur=demandeur,
-                        type_garde=type_garde,
-                        tenant=tenant
-                    )
-                except Exception as email_error:
-                    logger.warning(f"⚠️ Erreur envoi email remplacement non trouvé: {email_error}")
-                    
+                # Notification in-app pour tous les employés
+                notifications_batch = []
+                for emp in tous_employes:
+                    notifications_batch.append({
+                        "id": str(uuid.uuid4()),
+                        "tenant_id": tenant_id,
+                        "destinataire_id": emp["id"],
+                        "type": "quart_ouvert",
+                        "titre": "Quart disponible",
+                        "message": f"Un quart de {type_garde_nom} le {demande_data['date']} est disponible. Rendez-vous dans Remplacements pour le prendre !",
+                        "statut": "non_lu",
+                        "lu": False,
+                        "data": {"demande_id": demande_id, "lien": "/remplacements"},
+                        "date_creation": datetime.now(timezone.utc).isoformat(),
+                        "created_at": datetime.now(timezone.utc).isoformat()
+                    })
+                if notifications_batch:
+                    await db.notifications.insert_many(notifications_batch)
+                    logger.info(f"📢 {len(notifications_batch)} notification(s) 'quart ouvert' envoyées à tous les employés")
+            
+            # Envoyer un email au demandeur
+            try:
+                tenant = await db.tenants.find_one({"id": tenant_id})
+                await envoyer_email_remplacement_non_trouve(
+                    db=db,
+                    demande_data=demande_data,
+                    demandeur=demandeur,
+                    type_garde=type_garde,
+                    tenant=tenant
+                )
+            except Exception as email_error:
+                logger.warning(f"⚠️ Erreur envoi email remplacement non trouvé: {email_error}")
+            
+            # Broadcaster la mise à jour WebSocket
+            tenant_data = await db.tenants.find_one({"id": tenant_id})
+            tenant_slug_ws = tenant_data.get("slug", "") if tenant_data else ""
+            if tenant_slug_ws:
+                asyncio.create_task(broadcast_remplacement_update(tenant_slug_ws, "quart_ouvert", {
+                    "demande_id": demande_id,
+                    "demandeur_nom": demandeur_nom,
+                    "date": demande_data["date"],
+                    "type_garde_nom": type_garde_nom
+                }))
+            
             return
         
         if mode_notification == "multiple":
@@ -658,6 +711,176 @@ async def export_remplacements_excel(
     # RBAC: Vérifier si l'utilisateur peut voir toutes les demandes
     can_view_all = await user_has_module_action(tenant.id, current_user, "remplacements", "voir", "toutes-demandes")
     return await export_remplacements_to_excel(db, tenant, current_user, user_id, can_view_all)
+
+
+@router.get("/{tenant_slug}/remplacements/quarts-ouverts")
+async def get_quarts_ouverts(tenant_slug: str, current_user: User = Depends(get_current_user)):
+    """Retourne les quarts ouverts (disponibles pour tous) dont la date n'est pas passée"""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
+    demandes = await db.demandes_remplacement.find({
+        "tenant_id": tenant.id,
+        "statut": "ouvert",
+        "date": {"$gte": today}
+    }).to_list(100)
+    
+    quarts = []
+    for demande in demandes:
+        cleaned = clean_mongo_doc(demande)
+        
+        # Enrichir avec le nom du demandeur
+        demandeur = await db.users.find_one({"id": cleaned.get("demandeur_id")}, {"prenom": 1, "nom": 1})
+        if demandeur:
+            cleaned["demandeur_nom"] = f"{demandeur.get('prenom', '')} {demandeur.get('nom', '')}".strip()
+        
+        # Enrichir avec le type de garde
+        type_garde = await db.types_garde.find_one({"id": cleaned.get("type_garde_id")}, {"nom": 1, "heure_debut": 1, "heure_fin": 1})
+        if type_garde:
+            cleaned["type_garde_nom"] = type_garde.get("nom", "")
+            cleaned["type_garde_heure_debut"] = type_garde.get("heure_debut", "")
+            cleaned["type_garde_heure_fin"] = type_garde.get("heure_fin", "")
+        
+        quarts.append(cleaned)
+    
+    return quarts
+
+
+@router.put("/{tenant_slug}/remplacements/{demande_id}/prendre")
+async def prendre_quart_ouvert(
+    tenant_slug: str,
+    demande_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Permet à n'importe quel employé de prendre un quart ouvert"""
+    send_push_notification_to_users = await get_send_push_notification()
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    demande_data = await db.demandes_remplacement.find_one({"id": demande_id, "tenant_id": tenant.id})
+    if not demande_data:
+        raise HTTPException(status_code=404, detail="Demande non trouvee")
+    
+    if demande_data["statut"] != "ouvert":
+        raise HTTPException(status_code=400, detail="Ce quart n'est plus disponible")
+    
+    # Empêcher le demandeur de prendre son propre quart
+    if current_user.id == demande_data["demandeur_id"]:
+        raise HTTPException(status_code=400, detail="Vous ne pouvez pas prendre votre propre quart")
+    
+    # Vérifier que la date n'est pas passée
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    if demande_data["date"] < today:
+        raise HTTPException(status_code=400, detail="Ce quart est pour une date passee")
+    
+    maintenant = datetime.now(timezone.utc)
+    
+    # Mettre à jour la demande
+    await db.demandes_remplacement.update_one(
+        {"id": demande_id},
+        {
+            "$set": {
+                "statut": "accepte",
+                "remplacant_id": current_user.id,
+                "pris_via_quart_ouvert": True,
+                "updated_at": maintenant
+            }
+        }
+    )
+    
+    # Mettre à jour le planning (remplacer l'assignation)
+    assignation = await db.assignations.find_one({
+        "tenant_id": tenant.id,
+        "user_id": demande_data["demandeur_id"],
+        "date": demande_data["date"],
+        "type_garde_id": demande_data["type_garde_id"]
+    })
+    
+    if assignation:
+        await db.assignations.update_one(
+            {"id": assignation["id"]},
+            {
+                "$set": {
+                    "user_id": current_user.id,
+                    "est_remplacement": True,
+                    "demandeur_original_id": demande_data["demandeur_id"],
+                    "pris_via_quart_ouvert": True,
+                    "updated_at": maintenant
+                }
+            }
+        )
+        logger.info(f"Planning mis a jour: {current_user.prenom} {current_user.nom} prend l'assignation {assignation['id']}")
+    
+    remplacant_nom = f"{current_user.prenom} {current_user.nom}"
+    demandeur = await db.users.find_one({"id": demande_data["demandeur_id"]})
+    demandeur_nom = f"{demandeur.get('prenom', '')} {demandeur.get('nom', '')}" if demandeur else "le demandeur"
+    type_garde = await db.types_garde.find_one({"id": demande_data["type_garde_id"], "tenant_id": tenant.id})
+    type_garde_nom = type_garde.get("nom", "une garde") if type_garde else "une garde"
+    
+    # Notifier le demandeur
+    demandeur_id = demande_data["demandeur_id"]
+    await send_push_notification_to_users(
+        user_ids=[demandeur_id],
+        title="Remplacant trouve !",
+        body=f"{remplacant_nom} a pris votre quart de {type_garde_nom} du {demande_data['date']}.",
+        data={"type": "quart_pris", "demande_id": demande_id}
+    )
+    await db.notifications.insert_one({
+        "id": str(uuid.uuid4()),
+        "tenant_id": tenant.id,
+        "destinataire_id": demandeur_id,
+        "type": "quart_pris",
+        "titre": "Remplacant trouve !",
+        "message": f"{remplacant_nom} a pris votre quart de {type_garde_nom} du {demande_data['date']}.",
+        "statut": "non_lu",
+        "lu": False,
+        "data": {"demande_id": demande_id, "remplacant_id": current_user.id},
+        "date_creation": maintenant.isoformat(),
+        "created_at": maintenant.isoformat()
+    })
+    
+    # Notifier les superviseurs
+    superviseurs = await db.users.find({
+        "tenant_id": tenant.id,
+        "role": {"$in": ["superviseur", "admin"]}
+    }).to_list(100)
+    
+    for sup in superviseurs:
+        await creer_notification(
+            tenant_id=tenant.id,
+            destinataire_id=sup["id"],
+            type="quart_pris",
+            titre="Quart ouvert pris",
+            message=f"{remplacant_nom} a pris le quart de {type_garde_nom} ({demandeur_nom}) du {demande_data['date']}.",
+            lien="/remplacements",
+            data={"demande_id": demande_id},
+            envoyer_email=False
+        )
+    
+    # Activité
+    await creer_activite(
+        tenant_id=tenant.id,
+        type_activite="quart_ouvert_pris",
+        description=f"{remplacant_nom} a pris le quart ouvert de {type_garde_nom} ({demandeur_nom}) du {demande_data['date']}",
+        user_id=current_user.id,
+        user_nom=remplacant_nom
+    )
+    
+    # Broadcaster la mise à jour WebSocket
+    asyncio.create_task(broadcast_remplacement_update(tenant_slug, "quart_pris", {
+        "demande_id": demande_id,
+        "remplacant_id": current_user.id,
+        "remplacant_nom": remplacant_nom,
+        "demandeur_nom": demandeur_nom,
+        "date": demande_data["date"]
+    }))
+    
+    logger.info(f"Quart ouvert pris: {remplacant_nom} prend le quart de {demandeur_nom} ({demande_id})")
+    
+    return {
+        "message": f"Quart pris avec succes ! Vous remplacez {demandeur_nom} le {demande_data['date']}.",
+        "demande_id": demande_id
+    }
 
 
 @router.get("/{tenant_slug}/remplacements", response_model=List[DemandeRemplacement])
@@ -1050,7 +1273,7 @@ async def relancer_demande_remplacement(
         raise HTTPException(status_code=404, detail="Demande non trouvée")
     
     # Vérifier que la demande est expirée ou annulée
-    if demande_data["statut"] not in ["expiree", "annulee"]:
+    if demande_data["statut"] not in ["expiree", "annulee", "ouvert"]:
         raise HTTPException(status_code=400, detail="Seules les demandes expirées ou annulées peuvent être relancées")
     
     # Vérifier que l'utilisateur a le droit via RBAC (permission modifier ou demandeur original)

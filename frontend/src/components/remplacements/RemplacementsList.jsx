@@ -178,8 +178,8 @@ const RemplacementsList = ({
                 </div>
               )}
               
-              {/* Bouton Relancer pour demandes expirées ou annulées */}
-              {['expiree', 'annulee'].includes(demande.statut) && (
+              {/* Bouton Relancer pour demandes expirées, annulées ou ouvertes */}
+              {['expiree', 'annulee', 'ouvert'].includes(demande.statut) && (
                 <div className="demande-actions" style={{ marginTop: '10px' }}>
                   <Button 
                     variant="outline" 

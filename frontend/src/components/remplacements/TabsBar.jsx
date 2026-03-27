@@ -10,7 +10,8 @@ const TabsBar = ({
   setActiveTab,
   propositionsCount,
   remplacementsCount,
-  congesCount
+  congesCount,
+  quartsOuvertsCount
 }) => {
   return (
     <div className="flex gap-2 mb-6 border-b border-gray-200 pb-2 flex-wrap">
@@ -24,7 +25,19 @@ const TabsBar = ({
           onClick={() => setActiveTab('propositions')}
           data-testid="tab-propositions"
         >
-          🚨 Propositions reçues ({propositionsCount})
+          Propositions recues ({propositionsCount})
+        </button>
+      )}
+      {/* Onglet Quarts ouverts */}
+      {quartsOuvertsCount > 0 && (
+        <button
+          className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
+            activeTab === 'quarts_ouverts' ? 'bg-amber-500 text-white' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+          }`}
+          onClick={() => setActiveTab('quarts_ouverts')}
+          data-testid="tab-quarts-ouverts"
+        >
+          Quarts disponibles ({quartsOuvertsCount})
         </button>
       )}
       <button
@@ -34,7 +47,7 @@ const TabsBar = ({
         onClick={() => setActiveTab('remplacements')}
         data-testid="tab-remplacements"
       >
-        🔄 Remplacements ({remplacementsCount})
+        Remplacements ({remplacementsCount})
       </button>
       <button
         className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
@@ -43,7 +56,7 @@ const TabsBar = ({
         onClick={() => setActiveTab('conges')}
         data-testid="tab-conges"
       >
-        🏖️ Congés ({congesCount})
+        Conges ({congesCount})
       </button>
     </div>
   );

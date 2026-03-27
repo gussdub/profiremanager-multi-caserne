@@ -3,7 +3,7 @@ import { Button } from "./ui/button";
 import { useToast } from "../hooks/use-toast";
 import { useTenant } from "../contexts/TenantContext";
 import { useAuth } from "../contexts/AuthContext";
-import { apiGet } from '../utils/api';
+import { apiGet, apiPut } from '../utils/api';
 import usePermissions from '../hooks/usePermissions';
 
 // Hooks personnalisés extraits
@@ -23,6 +23,7 @@ import ImpactPlanningModal from './remplacements/ImpactPlanningModal';
 import SuiviRemplacementModal from './SuiviRemplacementModal';
 import FilterBar from './remplacements/FilterBar';
 import { ActionButtons, ExportButtons } from './remplacements/ActionButtons';
+import QuartsOuverts from './remplacements/QuartsOuverts';
 
 // Constantes
 const TYPES_CONGE = [
@@ -56,7 +57,8 @@ const getStatutColor = (statut) => {
     'en_cours': '#F59E0B', 'en_attente': '#F59E0B',
     'approuve': '#10B981', 'accepte': '#10B981', 'approuve_manuellement': '#10B981',
     'refuse': '#EF4444', 'refusee': '#EF4444', 'annulee': '#EF4444',
-    'expiree': '#9CA3AF'
+    'expiree': '#9CA3AF',
+    'ouvert': '#F59E0B'
   };
   return colors[statut] || '#6B7280';
 };
@@ -64,8 +66,9 @@ const getStatutColor = (statut) => {
 const getStatutLabel = (statut) => {
   const labels = {
     'en_cours': 'En cours', 'en_attente': 'En attente',
-    'approuve': 'Acceptée', 'accepte': 'Acceptée', 'approuve_manuellement': 'Approuvée manuellement',
-    'refuse': 'Refusée', 'refusee': 'Refusée', 'annulee': 'Annulée', 'expiree': 'Expirée'
+    'approuve': 'Acceptee', 'accepte': 'Acceptee', 'approuve_manuellement': 'Approuvee manuellement',
+    'refuse': 'Refusee', 'refusee': 'Refusee', 'annulee': 'Annulee', 'expiree': 'Expiree',
+    'ouvert': 'Quart ouvert'
   };
   return labels[statut] || statut;
 };
@@ -93,7 +96,7 @@ const Remplacements = () => {
 
   // Hooks personnalisés
   const {
-    demandes, demandesConge, users, typesGarde, loading, propositionsRecues,
+    demandes, demandesConge, users, typesGarde, loading, propositionsRecues, quartsOuverts,
     refetch, getTypeGardeName, getUserName
   } = useRemplacementsData(tenantSlug, user, toast);
 
@@ -178,7 +181,7 @@ const Remplacements = () => {
 
   // KPIs
   const totalDemandes = mesDemandes.length;
-  const enAttente = mesDemandes.filter(d => ['en_cours', 'en_attente'].includes(d.statut)).length;
+  const enAttente = mesDemandes.filter(d => ['en_cours', 'en_attente', 'ouvert'].includes(d.statut)).length;
   const acceptees = mesDemandes.filter(d => ['approuve', 'accepte', 'approuve_manuellement'].includes(d.statut)).length;
   const refusees = mesDemandes.filter(d => ['refuse', 'refusee', 'annulee', 'expiree'].includes(d.statut)).length;
   const remplacementsTrouves = mesDemandes.filter(d => ['approuve', 'accepte', 'approuve_manuellement'].includes(d.statut) && d.remplacant_id).length;
@@ -208,6 +211,25 @@ const Remplacements = () => {
       setShowCreateCongeModal(false);
       setNewConge({ type_conge: '', date_debut: getLocalDateString(), date_fin: getLocalDateString(), raison: '', priorite: 'normale', target_user_id: null });
     });
+  };
+
+  // Handler pour prendre un quart ouvert
+  const handlePrendreQuart = async (demandeId) => {
+    try {
+      const result = await apiPut(tenantSlug, `/remplacements/${demandeId}/prendre`, {});
+      toast({
+        title: "Quart pris !",
+        description: result.message || "Vous avez pris ce quart avec succes.",
+      });
+      refetch();
+    } catch (error) {
+      const detail = error?.response?.data?.detail || error?.message || "Impossible de prendre ce quart";
+      toast({
+        title: "Erreur",
+        description: detail,
+        variant: "destructive"
+      });
+    }
   };
 
   // Handler pour l'export
@@ -359,6 +381,7 @@ const Remplacements = () => {
         propositionsCount={propositionsRecues.length}
         remplacementsCount={filteredDemandes.length}
         congesCount={filteredConges.length}
+        quartsOuvertsCount={quartsOuverts.length}
       />
 
       {/* Contenu des onglets */}
@@ -371,6 +394,16 @@ const Remplacements = () => {
             parseDateLocal={parseDateLocal}
             onAccept={(id) => handlers.handleRepondreProposition(id, 'accepter')}
             onRefuse={(id) => handlers.handleRepondreProposition(id, 'refuser')}
+          />
+        )}
+
+        {activeTab === 'quarts_ouverts' && (
+          <QuartsOuverts
+            quarts={quartsOuverts}
+            getTypeGardeName={getTypeGardeName}
+            parseDateLocal={parseDateLocal}
+            onPrendreQuart={handlePrendreQuart}
+            currentUserId={user?.id}
           />
         )}
 

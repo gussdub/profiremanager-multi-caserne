@@ -24,7 +24,7 @@ class DemandeRemplacement(BaseModel):
     type_garde_id: str
     date: str  # Date de la garde à remplacer (format: YYYY-MM-DD)
     raison: str
-    statut: str = "en_attente"  # en_attente, en_cours, accepte, expiree, annulee
+    statut: str = "en_attente"  # en_attente, en_cours, accepte, expiree, annulee, ouvert, approuve_manuellement
     priorite: str = "normal"  # urgent (≤24h), normal (>24h) - calculé automatiquement
     remplacant_id: Optional[str] = None
     tentatives_historique: List[Dict[str, Any]] = []

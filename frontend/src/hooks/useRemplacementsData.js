@@ -13,6 +13,7 @@ const useRemplacementsData = (tenantSlug, user, toast) => {
   const [typesGarde, setTypesGarde] = useState([]);
   const [loading, setLoading] = useState(true);
   const [propositionsRecues, setPropositionsRecues] = useState([]);
+  const [quartsOuverts, setQuartsOuverts] = useState([]);
 
   // Fonction pour trier par date de création (plus récent en premier)
   const sortByCreatedAt = (a, b) => new Date(b.created_at) - new Date(a.created_at);
@@ -26,7 +27,8 @@ const useRemplacementsData = (tenantSlug, user, toast) => {
         apiGet(tenantSlug, '/remplacements'),
         apiGet(tenantSlug, '/demandes-conge'),
         apiGet(tenantSlug, '/types-garde'),
-        apiGet(tenantSlug, '/remplacements/propositions').catch(() => [])
+        apiGet(tenantSlug, '/remplacements/propositions').catch(() => []),
+        apiGet(tenantSlug, '/remplacements/quarts-ouverts').catch(() => [])
       ];
       
       // Charger les utilisateurs seulement pour admin/superviseur
@@ -40,9 +42,10 @@ const useRemplacementsData = (tenantSlug, user, toast) => {
       setDemandesConge((responses[1] || []).sort(sortByCreatedAt));
       setTypesGarde(responses[2]);
       setPropositionsRecues((responses[3] || []).sort(sortByCreatedAt));
+      setQuartsOuverts((responses[4] || []).sort(sortByCreatedAt));
       
-      if (responses[4]) {
-        setUsers(responses[4]);
+      if (responses[5]) {
+        setUsers(responses[5]);
       }
     } catch (error) {
       console.error('Erreur lors du chargement:', error);
@@ -69,14 +72,16 @@ const useRemplacementsData = (tenantSlug, user, toast) => {
     // Notifications toast selon l'action
     if (data.type === 'remplacement_update' && toast) {
       const toastMessages = {
-        'accepte': { title: "✅ Remplacement accepté", desc: `${data.data?.remplacant_nom || 'Un remplaçant'} a accepté une demande` },
-        'nouvelle_demande': { title: "📋 Nouvelle demande", desc: `${data.data?.demandeur_nom || 'Quelqu\'un'} cherche un remplaçant` },
-        'approuve_manuellement': { title: "✅ Demande approuvée", desc: `Approuvée par ${data.data?.approuve_par_nom || 'un superviseur'}` },
-        'annulee': { title: "❌ Demande annulée", desc: `Annulée par ${data.data?.annule_par_nom || 'un superviseur'}` },
-        'relancee': { title: "🔄 Demande relancée", desc: `Relancée par ${data.data?.relance_par_nom || 'un utilisateur'}` },
-        'supprimee': { title: "🗑️ Demande supprimée", desc: "Une demande a été supprimée" },
-        'expiree': { title: "⏱️ Demande expirée", desc: "Aucun remplaçant trouvé" },
-        'arrete': { title: "🛑 Processus arrêté", desc: `Arrêté par ${data.data?.arrete_par_nom || 'un superviseur'}` }
+        'accepte': { title: "Remplacement accepte", desc: `${data.data?.remplacant_nom || 'Un remplacant'} a accepte une demande` },
+        'nouvelle_demande': { title: "Nouvelle demande", desc: `${data.data?.demandeur_nom || 'Quelqu\'un'} cherche un remplacant` },
+        'approuve_manuellement': { title: "Demande approuvee", desc: `Approuvee par ${data.data?.approuve_par_nom || 'un superviseur'}` },
+        'annulee': { title: "Demande annulee", desc: `Annulee par ${data.data?.annule_par_nom || 'un superviseur'}` },
+        'relancee': { title: "Demande relancee", desc: `Relancee par ${data.data?.relance_par_nom || 'un utilisateur'}` },
+        'supprimee': { title: "Demande supprimee", desc: "Une demande a ete supprimee" },
+        'expiree': { title: "Demande expiree", desc: "Aucun remplacant trouve" },
+        'arrete': { title: "Processus arrete", desc: `Arrete par ${data.data?.arrete_par_nom || 'un superviseur'}` },
+        'quart_ouvert': { title: "Quart disponible", desc: `Un quart de ${data.data?.type_garde_nom || 'garde'} le ${data.data?.date || ''} est ouvert a tous` },
+        'quart_pris': { title: "Quart pris", desc: `${data.data?.remplacant_nom || 'Un employe'} a pris un quart ouvert` }
       };
       
       const msg = toastMessages[data.action];
@@ -110,6 +115,7 @@ const useRemplacementsData = (tenantSlug, user, toast) => {
     typesGarde,
     loading,
     propositionsRecues,
+    quartsOuverts,
     // Setters (pour manipulation directe si nécessaire)
     setDemandes,
     setDemandesConge,
