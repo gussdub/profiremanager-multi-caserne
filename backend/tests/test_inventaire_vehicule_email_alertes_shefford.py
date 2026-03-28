@@ -9,7 +9,7 @@ alors qu'il devait lire `parametres.get('actifs', {}).get('emails_notifications_
 
 ENVIRONNEMENT DE TEST:
 - Tenant: shefford (où la configuration est déjà correcte)
-- Backend URL: https://planning-notif-test.preview.emergentagent.com
+- Backend URL: https://pdf-fiche-batiment.preview.emergentagent.com
 - Credentials: admin@firemanager.ca / admin123
 - User ID configuré: 426c0f86-91f2-48fb-9e77-c762f0e9e7dc
 

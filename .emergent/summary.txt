@@ -1,117 +1,138 @@
-<analysis>**original_problem_statement:**
-L'utilisateur a demandé de corriger le bug d'exécution de l'import CSV silencieux. Ensuite, il a demandé l'ajout du support d'importation de fichiers XML (format CEFX du Rôle d'évaluation foncière du Québec) avec la même logique de détection de doublons que le CSV. Il a également demandé de supprimer complètement l'onglet Bâtiments du module Prévention, tout en s'assurant que les liens vers les bâtiments dans Prévention redirigent vers le module global Bâtiments. Le modal de détail du bâtiment doit être unifié et afficher conditionnellement les onglets liés à la prévention (Inspecter, Plan d'intervention, etc.) selon que le module Prévention est actif ou non pour le tenant. Enfin, l'utilisateur a demandé d'ajouter un historique des modifications des bâtiments (manuel vs import), de nettoyer les modèles Pydantic en double dans  (Tâche P2), et d'afficher les secteurs géographiques sur la carte globale des bâtiments.
+<analysis>Here is the handover summary based on the LLM message history:
 
-**User's preferred language**: French (Vous DEVEZ automatiquement détecter la langue principale de l'utilisateur et INSTRUIRE le prochain agent de répondre UNIQUEMENT dans la langue préférée de l'utilisateur : **FRANÇAIS**).
+**original_problem_statement**: 
+L'utilisateur a demandé plusieurs actions, corrections et nouvelles fonctionnalités :
+1. **P0 (Bug)** : Fixer l'import manquant de  dans  qui risquait de faire crasher l'envoi d'emails.
+2. **Refonte Emails** : Migrer les 10 templates d'emails restants (inline HTML) dans  et  vers le nouveau système centralisé .
+3. **Bug en Production (Audit)** : Dans le planning, cliquer sur l'audit d'un employé affichait les données d'un autre employé (problème d'indexation dans le frontend).
+4. **Refactorisation (P2)** : Découper les fichiers massifs  (> 5300 lignes) et  (> 2600 lignes) pour améliorer la maintenabilité.
+5. **Photos Bâtiments (P2)** : Ajouter un système de Drag & Drop pour réordonner les photos directement dans la fiche d'un bâtiment, et permettre d'ajouter une légende textuelle sur chaque photo.
+6. **Feature (Suggestion en cours)** : Ajouter un export PDF de la fiche du bâtiment incluant les photos annotées.
+
+**User's preferred language**: French (You MUST INSTRUCT the next agent to respond in **FRANÇAIS** only).
 
 **what currently exists?** 
-Un module Bâtiments global, robuste et indépendant. L'import intelligent supporte désormais les fichiers CSV et XML (Rôle d'évaluation) avec géolocalisation Nominatim automatique et détection de conflits. Le module Prévention est entièrement expurgé de sa gestion interne des bâtiments ; toute interaction redirige vers le module global. Le modal  est partagé et conditionnel (affiche les options de prévention uniquement si le tenant a le module actif). La base de données tracke l'historique de chaque modification de bâtiment. Les modèles Pydantic du backend ont été dédupliqués. La carte globale affiche désormais les polygones des secteurs géographiques de prévention.
+- **Système d'emails** : 100% des templates de la plateforme utilisent désormais . Plus aucun HTML inline.
+- **Bug Audit Planning** : Corrigé. Le frontend utilise désormais  au lieu de l'index du tableau pour lier les données.
+- **Refactorisation** : Réussie.  a été divisé en 4 fichiers distincts (core, exports, auto, audit).  a été allégé en extrayant .
+- **Galerie Photos** : La fiche bâtiment () intègre un Drag & Drop HTML5 fluide, des légendes éditables inline, et un endpoint backend dédié ().
+- **Object Storage & PDF Helpers** : Le stockage des fichiers et les utilitaires de génération de PDF () sont opérationnels.
 
-**Last working item**: 
-- **Last item agent was working:** Exécution des tests complets du module Prévention et du module Bâtiments via le  après la refactorisation majeure des modèles Pydantic et l'ajout des secteurs géographiques sur la carte Leaflet ().
-- **Status:** COMPLETED
-- **Agent Testing Done:** Y (12/12 tests backend passés, Frontend 100% fonctionnel reporté dans ).
-- **Which testing method agent to use?** NA (testing is already done).
-- **User Testing Done:** N (L'utilisateur a mentionné qu'il testerait plus tard).
+**Last working item**:
+- **Last item agent was working**: Création d'un export PDF de la fiche bâtiment incluant les photos annotées (suite à une suggestion de l'agent validée par l'utilisateur).
+- **Status**: IN PROGRESS
+- **Agent Testing Done**: N (L'agent venait tout juste d'analyser la structure de la BDD et les utilitaires PDF).
+- **Which testing method agent to use?** backend minor issue testing by python script (pour générer le PDF localement et valider sa structure) puis frontend manual testing (téléchargement du PDF via l'UI).
+- **User Testing Done**: N
 
-**All Pending/In progress Issue list**: 
-Aucun problème critique en cours. Tous les tests sont au vert.
+**All Pending/In progress Issue list**:
+Aucun bug critique ou bloquant identifié.
 
-**In progress Task List**: 
-Aucune tâche en cours.
+**In progress Task List**:
+Task 1: Implémentation de l'export PDF de la fiche bâtiment avec photos annotées (P1)
 
-**Upcoming and Future Tasks**:
-- **P1: UI pour l'Historique des Bâtiments** : Le backend tracke désormais l'historique des modifications (via la collection  et l'endpoint ), mais l'onglet UI Historique suggéré à la fin de la session dans le  reste à implémenter pour afficher qui a modifié quoi et quand.
-- **P2: Refactorisation de ** : Bien que les modèles Pydantic aient été nettoyés et les doublons résolus, le fichier fait plus de 6200 lignes. Il serait judicieux de le scinder en plusieurs routeurs (ex: , , ).
+ Task Detail:
+  - Task 1: 
+     - **Where to resume**: Créer un endpoint backend (ex: ) en utilisant  et la fonction  issue de . Ensuite, ajouter le bouton Exporter PDF dans le composant frontend .
+     - **What will be achieved with this?**: Permettre aux préventionnistes de télécharger et d'imprimer une fiche complète du bâtiment avec les photos et leurs légendes pour le travail sur le terrain.
+     - **Status**: IN PROGRESS
+     - **Should Test frontend/backend/both after fix?**: both
+     - **Blocked on something**: Rien.
 
-**Completed work in this session**:
-- Correction du bug d'exécution de l'import CSV () (DONE)
-- Implémentation du parsing XML CEFX pour le Rôle d'évaluation du Québec dans  (DONE)
-- Ajout du champ  dans l'UI et la BDD (DONE)
-- Création du système de tracking d'historique  (Backend) (DONE)
-- Suppression complète de l'onglet Bâtiments dans  et nettoyage massif du code orphelin (switch cases) (DONE)
-- Unification du modal :  utilise désormais  avec des onglets conditionnels selon les permissions/modules actifs (DONE)
-- Redirection via URL params () depuis Prévention vers Bâtiments (DONE)
-- Résolution complète des doublons Pydantic (P2) dans  (DONE)
-- Intégration des polygones des secteurs géographiques dans  (DONE)
+**Upcoming and Future Tasks**
+Upcoming Tasks:
+- P1: Tester rigoureusement l'import d'historique d'interventions (CSV/XML/ZIP) avec des fichiers réels.
 
-**Earlier issues found/mentioned but not fixed**:
-Aucun. Tous les problèmes mentionnés (F811, F821 lint errors, code orphelin) ont été corrigés.
+Future Tasks:
+- Backlog: Créer un aperçu d'emails en temps réel dans les paramètres admin pour permettre la personnalisation des couleurs/logos par caserne sans toucher au code.
 
-**Known issue recurrence from previous fork**:
-- Issue recurrence in previous fork: Modal stacking context crashes (Safari). 
-- Recurrence count: 1
-- Status: RESOLVED (À garder à l'esprit lors de l'ajout du futur onglet Historique).
+**Completed work in this session**
+- Fix P0 : Import de  manquant dans  (DONE)
+- Migration de 10 templates d'emails vers  (DONE)
+- Fix Bug : Affichage incorrect de l'Audit dans  (remplacement de  par ) (DONE)
+- Refactorisation de  en , , ,  (DONE)
+- Refactorisation de  via l'extraction de  (DONE)
+- Feature : Drag & drop pour réordonner les photos + légendes éditables dans  (DONE)
+- Création de l'endpoint backend  (DONE)
 
-**Code Architecture**:
+**Earlier issues found/mentioned but not fixed**
+Aucun.
+
+**Known issue recurrence from previous fork**
+- Issue recurrence in previous fork: Omission d'imports lors de modifications massives (résolu en début de session).
+- Recurrence count: 0
+- Status: RESOLVED
+*Note pour le prochain agent* : Attention à l'ordre des routers dans . Le  (principal) **DOIT** être inclus en dernier par rapport à ses sous-routers (, , etc.) à cause d'une route catch-all ().
+
+**Code Architecture**
 
 
-**Key Technical Concepts**:
-- Parsing XML personnalisé pour des structures imbriquées complexes (CEFX du Québec).
-- Architecture modulaire stricte : Le module Prévention ne possède plus les Bâtiments. Les Bâtiments agissent comme un registre central avec des Greffons (tabs) de prévention injectés dynamiquement ().
-- Tracking d'audit NoSQL (Collection  enregistrant les diffs).
+**Key Technical Concepts**
+- **PDF Generation**: Utilise la librairie . Le backend dispose déjà d'utilitaires dans  (notamment  et ) pour garantir une charte graphique unifiée.
+- **Photos Bâtiments**: Les photos sont stockées dans un tableau  à l'intérieur du document MongoDB du bâtiment. Chaque photo a un uid=0(root) gid=0(root) groups=0(root), ,  (optionnel), et . L'ordre dans le tableau dicte l'ordre d'affichage.
 
-**key DB schema**:
-  - : Ajout du champ .
-  -  (NOUVEAU): .
+**key DB schema**
+  - : {..., : }
 
-**changes in tech stack**:
-  - Utilisation du module  standard Python pour le parsing CEFX.
+**changes in tech stack**
+  - N/A
 
-**All files of reference**: 
-1.  (Logique de parsing XML et exécution avec flag )
-2.  (Nouvelle logique d'historique)
-3.  (Fichier de +6200 lignes, modèles Pydantic réorganisés au début du fichier)
-4.  (Point d'entrée principal pour la visualisation, incluant la carte)
-5.  (Gestion de la carte avec polygones Leaflet pour les secteurs)
-6.  (Modal partagé)
+**All files of reference** 
+-  (Crucial pour la tâche PDF en cours)
+-  (Pour ajouter le nouvel endpoint d'export PDF bâtiment)
+-  (Pour ajouter le bouton d'export dans l'interface)
+-  (Pour comprendre l'ordre des routers si de nouvelles routes sont créées)
 
 **Areas that need refactoring**: 
--  : Bien que corrigé, le fichier est beaucoup trop grand (6200+ lignes). Une séparation des routes (Grilles, Inspections, Secteurs, etc.) est fortement recommandée pour la maintenabilité.
+L'application vient de subir une refactorisation majeure. Aucun besoin immédiat.
 
-**key api endpoints**:
--  (Accepte CSV et XML)
--  (NOUVEAU)
--  (Utilisé pour afficher les secteurs sur la carte)
+**key api endpoints**
+-  (Sauvegarde de l'ordre et des légendes des photos)
+-  (Route séparée suite au refactoring)
 
-**Critical Info for New Agent**: 
-- **LANGUE**: Vous DEVEZ communiquer en **Français**.
-- La séparation entre  et  est maintenant totale côté frontend. Ne réintroduisez pas de composants de gestion de bâtiments dans .
-- Le modèle de données Pydantic dans  a été déplacé en haut du fichier pour éviter les erreurs .
-- La logique de la carte des secteurs a été déplacée vers  pour être centralisée.
+**Critical Info for New Agent** 
+- **Langue** : L'utilisateur communique en français, vous DEVEZ répondre en français.
+- **PDF** : Pour la tâche en cours (Export PDF de la fiche bâtiment), réutilisez impérativement les fonctions de  pour avoir l'en-tête (logo) et le pied de page standard de l'application. Ne réinventez pas les styles PDF.
+- **Routage** : Si vous créez de nouvelles routes pour le planning, assurez-vous qu'elles sont incluses avant la route catch-all de .
 
-**documents and test reports created in this job**: 
-  -  (Mis à jour avec le statut du tracking XML et historique)
-  - 
-  -  (Validation finale à 100%)
+**documents and test reports created in this job** 
+  -  (Succès Refactorisation P2)
+  -  (Succès Drag & Drop Photos)
+  -  (Mis à jour)
+  -  (Contient les accès de test  / )
 
-**Last 10 User Messages and any pending HUMAN messages**: 
-1. User confirmed plan to fix CSV bug.
-2. User provided XML samples (Rôle d'évaluation) and requested XML import support mimicking CSV behavior.
-3. User provided UI feedback (photo2) for the unified building modal, requesting conditional rendering of Prevention tabs based on tenant capabilities.
-4. User clarified: Module Prevention should have NO building buttons/tabs. Everything building-related must redirect to the independent Batiments module, but retain Prevention context if the tenant has the module active. Added request to track historical changes (XML/Manual).
-5. User confirmed understanding: UI redirects to Batiments with all info, historical DB tracking is a good idea, and geographical sectors should appear on the main map.
-6. User approved the current progress and instructed the agent to complete the P2 task (Pydantic refactor), backlog (Sectors map), and run a full Prevention module test.
+**Last 10 User Messages and any pending HUMAN messages** 
+1. **User**: avant de continuer, je viens de trouver un bug en production... Kaven beauregard... audit de William Falardeau...
+2. **Assistant**: Identifie le bug d'indexation dans , le corrige, teste, et termine la tâche.
+3. **User**: ok je vais vérifier... continu ce que tu faisais
+4. **Assistant**: Propose de lancer la tâche P2 (Refactorisation de planning.py et Parametres.js).
+5. **User**: go pour P2 et fait des tests complets...
+6. **Assistant**: Refactorise le backend et le frontend avec succès, lance le testing_agent (100% pass), conclut la tâche.
+7. **User**: go P2 (pour le drag & drop des photos).
+8. **Assistant**: Commence à implémenter un système global d'échange de photos entre bâtiments. Demande confirmation.
+9. **User**: en fait je veux juste drag and drop dans la fiche bâtiment, avec une légende...
+10. **Assistant**: Modifie  pour le drag & drop interne + légendes éditables, réussit les tests, termine et suggère un export PDF de la fiche.
+11. **User**: go pour ta suggestion. (Dernier message, tâche PDF initiée).
 
 **Project Health Check:**
-- Broken: None.
-- Mocked: None.
-- Status: Excellent (Backend 12/12 tests passing, Frontend E2E tests passing).
+- **Broken**: Aucun.
+- **Mocked**: Aucun.
 
-**3rd Party Integrations**: 
-- Nominatim (OpenStreetMap) Geocoding — free, no key required.
-- Resend (Emails) — API Key present in env.
-- Firebase (Push Notifications)
+**3rd Party Integrations** 
+- Resend (Emails) — requires User API Key
+- Emergent Object Storage — uses Emergent LLM Key / infrastructure
+- Open-Meteo API — publique
+- Nominatim (OpenStreetMap) — publique
 
-**Testing status**: 
-  - Testing agent used after significant changes: YES ( & )
+**Testing status**
+  - Testing agent used after significant changes: YES (itération 23 et 24, 100% de succès sur les deux).
   - Troubleshoot agent used after agent stuck in loop: NO
-  - Test files created: , 
+  - Test files created: None retained
   - Known regressions: None.
 
 **Credentials to test flow:**
-- Email: 
-- Password: 
-- Tenant: 
+Use variables and accounts found in .
+Tenant:  (slug), email: 
 
-**What agent forgot to execute**: 
-L'agent a créé le backend pour enregistrer et consulter l'historique des modifications des bâtiments (), mais n'a pas eu le temps de créer l'onglet/UI Historique dans le  pour afficher ces données à l'utilisateur final. Il l'a suggéré comme prochaine étape à la fin de sa session.</analysis>
+**What agent forgot to execute**
+Rien n'a été oublié. L'agent vient juste d'obtenir l'approbation pour démarrer l'export PDF du bâtiment et a inspecté les schémas de base de données. Il faut maintenant implémenter l'endpoint de génération PDF.</analysis>
