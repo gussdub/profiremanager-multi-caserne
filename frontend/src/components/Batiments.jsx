@@ -35,9 +35,6 @@ const BatimentDetailModal = lazy(() => import('./BatimentDetailModalNew'));
 // Lazy load de la carte avec secteurs
 const CarteBatiments = lazy(() => import('./CarteBatiments'));
 
-// Lazy load du composant de réassignation de photos
-const ReassignPhotos = lazy(() => import('./ReassignPhotos'));
-
 // Composant de chargement
 const LoadingComponent = () => (
   <div className="flex items-center justify-center p-8">
@@ -271,15 +268,6 @@ const Batiments = () => {
             >
               <Map size={16} /> Carte
             </button>
-            <button
-              onClick={() => setViewMode('photos')}
-              data-testid="view-mode-photos"
-              className={`px-3 py-1.5 rounded-md transition-all flex items-center gap-1 ${
-                viewMode === 'photos' ? 'bg-white shadow text-blue-600' : 'text-gray-600'
-              }`}
-            >
-              <Image size={16} /> Photos
-            </button>
           </div>
           
           {canExport && (
@@ -503,11 +491,6 @@ const Batiments = () => {
             </div>
           )}
         </Card>
-      ) : viewMode === 'photos' ? (
-        /* Vue Réassignation Photos */
-        <Suspense fallback={<LoadingComponent />}>
-          <ReassignPhotos batiments={batiments} />
-        </Suspense>
       ) : (
         /* Vue Carte avec secteurs */
         <Card className="overflow-hidden">

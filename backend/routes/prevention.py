@@ -1307,59 +1307,47 @@ async def delete_photo_from_galerie(
     return {"message": "Photo supprimée avec succès"}
 
 
-
-@router.put("/{tenant_slug}/prevention/batiments/photos/{photo_id}/reassign")
-async def reassign_photo_batiment(
+@router.put("/{tenant_slug}/prevention/batiments/{batiment_id}/photos/reorder")
+async def reorder_photos_batiment(
     tenant_slug: str,
-    photo_id: str,
+    batiment_id: str,
     body: dict = Body(...),
     current_user: User = Depends(get_current_user)
 ):
-    """Deplace une photo legacy d'un batiment vers un autre."""
+    """Met a jour l'ordre et les legendes des photos d'un batiment."""
     tenant = await get_tenant_from_slug(tenant_slug)
     await require_permission(tenant.id, current_user, "prevention", "modifier", "batiments")
-    
-    source_batiment_id = body.get("source_batiment_id")
-    target_batiment_id = body.get("target_batiment_id")
-    
-    if not source_batiment_id or not target_batiment_id:
-        raise HTTPException(status_code=400, detail="source_batiment_id et target_batiment_id sont requis")
-    
-    # Trouver la photo dans le batiment source
-    source = await db.batiments.find_one(
-        {"id": source_batiment_id, "tenant_id": tenant.id},
-        {"_id": 0, "photos": 1}
-    )
-    if not source:
-        raise HTTPException(status_code=404, detail="Batiment source non trouve")
-    
-    photo_data = None
-    for p in source.get("photos", []):
-        if p.get("id") == photo_id:
-            photo_data = p
-            break
-    
-    if not photo_data:
-        raise HTTPException(status_code=404, detail="Photo non trouvee dans le batiment source")
-    
-    # Verifier que le batiment cible existe
-    target = await db.batiments.find_one({"id": target_batiment_id, "tenant_id": tenant.id})
-    if not target:
-        raise HTTPException(status_code=404, detail="Batiment cible non trouve")
-    
-    # Retirer du source, ajouter au cible
-    now = datetime.now(timezone.utc)
-    await db.batiments.update_one(
-        {"id": source_batiment_id, "tenant_id": tenant.id},
-        {"$pull": {"photos": {"id": photo_id}}, "$set": {"updated_at": now}}
-    )
-    await db.batiments.update_one(
-        {"id": target_batiment_id, "tenant_id": tenant.id},
-        {"$push": {"photos": photo_data}, "$set": {"updated_at": now}}
-    )
-    
-    return {"success": True, "photo_id": photo_id, "moved_to": target_batiment_id}
 
+    batiment = await db.batiments.find_one({"id": batiment_id, "tenant_id": tenant.id}, {"_id": 0})
+    if not batiment:
+        raise HTTPException(status_code=404, detail="Batiment non trouve")
+
+    photos_update = body.get("photos", [])
+    existing_photos = batiment.get("photos", [])
+
+    # Rebuild ordered photos array
+    photos_by_id = {p["id"]: p for p in existing_photos}
+    new_photos = []
+    for item in photos_update:
+        pid = item.get("id")
+        if pid in photos_by_id:
+            photo = photos_by_id[pid]
+            if "legende" in item:
+                photo["legende"] = item["legende"]
+            new_photos.append(photo)
+
+    # Append any photos not in the update list (safety)
+    seen_ids = {p["id"] for p in new_photos}
+    for p in existing_photos:
+        if p["id"] not in seen_ids:
+            new_photos.append(p)
+
+    await db.batiments.update_one(
+        {"id": batiment_id, "tenant_id": tenant.id},
+        {"$set": {"photos": new_photos, "updated_at": datetime.now(timezone.utc)}}
+    )
+
+    return {"success": True, "photos_count": len(new_photos)}
 
 
 @router.get("/{tenant_slug}/prevention/dependances/{dependance_id}/photos")

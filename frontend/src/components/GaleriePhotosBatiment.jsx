@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from './ui/button';
-import { apiGet, apiPost, apiDelete, buildApiUrl, getTenantToken } from '../utils/api';
+import { apiGet, apiPost, apiPut, apiDelete, buildApiUrl, getTenantToken } from '../utils/api';
 import imageCompression from 'browser-image-compression';
 import axios from 'axios';
+import { GripVertical, Pencil, Check, X } from 'lucide-react';
 
 const GaleriePhotosBatiment = ({ 
   tenantSlug, 
@@ -13,6 +14,12 @@ const GaleriePhotosBatiment = ({
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [editingLegende, setEditingLegende] = useState(null);
+  const [legendeValue, setLegendeValue] = useState('');
+  const [dragIndex, setDragIndex] = useState(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const loadPhotos = useCallback(async () => {
     try {
@@ -50,21 +57,92 @@ const GaleriePhotosBatiment = ({
     if (batimentId) loadPhotos();
   }, [batimentId, loadPhotos]);
 
-  // Navigation clavier en plein écran
+  // Keyboard navigation in fullscreen
   useEffect(() => {
     if (selectedIndex < 0) return;
     const handler = (e) => {
-      if (e.key === 'ArrowRight') {
-        setSelectedIndex(i => (i + 1) % photos.length);
-      } else if (e.key === 'ArrowLeft') {
-        setSelectedIndex(i => (i - 1 + photos.length) % photos.length);
-      } else if (e.key === 'Escape') {
-        setSelectedIndex(-1);
-      }
+      if (e.key === 'ArrowRight') setSelectedIndex(i => (i + 1) % photos.length);
+      else if (e.key === 'ArrowLeft') setSelectedIndex(i => (i - 1 + photos.length) % photos.length);
+      else if (e.key === 'Escape') setSelectedIndex(-1);
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [selectedIndex, photos.length]);
+
+  // === DRAG & DROP ===
+  const handleDragStart = (e, index) => {
+    setDragIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', index.toString());
+    // Transparent drag image
+    const el = e.currentTarget;
+    el.style.opacity = '0.5';
+  };
+
+  const handleDragEnd = (e) => {
+    e.currentTarget.style.opacity = '1';
+    setDragIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (index !== dragOverIndex) setDragOverIndex(index);
+  };
+
+  const handleDrop = (e, dropIndex) => {
+    e.preventDefault();
+    if (dragIndex === null || dragIndex === dropIndex) return;
+
+    const newPhotos = [...photos];
+    const [moved] = newPhotos.splice(dragIndex, 1);
+    newPhotos.splice(dropIndex, 0, moved);
+    setPhotos(newPhotos);
+    setHasChanges(true);
+    setDragIndex(null);
+    setDragOverIndex(null);
+  };
+
+  // === LEGEND EDITING ===
+  const startEditLegende = (photo, e) => {
+    if (e) e.stopPropagation();
+    setEditingLegende(photo.id);
+    setLegendeValue(photo.legende || photo.nom || '');
+  };
+
+  const saveLegende = (photoId, e) => {
+    if (e) e.stopPropagation();
+    setPhotos(prev => prev.map(p =>
+      p.id === photoId ? { ...p, legende: legendeValue } : p
+    ));
+    setEditingLegende(null);
+    setHasChanges(true);
+  };
+
+  const cancelEditLegende = (e) => {
+    if (e) e.stopPropagation();
+    setEditingLegende(null);
+  };
+
+  // === SAVE ORDER + LEGENDS ===
+  const handleSaveAll = async () => {
+    setSaving(true);
+    try {
+      const legacyPhotos = photos.filter(p => p.source === 'legacy');
+      if (legacyPhotos.length > 0) {
+        await apiPut(tenantSlug, `/prevention/batiments/${batimentId}/photos/reorder`, {
+          photos: legacyPhotos.map(p => ({ id: p.id, legende: p.legende || '' })),
+        });
+      }
+      setHasChanges(false);
+    } catch (error) {
+      console.error('Erreur sauvegarde:', error);
+      alert('Erreur lors de la sauvegarde');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleUpload = async (e) => {
     const files = e.target.files;
@@ -87,7 +165,7 @@ const GaleriePhotosBatiment = ({
       await loadPhotos();
     } catch (error) {
       console.error('Erreur upload:', error);
-      alert('Erreur lors de l\'upload');
+      alert("Erreur lors de l'upload");
     } finally {
       setUploading(false);
     }
@@ -111,7 +189,7 @@ const GaleriePhotosBatiment = ({
 
   const selectedPhoto = selectedIndex >= 0 ? photos[selectedIndex] : null;
 
-  // Plein écran
+  // === FULLSCREEN ===
   const renderFullscreen = () => {
     if (!selectedPhoto) return null;
     return (
@@ -129,16 +207,12 @@ const GaleriePhotosBatiment = ({
           alt={selectedPhoto.nom || 'Photo'}
           style={{ maxWidth: '85vw', maxHeight: '85vh', objectFit: 'contain', borderRadius: '4px' }}
         />
-
-        {/* Compteur */}
         <div style={{
           position: 'absolute', top: '1rem', left: '50%', transform: 'translateX(-50%)',
           color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', fontWeight: 500,
         }}>
           {selectedIndex + 1} / {photos.length}
         </div>
-
-        {/* Flèche gauche */}
         {photos.length > 1 && (
           <button
             onClick={(e) => { e.stopPropagation(); setSelectedIndex(i => (i - 1 + photos.length) % photos.length); }}
@@ -150,12 +224,8 @@ const GaleriePhotosBatiment = ({
               backdropFilter: 'blur(4px)',
             }}
             data-testid="photo-prev"
-          >
-            &#8249;
-          </button>
+          >&#8249;</button>
         )}
-
-        {/* Flèche droite */}
         {photos.length > 1 && (
           <button
             onClick={(e) => { e.stopPropagation(); setSelectedIndex(i => (i + 1) % photos.length); }}
@@ -167,12 +237,8 @@ const GaleriePhotosBatiment = ({
               backdropFilter: 'blur(4px)',
             }}
             data-testid="photo-next"
-          >
-            &#8250;
-          </button>
+          >&#8250;</button>
         )}
-
-        {/* Fermer */}
         <button
           onClick={(e) => { e.stopPropagation(); setSelectedIndex(-1); }}
           style={{
@@ -181,11 +247,7 @@ const GaleriePhotosBatiment = ({
             width: '40px', height: '40px', color: 'white', fontSize: '1.25rem',
             cursor: 'pointer', backdropFilter: 'blur(4px)',
           }}
-        >
-          ✕
-        </button>
-
-        {/* Supprimer en plein écran */}
+        >&#10005;</button>
         {canEdit && (
           <button
             onClick={(e) => { e.stopPropagation(); handleDelete(selectedPhoto); }}
@@ -195,17 +257,14 @@ const GaleriePhotosBatiment = ({
               padding: '0.6rem 1.2rem', color: 'white', cursor: 'pointer',
               fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem',
             }}
-          >
-            Supprimer
-          </button>
+          >Supprimer</button>
         )}
-
-        {/* Nom du fichier */}
         <div style={{
           position: 'absolute', bottom: '1.5rem', left: '50%', transform: 'translateX(-50%)',
-          color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem',
+          color: 'rgba(255,255,255,0.85)', fontSize: '0.9rem', textAlign: 'center',
+          maxWidth: '60vw',
         }}>
-          {selectedPhoto.nom}
+          <div style={{ fontWeight: 600 }}>{selectedPhoto.legende || selectedPhoto.nom}</div>
         </div>
       </div>
     );
@@ -218,7 +277,7 @@ const GaleriePhotosBatiment = ({
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: 8 }}>
         <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           Galerie Photos
           <span style={{
@@ -228,77 +287,140 @@ const GaleriePhotosBatiment = ({
             {photos.length}
           </span>
         </h3>
-        {canEdit && (
-          <label style={{
-            display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-            padding: '0.4rem 0.8rem', backgroundColor: '#3b82f6', color: 'white',
-            borderRadius: '8px', cursor: uploading ? 'wait' : 'pointer', fontSize: '0.8rem',
-            opacity: uploading ? 0.7 : 1,
-          }}>
-            {uploading ? 'Upload...' : '+ Ajouter'}
-            <input type="file" accept="image/*" multiple hidden onChange={handleUpload} disabled={uploading} />
-          </label>
-        )}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {hasChanges && (
+            <Button
+              size="sm"
+              onClick={handleSaveAll}
+              disabled={saving}
+              data-testid="save-photos-order"
+              style={{ fontSize: '0.8rem' }}
+            >
+              {saving ? 'Sauvegarde...' : 'Enregistrer'}
+            </Button>
+          )}
+          {canEdit && (
+            <label style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+              padding: '0.4rem 0.8rem', backgroundColor: '#3b82f6', color: 'white',
+              borderRadius: '8px', cursor: uploading ? 'wait' : 'pointer', fontSize: '0.8rem',
+              opacity: uploading ? 0.7 : 1,
+            }}>
+              {uploading ? 'Upload...' : '+ Ajouter'}
+              <input type="file" accept="image/*" multiple hidden onChange={handleUpload} disabled={uploading} />
+            </label>
+          )}
+        </div>
       </div>
 
-      {/* Grille */}
+      {/* Grid */}
       {photos.length > 0 ? (
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
           gap: '0.75rem',
         }}>
           {photos.map((photo, idx) => (
             <div
               key={photo.id || idx}
-              style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#f3f4f6' }}
+              draggable={canEdit}
+              onDragStart={(e) => handleDragStart(e, idx)}
+              onDragEnd={handleDragEnd}
+              onDragOver={(e) => handleDragOver(e, idx)}
+              onDrop={(e) => handleDrop(e, idx)}
+              data-testid={`photo-card-${photo.id}`}
+              style={{
+                position: 'relative',
+                borderRadius: '10px',
+                overflow: 'hidden',
+                backgroundColor: '#fff',
+                border: dragOverIndex === idx ? '2px solid #3b82f6' : '1px solid #e5e7eb',
+                boxShadow: dragIndex === idx ? '0 8px 25px rgba(0,0,0,0.15)' : '0 1px 3px rgba(0,0,0,0.06)',
+                transition: 'border-color 0.15s, box-shadow 0.15s',
+              }}
             >
-              <div
-                onClick={() => setSelectedIndex(idx)}
-                style={{
-                  paddingTop: '100%', position: 'relative', cursor: 'pointer',
-                  transition: 'transform 0.15s',
-                }}
-                onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-                onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
-              >
-                <img
-                  src={photo.url}
-                  alt={photo.nom || `Photo ${idx + 1}`}
-                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-                {photo.nom && (
-                  <div style={{
-                    position: 'absolute', bottom: 0, left: 0, right: 0,
-                    padding: '0.25rem 0.5rem',
-                    background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
-                    color: 'white', fontSize: '0.65rem',
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  }}>
-                    {photo.nom}
-                  </div>
-                )}
-              </div>
-              {/* Bouton supprimer sur la vignette */}
+              {/* Drag handle */}
+              {canEdit && (
+                <div style={{
+                  position: 'absolute', top: 6, left: 6, zIndex: 2,
+                  background: 'rgba(0,0,0,0.45)', borderRadius: 6, padding: '3px 4px',
+                  cursor: 'grab', display: 'flex', alignItems: 'center',
+                }}>
+                  <GripVertical size={14} color="#fff" />
+                </div>
+              )}
+
+              {/* Delete button */}
               {canEdit && (
                 <button
                   onClick={(e) => handleDelete(photo, e)}
                   data-testid={`delete-photo-${photo.id}`}
                   style={{
-                    position: 'absolute', top: '4px', right: '4px',
+                    position: 'absolute', top: 6, right: 6, zIndex: 2,
                     background: 'rgba(239,68,68,0.85)', border: 'none', borderRadius: '50%',
-                    width: '24px', height: '24px', color: 'white', fontSize: '0.7rem',
+                    width: 22, height: 22, color: 'white', fontSize: '0.65rem',
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    lineHeight: 1, padding: 0,
                     opacity: 0.7, transition: 'opacity 0.15s',
                   }}
                   onMouseOver={(e) => e.currentTarget.style.opacity = '1'}
                   onMouseOut={(e) => e.currentTarget.style.opacity = '0.7'}
-                  title="Supprimer cette photo"
-                >
-                  ✕
-                </button>
+                  title="Supprimer"
+                >&#10005;</button>
               )}
+
+              {/* Image */}
+              <div
+                onClick={() => setSelectedIndex(idx)}
+                style={{ paddingTop: '75%', position: 'relative', cursor: 'pointer' }}
+              >
+                <img
+                  src={photo.url}
+                  alt={photo.legende || photo.nom || `Photo ${idx + 1}`}
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              </div>
+
+              {/* Legend */}
+              <div style={{ padding: '8px 10px', borderTop: '1px solid #f1f5f9', minHeight: 36 }}>
+                {editingLegende === photo.id ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} onClick={e => e.stopPropagation()}>
+                    <input
+                      autoFocus
+                      value={legendeValue}
+                      onChange={(e) => setLegendeValue(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') saveLegende(photo.id); if (e.key === 'Escape') cancelEditLegende(); }}
+                      style={{
+                        flex: 1, fontSize: '0.75rem', padding: '3px 6px',
+                        border: '1px solid #d1d5db', borderRadius: 4, outline: 'none',
+                      }}
+                      data-testid={`legende-input-${photo.id}`}
+                    />
+                    <button onClick={(e) => saveLegende(photo.id, e)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
+                      <Check size={14} color="#22c55e" />
+                    </button>
+                    <button onClick={cancelEditLegende} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
+                      <X size={14} color="#ef4444" />
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    onClick={(e) => { if (canEdit) { e.stopPropagation(); startEditLegende(photo, e); } }}
+                    style={{
+                      fontSize: '0.75rem', color: photo.legende ? '#374151' : '#9ca3af',
+                      cursor: canEdit ? 'pointer' : 'default',
+                      display: 'flex', alignItems: 'center', gap: 4,
+                      minHeight: 20,
+                    }}
+                    data-testid={`legende-display-${photo.id}`}
+                    title={canEdit ? 'Cliquer pour modifier la légende' : ''}
+                  >
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                      {photo.legende || photo.nom || 'Ajouter une légende...'}
+                    </span>
+                    {canEdit && <Pencil size={11} color="#9ca3af" />}
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -308,7 +430,7 @@ const GaleriePhotosBatiment = ({
           borderRadius: '12px', color: '#6b7280',
         }}>
           <p style={{ margin: 0 }}>Aucune photo dans la galerie</p>
-          {canEdit && <p style={{ margin: '0.5rem 0 0', fontSize: '0.875rem' }}>Cliquez sur "Ajouter" pour télécharger des photos</p>}
+          {canEdit && <p style={{ margin: '0.5rem 0 0', fontSize: '0.875rem' }}>Cliquez sur "Ajouter" pour ajouter des photos</p>}
         </div>
       )}
 
