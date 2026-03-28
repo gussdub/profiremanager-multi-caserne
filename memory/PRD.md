@@ -57,10 +57,12 @@ Application de gestion complète pour les services d'incendie canadiens. Multi-t
   - remplacements/notifications.py: envoyer_email_remplacement, envoyer_email_remplacement_trouve, envoyer_email_remplacement_non_trouve
 - ✅ Lazy loading bâtiments + carte secteurs améliorée
 - ✅ **Fix bug audit modal** : le bouton Audit affichait le mauvais audit car `assignations[index]` ne correspondait pas à `personnelAssigne[index]`. Remplacé par `assignations.find(a => a.user_id === person.id)` pour un matching fiable.
+- ✅ **Drag & drop photos + légendes** dans la fiche bâtiment : réordonnancement des photos par glisser-déposer + légende éditable sur chaque photo + sauvegarde via PUT endpoint
+- ✅ **Refactorisation planning.py** : 5361 → 2131 lignes, éclaté en 4 fichiers (planning.py, planning_exports.py, planning_auto.py, planning_audit.py)
+- ✅ **Refactorisation Parametres.js** : 2639 → 2138 lignes, extraction ParametresTypesGarde.jsx
 
 ## Backlog
 - P1: Tester rigoureusement l'import d'historique d'interventions (CSV/XML/ZIP)
-- P2: Drag & drop pour réassigner les photos entre bâtiments après import
 
 ## Refactoring Status (completed 2026-03-27)
 ### Backend: planning.py split
