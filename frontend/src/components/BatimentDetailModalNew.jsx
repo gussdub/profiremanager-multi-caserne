@@ -12,7 +12,7 @@ import DependancesBatiment from './DependancesBatiment';
 import GaleriePhotosBatiment from './GaleriePhotosBatiment';
 import HistoriqueModifications from './HistoriqueModifications';
 import { useModalScrollLock } from '../hooks/useModalScrollLock';
-import { Pencil, ClipboardCheck, Map, ScrollText, Clock, FileText, Trash2, Save, X } from 'lucide-react';
+import { Pencil, ClipboardCheck, Map, ScrollText, Clock, FileText, Trash2, Save, X, Download } from 'lucide-react';
 
 // Style pour l'animation de rotation
 const spinKeyframes = `
@@ -927,6 +927,34 @@ const BatimentForm = ({
     onClose();
   };
 
+  // Export PDF de la fiche bâtiment
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const handleExportPdf = async () => {
+    if (!batiment?.id) return;
+    setExportingPdf(true);
+    try {
+      const token = getTenantToken();
+      const response = await axios.get(
+        buildApiUrl(tenantSlug, `/prevention/batiments/${batiment.id}/rapport-pdf`),
+        { headers: { Authorization: `Bearer ${token}` }, responseType: 'blob' }
+      );
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      const nom = batiment.nom_etablissement || batiment.adresse_civique || 'batiment';
+      link.setAttribute('download', `fiche_${nom.replace(/\s+/g, '_')}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Erreur export PDF:', error);
+      alert('Erreur lors de l\'export PDF. Veuillez réessayer.');
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+
   // Gestion de la navigation rapport complet
   if (viewMode === 'rapport') {
     return (
@@ -1423,6 +1451,7 @@ const BatimentForm = ({
                   onViewHistory && { label: 'Inspections', icon: ScrollText, action: () => setViewMode('history') },
                   { label: 'Historique', icon: Clock, action: () => setViewMode('full-history'), testid: 'btn-full-history' },
                   onGenerateReport && { label: 'Rapport', icon: FileText, action: () => setViewMode('rapport') },
+                  !isCreating && { label: exportingPdf ? 'Export...' : 'PDF', icon: Download, action: handleExportPdf, testid: 'btn-export-pdf' },
                   canEdit && onDelete && { label: 'Supprimer', icon: Trash2, action: () => onDelete(batiment), danger: true },
                 ].filter(Boolean).map((item, idx) => (
                   <button

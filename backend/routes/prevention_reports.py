@@ -18,6 +18,7 @@ from datetime import datetime, timezone, timedelta
 from io import BytesIO
 from starlette.responses import StreamingResponse, Response
 import logging
+import httpx
 
 from routes.dependencies import (
     db,
@@ -501,6 +502,63 @@ async def export_rapport_batiment_pdf(
             story.append(Spacer(1, 0.2*inch))
         except Exception as e:
             logger.error(f"Erreur chargement photo: {e}")
+    
+    # Section Galerie Photos (photos annotées)
+    gallery_photos = batiment.get('photos', [])
+    if gallery_photos:
+        story.append(Paragraph("GALERIE PHOTOS", heading_style))
+        
+        caption_style = ParagraphStyle(
+            'PhotoCaption',
+            parent=styles['Normal'],
+            fontSize=10,
+            textColor=colors.HexColor('#4b5563'),
+            alignment=TA_CENTER,
+            spaceAfter=15,
+            spaceBefore=4,
+            italic=True
+        )
+        
+        photo_max_w = 4.5 * inch
+        photo_max_h = 3.5 * inch
+        
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            for idx, photo in enumerate(gallery_photos):
+                photo_url = photo.get('url', '')
+                if not photo_url:
+                    continue
+                try:
+                    # Télécharger l'image depuis l'URL
+                    resp = await client.get(photo_url)
+                    if resp.status_code != 200:
+                        continue
+                    
+                    pil_img = PILImage.open(io.BytesIO(resp.content))
+                    orig_w, orig_h = pil_img.size
+                    
+                    # Calculer les dimensions proportionnelles
+                    ratio = min(photo_max_w / orig_w, photo_max_h / orig_h)
+                    display_w = orig_w * ratio
+                    display_h = orig_h * ratio
+                    
+                    img_buf = io.BytesIO()
+                    pil_img.save(img_buf, format='JPEG', quality=80)
+                    img_buf.seek(0)
+                    
+                    rl_photo = RLImage(img_buf, width=display_w, height=display_h)
+                    rl_photo.hAlign = 'CENTER'
+                    story.append(rl_photo)
+                    
+                    # Légende
+                    legende = photo.get('legende', '').strip()
+                    label = legende if legende else f"Photo {idx + 1}"
+                    story.append(Paragraph(label, caption_style))
+                    
+                except Exception as e:
+                    logger.warning(f"Impossible de charger la photo {photo.get('id', '?')}: {e}")
+                    continue
+        
+        story.append(Spacer(1, 0.2*inch))
     
     # Section B : Historique des Inspections
     story.append(Paragraph("HISTORIQUE DES INSPECTIONS", heading_style))
