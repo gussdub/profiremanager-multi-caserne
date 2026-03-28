@@ -150,3 +150,50 @@ async def soft_delete_file(
         raise HTTPException(status_code=404, detail="Fichier non trouvé")
 
     return {"success": True}
+
+
+
+from pydantic import BaseModel
+
+class ReassignFileRequest(BaseModel):
+    new_entity_id: str
+
+
+@router.put("/{tenant_slug}/files/{file_id}/reassign")
+async def reassign_file(
+    tenant_slug: str,
+    file_id: str,
+    body: ReassignFileRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """Reassigne un fichier a une nouvelle entite (ex: deplacer une photo vers un autre batiment)."""
+    tenant = await get_tenant_from_slug(tenant_slug)
+
+    record = await db.stored_files.find_one(
+        {"id": file_id, "tenant_id": tenant.id, "is_deleted": False},
+        {"_id": 0},
+    )
+    if not record:
+        raise HTTPException(status_code=404, detail="Fichier non trouve")
+
+    old_entity_id = record.get("entity_id")
+
+    result = await db.stored_files.update_one(
+        {"id": file_id, "tenant_id": tenant.id},
+        {
+            "$set": {
+                "entity_id": body.new_entity_id,
+                "reassigned_at": datetime.now(timezone.utc).isoformat(),
+                "reassigned_by": current_user.id,
+            }
+        },
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=500, detail="Erreur lors de la reassignation")
+
+    return {
+        "success": True,
+        "file_id": file_id,
+        "old_entity_id": old_entity_id,
+        "new_entity_id": body.new_entity_id,
+    }
