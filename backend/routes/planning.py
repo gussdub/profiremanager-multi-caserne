@@ -1701,14 +1701,40 @@ async def assignation_manuelle_avancee(
         
         assignations_creees = []
         
+        # Pré-calculer quels mois sont déjà publiés pour déterminer le statut de chaque assignation
+        # Collecter tous les mois couverts par la plage
+        mois_couverts = set()
+        d = date_debut
+        while d <= date_fin:
+            mois_couverts.add(d.strftime("%Y-%m"))
+            if d.month == 12:
+                d = d.replace(year=d.year + 1, month=1, day=1)
+            else:
+                d = d.replace(month=d.month + 1, day=1)
+        
+        mois_publies = set()
+        for mois in mois_couverts:
+            exists = await db.assignations.find_one({
+                "tenant_id": tenant.id,
+                "date": {"$regex": f"^{mois}"},
+                "publication_status": "publie"
+            })
+            if exists:
+                mois_publies.add(mois)
+        
+        def get_pub_status(date_str):
+            return "publie" if date_str[:7] in mois_publies else "brouillon"
+        
         if recurrence_type == "unique":
             # Assignation unique
+            date_str_unique = date_debut.strftime("%Y-%m-%d")
             assignation_obj = Assignation(
                 user_id=user_id,
                 type_garde_id=type_garde_id,
-                date=date_debut.strftime("%Y-%m-%d"),
+                date=date_str_unique,
                 assignation_type="manuel_avance",
-                tenant_id=tenant.id
+                tenant_id=tenant.id,
+                publication_status=get_pub_status(date_str_unique)
             )
             await db.assignations.insert_one(assignation_obj.dict())
             assignations_creees.append(assignation_obj.dict())
@@ -1747,12 +1773,14 @@ async def assignation_manuelle_avancee(
                         })
                         
                         if not existing:
+                            date_str_h = current_date.strftime("%Y-%m-%d")
                             assignation_obj = Assignation(
                                 user_id=user_id,
                                 type_garde_id=type_garde_id,
-                                date=current_date.strftime("%Y-%m-%d"),
+                                date=date_str_h,
                                 assignation_type="manuel_avance",
-                                tenant_id=tenant.id
+                                tenant_id=tenant.id,
+                                publication_status=get_pub_status(date_str_h)
                             )
                             await db.assignations.insert_one(assignation_obj.dict())
                             assignations_creees.append(assignation_obj.dict())
@@ -1786,12 +1814,14 @@ async def assignation_manuelle_avancee(
                     })
                     
                     if not existing:
+                        date_str_bh = current_date.strftime("%Y-%m-%d")
                         assignation_obj = Assignation(
                             user_id=user_id,
                             type_garde_id=type_garde_id,
-                            date=current_date.strftime("%Y-%m-%d"),
+                            date=date_str_bh,
                             assignation_type="manuel_avance",
-                            tenant_id=tenant.id
+                            tenant_id=tenant.id,
+                            publication_status=get_pub_status(date_str_bh)
                         )
                         await db.assignations.insert_one(assignation_obj.dict())
                         assignations_creees.append(assignation_obj.dict())
@@ -1817,12 +1847,14 @@ async def assignation_manuelle_avancee(
                         })
                         
                         if not existing:
+                            date_str_m = target_date.strftime("%Y-%m-%d")
                             assignation_obj = Assignation(
                                 user_id=user_id,
                                 type_garde_id=type_garde_id,
-                                date=target_date.strftime("%Y-%m-%d"),
+                                date=date_str_m,
                                 assignation_type="manuel_avance",
-                                tenant_id=tenant.id
+                                tenant_id=tenant.id,
+                                publication_status=get_pub_status(date_str_m)
                             )
                             await db.assignations.insert_one(assignation_obj.dict())
                             assignations_creees.append(assignation_obj.dict())
@@ -1859,12 +1891,14 @@ async def assignation_manuelle_avancee(
                         })
                         
                         if not existing:
+                            date_str_a = target_date.strftime("%Y-%m-%d")
                             assignation_obj = Assignation(
                                 user_id=user_id,
                                 type_garde_id=type_garde_id,
-                                date=target_date.strftime("%Y-%m-%d"),
+                                date=date_str_a,
                                 assignation_type="manuel_avance",
-                                tenant_id=tenant.id
+                                tenant_id=tenant.id,
+                                publication_status=get_pub_status(date_str_a)
                             )
                             await db.assignations.insert_one(assignation_obj.dict())
                             assignations_creees.append(assignation_obj.dict())
@@ -1896,12 +1930,14 @@ async def assignation_manuelle_avancee(
                     })
                     
                     if not existing:
+                        date_str_p = current_date.strftime("%Y-%m-%d")
                         assignation_obj = Assignation(
                             user_id=user_id,
                             type_garde_id=type_garde_id,
-                            date=current_date.strftime("%Y-%m-%d"),
+                            date=date_str_p,
                             assignation_type="manuel_avance",
-                            tenant_id=tenant.id
+                            tenant_id=tenant.id,
+                            publication_status=get_pub_status(date_str_p)
                         )
                         await db.assignations.insert_one(assignation_obj.dict())
                         assignations_creees.append(assignation_obj.dict())
@@ -1919,12 +1955,14 @@ async def assignation_manuelle_avancee(
                     })
                     
                     if not existing:
+                        date_str_p2 = current_date.strftime("%Y-%m-%d")
                         assignation_obj = Assignation(
                             user_id=user_id,
                             type_garde_id=type_garde_id,
-                            date=current_date.strftime("%Y-%m-%d"),
+                            date=date_str_p2,
                             assignation_type="manuel_avance",
-                            tenant_id=tenant.id
+                            tenant_id=tenant.id,
+                            publication_status=get_pub_status(date_str_p2)
                         )
                         await db.assignations.insert_one(assignation_obj.dict())
                         assignations_creees.append(assignation_obj.dict())

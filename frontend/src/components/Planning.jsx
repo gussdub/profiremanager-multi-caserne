@@ -1085,7 +1085,8 @@ const Planning = () => {
         type_garde_id: typeGardeId,
         date: date,
         assignation_type: "manuel",
-        tenant_id: response.tenant_id
+        tenant_id: response.tenant_id,
+        publication_status: response.publication_status || "brouillon"
       };
       
       setAssignations(prev => [...prev, newAssignation]);

@@ -1,10 +1,8 @@
-# Test Credentials - ProFireManager
+# Test Credentials
 
-## Tenant Demo
-- **Slug**: `demo`
-- **Email admin**: `gussdub@gmail.com`
-- **Email employé test**: `info@profiremanager.ca`
-- **Login field**: `mot_de_passe` (not `password`)
-- **Token field**: `access_token`
-- **JWT Secret**: `your-secret-key-here` (default)
+## Tenant: demo
+- **Admin**: gussdub@gmail.com / 230685Juin+ (role: admin, full access)
+- **Employé**: info@profiremanager.ca / 230685Juin+ (role: employe, limited access - default)
 - **Login endpoint**: `POST /api/demo/auth/login`
+- **Body**: `{"email": "...", "mot_de_passe": "..."}`
+- **Token field**: `access_token`
