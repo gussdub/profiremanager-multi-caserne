@@ -311,7 +311,7 @@ class Assignation(BaseModel):
     date: str
     statut: str = "planifie"  # planifie, confirme, remplacement_demande
     assignation_type: str = "auto"  # auto, manuel, manuel_avance
-    publication_status: str = "publie"  # brouillon, publie - pour le mode test/preview
+    publication_status: str = "brouillon"  # brouillon, publie - défaut brouillon pour éviter les notifications prématurées
     caserne_id: Optional[str] = None  # ID de la caserne (si mode multi-casernes actif et type_garde par_caserne)
     justification: Optional[Dict[str, Any]] = None
     notes_admin: Optional[str] = None
@@ -478,6 +478,17 @@ async def create_assignation(
         warning_message = f"Cette garde nécessite {personnel_requis} personne(s), vous en avez maintenant {current_count + 1}."
     
     # Créer une nouvelle assignation (permet plusieurs personnes sur le même créneau)
+    # Déterminer le statut de publication :
+    # - Si le planning du mois est déjà publié → "publie" (ajout post-publication)
+    # - Sinon → "brouillon" (édition avant publication)
+    mois_prefix = assignation_data.date[:7]  # YYYY-MM
+    planning_deja_publie = await db.assignations.find_one({
+        "tenant_id": tenant.id,
+        "date": {"$regex": f"^{mois_prefix}"},
+        "publication_status": "publie"
+    })
+    pub_status = "publie" if planning_deja_publie else "brouillon"
+    
     assignation = Assignation(
         tenant_id=tenant.id,
         user_id=assignation_data.user_id,
@@ -485,21 +496,15 @@ async def create_assignation(
         date=assignation_data.date,
         assignation_type=assignation_data.assignation_type,
         caserne_id=assignation_data.caserne_id,
-        notes_admin=assignation_data.notes_admin
+        notes_admin=assignation_data.notes_admin,
+        publication_status=pub_status
     )
     
     await db.assignations.insert_one(assignation.dict())
     
     # Notifier l'employé UNIQUEMENT si le planning de cette période est déjà publié
     # (pas de notification pendant la phase brouillon/pré-publication)
-    planning_publie = await db.assignations.find_one({
-        "tenant_id": tenant.id,
-        "date": {"$regex": f"^{assignation_data.date[:7]}"},  # même mois (YYYY-MM)
-        "publication_status": "publie",
-        "id": {"$ne": assignation.id}  # exclure l'assignation qu'on vient de créer
-    })
-    
-    if planning_publie:
+    if pub_status == "publie":
         try:
             await creer_notification(
                 tenant_id=tenant.id,

@@ -1,0 +1,80 @@
+{
+  "summary": "Bug fix verification for planning notification issue: Notifications were being sent even when planning was in draft mode (brouillon). All 11 tests passed, confirming the fix is working correctly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_planning_notification_bug_fix.py",
+    "/app/test_reports/pytest/pytest_planning_notification_bug_fix.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Line 314: Assignation model now defaults to publication_status='brouillon' - VERIFIED",
+    "Lines 480-519: Creation logic checks if month has published assignments. If yes → 'publie', if no → 'brouillon' - VERIFIED",
+    "Lines 505-519: Notification only sent when pub_status == 'publie' - VERIFIED",
+    "Lines 576-636: Deletion notification only sent when assignation.publication_status == 'publie' - VERIFIED",
+    "Lines 651-700: Publish endpoint changes brouillon → publie and sends notifications - VERIFIED"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_planning_notification_bug_fix.py"
+  ],
+  "success_rate": {
+    "backend": "100% (11/11 passed)",
+    "frontend": "N/A - backend only testing"
+  },
+  "test_credentials": {
+    "admin_email": "gussdub@icloud.com",
+    "admin_password": "230685Juin+",
+    "tenant": "demo",
+    "login_field": "mot_de_passe",
+    "token_field": "access_token"
+  },
+  "seed_data_creation": "Test data created in future month 2026-08 to avoid interfering with existing data. Cleanup performed after each test.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Planning notification bug fix verified. Key tests: (1) Create assignment in unpublished month → 'brouillon' status, no notification. (2) Create assignment in published month → 'publie' status. (3) Delete brouillon → no notification. (4) Delete published → notification sent. (5) Publish planning → status changes to 'publie'. Use admin credentials gussdub@icloud.com for testing planning features.",
+  "verified_bug_fixes": {
+    "BUG_1_CREATE_UNPUBLISHED_MONTH": {
+      "description": "Create assignment in unpublished month should get 'brouillon' status and NOT create notification",
+      "status": "FIXED",
+      "test": "test_04_create_assignment_unpublished_month_gets_brouillon_status",
+      "result": "PASSED"
+    },
+    "BUG_2_CREATE_PUBLISHED_MONTH": {
+      "description": "Create assignment in already published month should get 'publie' status",
+      "status": "FIXED",
+      "test": "test_08_create_assignment_in_published_month_gets_publie_status",
+      "result": "PASSED"
+    },
+    "BUG_3_DELETE_BROUILLON": {
+      "description": "Delete brouillon assignment should NOT create notification",
+      "status": "FIXED",
+      "test": "test_06_delete_brouillon_assignment_no_notification",
+      "result": "PASSED"
+    },
+    "BUG_4_PUBLISH_PLANNING": {
+      "description": "Publish planning should change status to 'publie' and send notifications",
+      "status": "FIXED",
+      "test": "test_07_publish_planning_changes_status",
+      "result": "PASSED"
+    },
+    "BUG_5_MODEL_DEFAULT": {
+      "description": "Assignation model should default to publication_status='brouillon'",
+      "status": "FIXED",
+      "test": "test_model_default_is_brouillon",
+      "result": "PASSED"
+    },
+    "BUG_6_VISIBILITY_FILTERING": {
+      "description": "Non-admin users should not see brouillon assignments",
+      "status": "VERIFIED",
+      "test": "test_10_non_admin_cannot_see_brouillons",
+      "result": "PASSED"
+    }
+  }
+}
