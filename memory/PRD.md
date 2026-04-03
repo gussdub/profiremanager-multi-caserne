@@ -15,8 +15,9 @@ Application de gestion complète pour les services d'incendie canadiens. Multi-t
 - `POST /api/{tenant_slug}/planning/assignation` — Crée une assignation (brouillon/publie selon état du mois)
 - `DELETE /api/{tenant_slug}/planning/assignation/{id}` — Supprime une assignation
 - `POST /api/{tenant_slug}/planning/publier` — Publie le planning brouillon
-- `POST /api/{tenant_slug}/planning/assignation-avancee` — Assignation récurrente (brouillon/publie par mois)
+- `POST /api/{tenant_slug}/planning/assignation-avancee` — Assignation récurrente
 - `GET /api/{tenant_slug}/prevention/batiments/{id}/rapport-pdf` — Export PDF bâtiment
+- `GET /api/{tenant_slug}/actifs/vehicules/{id}/public` — Info publique véhicule (QR)
 
 ## Completed Features
 - Multi-tenant auth, planning, remplacements, prévention, EPI, bâtiments
@@ -25,7 +26,8 @@ Application de gestion complète pour les services d'incendie canadiens. Multi-t
 - Drag & drop photos + légendes dans fiche bâtiment
 - Refactorisation planning.py (4 fichiers) + Parametres.js
 - Export PDF fiche bâtiment avec galerie photos annotées
-- **Fix bug notifications planning (brouillon)** : Le modèle Assignation default maintenant à "brouillon". Les endpoints de création manuelle ET avancée déterminent dynamiquement le statut (publie si le mois est déjà publié, brouillon sinon). Les notifications ne sont envoyées que pour les assignations publiées. Le bandeau "Mode Brouillon Actif" s'affiche maintenant aussi lors des assignations manuelles.
+- Fix bug notifications planning (brouillon) — modèle Assignation default "brouillon"
+- **Fix QR code deep linking PWA iOS** : tenant_slug + timestamp ajoutés dans qr_action, TenantContext détecte auto le scan QR en attente et redirige vers le bon tenant sans sélection manuelle
 
 ## Backlog
 - P1: Tester rigoureusement l'import d'historique d'interventions (CSV/XML/ZIP)

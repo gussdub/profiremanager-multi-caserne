@@ -106,7 +106,9 @@ const VehiculeQRAction = () => {
     const qrActionData = {
       action: 'ronde_securite',
       vehicule_id: vehiculeId,
-      vehicule: vehicule
+      vehicule: vehicule,
+      tenant_slug: tenantSlug,
+      timestamp: Date.now()
     };
     localStorage.setItem('qr_action', JSON.stringify(qrActionData));
     console.log('💾 QR Action sauvegardée (ronde):', qrActionData);
@@ -129,7 +131,9 @@ const VehiculeQRAction = () => {
     const qrActionData = {
       action: 'inventaire',
       vehicule_id: vehiculeId,
-      vehicule: vehicule
+      vehicule: vehicule,
+      tenant_slug: tenantSlug,
+      timestamp: Date.now()
     };
     localStorage.setItem('qr_action', JSON.stringify(qrActionData));
     console.log('💾 QR Action sauvegardée (inventaire):', qrActionData);

@@ -165,6 +165,31 @@ export const TenantProvider = ({ children }) => {
     const lastTenant = localStorage.getItem(LAST_TENANT_KEY);
     const savedTenants = getSavedTenants();
     
+    // ===== QR CODE DEEP LINK =====
+    // Quand le PWA s'ouvre à la racine (iOS perd le path /qr/...),
+    // vérifier si un scan QR est en attente dans localStorage
+    try {
+      const pendingQR = localStorage.getItem('qr_action');
+      if (pendingQR) {
+        const qrData = JSON.parse(pendingQR);
+        const qrTenant = qrData.tenant_slug;
+        const qrTimestamp = qrData.timestamp || 0;
+        const isRecent = (Date.now() - qrTimestamp) < 5 * 60 * 1000; // 5 minutes max
+        
+        if (qrTenant && isRecent) {
+          console.log(`[QR Deep Link] Action QR en attente pour tenant: ${qrTenant}, redirection auto`);
+          // Sauvegarder le tenant comme dernier utilisé
+          localStorage.setItem(LAST_TENANT_KEY, qrTenant);
+          localStorage.setItem('currentPage', 'actifs');
+          setLoading(false);
+          window.location.href = `/${qrTenant}`;
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('[QR Deep Link] Erreur parsing qr_action:', e);
+    }
+    
     // Détecter si on est sur mobile/tablette/app native (incluant web mobile)
     const isMobileOrApp = () => {
       try {
