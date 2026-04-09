@@ -956,29 +956,28 @@ async def get_ronde_pdf(
         doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
         elements = []
         
-        # Header avec logo
-        if hasattr(tenant, 'logo_url') and tenant.logo_url:
-            try:
-                if tenant.logo_url.startswith('data:image/'):
-                    header_logo, encoded = tenant.logo_url.split(',', 1)
-                    logo_data = base64.b64decode(encoded)
-                    logo_buffer = BytesIO(logo_data)
-                    
-                    from PIL import Image as PILImage
-                    pil_image = PILImage.open(logo_buffer)
-                    img_width, img_height = pil_image.size
-                    
-                    target_width = 1 * inch
-                    aspect_ratio = img_height / img_width
-                    target_height = target_width * aspect_ratio
-                    
-                    logo_buffer.seek(0)
-                    logo = RLImage(logo_buffer, width=target_width, height=target_height)
-                    logo.hAlign = 'CENTER'
-                    elements.append(logo)
-                    elements.append(Spacer(1, 0.05*inch))
-            except Exception as e:
-                logger.error(f"Erreur chargement logo: {e}")
+        # Header avec logo (Azure ou legacy base64)
+        try:
+            from services.azure_storage import get_logo_bytes
+            logo_data = get_logo_bytes(tenant)
+            if logo_data:
+                logo_buffer = BytesIO(logo_data)
+                
+                from PIL import Image as PILImage
+                pil_image = PILImage.open(logo_buffer)
+                img_width, img_height = pil_image.size
+                
+                target_width = 1 * inch
+                aspect_ratio = img_height / img_width
+                target_height = target_width * aspect_ratio
+                
+                logo_buffer.seek(0)
+                logo = RLImage(logo_buffer, width=target_width, height=target_height)
+                logo.hAlign = 'CENTER'
+                elements.append(logo)
+                elements.append(Spacer(1, 0.05*inch))
+        except Exception as e:
+            logger.error(f"Erreur chargement logo: {e}")
         
         # Nom du service
         nom_service = tenant.nom_service if hasattr(tenant, 'nom_service') and tenant.nom_service else tenant.nom

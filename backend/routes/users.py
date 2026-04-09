@@ -114,8 +114,8 @@ class AccessUpdate(BaseModel):
 from io import BytesIO
 from PIL import Image as PILImage
 
-def resize_and_compress_image(base64_string: str, max_size: int = 200) -> str:
-    """Redimensionne et compresse une image base64"""
+def resize_and_compress_image_bytes(base64_string: str, max_size: int = 200) -> bytes:
+    """Redimensionne et compresse une image base64, retourne les bytes JPEG."""
     try:
         if ',' in base64_string:
             base64_string = base64_string.split(',')[1]
@@ -145,7 +145,7 @@ def resize_and_compress_image(base64_string: str, max_size: int = 200) -> str:
         img.save(buffer, format='JPEG', quality=85, optimize=True)
         buffer.seek(0)
         
-        return f"data:image/jpeg;base64,{base64.b64encode(buffer.read()).decode()}"
+        return buffer.read()
     except Exception as e:
         logger.error(f"Erreur resize image: {e}")
         raise ValueError(f"Erreur traitement image: {str(e)}")
@@ -599,24 +599,27 @@ async def upload_photo_profil(
 ):
     """
     Upload une photo de profil pour l'utilisateur connecté
-    Redimensionne automatiquement à 200x200 pixels
+    Redimensionne automatiquement à 200x200 pixels → Azure Blob Storage
     """
     tenant = await get_tenant_from_slug(tenant_slug)
     
     try:
-        # Traiter et redimensionner l'image
-        processed_photo = resize_and_compress_image(photo_data.photo_base64)
+        from services.azure_storage import put_object, generate_sas_url, generate_storage_path
         
-        # Mettre à jour l'utilisateur
+        image_bytes = resize_and_compress_image_bytes(photo_data.photo_base64)
+        blob_path = generate_storage_path(tenant.id, "profils", f"user_{current_user.id}.jpg")
+        put_object(blob_path, image_bytes, "image/jpeg")
+        sas_url = generate_sas_url(blob_path)
+        
         result = await db.users.update_one(
             {"id": current_user.id, "tenant_id": tenant.id},
-            {"$set": {"photo_profil": processed_photo}}
+            {"$set": {"photo_profil_blob_name": blob_path, "photo_profil": None}}
         )
         
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
         
-        return {"message": "Photo de profil mise à jour", "photo_profil": processed_photo}
+        return {"message": "Photo de profil mise à jour", "photo_profil": sas_url}
         
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -718,16 +721,19 @@ async def upload_photo_profil_admin(
         if not user:
             raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
         
-        # Traiter et redimensionner l'image
-        processed_photo = resize_and_compress_image(photo_data.photo_base64)
+        from services.azure_storage import put_object, generate_sas_url, generate_storage_path
         
-        # Mettre à jour l'utilisateur
+        image_bytes = resize_and_compress_image_bytes(photo_data.photo_base64)
+        blob_path = generate_storage_path(tenant.id, "profils", f"user_{user_id}.jpg")
+        put_object(blob_path, image_bytes, "image/jpeg")
+        sas_url = generate_sas_url(blob_path)
+        
         await db.users.update_one(
             {"id": user_id, "tenant_id": tenant.id},
-            {"$set": {"photo_profil": processed_photo}}
+            {"$set": {"photo_profil_blob_name": blob_path, "photo_profil": None}}
         )
         
-        return {"message": "Photo de profil mise à jour", "photo_profil": processed_photo}
+        return {"message": "Photo de profil mise à jour", "photo_profil": sas_url}
         
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -746,13 +752,19 @@ async def delete_photo_profil(
     """
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    result = await db.users.update_one(
-        {"id": current_user.id, "tenant_id": tenant.id},
-        {"$set": {"photo_profil": None}}
-    )
-    
-    if result.matched_count == 0:
+    user = await db.users.find_one({"id": current_user.id, "tenant_id": tenant.id})
+    if not user:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    blob_name = user.get("photo_profil_blob_name")
+    if blob_name:
+        from services.azure_storage import delete_object
+        delete_object(blob_name)
+    
+    await db.users.update_one(
+        {"id": current_user.id, "tenant_id": tenant.id},
+        {"$set": {"photo_profil": None}, "$unset": {"photo_profil_blob_name": ""}}
+    )
     
     return {"message": "Photo de profil supprimée"}
 
@@ -769,16 +781,21 @@ async def delete_photo_profil_admin(
     """
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # RBAC: Vérifier permission de modification sur le module personnel
     await require_permission(tenant.id, current_user, "personnel", "modifier")
     
-    result = await db.users.update_one(
-        {"id": user_id, "tenant_id": tenant.id},
-        {"$set": {"photo_profil": None}}
-    )
-    
-    if result.matched_count == 0:
+    user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
+    if not user:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    blob_name = user.get("photo_profil_blob_name")
+    if blob_name:
+        from services.azure_storage import delete_object
+        delete_object(blob_name)
+    
+    await db.users.update_one(
+        {"id": user_id, "tenant_id": tenant.id},
+        {"$set": {"photo_profil": None}, "$unset": {"photo_profil_blob_name": ""}}
+    )
     
     return {"message": "Photo de profil supprimée"}
 
@@ -1118,21 +1135,22 @@ async def upload_signature(
     if len(content) > 500 * 1024:
         raise HTTPException(status_code=400, detail="Le fichier ne doit pas dépasser 500KB")
     
-    # Convertir en base64 pour stockage
-    import base64
-    content_type = file.content_type
-    base64_content = base64.b64encode(content).decode('utf-8')
-    signature_url = f"data:{content_type};base64,{base64_content}"
+    # Upload vers Azure
+    from services.azure_storage import put_object, generate_sas_url, generate_storage_path
+    ext = file.filename.rsplit(".", 1)[-1].lower() if file.filename and "." in file.filename else "png"
+    blob_path = generate_storage_path(tenant.id, "signatures", f"sig_{user_id}.{ext}")
+    put_object(blob_path, content, file.content_type or "image/png")
+    sas_url = generate_sas_url(blob_path)
     
-    # Mettre à jour l'utilisateur
+    # Stocker le blob_name dans MongoDB
     await db.users.update_one(
         {"id": user_id, "tenant_id": tenant.id},
-        {"$set": {"signature_url": signature_url, "updated_at": datetime.now(timezone.utc)}}
+        {"$set": {"signature_blob_name": blob_path, "signature_url": None, "updated_at": datetime.now(timezone.utc)}}
     )
     
-    logger.info(f"✅ Signature uploadée pour {user_id} par {current_user.email}")
+    logger.info(f"Signature uploadée vers Azure pour {user_id} par {current_user.email}")
     
-    return {"message": "Signature enregistrée avec succès", "signature_url": signature_url}
+    return {"message": "Signature enregistrée avec succès", "signature_url": sas_url}
 
 
 # DELETE users/{user_id}/signature - Supprimer signature
@@ -1145,14 +1163,18 @@ async def delete_signature(
     """Supprimer la signature numérique d'un utilisateur"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Vérifier les permissions via RBAC (soi-même ou permission de modifier)
     can_modify_others = await user_has_module_action(tenant.id, current_user, "personnel", "modifier")
     if current_user.id != user_id and not can_modify_others:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
+    user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
+    if user and user.get("signature_blob_name"):
+        from services.azure_storage import delete_object
+        delete_object(user["signature_blob_name"])
+    
     await db.users.update_one(
         {"id": user_id, "tenant_id": tenant.id},
-        {"$set": {"signature_url": None, "updated_at": datetime.now(timezone.utc)}}
+        {"$set": {"signature_url": None, "updated_at": datetime.now(timezone.utc)}, "$unset": {"signature_blob_name": ""}}
     )
     
     return {"message": "Signature supprimée"}
@@ -1239,6 +1261,3 @@ async def get_user_monthly_stats(tenant_slug: str, user_id: str, current_user: U
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors du calcul des statistiques: {str(e)}")
-
-# Statistics routes
-

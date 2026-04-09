@@ -160,6 +160,12 @@ async def tenant_login(tenant_slug: str, login: LoginRequest):
     # Inclure les informations du tenant dans la réponse pour éviter un chargement séparé
     tenant_data = await db.tenants.find_one({"id": tenant.id}, {"_id": 0})
     
+    # Résoudre blob_name en SAS URL
+    photo_profil = user.get("photo_profil")
+    if user.get("photo_profil_blob_name"):
+        from services.azure_storage import generate_sas_url as _sas
+        photo_profil = _sas(user["photo_profil_blob_name"])
+    
     return {
         "access_token": access_token,
         "token_type": "bearer",
@@ -172,7 +178,7 @@ async def tenant_login(tenant_slug: str, login: LoginRequest):
             "grade": user.get("grade"),
             "type_emploi": user.get("type_emploi"),
             "est_preventionniste": user.get("est_preventionniste", False),
-            "photo_profil": user.get("photo_profil")
+            "photo_profil": photo_profil
         },
         "tenant": tenant_data
     }
@@ -223,7 +229,7 @@ async def get_current_user_info(
             if not user:
                 raise HTTPException(status_code=401, detail="Utilisateur non trouvé")
             
-            return {
+            result = {
                 "id": user["id"],
                 "email": user["email"],
                 "nom": user.get("nom", ""),
@@ -237,6 +243,13 @@ async def get_current_user_info(
                 "numero_employe": user.get("numero_employe"),
                 "statut": user.get("statut", "Actif")
             }
+            
+            # Résoudre blob_name en SAS URL
+            if user.get("photo_profil_blob_name"):
+                from services.azure_storage import generate_sas_url as _sas
+                result["photo_profil"] = _sas(user["photo_profil_blob_name"])
+            
+            return result
     
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expiré")

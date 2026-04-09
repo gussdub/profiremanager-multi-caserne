@@ -37,7 +37,7 @@ from utils.address_utils import (
     generate_address_key,
     is_same_address
 )
-from utils.object_storage import put_object, get_content_type, generate_storage_path
+from services.azure_storage import put_object, get_content_type, generate_storage_path
 
 import logging
 logger = logging.getLogger(__name__)
@@ -1160,7 +1160,9 @@ async def execute_zip_import(
                     file_doc = {
                         "id": str(uuid.uuid4()),
                         "tenant_id": tenant.id,
+                        "storage": "azure",
                         "storage_path": result["path"],
+                        "blob_name": result["path"],
                         "original_filename": mf["filename"],
                         "content_type": content_type,
                         "size": result.get("size", len(file_data)),

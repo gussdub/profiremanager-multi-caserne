@@ -2435,19 +2435,18 @@ async def generer_pdf_remise_propriete(tenant: dict, intervention: dict, remise:
     
     # Logo et en-tête
     nom_service = tenant.get("nom_service") or tenant.get("nom", "Service de sécurité incendie")
-    logo_url = tenant.get("logo_url")
     
     header_data = []
-    if logo_url and logo_url.startswith('data:image/'):
-        try:
-            header, encoded = logo_url.split(',', 1)
-            logo_data = base64.b64decode(encoded)
+    try:
+        from services.azure_storage import get_logo_bytes
+        logo_data = get_logo_bytes(tenant)
+        if logo_data:
             logo_buffer = BytesIO(logo_data)
             logo_img = Image(logo_buffer, width=1*inch, height=1*inch)
             header_data.append([logo_img, Paragraph(f"<b>{nom_service}</b><br/>AVIS DE CESSATION D'INTERVENTION<br/>ET TRANSFERT DE GARDE", title_style)])
-        except:
-            header_data.append([Paragraph(f"<b>{nom_service}</b><br/>AVIS DE CESSATION D'INTERVENTION ET TRANSFERT DE GARDE", title_style)])
-    else:
+        else:
+            header_data.append([Paragraph(f"<b>{nom_service}</b><br/><br/>AVIS DE CESSATION D'INTERVENTION ET TRANSFERT DE GARDE", title_style)])
+    except:
         header_data.append([Paragraph(f"<b>{nom_service}</b><br/><br/>AVIS DE CESSATION D'INTERVENTION ET TRANSFERT DE GARDE", title_style)])
     
     if header_data and len(header_data[0]) == 2:
@@ -2790,6 +2789,15 @@ async def get_rcci(
         "intervention_id": intervention_id
     }, {"_id": 0})
     
+    # Résoudre blob_names en SAS URLs pour les photos RCCI
+    if rcci and rcci.get("photos"):
+        from services.azure_storage import generate_sas_url as _sas
+        for p in rcci["photos"]:
+            if p.get("blob_name"):
+                p["photo_url"] = _sas(p["blob_name"])
+            elif p.get("photo_base64"):
+                p["photo_url"] = p["photo_base64"]
+    
     return {"rcci": rcci}
 
 
@@ -2893,9 +2901,14 @@ async def add_rcci_photo(
         raise HTTPException(status_code=404, detail="RCCI non trouvé. Créez d'abord le rapport d'enquête.")
     
     now = datetime.now(timezone.utc)
+    
+    # Upload photo vers Azure
+    from services.azure_storage import upload_base64_to_azure, generate_sas_url
+    azure_result = upload_base64_to_azure(data.photo_base64, tenant.id, "rcci-photos", f"rcci_{intervention_id}.jpg")
+    
     photo = {
         "id": str(uuid.uuid4()),
-        "photo_base64": data.photo_base64,
+        "blob_name": azure_result["blob_name"],
         "description": data.description,
         "latitude": data.latitude,
         "longitude": data.longitude,
@@ -2923,6 +2936,18 @@ async def delete_rcci_photo(
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # Récupérer le blob_name avant suppression
+    rcci = await db.rcci.find_one(
+        {"tenant_id": tenant.id, "intervention_id": intervention_id},
+        {"photos": 1}
+    )
+    if rcci:
+        for p in rcci.get("photos", []):
+            if p.get("id") == photo_id and p.get("blob_name"):
+                from services.azure_storage import delete_object
+                delete_object(p["blob_name"])
+                break
     
     await db.rcci.update_one(
         {"tenant_id": tenant.id, "intervention_id": intervention_id},
@@ -3043,6 +3068,14 @@ async def get_photos_dommages(
         "intervention_id": intervention_id
     }, {"_id": 0}).sort("timestamp", 1).to_list(100)
     
+    # Résoudre blob_names en SAS URLs
+    from services.azure_storage import generate_sas_url as _sas
+    for p in photos:
+        if p.get("blob_name"):
+            p["photo_url"] = _sas(p["blob_name"])
+        elif p.get("photo_base64"):
+            p["photo_url"] = p["photo_base64"]
+    
     return {"photos": photos}
 
 
@@ -3059,11 +3092,16 @@ async def add_photo_dommage(
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
     
     now = datetime.now(timezone.utc)
+    
+    # Upload photo vers Azure
+    from services.azure_storage import upload_base64_to_azure
+    azure_result = upload_base64_to_azure(data.photo_base64, tenant.id, "photos-dommages", f"dommage_{intervention_id}.jpg")
+    
     photo = {
         "id": str(uuid.uuid4()),
         "tenant_id": tenant.id,
         "intervention_id": intervention_id,
-        "photo_base64": data.photo_base64,
+        "blob_name": azure_result["blob_name"],
         "description": data.description,
         "zone": data.zone,
         "latitude": data.latitude,
@@ -3098,6 +3136,14 @@ async def delete_photo_dommage(
     tenant = await get_tenant_from_slug(tenant_slug)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant non trouvé")
+    
+    # Récupérer le doc pour nettoyer Azure
+    photo_doc = await db.photos_dommages.find_one({
+        "id": photo_id, "tenant_id": tenant.id, "intervention_id": intervention_id
+    })
+    if photo_doc and photo_doc.get("blob_name"):
+        from services.azure_storage import delete_object
+        delete_object(photo_doc["blob_name"])
     
     result = await db.photos_dommages.delete_one({
         "id": photo_id,

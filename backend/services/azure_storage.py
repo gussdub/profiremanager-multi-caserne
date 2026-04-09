@@ -161,6 +161,79 @@ def generate_storage_path(tenant_id: str, category: str, filename: str) -> str:
     return f"{APP_NAME}/{tenant_id}/{category}/{unique_name}"
 
 
+def resolve_blob_urls(doc: dict, mappings: dict = None) -> dict:
+    """
+    Résout les champs *_blob_name en SAS URLs fraîches (15 min).
+    
+    Args:
+        doc: Document MongoDB
+        mappings: {"blob_field": "display_field"} ou None pour auto-détection
+    
+    Returns:
+        Document enrichi avec des SAS URLs fraîches
+    """
+    if not doc:
+        return doc
+    
+    if mappings is None:
+        mappings = {}
+        for key in list(doc.keys()):
+            if key.endswith("_blob_name") and doc.get(key):
+                display_field = key.replace("_blob_name", "")
+                mappings[key] = display_field
+    
+    for blob_field, display_field in mappings.items():
+        blob_name = doc.get(blob_field)
+        if blob_name:
+            try:
+                doc[display_field] = generate_sas_url(blob_name)
+            except Exception as e:
+                logger.warning("SAS URL generation failed for %s: %s", blob_name, e)
+    
+    return doc
+
+
+def get_logo_bytes(tenant_dict_or_obj) -> bytes:
+    """
+    Résout le logo du tenant en bytes bruts (pour la génération PDF).
+    Supporte Azure blob_name ET legacy base64.
+    
+    Returns:
+        bytes du logo ou None
+    """
+    import base64 as b64
+    
+    # Cas 1: Azure blob_name
+    blob_name = None
+    if isinstance(tenant_dict_or_obj, dict):
+        blob_name = tenant_dict_or_obj.get("logo_blob_name")
+    elif hasattr(tenant_dict_or_obj, "logo_blob_name"):
+        blob_name = getattr(tenant_dict_or_obj, "logo_blob_name", None)
+    
+    if blob_name:
+        try:
+            data, _ = get_object(blob_name)
+            return data
+        except Exception as e:
+            logger.warning("Impossible de charger logo Azure %s: %s", blob_name, e)
+    
+    # Cas 2: legacy base64 dans logo_url
+    logo_url = None
+    if isinstance(tenant_dict_or_obj, dict):
+        logo_url = tenant_dict_or_obj.get("logo_url")
+    elif hasattr(tenant_dict_or_obj, "logo_url"):
+        logo_url = getattr(tenant_dict_or_obj, "logo_url", None)
+    
+    if logo_url and isinstance(logo_url, str) and logo_url.startswith("data:image/"):
+        try:
+            _, encoded = logo_url.split(",", 1)
+            return b64.b64decode(encoded)
+        except Exception as e:
+            logger.warning("Impossible de décoder logo base64: %s", e)
+    
+    return None
+
+
 def upload_base64_to_azure(base64_data: str, tenant_id: str, category: str, filename: str) -> dict:
     """
     Upload une image base64 vers Azure.

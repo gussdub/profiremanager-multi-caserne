@@ -478,8 +478,30 @@ async def export_rapport_batiment_pdf(
     story.append(info_table)
     story.append(Spacer(1, 0.2*inch))
     
-    # Photo du bâtiment si disponible
-    if batiment.get('photo_url'):
+    # Photo du bâtiment si disponible (Azure ou legacy base64)
+    photo_loaded = False
+    if batiment.get('photo_blob_name'):
+        try:
+            from services.azure_storage import get_object
+            img_data, _ = get_object(batiment['photo_blob_name'])
+            img = PILImage.open(io.BytesIO(img_data))
+            
+            max_width = 4 * inch
+            max_height = 3 * inch
+            img.thumbnail((int(max_width * 2), int(max_height * 2)), PILImage.Resampling.LANCZOS)
+            
+            img_buffer = io.BytesIO()
+            img.save(img_buffer, format='JPEG', quality=85)
+            img_buffer.seek(0)
+            
+            rl_img = RLImage(img_buffer, width=max_width, height=max_height)
+            story.append(rl_img)
+            story.append(Spacer(1, 0.2*inch))
+            photo_loaded = True
+        except Exception as e:
+            logger.error(f"Erreur chargement photo Azure: {e}")
+    
+    if not photo_loaded and batiment.get('photo_url'):
         try:
             photo_data = batiment['photo_url']
             if photo_data.startswith('data:image'):
@@ -488,7 +510,6 @@ async def export_rapport_batiment_pdf(
             img_data = base64.b64decode(photo_data)
             img = PILImage.open(io.BytesIO(img_data))
             
-            # Redimensionner
             max_width = 4 * inch
             max_height = 3 * inch
             img.thumbnail((int(max_width * 2), int(max_height * 2)), PILImage.Resampling.LANCZOS)

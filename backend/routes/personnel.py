@@ -126,6 +126,15 @@ async def get_users(
         raise HTTPException(status_code=403, detail="Accès interdit à cette caserne")
     
     users = await db.users.find({"tenant_id": tenant.id}).to_list(1000)
+    
+    # Résoudre photo_profil blob_names en SAS URLs
+    from services.azure_storage import generate_sas_url as _sas
+    for u in users:
+        if u.get("photo_profil_blob_name"):
+            u["photo_profil"] = _sas(u["photo_profil_blob_name"])
+        if u.get("signature_blob_name"):
+            u["signature_url"] = _sas(u["signature_blob_name"])
+    
     cleaned_users = [clean_mongo_doc(user) for user in users]
     return [User(**user) for user in cleaned_users]
 
@@ -153,6 +162,13 @@ async def get_user(
     
     if not user:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    # Résoudre SAS URLs
+    from services.azure_storage import generate_sas_url as _sas
+    if user.get("photo_profil_blob_name"):
+        user["photo_profil"] = _sas(user["photo_profil_blob_name"])
+    if user.get("signature_blob_name"):
+        user["signature_url"] = _sas(user["signature_blob_name"])
     
     return User(**clean_mongo_doc(user))
 

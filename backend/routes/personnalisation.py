@@ -39,8 +39,15 @@ async def get_public_branding(tenant_slug: str):
     """
     tenant = await get_tenant_from_slug(tenant_slug)
     
+    logo_url = tenant.logo_url if hasattr(tenant, 'logo_url') else ""
+    # Résoudre blob_name en SAS URL
+    tenant_doc = await db.tenants.find_one({"id": tenant.id}, {"logo_blob_name": 1})
+    if tenant_doc and tenant_doc.get("logo_blob_name"):
+        from services.azure_storage import generate_sas_url
+        logo_url = generate_sas_url(tenant_doc["logo_blob_name"])
+    
     return {
-        "logo_url": tenant.logo_url if hasattr(tenant, 'logo_url') else "",
+        "logo_url": logo_url,
         "nom_service": tenant.nom_service if hasattr(tenant, 'nom_service') else tenant.nom,
         "afficher_profiremanager": tenant.afficher_profiremanager if hasattr(tenant, 'afficher_profiremanager') else True
     }
@@ -54,8 +61,14 @@ async def get_personnalisation(
     """Récupérer les paramètres de personnalisation du tenant"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
+    logo_url = tenant.logo_url if hasattr(tenant, 'logo_url') else ""
+    tenant_doc = await db.tenants.find_one({"id": tenant.id}, {"logo_blob_name": 1})
+    if tenant_doc and tenant_doc.get("logo_blob_name"):
+        from services.azure_storage import generate_sas_url
+        logo_url = generate_sas_url(tenant_doc["logo_blob_name"])
+    
     return {
-        "logo_url": tenant.logo_url if hasattr(tenant, 'logo_url') else "",
+        "logo_url": logo_url,
         "nom_service": tenant.nom_service if hasattr(tenant, 'nom_service') else tenant.nom,
         "afficher_profiremanager": tenant.afficher_profiremanager if hasattr(tenant, 'afficher_profiremanager') else True
     }
@@ -107,7 +120,7 @@ async def upload_logo(
     logo_data: dict,
     current_user: User = Depends(get_current_user)
 ):
-    """Upload du logo en base64"""
+    """Upload du logo vers Azure Blob Storage"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     # RBAC: Vérifier permission de modifier sur le module parametres/personnalisation
@@ -123,17 +136,22 @@ async def upload_logo(
     if not logo_base64.startswith("data:image/"):
         raise HTTPException(status_code=400, detail="Format d'image invalide")
     
-    # Mettre à jour dans MongoDB
+    # Upload vers Azure
+    from services.azure_storage import upload_base64_to_azure, generate_sas_url
+    result = upload_base64_to_azure(logo_base64, tenant.id, "logos", f"logo_{tenant.id}.png")
+    sas_url = generate_sas_url(result["blob_name"])
+    
+    # Stocker le blob_name dans MongoDB
     await db.tenants.update_one(
         {"id": tenant.id},
-        {"$set": {"logo_url": logo_base64}}
+        {"$set": {"logo_blob_name": result["blob_name"], "logo_url": None}}
     )
     # Invalider le cache pour que les prochaines lectures reflètent la mise à jour
     invalidate_tenant_cache(tenant_slug)
     
-    logger.info(f"🖼️ Logo uploadé pour {tenant_slug}")
+    logger.info(f"Logo uploadé vers Azure pour {tenant_slug}")
     
     return {
         "message": "Logo uploadé avec succès",
-        "logo_url": logo_base64
+        "logo_url": sas_url
     }

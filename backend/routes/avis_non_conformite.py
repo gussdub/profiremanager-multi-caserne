@@ -1772,19 +1772,27 @@ async def generer_avis_pdf(avis: Dict, tenant: Dict) -> BytesIO:
     # === SIGNATURE ===
     story.append(Paragraph("RESPONSABLE DU DOSSIER", heading_style))
     
-    # Ajouter signature numérique si disponible
-    if avis.get('signature_url') and avis['signature_url'].startswith('data:image'):
+    # Ajouter signature numérique si disponible (Azure ou legacy base64)
+    signature_data = None
+    if avis.get('signature_blob_name'):
+        try:
+            from services.azure_storage import get_object
+            signature_data, _ = get_object(avis['signature_blob_name'])
+        except Exception as e:
+            logger.warning(f"Impossible de charger signature Azure: {e}")
+    elif avis.get('signature_url') and avis['signature_url'].startswith('data:image'):
         try:
             import base64
-            from io import BytesIO
-            from reportlab.platypus import Image as RLImage
-            
-            # Extraire le contenu base64
             header, encoded = avis['signature_url'].split(',', 1)
             signature_data = base64.b64decode(encoded)
+        except Exception as e:
+            logger.warning(f"Impossible de décoder signature base64: {e}")
+    
+    if signature_data:
+        try:
+            from io import BytesIO
+            from reportlab.platypus import Image as RLImage
             signature_buffer = BytesIO(signature_data)
-            
-            # Ajouter l'image de signature
             signature_img = RLImage(signature_buffer, width=2*inch, height=0.8*inch)
             story.append(signature_img)
         except Exception as e:

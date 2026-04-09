@@ -1523,6 +1523,11 @@ async def get_demandes_remplacement_epi(
             admin = await db.users.find_one({"id": demande["traite_par"], "tenant_id": tenant.id})
             if admin:
                 demande["traite_par_nom"] = f"{admin.get('prenom', '')} {admin.get('nom', '')}"
+        
+        # Résoudre photo_defaut_blob_name en SAS URL
+        if demande.get("photo_defaut_blob_name"):
+            from services.azure_storage import generate_sas_url as _sas
+            demande["photo_defaut"] = _sas(demande["photo_defaut_blob_name"])
     
     return demandes
 
@@ -2866,17 +2871,28 @@ async def demander_remplacement_epi(
     if demande_existante:
         raise HTTPException(status_code=400, detail="Une demande de remplacement est déjà en attente pour cet EPI")
     
-    # Créer la demande avec la photo
+    # Upload photo vers Azure si présente
+    photo_blob_name = None
+    if demande.photo_defaut:
+        from services.azure_storage import upload_base64_to_azure
+        azure_result = upload_base64_to_azure(demande.photo_defaut, tenant.id, "epi-photos", f"defaut_{epi_id}.jpg")
+        photo_blob_name = azure_result["blob_name"]
+    
+    # Créer la demande avec le blob_name
     demande_obj = DemandeRemplacementEPI(
         tenant_id=tenant.id,
         epi_id=epi_id,
         user_id=current_user.id,
         raison=demande.raison,
         notes_employe=demande.notes_employe,
-        photo_defaut=demande.photo_defaut
+        photo_defaut=None
     )
     
-    await db.demandes_remplacement_epi.insert_one(demande_obj.dict())
+    demande_dict = demande_obj.dict()
+    if photo_blob_name:
+        demande_dict["photo_defaut_blob_name"] = photo_blob_name
+    
+    await db.demandes_remplacement_epi.insert_one(demande_dict)
     
     # Envoyer notification aux admins/superviseurs (avec gestion d'erreur pour ne pas bloquer la demande)
     try:

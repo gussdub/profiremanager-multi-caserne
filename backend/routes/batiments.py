@@ -487,8 +487,8 @@ async def upload_batiment_photo(
     if not existing:
         raise HTTPException(status_code=404, detail="Bâtiment non trouvé")
     
-    # Lire le contenu du fichier et le convertir en base64
-    import base64
+    # Upload vers Azure Blob Storage
+    from services.azure_storage import put_object, generate_sas_url, generate_storage_path
     content = await file.read()
     content_type = file.content_type or "image/jpeg"
     
@@ -496,15 +496,16 @@ async def upload_batiment_photo(
     if len(content) > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="Fichier trop volumineux (max 5MB)")
     
-    base64_content = base64.b64encode(content).decode('utf-8')
-    photo_url = f"data:{content_type};base64,{base64_content}"
+    blob_path = generate_storage_path(tenant.id, "batiments-photos", f"batiment_{batiment_id}.jpg")
+    put_object(blob_path, content, content_type)
+    sas_url = generate_sas_url(blob_path)
     
     await db.batiments.update_one(
         {"id": batiment_id, "tenant_id": tenant.id},
-        {"$set": {"photo_url": photo_url, "updated_at": datetime.now(timezone.utc)}}
+        {"$set": {"photo_blob_name": blob_path, "photo_url": None, "photo_storage": "azure", "updated_at": datetime.now(timezone.utc)}}
     )
     
-    return {"message": "Photo uploadée", "photo_url": photo_url}
+    return {"message": "Photo uploadée", "photo_url": sas_url}
 
 
 

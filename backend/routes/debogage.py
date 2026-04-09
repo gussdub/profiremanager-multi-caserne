@@ -643,13 +643,17 @@ async def upload_debug_image(
     file: UploadFile,
     admin: SuperAdmin = Depends(get_super_admin)
 ):
-    """Upload une image pour un bug/feature (retourne une URL ou base64)"""
+    """Upload une image pour un bug/feature vers Azure"""
     try:
         contents = await file.read()
-        encoded = base64.b64encode(contents).decode('utf-8')
         mime_type = file.content_type or 'image/png'
-        data_url = f"data:{mime_type};base64,{encoded}"
+        ext = file.filename.rsplit(".", 1)[-1].lower() if file.filename and "." in file.filename else "png"
         
-        return {"url": data_url}
+        from services.azure_storage import put_object, generate_sas_url, generate_storage_path
+        blob_path = generate_storage_path("admin", "debug-images", f"debug.{ext}")
+        put_object(blob_path, contents, mime_type)
+        sas_url = generate_sas_url(blob_path)
+        
+        return {"url": sas_url}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur upload image: {str(e)}")

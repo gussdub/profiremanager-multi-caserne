@@ -3032,45 +3032,37 @@ def create_pdf_header_elements(tenant, styles):
     """
     elements = []
     
-    # Logo (si présent)
-    if hasattr(tenant, 'logo_url') and tenant.logo_url:
-        try:
-            if tenant.logo_url.startswith('data:image/'):
-                # Extraire les données base64
-                header, encoded = tenant.logo_url.split(',', 1)
-                logo_data = base64.b64decode(encoded)
-                logo_buffer = IOBytesIO(logo_data)
-                
-                # Utiliser PIL pour obtenir les dimensions de l'image
-                from PIL import Image as PILImage
-                pil_image = PILImage.open(logo_buffer)
-                img_width, img_height = pil_image.size
-                
-                # Calculer les dimensions avec limites max pour éviter le dépassement
-                max_width = 1.2 * inch
-                max_height = 1.0 * inch  # Limite maximale de hauteur
-                
-                aspect_ratio = img_height / img_width
-                
-                # Calculer en fonction de la largeur
-                target_width = max_width
-                target_height = target_width * aspect_ratio
-                
-                # Si la hauteur dépasse la limite, recalculer en fonction de la hauteur
-                if target_height > max_height:
-                    target_height = max_height
-                    target_width = target_height / aspect_ratio
-                
-                # Réinitialiser le buffer pour ReportLab
-                logo_buffer.seek(0)
-                
-                # Ajouter le logo avec largeur et hauteur explicites
-                logo = Image(logo_buffer, width=target_width, height=target_height)
-                logo.hAlign = 'LEFT'
-                elements.append(logo)
-                elements.append(Spacer(1, 0.1 * inch))
-        except Exception as e:
-            print(f"Erreur chargement logo PDF: {e}")
+    # Logo (Azure ou legacy base64)
+    try:
+        from services.azure_storage import get_logo_bytes
+        logo_data = get_logo_bytes(tenant)
+        if logo_data:
+            logo_buffer = IOBytesIO(logo_data)
+            
+            from PIL import Image as PILImage
+            pil_image = PILImage.open(logo_buffer)
+            img_width, img_height = pil_image.size
+            
+            max_width = 1.2 * inch
+            max_height = 1.0 * inch
+            
+            aspect_ratio = img_height / img_width
+            
+            target_width = max_width
+            target_height = target_width * aspect_ratio
+            
+            if target_height > max_height:
+                target_height = max_height
+                target_width = target_height / aspect_ratio
+            
+            logo_buffer.seek(0)
+            
+            logo = Image(logo_buffer, width=target_width, height=target_height)
+            logo.hAlign = 'LEFT'
+            elements.append(logo)
+            elements.append(Spacer(1, 0.1 * inch))
+    except Exception as e:
+        print(f"Erreur chargement logo PDF: {e}")
     
     # Nom du service
     nom_service = tenant.nom_service if hasattr(tenant, 'nom_service') and tenant.nom_service else tenant.nom
@@ -3377,7 +3369,8 @@ class Tenant(BaseModel):
     date_creation: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     parametres: Dict[str, Any] = {}
     # Personnalisation
-    logo_url: str = ""  # URL ou base64 du logo
+    logo_url: str = ""  # URL ou base64 du logo (legacy)
+    logo_blob_name: str = ""  # Azure blob name du logo
     nom_service: str = ""  # Nom complet du service (ex: "Service Incendie de Ville-X")
     afficher_profiremanager: bool = True  # Afficher le branding ProFireManager
     # Centrale 911 associée
