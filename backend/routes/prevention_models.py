@@ -193,9 +193,13 @@ class PhotoBatiment(BaseModel):
     url: str
     nom: str = ""
     description: str = ""
+    legende: str = ""
     date_ajout: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     ajoutee_par_id: Optional[str] = None
     ajoutee_par_nom: Optional[str] = None
+    blob_name: Optional[str] = None
+    storage: Optional[str] = None
+    source: Optional[str] = None
 
 
 # ==================== MODÈLES PRINCIPAUX ====================

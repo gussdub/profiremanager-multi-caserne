@@ -503,7 +503,6 @@ async def create_inspection_point_eau(
         "accessibilite": inspection_data.get("accessibilite"),
         "signalisation": inspection_data.get("signalisation"),
         "commentaire": inspection_data.get("commentaire", ""),
-        "photos": inspection_data.get("photos", []),
         "anomalies": inspection_data.get("anomalies", []),
         "has_defaut": inspection_data.get("has_defaut", False),
         "reponses": inspection_data.get("reponses", []),
@@ -512,6 +511,31 @@ async def create_inspection_point_eau(
         "longitude": inspection_data.get("longitude"),
         "created_at": datetime.now(timezone.utc).isoformat()
     }
+    
+    # Upload des photos vers Azure Blob Storage
+    raw_photos = inspection_data.get("photos", [])
+    azure_photos = []
+    if raw_photos:
+        from services.azure_storage import upload_base64_to_azure
+        for i, photo in enumerate(raw_photos):
+            photo_data = photo if isinstance(photo, str) else photo.get("data", photo.get("url", ""))
+            if isinstance(photo_data, str) and photo_data.startswith("data:"):
+                try:
+                    result = upload_base64_to_azure(
+                        photo_data, tenant.id, "inspections-bornes", f"borne_{point_id}_{i}.jpg"
+                    )
+                    azure_photos.append({
+                        "url": result["url"],
+                        "blob_name": result["blob_name"],
+                        "storage": "azure"
+                    })
+                except Exception as e:
+                    logger.warning(f"Erreur upload photo borne vers Azure: {e}")
+                    azure_photos.append({"url": photo_data, "storage": "legacy"})
+            else:
+                azure_photos.append({"url": str(photo_data), "storage": "legacy"})
+    
+    inspection["photos"] = azure_photos
     
     await db.inspections_bornes_seches.insert_one(inspection)
     

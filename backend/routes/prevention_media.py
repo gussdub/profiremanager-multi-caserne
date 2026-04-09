@@ -2,6 +2,7 @@
 Routes API pour les Photos et Icônes personnalisées (Module Prévention)
 =======================================================================
 Fichier extrait de prevention.py pour améliorer la maintenabilité.
+MIGRÉ vers Azure Blob Storage (avec rétrocompatibilité base64 legacy).
 
 Routes:
 - POST   /{tenant_slug}/prevention/upload-photo                       - Upload photo prévention
@@ -35,6 +36,12 @@ from routes.prevention_models import (
     IconePersonnaliseeCreate,
 )
 
+from services.azure_storage import (
+    upload_base64_to_azure,
+    generate_sas_url,
+    delete_object,
+)
+
 router = APIRouter(tags=["Prévention - Photos & Icônes"])
 logger = logging.getLogger(__name__)
 
@@ -48,7 +55,7 @@ async def upload_photo(
     filename: str = Body(..., embed=True),
     current_user: User = Depends(get_current_user)
 ):
-    """Upload une photo en base64 et retourne l'URL"""
+    """Upload une photo vers Azure Blob Storage et retourne l'URL SAS"""
     tenant = await get_tenant_from_slug(tenant_slug)
     await require_permission(tenant.id, current_user, "prevention", "creer", "photos")
     
@@ -58,11 +65,18 @@ async def upload_photo(
     try:
         photo_id = str(uuid.uuid4())
         
+        # Upload vers Azure Blob Storage
+        azure_result = upload_base64_to_azure(photo_base64, tenant.id, "prevention-photos", filename)
+        
+        # Stocker uniquement les métadonnées dans MongoDB
         photo_doc = {
             "id": photo_id,
             "tenant_id": tenant.id,
             "filename": filename,
-            "data": photo_base64,
+            "blob_name": azure_result["blob_name"],
+            "content_type": azure_result["content_type"],
+            "size": azure_result["size"],
+            "storage": "azure",
             "uploaded_by": current_user.id,
             "uploaded_at": datetime.now(timezone.utc).isoformat()
         }
@@ -71,9 +85,10 @@ async def upload_photo(
         
         return {
             "photo_id": photo_id,
-            "url": f"/api/{tenant_slug}/prevention/photos/{photo_id}"
+            "url": azure_result["url"]
         }
     except Exception as e:
+        logger.error("Erreur upload photo prévention: %s", e)
         raise HTTPException(status_code=500, detail=f"Erreur upload photo: {str(e)}")
 
 @router.post("/{tenant_slug}/inventaires/upload-photo")
@@ -83,17 +98,23 @@ async def upload_inventaire_photo(
     filename: str = Body(..., embed=True),
     current_user: User = Depends(get_current_user)
 ):
-    """Upload une photo pour un inventaire véhicule et retourne l'URL"""
+    """Upload une photo d'inventaire vers Azure Blob Storage"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     try:
         photo_id = str(uuid.uuid4())
         
+        # Upload vers Azure Blob Storage
+        azure_result = upload_base64_to_azure(photo_base64, tenant.id, "inventaires-photos", filename)
+        
         photo_doc = {
             "id": photo_id,
             "tenant_id": tenant.id,
             "filename": filename,
-            "data": photo_base64,
+            "blob_name": azure_result["blob_name"],
+            "content_type": azure_result["content_type"],
+            "size": azure_result["size"],
+            "storage": "azure",
             "uploaded_by": current_user.id,
             "uploaded_at": datetime.now(timezone.utc).isoformat(),
             "type": "inventaire_vehicule"
@@ -103,10 +124,14 @@ async def upload_inventaire_photo(
         
         return {
             "photo_id": photo_id,
-            "url": f"/api/{tenant_slug}/inventaires/photos/{photo_id}"
+            "url": azure_result["url"]
         }
     except Exception as e:
+        logger.error("Erreur upload photo inventaire: %s", e)
         raise HTTPException(status_code=500, detail=f"Erreur upload photo: {str(e)}")
+
+
+# ==================== RÉCUPÉRATION PHOTOS ====================
 
 @router.get("/{tenant_slug}/inventaires/photos/{photo_id}")
 async def get_inventaire_photo(
@@ -114,7 +139,7 @@ async def get_inventaire_photo(
     photo_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Récupérer une photo d'inventaire par son ID"""
+    """Récupérer une photo d'inventaire (Azure SAS ou legacy base64)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     photo = await db.photos_inventaires.find_one({
@@ -125,16 +150,22 @@ async def get_inventaire_photo(
     if not photo:
         raise HTTPException(status_code=404, detail="Photo non trouvée")
     
-    if photo['data'].startswith('data:'):
-        header, data = photo['data'].split(',', 1)
-        mime_type = header.split(':')[1].split(';')[0]
-    else:
-        data = photo['data']
-        mime_type = 'image/png'
+    # Nouvelle photo Azure → retourner SAS URL
+    if photo.get("storage") == "azure" and photo.get("blob_name"):
+        return {"url": generate_sas_url(photo["blob_name"]), "storage": "azure"}
     
-    image_data = base64.b64decode(data)
+    # Legacy : photo base64 dans MongoDB → servir comme avant
+    if photo.get('data'):
+        if photo['data'].startswith('data:'):
+            header, data = photo['data'].split(',', 1)
+            mime_type = header.split(':')[1].split(';')[0]
+        else:
+            data = photo['data']
+            mime_type = 'image/png'
+        image_data = base64.b64decode(data)
+        return Response(content=image_data, media_type=mime_type)
     
-    return Response(content=image_data, media_type=mime_type)
+    raise HTTPException(status_code=404, detail="Données photo manquantes")
 
 @router.get("/{tenant_slug}/prevention/photos/{photo_id}")
 async def get_photo(
@@ -142,21 +173,32 @@ async def get_photo(
     photo_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Récupérer une photo par son ID"""
+    """Récupérer une photo prévention (Azure SAS ou legacy base64)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     if not tenant.parametres.get('module_prevention_active', False):
         raise HTTPException(status_code=403, detail="Module prévention non activé")
     
-    photo = await db.photos_prevention.find_one({"id": photo_id, "tenant_id": tenant.id})
+    photo = await db.photos_prevention.find_one({"id": photo_id, "tenant_id": tenant.id}, {"_id": 0})
     
     if not photo:
         raise HTTPException(status_code=404, detail="Photo non trouvée")
     
+    # Nouvelle photo Azure
+    if photo.get("storage") == "azure" and photo.get("blob_name"):
+        return {
+            "id": photo["id"],
+            "filename": photo.get("filename", "photo.jpg"),
+            "url": generate_sas_url(photo["blob_name"]),
+            "storage": "azure",
+            "uploaded_at": photo.get("uploaded_at")
+        }
+    
+    # Legacy base64
     return {
         "id": photo["id"],
         "filename": photo.get("filename", "photo.jpg"),
-        "data": photo["data"],
+        "data": photo.get("data", ""),
         "uploaded_at": photo.get("uploaded_at")
     }
 
@@ -166,17 +208,24 @@ async def delete_photo(
     photo_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Supprimer une photo"""
+    """Supprimer une photo (Azure + MongoDB)"""
     tenant = await get_tenant_from_slug(tenant_slug)
     await require_permission(tenant.id, current_user, "prevention", "supprimer", "photos")
     
     if not tenant.parametres.get('module_prevention_active', False):
         raise HTTPException(status_code=403, detail="Module prévention non activé")
     
-    result = await db.photos_prevention.delete_one({"id": photo_id, "tenant_id": tenant.id})
-    
-    if result.deleted_count == 0:
+    # Récupérer les infos pour supprimer le blob Azure
+    photo = await db.photos_prevention.find_one({"id": photo_id, "tenant_id": tenant.id}, {"_id": 0})
+    if not photo:
         raise HTTPException(status_code=404, detail="Photo non trouvée")
+    
+    # Supprimer le blob Azure si applicable
+    if photo.get("storage") == "azure" and photo.get("blob_name"):
+        delete_object(photo["blob_name"])
+    
+    # Supprimer le document MongoDB
+    await db.photos_prevention.delete_one({"id": photo_id, "tenant_id": tenant.id})
     
     return {"message": "Photo supprimée avec succès"}
 

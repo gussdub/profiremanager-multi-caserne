@@ -1,9 +1,10 @@
 """
-Routes pour le stockage et la récupération de fichiers via Object Storage.
+Routes pour le stockage et la récupération de fichiers via Azure Blob Storage.
 Gère les uploads/downloads de photos et documents pour tous les modules.
+Retourne des SAS URLs temporaires (15 min) pour l'accès direct depuis le frontend.
 """
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Body, Query, Header
-from fastapi.responses import Response
+from fastapi.responses import Response, RedirectResponse
 from typing import Optional
 from datetime import datetime, timezone
 import uuid
@@ -17,7 +18,7 @@ from routes.dependencies import (
     get_tenant_from_slug,
     User,
 )
-from utils.object_storage import put_object, get_object, get_content_type, generate_storage_path
+from services.azure_storage import put_object, get_object, get_content_type, generate_storage_path, generate_sas_url, delete_object
 
 router = APIRouter(tags=["File Storage"])
 logger = logging.getLogger(__name__)
@@ -35,7 +36,7 @@ async def upload_file(
     entity_id: Optional[str] = Query(None),
     current_user: User = Depends(get_current_user),
 ):
-    """Upload un fichier vers Object Storage et enregistre la référence en base."""
+    """Upload un fichier vers Azure Blob Storage et enregistre les métadonnées en base."""
     tenant = await get_tenant_from_slug(tenant_slug)
 
     data = await file.read()
@@ -48,12 +49,14 @@ async def upload_file(
         "id": str(uuid.uuid4()),
         "tenant_id": tenant.id,
         "storage_path": result["path"],
+        "blob_name": result["path"],
         "original_filename": file.filename,
         "content_type": content_type,
         "size": result.get("size", len(data)),
         "category": category,
         "entity_type": entity_type,
         "entity_id": entity_id,
+        "storage": "azure",
         "uploaded_by": current_user.id,
         "uploaded_at": datetime.now(timezone.utc).isoformat(),
         "is_deleted": False,
@@ -66,6 +69,7 @@ async def upload_file(
         "original_filename": file.filename,
         "content_type": content_type,
         "size": file_doc["size"],
+        "url": result.get("url", ""),
     }
 
 
@@ -75,10 +79,9 @@ async def download_file(
     file_id: str,
     auth: Optional[str] = Query(None),
 ):
-    """Télécharge un fichier depuis Object Storage. Supporte auth via query param pour les img tags."""
+    """Redirige vers une URL SAS Azure pour téléchargement direct."""
     tenant = await get_tenant_from_slug(tenant_slug)
 
-    # Valider le token depuis le query param
     if not auth:
         raise HTTPException(status_code=401, detail="Token d'authentification requis")
     try:
@@ -93,15 +96,42 @@ async def download_file(
     if not record:
         raise HTTPException(status_code=404, detail="Fichier non trouvé")
 
-    data, ct = get_object(record["storage_path"])
-    return Response(
-        content=data,
-        media_type=record.get("content_type", ct),
-        headers={
-            "Content-Disposition": f'inline; filename="{record["original_filename"]}"',
-            "Cache-Control": "public, max-age=3600",
-        },
+    blob_name = record.get("blob_name") or record.get("storage_path")
+    
+    # Fichier Azure : rediriger vers SAS URL
+    if blob_name:
+        sas_url = generate_sas_url(blob_name)
+        return RedirectResponse(url=sas_url, status_code=302)
+    
+    raise HTTPException(status_code=404, detail="Fichier introuvable dans le stockage")
+
+
+@router.get("/{tenant_slug}/files/{file_id}/sas-url")
+async def get_file_sas_url(
+    tenant_slug: str,
+    file_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    """Génère une URL SAS temporaire (15 min) pour accéder au fichier."""
+    tenant = await get_tenant_from_slug(tenant_slug)
+
+    record = await db.stored_files.find_one(
+        {"id": file_id, "tenant_id": tenant.id, "is_deleted": False},
+        {"_id": 0},
     )
+    if not record:
+        raise HTTPException(status_code=404, detail="Fichier non trouvé")
+
+    blob_name = record.get("blob_name") or record.get("storage_path")
+    if not blob_name:
+        raise HTTPException(status_code=404, detail="Chemin de stockage manquant")
+
+    return {
+        "url": generate_sas_url(blob_name),
+        "expires_in_minutes": 15,
+        "original_filename": record.get("original_filename"),
+        "content_type": record.get("content_type"),
+    }
 
 
 @router.get("/{tenant_slug}/files/by-entity/{entity_type}/{entity_id}")
@@ -111,7 +141,7 @@ async def list_files_by_entity(
     entity_id: str,
     current_user: User = Depends(get_current_user),
 ):
-    """Liste les fichiers associés à une entité (bâtiment, intervention, etc.)."""
+    """Liste les fichiers associés à une entité avec SAS URLs."""
     tenant = await get_tenant_from_slug(tenant_slug)
 
     files = await db.stored_files.find(
@@ -123,6 +153,12 @@ async def list_files_by_entity(
         },
         {"_id": 0},
     ).sort("uploaded_at", -1).to_list(length=500)
+
+    # Ajouter les SAS URLs pour chaque fichier
+    for f in files:
+        blob_name = f.get("blob_name") or f.get("storage_path")
+        if blob_name:
+            f["url"] = generate_sas_url(blob_name)
 
     return {"files": files}
 
@@ -150,5 +186,3 @@ async def soft_delete_file(
         raise HTTPException(status_code=404, detail="Fichier non trouvé")
 
     return {"success": True}
-
-

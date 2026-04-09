@@ -105,6 +105,30 @@ async def get_categories_batiments(tenant_slug: str):
     return CATEGORIES_NR24_27
 
 
+# ==================== HELPER SAS URL ====================
+
+def _refresh_sas_urls(batiment: dict) -> dict:
+    """Régénère les SAS URLs temporaires pour les photos Azure d'un bâtiment."""
+    from services.azure_storage import generate_sas_url
+    
+    # Photo principale
+    if batiment.get("photo_storage") == "azure" and batiment.get("photo_blob_name"):
+        batiment["photo_url"] = generate_sas_url(batiment["photo_blob_name"])
+    
+    # Galerie photos
+    for photo in batiment.get("photos", []):
+        if photo.get("blob_name"):
+            photo["url"] = generate_sas_url(photo["blob_name"])
+    
+    # Dépendances avec photos
+    for dep in batiment.get("dependances", []):
+        for photo in dep.get("photos", []):
+            if photo.get("blob_name"):
+                photo["url"] = generate_sas_url(photo["blob_name"])
+    
+    return batiment
+
+
 # ==================== ROUTES BÂTIMENTS ====================
 
 @router.get("/{tenant_slug}/prevention/batiments")
@@ -123,7 +147,7 @@ async def get_batiments(
         {"_id": 0}
     ).sort("nom_etablissement", 1).to_list(10000)
     
-    return batiments
+    return [_refresh_sas_urls(b) for b in batiments]
 
 
 @router.get("/{tenant_slug}/prevention/batiments/search")
@@ -157,7 +181,7 @@ async def search_batiments(
     
     batiments = await db.batiments.find(query, {"_id": 0}).sort("nom_etablissement", 1).to_list(1000)
     
-    return batiments
+    return [_refresh_sas_urls(b) for b in batiments]
 
 
 @router.get("/{tenant_slug}/prevention/batiments/{batiment_id}")
@@ -180,7 +204,7 @@ async def get_batiment(
     if not batiment:
         raise HTTPException(status_code=404, detail="Bâtiment non trouvé")
     
-    return batiment
+    return _refresh_sas_urls(batiment)
 
 
 @router.post("/{tenant_slug}/prevention/batiments")
@@ -781,35 +805,43 @@ async def upload_batiment_photo(
     photo_data: BatimentPhotoUpload,
     current_user: User = Depends(get_current_user)
 ):
-    """Uploader/Mettre à jour la photo d'un bâtiment (en base64)"""
+    """Uploader/Mettre à jour la photo d'un bâtiment vers Azure Blob Storage"""
     tenant = await get_tenant_from_slug(tenant_slug)
     # Vérifie permission RBAC ou est_preventionniste
     can_modify = await user_has_module_action(tenant.id, current_user, "prevention", "modifier", "batiments")
     if not can_modify and not current_user.est_preventionniste:
         raise HTTPException(status_code=403, detail="Accès refusé - Permission insuffisante")
     
-    tenant = await get_tenant_from_slug(tenant_slug)
-    
-    # Vérifier que le module prévention est activé
     if not tenant.parametres.get('module_prevention_active', False):
         raise HTTPException(status_code=403, detail="Module prévention non activé")
     
-    # Vérifier que le bâtiment existe
     existing = await db.batiments.find_one({"id": batiment_id, "tenant_id": tenant.id})
     if not existing:
         raise HTTPException(status_code=404, detail="Bâtiment non trouvé")
     
-    # Vérifier que la photo est au bon format base64
     if not photo_data.photo_base64.startswith('data:image/'):
         raise HTTPException(status_code=400, detail="Format de photo invalide (doit être base64 data URL)")
     
-    # Mettre à jour la photo
-    await db.batiments.update_one(
-        {"id": batiment_id, "tenant_id": tenant.id},
-        {"$set": {"photo_url": photo_data.photo_base64, "updated_at": datetime.now(timezone.utc)}}
-    )
-    
-    return {"message": "Photo mise à jour avec succès", "photo_url": photo_data.photo_base64}
+    try:
+        from services.azure_storage import upload_base64_to_azure
+        azure_result = upload_base64_to_azure(
+            photo_data.photo_base64, tenant.id, "batiments-photos", f"batiment_{batiment_id}.jpg"
+        )
+        
+        await db.batiments.update_one(
+            {"id": batiment_id, "tenant_id": tenant.id},
+            {"$set": {
+                "photo_url": azure_result["url"],
+                "photo_blob_name": azure_result["blob_name"],
+                "photo_storage": "azure",
+                "updated_at": datetime.now(timezone.utc)
+            }}
+        )
+        
+        return {"message": "Photo mise à jour avec succès", "photo_url": azure_result["url"]}
+    except Exception as e:
+        logger.error("Erreur upload photo bâtiment vers Azure: %s", e)
+        raise HTTPException(status_code=500, detail=f"Erreur upload photo: {str(e)}")
 
 @router.delete("/{tenant_slug}/prevention/batiments/{batiment_id}/photo")
 async def delete_batiment_photo(
@@ -1247,7 +1279,14 @@ async def get_photos_batiment(
     if not batiment:
         raise HTTPException(status_code=404, detail="Bâtiment non trouvé")
     
-    return batiment.get("photos", [])
+    # Régénérer les SAS URLs pour les photos Azure
+    photos = batiment.get("photos", [])
+    from services.azure_storage import generate_sas_url as _sas
+    for photo in photos:
+        if photo.get("blob_name"):
+            photo["url"] = _sas(photo["blob_name"])
+    
+    return photos
 
 
 @router.post("/{tenant_slug}/prevention/batiments/{batiment_id}/photos")

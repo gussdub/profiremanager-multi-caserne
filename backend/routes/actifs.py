@@ -1088,19 +1088,25 @@ async def generate_vehicle_qr_code(
     buffer.seek(0)
     
     img_base64 = base64.b64encode(buffer.getvalue()).decode()
-    qr_code_data_url = f"data:image/png;base64,{img_base64}"
+    
+    # Upload QR code vers Azure Blob Storage
+    from services.azure_storage import put_object, generate_sas_url, generate_storage_path
+    blob_path = generate_storage_path(tenant.id, "qr-codes", f"vehicule_{vehicle_id}.png")
+    put_object(blob_path, buffer.getvalue(), "image/png")
+    qr_sas_url = generate_sas_url(blob_path)
     
     await db.vehicules.update_one(
         {"id": vehicle_id},
         {"$set": {
-            "qr_code": qr_code_data_url,
+            "qr_code": qr_sas_url,
+            "qr_code_blob_name": blob_path,
             "qr_code_url": vehicle_url,
             "updated_at": datetime.now(timezone.utc)
         }}
     )
     
     return {
-        "qr_code": qr_code_data_url,
+        "qr_code": qr_sas_url,
         "qr_code_url": vehicle_url,
         "message": "QR code généré avec succès"
     }
@@ -1126,6 +1132,27 @@ async def create_inspection_saaq(
     if not vehicle:
         raise HTTPException(status_code=404, detail="Véhicule non trouvé")
     
+    # Upload des photos vers Azure Blob Storage
+    azure_photo_urls = []
+    if inspection_data.photo_urls:
+        from services.azure_storage import upload_base64_to_azure, generate_sas_url
+        for i, photo_url in enumerate(inspection_data.photo_urls):
+            if photo_url.startswith('data:'):
+                try:
+                    result = upload_base64_to_azure(
+                        photo_url, tenant.id, "inspections-saaq", f"inspection_{i}.jpg"
+                    )
+                    azure_photo_urls.append({
+                        "url": result["url"],
+                        "blob_name": result["blob_name"],
+                        "storage": "azure"
+                    })
+                except Exception as e:
+                    logger.warning(f"Erreur upload photo inspection vers Azure: {e}")
+                    azure_photo_urls.append({"url": photo_url, "storage": "legacy"})
+            else:
+                azure_photo_urls.append({"url": photo_url, "storage": "legacy"})
+    
     inspection = InspectionSAAQ(
         tenant_id=tenant.id,
         vehicle_id=vehicle_id,
@@ -1136,17 +1163,21 @@ async def create_inspection_saaq(
         signature_gps=inspection_data.signature_gps,
         checklist=inspection_data.checklist,
         defects=inspection_data.defects,
-        photo_urls=inspection_data.photo_urls,
+        photo_urls=[p["url"] for p in azure_photo_urls],
         comments=inspection_data.comments,
         device_id=inspection_data.device_id
     )
+    
+    # Stocker les métadonnées Azure dans le document
+    inspection_dict = inspection.dict()
+    inspection_dict["photo_metadata"] = azure_photo_urls
     
     has_major = any(defect.severity == "majeure" for defect in inspection.defects)
     
     inspection.has_major_defect = has_major
     inspection.passed = not has_major
     
-    await db.inspections_saaq.insert_one(inspection.dict())
+    await db.inspections_saaq.insert_one(inspection_dict)
     
     if has_major:
         await db.vehicules.update_one(

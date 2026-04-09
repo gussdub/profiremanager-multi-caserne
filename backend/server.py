@@ -436,13 +436,13 @@ async def startup_event():
     # Démarrer le nettoyage périodique des tâches SSE expirées
     asyncio.create_task(cleanup_expired_tasks())
     
-    # Initialiser Object Storage
+    # Initialiser Azure Blob Storage
     try:
-        from utils.object_storage import init_storage
-        init_storage()
-        logger.info("Object Storage initialisé")
+        from services.azure_storage import _get_client
+        _get_client()
+        logger.info("Azure Blob Storage initialisé")
     except Exception as e:
-        logger.warning(f"Object Storage init échoué (non bloquant): {e}")
+        logger.warning(f"Azure Blob Storage init échoué (non bloquant): {e}")
     
     logger.info("✅ Application démarrée avec succès")
 
