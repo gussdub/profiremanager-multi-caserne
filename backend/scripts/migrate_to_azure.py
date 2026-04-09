@@ -146,44 +146,53 @@ async def migrate_stored_files(db):
         logger.info("  Aucun fichier legacy à migrer")
         return
     
-    # Tenter de télécharger depuis Emergent Object Storage
+    # Initialiser Emergent Object Storage (session key)
+    import requests
     STORAGE_URL = "https://integrations.emergentagent.com/objstore/api/v1/storage"
-    STORAGE_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
+    EMERGENT_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
+    
+    try:
+        init_resp = requests.post(f"{STORAGE_URL}/init", json={"emergent_key": EMERGENT_KEY}, timeout=30)
+        init_resp.raise_for_status()
+        storage_key = init_resp.json()["storage_key"]
+        logger.info(f"  Emergent Object Storage initialisé (session key: {storage_key[:15]}...)")
+    except Exception as e:
+        logger.error(f"  Impossible d'initialiser Emergent Storage: {e}")
+        return
     
     count = 0
     errors = 0
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        for doc in docs:
-            path = doc.get("storage_path", "")
-            if not path:
-                continue
-            try:
-                # Télécharger depuis Emergent
-                resp = await client.get(
-                    f"{STORAGE_URL}/objects/{path}",
-                    headers={"Authorization": f"Bearer {STORAGE_KEY}"}
-                )
-                if resp.status_code != 200:
-                    logger.warning(f"  Fichier introuvable sur Emergent: {path} (HTTP {resp.status_code})")
-                    errors += 1
-                    continue
-                
-                data = resp.content
-                ct = doc.get("content_type", "application/octet-stream")
-                
-                # Upload vers Azure au même path
-                put_object(path, data, ct)
-                
-                await db.stored_files.update_one(
-                    {"_id": doc["_id"]},
-                    {"$set": {"storage": "azure", "blob_name": path}}
-                )
-                count += 1
-                if count % 10 == 0:
-                    logger.info(f"  ... {count}/{len(docs)} fichiers migrés")
-            except Exception as e:
-                logger.error(f"  ERREUR fichier {doc.get('id')}: {e}")
+    for doc in docs:
+        path = doc.get("storage_path", "")
+        if not path:
+            continue
+        try:
+            # Télécharger depuis Emergent
+            resp = requests.get(
+                f"{STORAGE_URL}/objects/{path}",
+                headers={"X-Storage-Key": storage_key},
+                timeout=60
+            )
+            if resp.status_code != 200:
+                logger.warning(f"  Fichier introuvable sur Emergent: {path} (HTTP {resp.status_code})")
                 errors += 1
+                continue
+            
+            data = resp.content
+            ct = doc.get("content_type") or resp.headers.get("Content-Type", "application/octet-stream")
+            
+            # Upload vers Azure au même path
+            put_object(path, data, ct)
+            
+            await db.stored_files.update_one(
+                {"_id": doc["_id"]},
+                {"$set": {"storage": "azure", "blob_name": path}}
+            )
+            count += 1
+            logger.info(f"  [{count}/{len(docs)}] Migré: {doc.get('original_filename')} ({len(data)} bytes)")
+        except Exception as e:
+            logger.error(f"  ERREUR fichier {doc.get('id')}: {e}")
+            errors += 1
     
     logger.info(f"  => {count} fichiers migrés, {errors} erreurs")
 
