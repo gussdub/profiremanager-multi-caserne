@@ -6,46 +6,33 @@ Application de gestion complète pour les services d'incendie canadiens. Multi-t
 ## Architecture
 - **Frontend**: React (CRA) + Tailwind + Shadcn/UI
 - **Backend**: FastAPI + MongoDB (via MONGO_URL)
-- **Stockage fichiers**: Azure Blob Storage (compte: profiremanagerdata, conteneur: fichiers-clients)
+- **Stockage fichiers**: Azure Blob Storage (profiremanagerdata / fichiers-clients)
 - **Emails**: Resend (RESEND_API_KEY) + `services/email_builder.py`
 - **Maps**: Leaflet + Nominatim (OpenStreetMap)
 - **Weather**: Open-Meteo API
 
 ## Architecture Hybride Azure Blob Storage
-- **Fichiers lourds** (photos, PDFs) → Azure Blob Storage (accès privé)
-- **Métadonnées** (ID client, blob_name, date, type, taille) → MongoDB
-- **Accès lecture** → SAS URL temporaire (15 minutes) générée à la demande
-- **Service central** → `services/azure_storage.py` (put_object, get_object, delete_object, generate_sas_url)
-- **Rétrocompatibilité** → `utils/object_storage.py` redirige vers Azure, anciennes photos base64 legacy toujours servies
+- Fichiers lourds (PDF, JPG) → Azure Blob Storage (accès privé)
+- Métadonnées → MongoDB (blob_name, content_type, size, tenant_id)
+- Accès lecture → SAS URL temporaire (15 min)
+- Service central → `services/azure_storage.py`
+- Script migration → `scripts/migrate_to_azure.py` (idempotent)
 
-### Endpoints stockage
-- `POST /api/{tenant}/files/upload` — Upload fichier → Azure, retourne SAS URL
-- `GET /api/{tenant}/files/{id}/sas-url` — Génère SAS URL temporaire (15 min)
-- `GET /api/{tenant}/files/{id}/download?auth=token` — Redirige (302) vers Azure SAS URL
-- `POST /api/{tenant}/prevention/upload-photo` — Upload photo prévention → Azure
-- `POST /api/{tenant}/inventaires/upload-photo` — Upload photo inventaire → Azure
-
-### Migration photos
-| Module | Avant | Après |
-|--------|-------|-------|
-| Photos bâtiments | base64 dans MongoDB | Azure + blob_name dans MongoDB |
-| Photos galerie | Emergent Object Storage | Azure + blob_name dans photos[] |
-| Photos inspections SAAQ | base64 dans photo_urls | Azure + photo_metadata[] |
-| Photos bornes/points d'eau | base64 inline | Azure + blob_name |
-| QR codes véhicules | base64 dans MongoDB | Azure + qr_code_blob_name |
-| Photos prévention | base64 dans photos_prevention | Azure + blob_name |
-| Photos inventaires | base64 dans photos_inventaires | Azure + blob_name |
-| Fichiers généraux | Emergent Object Storage | Azure (stored_files collection) |
+### Migration effectuée
+| Collection | Avant | Après | Statut |
+|---|---|---|---|
+| photos_inventaires | base64 dans MongoDB | Azure + blob_name | ✅ 5/5 |
+| batiments.photo_url | base64 data URL | Azure + photo_blob_name | ✅ 1/1 |
+| vehicules.qr_code | base64 data URL | Azure + qr_code_blob_name | ✅ 3/3 |
+| users.photo_profil | base64 data URL | Azure + photo_profil_blob_name | ✅ 1/1 |
+| stored_files | Emergent Object Storage | Azure | ⚠️ 9/55 (46 Emergent inaccessible) |
 
 ## Completed Features
 - Multi-tenant auth, planning, remplacements, prévention, EPI, bâtiments
-- email_builder.py centralisé (10 templates)
-- Fix bug audit modal, Fix bug notifications planning (brouillon)
-- Drag & drop photos + légendes, Export PDF fiche bâtiment
-- Fix QR code deep linking PWA iOS
-- Fix logique couleurs inspections bornes
-- **Migration Azure Blob Storage** — 12/12 tests passés. Service central, SAS URLs 15 min, rétrocompatibilité legacy, tous les modules migrés
+- email_builder.py centralisé, Fix audit/notifications/QR/inspections
+- **Migration Azure Blob Storage** complète : service, SAS URLs 15 min, migration batch des données existantes
 
 ## Backlog
-- P1: Tester rigoureusement l'import d'historique d'interventions (CSV/XML/ZIP)
+- P1: Tester l'import d'historique d'interventions (CSV/XML/ZIP)
+- P2: Migrer les 46 stored_files Emergent restants en production
 - Future: Aperçu d'emails en temps réel dans les paramètres admin
