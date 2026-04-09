@@ -101,15 +101,9 @@ const InspectionsBornesSeches = ({ user }) => {
 
   // Calculer la couleur selon le STATUT D'INSPECTION (pas l'état du point)
   const getInspectionColor = (point) => {
-    // PRIORITÉ 1 : Vérifier l'état explicite du point (hors_service, fonctionnelle, en_inspection)
+    // PRIORITÉ 1 : Vérifier l'état explicite du point (hors_service)
     if (point.etat === 'hors_service') {
       return '#ef4444'; // Rouge - Hors service
-    }
-    if (point.etat === 'fonctionnelle') {
-      return '#10b981'; // Vert - Fonctionnel
-    }
-    if (point.etat === 'en_inspection') {
-      return '#f59e0b'; // Orange - En inspection
     }
 
     // PRIORITÉ 2 : Si statut manuel "à refaire" par admin
@@ -117,24 +111,41 @@ const InspectionsBornesSeches = ({ user }) => {
       return '#f59e0b'; // Orange - À refaire
     }
 
-    // PRIORITÉ 3 : Vérifier si une date de test bi-annuelle est dépassée
+    // PRIORITÉ 3 : Vérifier les dates de tests configurées
+    // Si une date de test est passée, la borne doit être rouge SAUF si
+    // elle a été inspectée APRÈS cette date avec un résultat conforme
     const today = new Date();
-    const hasPassedTestDate = datesTests.some(dateTest => {
-      const testDate = new Date(dateTest.date);
-      return today > testDate;
-    });
+    const passedTestDates = datesTests
+      .map(dt => new Date(dt.date))
+      .filter(d => today > d)
+      .sort((a, b) => b - a); // Plus récente d'abord
 
-    if (hasPassedTestDate) {
-      return '#ef4444'; // Rouge - Date de test dépassée
+    if (passedTestDates.length > 0) {
+      const mostRecentPassedTest = passedTestDates[0];
+      
+      // Vérifier si la borne a été inspectée APRÈS la date de test la plus récente
+      if (point.date_derniere_inspection) {
+        const derniereInspection = new Date(point.date_derniere_inspection);
+        const isAfterTestDate = derniereInspection >= mostRecentPassedTest;
+        const isConforme = point.statut_inspection === 'ok' || 
+                          point.etat === 'fonctionnel' || 
+                          point.etat === 'fonctionnelle';
+        
+        if (isAfterTestDate && isConforme) {
+          return '#10b981'; // Vert - Inspectée après la date de test et conforme
+        }
+      }
+      
+      return '#ef4444'; // Rouge - Date de test dépassée sans inspection conforme après
     }
 
     // PRIORITÉ 4 : Si pas d'inspection = pas encore inspectée
-    if (!point.derniere_inspection_date) {
-      return '#ef4444'; // Rouge - Non inspectée
+    if (!point.date_derniere_inspection && !point.derniere_inspection_date) {
+      return '#9ca3af'; // Gris - Non inspectée (aucune date de test active)
     }
 
     // PRIORITÉ 5 : Si inspection il y a plus de 6 mois
-    const derniereInspection = new Date(point.derniere_inspection_date);
+    const derniereInspection = new Date(point.date_derniere_inspection || point.derniere_inspection_date);
     const sixMoisEnMs = 6 * 30 * 24 * 60 * 60 * 1000;
     const tempsPasse = today - derniereInspection;
 
@@ -148,10 +159,18 @@ const InspectionsBornesSeches = ({ user }) => {
   // Obtenir le label du statut d'inspection
   const getInspectionLabel = (point) => {
     const color = getInspectionColor(point);
-    if (color === '#10b981') return '✓ Inspectée';
+    if (color === '#10b981') return '✓ Conforme';
     if (color === '#f59e0b') return '⚠ À refaire';
-    if (!point.derniere_inspection_date) return '✗ Non inspectée';
-    return '✗ Inspection expirée';
+    if (color === '#9ca3af') return '— Non inspectée';
+    if (color === '#ef4444') {
+      // Distinguer entre "pas inspectée" et "inspection expirée"
+      const today = new Date();
+      const hasPassedTest = datesTests.some(dt => today > new Date(dt.date));
+      if (hasPassedTest) return '✗ Inspection requise';
+      if (!point.date_derniere_inspection && !point.derniere_inspection_date) return '✗ Non inspectée';
+      return '✗ Inspection expirée';
+    }
+    return '✗ Non inspectée';
   };
 
   // Créer l'icône Leaflet avec badge coloré
