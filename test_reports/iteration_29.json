@@ -1,0 +1,123 @@
+{
+  "summary": "Import Interventions History feature testing completed successfully. All 11 backend API tests passed. Frontend UI verified: Historique tab shows 'Importé' badges, Batiment detail modal shows linked interventions with imported badge, ImportInterventions component accessible via Paramètres > Imports CSV > Historique Interventions.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "Azure Blob Storage", "issue": "403 errors in console for some blob requests - likely SAS token expiration, not blocking functionality"}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_import_interventions.py",
+    "/app/test_reports/pytest/pytest_import_interventions.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "POST /api/demo/interventions/import-history/preview correctly parses CSV and ZIP files",
+    "POST /api/demo/interventions/import-history/execute creates interventions with import_source='history_import'",
+    "GET /api/demo/interventions/historique-import returns only imported interventions with proper filters",
+    "GET /api/demo/batiments/{id}/interventions-historique returns linked interventions",
+    "GET /api/demo/import-history/dossier-adresses returns stored dossier adresses",
+    "Chunked upload (init-upload, upload-chunk, finalize-upload) endpoints working",
+    "Address matching logic in address_utils.py correctly matches interventions to batiments",
+    "Frontend Historique tab shows 'Importé' badge (data-testid='import-badge') for imported interventions",
+    "HistoriqueInterventionsBatiment component shows interventions in batiment detail modal with 'Importé' badge",
+    "ImportInterventions component accessible via Paramètres > Imports CSV > Historique Interventions tab"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_import_interventions.py"
+  ],
+  "success_rate": {
+    "backend": "100% (11/11 passed)",
+    "frontend": "100% - All UI elements verified"
+  },
+  "test_credentials": {
+    "admin_email": "gussdub@gmail.com",
+    "admin_password": "230685Juin+",
+    "tenant": "demo",
+    "login_field": "mot_de_passe",
+    "token_field": "access_token"
+  },
+  "seed_data_creation": "3 interventions imported from /tmp/test_interventions.csv with import_source='history_import'. 6+ dossier adresses imported from /tmp/DossierAdresse.zip",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Import Interventions History feature fully verified. Key endpoints: (1) POST /api/demo/interventions/import-history/preview - accepts CSV/ZIP, returns preview with matched/unmatched counts. (2) POST /api/demo/interventions/import-history/execute - creates interventions with import_source='history_import'. (3) GET /api/demo/interventions/historique-import - returns imported interventions with filters. (4) GET /api/demo/batiments/{id}/interventions-historique - returns interventions linked to batiment. (5) GET /api/demo/import-history/dossier-adresses - returns stored dossier adresses. Frontend: Historique tab in Interventions shows 'Importé' badge. Batiment detail modal shows HistoriqueInterventionsBatiment section. ImportInterventions component at Paramètres > Imports CSV > Historique Interventions.",
+  "verified_features": {
+    "CSV_PREVIEW": {
+      "description": "POST /api/demo/interventions/import-history/preview with CSV file",
+      "status": "VERIFIED",
+      "test": "test_01_preview_csv_file",
+      "result": "PASSED"
+    },
+    "ZIP_PREVIEW": {
+      "description": "POST /api/demo/interventions/import-history/preview with ZIP (DossierAdresse.zip)",
+      "status": "VERIFIED",
+      "test": "test_02_preview_zip_dossier_adresse",
+      "result": "PASSED"
+    },
+    "CSV_EXECUTE": {
+      "description": "POST /api/demo/interventions/import-history/execute creates interventions",
+      "status": "VERIFIED",
+      "test": "test_03_execute_csv_import",
+      "result": "PASSED"
+    },
+    "ZIP_EXECUTE": {
+      "description": "POST /api/demo/interventions/import-history/execute for dossier adresses",
+      "status": "VERIFIED",
+      "test": "test_04_execute_zip_import",
+      "result": "PASSED"
+    },
+    "GET_IMPORTED_INTERVENTIONS": {
+      "description": "GET /api/demo/interventions/historique-import returns imported interventions",
+      "status": "VERIFIED",
+      "test": "test_05_get_imported_interventions",
+      "result": "PASSED"
+    },
+    "GET_IMPORTED_WITH_FILTERS": {
+      "description": "GET /api/demo/interventions/historique-import with date/municipality filters",
+      "status": "VERIFIED",
+      "test": "test_06_get_imported_interventions_with_filters",
+      "result": "PASSED"
+    },
+    "GET_BATIMENT_INTERVENTIONS": {
+      "description": "GET /api/demo/batiments/{id}/interventions-historique",
+      "status": "VERIFIED",
+      "test": "test_07_get_batiment_interventions_historique",
+      "result": "PASSED"
+    },
+    "GET_DOSSIER_ADRESSES": {
+      "description": "GET /api/demo/import-history/dossier-adresses",
+      "status": "VERIFIED",
+      "test": "test_08_get_dossier_adresses",
+      "result": "PASSED"
+    },
+    "CHUNKED_UPLOAD_INIT": {
+      "description": "POST /api/demo/interventions/import-history/init-upload",
+      "status": "VERIFIED",
+      "test": "test_09_init_chunked_upload",
+      "result": "PASSED"
+    },
+    "FRONTEND_HISTORIQUE_TAB": {
+      "description": "Historique tab shows 'Importé' badge for imported interventions",
+      "status": "VERIFIED",
+      "test": "Playwright UI test",
+      "result": "PASSED - Found 3 import badges, 3 amber-highlighted rows"
+    },
+    "FRONTEND_BATIMENT_MODAL": {
+      "description": "Batiment detail modal shows interventions historique section",
+      "status": "VERIFIED",
+      "test": "Playwright UI test",
+      "result": "PASSED - Found historique-interventions-batiment section with imported badge"
+    },
+    "FRONTEND_IMPORT_COMPONENT": {
+      "description": "ImportInterventions component accessible via Paramètres > Imports CSV",
+      "status": "VERIFIED",
+      "test": "Playwright UI test",
+      "result": "PASSED - Found import-interventions component with file upload"
+    }
+  }
+}

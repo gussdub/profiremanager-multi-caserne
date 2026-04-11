@@ -1778,11 +1778,12 @@ const TabHistorique = ({ user, tenantSlug, toast, confirm, readOnly = false, set
 
   return (
     <div>
-      <div className="flex gap-4 mb-6 flex-wrap">
+      <div className="flex gap-4 mb-6 flex-wrap items-center">
         <select
           value={filters.status}
           onChange={(e) => setFilters({ ...filters, status: e.target.value })}
           className="border border-gray-300 rounded-lg p-2"
+          data-testid="historique-status-filter"
         >
           <option value="">Tous les statuts</option>
           <option value="signed">Signés</option>
@@ -1793,12 +1794,14 @@ const TabHistorique = ({ user, tenantSlug, toast, confirm, readOnly = false, set
           value={filters.dateFrom}
           onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
           className="border border-gray-300 rounded-lg p-2"
+          data-testid="historique-date-from"
         />
         <input
           type="date"
           value={filters.dateTo}
           onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
           className="border border-gray-300 rounded-lg p-2"
+          data-testid="historique-date-to"
         />
       </div>
 
@@ -1813,34 +1816,42 @@ const TabHistorique = ({ user, tenantSlug, toast, confirm, readOnly = false, set
                 <th className="text-left p-3 border-b">Date</th>
                 <th className="text-left p-3 border-b">Type</th>
                 <th className="text-left p-3 border-b">Adresse</th>
-                <th className="text-left p-3 border-b">⏱️ Temps réponse</th>
-                <th className="text-left p-3 border-b">Statut</th>
+                <th className="text-left p-3 border-b">Ville</th>
+                <th className="text-left p-3 border-b">Temps rép.</th>
+                <th className="text-left p-3 border-b">Source</th>
                 <th className="text-left p-3 border-b">Actions</th>
               </tr>
             </thead>
             <tbody>
               {interventions.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-8 text-gray-500">
+                  <td colSpan={8} className="text-center py-8 text-gray-500">
                     Aucune intervention trouvée
                   </td>
                 </tr>
               ) : (
                 interventions.map(intervention => (
-                  <tr key={intervention.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setSelectedIntervention(intervention)}>
-                    <td className="p-3 border-b font-mono">{intervention.external_call_id}</td>
-                    <td className="p-3 border-b">{formatDate(intervention.xml_time_call_received || intervention.created_at)}</td>
-                    <td className="p-3 border-b">{intervention.type_intervention || '-'}</td>
-                    <td className="p-3 border-b">{intervention.address_full || '-'}</td>
+                  <tr key={intervention.id} className={`hover:bg-gray-50 cursor-pointer ${intervention.import_source === 'history_import' ? 'bg-amber-50/40' : ''}`} onClick={() => setSelectedIntervention(intervention)}>
+                    <td className="p-3 border-b font-mono text-sm">{intervention.external_call_id || '-'}</td>
+                    <td className="p-3 border-b text-sm">{formatDate(intervention.xml_time_call_received || intervention.created_at)}</td>
+                    <td className="p-3 border-b text-sm">{intervention.type_intervention || '-'}</td>
+                    <td className="p-3 border-b text-sm">{intervention.address_full || '-'}</td>
+                    <td className="p-3 border-b text-sm">{intervention.municipality || '-'}</td>
                     <td className="p-3 border-b">
                       <ResponseTimeIndicator intervention={intervention} />
                     </td>
                     <td className="p-3 border-b">
-                      <span className={`px-2 py-1 rounded text-sm ${
-                        intervention.status === 'signed' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {getStatusLabel(intervention.status)}
-                      </span>
+                      {intervention.import_source === 'history_import' ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-medium" data-testid="import-badge">
+                          Importé
+                        </span>
+                      ) : (
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          intervention.status === 'signed' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {getStatusLabel(intervention.status)}
+                        </span>
+                      )}
                     </td>
                     <td className="p-3 border-b">
                       <div className="flex gap-2">
@@ -1848,15 +1859,15 @@ const TabHistorique = ({ user, tenantSlug, toast, confirm, readOnly = false, set
                           onClick={(e) => { e.stopPropagation(); setSelectedIntervention(intervention); }}
                           className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                         >
-                          👁️ Consulter
+                          Consulter
                         </button>
-                        {canValidate && intervention.status === 'signed' && (
+                        {canValidate && intervention.status === 'signed' && !intervention.import_source && (
                           <button 
                             onClick={(e) => { e.stopPropagation(); handleUnlock(intervention.id); }}
                             disabled={unlocking === intervention.id}
                             className="text-orange-600 hover:text-orange-800 text-sm font-medium disabled:opacity-50"
                           >
-                            {unlocking === intervention.id ? '⏳' : '🔓'} Déverrouiller
+                            {unlocking === intervention.id ? '...' : 'Déverrouiller'}
                           </button>
                         )}
                         {isSuperAdmin && (
@@ -1866,7 +1877,7 @@ const TabHistorique = ({ user, tenantSlug, toast, confirm, readOnly = false, set
                             className="text-red-600 hover:text-red-800 text-sm font-medium disabled:opacity-50"
                             title="Supprimer (Superadmin)"
                           >
-                            {deleting === intervention.id ? '⏳' : '🗑️'} Supprimer
+                            {deleting === intervention.id ? '...' : 'Supprimer'}
                           </button>
                         )}
                       </div>

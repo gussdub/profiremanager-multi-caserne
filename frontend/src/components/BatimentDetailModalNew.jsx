@@ -11,6 +11,7 @@ import RapportBatimentComplet from './RapportBatimentComplet';
 import DependancesBatiment from './DependancesBatiment';
 import GaleriePhotosBatiment from './GaleriePhotosBatiment';
 import HistoriqueModifications from './HistoriqueModifications';
+import HistoriqueInterventionsBatiment from './HistoriqueInterventionsBatiment';
 import { useModalScrollLock } from '../hooks/useModalScrollLock';
 import { Pencil, ClipboardCheck, Map, ScrollText, Clock, FileText, Trash2, Save, X, Download } from 'lucide-react';
 
@@ -2628,6 +2629,14 @@ const BatimentForm = ({
                   ))}
                 </div>
               </Card>
+            )}
+
+            {/* ====== SECTION HISTORIQUE INTERVENTIONS ====== */}
+            {!isEditing && batiment?.id && (
+              <HistoriqueInterventionsBatiment
+                tenantSlug={tenantSlug}
+                batimentId={batiment.id}
+              />
             )}
 
             {/* Non-conformités du bâtiment */}
