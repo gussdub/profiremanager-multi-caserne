@@ -16,7 +16,6 @@ Application de gestion complète pour les services d'incendie canadiens. Multi-t
 - Métadonnées → MongoDB (blob_name, content_type, size, tenant_id)
 - Accès lecture → SAS URL temporaire (15 min) générée à chaque requête
 - Service central → `services/azure_storage.py`
-- Script migration → `scripts/migrate_to_azure.py` (idempotent)
 
 ### Routes migrées vers Azure (100%)
 | Route | Fichier | Avant | Après |
@@ -29,45 +28,31 @@ Application de gestion complète pour les services d'incendie canadiens. Multi-t
 | Photos dommages | `routes/interventions.py` | base64 dans `photo_base64` | Azure → `blob_name` |
 | Photo défaut EPI | `routes/epi.py` | base64 dans `photo_defaut` | Azure → `photo_defaut_blob_name` |
 | Images débogage | `routes/debogage.py` | base64 retourné | Azure → SAS URL |
-| Photo bâtiment (prévention) | `routes/prevention.py` | Déjà Azure | Azure ✅ |
-| Photos inventaires | `routes/prevention_media.py` | Déjà Azure | Azure ✅ |
-| QR Codes véhicules | `routes/actifs.py` | Déjà Azure | Azure ✅ |
-| Fichiers généraux | `routes/file_storage.py` | Déjà Azure | Azure ✅ |
-| Import bâtiments (ZIP) | `routes/batiments_import.py` | Déjà Azure (via proxy) | Azure direct ✅ |
+| Import fichiers historique | `routes/import_interventions.py` | N/A | Azure → blob_name |
 
-### Données existantes migrées
-| Collection | Avant | Après | Statut |
-|---|---|---|---|
-| photos_inventaires | base64 dans MongoDB | Azure + blob_name | ✅ 5/5 |
-| batiments.photo_url | base64 data URL | Azure + photo_blob_name | ✅ 1/1 |
-| vehicules.qr_code | base64 data URL | Azure + qr_code_blob_name | ✅ 3/3 |
-| users.photo_profil | base64 data URL | Azure + photo_profil_blob_name | ✅ 1/1 |
-| users.signature_url | base64 data URL | Azure + signature_blob_name | ✅ 1/1 |
-| tenants.logo_url | base64 data URL | Azure + logo_blob_name | ✅ 2/2 |
-| stored_files | Emergent Object Storage | Azure | ✅ 55/55 |
+## Import Historique Interventions (Avr 2026)
+### Fonctionnalités implémentées
+- **Import par chunks** pour fichiers > 5 Mo (init → upload chunks → finalize)
+- **Parsing CSV** formats ProFireManager (DossierAdresse.csv, Intervention.csv)
+- **Parsing ZIP** avec manifest.json + fichiers CSV + dossier files/
+- **Mapping intelligent d'adresses** : numéro civique + rue normalisée + ville (via `address_utils.py`)
+- **Upload fichiers joints** (PDFs, JPGs) vers Azure Blob Storage
+- **Collection unique** `interventions` avec flag `import_source: "history_import"`
+- **Badge visuel "Importé"** dans l'onglet Historique des interventions
+- **Section "Interventions"** dans la fiche bâtiment (via `HistoriqueInterventionsBatiment.jsx`)
+- **Collection `import_dossier_adresses`** pour stocker les références de mapping
 
-### Résolution SAS URLs côté lecture
-| Endpoint | Fichier | Champs résolus |
+### Endpoints
+| Endpoint | Méthode | Description |
 |---|---|---|
-| POST /auth/login | `routes/auth.py` | photo_profil_blob_name → photo_profil |
-| GET /auth/me | `routes/auth.py` | photo_profil_blob_name → photo_profil |
-| GET /users | `routes/personnel.py` | photo_profil_blob_name, signature_blob_name |
-| GET /users/{id} | `routes/personnel.py` | photo_profil_blob_name, signature_blob_name |
-| GET /personnalisation | `routes/personnalisation.py` | logo_blob_name → logo_url |
-| GET /public/branding | `routes/personnalisation.py` | logo_blob_name → logo_url |
-| GET /prevention/batiments | `routes/prevention.py` | photo_blob_name, photos[].blob_name |
-| GET /interventions/{id}/rcci | `routes/interventions.py` | photos[].blob_name → photo_url |
-| GET /interventions/{id}/photos-dommages | `routes/interventions.py` | blob_name → photo_url |
-| GET /epi/demandes-remplacement | `routes/epi.py` | photo_defaut_blob_name → photo_defaut |
-
-### PDF Generation (Azure logo)
-| Fichier | Fonction |
-|---|---|
-| `server.py` | `create_pdf_header_elements()` via `get_logo_bytes()` |
-| `routes/rondes_securite.py` | Rapport rondes via `get_logo_bytes()` |
-| `routes/interventions.py` | Remise propriété via `get_logo_bytes()` |
-| `routes/prevention_reports.py` | Rapport bâtiment via `get_object()` |
-| `routes/avis_non_conformite.py` | Signature via `get_object()` (Azure) ou base64 (legacy) |
+| `/{tenant}/interventions/import-history/preview` | POST | Prévisualisation import (CSV/XML/ZIP) |
+| `/{tenant}/interventions/import-history/execute` | POST | Exécution de l'import |
+| `/{tenant}/interventions/import-history/init-upload` | POST | Init upload par chunks |
+| `/{tenant}/interventions/import-history/upload-chunk` | POST | Upload d'un chunk |
+| `/{tenant}/interventions/import-history/finalize-upload` | POST | Finalisation chunked upload |
+| `/{tenant}/interventions/historique-import` | GET | Liste des interventions importées (filtres date/ville/bâtiment) |
+| `/{tenant}/batiments/{id}/interventions-historique` | GET | Interventions liées à un bâtiment |
+| `/{tenant}/import-history/dossier-adresses` | GET | Dossiers d'adresse importés |
 
 ## Completed Features
 - Multi-tenant auth, planning, remplacements, prévention, EPI, bâtiments
@@ -78,8 +63,8 @@ Application de gestion complète pour les services d'incendie canadiens. Multi-t
 - Correction logique couleurs bornes d'incendie
 - **Migration Azure Blob Storage complète** : service, SAS URLs 15 min, migration batch
 - **Migration 100% routes vers Azure** : users, logo, interventions, EPI, débogage (Avr 2026)
+- **Import historique interventions** : CSV/ZIP, mapping intelligent, chunks, badge visuel (Avr 2026)
 
 ## Backlog
-- P1: Tester l'import d'historique d'interventions (CSV/XML/ZIP) avec fichiers réels
-- Future: Aperçu d'emails en temps réel dans les paramètres admin
-- Refactoring: Supprimer `utils/object_storage.py` (proxy legacy)
+- P2: Aperçu d'emails en temps réel dans les paramètres admin
+- Future: Import complet format .pfmbundle.zip (JSONL, multi-entités, FK resolution)
