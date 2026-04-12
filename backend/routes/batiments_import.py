@@ -27,7 +27,7 @@ from routes.dependencies import (
     require_permission
 )
 from routes.batiments import log_batiment_history, compute_changes
-from utils.chunked_upload import save_upload_to_disk, cleanup_file, CHUNKS_DIR
+from utils.chunked_upload import save_upload_to_disk, cleanup_file
 from utils.address_utils import (
     normalize_address,
     calculate_address_similarity,
@@ -372,7 +372,7 @@ async def init_batiment_chunked_upload(
     """Initialise un upload par chunks pour l'import de bâtiments."""
     tenant = await get_tenant_from_slug(tenant_slug)
     await require_permission(tenant.id, current_user, "prevention", "creer", "batiments")
-    upload_id = init_upload(tenant.id, current_user.id, body.get("filename", ""), body.get("total_size", 0), body.get("total_chunks", 0))
+    upload_id = await init_upload(tenant.id, current_user.id, body.get("filename", ""), body.get("total_size", 0), body.get("total_chunks", 0))
     return {"upload_id": upload_id, "status": "ready"}
 
 
@@ -386,7 +386,7 @@ async def upload_batiment_chunk(
 ):
     """Upload un chunk individuel."""
     tenant = await get_tenant_from_slug(tenant_slug)
-    session = get_upload_session(upload_id)
+    session = await get_upload_session(upload_id)
     if not session or session["tenant_id"] != tenant.id:
         raise HTTPException(status_code=404, detail="Session d'upload non trouvée")
     result = await save_chunk(upload_id, chunk_index, file)
@@ -405,11 +405,11 @@ async def finalize_batiment_upload(
     tenant = await get_tenant_from_slug(tenant_slug)
     await require_permission(tenant.id, current_user, "prevention", "creer", "batiments")
     upload_id = body.get("upload_id")
-    session = get_upload_session(upload_id)
+    session = await get_upload_session(upload_id)
     if not session or session["tenant_id"] != tenant.id:
         raise HTTPException(status_code=404, detail="Session d'upload non trouvée")
     try:
-        file_path = assemble_chunks(upload_id)
+        file_path = await assemble_chunks(upload_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     # Traiter comme un ZIP import

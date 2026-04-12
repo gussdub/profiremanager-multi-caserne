@@ -20,7 +20,7 @@ import io
 router = APIRouter(tags=["Import Inspections Bornes"])
 logger = logging.getLogger(__name__)
 
-from utils.chunked_upload import save_upload_to_disk, cleanup_file, init_upload, get_upload_session, save_chunk, assemble_chunks
+from utils.chunked_upload import save_upload_to_disk, cleanup_file
 
 from routes.dependencies import (
     db,

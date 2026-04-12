@@ -36,7 +36,7 @@ import_sessions: Dict[str, dict] = {}
 # Utiliser le module partagé pour les chunks
 from utils.chunked_upload import (
     init_upload, get_upload_session, save_chunk, assemble_chunks,
-    cleanup_file, CHUNKS_DIR
+    cleanup_file, LOCAL_TMP
 )
 
 
@@ -416,7 +416,7 @@ async def init_chunked_upload(
     """Initialise un upload par chunks pour les gros fichiers."""
     tenant = await get_tenant_from_slug(tenant_slug)
     await require_permission(tenant.id, current_user, "interventions", "creer", "rapports")
-    upload_id = init_upload(
+    upload_id = await init_upload(
         tenant.id, current_user.id,
         body.get("filename", ""), body.get("total_size", 0), body.get("total_chunks", 0)
     )
@@ -431,9 +431,9 @@ async def upload_chunk(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
 ):
-    """Upload un chunk individuel — stocké sur disque."""
+    """Upload un chunk — stocké dans Azure Blob Storage."""
     tenant = await get_tenant_from_slug(tenant_slug)
-    session = get_upload_session(upload_id)
+    session = await get_upload_session(upload_id)
     if not session or session["tenant_id"] != tenant.id:
         raise HTTPException(status_code=404, detail="Session d'upload non trouvée")
     result = await save_chunk(upload_id, chunk_index, file)
@@ -448,15 +448,15 @@ async def finalize_chunked_upload(
     body: dict,
     current_user: User = Depends(get_current_user),
 ):
-    """Assemble les chunks depuis le disque et lance le preview."""
+    """Assemble les chunks depuis Azure et lance le preview."""
     tenant = await get_tenant_from_slug(tenant_slug)
     await require_permission(tenant.id, current_user, "interventions", "creer", "rapports")
     upload_id = body.get("upload_id")
-    session = get_upload_session(upload_id)
+    session = await get_upload_session(upload_id)
     if not session or session["tenant_id"] != tenant.id:
         raise HTTPException(status_code=404, detail="Session d'upload non trouvée")
     try:
-        final_path = assemble_chunks(upload_id)
+        final_path = await assemble_chunks(upload_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     filename = session["filename"].lower()
@@ -580,7 +580,7 @@ async def _build_preview_response(
             zip_path = zip_source
         elif zip_source and isinstance(zip_source, bytes):
             # Petits fichiers (upload direct) → sauver sur disque
-            tmp_path = os.path.join(CHUNKS_DIR, f"session_{session_id}.zip")
+            tmp_path = os.path.join(LOCAL_TMP, f"session_{session_id}.zip")
             with open(tmp_path, "wb") as f:
                 f.write(zip_source)
             zip_path = tmp_path
@@ -654,7 +654,7 @@ async def _build_preview_response(
     if zip_source and isinstance(zip_source, str) and os.path.exists(zip_source):
         zip_path = zip_source
     elif zip_source and isinstance(zip_source, bytes):
-        tmp_path = os.path.join(CHUNKS_DIR, f"session_{session_id}.zip")
+        tmp_path = os.path.join(LOCAL_TMP, f"session_{session_id}.zip")
         with open(tmp_path, "wb") as f:
             f.write(zip_source)
         zip_path = tmp_path
@@ -890,9 +890,9 @@ async def execute_intervention_import(
         try:
             if os.path.isfile(zip_path):
                 os.remove(zip_path)
-            # Aussi nettoyer le dossier parent s'il est dans CHUNKS_DIR
+            # Aussi nettoyer le dossier parent s'il est dans LOCAL_TMP
             parent = os.path.dirname(zip_path)
-            if parent.startswith(CHUNKS_DIR) and os.path.isdir(parent):
+            if parent.startswith(LOCAL_TMP) and os.path.isdir(parent):
                 import shutil
                 shutil.rmtree(parent, ignore_errors=True)
         except Exception:
@@ -977,7 +977,7 @@ async def _execute_dossier_adresse_import(session, tenant, current_user, session
             if os.path.isfile(zip_path):
                 os.remove(zip_path)
             parent = os.path.dirname(zip_path)
-            if parent.startswith(CHUNKS_DIR) and os.path.isdir(parent):
+            if parent.startswith(LOCAL_TMP) and os.path.isdir(parent):
                 import shutil
                 shutil.rmtree(parent, ignore_errors=True)
         except Exception:

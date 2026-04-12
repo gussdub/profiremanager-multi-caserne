@@ -1,15 +1,12 @@
 """
 Utilitaire partagé pour les uploads par chunks.
-Les chunks sont stockés sur disque. Les sessions utilisent un fichier JSON
-avec un compteur de fichiers sur disque (pas de liste en mémoire).
-Supporte les uploads parallèles sans race condition.
+Stockage persistant : chunks dans Azure Blob Storage, sessions dans MongoDB.
+Survit aux redémarrages du serveur (Render, etc.).
 """
 import os
 import uuid
-import json
-import shutil
 import tempfile
-import fcntl
+import shutil
 from datetime import datetime, timezone
 from typing import Optional
 from fastapi import UploadFile
@@ -18,88 +15,78 @@ import logging
 logger = logging.getLogger(__name__)
 
 CHUNK_SIZE = 10 * 1024 * 1024  # 10 Mo par chunk
-CHUNKS_DIR = os.path.join(tempfile.gettempdir(), "pfm_upload_chunks")
-os.makedirs(CHUNKS_DIR, exist_ok=True)
+
+# Répertoire local temporaire (assemblage uniquement)
+LOCAL_TMP = os.path.join(tempfile.gettempdir(), "pfm_upload_tmp")
+os.makedirs(LOCAL_TMP, exist_ok=True)
 
 
-def _session_path(upload_id: str) -> str:
-    return os.path.join(CHUNKS_DIR, upload_id, "_session.json")
+async def _get_db():
+    """Accès à la base MongoDB."""
+    from routes.dependencies import db
+    return db
 
 
-def _save_session(upload_id: str, data: dict):
-    path = _session_path(upload_id)
-    with open(path, "w") as f:
-        fcntl.flock(f.fileno(), fcntl.LOCK_EX)
-        json.dump(data, f)
-        fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+def _chunk_blob_path(upload_id: str, chunk_index: int) -> str:
+    """Chemin Azure pour un chunk."""
+    return f"_tmp_chunks/{upload_id}/chunk_{chunk_index:06d}"
 
 
-def _load_session(upload_id: str) -> Optional[dict]:
-    path = _session_path(upload_id)
-    if not os.path.exists(path):
-        return None
-    try:
-        with open(path, "r") as f:
-            fcntl.flock(f.fileno(), fcntl.LOCK_SH)
-            data = json.load(f)
-            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
-            return data
-    except (json.JSONDecodeError, OSError):
-        return None
-
-
-def _count_chunks_on_disk(upload_dir: str) -> int:
-    """Compte le nombre de fichiers chunk sur disque."""
-    if not os.path.isdir(upload_dir):
-        return 0
-    return len([f for f in os.listdir(upload_dir) if f.startswith("chunk_")])
-
-
-def init_upload(tenant_id: str, user_id: str, filename: str, total_size: int, total_chunks: int) -> str:
-    """Initialise un upload par chunks. Retourne l'upload_id."""
+async def init_upload(tenant_id: str, user_id: str, filename: str, total_size: int, total_chunks: int) -> str:
+    """Initialise un upload. Session stockée dans MongoDB."""
+    db = await _get_db()
     upload_id = str(uuid.uuid4())
-    upload_dir = os.path.join(CHUNKS_DIR, upload_id)
-    os.makedirs(upload_dir, exist_ok=True)
 
-    session = {
+    await db.upload_sessions.insert_one({
         "upload_id": upload_id,
         "tenant_id": tenant_id,
         "user_id": user_id,
         "filename": filename,
         "total_size": total_size,
         "total_chunks": total_chunks,
-        "upload_dir": upload_dir,
+        "received_chunks": 0,
         "created_at": datetime.now(timezone.utc).isoformat(),
-    }
-    _save_session(upload_id, session)
+    })
+
+    logger.info("Upload init: %s (%s, %d chunks)", upload_id, filename, total_chunks)
     return upload_id
 
 
-def get_upload_session(upload_id: str) -> Optional[dict]:
-    """Récupère les métadonnées d'un upload (depuis le disque)."""
-    return _load_session(upload_id)
+async def get_upload_session(upload_id: str) -> Optional[dict]:
+    """Récupère la session depuis MongoDB."""
+    db = await _get_db()
+    session = await db.upload_sessions.find_one(
+        {"upload_id": upload_id},
+        {"_id": 0}
+    )
+    return session
 
 
 async def save_chunk(upload_id: str, chunk_index: int, file: UploadFile) -> dict:
-    """Sauvegarde un chunk sur disque. Thread-safe (un fichier par chunk)."""
-    session = _load_session(upload_id)
+    """Sauvegarde un chunk dans Azure Blob Storage."""
+    db = await _get_db()
+    session = await db.upload_sessions.find_one({"upload_id": upload_id}, {"_id": 0})
     if not session:
         return {"error": "Session d'upload non trouvée"}
 
-    upload_dir = session["upload_dir"]
-    chunk_path = os.path.join(upload_dir, f"chunk_{chunk_index:06d}")
+    # Lire le chunk
+    chunk_data = await file.read()
 
-    # Écrire sur disque par blocs de 1 Mo
-    with open(chunk_path, "wb") as f:
-        while True:
-            block = await file.read(1024 * 1024)
-            if not block:
-                break
-            f.write(block)
+    # Upload vers Azure
+    from services.azure_storage import put_object
+    blob_path = _chunk_blob_path(upload_id, chunk_index)
+    put_object(blob_path, chunk_data, "application/octet-stream")
 
-    # Compter les chunks sur disque (pas de race condition)
-    received = _count_chunks_on_disk(upload_dir)
-    total = session["total_chunks"]
+    # Incrémenter le compteur (atomique)
+    await db.upload_sessions.update_one(
+        {"upload_id": upload_id},
+        {"$inc": {"received_chunks": 1}}
+    )
+
+    # Relire le compteur mis à jour
+    session = await db.upload_sessions.find_one({"upload_id": upload_id}, {"_id": 0})
+    received = session["received_chunks"] if session else 0
+    total = session["total_chunks"] if session else 0
 
     return {
         "status": "received",
@@ -110,62 +97,62 @@ async def save_chunk(upload_id: str, chunk_index: int, file: UploadFile) -> dict
     }
 
 
-def assemble_chunks(upload_id: str) -> str:
+async def assemble_chunks(upload_id: str) -> str:
     """
-    Assemble les chunks en un seul fichier sur disque.
+    Télécharge les chunks depuis Azure et assemble en fichier local.
     Retourne le chemin du fichier assemblé.
     """
-    session = _load_session(upload_id)
+    db = await _get_db()
+    session = await db.upload_sessions.find_one({"upload_id": upload_id}, {"_id": 0})
     if not session:
         raise ValueError("Session d'upload non trouvée")
 
     total = session["total_chunks"]
-    upload_dir = session["upload_dir"]
-
-    # Vérifier les chunks sur disque (source de vérité)
-    received = _count_chunks_on_disk(upload_dir)
+    received = session.get("received_chunks", 0)
     if received < total:
-        # Lister les chunks manquants pour le debug
-        missing = [i for i in range(total) if not os.path.exists(os.path.join(upload_dir, f"chunk_{i:06d}"))]
-        raise ValueError(f"Chunks manquants: {received}/{total}. Manquants: {missing[:10]}")
+        raise ValueError(f"Chunks manquants: {received}/{total}")
 
-    final_path = os.path.join(upload_dir, "assembled_file")
+    from services.azure_storage import get_object, delete_object
+
+    # Assembler dans un fichier local temporaire
+    assemble_dir = os.path.join(LOCAL_TMP, upload_id)
+    os.makedirs(assemble_dir, exist_ok=True)
+    final_path = os.path.join(assemble_dir, "assembled_file")
+
     with open(final_path, "wb") as out:
         for i in range(total):
-            chunk_path = os.path.join(upload_dir, f"chunk_{i:06d}")
-            with open(chunk_path, "rb") as chunk_file:
-                while True:
-                    block = chunk_file.read(8 * 1024 * 1024)
-                    if not block:
-                        break
-                    out.write(block)
-
-    # Supprimer les chunks individuels et la session
-    for i in range(total):
-        chunk_path = os.path.join(upload_dir, f"chunk_{i:06d}")
-        try:
-            os.remove(chunk_path)
-        except OSError:
-            pass
-    try:
-        os.remove(_session_path(upload_id))
-    except OSError:
-        pass
+            blob_path = _chunk_blob_path(upload_id, i)
+            try:
+                data, _ = get_object(blob_path)
+                out.write(data)
+            except Exception as e:
+                raise ValueError(f"Impossible de lire le chunk {i}: {e}")
 
     size_mb = os.path.getsize(final_path) / (1024 * 1024)
     logger.info("Upload %s assemblé: %.1f Mo", upload_id, size_mb)
+
+    # Nettoyer Azure (en arrière-plan, non bloquant)
+    for i in range(total):
+        try:
+            delete_object(_chunk_blob_path(upload_id, i))
+        except Exception:
+            pass
+
+    # Supprimer la session MongoDB
+    await db.upload_sessions.delete_one({"upload_id": upload_id})
+
     return final_path
 
 
 def cleanup_file(file_path: str):
-    """Nettoie un fichier temporaire et son dossier parent si dans CHUNKS_DIR."""
+    """Nettoie un fichier temporaire local."""
     if not file_path:
         return
     try:
         if os.path.isfile(file_path):
             os.remove(file_path)
         parent = os.path.dirname(file_path)
-        if parent.startswith(CHUNKS_DIR) and os.path.isdir(parent):
+        if parent.startswith(LOCAL_TMP) and os.path.isdir(parent):
             shutil.rmtree(parent, ignore_errors=True)
     except Exception:
         pass
@@ -173,11 +160,11 @@ def cleanup_file(file_path: str):
 
 async def save_upload_to_disk(file: UploadFile) -> str:
     """
-    Sauvegarde un upload direct (non-chunked) sur disque.
-    Lit par blocs pour ne pas exploser la RAM.
+    Sauvegarde un upload direct (non-chunked) sur disque local.
+    Pour les petits fichiers (< CHUNK_SIZE).
     """
     upload_id = str(uuid.uuid4())
-    upload_dir = os.path.join(CHUNKS_DIR, upload_id)
+    upload_dir = os.path.join(LOCAL_TMP, upload_id)
     os.makedirs(upload_dir, exist_ok=True)
 
     file_path = os.path.join(upload_dir, "uploaded_file")
