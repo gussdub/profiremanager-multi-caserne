@@ -33,8 +33,10 @@ logger = logging.getLogger(__name__)
 # Sessions d'import en mémoire
 import_sessions: Dict[str, dict] = {}
 
-# Chunks d'upload en mémoire
-upload_chunks: Dict[str, dict] = {}
+# Répertoire temporaire pour les chunks
+import tempfile
+CHUNKS_DIR = os.path.join(tempfile.gettempdir(), "pfm_import_chunks")
+os.makedirs(CHUNKS_DIR, exist_ok=True)
 
 
 # ======================== PARSEURS CSV ========================
@@ -402,7 +404,10 @@ async def match_interventions_to_batiments(
     return matched_interventions
 
 
-# ======================== CHUNKED UPLOAD ========================
+# ======================== CHUNKED UPLOAD (stockage disque) ========================
+
+# Métadonnées des uploads en cours (léger, en mémoire)
+upload_sessions: Dict[str, dict] = {}
 
 @router.post("/{tenant_slug}/interventions/import-history/init-upload")
 async def init_chunked_upload(
@@ -419,13 +424,18 @@ async def init_chunked_upload(
     total_chunks = body.get("total_chunks", 0)
 
     upload_id = str(uuid.uuid4())
-    upload_chunks[upload_id] = {
+    # Créer un dossier pour ce upload
+    upload_dir = os.path.join(CHUNKS_DIR, upload_id)
+    os.makedirs(upload_dir, exist_ok=True)
+
+    upload_sessions[upload_id] = {
         "tenant_id": tenant.id,
         "user_id": current_user.id,
         "filename": filename,
         "total_size": total_size,
         "total_chunks": total_chunks,
-        "received_chunks": {},
+        "received_count": 0,
+        "upload_dir": upload_dir,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -440,19 +450,23 @@ async def upload_chunk(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
 ):
-    """Upload un chunk individuel."""
+    """Upload un chunk individuel — stocké sur disque, pas en RAM."""
     tenant = await get_tenant_from_slug(tenant_slug)
 
-    session = upload_chunks.get(upload_id)
+    session = upload_sessions.get(upload_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session d'upload non trouvée")
     if session["tenant_id"] != tenant.id:
         raise HTTPException(status_code=403, detail="Non autorisé")
 
+    # Écrire le chunk sur disque
+    chunk_path = os.path.join(session["upload_dir"], f"chunk_{chunk_index:06d}")
     chunk_data = await file.read()
-    session["received_chunks"][chunk_index] = chunk_data
+    with open(chunk_path, "wb") as f:
+        f.write(chunk_data)
 
-    received = len(session["received_chunks"])
+    session["received_count"] += 1
+    received = session["received_count"]
     total = session["total_chunks"]
 
     return {
@@ -470,34 +484,48 @@ async def finalize_chunked_upload(
     body: dict,
     current_user: User = Depends(get_current_user),
 ):
-    """Assemble les chunks et lance le preview."""
+    """Assemble les chunks depuis le disque et lance le preview."""
     tenant = await get_tenant_from_slug(tenant_slug)
     await require_permission(tenant.id, current_user, "interventions", "creer", "rapports")
 
     upload_id = body.get("upload_id")
-    session = upload_chunks.get(upload_id)
+    session = upload_sessions.get(upload_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session d'upload non trouvée")
     if session["tenant_id"] != tenant.id:
         raise HTTPException(status_code=403, detail="Non autorisé")
 
-    # Assembler les chunks dans l'ordre
     total = session["total_chunks"]
-    if len(session["received_chunks"]) < total:
-        raise HTTPException(status_code=400, detail=f"Chunks manquants: {len(session['received_chunks'])}/{total}")
+    upload_dir = session["upload_dir"]
 
-    contents = b""
-    for i in range(total):
-        if i not in session["received_chunks"]:
-            raise HTTPException(status_code=400, detail=f"Chunk {i} manquant")
-        contents += session["received_chunks"][i]
+    # Vérifier que tous les chunks sont là
+    received_files = [f for f in os.listdir(upload_dir) if f.startswith("chunk_")]
+    if len(received_files) < total:
+        raise HTTPException(status_code=400, detail=f"Chunks manquants: {len(received_files)}/{total}")
 
-    # Nettoyer les chunks de la mémoire
-    del upload_chunks[upload_id]
+    # Assembler en fichier final sur disque
+    final_path = os.path.join(upload_dir, "assembled_file")
+    with open(final_path, "wb") as out:
+        for i in range(total):
+            chunk_path = os.path.join(upload_dir, f"chunk_{i:06d}")
+            if not os.path.exists(chunk_path):
+                raise HTTPException(status_code=400, detail=f"Chunk {i} manquant")
+            with open(chunk_path, "rb") as chunk_file:
+                while True:
+                    block = chunk_file.read(8 * 1024 * 1024)  # 8MB blocs
+                    if not block:
+                        break
+                    out.write(block)
 
-    # Traiter le fichier assemblé
+    del upload_sessions[upload_id]
+
+    # Traiter le fichier depuis le disque (pas de chargement complet en RAM)
     filename = session["filename"].lower()
-    return await _process_import_file(contents, filename, tenant, current_user)
+    result = await _process_import_file_from_path(final_path, filename, tenant, current_user)
+
+    # Nettoyer le dossier de chunks (mais garder le fichier assemblé si session active)
+    # Le cleanup sera fait après l'execute
+    return result
 
 
 # ======================== ROUTES EXISTANTES (AMÉLIORÉES) ========================
@@ -517,8 +545,8 @@ async def preview_intervention_import(
     return await _process_import_file(contents, filename, tenant, current_user)
 
 
-async def _process_import_file(contents: bytes, filename: str, tenant, current_user) -> dict:
-    """Logique commune pour traiter un fichier d'import (direct ou chunked)."""
+async def _process_import_file_from_path(file_path: str, filename: str, tenant, current_user) -> dict:
+    """Traite un fichier d'import depuis un chemin sur disque (pour gros fichiers chunked)."""
     all_interventions = []
     dossier_adresses = []
     file_count = 0
@@ -527,7 +555,7 @@ async def _process_import_file(contents: bytes, filename: str, tenant, current_u
 
     if filename.endswith(".zip"):
         try:
-            zf = zipfile.ZipFile(BytesIO(contents))
+            zf = zipfile.ZipFile(file_path)
             namelist = zf.namelist()
 
             # Lire le manifest si présent
@@ -537,15 +565,12 @@ async def _process_import_file(contents: bytes, filename: str, tenant, current_u
                 except Exception:
                     pass
 
-            # Détecter le type de bundle
             entity_type = manifest_data.get("entityType", "")
 
-            # Collecter les fichiers binaires (photos/PDFs)
             for name in namelist:
                 if name.startswith("files/") and not name.endswith("/"):
                     files_in_zip[name] = True
 
-            # Parser les CSV/XML
             for name in namelist:
                 lower_name = name.lower()
                 basename = os.path.basename(name).lower()
@@ -557,7 +582,6 @@ async def _process_import_file(contents: bytes, filename: str, tenant, current_u
                         csv_text = zf.read(name).decode("latin-1")
                     dossier_adresses = [normalize_pfm_dossier(r) for r in parse_pfm_csv_dossier_adresse(csv_text)]
                     file_count += 1
-
                 elif basename == "intervention.csv" or (entity_type == "Intervention" and lower_name.endswith(".csv")):
                     try:
                         csv_text = zf.read(name).decode("utf-8")
@@ -565,53 +589,71 @@ async def _process_import_file(contents: bytes, filename: str, tenant, current_u
                         csv_text = zf.read(name).decode("latin-1")
                     all_interventions.extend(parse_csv_interventions(csv_text))
                     file_count += 1
-
                 elif lower_name.endswith(".csv") and not lower_name.startswith("files/"):
                     try:
                         csv_text = zf.read(name).decode("utf-8")
                     except UnicodeDecodeError:
                         csv_text = zf.read(name).decode("latin-1")
-                    # Detect type from first line
                     first_line = csv_text.split("\n")[0].lower()
                     if "dossier" in first_line or "matricule" in first_line:
                         dossier_adresses = [normalize_pfm_dossier(r) for r in parse_pfm_csv_dossier_adresse(csv_text)]
                     else:
                         all_interventions.extend(parse_csv_interventions(csv_text))
                     file_count += 1
-
                 elif lower_name.endswith(".xml") and not lower_name.startswith("files/"):
                     all_interventions.extend(parse_xml_interventions_batch(zf.read(name)))
                     file_count += 1
-
             zf.close()
         except zipfile.BadZipFile:
             raise HTTPException(status_code=400, detail="Fichier ZIP invalide")
-
-    elif filename.endswith(".csv"):
-        try:
-            csv_text = contents.decode("utf-8")
-        except UnicodeDecodeError:
-            csv_text = contents.decode("latin-1")
-        all_interventions = parse_csv_interventions(csv_text)
-        file_count = 1
-
-    elif filename.endswith(".xml"):
-        all_interventions = parse_xml_interventions_batch(contents)
-        file_count = 1
-
     else:
-        raise HTTPException(status_code=400, detail="Format non supporté. Utilisez CSV, XML ou ZIP.")
+        with open(file_path, "rb") as f:
+            contents = f.read()
+        if filename.endswith(".csv"):
+            try:
+                csv_text = contents.decode("utf-8")
+            except UnicodeDecodeError:
+                csv_text = contents.decode("latin-1")
+            all_interventions = parse_csv_interventions(csv_text)
+            file_count = 1
+        elif filename.endswith(".xml"):
+            all_interventions = parse_xml_interventions_batch(contents)
+            file_count = 1
+        else:
+            raise HTTPException(status_code=400, detail="Format non supporté.")
 
-    # Si c'est un ZIP DossierAdresse sans interventions, on le stocke comme données de référence
+    # Réutiliser la logique commune pour le matching et le preview
+    return await _build_preview_response(
+        all_interventions, dossier_adresses, files_in_zip, file_count,
+        file_path if files_in_zip else None,  # Garder le chemin pour les fichiers
+        tenant, current_user
+    )
+
+
+async def _build_preview_response(
+    all_interventions, dossier_adresses, files_in_zip, file_count,
+    zip_source, tenant, current_user
+) -> dict:
+    """Construit la réponse preview commune pour les deux chemins (direct et chunked)."""
+    # Si c'est un DossierAdresse sans interventions
     if not all_interventions and dossier_adresses:
         session_id = str(uuid.uuid4())
+        # Pour les fichiers ZIP avec des files, stocker le chemin ou les bytes
+        zip_ref = None
+        if zip_source:
+            if isinstance(zip_source, str):
+                # C'est un chemin de fichier
+                with open(zip_source, "rb") as f:
+                    zip_ref = f.read()
+            else:
+                zip_ref = zip_source
         import_sessions[session_id] = {
             "tenant_id": tenant.id,
             "user_id": current_user.id,
             "type": "dossier_adresse",
             "dossier_adresses": dossier_adresses,
             "files_in_zip": list(files_in_zip.keys()),
-            "zip_contents": contents,
+            "zip_contents": zip_ref,
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
         return {
@@ -632,13 +674,13 @@ async def _process_import_file(contents: bytes, filename: str, tenant, current_u
                 }
                 for i, da in enumerate(dossier_adresses[:20])
             ],
-            "message": f"{len(dossier_adresses)} dossier(s) d'adresse trouvé(s). Ces données seront utilisées pour le mapping lors de l'import des interventions."
+            "message": f"{len(dossier_adresses)} dossier(s) d'adresse trouvé(s)."
         }
 
     if not all_interventions:
         raise HTTPException(status_code=400, detail="Aucune intervention trouvée dans le fichier")
 
-    # Mapping intelligent avec les bâtiments
+    # Mapping intelligent
     matched = await match_interventions_to_batiments(all_interventions, tenant.id, dossier_adresses)
 
     # Vérifier les doublons
@@ -661,21 +703,23 @@ async def _process_import_file(contents: bytes, filename: str, tenant, current_u
     new_items = []
     duplicates = []
     for idx, intv in enumerate(matched):
-        is_dup = False
-        if intv.get("external_call_id") in existing_call_ids:
-            is_dup = True
-        if intv.get("pfm_id") and intv["pfm_id"] in existing_call_ids:
-            is_dup = True
+        is_dup = (intv.get("external_call_id") in existing_call_ids) or (intv.get("pfm_id") and intv["pfm_id"] in existing_call_ids)
         if is_dup:
             duplicates.append({"index": idx, "data": intv})
         else:
             new_items.append({"index": idx, "data": intv})
 
-    # Stats de matching
     matched_count = sum(1 for item in new_items if item["data"].get("_match", {}).get("batiment_id"))
     unmatched_count = len(new_items) - matched_count
 
     session_id = str(uuid.uuid4())
+    zip_ref = None
+    if zip_source:
+        if isinstance(zip_source, str):
+            with open(zip_source, "rb") as f:
+                zip_ref = f.read()
+        else:
+            zip_ref = zip_source
     import_sessions[session_id] = {
         "tenant_id": tenant.id,
         "user_id": current_user.id,
@@ -685,7 +729,7 @@ async def _process_import_file(contents: bytes, filename: str, tenant, current_u
         "duplicates": duplicates,
         "dossier_adresses": dossier_adresses,
         "files_in_zip": list(files_in_zip.keys()),
-        "zip_contents": contents if files_in_zip else None,
+        "zip_contents": zip_ref,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -717,6 +761,86 @@ async def _process_import_file(contents: bytes, filename: str, tenant, current_u
         "files_processed": file_count,
         "preview": preview_items,
     }
+
+
+async def _process_import_file(contents: bytes, filename: str, tenant, current_user) -> dict:
+    """Logique commune pour traiter un fichier d'import direct (petits fichiers)."""
+    all_interventions = []
+    dossier_adresses = []
+    file_count = 0
+    files_in_zip = {}
+    manifest_data = {}
+
+    if filename.endswith(".zip"):
+        try:
+            zf = zipfile.ZipFile(BytesIO(contents))
+            namelist = zf.namelist()
+
+            if "manifest.json" in namelist:
+                try:
+                    manifest_data = json.loads(zf.read("manifest.json").decode("utf-8"))
+                except Exception:
+                    pass
+
+            entity_type = manifest_data.get("entityType", "")
+
+            for name in namelist:
+                if name.startswith("files/") and not name.endswith("/"):
+                    files_in_zip[name] = True
+
+            for name in namelist:
+                lower_name = name.lower()
+                basename = os.path.basename(name).lower()
+
+                if basename == "dossieradresse.csv" or (entity_type == "DossierAdresse" and lower_name.endswith(".csv")):
+                    try:
+                        csv_text = zf.read(name).decode("utf-8")
+                    except UnicodeDecodeError:
+                        csv_text = zf.read(name).decode("latin-1")
+                    dossier_adresses = [normalize_pfm_dossier(r) for r in parse_pfm_csv_dossier_adresse(csv_text)]
+                    file_count += 1
+                elif basename == "intervention.csv" or (entity_type == "Intervention" and lower_name.endswith(".csv")):
+                    try:
+                        csv_text = zf.read(name).decode("utf-8")
+                    except UnicodeDecodeError:
+                        csv_text = zf.read(name).decode("latin-1")
+                    all_interventions.extend(parse_csv_interventions(csv_text))
+                    file_count += 1
+                elif lower_name.endswith(".csv") and not lower_name.startswith("files/"):
+                    try:
+                        csv_text = zf.read(name).decode("utf-8")
+                    except UnicodeDecodeError:
+                        csv_text = zf.read(name).decode("latin-1")
+                    first_line = csv_text.split("\n")[0].lower()
+                    if "dossier" in first_line or "matricule" in first_line:
+                        dossier_adresses = [normalize_pfm_dossier(r) for r in parse_pfm_csv_dossier_adresse(csv_text)]
+                    else:
+                        all_interventions.extend(parse_csv_interventions(csv_text))
+                    file_count += 1
+                elif lower_name.endswith(".xml") and not lower_name.startswith("files/"):
+                    all_interventions.extend(parse_xml_interventions_batch(zf.read(name)))
+                    file_count += 1
+            zf.close()
+        except zipfile.BadZipFile:
+            raise HTTPException(status_code=400, detail="Fichier ZIP invalide")
+    elif filename.endswith(".csv"):
+        try:
+            csv_text = contents.decode("utf-8")
+        except UnicodeDecodeError:
+            csv_text = contents.decode("latin-1")
+        all_interventions = parse_csv_interventions(csv_text)
+        file_count = 1
+    elif filename.endswith(".xml"):
+        all_interventions = parse_xml_interventions_batch(contents)
+        file_count = 1
+    else:
+        raise HTTPException(status_code=400, detail="Format non supporté. Utilisez CSV, XML ou ZIP.")
+
+    return await _build_preview_response(
+        all_interventions, dossier_adresses, files_in_zip, file_count,
+        contents if files_in_zip else None,
+        tenant, current_user
+    )
 
 
 @router.post("/{tenant_slug}/interventions/import-history/execute")
@@ -1003,7 +1127,6 @@ async def get_batiment_interventions_historique(
 
             civic = extract_civic_number(clean_addr)
             if civic:
-                street = extract_street_name(clean_addr)
                 # Chercher les interventions sans batiment_id qui correspondent par adresse
                 addr_regex = re.escape(civic) + ".*"
                 addr_query = {
@@ -1081,28 +1204,7 @@ async def auto_link_interventions_to_batiment(tenant_id: str, batiment_id: str, 
 
     # Chercher les interventions orphelines (pas de batiment_id) du même tenant
     addr_regex = re.escape(civic) + ".*"
-    orphan_query = {
-        "tenant_id": tenant_id,
-        "$or": [
-            {"batiment_id": {"$exists": False}},
-            {"batiment_id": None},
-            {"batiment_id": ""},
-        ],
-        "$or": [
-            {"batiment_id": {"$exists": False}},
-            {"batiment_id": None},
-            {"batiment_id": ""},
-        ],
-    }
-    # Requête séparée pour chaque champ d'adresse
-    addr_fields_query = {
-        "$or": [
-            {"address_full": {"$regex": addr_regex, "$options": "i"}},
-            {"adresse": {"$regex": addr_regex, "$options": "i"}},
-            {"adresse_incident": {"$regex": addr_regex, "$options": "i"}},
-        ]
-    }
-    # Combiner: orphelines ET correspondant à l'adresse
+    # Combiner: orphelines ET correspondant à l'adresse (sur plusieurs champs)
     combined_query = {
         "tenant_id": tenant_id,
         "$and": [
@@ -1111,7 +1213,11 @@ async def auto_link_interventions_to_batiment(tenant_id: str, batiment_id: str, 
                 {"batiment_id": None},
                 {"batiment_id": ""},
             ]},
-            addr_fields_query,
+            {"$or": [
+                {"address_full": {"$regex": addr_regex, "$options": "i"}},
+                {"adresse": {"$regex": addr_regex, "$options": "i"}},
+                {"adresse_incident": {"$regex": addr_regex, "$options": "i"}},
+            ]},
         ]
     }
 

@@ -7,7 +7,7 @@ import {
   AlertTriangle, Siren, XCircle, Building2, Link2, LinkIcon
 } from 'lucide-react';
 
-const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB par chunk
+const CHUNK_SIZE = 50 * 1024 * 1024; // 50MB par chunk (réduit le nombre de requêtes pour les gros fichiers)
 
 const ImportInterventions = ({ tenantSlug, onImportComplete }) => {
   const { toast } = useToast();
@@ -40,38 +40,62 @@ const ImportInterventions = ({ tenantSlug, onImportComplete }) => {
     
     // 1. Init
     setUploadProgress(1);
-    const initRes = await fetch(`${API}/interventions/import-history/init-upload`, {
-      method: 'POST',
-      headers: { 
-        'Authorization': `Bearer ${getToken()}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        filename: file.name,
-        total_size: file.size,
-        total_chunks: totalChunks,
-      }),
-    });
-    if (!initRes.ok) throw new Error('Échec initialisation upload');
+    let initRes;
+    try {
+      initRes = await fetch(`${API}/interventions/import-history/init-upload`, {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${getToken()}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          filename: file.name,
+          total_size: file.size,
+          total_chunks: totalChunks,
+        }),
+      });
+    } catch (networkErr) {
+      throw new Error(`Erreur réseau lors de l'initialisation. Vérifiez votre connexion.`);
+    }
+    if (!initRes.ok) {
+      let detail = 'Échec initialisation upload';
+      try { detail = (await initRes.json()).detail || detail; } catch {}
+      throw new Error(`${detail} (HTTP ${initRes.status})`);
+    }
     const { upload_id } = await initRes.json();
 
-    // 2. Upload chunks
+    // 2. Upload chunks with retry
+    const MAX_RETRIES = 3;
     for (let i = 0; i < totalChunks; i++) {
       const start = i * CHUNK_SIZE;
       const end = Math.min(start + CHUNK_SIZE, file.size);
       const chunk = file.slice(start, end);
+      const chunkSizeMB = ((end - start) / (1024 * 1024)).toFixed(1);
       
-      const formData = new FormData();
-      formData.append('upload_id', upload_id);
-      formData.append('chunk_index', i.toString());
-      formData.append('file', chunk, `chunk_${i}`);
+      let success = false;
+      for (let attempt = 0; attempt < MAX_RETRIES && !success; attempt++) {
+        try {
+          const formData = new FormData();
+          formData.append('upload_id', upload_id);
+          formData.append('chunk_index', i.toString());
+          formData.append('file', chunk, `chunk_${i}`);
 
-      const chunkRes = await fetch(`${API}/interventions/import-history/upload-chunk`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${getToken()}` },
-        body: formData,
-      });
-      if (!chunkRes.ok) throw new Error(`Échec upload chunk ${i + 1}/${totalChunks}`);
+          const chunkRes = await fetch(`${API}/interventions/import-history/upload-chunk`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${getToken()}` },
+            body: formData,
+          });
+          if (!chunkRes.ok) {
+            if (attempt === MAX_RETRIES - 1) throw new Error(`Échec chunk ${i + 1}/${totalChunks} (${chunkSizeMB} Mo)`);
+            await new Promise(r => setTimeout(r, 2000 * (attempt + 1))); // backoff
+            continue;
+          }
+          success = true;
+        } catch (err) {
+          if (attempt === MAX_RETRIES - 1) throw err;
+          await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+        }
+      }
       
       setUploadProgress(Math.round(((i + 1) / totalChunks) * 80));
     }
@@ -87,8 +111,9 @@ const ImportInterventions = ({ tenantSlug, onImportComplete }) => {
       body: JSON.stringify({ upload_id }),
     });
     if (!finalRes.ok) {
-      const err = await finalRes.json();
-      throw new Error(err.detail || 'Échec finalisation');
+      let detail = 'Échec finalisation';
+      try { detail = (await finalRes.json()).detail || detail; } catch {}
+      throw new Error(detail);
     }
     setUploadProgress(100);
     return await finalRes.json();
