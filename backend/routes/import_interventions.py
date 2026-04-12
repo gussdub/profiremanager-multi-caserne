@@ -436,9 +436,12 @@ async def upload_chunk(
     session = await get_upload_session(upload_id)
     if not session or session["tenant_id"] != tenant.id:
         raise HTTPException(status_code=404, detail="Session d'upload non trouvée")
-    result = await save_chunk(upload_id, chunk_index, file)
+    try:
+        result = await save_chunk(upload_id, chunk_index, file)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur upload chunk: {str(e)}")
     if "error" in result:
-        raise HTTPException(status_code=404, detail=result["error"])
+        raise HTTPException(status_code=500, detail=result["error"])
     return result
 
 

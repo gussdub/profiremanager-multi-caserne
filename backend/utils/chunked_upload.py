@@ -69,13 +69,17 @@ async def save_chunk(upload_id: str, chunk_index: int, file: UploadFile) -> dict
     if not session:
         return {"error": "Session d'upload non trouvée"}
 
-    # Lire le chunk
-    chunk_data = await file.read()
+    try:
+        # Lire le chunk
+        chunk_data = await file.read()
 
-    # Upload vers Azure
-    from services.azure_storage import put_object
-    blob_path = _chunk_blob_path(upload_id, chunk_index)
-    put_object(blob_path, chunk_data, "application/octet-stream")
+        # Upload vers Azure
+        from services.azure_storage import put_object
+        blob_path = _chunk_blob_path(upload_id, chunk_index)
+        put_object(blob_path, chunk_data, "application/octet-stream")
+    except Exception as e:
+        logger.error("Erreur save_chunk %s/%d: %s", upload_id, chunk_index, e)
+        return {"error": f"Erreur upload chunk {chunk_index}: {str(e)}"}
 
     # Incrémenter le compteur (atomique)
     await db.upload_sessions.update_one(
