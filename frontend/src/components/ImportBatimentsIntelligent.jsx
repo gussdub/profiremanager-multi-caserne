@@ -34,6 +34,55 @@ const ImportBatimentsIntelligent = ({ tenantSlug, user, onImportComplete }) => {
   const [executing, setExecuting] = useState(false);
   const [results, setResults] = useState(null);
 
+  // Upload par chunks pour les gros fichiers ZIP
+  const uploadChunkedBatiment = async () => {
+    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+    // 1. Init
+    const initRes = await fetch(`${API_BASE}/batiments/import/init-upload`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${getToken()}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename: file.name, total_size: file.size, total_chunks: totalChunks }),
+    });
+    if (!initRes.ok) throw new Error(`Échec initialisation (HTTP ${initRes.status})`);
+    const { upload_id } = await initRes.json();
+    // 2. Upload chunks
+    for (let i = 0; i < totalChunks; i++) {
+      const start = i * CHUNK_SIZE;
+      const end = Math.min(start + CHUNK_SIZE, file.size);
+      const chunk = file.slice(start, end);
+      const formData = new FormData();
+      formData.append('upload_id', upload_id);
+      formData.append('chunk_index', i.toString());
+      formData.append('file', chunk, `chunk_${i}`);
+      let success = false;
+      for (let attempt = 0; attempt < 3 && !success; attempt++) {
+        try {
+          const res = await fetch(`${API_BASE}/batiments/import/upload-chunk`, {
+            method: 'POST', headers: { 'Authorization': `Bearer ${getToken()}` }, body: formData,
+          });
+          if (res.ok) success = true;
+          else if (attempt === 2) throw new Error(`Échec chunk ${i+1}/${totalChunks}`);
+          else await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+        } catch (err) {
+          if (attempt === 2) throw err;
+          await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+        }
+      }
+    }
+    // 3. Finalize
+    const finalRes = await fetch(`${API_BASE}/batiments/import/finalize-upload`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${getToken()}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ upload_id }),
+    });
+    if (!finalRes.ok) {
+      let detail = 'Échec finalisation';
+      try { detail = (await finalRes.json()).detail || detail; } catch {}
+      throw new Error(detail);
+    }
+    return await finalRes.json();
+  };
+
   // Gestion du fichier
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -47,36 +96,51 @@ const ImportBatimentsIntelligent = ({ tenantSlug, user, onImportComplete }) => {
     }
   };
 
+  // Constantes pour chunked upload
+  const CHUNK_SIZE = 50 * 1024 * 1024; // 50 Mo
+  const API_BASE = `${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}`;
+  const getToken = () => localStorage.getItem(`${tenantSlug}_token`) || localStorage.getItem('token');
+
   // Prévisualisation de l'import
   const handlePreview = async () => {
     if (!file) return;
 
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
+      let data;
+      const isLargeFile = file.size > CHUNK_SIZE;
 
-      const endpoint = isZip
-        ? `/batiments/import/zip/preview`
-        : `/batiments/import/preview?similarity_threshold=0.85`;
+      if (isLargeFile && isZip) {
+        // Chunked upload pour les gros fichiers ZIP
+        data = await uploadChunkedBatiment();
+      } else {
+        // Upload direct pour les petits fichiers
+        const formData = new FormData();
+        formData.append('file', file);
 
-      const response = await fetch(
-        `${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}${endpoint}`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem(`${tenantSlug}_token`)}`
-          },
-          body: formData
+        const endpoint = isZip
+          ? `/batiments/import/zip/preview`
+          : `/batiments/import/preview?similarity_threshold=0.85`;
+
+        const response = await fetch(
+          `${API_BASE}${endpoint}`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${getToken()}`
+            },
+            body: formData
+          }
+        );
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.detail || 'Erreur lors de la prévisualisation');
         }
-      );
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || 'Erreur lors de la prévisualisation');
+        data = await response.json();
       }
 
-      const data = await response.json();
       setPreviewData(data);
       setCurrentConflictIndex(0);
       

@@ -16,7 +16,7 @@ import tempfile
 from io import StringIO, BytesIO
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any, Tuple
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Body
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Body, Form
 from pydantic import BaseModel, Field
 
 from routes.dependencies import (
@@ -27,6 +27,7 @@ from routes.dependencies import (
     require_permission
 )
 from routes.batiments import log_batiment_history, compute_changes
+from utils.chunked_upload import save_upload_to_disk, cleanup_file, CHUNKS_DIR
 from utils.address_utils import (
     normalize_address,
     calculate_address_similarity,
@@ -359,6 +360,129 @@ import_sessions = {}
 
 # ==================== ROUTES ====================
 
+# --- Routes de chunked upload partagées ---
+from utils.chunked_upload import init_upload, get_upload_session, save_chunk, assemble_chunks
+
+@router.post("/{tenant_slug}/batiments/import/init-upload")
+async def init_batiment_chunked_upload(
+    tenant_slug: str,
+    body: dict,
+    current_user: User = Depends(get_current_user),
+):
+    """Initialise un upload par chunks pour l'import de bâtiments."""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "creer", "batiments")
+    upload_id = init_upload(tenant.id, current_user.id, body.get("filename", ""), body.get("total_size", 0), body.get("total_chunks", 0))
+    return {"upload_id": upload_id, "status": "ready"}
+
+
+@router.post("/{tenant_slug}/batiments/import/upload-chunk")
+async def upload_batiment_chunk(
+    tenant_slug: str,
+    upload_id: str = Form(...),
+    chunk_index: int = Form(...),
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+):
+    """Upload un chunk individuel."""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    session = get_upload_session(upload_id)
+    if not session or session["tenant_id"] != tenant.id:
+        raise HTTPException(status_code=404, detail="Session d'upload non trouvée")
+    result = await save_chunk(upload_id, chunk_index, file)
+    if "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result
+
+
+@router.post("/{tenant_slug}/batiments/import/finalize-upload")
+async def finalize_batiment_upload(
+    tenant_slug: str,
+    body: dict,
+    current_user: User = Depends(get_current_user),
+):
+    """Assemble les chunks et traite le fichier ZIP."""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "prevention", "creer", "batiments")
+    upload_id = body.get("upload_id")
+    session = get_upload_session(upload_id)
+    if not session or session["tenant_id"] != tenant.id:
+        raise HTTPException(status_code=404, detail="Session d'upload non trouvée")
+    try:
+        file_path = assemble_chunks(upload_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    # Traiter comme un ZIP import
+    filename = session["filename"].lower()
+    return await _process_batiment_zip_from_path(file_path, filename, tenant, current_user)
+
+
+async def _process_batiment_zip_from_path(file_path: str, filename: str, tenant, current_user):
+    """Traite un fichier ZIP d'import bâtiments depuis le disque."""
+    if not filename.endswith(".zip"):
+        cleanup_file(file_path)
+        raise HTTPException(status_code=400, detail="Seuls les fichiers .zip sont acceptés")
+    try:
+        zf = zipfile.ZipFile(file_path)
+    except zipfile.BadZipFile:
+        cleanup_file(file_path)
+        raise HTTPException(status_code=400, detail="Fichier ZIP invalide")
+    csv_content = None
+    manifest = None
+    media_files = []
+    for name in zf.namelist():
+        lower = name.lower()
+        if lower.endswith(".csv"):
+            csv_content = zf.read(name)
+        elif lower == "manifest.json":
+            manifest = json.loads(zf.read(name))
+        elif lower.startswith("files/") and not lower.endswith("/"):
+            ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
+            is_image = ext in ("jpg", "jpeg", "png", "gif", "webp")
+            media_files.append({
+                "zip_path": name, "filename": os.path.basename(name),
+                "file_id": os.path.basename(name).rsplit(".", 1)[0],
+                "extension": ext, "is_image": is_image, "size": zf.getinfo(name).file_size,
+            })
+    zf.close()
+    if not csv_content:
+        cleanup_file(file_path)
+        raise HTTPException(status_code=400, detail="Aucun fichier CSV trouvé dans l'archive")
+    try:
+        csv_text = csv_content.decode("utf-8")
+    except UnicodeDecodeError:
+        csv_text = csv_content.decode("latin-1")
+    batiments = parse_profiremanager_csv(csv_text)
+    existing_batiments = await db.batiments.find({"tenant_id": tenant.id}, {"_id": 0}).to_list(length=None)
+    conflicts = []
+    new_batiments = []
+    for idx, bat in enumerate(batiments):
+        address = bat.get("adresse_civique", "")
+        city = bat.get("ville", "")
+        matches = find_matching_address(address, city, existing_batiments, 0.85)
+        if matches:
+            best_match, score = matches[0]
+            differences = compare_building_fields(bat, best_match)
+            conflicts.append({"import_index": idx, "new_data": bat, "existing_batiment": best_match, "similarity_score": score, "differences": differences, "suggested_action": "replace" if score >= 0.95 else "review"})
+        else:
+            new_batiments.append({"import_index": idx, "data": bat})
+    session_id = str(uuid.uuid4())
+    import_sessions[session_id] = {
+        "tenant_id": tenant.id, "user_id": current_user.id,
+        "created_at": datetime.now(timezone.utc).isoformat(), "is_zip": True,
+        "rows": batiments, "new_batiments": new_batiments, "conflicts": conflicts,
+        "errors": [], "zip_path": file_path, "media_files": media_files,
+    }
+    return {
+        "session_id": session_id, "total_rows": len(batiments),
+        "new_batiments": len(new_batiments), "conflicts": conflicts,
+        "media_files_count": len(media_files),
+        "media_files_images": len([m for m in media_files if m["is_image"]]),
+        "media_files_documents": len([m for m in media_files if not m["is_image"]]),
+        "manifest": manifest, "errors": [],
+    }
+
+
 @router.post("/{tenant_slug}/batiments/import/preview")
 async def preview_import_batiments(
     tenant_slug: str,
@@ -374,9 +498,14 @@ async def preview_import_batiments(
     tenant = await get_tenant_from_slug(tenant_slug)
     await require_permission(tenant.id, current_user, "prevention", "creer", "batiments")
     
-    # Lire le fichier
-    contents = await file.read()
+    # Lire le fichier via disque (pour supporter les gros fichiers)
+    file_path = await save_upload_to_disk(file)
     filename = file.filename.lower() if file.filename else ''
+    
+    # Lire le contenu depuis le disque
+    with open(file_path, "rb") as f:
+        contents = f.read()
+    cleanup_file(file_path)  # CSV/XML sont parsés en mémoire, on nettoie le disque
     
     # Détecter le format (CSV ou XML)
     is_xml = filename.endswith('.xml') or contents.strip().startswith(b'<?xml') or contents.strip().startswith(b'<')
@@ -896,13 +1025,16 @@ async def preview_zip_import(
     tenant = await get_tenant_from_slug(tenant_slug)
     await require_permission(tenant.id, current_user, "prevention", "creer", "batiments")
 
-    contents = await file.read()
+    # Sauver le fichier sur disque au lieu de le garder en RAM
+    file_path = await save_upload_to_disk(file)
     if not file.filename.lower().endswith(".zip"):
+        cleanup_file(file_path)
         raise HTTPException(status_code=400, detail="Seuls les fichiers .zip sont acceptés")
 
     try:
-        zf = zipfile.ZipFile(BytesIO(contents))
+        zf = zipfile.ZipFile(file_path)
     except zipfile.BadZipFile:
+        cleanup_file(file_path)
         raise HTTPException(status_code=400, detail="Fichier ZIP invalide")
 
     # Trouver le CSV/XML de données
@@ -978,7 +1110,7 @@ async def preview_zip_import(
         "new_batiments": new_batiments,
         "conflicts": conflicts,
         "errors": errors,
-        "zip_data": contents,
+        "zip_path": file_path,
         "media_files": media_files,
     }
 
@@ -1117,13 +1249,13 @@ async def execute_zip_import(
         except Exception as e:
             results["errors"].append({"type": resolution.action, "error": str(e)})
 
-    # 3. Upload des médias depuis le ZIP
-    zip_data = session.get("zip_data")
+    # 3. Upload des médias depuis le ZIP (lecture depuis le disque)
+    zip_path = session.get("zip_path")
     media_files = session.get("media_files", [])
 
-    if zip_data and media_files:
+    if zip_path and os.path.exists(zip_path) and media_files:
         try:
-            zf = zipfile.ZipFile(BytesIO(zip_data))
+            zf = zipfile.ZipFile(zip_path)
 
             # Associer les fichiers aux bâtiments par proximité d'ID
             pfm_ids_sorted = sorted(
@@ -1192,7 +1324,10 @@ async def execute_zip_import(
         except Exception as e:
             results["errors"].append({"type": "zip_processing", "error": str(e)})
 
-    # Nettoyer la session (enlever les données volumineuses)
+    # Nettoyer la session et les fichiers temporaires
+    zip_path = import_sessions.get(request.session_id, {}).get("zip_path")
+    if zip_path:
+        cleanup_file(zip_path)
     del import_sessions[request.session_id]
 
     return {

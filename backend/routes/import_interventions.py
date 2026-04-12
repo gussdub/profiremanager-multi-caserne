@@ -33,10 +33,11 @@ logger = logging.getLogger(__name__)
 # Sessions d'import en mémoire
 import_sessions: Dict[str, dict] = {}
 
-# Répertoire temporaire pour les chunks
-import tempfile
-CHUNKS_DIR = os.path.join(tempfile.gettempdir(), "pfm_import_chunks")
-os.makedirs(CHUNKS_DIR, exist_ok=True)
+# Utiliser le module partagé pour les chunks
+from utils.chunked_upload import (
+    init_upload, get_upload_session, save_chunk, assemble_chunks,
+    cleanup_file, CHUNKS_DIR
+)
 
 
 # ======================== PARSEURS CSV ========================
@@ -404,10 +405,7 @@ async def match_interventions_to_batiments(
     return matched_interventions
 
 
-# ======================== CHUNKED UPLOAD (stockage disque) ========================
-
-# Métadonnées des uploads en cours (léger, en mémoire)
-upload_sessions: Dict[str, dict] = {}
+# ======================== CHUNKED UPLOAD (module partagé) ========================
 
 @router.post("/{tenant_slug}/interventions/import-history/init-upload")
 async def init_chunked_upload(
@@ -418,27 +416,10 @@ async def init_chunked_upload(
     """Initialise un upload par chunks pour les gros fichiers."""
     tenant = await get_tenant_from_slug(tenant_slug)
     await require_permission(tenant.id, current_user, "interventions", "creer", "rapports")
-
-    filename = body.get("filename", "")
-    total_size = body.get("total_size", 0)
-    total_chunks = body.get("total_chunks", 0)
-
-    upload_id = str(uuid.uuid4())
-    # Créer un dossier pour ce upload
-    upload_dir = os.path.join(CHUNKS_DIR, upload_id)
-    os.makedirs(upload_dir, exist_ok=True)
-
-    upload_sessions[upload_id] = {
-        "tenant_id": tenant.id,
-        "user_id": current_user.id,
-        "filename": filename,
-        "total_size": total_size,
-        "total_chunks": total_chunks,
-        "received_count": 0,
-        "upload_dir": upload_dir,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    }
-
+    upload_id = init_upload(
+        tenant.id, current_user.id,
+        body.get("filename", ""), body.get("total_size", 0), body.get("total_chunks", 0)
+    )
     return {"upload_id": upload_id, "status": "ready"}
 
 
@@ -450,32 +431,15 @@ async def upload_chunk(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
 ):
-    """Upload un chunk individuel — stocké sur disque, pas en RAM."""
+    """Upload un chunk individuel — stocké sur disque."""
     tenant = await get_tenant_from_slug(tenant_slug)
-
-    session = upload_sessions.get(upload_id)
-    if not session:
+    session = get_upload_session(upload_id)
+    if not session or session["tenant_id"] != tenant.id:
         raise HTTPException(status_code=404, detail="Session d'upload non trouvée")
-    if session["tenant_id"] != tenant.id:
-        raise HTTPException(status_code=403, detail="Non autorisé")
-
-    # Écrire le chunk sur disque
-    chunk_path = os.path.join(session["upload_dir"], f"chunk_{chunk_index:06d}")
-    chunk_data = await file.read()
-    with open(chunk_path, "wb") as f:
-        f.write(chunk_data)
-
-    session["received_count"] += 1
-    received = session["received_count"]
-    total = session["total_chunks"]
-
-    return {
-        "status": "received",
-        "chunk_index": chunk_index,
-        "received": received,
-        "total": total,
-        "complete": received >= total,
-    }
+    result = await save_chunk(upload_id, chunk_index, file)
+    if "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result
 
 
 @router.post("/{tenant_slug}/interventions/import-history/finalize-upload")
@@ -487,45 +451,16 @@ async def finalize_chunked_upload(
     """Assemble les chunks depuis le disque et lance le preview."""
     tenant = await get_tenant_from_slug(tenant_slug)
     await require_permission(tenant.id, current_user, "interventions", "creer", "rapports")
-
     upload_id = body.get("upload_id")
-    session = upload_sessions.get(upload_id)
-    if not session:
+    session = get_upload_session(upload_id)
+    if not session or session["tenant_id"] != tenant.id:
         raise HTTPException(status_code=404, detail="Session d'upload non trouvée")
-    if session["tenant_id"] != tenant.id:
-        raise HTTPException(status_code=403, detail="Non autorisé")
-
-    total = session["total_chunks"]
-    upload_dir = session["upload_dir"]
-
-    # Vérifier que tous les chunks sont là
-    received_files = [f for f in os.listdir(upload_dir) if f.startswith("chunk_")]
-    if len(received_files) < total:
-        raise HTTPException(status_code=400, detail=f"Chunks manquants: {len(received_files)}/{total}")
-
-    # Assembler en fichier final sur disque
-    final_path = os.path.join(upload_dir, "assembled_file")
-    with open(final_path, "wb") as out:
-        for i in range(total):
-            chunk_path = os.path.join(upload_dir, f"chunk_{i:06d}")
-            if not os.path.exists(chunk_path):
-                raise HTTPException(status_code=400, detail=f"Chunk {i} manquant")
-            with open(chunk_path, "rb") as chunk_file:
-                while True:
-                    block = chunk_file.read(8 * 1024 * 1024)  # 8MB blocs
-                    if not block:
-                        break
-                    out.write(block)
-
-    del upload_sessions[upload_id]
-
-    # Traiter le fichier depuis le disque (pas de chargement complet en RAM)
+    try:
+        final_path = assemble_chunks(upload_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     filename = session["filename"].lower()
-    result = await _process_import_file_from_path(final_path, filename, tenant, current_user)
-
-    # Nettoyer le dossier de chunks (mais garder le fichier assemblé si session active)
-    # Le cleanup sera fait après l'execute
-    return result
+    return await _process_import_file_from_path(final_path, filename, tenant, current_user)
 
 
 # ======================== ROUTES EXISTANTES (AMÉLIORÉES) ========================
