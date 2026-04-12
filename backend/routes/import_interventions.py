@@ -445,25 +445,287 @@ async def upload_chunk(
     return result
 
 
+# ======================== FINALIZE AVEC BACKGROUND TASK ========================
+
+import asyncio
+
+async def _background_finalize(task_id: str, upload_id: str, filename: str, tenant_id: str, user_id: str):
+    """Tâche de fond : assemble les chunks, parse, et stocke le résultat."""
+    try:
+        await db.import_tasks.update_one(
+            {"task_id": task_id},
+            {"$set": {"status": "assembling", "progress": "Assemblage des chunks..."}}
+        )
+
+        final_path = await assemble_chunks(upload_id)
+
+        await db.import_tasks.update_one(
+            {"task_id": task_id},
+            {"$set": {"status": "processing", "progress": "Analyse du fichier..."}}
+        )
+
+        # Traiter le fichier
+        result = await _process_import_file_from_path_raw(final_path, filename, tenant_id)
+
+        await db.import_tasks.update_one(
+            {"task_id": task_id},
+            {"$set": {
+                "status": "ready",
+                "progress": "Prévisualisation prête",
+                "result": result,
+                "file_path": final_path,
+            }}
+        )
+
+    except Exception as e:
+        logger.error("Background finalize error: %s", e)
+        await db.import_tasks.update_one(
+            {"task_id": task_id},
+            {"$set": {"status": "error", "progress": str(e)}}
+        )
+
+
+async def _process_import_file_from_path_raw(file_path: str, filename: str, tenant_id: str) -> dict:
+    """Parse un fichier d'import et retourne le résultat brut (sans session)."""
+    all_interventions = []
+    dossier_adresses = []
+    file_count = 0
+    files_in_zip = {}
+    manifest_data = {}
+
+    if filename.endswith(".zip"):
+        try:
+            zf = zipfile.ZipFile(file_path)
+            namelist = zf.namelist()
+            if "manifest.json" in namelist:
+                try:
+                    manifest_data = json.loads(zf.read("manifest.json").decode("utf-8"))
+                except Exception:
+                    pass
+            entity_type = manifest_data.get("entityType", "")
+            for name in namelist:
+                if name.startswith("files/") and not name.endswith("/"):
+                    files_in_zip[name] = True
+            for name in namelist:
+                lower_name = name.lower()
+                basename = os.path.basename(name).lower()
+                if basename == "dossieradresse.csv" or (entity_type == "DossierAdresse" and lower_name.endswith(".csv")):
+                    try:
+                        csv_text = zf.read(name).decode("utf-8")
+                    except UnicodeDecodeError:
+                        csv_text = zf.read(name).decode("latin-1")
+                    dossier_adresses = [normalize_pfm_dossier(r) for r in parse_pfm_csv_dossier_adresse(csv_text)]
+                    file_count += 1
+                elif basename == "intervention.csv" or (entity_type == "Intervention" and lower_name.endswith(".csv")):
+                    try:
+                        csv_text = zf.read(name).decode("utf-8")
+                    except UnicodeDecodeError:
+                        csv_text = zf.read(name).decode("latin-1")
+                    all_interventions.extend(parse_csv_interventions(csv_text))
+                    file_count += 1
+                elif lower_name.endswith(".csv") and not lower_name.startswith("files/"):
+                    try:
+                        csv_text = zf.read(name).decode("utf-8")
+                    except UnicodeDecodeError:
+                        csv_text = zf.read(name).decode("latin-1")
+                    first_line = csv_text.split("\n")[0].lower()
+                    if "dossier" in first_line or "matricule" in first_line:
+                        dossier_adresses = [normalize_pfm_dossier(r) for r in parse_pfm_csv_dossier_adresse(csv_text)]
+                    else:
+                        all_interventions.extend(parse_csv_interventions(csv_text))
+                    file_count += 1
+                elif lower_name.endswith(".xml") and not lower_name.startswith("files/"):
+                    all_interventions.extend(parse_xml_interventions_batch(zf.read(name)))
+                    file_count += 1
+            zf.close()
+        except zipfile.BadZipFile:
+            raise ValueError("Fichier ZIP invalide")
+    else:
+        with open(file_path, "rb") as f:
+            contents = f.read()
+        if filename.endswith(".csv"):
+            try:
+                csv_text = contents.decode("utf-8")
+            except UnicodeDecodeError:
+                csv_text = contents.decode("latin-1")
+            all_interventions = parse_csv_interventions(csv_text)
+            file_count = 1
+        elif filename.endswith(".xml"):
+            all_interventions = parse_xml_interventions_batch(contents)
+            file_count = 1
+
+    # Déterminer le type
+    if not all_interventions and dossier_adresses:
+        return {
+            "type": "dossier_adresse",
+            "total": len(dossier_adresses),
+            "new_count": len(dossier_adresses),
+            "duplicate_count": 0,
+            "files_count": len(files_in_zip),
+            "files_processed": file_count,
+            "dossier_adresses": dossier_adresses,
+            "files_in_zip": list(files_in_zip.keys()),
+            "preview": [
+                {"index": i, "pfm_id": da.get("pfm_id", ""), "adresse_civique": da.get("adresse_civique", ""), "ville": da.get("ville", "")}
+                for i, da in enumerate(dossier_adresses[:20])
+            ],
+        }
+
+    if not all_interventions:
+        raise ValueError("Aucune intervention trouvée dans le fichier")
+
+    # Mapping intelligent
+    matched = await match_interventions_to_batiments(all_interventions, tenant_id, dossier_adresses)
+
+    # Doublons
+    existing_call_ids = set()
+    ext_ids = [i.get("external_call_id") for i in matched if i.get("external_call_id")]
+    pfm_ids = [i.get("pfm_id") for i in matched if i.get("pfm_id")]
+    if ext_ids:
+        existing = await db.interventions.find(
+            {"tenant_id": tenant_id, "external_call_id": {"$in": ext_ids}},
+            {"_id": 0, "external_call_id": 1},
+        ).to_list(length=None)
+        existing_call_ids = {e["external_call_id"] for e in existing}
+    if pfm_ids:
+        existing_pfm = await db.interventions.find(
+            {"tenant_id": tenant_id, "pfm_id": {"$in": pfm_ids}},
+            {"_id": 0, "pfm_id": 1},
+        ).to_list(length=None)
+        existing_call_ids.update({e["pfm_id"] for e in existing_pfm})
+
+    new_items = []
+    duplicates = []
+    for idx, intv in enumerate(matched):
+        is_dup = (intv.get("external_call_id") in existing_call_ids) or (intv.get("pfm_id") and intv["pfm_id"] in existing_call_ids)
+        if is_dup:
+            duplicates.append({"index": idx, "data": intv})
+        else:
+            new_items.append({"index": idx, "data": intv})
+
+    matched_count = sum(1 for item in new_items if item["data"].get("_match", {}).get("batiment_id"))
+
+    preview_items = [
+        {
+            "index": item["index"],
+            "external_call_id": item["data"].get("external_call_id", ""),
+            "pfm_id": item["data"].get("pfm_id", ""),
+            "type_intervention": item["data"].get("type_intervention", ""),
+            "address_full": item["data"].get("address_full", ""),
+            "municipality": item["data"].get("municipality", ""),
+            "date": item["data"].get("xml_time_call_received", ""),
+            "batiment_id": item["data"].get("_match", {}).get("batiment_id"),
+            "batiment_adresse": item["data"].get("_match", {}).get("batiment_adresse"),
+            "match_method": item["data"].get("_match", {}).get("match_method"),
+        }
+        for item in new_items[:30]
+    ]
+
+    return {
+        "type": "intervention",
+        "total": len(matched),
+        "new_count": len(new_items),
+        "duplicate_count": len(duplicates),
+        "matched_count": matched_count,
+        "unmatched_count": len(new_items) - matched_count,
+        "files_count": len(files_in_zip),
+        "files_processed": file_count,
+        "preview": preview_items,
+        # Stocker les données pour l'execute
+        "interventions_data": [item["data"] for item in new_items],
+        "duplicates_data": [item["data"] for item in duplicates],
+        "dossier_adresses": dossier_adresses,
+        "files_in_zip": list(files_in_zip.keys()),
+    }
+
+
 @router.post("/{tenant_slug}/interventions/import-history/finalize-upload")
 async def finalize_chunked_upload(
     tenant_slug: str,
     body: dict,
     current_user: User = Depends(get_current_user),
 ):
-    """Assemble les chunks depuis Azure et lance le preview."""
+    """Lance l'assemblage en tâche de fond. Retourne un task_id pour polling."""
     tenant = await get_tenant_from_slug(tenant_slug)
     await require_permission(tenant.id, current_user, "interventions", "creer", "rapports")
     upload_id = body.get("upload_id")
     session = await get_upload_session(upload_id)
     if not session or session["tenant_id"] != tenant.id:
         raise HTTPException(status_code=404, detail="Session d'upload non trouvée")
-    try:
-        final_path = await assemble_chunks(upload_id)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+
+    task_id = str(uuid.uuid4())
     filename = session["filename"].lower()
-    return await _process_import_file_from_path(final_path, filename, tenant, current_user)
+
+    # Créer la tâche en MongoDB
+    await db.import_tasks.insert_one({
+        "task_id": task_id,
+        "upload_id": upload_id,
+        "tenant_id": tenant.id,
+        "user_id": current_user.id,
+        "filename": filename,
+        "status": "started",
+        "progress": "Démarrage...",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+
+    # Lancer en arrière-plan
+    asyncio.create_task(_background_finalize(task_id, upload_id, filename, tenant.id, current_user.id))
+
+    return {"task_id": task_id, "status": "started"}
+
+
+@router.get("/{tenant_slug}/interventions/import-history/task-status/{task_id}")
+async def get_task_status(
+    tenant_slug: str,
+    task_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    """Polling du statut d'une tâche de finalize."""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    task = await db.import_tasks.find_one(
+        {"task_id": task_id, "tenant_id": tenant.id},
+        {"_id": 0}
+    )
+    if not task:
+        raise HTTPException(status_code=404, detail="Tâche non trouvée")
+
+    response = {
+        "task_id": task_id,
+        "status": task["status"],
+        "progress": task.get("progress", ""),
+    }
+
+    if task["status"] == "ready":
+        result = task.get("result", {})
+        # Créer une session d'import pour l'execute
+        session_id = str(uuid.uuid4())
+        import_sessions[session_id] = {
+            "tenant_id": tenant.id,
+            "user_id": current_user.id,
+            "type": result.get("type", "intervention"),
+            "new_items": [{"index": i, "data": d} for i, d in enumerate(result.get("interventions_data", []))],
+            "duplicates": [{"index": i, "data": d} for i, d in enumerate(result.get("duplicates_data", []))],
+            "dossier_adresses": result.get("dossier_adresses", []),
+            "files_in_zip": result.get("files_in_zip", []),
+            "zip_path": task.get("file_path"),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        # Ajouter les champs de preview
+        result["session_id"] = session_id
+        # Retirer les données volumineuses
+        result.pop("interventions_data", None)
+        result.pop("duplicates_data", None)
+        result.pop("dossier_adresses", None)
+        result.pop("files_in_zip", None)
+        response["result"] = result
+        # Nettoyer la tâche
+        await db.import_tasks.delete_one({"task_id": task_id})
+
+    elif task["status"] == "error":
+        response["error"] = task.get("progress", "Erreur inconnue")
+        await db.import_tasks.delete_one({"task_id": task_id})
+
+    return response
 
 
 # ======================== ROUTES EXISTANTES (AMÉLIORÉES) ========================

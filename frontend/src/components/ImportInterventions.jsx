@@ -102,7 +102,7 @@ const ImportInterventions = ({ tenantSlug, onImportComplete }) => {
       setUploadProgress(Math.round(((i + 1) / totalChunks) * 80));
     }
 
-    // 3. Finalize
+    // 3. Finalize (lance une tâche de fond)
     setUploadProgress(85);
     let finalRes;
     try {
@@ -125,8 +125,37 @@ const ImportInterventions = ({ tenantSlug, onImportComplete }) => {
       } catch {}
       throw new Error(detail);
     }
+    const { task_id } = await finalRes.json();
+
+    // 4. Polling du statut de la tâche
+    setUploadProgress(90);
+    let taskResult = null;
+    for (let attempt = 0; attempt < 300; attempt++) { // max 5 min
+      await new Promise(r => setTimeout(r, 2000)); // poll toutes les 2s
+      try {
+        const statusRes = await fetch(`${API}/interventions/import-history/task-status/${task_id}`, {
+          headers: { 'Authorization': `Bearer ${getToken()}` },
+        });
+        if (!statusRes.ok) continue;
+        const status = await statusRes.json();
+        
+        if (status.status === 'ready') {
+          taskResult = status.result;
+          break;
+        } else if (status.status === 'error') {
+          throw new Error(status.error || 'Erreur traitement fichier');
+        }
+        // Update progress message
+        setUploadProgress(90 + Math.min(attempt * 0.3, 9));
+      } catch (pollErr) {
+        if (pollErr.message.includes('Erreur traitement')) throw pollErr;
+        // Ignorer les erreurs réseau temporaires
+      }
+    }
+    if (!taskResult) throw new Error('Timeout: le traitement a pris trop de temps');
+    
     setUploadProgress(100);
-    return await finalRes.json();
+    return taskResult;
   }, [file, API]);
 
   const uploadDirect = useCallback(async () => {
