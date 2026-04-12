@@ -104,17 +104,25 @@ const ImportInterventions = ({ tenantSlug, onImportComplete }) => {
 
     // 3. Finalize
     setUploadProgress(85);
-    const finalRes = await fetch(`${API}/interventions/import-history/finalize-upload`, {
-      method: 'POST',
-      headers: { 
-        'Authorization': `Bearer ${getToken()}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ upload_id }),
-    });
+    let finalRes;
+    try {
+      finalRes = await fetch(`${API}/interventions/import-history/finalize-upload`, {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${getToken()}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ upload_id }),
+      });
+    } catch (networkErr) {
+      throw new Error(`Erreur réseau lors de la finalisation: ${networkErr.message}`);
+    }
     if (!finalRes.ok) {
-      let detail = 'Échec finalisation';
-      try { detail = (await finalRes.json()).detail || detail; } catch {}
+      let detail = `Échec finalisation (HTTP ${finalRes.status})`;
+      try { 
+        const errBody = await finalRes.json();
+        detail = errBody.detail || detail;
+      } catch {}
       throw new Error(detail);
     }
     setUploadProgress(100);

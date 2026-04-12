@@ -1,13 +1,15 @@
 """
 Utilitaire partagé pour les uploads par chunks.
-Permet de gérer les gros fichiers (> 10 Mo) pour tous les types d'import.
-Les chunks ET les sessions sont stockés sur disque (survit aux redémarrages).
+Les chunks sont stockés sur disque. Les sessions utilisent un fichier JSON
+avec un compteur de fichiers sur disque (pas de liste en mémoire).
+Supporte les uploads parallèles sans race condition.
 """
 import os
 import uuid
 import json
 import shutil
 import tempfile
+import fcntl
 from datetime import datetime, timezone
 from typing import Optional
 from fastapi import UploadFile
@@ -25,16 +27,32 @@ def _session_path(upload_id: str) -> str:
 
 
 def _save_session(upload_id: str, data: dict):
-    with open(_session_path(upload_id), "w") as f:
+    path = _session_path(upload_id)
+    with open(path, "w") as f:
+        fcntl.flock(f.fileno(), fcntl.LOCK_EX)
         json.dump(data, f)
+        fcntl.flock(f.fileno(), fcntl.LOCK_UN)
 
 
 def _load_session(upload_id: str) -> Optional[dict]:
     path = _session_path(upload_id)
     if not os.path.exists(path):
         return None
-    with open(path, "r") as f:
-        return json.load(f)
+    try:
+        with open(path, "r") as f:
+            fcntl.flock(f.fileno(), fcntl.LOCK_SH)
+            data = json.load(f)
+            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+            return data
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def _count_chunks_on_disk(upload_dir: str) -> int:
+    """Compte le nombre de fichiers chunk sur disque."""
+    if not os.path.isdir(upload_dir):
+        return 0
+    return len([f for f in os.listdir(upload_dir) if f.startswith("chunk_")])
 
 
 def init_upload(tenant_id: str, user_id: str, filename: str, total_size: int, total_chunks: int) -> str:
@@ -50,7 +68,6 @@ def init_upload(tenant_id: str, user_id: str, filename: str, total_size: int, to
         "filename": filename,
         "total_size": total_size,
         "total_chunks": total_chunks,
-        "received_chunks": [],
         "upload_dir": upload_dir,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
@@ -64,7 +81,7 @@ def get_upload_session(upload_id: str) -> Optional[dict]:
 
 
 async def save_chunk(upload_id: str, chunk_index: int, file: UploadFile) -> dict:
-    """Sauvegarde un chunk sur disque. Retourne le statut."""
+    """Sauvegarde un chunk sur disque. Thread-safe (un fichier par chunk)."""
     session = _load_session(upload_id)
     if not session:
         return {"error": "Session d'upload non trouvée"}
@@ -80,12 +97,8 @@ async def save_chunk(upload_id: str, chunk_index: int, file: UploadFile) -> dict
                 break
             f.write(block)
 
-    # Mettre à jour la liste des chunks reçus
-    if chunk_index not in session["received_chunks"]:
-        session["received_chunks"].append(chunk_index)
-    _save_session(upload_id, session)
-
-    received = len(session["received_chunks"])
+    # Compter les chunks sur disque (pas de race condition)
+    received = _count_chunks_on_disk(upload_dir)
     total = session["total_chunks"]
 
     return {
@@ -109,16 +122,17 @@ def assemble_chunks(upload_id: str) -> str:
     total = session["total_chunks"]
     upload_dir = session["upload_dir"]
 
-    received = session.get("received_chunks", [])
-    if len(received) < total:
-        raise ValueError(f"Chunks manquants: {len(received)}/{total}")
+    # Vérifier les chunks sur disque (source de vérité)
+    received = _count_chunks_on_disk(upload_dir)
+    if received < total:
+        # Lister les chunks manquants pour le debug
+        missing = [i for i in range(total) if not os.path.exists(os.path.join(upload_dir, f"chunk_{i:06d}"))]
+        raise ValueError(f"Chunks manquants: {received}/{total}. Manquants: {missing[:10]}")
 
     final_path = os.path.join(upload_dir, "assembled_file")
     with open(final_path, "wb") as out:
         for i in range(total):
             chunk_path = os.path.join(upload_dir, f"chunk_{i:06d}")
-            if not os.path.exists(chunk_path):
-                raise ValueError(f"Chunk {i} manquant sur disque")
             with open(chunk_path, "rb") as chunk_file:
                 while True:
                     block = chunk_file.read(8 * 1024 * 1024)
@@ -138,7 +152,8 @@ def assemble_chunks(upload_id: str) -> str:
     except OSError:
         pass
 
-    logger.info("Upload %s assemblé: %s (%.1f Mo)", upload_id, final_path, os.path.getsize(final_path) / (1024 * 1024))
+    size_mb = os.path.getsize(final_path) / (1024 * 1024)
+    logger.info("Upload %s assemblé: %.1f Mo", upload_id, size_mb)
     return final_path
 
 
