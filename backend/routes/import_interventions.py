@@ -974,37 +974,66 @@ async def get_batiment_interventions_historique(
     # Chercher par batiment_id direct
     query = {
         "tenant_id": tenant.id,
-        "$or": [
-            {"batiment_id": batiment_id},
-        ]
+        "batiment_id": batiment_id,
     }
 
-    # Aussi chercher par correspondance d'adresse
+    # Récupérer les interventions liées par batiment_id
+    linked_interventions = await db.interventions.find(
+        query, {"_id": 0}
+    ).sort("xml_time_call_received", -1).limit(limit).to_list(limit)
+    linked_ids = {i["id"] for i in linked_interventions}
+
+    # Aussi chercher par correspondance d'adresse (pour les interventions normales sans batiment_id)
     batiment = await db.batiments.find_one(
         {"tenant_id": tenant.id, "id": batiment_id},
         {"_id": 0, "adresse_civique": 1, "ville": 1}
     )
+    address_matched = []
     if batiment:
         addr = batiment.get("adresse_civique", "")
         ville = batiment.get("ville", "")
         if addr:
-            norm_addr = normalize_address(addr)
-            civic = extract_civic_number(addr)
-            if civic and norm_addr:
-                addr_regex = re.escape(civic) + ".*"
-                query["$or"].append({
-                    "address_full": {"$regex": addr_regex, "$options": "i"},
-                    "municipality": {"$regex": re.escape(ville), "$options": "i"} if ville else {"$exists": True},
-                })
+            # Nettoyer l'adresse (retirer ville si incluse)
+            clean_addr = addr
+            if "," in addr:
+                parts = addr.split(",")
+                possible_ville = parts[-1].strip().lstrip("*").strip()
+                if possible_ville:
+                    clean_addr = ",".join(parts[:-1]).strip()
 
-    total = await db.interventions.count_documents(query)
-    interventions = await db.interventions.find(
-        query, {"_id": 0}
-    ).sort("xml_time_call_received", -1).limit(limit).to_list(limit)
+            civic = extract_civic_number(clean_addr)
+            if civic:
+                street = extract_street_name(clean_addr)
+                # Chercher les interventions sans batiment_id qui correspondent par adresse
+                addr_regex = re.escape(civic) + ".*"
+                addr_query = {
+                    "tenant_id": tenant.id,
+                    "$or": [
+                        {"batiment_id": {"$exists": False}},
+                        {"batiment_id": None},
+                    ],
+                    "address_full": {"$regex": addr_regex, "$options": "i"},
+                }
+                candidates = await db.interventions.find(
+                    addr_query, {"_id": 0}
+                ).sort("xml_time_call_received", -1).limit(limit).to_list(limit)
+
+                for intv in candidates:
+                    if intv["id"] not in linked_ids:
+                        intv_addr = intv.get("address_full", "")
+                        intv_city = intv.get("municipality", "")
+                        is_match, _ = is_same_address(intv_addr, intv_city, clean_addr, ville or "")
+                        if is_match:
+                            address_matched.append(intv)
+
+    # Combiner et trier
+    all_interventions = linked_interventions + address_matched
+    all_interventions.sort(key=lambda x: x.get("xml_time_call_received", x.get("created_at", "")), reverse=True)
+    all_interventions = all_interventions[:limit]
 
     return {
-        "interventions": interventions,
-        "total": total,
+        "interventions": all_interventions,
+        "total": len(all_interventions),
     }
 
 
@@ -1022,3 +1051,94 @@ async def get_imported_dossier_adresses(
     ).to_list(length=None)
 
     return {"dossier_adresses": docs, "total": len(docs)}
+
+
+# ======================== MAPPING RÉTROACTIF ========================
+
+async def auto_link_interventions_to_batiment(tenant_id: str, batiment_id: str, adresse_civique: str, ville: str):
+    """
+    Appelée automatiquement quand un bâtiment est créé ou importé.
+    Relie les interventions orphelines (sans batiment_id) qui correspondent à cette adresse.
+    Couvre les interventions importées (address_full) ET les interventions normales (adresse, adresse_incident).
+    """
+    if not adresse_civique:
+        return 0
+
+    # Nettoyer l'adresse du bâtiment (retirer la ville si elle est dans l'adresse)
+    clean_addr = adresse_civique
+    clean_ville = ville or ""
+    if "," in adresse_civique:
+        parts = adresse_civique.split(",")
+        possible_ville = parts[-1].strip().lstrip("*").strip()
+        if possible_ville and (not ville or normalize_address(possible_ville) == normalize_address(ville)):
+            clean_addr = ",".join(parts[:-1]).strip()
+            if not clean_ville:
+                clean_ville = possible_ville
+
+    civic = extract_civic_number(clean_addr)
+    if not civic:
+        return 0
+
+    # Chercher les interventions orphelines (pas de batiment_id) du même tenant
+    addr_regex = re.escape(civic) + ".*"
+    orphan_query = {
+        "tenant_id": tenant_id,
+        "$or": [
+            {"batiment_id": {"$exists": False}},
+            {"batiment_id": None},
+            {"batiment_id": ""},
+        ],
+        "$or": [
+            {"batiment_id": {"$exists": False}},
+            {"batiment_id": None},
+            {"batiment_id": ""},
+        ],
+    }
+    # Requête séparée pour chaque champ d'adresse
+    addr_fields_query = {
+        "$or": [
+            {"address_full": {"$regex": addr_regex, "$options": "i"}},
+            {"adresse": {"$regex": addr_regex, "$options": "i"}},
+            {"adresse_incident": {"$regex": addr_regex, "$options": "i"}},
+        ]
+    }
+    # Combiner: orphelines ET correspondant à l'adresse
+    combined_query = {
+        "tenant_id": tenant_id,
+        "$and": [
+            {"$or": [
+                {"batiment_id": {"$exists": False}},
+                {"batiment_id": None},
+                {"batiment_id": ""},
+            ]},
+            addr_fields_query,
+        ]
+    }
+
+    orphans = await db.interventions.find(
+        combined_query,
+        {"_id": 0, "id": 1, "address_full": 1, "municipality": 1, "adresse": 1, "adresse_incident": 1}
+    ).to_list(length=None)
+
+    linked = 0
+    for intv in orphans:
+        # Essayer avec address_full (interventions importées)
+        intv_addr = intv.get("address_full") or intv.get("adresse") or intv.get("adresse_incident") or ""
+        intv_city = intv.get("municipality", "")
+        if not intv_addr:
+            continue
+        is_match, _ = is_same_address(intv_addr, intv_city, clean_addr, clean_ville)
+        if is_match:
+            await db.interventions.update_one(
+                {"tenant_id": tenant_id, "id": intv["id"]},
+                {"$set": {
+                    "batiment_id": batiment_id,
+                    "match_method": "auto_retroactive",
+                }}
+            )
+            linked += 1
+
+    if linked > 0:
+        logger.info("Mapping rétroactif: %d intervention(s) reliée(s) au bâtiment %s (%s)", linked, batiment_id, adresse_civique)
+
+    return linked

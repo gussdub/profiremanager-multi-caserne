@@ -382,6 +382,18 @@ async def create_batiment(
         description=f"Création du bâtiment: {batiment.adresse_civique}, {batiment.ville}"
     )
     
+    # Mapping rétroactif: relier automatiquement les interventions orphelines
+    try:
+        from routes.import_interventions import auto_link_interventions_to_batiment
+        linked = await auto_link_interventions_to_batiment(
+            tenant.id, batiment_obj.id, batiment.adresse_civique, batiment.ville
+        )
+        if linked > 0:
+            return {"message": f"Bâtiment créé. {linked} intervention(s) historique(s) reliée(s) automatiquement.", "id": batiment_obj.id, "interventions_linked": linked}
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning("Erreur mapping rétroactif: %s", e)
+    
     return {"message": "Bâtiment créé", "id": batiment_obj.id}
 
 
