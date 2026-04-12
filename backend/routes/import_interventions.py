@@ -475,9 +475,10 @@ async def preview_intervention_import(
     tenant = await get_tenant_from_slug(tenant_slug)
     await require_permission(tenant.id, current_user, "interventions", "creer", "rapports")
 
-    contents = await file.read()
+    from utils.chunked_upload import save_upload_to_disk
+    file_path = await save_upload_to_disk(file)
     filename = file.filename.lower()
-    return await _process_import_file(contents, filename, tenant, current_user)
+    return await _process_import_file_from_path(file_path, filename, tenant, current_user)
 
 
 async def _process_import_file_from_path(file_path: str, filename: str, tenant, current_user) -> dict:

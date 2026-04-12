@@ -20,6 +20,8 @@ import io
 router = APIRouter(tags=["Import Inspections Bornes"])
 logger = logging.getLogger(__name__)
 
+from utils.chunked_upload import save_upload_to_disk, cleanup_file, init_upload, get_upload_session, save_chunk, assemble_chunks
+
 from routes.dependencies import (
     db,
     get_current_user,
@@ -211,8 +213,11 @@ async def import_inspections_bornes_seches(
             }
         )
     
-    # Lire le fichier Excel
-    content = await file.read()
+    # Lire le fichier Excel via disque
+    file_path = await save_upload_to_disk(file)
+    with open(file_path, "rb") as f:
+        content = f.read()
+    cleanup_file(file_path)
     wb = openpyxl.load_workbook(io.BytesIO(content))
     ws = wb.active
     

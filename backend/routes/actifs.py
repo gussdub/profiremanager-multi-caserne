@@ -74,6 +74,7 @@ from routes.notifications import send_push_notification_to_users, send_web_push_
 
 # Import WebSocket pour synchronisation temps réel
 from routes.websocket import broadcast_actif_update
+from utils.chunked_upload import save_upload_to_disk, cleanup_file
 
 router = APIRouter(tags=["Actifs"])
 logger = logging.getLogger(__name__)
@@ -1579,7 +1580,10 @@ async def import_inspections_bornes(
     tenant = await get_tenant_from_slug(tenant_slug)
     await require_permission(tenant.id, current_user, "actifs", "creer", "eau")
     
-    contents = await file.read()
+    file_path = await save_upload_to_disk(file)
+    with open(file_path, "rb") as f:
+        contents = f.read()
+    cleanup_file(file_path)
     try:
         csv_text = contents.decode('utf-8')
     except UnicodeDecodeError:

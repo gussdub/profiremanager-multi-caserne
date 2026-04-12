@@ -72,6 +72,7 @@ router = APIRouter(tags=["Prévention"])
 logger = logging.getLogger(__name__)
 
 # Import des modèles Pydantic depuis le fichier dédié
+from utils.chunked_upload import save_upload_to_disk, cleanup_file
 from routes.prevention_models import (
     Batiment, BatimentCreate, BatimentPhotoUpload,
     DependanceBatiment, DependanceCreate, DependanceUpdate,
@@ -301,7 +302,10 @@ async def import_batiments_csv(
     if not tenant.parametres.get('module_prevention_active', False):
         raise HTTPException(status_code=403, detail="Module prévention non activé")
     
-    contents = await file.read()
+    file_path = await save_upload_to_disk(file)
+    with open(file_path, "rb") as f:
+        contents = f.read()
+    cleanup_file(file_path)
     try:
         csv_text = contents.decode('utf-8')
     except UnicodeDecodeError:

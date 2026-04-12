@@ -70,6 +70,7 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 # Imports pour Excel
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from utils.chunked_upload import save_upload_to_disk, cleanup_file
 from openpyxl.utils import get_column_letter
 
 router = APIRouter(tags=["Rapports"])
@@ -846,7 +847,10 @@ async def import_rapports_csv(
     await require_permission(tenant.id, current_user, "rapports", "exporter")
     
     try:
-        content = await file.read()
+        file_path = await save_upload_to_disk(file)
+        with open(file_path, "rb") as f:
+            content = f.read()
+        cleanup_file(file_path)
         decoded = content.decode('utf-8-sig')
         reader = csv.DictReader(io.StringIO(decoded))
         

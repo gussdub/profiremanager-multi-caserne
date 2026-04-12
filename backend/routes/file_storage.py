@@ -19,6 +19,7 @@ from routes.dependencies import (
     User,
 )
 from services.azure_storage import put_object, get_object, get_content_type, generate_storage_path, generate_sas_url, delete_object
+from utils.chunked_upload import save_upload_to_disk, cleanup_file
 
 router = APIRouter(tags=["File Storage"])
 logger = logging.getLogger(__name__)
@@ -39,7 +40,10 @@ async def upload_file(
     """Upload un fichier vers Azure Blob Storage et enregistre les métadonnées en base."""
     tenant = await get_tenant_from_slug(tenant_slug)
 
-    data = await file.read()
+    file_path = await save_upload_to_disk(file)
+    with open(file_path, "rb") as f:
+        data = f.read()
+    cleanup_file(file_path)
     content_type = file.content_type or get_content_type(file.filename)
     path = generate_storage_path(tenant.id, category, file.filename)
 
