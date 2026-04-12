@@ -97,7 +97,7 @@ const ImportBatimentsIntelligent = ({ tenantSlug, user, onImportComplete }) => {
   };
 
   // Constantes pour chunked upload
-  const CHUNK_SIZE = 50 * 1024 * 1024; // 50 Mo
+  const CHUNK_SIZE = 10 * 1024 * 1024; // 10 Mo
   const API_BASE = `${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}`;
   const getToken = () => localStorage.getItem(`${tenantSlug}_token`) || localStorage.getItem('token');
 

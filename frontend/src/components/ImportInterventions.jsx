@@ -7,7 +7,7 @@ import {
   AlertTriangle, Siren, XCircle, Building2, Link2, LinkIcon
 } from 'lucide-react';
 
-const CHUNK_SIZE = 50 * 1024 * 1024; // 50MB par chunk (réduit le nombre de requêtes pour les gros fichiers)
+const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB par chunk (compatible Render timeout 30s)
 
 const ImportInterventions = ({ tenantSlug, onImportComplete }) => {
   const { toast } = useToast();
@@ -86,7 +86,9 @@ const ImportInterventions = ({ tenantSlug, onImportComplete }) => {
             body: formData,
           });
           if (!chunkRes.ok) {
-            if (attempt === MAX_RETRIES - 1) throw new Error(`Échec chunk ${i + 1}/${totalChunks} (${chunkSizeMB} Mo)`);
+            let errDetail = `HTTP ${chunkRes.status}`;
+            try { errDetail = (await chunkRes.json()).detail || errDetail; } catch {}
+            if (attempt === MAX_RETRIES - 1) throw new Error(`Échec chunk ${i + 1}/${totalChunks}: ${errDetail}`);
             await new Promise(r => setTimeout(r, 2000 * (attempt + 1))); // backoff
             continue;
           }
