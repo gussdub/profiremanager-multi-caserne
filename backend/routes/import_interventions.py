@@ -638,22 +638,23 @@ async def _build_preview_response(
     # Si c'est un DossierAdresse sans interventions
     if not all_interventions and dossier_adresses:
         session_id = str(uuid.uuid4())
-        # Pour les fichiers ZIP avec des files, stocker le chemin ou les bytes
-        zip_ref = None
-        if zip_source:
-            if isinstance(zip_source, str):
-                # C'est un chemin de fichier
-                with open(zip_source, "rb") as f:
-                    zip_ref = f.read()
-            else:
-                zip_ref = zip_source
+        # Stocker le CHEMIN du fichier ZIP (pas le contenu pour éviter OOM)
+        zip_path = None
+        if zip_source and isinstance(zip_source, str) and os.path.exists(zip_source):
+            zip_path = zip_source
+        elif zip_source and isinstance(zip_source, bytes):
+            # Petits fichiers (upload direct) → sauver sur disque
+            tmp_path = os.path.join(CHUNKS_DIR, f"session_{session_id}.zip")
+            with open(tmp_path, "wb") as f:
+                f.write(zip_source)
+            zip_path = tmp_path
         import_sessions[session_id] = {
             "tenant_id": tenant.id,
             "user_id": current_user.id,
             "type": "dossier_adresse",
             "dossier_adresses": dossier_adresses,
             "files_in_zip": list(files_in_zip.keys()),
-            "zip_contents": zip_ref,
+            "zip_path": zip_path,
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
         return {
@@ -713,13 +714,14 @@ async def _build_preview_response(
     unmatched_count = len(new_items) - matched_count
 
     session_id = str(uuid.uuid4())
-    zip_ref = None
-    if zip_source:
-        if isinstance(zip_source, str):
-            with open(zip_source, "rb") as f:
-                zip_ref = f.read()
-        else:
-            zip_ref = zip_source
+    zip_path = None
+    if zip_source and isinstance(zip_source, str) and os.path.exists(zip_source):
+        zip_path = zip_source
+    elif zip_source and isinstance(zip_source, bytes):
+        tmp_path = os.path.join(CHUNKS_DIR, f"session_{session_id}.zip")
+        with open(tmp_path, "wb") as f:
+            f.write(zip_source)
+        zip_path = tmp_path
     import_sessions[session_id] = {
         "tenant_id": tenant.id,
         "user_id": current_user.id,
@@ -729,7 +731,7 @@ async def _build_preview_response(
         "duplicates": duplicates,
         "dossier_adresses": dossier_adresses,
         "files_in_zip": list(files_in_zip.keys()),
-        "zip_contents": zip_ref,
+        "zip_path": zip_path,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -875,12 +877,12 @@ async def execute_intervention_import(
     errors = []
     files_uploaded = 0
 
-    # Upload des fichiers joints si disponibles
-    zip_contents = session.get("zip_contents")
+    # Upload des fichiers joints si disponibles (lire depuis le disque)
+    zip_path = session.get("zip_path")
     file_blob_map = {}
-    if zip_contents:
+    if zip_path and os.path.exists(zip_path):
         try:
-            zf = zipfile.ZipFile(BytesIO(zip_contents))
+            zf = zipfile.ZipFile(zip_path)
             for file_path in session.get("files_in_zip", []):
                 try:
                     file_data = zf.read(file_path)
@@ -889,7 +891,6 @@ async def execute_intervention_import(
                     content_type = MIME_TYPES.get(ext, "application/octet-stream")
                     blob_path = f"profiremanager/{tenant.id}/import-history/{uuid.uuid4()}.{ext}"
                     put_object(blob_path, file_data, content_type)
-                    # Map le nom de fichier (sans extension parfois) au blob
                     file_id = file_name.rsplit(".", 1)[0] if "." in file_name else file_name
                     file_blob_map[file_id] = {
                         "blob_name": blob_path,
@@ -947,7 +948,19 @@ async def execute_intervention_import(
                 "error": str(e),
             })
 
-    # Nettoyer la session
+    # Nettoyer la session et les fichiers temporaires
+    zip_path = session.get("zip_path")
+    if zip_path:
+        try:
+            if os.path.isfile(zip_path):
+                os.remove(zip_path)
+            # Aussi nettoyer le dossier parent s'il est dans CHUNKS_DIR
+            parent = os.path.dirname(zip_path)
+            if parent.startswith(CHUNKS_DIR) and os.path.isdir(parent):
+                import shutil
+                shutil.rmtree(parent, ignore_errors=True)
+        except Exception:
+            pass
     del import_sessions[session_id]
 
     return {
@@ -963,14 +976,14 @@ async def _execute_dossier_adresse_import(session, tenant, current_user, session
     """Exécute l'import des DossierAdresse comme référence et enregistre dans la session."""
     dossier_adresses = session.get("dossier_adresses", [])
     files_in_zip = session.get("files_in_zip", [])
-    zip_contents = session.get("zip_contents")
+    zip_path = session.get("zip_path")
     files_uploaded = 0
 
-    # Upload des fichiers
+    # Upload des fichiers depuis le disque
     file_blob_map = {}
-    if zip_contents and files_in_zip:
+    if zip_path and os.path.exists(zip_path) and files_in_zip:
         try:
-            zf = zipfile.ZipFile(BytesIO(zip_contents))
+            zf = zipfile.ZipFile(zip_path)
             for file_path in files_in_zip:
                 try:
                     file_data = zf.read(file_path)
@@ -1022,6 +1035,17 @@ async def _execute_dossier_adresse_import(session, tenant, current_user, session
         await db.import_dossier_adresses.insert_one(doc)
         stored += 1
 
+    # Nettoyer les fichiers temporaires
+    if zip_path:
+        try:
+            if os.path.isfile(zip_path):
+                os.remove(zip_path)
+            parent = os.path.dirname(zip_path)
+            if parent.startswith(CHUNKS_DIR) and os.path.isdir(parent):
+                import shutil
+                shutil.rmtree(parent, ignore_errors=True)
+        except Exception:
+            pass
     del import_sessions[session_id]
 
     return {
@@ -1029,7 +1053,7 @@ async def _execute_dossier_adresse_import(session, tenant, current_user, session
         "created": stored,
         "files_uploaded": files_uploaded,
         "errors": [],
-        "message": f"{stored} dossier(s) d'adresse importé(s) comme référence, {files_uploaded} fichier(s) uploadé(s). Ces données seront utilisées pour le mapping intelligent lors de l'import des interventions.",
+        "message": f"{stored} dossier(s) d'adresse importé(s) comme référence, {files_uploaded} fichier(s) uploadé(s).",
     }
 
 
