@@ -547,6 +547,73 @@ async def get_intervention_detail(
         {"intervention_id": intervention_id}, {"_id": 0}
     ).to_list(20)
     
+    # Pour les interventions importées : enrichir avec les données PremLigne
+    if intervention.get("import_source") == "history_import" and intervention.get("pfm_record"):
+        rec = intervention["pfm_record"]
+        
+        # Extraire les véhicules depuis intervenant.ressource
+        if not vehicles:
+            intv_data = rec.get("intervenant", {})
+            ressource = intv_data.get("ressource", {})
+            if isinstance(ressource, dict):
+                for key, val in ressource.items():
+                    if isinstance(val, dict) and ("id_vehicule" in val or "vehicule" in val):
+                        vehicles.append({
+                            "intervention_id": intervention_id,
+                            "number": val.get("id_vehicule") or val.get("vehicule") or key,
+                            "type": val.get("type_vehicule") or "",
+                            "crew_count": val.get("nb_pompier") or 0,
+                            "heure_depart": val.get("heure_depart") or "",
+                            "heure_arrivee": val.get("heure_arrivee") or "",
+                            "heure_retour": val.get("heure_retour") or "",
+                            "imported": True,
+                        })
+                    elif isinstance(val, list):
+                        for v in val:
+                            if isinstance(v, dict):
+                                vehicles.append({
+                                    "intervention_id": intervention_id,
+                                    "number": v.get("id_vehicule") or v.get("vehicule") or "",
+                                    "type": v.get("type_vehicule") or "",
+                                    "crew_count": v.get("nb_pompier") or 0,
+                                    "imported": True,
+                                })
+            # Format alternatif: liste directe de véhicules
+            if not vehicles and isinstance(rec.get("vehicules"), list):
+                for v in rec["vehicules"]:
+                    if isinstance(v, dict):
+                        vehicles.append({
+                            "intervention_id": intervention_id,
+                            "number": v.get("nom") or v.get("numero") or "",
+                            "type": v.get("type") or "",
+                            "imported": True,
+                        })
+        
+        # Extraire le personnel depuis intervenant.info_interv_employe
+        if not resources:
+            employes = intv_data.get("info_interv_employe", {}) if isinstance(rec.get("intervenant"), dict) else {}
+            info_emp = employes.get("info_employe", {})
+            if isinstance(info_emp, dict):
+                for key, val in info_emp.items():
+                    if isinstance(val, dict) and ("nom" in val or "matricule" in val):
+                        resources.append({
+                            "intervention_id": intervention_id,
+                            "user_id": val.get("matricule") or key,
+                            "name": f"{val.get('prenom', '')} {val.get('nom', '')}".strip() or key,
+                            "role": val.get("fonction") or val.get("role") or "",
+                            "vehicle_number": val.get("id_vehicule") or "",
+                            "imported": True,
+                        })
+                    elif isinstance(val, list):
+                        for emp in val:
+                            if isinstance(emp, dict):
+                                resources.append({
+                                    "intervention_id": intervention_id,
+                                    "name": f"{emp.get('prenom', '')} {emp.get('nom', '')}".strip(),
+                                    "role": emp.get("fonction") or "",
+                                    "imported": True,
+                                })
+    
     # Calculer les délais
     response_time = None
     if intervention.get("xml_time_dispatch") and intervention.get("xml_time_arrival_1st"):

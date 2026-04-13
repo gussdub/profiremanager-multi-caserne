@@ -250,6 +250,13 @@ async def fix_existing_interventions(
             if m:
                 caller_phone = m.group(1).strip()
 
+        # Extraire code_feu du type si format "40 - Installation Électrique"
+        code_feu = record.get("code_feu") or doc.get("code_feu") or ""
+        if not code_feu and type_intv:
+            parts = type_intv.split(" - ", 1)
+            if len(parts) == 2 and parts[0].strip().isdigit():
+                code_feu = parts[0].strip()
+
         update = {
             "address_full": addr or doc.get("address_full") or "",
             "municipality": city or doc.get("municipality") or "",
@@ -260,7 +267,7 @@ async def fix_existing_interventions(
             "vehicules": vehicules if vehicules else doc.get("vehicules") or [],
             "caller_name": caller_name,
             "caller_phone": caller_phone,
-            "code_feu": record.get("code_feu") or doc.get("code_feu") or "",
+            "code_feu": code_feu,
             # Chronologie — format brut: "appel", format résolu: "date_appel"
             "xml_time_call_received": chrono.get("appel") or chrono.get("date_appel") or carte.get("heure_appel") or record.get("date_activite") or doc.get("xml_time_call_received") or "",
             "xml_time_alert": chrono.get("transmission") or chrono.get("alerte") or carte.get("heure_alerte") or "",
@@ -374,6 +381,13 @@ async def _handle_intervention(record: dict, tenant, user, source: str) -> dict:
     if isinstance(cause, str):
         cause = {}
 
+    # Extraire code_feu du type si format "40 - Installation Électrique"
+    code_feu = record.get("code_feu") or carte.get("code_feu") or ""
+    if not code_feu and type_intv:
+        parts = type_intv.split(" - ", 1)
+        if len(parts) == 2 and parts[0].strip().isdigit():
+            code_feu = parts[0].strip()
+
     doc_id = str(uuid.uuid4())
     doc = {
         "id": doc_id,
@@ -382,7 +396,7 @@ async def _handle_intervention(record: dict, tenant, user, source: str) -> dict:
         "type_intervention": type_intv,
         "address_full": addr,
         "municipality": city,
-        "code_feu": record.get("code_feu") or carte.get("code_feu") or "",
+        "code_feu": code_feu,
         "niveau_risque": record.get("niveau_risque") or "",
         "caserne": caserne,
         # Chronologie complète
