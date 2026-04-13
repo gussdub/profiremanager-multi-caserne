@@ -172,84 +172,120 @@ async def fix_existing_interventions(
 ):
     """
     Corrige les interventions déjà importées en re-extrayant les champs depuis pfm_record.
-    Utile si le mapping initial était incomplet.
+    Gère les deux formats : PremLigne brut (chronologie.appel, lieu_interv.desc_lieu)
+    et PremLigne résolu (id_code_appel, id_dossier_adresse).
     """
     tenant = await get_tenant_from_slug(tenant_slug)
-    
+
     cursor = db.interventions.find(
         {"tenant_id": tenant.id, "import_source": "history_import", "pfm_record": {"$exists": True, "$ne": None}},
         {"_id": 0}
     )
-    
+
     fixed = 0
     async for doc in cursor:
         record = doc.get("pfm_record", {})
         if not record:
             continue
-        
-        # Re-extraire tous les champs
-        addr = (record.get("id_dossier_adresse") or record.get("dossier_adresse")
-                or record.get("adresse") or doc.get("address_full") or "")
-        city = record.get("ville") or record.get("municipalite") or ""
-        if not city and "," in addr:
-            parts = addr.split(",")
-            city = parts[-1].strip().lstrip("*").strip()
-            addr = ",".join(parts[:-1]).strip()
-        
-        type_intv = (record.get("id_code_appel") or record.get("code_appel")
-                     or record.get("type_intervention") or doc.get("type_intervention") or "")
-        
+
         chrono = record.get("chronologie") or {}
         if isinstance(chrono, str):
             chrono = {}
         carte = record.get("carte_appel") or {}
         if isinstance(carte, str):
             carte = {}
-        
-        officier = (record.get("id_responsable") or record.get("responsable")
-                    or record.get("id_auteur") or record.get("auteur") or doc.get("officer_in_charge_xml") or "")
-        
+        lieu = record.get("lieu_interv") or {}
+        if isinstance(lieu, str):
+            lieu = {}
         cr = record.get("compte_rendu") or {}
-        notes = cr.get("description") or cr.get("narratif") or "" if isinstance(cr, dict) else str(cr)
+        if isinstance(cr, str):
+            cr = {"description": cr}
+
+        # === ADRESSE ===
+        # Format résolu: id_dossier_adresse = "500 chemin VALLEY, Brome"
+        # Format brut: lieu_interv.desc_lieu = "de 1500, SCENIC (CHEMIN), SUTTON"
+        addr = (record.get("id_dossier_adresse") or record.get("dossier_adresse") or "")
+        city = ""
+        if not addr:
+            raw_lieu = lieu.get("desc_lieu") or ""
+            if raw_lieu:
+                # Parser "de 1500, SCENIC (CHEMIN), SUTTON" → "1500 SCENIC, SUTTON"
+                addr = raw_lieu.lstrip("de ").strip()
+            city = lieu.get("ville") or ""
+        if not city and addr and "," in addr:
+            parts = addr.split(",")
+            city = parts[-1].strip().lstrip("*").strip()
+            addr = ",".join(parts[:-1]).strip()
+
+        # === TYPE / NATURE ===
+        type_intv = (record.get("id_code_appel") or record.get("code_appel")
+                     or record.get("type_intervention") or "")
+
+        # === OFFICIER / RESPONSABLE ===
+        officier = (record.get("id_responsable") or record.get("responsable")
+                    or record.get("id_auteur") or record.get("auteur") or "")
+
+        # === NOTES / COMPTE RENDU ===
+        notes = cr.get("description") or cr.get("narratif") or ""
         if not notes:
-            notes = record.get("notes") or doc.get("notes") or ""
-        
+            notes = record.get("notes") or record.get("narratif") or ""
+
+        # === CASERNE ===
+        caserne = record.get("id_caserne") or record.get("caserne") or ""
+
+        # === VÉHICULES ===
         vehicules = record.get("vehicules") or record.get("ressources") or []
-        caserne = record.get("id_caserne") or record.get("caserne") or doc.get("caserne") or ""
-        
+
+        # === CALLER (peut être dans carte_appel ou parsé des notes) ===
+        caller_name = carte.get("nom_demandeur") or carte.get("de_qui") or ""
+        caller_phone = carte.get("tel_demandeur") or carte.get("tel_de_qui") or ""
+        # Parser depuis les notes si pas trouvé directement
+        if not caller_name and notes:
+            import re
+            m = re.search(r"Nom du demandeur\s*:\s*(.+?)(?:\n|$)", notes)
+            if m:
+                caller_name = m.group(1).strip().rstrip("-").strip()
+        if not caller_phone and notes:
+            m = re.search(r"Tel du demandeur\s*:\s*(\S+)", notes)
+            if m:
+                caller_phone = m.group(1).strip()
+
         update = {
-            "type_intervention": type_intv,
-            "address_full": addr,
-            "municipality": city,
-            "caserne": caserne,
-            "officer_in_charge_xml": officier,
-            "notes": notes,
-            "vehicules": vehicules,
-            "code_feu": record.get("code_feu") or carte.get("code_feu") or doc.get("code_feu") or "",
-            "xml_time_call_received": chrono.get("date_appel") or carte.get("heure_appel") or record.get("date_activite") or doc.get("xml_time_call_received") or "",
-            "xml_time_alert": chrono.get("transmission") or carte.get("heure_alerte") or "",
-            "xml_time_departure": chrono.get("depart_caserne") or carte.get("heure_depart") or "",
-            "xml_time_arrival": chrono.get("arrivee_prem_vehicule") or chrono.get("arrivee_force_frappe") or carte.get("heure_arrivee") or "",
+            "address_full": addr or doc.get("address_full") or "",
+            "municipality": city or doc.get("municipality") or "",
+            "type_intervention": type_intv or doc.get("type_intervention") or "",
+            "officer_in_charge_xml": officier or doc.get("officer_in_charge_xml") or "",
+            "caserne": caserne or doc.get("caserne") or "",
+            "notes": notes or doc.get("notes") or "",
+            "vehicules": vehicules if vehicules else doc.get("vehicules") or [],
+            "caller_name": caller_name,
+            "caller_phone": caller_phone,
+            "code_feu": record.get("code_feu") or doc.get("code_feu") or "",
+            # Chronologie — format brut: "appel", format résolu: "date_appel"
+            "xml_time_call_received": chrono.get("appel") or chrono.get("date_appel") or carte.get("heure_appel") or record.get("date_activite") or doc.get("xml_time_call_received") or "",
+            "xml_time_alert": chrono.get("transmission") or chrono.get("alerte") or carte.get("heure_alerte") or "",
+            "xml_time_departure": chrono.get("depart_caserne") or chrono.get("depart") or carte.get("heure_depart") or "",
+            "xml_time_arrival": chrono.get("arrivee_prem_vehicule") or carte.get("heure_arrivee") or "",
+            "xml_time_force_frappe": chrono.get("arrivee_force_frappe") or "",
             "xml_time_maitrise": chrono.get("maitrise") or "",
             "xml_time_return": chrono.get("retour") or carte.get("heure_retour") or "",
-            "xml_time_end": chrono.get("fin_intervention") or carte.get("heure_disp_caserne") or "",
-            "caller_name": carte.get("nom_demandeur") or carte.get("de_qui") or "",
-            "caller_phone": carte.get("tel_demandeur") or carte.get("tel_de_qui") or "",
+            "xml_time_end": chrono.get("fin_intervention") or chrono.get("disponible") or carte.get("heure_disp_caserne") or "",
+            "statut_premligne": record.get("statut") or "",
         }
-        
+
         # Auto-match bâtiment si pas encore fait
-        if not doc.get("batiment_id") and addr:
-            bat_id = await _match_address(addr, city, tenant.id)
+        if not doc.get("batiment_id") and update["address_full"]:
+            bat_id = await _match_address(update["address_full"], update["municipality"], tenant.id)
             if bat_id:
                 update["batiment_id"] = bat_id
                 update["match_method"] = "auto_address"
-        
+
         await db.interventions.update_one(
             {"tenant_id": tenant.id, "id": doc["id"]},
             {"$set": update}
         )
         fixed += 1
-    
+
     return {"fixed": fixed, "message": f"{fixed} intervention(s) corrigée(s)"}
 
 
@@ -266,20 +302,30 @@ async def _handle_intervention(record: dict, tenant, user, source: str) -> dict:
         if existing:
             return {"status": "duplicate", "entity_type": "Intervention", "id": existing["id"]}
 
-    # Adresse (PremLigne: id_dossier_adresse = "500 chemin VALLEY, Brome")
-    addr = (record.get("id_dossier_adresse") or record.get("dossier_adresse")
-            or record.get("adresse") or record.get("adresse_appel") or "")
-    city = record.get("ville") or record.get("municipalite") or ""
-    if not city and "," in addr:
+    # Adresse — Format résolu: id_dossier_adresse = "500 chemin VALLEY, Brome"
+    #           Format brut: lieu_interv.desc_lieu = "de 1500, SCENIC (CHEMIN), SUTTON"
+    lieu = record.get("lieu_interv") or {}
+    if isinstance(lieu, str):
+        lieu = {}
+    addr = (record.get("id_dossier_adresse") or record.get("dossier_adresse") or "")
+    city = ""
+    if not addr:
+        raw_lieu = lieu.get("desc_lieu") or record.get("adresse") or record.get("adresse_appel") or ""
+        if raw_lieu:
+            addr = raw_lieu.lstrip("de ").strip()
+        city = lieu.get("ville") or ""
+    if not city:
+        city = record.get("ville") or record.get("municipalite") or ""
+    if not city and addr and "," in addr:
         parts = addr.split(",")
         city = parts[-1].strip().lstrip("*").strip()
         addr = ",".join(parts[:-1]).strip()
 
-    # Type (PremLigne: id_code_appel = "40 - Installation Électrique (Hydro)")
+    # Type (résolu: id_code_appel / brut: peut être absent)
     type_intv = (record.get("id_code_appel") or record.get("code_appel")
                  or record.get("type_intervention") or record.get("nature") or "")
 
-    # Chronologie
+    # Chronologie — brut: "appel" / résolu: "date_appel"
     chrono = record.get("chronologie") or {}
     if isinstance(chrono, str):
         chrono = {}
@@ -287,16 +333,15 @@ async def _handle_intervention(record: dict, tenant, user, source: str) -> dict:
     if isinstance(carte, str):
         carte = {}
 
-    date_appel = (chrono.get("date_appel") or carte.get("heure_appel")
+    date_appel = (chrono.get("appel") or chrono.get("date_appel") or carte.get("heure_appel")
                   or record.get("date_activite") or record.get("date_ident") or "")
-    date_alerte = chrono.get("transmission") or carte.get("heure_alerte") or ""
-    date_depart = chrono.get("depart_caserne") or carte.get("heure_depart") or ""
-    date_arrivee = (chrono.get("arrivee_prem_vehicule") or chrono.get("arrivee_force_frappe")
-                    or carte.get("heure_arrivee") or "")
+    date_alerte = chrono.get("transmission") or chrono.get("alerte") or carte.get("heure_alerte") or ""
+    date_depart = chrono.get("depart_caserne") or chrono.get("depart") or carte.get("heure_depart") or ""
+    date_arrivee = chrono.get("arrivee_prem_vehicule") or carte.get("heure_arrivee") or ""
+    date_force_frappe = chrono.get("arrivee_force_frappe") or ""
     date_maitrise = chrono.get("maitrise") or ""
     date_retour = chrono.get("retour") or carte.get("heure_retour") or ""
     date_fin = chrono.get("fin_intervention") or chrono.get("disponible") or carte.get("heure_disp_caserne") or ""
-    date_sous_controle = chrono.get("sous_controle") or ""
 
     # Officier / Auteur
     officier = (record.get("id_responsable") or record.get("responsable")
@@ -304,21 +349,27 @@ async def _handle_intervention(record: dict, tenant, user, source: str) -> dict:
 
     # Compte rendu
     cr = record.get("compte_rendu") or {}
-    notes = cr.get("description") or cr.get("narratif") or "" if isinstance(cr, dict) else str(cr)
+    if isinstance(cr, str):
+        cr = {"description": cr}
+    notes = cr.get("description") or cr.get("narratif") or ""
     if not notes:
-        notes = record.get("notes") or record.get("description") or record.get("narratif") or ""
+        notes = record.get("notes") or record.get("narratif") or ""
 
-    # Caserne
-    caserne = record.get("id_caserne") or record.get("caserne") or ""
-
-    # Appelant
-    caller_name = carte.get("nom_demandeur") or carte.get("de_qui") or record.get("de_qui") or ""
+    # Parser appelant depuis les notes si pas dans carte_appel
+    import re as _re
+    caller_name = carte.get("nom_demandeur") or carte.get("de_qui") or ""
     caller_phone = carte.get("tel_demandeur") or carte.get("tel_de_qui") or ""
+    if not caller_name and notes:
+        m = _re.search(r"Nom du demandeur\s*:\s*(.+?)(?:\n|$|-{3,})", notes)
+        if m:
+            caller_name = m.group(1).strip()
+    if not caller_phone and notes:
+        m = _re.search(r"Tel du demandeur\s*:\s*(\S+)", notes)
+        if m:
+            caller_phone = m.group(1).strip()
 
-    # Véhicules / Ressources
+    caserne = record.get("id_caserne") or record.get("caserne") or ""
     vehicules = record.get("vehicules") or record.get("ressources") or []
-
-    # Cause incendie
     cause = record.get("cause_incendie") or {}
     if isinstance(cause, str):
         cause = {}
@@ -339,7 +390,7 @@ async def _handle_intervention(record: dict, tenant, user, source: str) -> dict:
         "xml_time_alert": date_alerte,
         "xml_time_departure": date_depart,
         "xml_time_arrival": date_arrivee,
-        "xml_time_under_control": date_sous_controle,
+        "xml_time_force_frappe": date_force_frappe,
         "xml_time_maitrise": date_maitrise,
         "xml_time_return": date_retour,
         "xml_time_end": date_fin,
