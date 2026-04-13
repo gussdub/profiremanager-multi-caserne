@@ -208,6 +208,24 @@ async def import_batch(
             detail=f"entity_type '{entity_type}' non supporté. Types: {', '.join(list(main_handlers.keys()) + sorted(referentiels))}"
         )
 
+
+@router.delete("/{tenant_slug}/import/purge-history")
+async def purge_import_history(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user),
+):
+    """Supprime toutes les interventions importées (history_import) pour recommencer un import propre."""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    result = await db.interventions.delete_many({"tenant_id": tenant.id, "import_source": "history_import"})
+    # Nettoyer aussi les sessions et données temporaires
+    await db.upload_sessions.delete_many({"tenant_id": tenant.id})
+    await db.upload_chunks.delete_many({"upload_id": {"$exists": True}})
+    await db.import_tasks.delete_many({"tenant_id": tenant.id})
+    await db.import_task_data.delete_many({})
+    await db.import_dossier_adresses.delete_many({"tenant_id": tenant.id})
+    return {"deleted": result.deleted_count, "message": f"{result.deleted_count} intervention(s) importée(s) supprimée(s)"}
+
+
 # Table des codes d'intervention CAUCA
 CAUCA_CODES = {
     "1": "Administration",
