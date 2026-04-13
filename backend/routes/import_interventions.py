@@ -467,6 +467,17 @@ async def _background_finalize(task_id: str, upload_id: str, filename: str, tena
         # Traiter le fichier
         result = await _process_import_file_from_path_raw(final_path, filename, tenant_id)
 
+        # Stocker les données volumineuses séparément (évite la limite 16 Mo)
+        heavy_data = {
+            "task_id": task_id,
+            "interventions_data": result.pop("interventions_data", []),
+            "duplicates_data": result.pop("duplicates_data", []),
+            "dossier_adresses": result.pop("dossier_adresses", []),
+            "files_in_zip": result.pop("files_in_zip", []),
+        }
+        await db.import_task_data.insert_one(heavy_data)
+
+        # Stocker seulement le résumé léger dans import_tasks
         await db.import_tasks.update_one(
             {"task_id": task_id},
             {"$set": {
@@ -687,7 +698,13 @@ async def get_task_status(
         {"_id": 0}
     )
     if not task:
-        raise HTTPException(status_code=404, detail="Tâche non trouvée")
+        # Tâche non trouvée = probablement le serveur a redémarré pendant le traitement
+        return {
+            "task_id": task_id,
+            "status": "error",
+            "progress": "La tâche a été interrompue (redémarrage serveur). Veuillez relancer l'import.",
+            "error": "task_lost",
+        }
 
     response = {
         "task_id": task_id,
@@ -697,33 +714,33 @@ async def get_task_status(
 
     if task["status"] == "ready":
         result = task.get("result", {})
-        # Créer une session d'import pour l'execute
+        # Créer une session d'import pour l'execute (les données sont dans import_task_data)
         session_id = str(uuid.uuid4())
+        
+        # Charger les données stockées séparément
+        task_data = await db.import_task_data.find_one({"task_id": task_id}, {"_id": 0})
+        
         import_sessions[session_id] = {
             "tenant_id": tenant.id,
             "user_id": current_user.id,
             "type": result.get("type", "intervention"),
-            "new_items": [{"index": i, "data": d} for i, d in enumerate(result.get("interventions_data", []))],
-            "duplicates": [{"index": i, "data": d} for i, d in enumerate(result.get("duplicates_data", []))],
-            "dossier_adresses": result.get("dossier_adresses", []),
-            "files_in_zip": result.get("files_in_zip", []),
+            "new_items": [{"index": i, "data": d} for i, d in enumerate(task_data.get("interventions_data", []))] if task_data else [],
+            "duplicates": [{"index": i, "data": d} for i, d in enumerate(task_data.get("duplicates_data", []))] if task_data else [],
+            "dossier_adresses": task_data.get("dossier_adresses", []) if task_data else [],
+            "files_in_zip": task_data.get("files_in_zip", []) if task_data else [],
             "zip_path": task.get("file_path"),
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
-        # Ajouter les champs de preview
         result["session_id"] = session_id
-        # Retirer les données volumineuses
-        result.pop("interventions_data", None)
-        result.pop("duplicates_data", None)
-        result.pop("dossier_adresses", None)
-        result.pop("files_in_zip", None)
         response["result"] = result
-        # Nettoyer la tâche
+        # Nettoyer
         await db.import_tasks.delete_one({"task_id": task_id})
+        await db.import_task_data.delete_one({"task_id": task_id})
 
     elif task["status"] == "error":
         response["error"] = task.get("progress", "Erreur inconnue")
         await db.import_tasks.delete_one({"task_id": task_id})
+        await db.import_task_data.delete_one({"task_id": task_id})
 
     return response
 

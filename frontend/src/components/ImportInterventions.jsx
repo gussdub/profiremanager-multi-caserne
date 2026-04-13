@@ -130,8 +130,8 @@ const ImportInterventions = ({ tenantSlug, onImportComplete }) => {
     // 4. Polling du statut de la tâche
     setUploadProgress(90);
     let taskResult = null;
-    for (let attempt = 0; attempt < 300; attempt++) { // max 5 min
-      await new Promise(r => setTimeout(r, 2000)); // poll toutes les 2s
+    for (let attempt = 0; attempt < 300; attempt++) { // max 10 min
+      await new Promise(r => setTimeout(r, 3000)); // poll toutes les 3s
       try {
         const statusRes = await fetch(`${API}/interventions/import-history/task-status/${task_id}`, {
           headers: { 'Authorization': `Bearer ${getToken()}` },
@@ -143,12 +143,12 @@ const ImportInterventions = ({ tenantSlug, onImportComplete }) => {
           taskResult = status.result;
           break;
         } else if (status.status === 'error') {
-          throw new Error(status.error || 'Erreur traitement fichier');
+          throw new Error(status.progress || status.error || 'Erreur traitement fichier');
         }
         // Update progress message
-        setUploadProgress(90 + Math.min(attempt * 0.3, 9));
+        setUploadProgress(90 + Math.min(attempt * 0.1, 9));
       } catch (pollErr) {
-        if (pollErr.message.includes('Erreur traitement')) throw pollErr;
+        if (pollErr.message && !pollErr.message.includes('fetch')) throw pollErr;
         // Ignorer les erreurs réseau temporaires
       }
     }
