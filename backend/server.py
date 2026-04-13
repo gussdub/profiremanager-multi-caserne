@@ -104,6 +104,7 @@ from routes.export_map import router as export_map_router
 from routes.batiments_import import router as batiments_import_router
 from routes.file_storage import router as file_storage_router
 from routes.import_interventions import router as import_interventions_router
+from routes.import_batch import router as import_batch_router
 from routes.batiments import router as batiments_router
 from routes.casernes import router as casernes_router
 from io import BytesIO
@@ -6520,6 +6521,7 @@ app.include_router(export_map_router, prefix="/api")  # Module Export Carte Stat
 app.include_router(batiments_import_router, prefix="/api")  # Module Import Bâtiments Intelligent
 app.include_router(file_storage_router, prefix="/api")  # Module File Storage (Object Storage)
 app.include_router(import_interventions_router, prefix="/api")  # Module Import Historique Interventions
+app.include_router(import_batch_router, prefix="/api")  # Endpoint générique import batch (PremLigne)
 app.include_router(batiments_router, prefix="/api")  # Module Bâtiments (indépendant)
 app.include_router(casernes_router, prefix="/api")  # Module Multi-Casernes
 app.include_router(delegations_router, prefix="/api")  # Module Délégations de responsabilités

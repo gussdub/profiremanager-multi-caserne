@@ -1,0 +1,608 @@
+"""
+Endpoint générique d'import batch pour ProFireManager Transfer.
+Reçoit des records un par un depuis PremLigne et les stocke selon entity_type.
+
+Le record est stocké TEL QUEL (déjà résolu par _fullResolveNode côté Transfer).
+On extrait seulement les champs nécessaires pour le matching et l'indexation.
+
+POST /api/{tenant}/import/batch
+{
+  "entity_type": "Intervention" | "DossierAdresse" | "Prevention" | ...,
+  "source_system": "PremLigne",
+  "record": { ... }
+}
+"""
+import uuid
+import logging
+from datetime import datetime, timezone
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException
+
+from routes.dependencies import (
+    db,
+    get_current_user,
+    get_tenant_from_slug,
+    User,
+)
+from utils.address_utils import normalize_address, extract_civic_number, is_same_address
+
+router = APIRouter(tags=["Import Batch"])
+logger = logging.getLogger(__name__)
+
+
+# Cache bâtiments par tenant (évite de recharger à chaque requête)
+_batiments_cache = {}
+_cache_timestamp = {}
+CACHE_TTL = 60  # secondes
+
+
+async def _get_batiments_cached(tenant_id: str) -> list:
+    """Charge les bâtiments avec cache de 60s."""
+    now = datetime.now(timezone.utc).timestamp()
+    if tenant_id in _batiments_cache and (now - _cache_timestamp.get(tenant_id, 0)) < CACHE_TTL:
+        return _batiments_cache[tenant_id]
+    batiments = await db.batiments.find(
+        {"tenant_id": tenant_id, "$or": [{"actif": True}, {"actif": {"$exists": False}}, {"actif": None}]},
+        {"_id": 0, "id": 1, "adresse_civique": 1, "ville": 1}
+    ).to_list(length=None)
+    _batiments_cache[tenant_id] = batiments
+    _cache_timestamp[tenant_id] = now
+    return batiments
+
+
+async def _match_address(address: str, city: str, tenant_id: str) -> Optional[str]:
+    """Match une adresse vers un batiment_id."""
+    if not address:
+        return None
+    batiments = await _get_batiments_cached(tenant_id)
+    for bat in batiments:
+        bat_addr = bat.get("adresse_civique", "")
+        bat_ville = bat.get("ville", "")
+        clean_addr = bat_addr
+        if "," in bat_addr:
+            parts = bat_addr.split(",")
+            clean_addr = ",".join(parts[:-1]).strip()
+        match, _ = is_same_address(address, city, clean_addr, bat_ville)
+        if match:
+            return bat["id"]
+    return None
+
+
+def _extract_address_city(record: dict) -> tuple:
+    """Extrait adresse et ville d'un record (plusieurs formats possibles)."""
+    addr = record.get("dossier_adresse") or record.get("adresse") or record.get("adresse_appel") or ""
+    city = record.get("ville") or record.get("municipalite") or ""
+    if not city and "," in addr:
+        parts = addr.split(",")
+        city = parts[-1].strip().lstrip("*").strip()
+        addr = ",".join(parts[:-1]).strip()
+    # Reconstituer depuis les composants si disponibles
+    if not addr and record.get("numero_civique"):
+        parts = [record.get("numero_civique", "")]
+        if record.get("type_rue"):
+            parts.append(record["type_rue"])
+        if record.get("rue"):
+            parts.append(record["rue"])
+        addr = " ".join(p for p in parts if p)
+    return addr, city
+
+
+def _get_ext_id(record: dict) -> str:
+    """Extrait l'identifiant unique du record."""
+    return str(
+        record.get("num_activite")
+        or record.get("external_call_id")
+        or record.get("id")
+        or ""
+    )
+
+
+def _get_file_refs(record: dict) -> list:
+    """Extrait les références de fichiers d'un record."""
+    refs = []
+    for key in ("photo_saisie", "photos", "pieces_jointes"):
+        val = record.get(key)
+        if isinstance(val, dict) and "photos" in val:
+            refs.extend(val["photos"])
+        elif isinstance(val, list):
+            refs.extend(val)
+    return refs
+
+
+@router.post("/{tenant_slug}/import/batch")
+async def import_batch(
+    tenant_slug: str,
+    body: dict,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Endpoint générique d'import. Route vers le bon handler selon entity_type.
+    Stocke le record complet + extrait les champs clés pour l'indexation.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+
+    entity_type = body.get("entity_type", "")
+    source_system = body.get("source_system", "PremLigne")
+    record = body.get("record")
+
+    if not record:
+        raise HTTPException(status_code=400, detail="Champ 'record' manquant")
+    if not entity_type:
+        raise HTTPException(status_code=400, detail="Champ 'entity_type' manquant")
+
+    # Entités principales (stockage dédié)
+    main_handlers = {
+        "Intervention": _handle_intervention,
+        "DossierAdresse": _handle_dossier_adresse,
+        "Prevention": _handle_prevention,
+        "RCCI": _handle_rcci,
+        "PlanIntervention": _handle_plan_intervention,
+        "Employe": _handle_employe,
+        "BorneIncendie": _handle_borne_incendie,
+        "BorneSeche": _handle_borne_seche,
+        "PointEau": _handle_point_eau,
+        "MaintenanceBorne": _handle_maintenance_borne,
+        "Travail": _handle_travail,
+    }
+
+    # Référentiels (petites tables — stockage générique)
+    referentiels = {
+        "Caserne", "Grade", "Equipe", "Vehicule", "CodeAppel",
+        "TypePrevention", "TypeBatiment", "TypeEquipement",
+        "ModeleBorne", "TypeValve", "UsageBorne", "Raccord",
+        "Classification", "ReferenceCode",
+    }
+
+    handler = main_handlers.get(entity_type)
+    if handler:
+        return await handler(record, tenant, current_user, source_system)
+    elif entity_type in referentiels:
+        return await _handle_referentiel(entity_type, record, tenant, current_user, source_system)
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=f"entity_type '{entity_type}' non supporté. Types: {', '.join(list(main_handlers.keys()) + sorted(referentiels))}"
+        )
+
+
+# ======================== INTERVENTION ========================
+
+async def _handle_intervention(record: dict, tenant, user, source: str) -> dict:
+    ext_id = _get_ext_id(record)
+    if ext_id:
+        existing = await db.interventions.find_one(
+            {"tenant_id": tenant.id, "external_call_id": ext_id}, {"_id": 0, "id": 1}
+        )
+        if existing:
+            return {"status": "duplicate", "entity_type": "Intervention", "id": existing["id"]}
+
+    addr, city = _extract_address_city(record)
+    date_str = record.get("date_activite") or record.get("date_ident") or ""
+    chrono = record.get("chronologie", {})
+
+    doc_id = str(uuid.uuid4())
+    doc = {
+        "id": doc_id,
+        "tenant_id": tenant.id,
+        "external_call_id": ext_id,
+        "type_intervention": record.get("code_appel") or record.get("type_intervention") or "",
+        "address_full": addr,
+        "municipality": city,
+        "xml_time_call_received": chrono.get("date_appel") or date_str,
+        "notes": record.get("compte_rendu", {}).get("description") or record.get("notes") or "",
+        "officer_in_charge_xml": record.get("responsable") or record.get("auteur") or "",
+        "caserne": record.get("caserne") or "",
+        "status": "signed",
+        "import_source": "history_import",
+        "source_system": source,
+        "pfm_record": record,  # Record complet stocké tel quel
+        "imported_at": datetime.now(timezone.utc).isoformat(),
+        "imported_by": user.id,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "audit_log": [{"action": "imported_batch", "by": user.id, "at": datetime.now(timezone.utc).isoformat()}],
+        "assigned_reporters": [],
+    }
+
+    # Auto-match bâtiment
+    bat_id = await _match_address(addr, city, tenant.id)
+    if bat_id:
+        doc["batiment_id"] = bat_id
+        doc["match_method"] = "auto_address"
+
+    await db.interventions.insert_one(doc)
+    return {"status": "created", "entity_type": "Intervention", "id": doc_id, "batiment_id": doc.get("batiment_id")}
+
+
+# ======================== DOSSIER ADRESSE (BÂTIMENT) ========================
+
+async def _handle_dossier_adresse(record: dict, tenant, user, source: str) -> dict:
+    addr, city = _extract_address_city(record)
+    if not addr:
+        return {"status": "error", "entity_type": "DossierAdresse", "message": "Adresse manquante"}
+
+    # Doublon par adresse exacte
+    existing = await db.batiments.find_one(
+        {"tenant_id": tenant.id, "adresse_civique": addr, "ville": city}, {"_id": 0, "id": 1}
+    )
+    if existing:
+        return {"status": "duplicate", "entity_type": "DossierAdresse", "id": existing["id"]}
+
+    def safe_int(v):
+        if not v or v == "-1":
+            return None
+        try:
+            return int(float(str(v).replace(" ", "")))
+        except (ValueError, TypeError):
+            return None
+
+    doc_id = str(uuid.uuid4())
+    doc = {
+        "id": doc_id,
+        "tenant_id": tenant.id,
+        "adresse_civique": addr,
+        "ville": city,
+        "code_postal": record.get("code_postal") or "",
+        "province": record.get("province") or "Québec",
+        "pays": "Canada",
+        "nom_etablissement": record.get("proprietaire_nom") or "",
+        "nombre_etages": safe_int(record.get("nombre_etages")),
+        "annee_construction": safe_int(record.get("annee_construction")),
+        "niveau_risque": record.get("categorie_risque") or "Faible",
+        "sous_type_batiment": record.get("type_batiment") or "",
+        "notes": record.get("notes") or "",
+        "contact_nom": record.get("proprietaire_nom") or "",
+        "contact_telephone": record.get("telephone") or "",
+        "actif": True,
+        "pfm_record": record,
+        "import_source": source,
+        "imported_at": datetime.now(timezone.utc).isoformat(),
+        "imported_by": user.id,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": user.id,
+    }
+
+    await db.batiments.insert_one(doc)
+
+    # Invalider le cache bâtiments
+    _batiments_cache.pop(tenant.id, None)
+
+    # Mapping rétroactif
+    from routes.import_interventions import auto_link_interventions_to_batiment
+    linked = await auto_link_interventions_to_batiment(tenant.id, doc_id, addr, city)
+
+    return {"status": "created", "entity_type": "DossierAdresse", "id": doc_id, "interventions_linked": linked}
+
+
+# ======================== PREVENTION ========================
+
+async def _handle_prevention(record: dict, tenant, user, source: str) -> dict:
+    ext_id = _get_ext_id(record)
+    if ext_id:
+        existing = await db.inspections.find_one(
+            {"tenant_id": tenant.id, "external_id": ext_id}, {"_id": 0, "id": 1}
+        )
+        if existing:
+            return {"status": "duplicate", "entity_type": "Prevention", "id": existing["id"]}
+
+    addr, city = _extract_address_city(record)
+
+    doc_id = str(uuid.uuid4())
+    doc = {
+        "id": doc_id,
+        "tenant_id": tenant.id,
+        "external_id": ext_id,
+        "type_inspection": record.get("type_prev") or "Prévention",
+        "adresse": addr,
+        "ville": city,
+        "date_inspection": record.get("date_activite") or "",
+        "inspecteur": record.get("auteur") or record.get("responsable") or "",
+        "resultat": record.get("statut") or "",
+        "notes": record.get("narratif") or "",
+        "anomalies": record.get("anomalies") or [],
+        "status": record.get("statut") or "completed",
+        "pfm_record": record,
+        "import_source": source,
+        "imported_at": datetime.now(timezone.utc).isoformat(),
+        "imported_by": user.id,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    bat_id = await _match_address(addr, city, tenant.id)
+    if bat_id:
+        doc["batiment_id"] = bat_id
+
+    await db.inspections.insert_one(doc)
+    return {"status": "created", "entity_type": "Prevention", "id": doc_id, "batiment_id": doc.get("batiment_id")}
+
+
+# ======================== RCCI ========================
+
+async def _handle_rcci(record: dict, tenant, user, source: str) -> dict:
+    ext_id = _get_ext_id(record)
+    if ext_id:
+        existing = await db.rcci.find_one(
+            {"tenant_id": tenant.id, "external_id": ext_id}, {"_id": 0, "id": 1}
+        )
+        if existing:
+            return {"status": "duplicate", "entity_type": "RCCI", "id": existing["id"]}
+
+    addr, city = _extract_address_city(record)
+
+    doc_id = str(uuid.uuid4())
+    doc = {
+        "id": doc_id,
+        "tenant_id": tenant.id,
+        "external_id": ext_id,
+        "adresse": addr,
+        "ville": city,
+        "date": record.get("date_activite") or "",
+        "auteur": record.get("auteur") or "",
+        "pfm_record": record,
+        "import_source": source,
+        "imported_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    bat_id = await _match_address(addr, city, tenant.id)
+    if bat_id:
+        doc["batiment_id"] = bat_id
+
+    await db.rcci.insert_one(doc)
+    return {"status": "created", "entity_type": "RCCI", "id": doc_id}
+
+
+# ======================== PLAN INTERVENTION ========================
+
+async def _handle_plan_intervention(record: dict, tenant, user, source: str) -> dict:
+    ext_id = _get_ext_id(record)
+    if ext_id:
+        existing = await db.plans_intervention.find_one(
+            {"tenant_id": tenant.id, "external_id": ext_id}, {"_id": 0, "id": 1}
+        )
+        if existing:
+            return {"status": "duplicate", "entity_type": "PlanIntervention", "id": existing["id"]}
+
+    addr, city = _extract_address_city(record)
+
+    doc_id = str(uuid.uuid4())
+    doc = {
+        "id": doc_id,
+        "tenant_id": tenant.id,
+        "external_id": ext_id,
+        "adresse": addr,
+        "ville": city,
+        "pfm_record": record,
+        "import_source": source,
+        "imported_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    bat_id = await _match_address(addr, city, tenant.id)
+    if bat_id:
+        doc["batiment_id"] = bat_id
+
+    await db.plans_intervention.insert_one(doc)
+    return {"status": "created", "entity_type": "PlanIntervention", "id": doc_id}
+
+
+# ======================== EMPLOYE ========================
+
+async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
+    matricule = record.get("matricule") or ""
+    nom = record.get("nom") or ""
+    prenom = record.get("prenom") or ""
+
+    if matricule:
+        existing = await db.imported_personnel.find_one(
+            {"tenant_id": tenant.id, "matricule": matricule}, {"_id": 0, "id": 1}
+        )
+        if existing:
+            return {"status": "duplicate", "entity_type": "Employe", "id": existing["id"]}
+
+    doc_id = str(uuid.uuid4())
+    doc = {
+        "id": doc_id,
+        "tenant_id": tenant.id,
+        "nom": nom,
+        "prenom": prenom,
+        "matricule": matricule,
+        "email": record.get("couriel") or record.get("courriel") or "",
+        "telephone": record.get("cell") or record.get("tel_bureau") or "",
+        "caserne": record.get("caserne") or "",
+        "type_employe": record.get("type_employe") or "",
+        "date_embauche": record.get("date_embauche") or "",
+        "actif": record.get("inactif") != "Oui",
+        "pfm_record": record,
+        "import_source": source,
+        "imported_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    await db.imported_personnel.insert_one(doc)
+    return {"status": "created", "entity_type": "Employe", "id": doc_id}
+
+
+# ======================== BORNE INCENDIE ========================
+
+async def _handle_borne_incendie(record: dict, tenant, user, source: str) -> dict:
+    nom = record.get("nom") or ""
+    if nom:
+        existing = await db.points_eau.find_one(
+            {"tenant_id": tenant.id, "nom": nom, "type": "borne_fontaine"}, {"_id": 0, "id": 1}
+        )
+        if existing:
+            return {"status": "duplicate", "entity_type": "BorneIncendie", "id": existing["id"]}
+
+    def safe_float(v):
+        if not v:
+            return None
+        try:
+            return float(str(v).split(" ")[0].replace(",", "."))
+        except (ValueError, TypeError):
+            return None
+
+    addr, city = _extract_address_city(record)
+
+    doc_id = str(uuid.uuid4())
+    doc = {
+        "id": doc_id,
+        "tenant_id": tenant.id,
+        "type": "borne_fontaine",
+        "nom": nom,
+        "adresse": addr,
+        "ville": city,
+        "etat": record.get("etat") or "En service",
+        "debit_gpm": safe_float(record.get("debit")),
+        "pression_statique": safe_float(record.get("pression_statique")),
+        "pression_residuelle": safe_float(record.get("pression_residuelle")),
+        "diametre_conduite": record.get("diametre_conduite") or "",
+        "modele": record.get("modele_borne") or "",
+        "accessible_hiver": record.get("accessible_hiver") == "Oui",
+        "date_installation": record.get("date_installation") or "",
+        "pfm_record": record,
+        "import_source": source,
+        "imported_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    await db.points_eau.insert_one(doc)
+    return {"status": "created", "entity_type": "BorneIncendie", "id": doc_id}
+
+
+# ======================== BORNE SECHE ========================
+
+async def _handle_borne_seche(record: dict, tenant, user, source: str) -> dict:
+    nom = record.get("nom") or ""
+    if nom:
+        existing = await db.points_eau.find_one(
+            {"tenant_id": tenant.id, "nom": nom, "type": "borne_seche"}, {"_id": 0, "id": 1}
+        )
+        if existing:
+            return {"status": "duplicate", "entity_type": "BorneSeche", "id": existing["id"]}
+
+    doc_id = str(uuid.uuid4())
+    doc = {
+        "id": doc_id,
+        "tenant_id": tenant.id,
+        "type": "borne_seche",
+        "nom": nom,
+        "adresse": record.get("adresse") or "",
+        "ville": record.get("ville") or "",
+        "pfm_record": record,
+        "import_source": source,
+        "imported_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    await db.points_eau.insert_one(doc)
+    return {"status": "created", "entity_type": "BorneSeche", "id": doc_id}
+
+
+# ======================== POINT D'EAU ========================
+
+async def _handle_point_eau(record: dict, tenant, user, source: str) -> dict:
+    nom = record.get("nom") or ""
+    if nom:
+        existing = await db.points_eau.find_one(
+            {"tenant_id": tenant.id, "nom": nom, "type": {"$nin": ["borne_fontaine", "borne_seche"]}}, {"_id": 0, "id": 1}
+        )
+        if existing:
+            return {"status": "duplicate", "entity_type": "PointEau", "id": existing["id"]}
+
+    doc_id = str(uuid.uuid4())
+    doc = {
+        "id": doc_id,
+        "tenant_id": tenant.id,
+        "type": record.get("type_point_eau") or "point_eau",
+        "nom": nom,
+        "adresse": record.get("adresse") or "",
+        "ville": record.get("ville") or "",
+        "pfm_record": record,
+        "import_source": source,
+        "imported_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    await db.points_eau.insert_one(doc)
+    return {"status": "created", "entity_type": "PointEau", "id": doc_id}
+
+
+# ======================== MAINTENANCE BORNE ========================
+
+async def _handle_maintenance_borne(record: dict, tenant, user, source: str) -> dict:
+    ext_id = _get_ext_id(record)
+    if ext_id:
+        existing = await db.maintenance_bornes.find_one(
+            {"tenant_id": tenant.id, "external_id": ext_id}, {"_id": 0, "id": 1}
+        )
+        if existing:
+            return {"status": "duplicate", "entity_type": "MaintenanceBorne", "id": existing["id"]}
+
+    doc_id = str(uuid.uuid4())
+    doc = {
+        "id": doc_id,
+        "tenant_id": tenant.id,
+        "external_id": ext_id,
+        "pfm_record": record,
+        "import_source": source,
+        "imported_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    await db.maintenance_bornes.insert_one(doc)
+    return {"status": "created", "entity_type": "MaintenanceBorne", "id": doc_id}
+
+
+# ======================== TRAVAIL ========================
+
+async def _handle_travail(record: dict, tenant, user, source: str) -> dict:
+    ext_id = _get_ext_id(record)
+    if ext_id:
+        existing = await db.travaux.find_one(
+            {"tenant_id": tenant.id, "external_id": ext_id}, {"_id": 0, "id": 1}
+        )
+        if existing:
+            return {"status": "duplicate", "entity_type": "Travail", "id": existing["id"]}
+
+    doc_id = str(uuid.uuid4())
+    doc = {
+        "id": doc_id,
+        "tenant_id": tenant.id,
+        "external_id": ext_id,
+        "pfm_record": record,
+        "import_source": source,
+        "imported_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    await db.travaux.insert_one(doc)
+    return {"status": "created", "entity_type": "Travail", "id": doc_id}
+
+
+# ======================== RÉFÉRENTIELS (générique) ========================
+
+async def _handle_referentiel(entity_type: str, record: dict, tenant, user, source: str) -> dict:
+    """Handler générique pour les petites tables de référence."""
+    collection_name = f"ref_{entity_type.lower()}"
+    nom = record.get("nom") or record.get("code") or record.get("description") or ""
+
+    if nom:
+        existing = await db[collection_name].find_one(
+            {"tenant_id": tenant.id, "nom": nom}, {"_id": 0, "id": 1}
+        )
+        if existing:
+            return {"status": "duplicate", "entity_type": entity_type, "id": existing["id"]}
+
+    doc_id = str(uuid.uuid4())
+    doc = {
+        "id": doc_id,
+        "tenant_id": tenant.id,
+        "nom": nom,
+        "pfm_record": record,
+        "import_source": source,
+        "imported_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    await db[collection_name].insert_one(doc)
+    return {"status": "created", "entity_type": entity_type, "id": doc_id}
