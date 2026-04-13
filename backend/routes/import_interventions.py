@@ -1490,3 +1490,88 @@ async def auto_link_interventions_to_batiment(tenant_id: str, batiment_id: str, 
         logger.info("Mapping rétroactif: %d intervention(s) reliée(s) au bâtiment %s (%s)", linked, batiment_id, adresse_civique)
 
     return linked
+
+
+# ======================== IMPORT DIRECT (pour script de migration) ========================
+
+@router.post("/{tenant_slug}/interventions/import-direct")
+async def import_intervention_direct(
+    tenant_slug: str,
+    body: dict,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Crée une intervention importée directement (sans preview/execute).
+    Utilisé par le script de migration local pour envoyer les interventions une par une.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    await require_permission(tenant.id, current_user, "interventions", "creer", "rapports")
+
+    # Vérifier les doublons
+    ext_id = body.get("external_call_id")
+    if ext_id:
+        existing = await db.interventions.find_one(
+            {"tenant_id": tenant.id, "external_call_id": ext_id},
+            {"_id": 0, "id": 1}
+        )
+        if existing:
+            return {"status": "duplicate", "message": f"Intervention {ext_id} déjà existante", "id": existing["id"]}
+
+    # Construire le document
+    intervention_id = str(uuid.uuid4())
+    doc = {
+        "id": intervention_id,
+        "tenant_id": tenant.id,
+        "external_call_id": body.get("external_call_id", ""),
+        "type_intervention": body.get("type_intervention", ""),
+        "address_full": body.get("address_full", ""),
+        "municipality": body.get("municipality", ""),
+        "xml_time_call_received": body.get("xml_time_call_received", ""),
+        "notes": body.get("notes", ""),
+        "officer_in_charge_xml": body.get("officer_in_charge_xml", ""),
+        "code_feu": body.get("code_feu", ""),
+        "niveau_risque": body.get("niveau_risque", ""),
+        "status": body.get("status", "signed"),
+        "import_source": "history_import",
+        "imported_at": datetime.now(timezone.utc).isoformat(),
+        "imported_by": current_user.id,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "audit_log": [{"action": "imported_history", "by": current_user.id, "at": datetime.now(timezone.utc).isoformat()}],
+        "assigned_reporters": [],
+    }
+
+    # Mapping avec un bâtiment si batiment_id fourni
+    if body.get("batiment_id"):
+        doc["batiment_id"] = body["batiment_id"]
+        doc["match_method"] = "script_migration"
+    else:
+        # Tenter un matching automatique par adresse
+        addr = body.get("address_full", "")
+        city = body.get("municipality", "")
+        if addr:
+            batiments = await db.batiments.find(
+                {"tenant_id": tenant.id, "$or": [{"actif": True}, {"actif": {"$exists": False}}, {"actif": None}]},
+                {"_id": 0, "id": 1, "adresse_civique": 1, "ville": 1}
+            ).to_list(length=None)
+            for bat in batiments:
+                bat_addr = bat.get("adresse_civique", "")
+                bat_ville = bat.get("ville", "")
+                # Nettoyer la ville de l'adresse du bâtiment
+                clean_addr = bat_addr
+                if "," in bat_addr:
+                    parts = bat_addr.split(",")
+                    clean_addr = ",".join(parts[:-1]).strip()
+                is_match, _ = is_same_address(addr, city, clean_addr, bat_ville)
+                if is_match:
+                    doc["batiment_id"] = bat["id"]
+                    doc["match_method"] = "auto_address"
+                    break
+
+    await db.interventions.insert_one(doc)
+
+    return {
+        "status": "created",
+        "id": intervention_id,
+        "batiment_id": doc.get("batiment_id"),
+        "match_method": doc.get("match_method"),
+    }
