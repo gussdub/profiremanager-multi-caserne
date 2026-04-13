@@ -164,6 +164,55 @@ async def import_batch(
             detail=f"entity_type '{entity_type}' non supporté. Types: {', '.join(list(main_handlers.keys()) + sorted(referentiels))}"
         )
 
+# Table des codes d'intervention CAUCA
+CAUCA_CODES = {
+    "1": "Administration",
+    "2": "Urgence municipale",
+    "3": "Inondation",
+    "5": "Mesures d'urgence",
+    "10": "Alarme incendie",
+    "11": "Alarme gaz",
+    "12": "Véhicule motorisé & ferroviaire",
+    "13": "Entraide",
+    "15": "Assistance",
+    "16": "Couverture caserne",
+    "21": "Cheminée",
+    "25": "RCCI",
+    "30": "Déversement",
+    "31": "Vérification",
+    "32": "Débris, déchets",
+    "33": "Fuite de gaz",
+    "40": "Installation électrique",
+    "50": "Forêt ou herbes",
+    "80": "Bâtiment",
+    "90": "Sauvetage",
+    "91": "Écrasement d'aéronef",
+    "92": "Sauvetage nautique",
+    "93": "Incident ferroviaire",
+    "95": "Intervention ascenseur",
+    "97": "Sauvetage hors-route",
+    "98": "Désincarcération",
+    "99": "Alerte à la bombe",
+    "105": "Accident de la route",
+    "110": "Premiers répondants",
+    "111": "Programme PAIR",
+    "120": "PIABS",
+    "130": "Entraide automatique",
+    "140": "Installation électrique (AM)",
+    "156": "Assistance désincarcération",
+    "164": "Assistance hors-route",
+    "888": "Couverture d'événements",
+    "999": "Pratique / exercice",
+}
+
+
+@router.get("/{tenant_slug}/import/cauca-codes")
+async def get_cauca_codes(tenant_slug: str):
+    """Retourne la table des codes d'intervention CAUCA."""
+    return {"codes": [{"code": k, "description": v} for k, v in CAUCA_CODES.items()]}
+
+
+
 
 @router.post("/{tenant_slug}/import/fix-existing-interventions")
 async def fix_existing_interventions(
@@ -250,12 +299,15 @@ async def fix_existing_interventions(
             if m:
                 caller_phone = m.group(1).strip()
 
-        # Extraire code_feu du type si format "40 - Installation Électrique"
-        code_feu = record.get("code_feu") or doc.get("code_feu") or ""
-        if not code_feu and type_intv:
+        # Code feu UNIQUEMENT depuis id_code_appel (format CAUCA: "40 - Installation Électrique")
+        # NE PAS parser depuis les notes/RAO
+        code_feu = ""
+        if type_intv:
             parts = type_intv.split(" - ", 1)
-            if len(parts) == 2 and parts[0].strip().isdigit():
+            if len(parts) >= 1 and parts[0].strip().isdigit():
                 code_feu = parts[0].strip()
+        if not code_feu:
+            code_feu = record.get("code_feu") or doc.get("code_feu") or ""
 
         update = {
             "address_full": addr or doc.get("address_full") or "",
@@ -381,11 +433,12 @@ async def _handle_intervention(record: dict, tenant, user, source: str) -> dict:
     if isinstance(cause, str):
         cause = {}
 
-    # Extraire code_feu du type si format "40 - Installation Électrique"
-    code_feu = record.get("code_feu") or carte.get("code_feu") or ""
+    # Extraire code_feu UNIQUEMENT depuis id_code_appel (format CAUCA: "40 - Installation Électrique")
+    # NE PAS parser depuis les notes/RAO (ce sont des codes internes, pas CAUCA)
+    code_feu = record.get("code_feu") or ""
     if not code_feu and type_intv:
         parts = type_intv.split(" - ", 1)
-        if len(parts) == 2 and parts[0].strip().isdigit():
+        if len(parts) >= 1 and parts[0].strip().isdigit():
             code_feu = parts[0].strip()
 
     doc_id = str(uuid.uuid4())
