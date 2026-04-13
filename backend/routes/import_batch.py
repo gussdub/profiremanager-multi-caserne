@@ -531,17 +531,32 @@ def _extract_intervention_fields(record: dict) -> dict:
 # ======================== INTERVENTION ========================
 
 async def _handle_intervention(record: dict, tenant, user, source: str) -> dict:
-    """Crée une intervention depuis un record PremLigne. Extraction exhaustive."""
+    """Crée ou REMPLACE une intervention depuis un record PremLigne."""
     ext_id = _get_ext_id(record)
+    fields = _extract_intervention_fields(record)
+
+    # Si doublon → REMPLACER (mettre à jour avec les nouvelles données)
     if ext_id:
         existing = await db.interventions.find_one(
             {"tenant_id": tenant.id, "external_call_id": ext_id}, {"_id": 0, "id": 1}
         )
         if existing:
-            return {"status": "duplicate", "entity_type": "Intervention", "id": existing["id"]}
-
-    # Utiliser la fonction d'extraction partagée (mêmes chemins que le fix)
-    fields = _extract_intervention_fields(record)
+            update = {
+                **fields,
+                "pfm_record": record,
+                "source_system": source,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }
+            # Auto-match bâtiment
+            bat_id = await _match_address(fields.get("address_full", ""), fields.get("municipality", ""), tenant.id)
+            if bat_id:
+                update["batiment_id"] = bat_id
+                update["match_method"] = "auto_address"
+            await db.interventions.update_one(
+                {"tenant_id": tenant.id, "id": existing["id"]},
+                {"$set": update}
+            )
+            return {"status": "replaced", "entity_type": "Intervention", "id": existing["id"], "batiment_id": update.get("batiment_id")}
 
     doc_id = str(uuid.uuid4())
     doc = {
@@ -560,7 +575,6 @@ async def _handle_intervention(record: dict, tenant, user, source: str) -> dict:
         "assigned_reporters": [],
     }
 
-    # Auto-match bâtiment
     bat_id = await _match_address(fields.get("address_full", ""), fields.get("municipality", ""), tenant.id)
     if bat_id:
         doc["batiment_id"] = bat_id
@@ -577,12 +591,16 @@ async def _handle_dossier_adresse(record: dict, tenant, user, source: str) -> di
     if not addr:
         return {"status": "error", "entity_type": "DossierAdresse", "message": "Adresse manquante"}
 
-    # Doublon par adresse exacte
+    # Doublon par adresse → REMPLACER
     existing = await db.batiments.find_one(
         {"tenant_id": tenant.id, "adresse_civique": addr, "ville": city}, {"_id": 0, "id": 1}
     )
     if existing:
-        return {"status": "duplicate", "entity_type": "DossierAdresse", "id": existing["id"]}
+        await db.batiments.update_one(
+            {"tenant_id": tenant.id, "id": existing["id"]},
+            {"$set": {"pfm_record": record, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        return {"status": "replaced", "entity_type": "DossierAdresse", "id": existing["id"]}
 
     def safe_int(v):
         if not v or v == "-1":
@@ -639,7 +657,11 @@ async def _handle_prevention(record: dict, tenant, user, source: str) -> dict:
             {"tenant_id": tenant.id, "external_id": ext_id}, {"_id": 0, "id": 1}
         )
         if existing:
-            return {"status": "duplicate", "entity_type": "Prevention", "id": existing["id"]}
+            await db.inspections.update_one(
+                {"tenant_id": tenant.id, "id": existing["id"]},
+                {"$set": {"pfm_record": record, "updated_at": datetime.now(timezone.utc).isoformat()}}
+            )
+            return {"status": "replaced", "entity_type": "Prevention", "id": existing["id"]}
 
     addr, city = _extract_address_city(record)
 
@@ -681,7 +703,8 @@ async def _handle_rcci(record: dict, tenant, user, source: str) -> dict:
             {"tenant_id": tenant.id, "external_id": ext_id}, {"_id": 0, "id": 1}
         )
         if existing:
-            return {"status": "duplicate", "entity_type": "RCCI", "id": existing["id"]}
+            await db.rcci.update_one({"tenant_id": tenant.id, "id": existing["id"]}, {"$set": {"pfm_record": record, "updated_at": datetime.now(timezone.utc).isoformat()}})
+            return {"status": "replaced", "entity_type": "RCCI", "id": existing["id"]}
 
     addr, city = _extract_address_city(record)
 
@@ -717,7 +740,8 @@ async def _handle_plan_intervention(record: dict, tenant, user, source: str) -> 
             {"tenant_id": tenant.id, "external_id": ext_id}, {"_id": 0, "id": 1}
         )
         if existing:
-            return {"status": "duplicate", "entity_type": "PlanIntervention", "id": existing["id"]}
+            await db.plans_intervention.update_one({"tenant_id": tenant.id, "id": existing["id"]}, {"$set": {"pfm_record": record, "updated_at": datetime.now(timezone.utc).isoformat()}})
+            return {"status": "replaced", "entity_type": "PlanIntervention", "id": existing["id"]}
 
     addr, city = _extract_address_city(record)
 
@@ -754,7 +778,8 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
             {"tenant_id": tenant.id, "matricule": matricule}, {"_id": 0, "id": 1}
         )
         if existing:
-            return {"status": "duplicate", "entity_type": "Employe", "id": existing["id"]}
+            await db.imported_personnel.update_one({"tenant_id": tenant.id, "id": existing["id"]}, {"$set": {"pfm_record": record, "updated_at": datetime.now(timezone.utc).isoformat()}})
+            return {"status": "replaced", "entity_type": "Employe", "id": existing["id"]}
 
     doc_id = str(uuid.uuid4())
     doc = {
@@ -788,7 +813,8 @@ async def _handle_borne_incendie(record: dict, tenant, user, source: str) -> dic
             {"tenant_id": tenant.id, "nom": nom, "type": "borne_fontaine"}, {"_id": 0, "id": 1}
         )
         if existing:
-            return {"status": "duplicate", "entity_type": "BorneIncendie", "id": existing["id"]}
+            await db.points_eau.update_one({"tenant_id": tenant.id, "id": existing["id"]}, {"$set": {"pfm_record": record, "updated_at": datetime.now(timezone.utc).isoformat()}})
+            return {"status": "replaced", "entity_type": "BorneIncendie", "id": existing["id"]}
 
     def safe_float(v):
         if not v:
@@ -835,7 +861,8 @@ async def _handle_borne_seche(record: dict, tenant, user, source: str) -> dict:
             {"tenant_id": tenant.id, "nom": nom, "type": "borne_seche"}, {"_id": 0, "id": 1}
         )
         if existing:
-            return {"status": "duplicate", "entity_type": "BorneSeche", "id": existing["id"]}
+            await db.points_eau.update_one({"tenant_id": tenant.id, "id": existing["id"]}, {"$set": {"pfm_record": record, "updated_at": datetime.now(timezone.utc).isoformat()}})
+            return {"status": "replaced", "entity_type": "BorneSeche", "id": existing["id"]}
 
     doc_id = str(uuid.uuid4())
     doc = {
@@ -864,7 +891,8 @@ async def _handle_point_eau(record: dict, tenant, user, source: str) -> dict:
             {"tenant_id": tenant.id, "nom": nom, "type": {"$nin": ["borne_fontaine", "borne_seche"]}}, {"_id": 0, "id": 1}
         )
         if existing:
-            return {"status": "duplicate", "entity_type": "PointEau", "id": existing["id"]}
+            await db.points_eau.update_one({"tenant_id": tenant.id, "id": existing["id"]}, {"$set": {"pfm_record": record, "updated_at": datetime.now(timezone.utc).isoformat()}})
+            return {"status": "replaced", "entity_type": "PointEau", "id": existing["id"]}
 
     doc_id = str(uuid.uuid4())
     doc = {
@@ -893,7 +921,8 @@ async def _handle_maintenance_borne(record: dict, tenant, user, source: str) -> 
             {"tenant_id": tenant.id, "external_id": ext_id}, {"_id": 0, "id": 1}
         )
         if existing:
-            return {"status": "duplicate", "entity_type": "MaintenanceBorne", "id": existing["id"]}
+            await db.maintenance_bornes.update_one({"tenant_id": tenant.id, "id": existing["id"]}, {"$set": {"pfm_record": record, "updated_at": datetime.now(timezone.utc).isoformat()}})
+            return {"status": "replaced", "entity_type": "MaintenanceBorne", "id": existing["id"]}
 
     doc_id = str(uuid.uuid4())
     doc = {
@@ -919,7 +948,8 @@ async def _handle_travail(record: dict, tenant, user, source: str) -> dict:
             {"tenant_id": tenant.id, "external_id": ext_id}, {"_id": 0, "id": 1}
         )
         if existing:
-            return {"status": "duplicate", "entity_type": "Travail", "id": existing["id"]}
+            await db.travaux.update_one({"tenant_id": tenant.id, "id": existing["id"]}, {"$set": {"pfm_record": record, "updated_at": datetime.now(timezone.utc).isoformat()}})
+            return {"status": "replaced", "entity_type": "Travail", "id": existing["id"]}
 
     doc_id = str(uuid.uuid4())
     doc = {
@@ -948,7 +978,8 @@ async def _handle_referentiel(entity_type: str, record: dict, tenant, user, sour
             {"tenant_id": tenant.id, "nom": nom}, {"_id": 0, "id": 1}
         )
         if existing:
-            return {"status": "duplicate", "entity_type": entity_type, "id": existing["id"]}
+            await db[collection_name].update_one({"tenant_id": tenant.id, "id": existing["id"]}, {"$set": {"pfm_record": record, "updated_at": datetime.now(timezone.utc).isoformat()}})
+            return {"status": "replaced", "entity_type": entity_type, "id": existing["id"]}
 
     doc_id = str(uuid.uuid4())
     doc = {
