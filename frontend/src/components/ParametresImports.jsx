@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ImportCSVEPI from "./ImportCSVEPI.jsx";
 import ImportCSVEquipements from "./ImportCSVEquipements.jsx";
 import ImportCSVPersonnel from "./ImportCSVPersonnel.jsx";
@@ -7,6 +7,7 @@ import ImportCSVDisponibilites from "./ImportCSVDisponibilites.jsx";
 import ImportHydrants from "./ImportHydrants.jsx";
 import ImportBatimentsIntelligent from "./ImportBatimentsIntelligent.jsx";
 import ImportInterventions from "./ImportInterventions.jsx";
+import ImportDuplicatesManager from "./ImportDuplicatesManager.jsx";
 import { 
   Shield, 
   Wrench, 
@@ -15,7 +16,8 @@ import {
   Calendar, 
   Droplets,
   Building,
-  Siren
+  Siren,
+  AlertTriangle
 } from "lucide-react";
 
 /**
@@ -24,6 +26,28 @@ import {
  */
 const ParametresImports = ({ tenantSlug, toast }) => {
   const [activeTab, setActiveTab] = useState('batiments');
+  const [duplicatesCount, setDuplicatesCount] = useState(0);
+
+  const API = `${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}`;
+  const getToken = () => localStorage.getItem(`${tenantSlug}_token`) || localStorage.getItem('token');
+
+  // Charger le nombre de doublons en attente
+  useEffect(() => {
+    const fetchCount = async () => {
+      try {
+        const res = await fetch(`${API}/import/duplicates?limit=1`, {
+          headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setDuplicatesCount(data.total || 0);
+        }
+      } catch {}
+    };
+    fetchCount();
+    const interval = setInterval(fetchCount, 30000);
+    return () => clearInterval(interval);
+  }, [API]);
 
   // Configuration des onglets d'import
   const importTabs = [
@@ -66,6 +90,12 @@ const ParametresImports = ({ tenantSlug, toast }) => {
       id: 'interventions',
       label: 'Historique Interventions',
       icon: Siren
+    },
+    {
+      id: 'doublons',
+      label: 'Doublons',
+      icon: AlertTriangle,
+      badge: duplicatesCount
     }
   ];
 
@@ -190,6 +220,12 @@ const ParametresImports = ({ tenantSlug, toast }) => {
             />
           </div>
         );
+      case 'doublons':
+        return (
+          <div className="import-content-wrapper">
+            <ImportDuplicatesManager tenantSlug={tenantSlug} />
+          </div>
+        );
       default:
         return null;
     }
@@ -200,7 +236,7 @@ const ParametresImports = ({ tenantSlug, toast }) => {
       {/* Navigation par onglets - Style cartes comme Gestion des Actifs */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(8, 1fr)',
+        gridTemplateColumns: 'repeat(9, 1fr)',
         gap: '0',
         marginBottom: '1.5rem',
         background: '#f1f5f9',
@@ -253,9 +289,29 @@ const ParametresImports = ({ tenantSlug, toast }) => {
               />
               <span style={{ 
                 textAlign: 'center',
-                lineHeight: '1.2'
+                lineHeight: '1.2',
+                position: 'relative'
               }}>
                 {tab.label}
+                {tab.badge > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: '-18px',
+                    right: '-14px',
+                    backgroundColor: '#ef4444',
+                    color: 'white',
+                    borderRadius: '50%',
+                    width: '20px',
+                    height: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.65rem',
+                    fontWeight: '700',
+                  }} data-testid="duplicates-badge">
+                    {tab.badge}
+                  </span>
+                )}
               </span>
             </button>
           );
