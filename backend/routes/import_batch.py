@@ -612,6 +612,28 @@ def _extract_intervention_fields(record: dict) -> dict:
         if m:
             caller_phone = m.group(1).strip()
 
+    # === JOURNAL DES COMMUNICATIONS ===
+    # Parser les lignes horodatées depuis les notes
+    xml_comments = []
+    clean_notes = str(notes) if notes else ""
+    if clean_notes:
+        comm_lines = re.findall(
+            r'(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2})\s+(.+?)(?=\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}|$)',
+            clean_notes, re.DOTALL
+        )
+        if comm_lines:
+            for timestamp, detail in comm_lines:
+                detail_clean = detail.strip().rstrip("( ")
+                # Filtrer les lignes qui sont des en-têtes, pas des communications
+                if (detail_clean and len(detail_clean) > 5
+                    and not detail_clean.startswith("Heure ")
+                    and not detail_clean.startswith("Notes:")
+                    and not detail_clean.startswith("---")):
+                    xml_comments.append({
+                        "timestamp": timestamp.replace("T", " "),
+                        "detail": detail_clean,
+                    })
+
     # === VÉHICULES ===
     vehicules = []
     equipes_raw = deep_get_list(r,
@@ -687,6 +709,7 @@ def _extract_intervention_fields(record: dict) -> dict:
         "caller_phone_pour": str(caller_phone_pour) if caller_phone_pour else "",
         "vehicules": vehicules,
         "personnel": personnel,
+        "xml_comments": xml_comments,
         # Chronologie — noms conformes au frontend PFM
         "xml_time_call_received": str(date_appel) if date_appel else "",
         "xml_time_dispatch": str(date_alerte) if date_alerte else "",
