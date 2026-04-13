@@ -226,6 +226,181 @@ async def purge_import_history(
     return {"deleted": result.deleted_count, "message": f"{result.deleted_count} intervention(s) importée(s) supprimée(s)"}
 
 
+# ======================== GESTION DES DOUBLONS ========================
+
+async def _queue_duplicate(tenant_id: str, entity_type: str, collection: str,
+                           existing_id: str, new_record: dict, user_id: str) -> dict:
+    """
+    Met un doublon en file d'attente pour résolution par l'utilisateur.
+    Retourne status=pending_review (le record est accepté mais pas encore intégré).
+    """
+    dup_id = str(uuid.uuid4())
+    await db.import_duplicates.insert_one({
+        "id": dup_id,
+        "tenant_id": tenant_id,
+        "entity_type": entity_type,
+        "collection": collection,
+        "existing_id": existing_id,
+        "new_record": new_record,
+        "status": "pending",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": user_id,
+    })
+    return {
+        "status": "pending_review",
+        "entity_type": entity_type,
+        "existing_id": existing_id,
+        "duplicate_id": dup_id,
+        "message": "Doublon détecté — en attente de résolution dans ProFireManager",
+    }
+
+
+@router.get("/{tenant_slug}/import/duplicates")
+async def list_duplicates(
+    tenant_slug: str,
+    entity_type: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
+    current_user: User = Depends(get_current_user),
+):
+    """Liste les doublons en attente de résolution."""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    query = {"tenant_id": tenant.id, "status": "pending"}
+    if entity_type:
+        query["entity_type"] = entity_type
+
+    total = await db.import_duplicates.count_documents(query)
+    duplicates = await db.import_duplicates.find(
+        query, {"_id": 0}
+    ).sort("created_at", -1).skip(offset).limit(limit).to_list(limit)
+
+    # Enrichir chaque doublon avec les données existantes
+    for dup in duplicates:
+        existing = await db[dup["collection"]].find_one(
+            {"tenant_id": tenant.id, "id": dup["existing_id"]},
+            {"_id": 0, "pfm_record": 0}
+        )
+        dup["existing_data"] = existing or {}
+
+    return {"duplicates": duplicates, "total": total}
+
+
+@router.post("/{tenant_slug}/import/duplicates/{duplicate_id}/resolve")
+async def resolve_duplicate(
+    tenant_slug: str,
+    duplicate_id: str,
+    body: dict,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Résoudre un doublon.
+    action: "merge" | "replace" | "ignore"
+    - merge: garde l'existant, ajoute les champs manquants du nouveau
+    - replace: remplace l'existant par le nouveau
+    - ignore: supprime le doublon sans modification
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    action = body.get("action")
+    if action not in ("merge", "replace", "ignore"):
+        raise HTTPException(status_code=400, detail="Action invalide. Utiliser: merge, replace, ignore")
+
+    dup = await db.import_duplicates.find_one(
+        {"id": duplicate_id, "tenant_id": tenant.id, "status": "pending"},
+        {"_id": 0}
+    )
+    if not dup:
+        raise HTTPException(status_code=404, detail="Doublon non trouvé")
+
+    collection = dup["collection"]
+    existing_id = dup["existing_id"]
+    new_record = dup["new_record"]
+
+    result_msg = ""
+
+    if action == "ignore":
+        result_msg = "Doublon ignoré"
+
+    elif action == "replace":
+        # Extraire les champs du nouveau record
+        if dup["entity_type"] == "Intervention":
+            fields = _extract_intervention_fields(new_record)
+            fields["pfm_record"] = new_record
+            fields["updated_at"] = datetime.now(timezone.utc).isoformat()
+        else:
+            fields = {"pfm_record": new_record, "updated_at": datetime.now(timezone.utc).isoformat()}
+
+        await db[collection].update_one(
+            {"tenant_id": tenant.id, "id": existing_id},
+            {"$set": fields}
+        )
+        result_msg = "Existant remplacé par le nouveau"
+
+    elif action == "merge":
+        # Fusionner : garder les champs existants, ajouter les nouveaux si absents
+        existing = await db[collection].find_one(
+            {"tenant_id": tenant.id, "id": existing_id},
+            {"_id": 0}
+        )
+        if existing:
+            if dup["entity_type"] == "Intervention":
+                new_fields = _extract_intervention_fields(new_record)
+            else:
+                new_fields = {}
+
+            merged = {}
+            for key, val in new_fields.items():
+                existing_val = existing.get(key)
+                if val and (not existing_val or existing_val in ("", [], None, {}, "-")):
+                    merged[key] = val
+            # Toujours mettre à jour le pfm_record (dernière version)
+            merged["pfm_record"] = new_record
+            merged["updated_at"] = datetime.now(timezone.utc).isoformat()
+
+            if merged:
+                await db[collection].update_one(
+                    {"tenant_id": tenant.id, "id": existing_id},
+                    {"$set": merged}
+                )
+        result_msg = "Données fusionnées (anciennes conservées, nouvelles ajoutées si manquantes)"
+
+    # Marquer le doublon comme résolu
+    await db.import_duplicates.update_one(
+        {"id": duplicate_id},
+        {"$set": {"status": action, "resolved_at": datetime.now(timezone.utc).isoformat(), "resolved_by": current_user.id}}
+    )
+
+    return {"status": "resolved", "action": action, "message": result_msg}
+
+
+@router.post("/{tenant_slug}/import/duplicates/resolve-all")
+async def resolve_all_duplicates(
+    tenant_slug: str,
+    body: dict,
+    current_user: User = Depends(get_current_user),
+):
+    """Résoudre tous les doublons en attente avec la même action."""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    action = body.get("action")
+    if action not in ("merge", "replace", "ignore"):
+        raise HTTPException(status_code=400, detail="Action invalide")
+
+    pending = await db.import_duplicates.find(
+        {"tenant_id": tenant.id, "status": "pending"}, {"_id": 0}
+    ).to_list(length=None)
+
+    resolved = 0
+    for dup in pending:
+        # Réutiliser la logique de résolution individuelle
+        fake_body = {"action": action}
+        try:
+            await resolve_duplicate(tenant_slug, dup["id"], fake_body, current_user)
+            resolved += 1
+        except Exception:
+            pass
+
+    return {"resolved": resolved, "total": len(pending), "action": action}
+
+
 # Table des codes d'intervention CAUCA
 CAUCA_CODES = {
     "1": "Administration",
@@ -541,22 +716,7 @@ async def _handle_intervention(record: dict, tenant, user, source: str) -> dict:
             {"tenant_id": tenant.id, "external_call_id": ext_id}, {"_id": 0, "id": 1}
         )
         if existing:
-            update = {
-                **fields,
-                "pfm_record": record,
-                "source_system": source,
-                "updated_at": datetime.now(timezone.utc).isoformat(),
-            }
-            # Auto-match bâtiment
-            bat_id = await _match_address(fields.get("address_full", ""), fields.get("municipality", ""), tenant.id)
-            if bat_id:
-                update["batiment_id"] = bat_id
-                update["match_method"] = "auto_address"
-            await db.interventions.update_one(
-                {"tenant_id": tenant.id, "id": existing["id"]},
-                {"$set": update}
-            )
-            return {"status": "replaced", "entity_type": "Intervention", "id": existing["id"], "batiment_id": update.get("batiment_id")}
+            return await _queue_duplicate(tenant.id, "Intervention", "interventions", existing["id"], record, user.id)
 
     doc_id = str(uuid.uuid4())
     doc = {
@@ -596,11 +756,7 @@ async def _handle_dossier_adresse(record: dict, tenant, user, source: str) -> di
         {"tenant_id": tenant.id, "adresse_civique": addr, "ville": city}, {"_id": 0, "id": 1}
     )
     if existing:
-        await db.batiments.update_one(
-            {"tenant_id": tenant.id, "id": existing["id"]},
-            {"$set": {"pfm_record": record, "updated_at": datetime.now(timezone.utc).isoformat()}}
-        )
-        return {"status": "replaced", "entity_type": "DossierAdresse", "id": existing["id"]}
+        return await _queue_duplicate(tenant.id, "DossierAdresse", "batiments", existing["id"], record, user.id)
 
     def safe_int(v):
         if not v or v == "-1":
@@ -657,11 +813,7 @@ async def _handle_prevention(record: dict, tenant, user, source: str) -> dict:
             {"tenant_id": tenant.id, "external_id": ext_id}, {"_id": 0, "id": 1}
         )
         if existing:
-            await db.inspections.update_one(
-                {"tenant_id": tenant.id, "id": existing["id"]},
-                {"$set": {"pfm_record": record, "updated_at": datetime.now(timezone.utc).isoformat()}}
-            )
-            return {"status": "replaced", "entity_type": "Prevention", "id": existing["id"]}
+            return await _queue_duplicate(tenant.id, "Prevention", "inspections", existing["id"], record, user.id)
 
     addr, city = _extract_address_city(record)
 
@@ -703,8 +855,7 @@ async def _handle_rcci(record: dict, tenant, user, source: str) -> dict:
             {"tenant_id": tenant.id, "external_id": ext_id}, {"_id": 0, "id": 1}
         )
         if existing:
-            await db.rcci.update_one({"tenant_id": tenant.id, "id": existing["id"]}, {"$set": {"pfm_record": record, "updated_at": datetime.now(timezone.utc).isoformat()}})
-            return {"status": "replaced", "entity_type": "RCCI", "id": existing["id"]}
+            return await _queue_duplicate(tenant.id, "RCCI", "rcci", existing["id"], record, user.id)
 
     addr, city = _extract_address_city(record)
 
@@ -740,8 +891,7 @@ async def _handle_plan_intervention(record: dict, tenant, user, source: str) -> 
             {"tenant_id": tenant.id, "external_id": ext_id}, {"_id": 0, "id": 1}
         )
         if existing:
-            await db.plans_intervention.update_one({"tenant_id": tenant.id, "id": existing["id"]}, {"$set": {"pfm_record": record, "updated_at": datetime.now(timezone.utc).isoformat()}})
-            return {"status": "replaced", "entity_type": "PlanIntervention", "id": existing["id"]}
+            return await _queue_duplicate(tenant.id, "PlanIntervention", "plans_intervention", existing["id"], record, user.id)
 
     addr, city = _extract_address_city(record)
 
@@ -778,8 +928,7 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
             {"tenant_id": tenant.id, "matricule": matricule}, {"_id": 0, "id": 1}
         )
         if existing:
-            await db.imported_personnel.update_one({"tenant_id": tenant.id, "id": existing["id"]}, {"$set": {"pfm_record": record, "updated_at": datetime.now(timezone.utc).isoformat()}})
-            return {"status": "replaced", "entity_type": "Employe", "id": existing["id"]}
+            return await _queue_duplicate(tenant.id, "Employe", "imported_personnel", existing["id"], record, user.id)
 
     doc_id = str(uuid.uuid4())
     doc = {
@@ -813,8 +962,7 @@ async def _handle_borne_incendie(record: dict, tenant, user, source: str) -> dic
             {"tenant_id": tenant.id, "nom": nom, "type": "borne_fontaine"}, {"_id": 0, "id": 1}
         )
         if existing:
-            await db.points_eau.update_one({"tenant_id": tenant.id, "id": existing["id"]}, {"$set": {"pfm_record": record, "updated_at": datetime.now(timezone.utc).isoformat()}})
-            return {"status": "replaced", "entity_type": "BorneIncendie", "id": existing["id"]}
+            return await _queue_duplicate(tenant.id, "BorneIncendie", "points_eau", existing["id"], record, user.id)
 
     def safe_float(v):
         if not v:
@@ -861,8 +1009,7 @@ async def _handle_borne_seche(record: dict, tenant, user, source: str) -> dict:
             {"tenant_id": tenant.id, "nom": nom, "type": "borne_seche"}, {"_id": 0, "id": 1}
         )
         if existing:
-            await db.points_eau.update_one({"tenant_id": tenant.id, "id": existing["id"]}, {"$set": {"pfm_record": record, "updated_at": datetime.now(timezone.utc).isoformat()}})
-            return {"status": "replaced", "entity_type": "BorneSeche", "id": existing["id"]}
+            return await _queue_duplicate(tenant.id, "BorneSeche", "points_eau", existing["id"], record, user.id)
 
     doc_id = str(uuid.uuid4())
     doc = {
@@ -891,8 +1038,7 @@ async def _handle_point_eau(record: dict, tenant, user, source: str) -> dict:
             {"tenant_id": tenant.id, "nom": nom, "type": {"$nin": ["borne_fontaine", "borne_seche"]}}, {"_id": 0, "id": 1}
         )
         if existing:
-            await db.points_eau.update_one({"tenant_id": tenant.id, "id": existing["id"]}, {"$set": {"pfm_record": record, "updated_at": datetime.now(timezone.utc).isoformat()}})
-            return {"status": "replaced", "entity_type": "PointEau", "id": existing["id"]}
+            return await _queue_duplicate(tenant.id, "PointEau", "points_eau", existing["id"], record, user.id)
 
     doc_id = str(uuid.uuid4())
     doc = {
@@ -921,8 +1067,7 @@ async def _handle_maintenance_borne(record: dict, tenant, user, source: str) -> 
             {"tenant_id": tenant.id, "external_id": ext_id}, {"_id": 0, "id": 1}
         )
         if existing:
-            await db.maintenance_bornes.update_one({"tenant_id": tenant.id, "id": existing["id"]}, {"$set": {"pfm_record": record, "updated_at": datetime.now(timezone.utc).isoformat()}})
-            return {"status": "replaced", "entity_type": "MaintenanceBorne", "id": existing["id"]}
+            return await _queue_duplicate(tenant.id, "MaintenanceBorne", "maintenance_bornes", existing["id"], record, user.id)
 
     doc_id = str(uuid.uuid4())
     doc = {
@@ -948,8 +1093,7 @@ async def _handle_travail(record: dict, tenant, user, source: str) -> dict:
             {"tenant_id": tenant.id, "external_id": ext_id}, {"_id": 0, "id": 1}
         )
         if existing:
-            await db.travaux.update_one({"tenant_id": tenant.id, "id": existing["id"]}, {"$set": {"pfm_record": record, "updated_at": datetime.now(timezone.utc).isoformat()}})
-            return {"status": "replaced", "entity_type": "Travail", "id": existing["id"]}
+            return await _queue_duplicate(tenant.id, "Travail", "travaux", existing["id"], record, user.id)
 
     doc_id = str(uuid.uuid4())
     doc = {
@@ -978,8 +1122,7 @@ async def _handle_referentiel(entity_type: str, record: dict, tenant, user, sour
             {"tenant_id": tenant.id, "nom": nom}, {"_id": 0, "id": 1}
         )
         if existing:
-            await db[collection_name].update_one({"tenant_id": tenant.id, "id": existing["id"]}, {"$set": {"pfm_record": record, "updated_at": datetime.now(timezone.utc).isoformat()}})
-            return {"status": "replaced", "entity_type": entity_type, "id": existing["id"]}
+            return await _queue_duplicate(tenant.id, entity_type, collection_name, existing["id"], record, "system")
 
     doc_id = str(uuid.uuid4())
     doc = {
