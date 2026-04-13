@@ -568,11 +568,18 @@ async def get_intervention_detail(
         if not resources and intervention.get("personnel"):
             for p in intervention["personnel"]:
                 if isinstance(p, dict):
+                    nom_complet = p.get("nom") or ""
                     resources.append({
                         "intervention_id": intervention_id,
-                        "name": p.get("nom") or "",
-                        "role": p.get("presence") or "",
+                        "id": nom_complet,
+                        "user_name": nom_complet,
+                        "nom": nom_complet.split("(")[0].strip().split(" ")[-1] if nom_complet else "",
+                        "prenom": nom_complet.split("(")[0].strip().split(" ")[0] if nom_complet else "",
                         "vehicle_number": p.get("vehicule") or "",
+                        "statut_presence": "present" if p.get("presence") in ("Présent", "Détaché") else p.get("presence", ""),
+                        "date_debut": p.get("date_debut") or "",
+                        "date_fin": p.get("date_fin") or "",
+                        "libere": p.get("libere") or "",
                         "imported": True,
                     })
         

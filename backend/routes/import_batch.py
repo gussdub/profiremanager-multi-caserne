@@ -656,27 +656,21 @@ def _extract_intervention_fields(record: dict) -> dict:
     # === PERSONNEL ===
     personnel = []
     employes_raw = deep_get_list(r,
-        "intervenant.interv_intervenant.info_interv_employe.info_histo_employe.vect_info_employe.info_employe",
+        "intervenant.interv_intervenant.info_interv_employe.info_histo_employe.vect_info_employe.interv_interv_employe",
+        "intervenant.interv_intervenant.info_interv_employe.info_employe",
         "intervenant.info_interv_employe.info_employe",
         "intervenant.info_interv_employe")
-    if isinstance(employes_raw, list):
-        for emp in employes_raw:
-            if isinstance(emp, dict):
-                personnel.append({
-                    "nom": emp.get("id_employe") or f"{emp.get('prenom', '')} {emp.get('nom', '')}".strip(),
-                    "vehicule": emp.get("id_vehicule") or "",
-                    "arrivee": emp.get("date_partiel_debut") or "",
-                    "depart": emp.get("date_partiel_fin") or emp.get("heure_depart") or "",
-                    "presence": emp.get("presence") or "",
-                    "libere": emp.get("libere") or "",
-                })
-    elif isinstance(employes_raw, dict):
-        personnel.append({
-            "nom": employes_raw.get("id_employe") or "",
-            "arrivee": employes_raw.get("date_partiel_debut") or "",
-            "depart": employes_raw.get("date_partiel_fin") or "",
-            "presence": employes_raw.get("presence") or "",
-        })
+    for emp in employes_raw:
+        if isinstance(emp, dict) and (emp.get("id_employe") or emp.get("nom")):
+            personnel.append({
+                "nom": emp.get("id_employe") or f"{emp.get('prenom', '')} {emp.get('nom', '')}".strip(),
+                "vehicule": emp.get("id_vehicule") or "",
+                "date_debut": emp.get("date_partiel_debut") or "",
+                "date_fin": emp.get("date_partiel_fin") or "",
+                "heure_depart": emp.get("heure_depart") or "",
+                "presence": emp.get("presence") or "",
+                "libere": emp.get("libere") or "",
+            })
 
     # === PERTES ===
     perte_batiment = deep_get(r,
