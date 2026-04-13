@@ -542,12 +542,13 @@ def _extract_intervention_fields(record: dict) -> dict:
         "carte_appel.heure_alerte")
     date_depart = deep_get(r,
         "chronologie.interv_chronologie.depart_premier_veh",
+        "chronologie.interv_chronologie.depart_caserne",
         "chronologie.depart_caserne",
         "chronologie.depart",
         "carte_appel.carte_appel.heure_depart",
         "carte_appel.heure_depart")
     date_arrivee = deep_get(r,
-        "chronologie.interv_chronologie.arrivee_prem_veh",
+        "chronologie.interv_chronologie.arrivee_prem_vehicule",
         "chronologie.arrivee_prem_vehicule",
         "carte_appel.carte_appel.heure_arrivee",
         "carte_appel.heure_arrivee")
@@ -555,6 +556,7 @@ def _extract_intervention_fields(record: dict) -> dict:
         "chronologie.interv_chronologie.arrivee_force_frappe",
         "chronologie.arrivee_force_frappe")
     date_maitrise = deep_get(r,
+        "chronologie.interv_chronologie.maitrise",
         "chronologie.interv_chronologie.sous_controle",
         "chronologie.maitrise",
         "chronologie.sous_controle")
@@ -565,6 +567,7 @@ def _extract_intervention_fields(record: dict) -> dict:
         "carte_appel.heure_retour")
     date_fin = deep_get(r,
         "chronologie.interv_chronologie.fin_interv",
+        "chronologie.interv_chronologie.retour",
         "chronologie.fin_intervention",
         "chronologie.disponible",
         "carte_appel.carte_appel.heure_disp_caserne",
