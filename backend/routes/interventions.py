@@ -587,6 +587,27 @@ async def get_intervention_detail(
         if intervention.get("notes") and not intervention.get("narratif_structure"):
             intervention["narratif_structure"] = {"notes": intervention["notes"]}
         
+        # Photos : fusionner les photos stockées dans stored_files
+        stored_photos = await db.stored_files.find({
+            "entity_id": intervention_id,
+            "is_deleted": False,
+        }, {"_id": 0}).to_list(100)
+        if stored_photos:
+            existing_photos = intervention.get("photos") or []
+            from services.azure_storage import generate_sas_url as _gen_sas
+            for sf in stored_photos:
+                blob_name = sf.get("blob_name") or sf.get("storage_path")
+                content_type = sf.get("content_type", "")
+                if blob_name and content_type.startswith("image/"):
+                    existing_photos.append({
+                        "id": sf.get("id", ""),
+                        "photo_url": _gen_sas(blob_name),
+                        "blob_name": blob_name,
+                        "description": sf.get("original_filename", ""),
+                        "imported": True,
+                    })
+            intervention["photos"] = existing_photos
+        
         # Matériel utilisé → injecter dans formData pour l'onglet Matériel
         if intervention.get("materiel_utilise") and not intervention.get("_materiel_loaded"):
             # Le frontend lit formData.materiel_utilise directement
@@ -2796,6 +2817,29 @@ async def get_remise_propriete_pdf(
         raise HTTPException(status_code=404, detail="Remise non trouvée")
     
     if not remise.get("pdf_base64"):
+        # Pour les interventions importées : chercher le fichier dans stored_files
+        stored_file = await db.stored_files.find_one({
+            "entity_id": intervention_id,
+            "is_deleted": False,
+            "$or": [
+                {"original_filename": {"$regex": "remise|propriete|prop", "$options": "i"}},
+                {"content_type": "application/pdf"},
+                {"category": "import-history"},
+            ]
+        }, {"_id": 0})
+        if stored_file:
+            blob_name = stored_file.get("blob_name") or stored_file.get("storage_path")
+            if blob_name:
+                from services.azure_storage import get_object
+                try:
+                    data, content_type = get_object(blob_name)
+                    return Response(
+                        content=data,
+                        media_type=content_type or "application/pdf",
+                        headers={"Content-Disposition": f"attachment; filename=remise_propriete_{remise_id[:8]}.pdf"}
+                    )
+                except Exception:
+                    pass
         raise HTTPException(status_code=404, detail="PDF non disponible")
     
     # Décoder et retourner le PDF

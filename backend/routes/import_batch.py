@@ -249,6 +249,7 @@ async def _queue_duplicate(tenant_id: str, entity_type: str, collection: str,
     return {
         "status": "pending_review",
         "entity_type": entity_type,
+        "id": existing_id,
         "existing_id": existing_id,
         "duplicate_id": dup_id,
         "message": "Doublon détecté — en attente de résolution dans ProFireManager",
