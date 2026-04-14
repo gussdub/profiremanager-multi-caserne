@@ -772,6 +772,25 @@ def _extract_intervention_fields(record: dict) -> dict:
         "enquete.interv_enquete.num_dossier_police",
         "enquete.num_dossier_police")
 
+    # === PROTECTION INCENDIE ===
+    prot = deep_get(r,
+        "desc_batiment.interv_desc_batiment.protection.interv_protection",
+        "desc_batiment.protection.interv_protection",
+        "desc_batiment.protection", default={})
+    if not isinstance(prot, dict):
+        prot = {}
+    # Codes PremLigne: 11=Oui+Fonctionnel, 88=Non, 99=Indéterminé
+    def _prot_presence(val):
+        if val in ("11", "88", "99"):
+            return "yes" if val == "11" else "no" if val == "88" else ""
+        return ""
+    def _prot_functional(val):
+        return "yes" if val == "11" else "no" if val == "88" else ""
+    avert = prot.get("id_avert_fonctionne", "")
+    extinc = prot.get("id_extinction_fonctionne", "")
+    alarme = prot.get("id_syst_alarme_fonctionne", "")
+
+
     # === PRÉVENTION (sur intervention) ===
     prev_dossier_remis = deep_get(r, "prevention.interv_prevention.dossier_remis")
     prev_avis_emis = deep_get(r, "prevention.interv_prevention.avis_emis")
@@ -860,6 +879,13 @@ def _extract_intervention_fields(record: dict) -> dict:
         # Météo
         "temperature": str(temperature) if temperature and temperature != "0" else "",
         "velocite_vent": str(velocite_vent) if velocite_vent and velocite_vent != "0" else "",
+        # Protection incendie
+        "smoke_detector_presence": _prot_presence(avert),
+        "smoke_detector_functional": _prot_functional(avert),
+        "sprinkler_present": extinc == "11",
+        "sprinkler_functional": _prot_functional(extinc),
+        "alarm_system_presence": _prot_presence(alarme),
+        "alarm_system_functional": _prot_functional(alarme),
     }
 
 
