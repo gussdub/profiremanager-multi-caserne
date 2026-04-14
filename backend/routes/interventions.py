@@ -11,6 +11,7 @@ Ce module gère toute la fonctionnalité des interventions :
 """
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Body
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone, timedelta
@@ -19,6 +20,7 @@ import uuid
 import logging
 import re
 import asyncio
+import base64
 
 from routes.dependencies import (
     db,
@@ -2840,6 +2842,32 @@ async def get_remise_propriete_pdf(
                     )
                 except Exception:
                     pass
+        
+        # Fallback : générer le PDF à la volée depuis les données existantes
+        intervention = await db.interventions.find_one(
+            {"id": intervention_id, "tenant_id": tenant.id}, {"_id": 0}
+        )
+        if intervention and remise.get("remis_a"):
+            try:
+                pdf_b64 = await generer_pdf_remise_propriete(
+                    {"id": tenant.id, "nom": tenant.nom, "nom_service": getattr(tenant, 'nom_service', tenant.nom)},
+                    intervention,
+                    remise
+                )
+                if pdf_b64:
+                    # Sauvegarder pour ne pas regénérer à chaque appel
+                    await db.remises_propriete.update_one(
+                        {"id": remise_id}, {"$set": {"pdf_base64": pdf_b64}}
+                    )
+                    pdf_bytes = base64.b64decode(pdf_b64)
+                    return Response(
+                        content=pdf_bytes,
+                        media_type="application/pdf",
+                        headers={"Content-Disposition": f"attachment; filename=remise_propriete_{remise_id[:8]}.pdf"}
+                    )
+            except Exception as e:
+                logger.error(f"Erreur génération PDF remise à la volée: {e}")
+        
         raise HTTPException(status_code=404, detail="PDF non disponible")
     
     # Décoder et retourner le PDF
@@ -2911,13 +2939,46 @@ async def get_rcci(
         )
         if intervention and (intervention.get("probable_cause") or intervention.get("ignition_source") or intervention.get("enquete_num_dossier")):
             import uuid as _uuid
+            
+            # Normaliser probable_cause pour correspondre aux valeurs du frontend
+            raw_cause = (intervention.get("probable_cause") or "").lower().strip()
+            normalized_cause = "indeterminee"
+            if "accident" in raw_cause or "négligence" in raw_cause:
+                normalized_cause = "accidentelle"
+            elif "intention" in raw_cause or "criminal" in raw_cause:
+                normalized_cause = "intentionnelle"
+            elif "natur" in raw_cause or "foudre" in raw_cause:
+                normalized_cause = "naturelle"
+            elif raw_cause in ("accidentelle", "intentionnelle", "naturelle", "indeterminee"):
+                normalized_cause = raw_cause
+            
+            # Normaliser ignition_source pour correspondre au dropdown frontend
+            raw_ignition = (intervention.get("ignition_source") or "").lower().strip()
+            normalized_ignition = intervention.get("ignition_source", "")
+            ignition_map = {
+                "electr": "electrique", "court-circuit": "electrique", "surcharge": "electrique",
+                "cuisi": "cuisson", "four": "cuisson", "plaque": "cuisson",
+                "chandel": "flamme_nue", "bougie": "flamme_nue", "allumette": "flamme_nue",
+                "cigarette": "cigarette", "fumeur": "cigarette",
+                "chauff": "appareil_chauffage", "poêle": "appareil_chauffage",
+                "foudre": "foudre",
+                "friction": "friction",
+                "chimiq": "produit_chimique",
+            }
+            for keyword, code in ignition_map.items():
+                if keyword in raw_ignition:
+                    normalized_ignition = code
+                    break
+            
             rcci = {
                 "id": str(_uuid.uuid4()),
                 "tenant_id": tenant.id,
                 "intervention_id": intervention_id,
                 "origin_area": intervention.get("origin_area", ""),
-                "probable_cause": intervention.get("probable_cause", ""),
-                "ignition_source": intervention.get("ignition_source", ""),
+                "probable_cause": normalized_cause,
+                "probable_cause_raw": intervention.get("probable_cause", ""),
+                "ignition_source": normalized_ignition,
+                "ignition_source_raw": intervention.get("ignition_source", ""),
                 "material_first_ignited": intervention.get("material_first_ignited", ""),
                 "fire_combustible": intervention.get("fire_combustible", ""),
                 "fire_extent": intervention.get("fire_extent", ""),
@@ -2932,6 +2993,7 @@ async def get_rcci(
                 "photos": [],
             }
             await db.rcci.insert_one(rcci)
+            rcci.pop("_id", None)
     
     # Résoudre blob_names en SAS URLs pour les photos RCCI
     if rcci and rcci.get("photos"):

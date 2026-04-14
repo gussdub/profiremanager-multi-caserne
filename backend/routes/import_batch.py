@@ -786,7 +786,7 @@ def _extract_intervention_fields(record: dict) -> dict:
             return "yes" if val == "11" else "no" if val == "88" else ""
         return ""
     def _prot_functional(val):
-        return "yes" if val == "11" else "no" if val == "88" else ""
+        return "worked" if val == "11" else "not_worked" if val == "88" else ""
     avert = prot.get("id_avert_fonctionne", "")
     extinc = prot.get("id_extinction_fonctionne", "")
     alarme = prot.get("id_syst_alarme_fonctionne", "")
@@ -911,7 +911,7 @@ def _extract_intervention_fields(record: dict) -> dict:
         "smoke_detector_presence": _prot_presence(avert),
         "smoke_detector_functional": _prot_functional(avert),
         "sprinkler_present": extinc == "11",
-        "sprinkler_functional": _prot_functional(extinc),
+        "sprinkler_functional": True if extinc == "11" else False if extinc == "88" else None,
         "alarm_system_presence": _prot_presence(alarme),
         "alarm_system_functional": _prot_functional(alarme),
         # DSI / Sinistre (propriétaire + assurance)
@@ -929,6 +929,13 @@ async def _handle_intervention(record: dict, tenant, user, source: str) -> dict:
     """Crée ou REMPLACE une intervention depuis un record PremLigne."""
     ext_id = _get_ext_id(record)
     fields = _extract_intervention_fields(record)
+
+    # Log pour debug en production
+    key_fields_status = {
+        k: bool(v) for k, v in fields.items() 
+        if k in ("probable_cause", "smoke_detector_presence", "owner_name", "code_feu", "estimated_loss_building")
+    }
+    logger.info(f"[IMPORT] Intervention {ext_id}: extraction key fields = {key_fields_status}")
 
     # Si doublon → REMPLACER (mettre à jour avec les nouvelles données)
     if ext_id:
