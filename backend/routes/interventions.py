@@ -2856,6 +2856,39 @@ async def get_rcci(
         "intervention_id": intervention_id
     }, {"_id": 0})
     
+    # Pour les interventions importées : créer automatiquement la RCCI si données disponibles
+    if not rcci:
+        intervention = await db.interventions.find_one(
+            {"tenant_id": tenant.id, "id": intervention_id, "import_source": "history_import"},
+            {"_id": 0, "probable_cause": 1, "ignition_source": 1, "origin_area": 1,
+             "material_first_ignited": 1, "fire_combustible": 1, "fire_extent": 1,
+             "fire_propagation": 1, "fire_dommage": 1, "fire_mode_inflammation": 1,
+             "fire_energie": 1, "enquete_police": 1, "enquete_date": 1, "enquete_num_dossier": 1}
+        )
+        if intervention and (intervention.get("probable_cause") or intervention.get("ignition_source") or intervention.get("enquete_num_dossier")):
+            import uuid as _uuid
+            rcci = {
+                "id": str(_uuid.uuid4()),
+                "tenant_id": tenant.id,
+                "intervention_id": intervention_id,
+                "origin_area": intervention.get("origin_area", ""),
+                "probable_cause": intervention.get("probable_cause", ""),
+                "ignition_source": intervention.get("ignition_source", ""),
+                "material_first_ignited": intervention.get("material_first_ignited", ""),
+                "fire_combustible": intervention.get("fire_combustible", ""),
+                "fire_extent": intervention.get("fire_extent", ""),
+                "fire_propagation": intervention.get("fire_propagation", ""),
+                "fire_dommage": intervention.get("fire_dommage", ""),
+                "fire_mode_inflammation": intervention.get("fire_mode_inflammation", ""),
+                "fire_energie": intervention.get("fire_energie", ""),
+                "transfert_police": intervention.get("enquete_police", "") != "Non" and bool(intervention.get("enquete_num_dossier")),
+                "numero_dossier_police": intervention.get("enquete_num_dossier", ""),
+                "date_transfert": intervention.get("enquete_date", ""),
+                "imported": True,
+                "photos": [],
+            }
+            await db.rcci.insert_one(rcci)
+    
     # Résoudre blob_names en SAS URLs pour les photos RCCI
     if rcci and rcci.get("photos"):
         from services.azure_storage import generate_sas_url as _sas

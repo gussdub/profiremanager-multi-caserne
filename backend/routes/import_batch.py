@@ -768,6 +768,9 @@ def _extract_intervention_fields(record: dict) -> dict:
     enquete_date = deep_get(r,
         "enquete.interv_enquete.date_remis",
         "enquete.date_remis")
+    enquete_num_dossier = deep_get(r,
+        "enquete.interv_enquete.num_dossier_police",
+        "enquete.num_dossier_police")
 
     # === PRÉVENTION (sur intervention) ===
     prev_dossier_remis = deep_get(r, "prevention.interv_prevention.dossier_remis")
@@ -849,6 +852,7 @@ def _extract_intervention_fields(record: dict) -> dict:
         # Enquête
         "enquete_police": str(enquete_police) if enquete_police else "",
         "enquete_date": str(enquete_date) if enquete_date else "",
+        "enquete_num_dossier": str(enquete_num_dossier) if enquete_num_dossier else "",
         # Prévention (sur intervention)
         "prevention_dossier_remis": str(prev_dossier_remis) if prev_dossier_remis else "",
         "prevention_avis_emis": str(prev_avis_emis) if prev_avis_emis else "",
