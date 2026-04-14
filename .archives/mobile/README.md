@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://intervention-sync.preview.emergentagent.com
+- **URL** : https://pfm-transfer-import.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://intervention-sync.preview.emergentagent.com"
+  "apiUrl": "https://pfm-transfer-import.preview.emergentagent.com"
 }
 ```
 
