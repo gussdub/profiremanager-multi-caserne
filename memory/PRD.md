@@ -20,10 +20,22 @@ Application de gestion complète pour les services d'incendie canadiens. Multi-t
 - **Fiche bâtiment** : Toutes les interventions (normales + importées) par batiment_id ou correspondance d'adresse
 - **Upload fichiers** vers Azure Blob Storage
 
+### Import PFM Transfer Direct (POST /api/{tenant}/import/batch)
+- Import direct JSON via PFM Transfer
+- Extraction profonde (deep_get) des données PremLigne imbriquées
+- Gestion des doublons via file d'attente UI
+- Lazy evaluation : RCCI, Remise de Propriété créés à la demande
+- Normalisation des valeurs RCCI (cause_probable, ignition_source) pour correspondre aux codes frontend
+- Génération PDF Remise de Propriété à la volée
+
 ## Completed Features
 - Multi-tenant auth, planning, remplacements, prévention, EPI, bâtiments
 - Migration Azure Blob Storage 100%
 - Import historique interventions avec mapping intelligent et rétroactif
+- Import PFM Transfer avec extraction complète (RCCI, Protection, DSI, Remise, Véhicules, Personnel)
+- Correction onglets RCCI/Protection/DSI vides (avr 2026)
+- Correction PDF Remise de Propriété 404 → génération à la volée (avr 2026)
+- UI Gestion des Doublons (Paramètres > Imports CSV)
 
 ## Backlog
 - P2: Aperçu d'emails en temps réel dans les paramètres admin
