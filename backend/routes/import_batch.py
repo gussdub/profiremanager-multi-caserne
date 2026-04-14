@@ -689,11 +689,65 @@ def _extract_intervention_fields(record: dict) -> dict:
         "cause_incendie.interv_cause_incendie.id_source_chaleur",
         "cause_incendie.id_source_chaleur")
 
+    # === RESSOURCES EXTERNES ===
+    ressources_ext = []
+    ress_raw = deep_get_list(r,
+        "intervenant.interv_intervenant.vect_interv_ressource.interv_interv_ressource")
+    for res in ress_raw:
+        if isinstance(res, dict):
+            ressources_ext.append({
+                "id_ressource": res.get("id_ressource") or "",
+                "heure_appel": res.get("heure_appel") or "",
+                "heure_arrivee": res.get("heure_arrivee") or "",
+                "heure_travail_fait": res.get("heure_travail_fait") or "",
+            })
+
+    # === VIE HUMAINE / SAUVETAGE ===
+    nbr_sauvetage = deep_get(r,
+        "vie_humaine.interv_vie_humaine.vect_interv_sauvetage.interv_sauvetage.nbr_sauvetage",
+        "vie_humaine.nbr_sauvetage", default="0")
+    nbr_evacuation = deep_get(r,
+        "vie_humaine.interv_vie_humaine.vect_interv_sauvetage.interv_sauvetage.nbr_evacuation",
+        "vie_humaine.nbr_evacuation", default="0")
+    adresse_sauvetage = deep_get(r,
+        "vie_humaine.interv_vie_humaine.vect_interv_sauvetage.interv_sauvetage.id_dossier_adresse")
+
+    # === ENQUÊTE ===
+    enquete_police = deep_get(r,
+        "enquete.interv_enquete.dossier_transmis_police",
+        "enquete.dossier_transmis_police")
+    enquete_date = deep_get(r,
+        "enquete.interv_enquete.date_remis",
+        "enquete.date_remis")
+
+    # === PRÉVENTION (sur intervention) ===
+    prev_dossier_remis = deep_get(r, "prevention.interv_prevention.dossier_remis")
+    prev_avis_emis = deep_get(r, "prevention.interv_prevention.avis_emis")
+    prev_type_avis = deep_get(r, "prevention.interv_prevention.type_avis")
+
+    # === TEMPÉRATURE ===
+    temperature = deep_get(r, "temperature.interv_temperature.temperature")
+    velocite_vent = deep_get(r, "temperature.interv_temperature.velocite")
+
+    # === COÛT TOTAL (nettoyer le emoji 📎) ===
+    cout_raw = deep_get(r, "cout_total") or ""
+    cout_total = str(cout_raw).replace("📎", "").strip() if cout_raw else ""
+
+    # === PERTES INDIRECTES / EXTÉRIEURES (chemins profonds) ===
+    perte_ext_deep = deep_get(r,
+        "interv_feu_exterieur.interv_feu_exterieur.perte",
+        "feu_exterieur.perte")
+    perte_indirecte = deep_get(r,
+        "interv_perte_indirecte.interv_perte_indirecte.perte",
+        "perte_indirecte.perte")
+
     return {
         "address_full": str(addr) if addr else "",
         "municipality": str(city) if city else "",
         "type_intervention": str(type_intv) if type_intv else "",
         "code_feu": str(code_feu) if code_feu else "",
+        "code_appel_initial": deep_get(r, "id_code_appel_initial") or "",
+        "no_appel": deep_get(r, "carte_appel.carte_appel.no_appel") or "",
         "officer_in_charge_xml": str(officier) if officier else "",
         "caserne": str(caserne) if caserne else "",
         "notes": str(notes) if notes else "",
@@ -703,8 +757,9 @@ def _extract_intervention_fields(record: dict) -> dict:
         "caller_phone_pour": str(caller_phone_pour) if caller_phone_pour else "",
         "vehicules": vehicules,
         "personnel": personnel,
+        "ressources_externes": ressources_ext,
         "xml_comments": xml_comments,
-        # Chronologie — noms conformes au frontend PFM
+        # Chronologie
         "xml_time_call_received": str(date_appel) if date_appel else "",
         "xml_time_dispatch": str(date_alerte) if date_alerte else "",
         "xml_time_en_route": str(date_depart) if date_depart else "",
@@ -713,13 +768,34 @@ def _extract_intervention_fields(record: dict) -> dict:
         "xml_time_under_control": str(date_maitrise) if date_maitrise else "",
         "xml_time_1022": str(date_retour) if date_retour else "",
         "xml_time_terminated": str(date_fin) if date_fin else "",
+        "moyen_transmission": deep_get(r, "chronologie.interv_chronologie.moyen_trans", "chronologie.moyen_trans") or "",
+        "annule": deep_get(r, "chronologie.interv_chronologie.annule") or "",
+        # Statut
         "statut_premligne": deep_get(r, "statut") or "",
+        "date_completee": deep_get(r, "date_completee") or "",
+        # Pertes
         "perte_batiment": str(perte_batiment) if perte_batiment else "",
         "perte_contenu": str(perte_contenu) if perte_contenu else "",
-        "perte_exterieur": str(perte_ext) if perte_ext else "",
+        "perte_exterieur": str(perte_ext_deep or perte_ext) if (perte_ext_deep or perte_ext) else "",
+        "perte_indirecte": str(perte_indirecte) if perte_indirecte else "",
+        "cout_total": cout_total,
+        # Cause incendie
         "cause_probable": str(cause_probable) if cause_probable else "",
         "source_chaleur": str(source_chaleur) if source_chaleur else "",
-        "cout_total": deep_get(r, "cout_total") or "",
+        # Vie humaine
+        "nbr_sauvetage": str(nbr_sauvetage) if nbr_sauvetage and nbr_sauvetage != "0" else "",
+        "nbr_evacuation": str(nbr_evacuation) if nbr_evacuation and nbr_evacuation != "0" else "",
+        "adresse_sauvetage": str(adresse_sauvetage) if adresse_sauvetage else "",
+        # Enquête
+        "enquete_police": str(enquete_police) if enquete_police else "",
+        "enquete_date": str(enquete_date) if enquete_date else "",
+        # Prévention (sur intervention)
+        "prevention_dossier_remis": str(prev_dossier_remis) if prev_dossier_remis else "",
+        "prevention_avis_emis": str(prev_avis_emis) if prev_avis_emis else "",
+        "prevention_type_avis": str(prev_type_avis) if prev_type_avis else "",
+        # Météo
+        "temperature": str(temperature) if temperature and temperature != "0" else "",
+        "velocite_vent": str(velocite_vent) if velocite_vent and velocite_vent != "0" else "",
     }
 
 
