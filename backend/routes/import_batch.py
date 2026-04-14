@@ -791,6 +791,33 @@ def _extract_intervention_fields(record: dict) -> dict:
     alarme = prot.get("id_syst_alarme_fonctionne", "")
 
 
+
+    # === DSI / Sinistre (propriétaire, assurance) ===
+    rep_data = deep_get(r, "repondant.interv_repondant", "repondant", default={})
+    if not isinstance(rep_data, dict):
+        rep_data = {}
+    rep_addr = rep_data.get("adresse", {})
+    if isinstance(rep_addr, dict) and "adresse" in rep_addr:
+        rep_addr = rep_addr["adresse"]
+    if not isinstance(rep_addr, dict):
+        rep_addr = {}
+
+    owner_name = rep_data.get("nom") or ""
+    owner_phone = rep_addr.get("telephone") or ""
+    owner_address = ""
+    if rep_addr.get("rue"):
+        owner_address = f"{rep_addr.get('no_civique', '')} {rep_addr.get('rue', '')}, {rep_addr.get('ville', '')}".strip().strip(",").strip()
+
+    # Assurance depuis les pertes
+    perte_data = deep_get(r,
+        "desc_batiment.interv_desc_batiment.perte.interv_perte",
+        "desc_batiment.perte", default={})
+    if not isinstance(perte_data, dict):
+        perte_data = {}
+    id_assurance = perte_data.get("id_assurance", "")
+    # Code PremLigne: 1=Oui, 0=Non, 2=Indéterminé
+    has_insurance = "yes" if id_assurance == "1" else "no" if id_assurance == "0" else ""
+
     # === PRÉVENTION (sur intervention) ===
     prev_dossier_remis = deep_get(r, "prevention.interv_prevention.dossier_remis")
     prev_avis_emis = deep_get(r, "prevention.interv_prevention.avis_emis")
@@ -886,6 +913,11 @@ def _extract_intervention_fields(record: dict) -> dict:
         "sprinkler_functional": _prot_functional(extinc),
         "alarm_system_presence": _prot_presence(alarme),
         "alarm_system_functional": _prot_functional(alarme),
+        # DSI / Sinistre (propriétaire + assurance)
+        "owner_name": owner_name,
+        "owner_phone": owner_phone,
+        "owner_address": owner_address,
+        "has_insurance": has_insurance,
     }
 
 
