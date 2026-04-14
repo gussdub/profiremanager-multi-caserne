@@ -711,6 +711,46 @@ def _extract_intervention_fields(record: dict) -> dict:
                 "heure_travail_fait": res.get("heure_travail_fait") or "",
             })
 
+    # === MATÉRIEL UTILISÉ ===
+    materiel_utilise = []
+    mat_raw = deep_get_list(r,
+        "equipement.interv_equipement.vect_interv_materiel.interv_materiel",
+        "equipement.vect_interv_materiel.interv_materiel")
+    for mat in mat_raw:
+        if isinstance(mat, dict):
+            materiel_utilise.append({
+                "id": mat.get("id_type_equipement") or "",
+                "nom": mat.get("id_type_equipement") or "",
+                "quantite": mat.get("quantite") or "1",
+                "imported": True,
+            })
+
+    # === REMISE DE PROPRIÉTÉ ===
+    remise_prop = {}
+    rp = deep_get(r, "remise_prop.interv_remise_prop", "remise_prop", default={})
+    if isinstance(rp, dict) and (rp.get("date_libere") or rp.get("remis_a")):
+        remise_prop = {
+            "date_libere": rp.get("date_libere") or "",
+            "remis_a": rp.get("remis_a") or "",
+            "fichier_ref": rp.get("id_fichier") or "",
+        }
+
+    # === RÉPONDANT ===
+    repondant = {}
+    rep = deep_get(r, "repondant.interv_repondant", "repondant", default={})
+    if isinstance(rep, dict) and (rep.get("nom") or rep.get("telephone")):
+        rep_addr = rep.get("adresse", {})
+        if isinstance(rep_addr, dict) and "adresse" in rep_addr:
+            rep_addr = rep_addr["adresse"]
+        repondant = {
+            "nom": rep.get("nom") or "",
+            "adresse_differente": rep.get("adresse_differente") or "",
+            "adresse": rep_addr.get("rue", "") if isinstance(rep_addr, dict) else "",
+            "ville": rep_addr.get("ville", "") if isinstance(rep_addr, dict) else "",
+            "telephone": rep_addr.get("telephone", "") if isinstance(rep_addr, dict) else "",
+            "tel_autre": rep_addr.get("tel_autre", "") if isinstance(rep_addr, dict) else "",
+        }
+
     # === VIE HUMAINE / SAUVETAGE ===
     nbr_sauvetage = deep_get(r,
         "vie_humaine.interv_vie_humaine.vect_interv_sauvetage.interv_sauvetage.nbr_sauvetage",
@@ -767,6 +807,9 @@ def _extract_intervention_fields(record: dict) -> dict:
         "vehicules": vehicules,
         "personnel": personnel,
         "ressources_externes": ressources_ext,
+        "materiel_utilise": materiel_utilise,
+        "remise_propriete": remise_prop,
+        "repondant": repondant,
         "xml_comments": xml_comments,
         # Chronologie
         "xml_time_call_received": str(date_appel) if date_appel else "",

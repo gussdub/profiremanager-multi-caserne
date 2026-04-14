@@ -586,6 +586,33 @@ async def get_intervention_detail(
         # S'assurer que narratif_structure contient les notes pour l'onglet Narratif
         if intervention.get("notes") and not intervention.get("narratif_structure"):
             intervention["narratif_structure"] = {"notes": intervention["notes"]}
+        
+        # Matériel utilisé → injecter dans formData pour l'onglet Matériel
+        if intervention.get("materiel_utilise") and not intervention.get("_materiel_loaded"):
+            # Le frontend lit formData.materiel_utilise directement
+            pass  # déjà dans l'objet intervention
+        
+        # Remise de propriété → créer dans la collection si pas encore fait
+        if intervention.get("remise_propriete") and intervention["remise_propriete"].get("remis_a"):
+            rp = intervention["remise_propriete"]
+            existing_rp = await db.remises_propriete.find_one(
+                {"intervention_id": intervention_id, "imported": True}, {"_id": 0, "id": 1}
+            )
+            if not existing_rp:
+                import uuid as _uuid
+                rp_id = str(_uuid.uuid4())
+                await db.remises_propriete.insert_one({
+                    "id": rp_id,
+                    "intervention_id": intervention_id,
+                    "tenant_id": intervention["tenant_id"],
+                    "date_libere": rp.get("date_libere", ""),
+                    "remis_a": rp.get("remis_a", ""),
+                    "nom_signataire": rp.get("remis_a", ""),
+                    "fichier_ref": rp.get("fichier_ref", ""),
+                    "repondant": intervention.get("repondant", {}),
+                    "imported": True,
+                    "created_at": intervention.get("imported_at", ""),
+                })
     
     # Calculer les délais
     response_time = None
