@@ -862,8 +862,17 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
     // Les cartes Alerte Santé ne sont jamais des incendies
     if (formData.type_carte === 'alerte_sante') return false;
     const nature = (formData.type_intervention || '').toLowerCase();
-    // Afficher DSI pour tout ce qui contient "incendie" (y compris alarmes)
-    return nature.includes('incendie');
+    const codeFeu = (formData.code_feu || '').trim();
+    // Codes CAUCA qui sont des incendies/feux
+    const fireCodesCauca = ['21', '22', '25', '30', '32', '33', '40', '50', '80'];
+    // Afficher DSI pour tout ce qui contient "incendie", "feu", "bâtiment" ou un code feu d'incendie
+    return nature.includes('incendie') || nature.includes('feu ') || nature.includes('feu de') 
+      || nature.includes('bâtiment') || nature.includes('batiment')
+      || nature.includes('cheminée') || nature.includes('cheminee')
+      || nature.includes('commerce') || nature.includes('résidence')
+      || nature.includes('installation') || nature.includes('forêt')
+      || nature.includes('débris') || nature.includes('déversement')
+      || fireCodesCauca.includes(codeFeu);
   };
   
   // Détecter si c'est une carte Alerte Santé
@@ -873,7 +882,16 @@ const InterventionDetailModal = ({ intervention, tenantSlug, user, onClose, onUp
   const isRealFire = () => {
     if (formData.type_carte === 'alerte_sante') return false;
     const nature = (formData.type_intervention || '').toLowerCase();
-    return nature.includes('incendie') && !nature.includes('alarme');
+    const codeFeu = (formData.code_feu || '').trim();
+    const fireCodesCauca = ['21', '22', '25', '30', '32', '33', '40', '50', '80'];
+    const isFireByNature = nature.includes('incendie') || nature.includes('feu ') || nature.includes('feu de')
+      || nature.includes('bâtiment') || nature.includes('batiment')
+      || nature.includes('cheminée') || nature.includes('cheminee')
+      || nature.includes('commerce') || nature.includes('installation')
+      || nature.includes('forêt') || nature.includes('résidence');
+    const isFireByCode = fireCodesCauca.includes(codeFeu);
+    const isAlarm = nature.includes('alarme');
+    return (isFireByNature || isFireByCode) && !isAlarm;
   };
 
   // Déterminer si ça touche un bâtiment
