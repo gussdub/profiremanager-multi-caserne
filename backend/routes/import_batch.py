@@ -682,12 +682,21 @@ def _extract_intervention_fields(record: dict) -> dict:
     perte_ext = deep_get(r, "feu_exterieur.perte", "feu_exterieur.interv_feu_exterieur.perte")
 
     # === CAUSE INCENDIE ===
-    cause_probable = deep_get(r,
-        "cause_incendie.interv_cause_incendie.id_cause_probable",
-        "cause_incendie.id_cause_probable")
-    source_chaleur = deep_get(r,
-        "cause_incendie.interv_cause_incendie.id_source_chaleur",
-        "cause_incendie.id_source_chaleur")
+    # === CAUSE INCENDIE / RCCI (chemins profonds) ===
+    cause_data = deep_get(r, "cause_incendie.interv_cause_incendie", "cause_incendie", default={})
+    if not isinstance(cause_data, dict):
+        cause_data = {}
+    
+    cause_probable = cause_data.get("cause_probable") or deep_get(r, "cause_incendie.id_cause_probable") or ""
+    source_chaleur = cause_data.get("source_chaleur") or cause_data.get("id_source_chaleur") or ""
+    lieu_origine = cause_data.get("lieu_origine") or ""
+    combustible = cause_data.get("combustible") or ""
+    prem_mat = cause_data.get("prem_mat_enflamme") or ""
+    ampleur = cause_data.get("ampleur_incendie") or ""
+    propagation = cause_data.get("propagation") or ""
+    dommage_rcci = cause_data.get("dommage") or ""
+    mode_inflammation = cause_data.get("id_mode_inflammation") or ""
+    energie = cause_data.get("id_energie") or ""
 
     # === RESSOURCES EXTERNES ===
     ressources_ext = []
@@ -773,15 +782,23 @@ def _extract_intervention_fields(record: dict) -> dict:
         # Statut
         "statut_premligne": deep_get(r, "statut") or "",
         "date_completee": deep_get(r, "date_completee") or "",
-        # Pertes
-        "perte_batiment": str(perte_batiment) if perte_batiment else "",
-        "perte_contenu": str(perte_contenu) if perte_contenu else "",
+        # Pertes — noms conformes au frontend PFM
+        "estimated_loss_building": str(perte_batiment) if perte_batiment else "",
+        "estimated_loss_content": str(perte_contenu) if perte_contenu else "",
         "perte_exterieur": str(perte_ext_deep or perte_ext) if (perte_ext_deep or perte_ext) else "",
         "perte_indirecte": str(perte_indirecte) if perte_indirecte else "",
         "cout_total": cout_total,
-        # Cause incendie
-        "cause_probable": str(cause_probable) if cause_probable else "",
-        "source_chaleur": str(source_chaleur) if source_chaleur else "",
+        # RCCI / Cause incendie — noms conformes au frontend PFM
+        "probable_cause": str(cause_probable) if cause_probable else "",
+        "ignition_source": str(source_chaleur) if source_chaleur else "",
+        "origin_area": str(lieu_origine) if lieu_origine else "",
+        "material_first_ignited": str(prem_mat) if prem_mat else "",
+        "fire_combustible": str(combustible) if combustible else "",
+        "fire_extent": str(ampleur) if ampleur else "",
+        "fire_propagation": str(propagation) if propagation else "",
+        "fire_dommage": str(dommage_rcci) if dommage_rcci else "",
+        "fire_mode_inflammation": str(mode_inflammation) if mode_inflammation else "",
+        "fire_energie": str(energie) if energie else "",
         # Vie humaine
         "nbr_sauvetage": str(nbr_sauvetage) if nbr_sauvetage and nbr_sauvetage != "0" else "",
         "nbr_evacuation": str(nbr_evacuation) if nbr_evacuation and nbr_evacuation != "0" else "",
