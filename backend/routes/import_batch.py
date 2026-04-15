@@ -599,18 +599,32 @@ async def fix_existing_batiments(
             if val is not None and val > 0:
                 update[db_key] = val
 
-        # Valeurs foncières
-        for pfm_key, db_key in [
-            ("valeur", "valeur_fonciere"), ("valeur_immeuble", "valeur_immeuble"),
-            ("valeur_terrain", "valeur_terrain"),
-        ]:
-            val = _parse_float(record.get(pfm_key))
-            if val is not None and val > 0:
-                update[db_key] = val
+        # Valeur foncière = valeur_immeuble (priorité) ou valeur
+        val_imm = _parse_float(record.get("valeur_immeuble"))
+        val_total = _parse_float(record.get("valeur"))
+        if val_imm and val_imm > 0:
+            update["valeur_fonciere"] = val_imm
+        elif val_total and val_total > 0:
+            update["valeur_fonciere"] = val_total
+
+        val_terrain = _parse_float(record.get("valeur_terrain"))
+        if val_terrain and val_terrain > 0:
+            update["valeur_terrain"] = val_terrain
+
+        # Matricule → cadastre_matricule
+        matricule = record.get("matricule")
+        if matricule:
+            update["cadastre_matricule"] = str(matricule)
+
+        # Superficie : parser "148 m²" → 148
+        superficie_raw = record.get("qte_aire_au_sol") or ""
+        if superficie_raw:
+            m = re.match(r"^([\d\s,.]+)", str(superficie_raw).replace("\xa0", " "))
+            if m:
+                update["superficie_totale_m2"] = m.group(1).replace(" ", "").replace(",", ".")
 
         # Champs texte
         for pfm_key, db_key in [
-            ("matricule", "matricule_foncier"),
             ("id_categ_risque", "niveau_risque"),
             ("id_type_batiment", "sous_type_batiment"),
             ("id_classification", "classification"),
@@ -632,9 +646,9 @@ async def fix_existing_batiments(
         if note and not doc.get("notes"):
             update["notes"] = note
 
-        # Contacts depuis liste_personne_ressource
+        # Contacts depuis liste_personne_ressource → proprietaire
         pers_ress = record.get("liste_personne_ressource", {})
-        if isinstance(pers_ress, dict) and not doc.get("contact_nom"):
+        if isinstance(pers_ress, dict) and not doc.get("proprietaire_nom"):
             items = pers_ress.get("item", [])
             if isinstance(items, dict):
                 items = [items]
@@ -643,9 +657,29 @@ async def fix_existing_batiments(
                 if isinstance(first, dict):
                     pr = first.get("personne_ressource", first)
                     if pr.get("nom"):
-                        update["contact_nom"] = pr["nom"]
+                        update["proprietaire_nom"] = pr["nom"]
+                        update["contact_nom"] = f"{pr.get('prenom', '')} {pr['nom']}".strip()
+                    if pr.get("prenom"):
+                        update["proprietaire_prenom"] = pr["prenom"]
                     if pr.get("telephone") or pr.get("cell"):
-                        update["contact_telephone"] = pr.get("telephone") or pr.get("cell")
+                        tel = pr.get("telephone") or pr.get("cell")
+                        update["proprietaire_telephone"] = tel
+                        update["contact_telephone"] = tel
+                    if pr.get("courriel"):
+                        update["proprietaire_courriel"] = pr["courriel"]
+                    # Adresse
+                    pr_addr = pr.get("adresse", {})
+                    if isinstance(pr_addr, dict) and "adresse" in pr_addr:
+                        pr_addr = pr_addr["adresse"]
+                    if isinstance(pr_addr, dict):
+                        pr_no = str(pr_addr.get("no_civ", "") or "").strip()
+                        pr_rue = str(pr_addr.get("rue", "") or "").strip()
+                        if pr_no or pr_rue:
+                            update["proprietaire_adresse"] = f"{pr_no} {pr_rue}".strip()
+                        if pr_addr.get("ville"):
+                            update["proprietaire_ville"] = pr_addr["ville"]
+                        if pr_addr.get("code_post"):
+                            update["proprietaire_code_postal"] = pr_addr["code_post"]
 
         # Sous-entités
         for pfm_key, db_key in [
@@ -1279,10 +1313,14 @@ async def _handle_dossier_adresse(record: dict, tenant, user, source: str) -> di
     if existing:
         return await _queue_duplicate(tenant.id, "DossierAdresse", "batiments", existing["id"], record, user.id)
 
-    # Personnes ressources (contacts du bâtiment)
-    contact_nom = ""
-    contact_telephone = ""
-    contact_courriel = ""
+    # Personnes ressources → propriétaire (format frontend PFM)
+    proprietaire_nom = ""
+    proprietaire_prenom = ""
+    proprietaire_telephone = ""
+    proprietaire_courriel = ""
+    proprietaire_adresse = ""
+    proprietaire_ville = ""
+    proprietaire_code_postal = ""
     pers_ress = record.get("liste_personne_ressource", {})
     if isinstance(pers_ress, dict):
         items = pers_ress.get("item", [])
@@ -1292,13 +1330,33 @@ async def _handle_dossier_adresse(record: dict, tenant, user, source: str) -> di
             first = items[0]
             if isinstance(first, dict):
                 pr = first.get("personne_ressource", first)
-                contact_nom = pr.get("nom", "") or ""
-                contact_telephone = pr.get("telephone", "") or pr.get("cell", "") or ""
-                contact_courriel = pr.get("courriel", "") or ""
-    if not contact_nom:
-        contact_nom = record.get("proprietaire_nom") or record.get("prop_nom") or ""
-    if not contact_telephone:
-        contact_telephone = record.get("telephone") or ""
+                proprietaire_nom = pr.get("nom", "") or ""
+                proprietaire_prenom = pr.get("prenom", "") or ""
+                proprietaire_telephone = pr.get("telephone", "") or pr.get("cell", "") or ""
+                proprietaire_courriel = pr.get("courriel", "") or ""
+                # Adresse de la personne ressource
+                pr_addr = pr.get("adresse", {})
+                if isinstance(pr_addr, dict) and "adresse" in pr_addr:
+                    pr_addr = pr_addr["adresse"]
+                if isinstance(pr_addr, dict):
+                    pr_no = str(pr_addr.get("no_civ", "") or "").strip()
+                    pr_rue = str(pr_addr.get("rue", "") or "").strip()
+                    proprietaire_adresse = f"{pr_no} {pr_rue}".strip() if pr_no else pr_rue
+                    proprietaire_ville = str(pr_addr.get("ville", "") or "").strip()
+                    proprietaire_code_postal = str(pr_addr.get("code_post", "") or "").strip()
+    if not proprietaire_nom:
+        proprietaire_nom = record.get("proprietaire_nom") or record.get("prop_nom") or ""
+
+    # Superficie : parser "148 m²" → 148
+    superficie_raw = record.get("qte_aire_au_sol") or ""
+    superficie_m2 = ""
+    if superficie_raw:
+        m = re.match(r"^([\d\s,.]+)", str(superficie_raw).replace("\xa0", " "))
+        if m:
+            superficie_m2 = m.group(1).replace(" ", "").replace(",", ".")
+
+    # Valeur foncière : priorité valeur_immeuble > valeur
+    valeur_fonciere = _parse_float(record.get("valeur_immeuble")) or _parse_float(record.get("valeur"))
 
     doc_id = str(uuid.uuid4())
     doc = {
@@ -1311,7 +1369,7 @@ async def _handle_dossier_adresse(record: dict, tenant, user, source: str) -> di
         "province": province,
         "pays": "Canada",
         # Identification
-        "matricule_foncier": str(record.get("matricule") or ""),
+        "cadastre_matricule": str(record.get("matricule") or ""),
         "nom_etablissement": record.get("proprietaire_nom") or record.get("prop_nom") or record.get("raison_sociale") or "",
         "raison_sociale": record.get("raison_sociale") or "",
         "subdivision": record.get("subdivision") or "",
@@ -1323,11 +1381,10 @@ async def _handle_dossier_adresse(record: dict, tenant, user, source: str) -> di
         "nombre_autres_locaux": _parse_int(record.get("nbr_autres_locaux")),
         "annee_construction": _parse_int(record.get("annee_construction")),
         "annee_renovation": _parse_int(record.get("annee_dern_renov") or record.get("annee_renovation")),
-        "aire_au_sol": record.get("qte_aire_au_sol") or "",
+        "superficie_totale_m2": superficie_m2,
         "aire_terrain": record.get("qte_aire_au_sol_terrain") or "",
         # Valeurs foncières
-        "valeur_fonciere": _parse_float(record.get("valeur")),
-        "valeur_immeuble": _parse_float(record.get("valeur_immeuble")),
+        "valeur_fonciere": valeur_fonciere,
         "valeur_terrain": _parse_float(record.get("valeur_terrain")),
         # Classification / types (labels textuels de PremLigne)
         "niveau_risque": record.get("id_categ_risque") or record.get("categorie_risque") or "Faible",
@@ -1342,10 +1399,16 @@ async def _handle_dossier_adresse(record: dict, tenant, user, source: str) -> di
         "usage_local": record.get("id_usage_du_local") or "",
         # Notes
         "notes": record.get("note") or record.get("notes") or "",
-        # Contacts
-        "contact_nom": contact_nom,
-        "contact_telephone": contact_telephone,
-        "contact_courriel": contact_courriel,
+        # Propriétaire (depuis personnes ressources)
+        "proprietaire_nom": proprietaire_nom,
+        "proprietaire_prenom": proprietaire_prenom,
+        "proprietaire_telephone": proprietaire_telephone,
+        "proprietaire_courriel": proprietaire_courriel,
+        "proprietaire_adresse": proprietaire_adresse,
+        "proprietaire_ville": proprietaire_ville,
+        "proprietaire_code_postal": proprietaire_code_postal,
+        "contact_nom": f"{proprietaire_prenom} {proprietaire_nom}".strip() or proprietaire_nom,
+        "contact_telephone": proprietaire_telephone,
         # Sous-entités embarquées (JSONB)
         "personnes_ressources": record.get("liste_personne_ressource"),
         "produits_dangereux": record.get("liste_produit_dangereux"),

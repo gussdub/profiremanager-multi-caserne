@@ -345,6 +345,42 @@ async def get_batiment(
     if not batiment:
         raise HTTPException(status_code=404, detail="Bâtiment non trouvé")
     
+    # Pour les bâtiments importés : chercher les photos dans stored_files
+    if not batiment.get("photo_blob_name"):
+        stored_photos = await db.stored_files.find({
+            "entity_id": batiment_id,
+            "is_deleted": False,
+        }, {"_id": 0}).sort("uploaded_at", 1).to_list(100)
+        
+        if stored_photos:
+            from services.azure_storage import generate_sas_url
+            # Première photo image → photo principale
+            for sf in stored_photos:
+                ct = sf.get("content_type", "")
+                blob = sf.get("blob_name") or sf.get("storage_path")
+                if blob and ct.startswith("image/"):
+                    batiment["photo_url"] = generate_sas_url(blob)
+                    batiment["photo_blob_name"] = blob
+                    batiment["photo_storage"] = "azure"
+                    break
+            
+            # Galerie : toutes les photos images
+            gallery = batiment.get("photos", []) or []
+            for sf in stored_photos:
+                ct = sf.get("content_type", "")
+                blob = sf.get("blob_name") or sf.get("storage_path")
+                if blob and ct.startswith("image/"):
+                    gallery.append({
+                        "id": sf.get("id", ""),
+                        "url": generate_sas_url(blob),
+                        "blob_name": blob,
+                        "description": sf.get("original_filename", ""),
+                        "uploaded_at": sf.get("uploaded_at", ""),
+                        "imported": True,
+                    })
+            if gallery:
+                batiment["photos"] = gallery
+    
     return batiment
 
 
