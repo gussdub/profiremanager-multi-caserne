@@ -115,7 +115,12 @@ async def _match_address(address: str, city: str, tenant_id: str) -> Optional[st
 def _extract_address_city(record: dict) -> tuple:
     """Extrait adresse et ville d'un record (plusieurs formats possibles)."""
     addr = record.get("dossier_adresse") or record.get("adresse") or record.get("adresse_appel") or ""
+    # Sécuriser si addr est un objet PremLigne
+    if isinstance(addr, dict):
+        addr = _safe_address_str(addr)
     city = record.get("ville") or record.get("municipalite") or ""
+    if isinstance(city, dict):
+        city = ""
     if not city and "," in addr:
         parts = addr.split(",")
         city = parts[-1].strip().lstrip("*").strip()
@@ -216,6 +221,33 @@ def _parse_int(value) -> Optional[int]:
         return None
 
 
+def _safe_address_str(value) -> str:
+    """
+    Convertit une adresse PremLigne en string propre.
+    PremLigne peut envoyer un objet {adresse: {no_civ, type_rue, rue, ville}} au lieu d'un string.
+    """
+    if not value:
+        return ""
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, dict):
+        # Format PremLigne: {adresse: {no_civ, type_rue, rue, ville}}
+        inner = value.get("adresse", value)
+        if isinstance(inner, dict):
+            parts = [
+                str(inner.get("no_civ", "") or ""),
+                str(inner.get("type_rue", "") or ""),
+                str(inner.get("rue", "") or ""),
+            ]
+            addr = " ".join(p for p in parts if p).strip()
+            ville = str(inner.get("ville", "") or "")
+            if addr and ville:
+                return f"{addr}, {ville}"
+            return addr or ville
+        return str(inner)
+    return str(value)
+
+
 @router.post("/{tenant_slug}/import/batch")
 async def import_batch(
     tenant_slug: str,
@@ -293,6 +325,48 @@ async def purge_import_history(
     await db.import_task_data.delete_many({})
     await db.import_dossier_adresses.delete_many({"tenant_id": tenant.id})
     return {"deleted": result.deleted_count, "message": f"{result.deleted_count} intervention(s) importée(s) supprimée(s)"}
+
+
+@router.post("/{tenant_slug}/import/fix-object-fields")
+async def fix_object_fields(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Corrige les champs 'adresse' qui sont des objets au lieu de strings.
+    À appeler après un import PFM Transfer pour nettoyer les données.
+    Scanne: batiments, points_eau, interventions, inspections.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    fixed = 0
+
+    # Collections à scanner
+    collections_fields = [
+        ("batiments", ["adresse", "adresse_civique"]),
+        ("points_eau", ["adresse"]),
+        ("interventions", ["address_full", "municipality"]),
+        ("inspections", ["adresse"]),
+        ("imported_personnel", ["adresse", "adresse_rue"]),
+    ]
+
+    for coll_name, fields in collections_fields:
+        for field in fields:
+            # Trouver les docs où le champ est un objet (pas un string)
+            cursor = db[coll_name].find(
+                {"tenant_id": tenant.id, field: {"$type": "object"}},
+                {"_id": 0, "id": 1, field: 1}
+            )
+            async for doc in cursor:
+                raw_val = doc.get(field)
+                fixed_val = _safe_address_str(raw_val)
+                await db[coll_name].update_one(
+                    {"tenant_id": tenant.id, "id": doc["id"]},
+                    {"$set": {field: fixed_val}}
+                )
+                fixed += 1
+                logger.info(f"[FIX] {coll_name}.{field} id={doc['id']}: {type(raw_val).__name__} → '{fixed_val}'")
+
+    return {"fixed": fixed, "message": f"{fixed} champ(s) objet converti(s) en string"}
 
 
 # ======================== GESTION DES DOUBLONS ========================
@@ -1417,7 +1491,7 @@ async def _handle_borne_seche(record: dict, tenant, user, source: str) -> dict:
         "premligne_id": _get_premligne_id(record),
         "type": "borne_seche",
         "nom": nom,
-        "adresse": record.get("adresse") or "",
+        "adresse": _safe_address_str(record.get("adresse")),
         "ville": record.get("ville") or "",
         "pfm_record": record,
         "import_source": source,
@@ -1447,7 +1521,7 @@ async def _handle_point_eau(record: dict, tenant, user, source: str) -> dict:
         "premligne_id": _get_premligne_id(record),
         "type": record.get("type_point_eau") or "point_eau",
         "nom": nom,
-        "adresse": record.get("adresse") or "",
+        "adresse": _safe_address_str(record.get("adresse")),
         "ville": record.get("ville") or "",
         "pfm_record": record,
         "import_source": source,
