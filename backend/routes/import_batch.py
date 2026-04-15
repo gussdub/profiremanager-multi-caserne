@@ -544,6 +544,130 @@ async def resolve_all_duplicates(
     return {"resolved": resolved, "total": len(pending), "action": action}
 
 
+@router.post("/{tenant_slug}/import/fix-existing-batiments")
+async def fix_existing_batiments(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Re-extrait les champs depuis pfm_record pour tous les bâtiments importés.
+    Corrige ville, code postal, étages, matricule, valeur foncière, etc.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+
+    cursor = db.batiments.find(
+        {"tenant_id": tenant.id, "pfm_record": {"$exists": True, "$ne": None}},
+        {"_id": 0}
+    )
+
+    fixed = 0
+    async for doc in cursor:
+        record = doc.get("pfm_record", {})
+        if not record:
+            continue
+
+        # Re-extraire l'adresse
+        addr_obj = record.get("adresse", {})
+        if isinstance(addr_obj, dict) and "adresse" in addr_obj:
+            addr_obj = addr_obj["adresse"]
+
+        update = {}
+        if isinstance(addr_obj, dict) and (addr_obj.get("no_civ") or addr_obj.get("rue")):
+            no_civ = str(addr_obj.get("no_civ", "") or "").strip()
+            type_rue = str(addr_obj.get("type_rue", "") or "").strip()
+            rue = str(addr_obj.get("rue", "") or "").strip()
+            new_addr = f"{no_civ} {type_rue} {rue}".strip()
+            new_city = str(addr_obj.get("ville", "") or "").strip()
+            new_cp = str(addr_obj.get("code_post", "") or "").strip()
+
+            if new_addr:
+                update["adresse_civique"] = new_addr
+            if new_city:
+                update["ville"] = new_city
+            if new_cp:
+                update["code_postal"] = new_cp
+
+        # Champs numériques
+        for pfm_key, db_key in [
+            ("nbr_etage", "nombre_etages"), ("nbr_logement", "nombre_logements"),
+            ("nbr_sous_sol", "nombre_sous_sol"), ("nbr_attique", "nombre_attique"),
+            ("nbr_autres_locaux", "nombre_autres_locaux"),
+            ("annee_construction", "annee_construction"),
+            ("annee_dern_renov", "annee_renovation"),
+        ]:
+            val = _parse_int(record.get(pfm_key))
+            if val is not None and val > 0:
+                update[db_key] = val
+
+        # Valeurs foncières
+        for pfm_key, db_key in [
+            ("valeur", "valeur_fonciere"), ("valeur_immeuble", "valeur_immeuble"),
+            ("valeur_terrain", "valeur_terrain"),
+        ]:
+            val = _parse_float(record.get(pfm_key))
+            if val is not None and val > 0:
+                update[db_key] = val
+
+        # Champs texte
+        for pfm_key, db_key in [
+            ("matricule", "matricule_foncier"),
+            ("id_categ_risque", "niveau_risque"),
+            ("id_type_batiment", "sous_type_batiment"),
+            ("id_classification", "classification"),
+            ("id_type_construction", "type_construction"),
+            ("id_type_toit", "type_toit"),
+            ("id_parement_exterieur", "parement"),
+            ("id_usage_principal", "usage_principal"),
+            ("id_usage_du_local", "usage_local"),
+            ("id_type_chauffage", "type_chauffage"),
+            ("qte_aire_au_sol", "aire_au_sol"),
+            ("qte_aire_au_sol_terrain", "aire_terrain"),
+        ]:
+            val = record.get(pfm_key)
+            if val and isinstance(val, str) and val.strip():
+                update[db_key] = val.strip()
+
+        # Notes (ne pas écraser si déjà rempli manuellement)
+        note = record.get("note") or record.get("notes") or ""
+        if note and not doc.get("notes"):
+            update["notes"] = note
+
+        # Contacts depuis liste_personne_ressource
+        pers_ress = record.get("liste_personne_ressource", {})
+        if isinstance(pers_ress, dict) and not doc.get("contact_nom"):
+            items = pers_ress.get("item", [])
+            if isinstance(items, dict):
+                items = [items]
+            if isinstance(items, list) and items:
+                first = items[0]
+                if isinstance(first, dict):
+                    pr = first.get("personne_ressource", first)
+                    if pr.get("nom"):
+                        update["contact_nom"] = pr["nom"]
+                    if pr.get("telephone") or pr.get("cell"):
+                        update["contact_telephone"] = pr.get("telephone") or pr.get("cell")
+
+        # Sous-entités
+        for pfm_key, db_key in [
+            ("liste_personne_ressource", "personnes_ressources"),
+            ("liste_produit_dangereux", "produits_dangereux"),
+            ("protection", "protections"),
+            ("liste_code_reference", "codes_reference"),
+        ]:
+            val = record.get(pfm_key)
+            if val and not doc.get(db_key):
+                update[db_key] = val
+
+        if update:
+            await db.batiments.update_one(
+                {"tenant_id": tenant.id, "id": doc["id"]},
+                {"$set": update}
+            )
+            fixed += 1
+
+    return {"fixed": fixed, "message": f"{fixed} bâtiment(s) enrichi(s) depuis pfm_record"}
+
+
 # Table des codes d'intervention CAUCA
 CAUCA_CODES = {
     "1": "Administration",
@@ -1126,17 +1250,21 @@ async def _handle_dossier_adresse(record: dict, tenant, user, source: str) -> di
     """Crée ou détecte doublon d'un bâtiment depuis un record PremLigne."""
     premligne_id = _get_premligne_id(record)
 
-    # Extraire l'adresse — format Transfer: adresse.adresse.{no_civ, type_rue, rue, ville}
+    # Extraire l'adresse — format Transfer: adresse.adresse.{no_civ, type_rue, rue, ville, code_post}
     addr_obj = record.get("adresse", {})
     if isinstance(addr_obj, dict) and "adresse" in addr_obj:
         addr_obj = addr_obj["adresse"]
-    if isinstance(addr_obj, dict) and addr_obj.get("no_civ"):
-        no_civ = addr_obj.get("no_civ", "")
-        type_rue = addr_obj.get("type_rue", "")
-        rue = addr_obj.get("rue", "")
+
+    code_postal = ""
+    province = "Québec"
+    if isinstance(addr_obj, dict) and (addr_obj.get("no_civ") or addr_obj.get("rue")):
+        no_civ = str(addr_obj.get("no_civ", "") or "").strip()
+        type_rue = str(addr_obj.get("type_rue", "") or "").strip()
+        rue = str(addr_obj.get("rue", "") or "").strip()
         addr = f"{no_civ} {type_rue} {rue}".strip()
-        city = addr_obj.get("ville", "")
-        code_postal = addr_obj.get("code_post", "") or addr_obj.get("code_postal", "")
+        city = str(addr_obj.get("ville", "") or "").strip()
+        code_postal = str(addr_obj.get("code_post", "") or addr_obj.get("code_postal", "") or "").strip()
+        province = str(addr_obj.get("province", "") or "Québec").strip()
     else:
         addr, city = _extract_address_city(record)
         code_postal = record.get("code_postal") or ""
@@ -1151,6 +1279,27 @@ async def _handle_dossier_adresse(record: dict, tenant, user, source: str) -> di
     if existing:
         return await _queue_duplicate(tenant.id, "DossierAdresse", "batiments", existing["id"], record, user.id)
 
+    # Personnes ressources (contacts du bâtiment)
+    contact_nom = ""
+    contact_telephone = ""
+    contact_courriel = ""
+    pers_ress = record.get("liste_personne_ressource", {})
+    if isinstance(pers_ress, dict):
+        items = pers_ress.get("item", [])
+        if isinstance(items, dict):
+            items = [items]
+        if isinstance(items, list) and items:
+            first = items[0]
+            if isinstance(first, dict):
+                pr = first.get("personne_ressource", first)
+                contact_nom = pr.get("nom", "") or ""
+                contact_telephone = pr.get("telephone", "") or pr.get("cell", "") or ""
+                contact_courriel = pr.get("courriel", "") or ""
+    if not contact_nom:
+        contact_nom = record.get("proprietaire_nom") or record.get("prop_nom") or ""
+    if not contact_telephone:
+        contact_telephone = record.get("telephone") or ""
+
     doc_id = str(uuid.uuid4())
     doc = {
         "id": doc_id,
@@ -1159,29 +1308,53 @@ async def _handle_dossier_adresse(record: dict, tenant, user, source: str) -> di
         "adresse_civique": addr,
         "ville": city,
         "code_postal": code_postal,
-        "province": record.get("province") or "Québec",
+        "province": province,
         "pays": "Canada",
-        "nom_etablissement": record.get("proprietaire_nom") or record.get("prop_nom") or "",
-        "nombre_etages": _parse_int(record.get("nombre_etages")),
-        "annee_construction": _parse_int(record.get("annee_construction")),
-        "nombre_logements": _parse_int(record.get("nombre_logements") or record.get("nbr_logement")),
-        "niveau_risque": record.get("categorie_risque") or record.get("id_categ_risque") or "Faible",
-        "sous_type_batiment": record.get("type_batiment") or record.get("id_type_batiment") or "",
-        "type_chauffage": record.get("id_type_chauffage") or "",
-        "type_toit": record.get("id_type_toit") or "",
-        "parement": record.get("id_parement") or "",
-        "plancher": record.get("id_plancher") or "",
-        "notes": record.get("note") or record.get("notes") or "",
-        "contact_nom": record.get("proprietaire_nom") or record.get("prop_nom") or "",
-        "contact_telephone": record.get("telephone") or "",
+        # Identification
+        "matricule_foncier": str(record.get("matricule") or ""),
+        "nom_etablissement": record.get("proprietaire_nom") or record.get("prop_nom") or record.get("raison_sociale") or "",
         "raison_sociale": record.get("raison_sociale") or "",
         "subdivision": record.get("subdivision") or "",
-        # Sous-entités embarquées
-        "personnes_ressources": record.get("vect_personne_ress"),
-        "produits_dangereux": record.get("vect_prod_dang"),
-        "protections": record.get("vect_protection"),
-        "champs_personnalises": record.get("vect_champ_perso"),
-        "actif": True,
+        # Caractéristiques du bâtiment
+        "nombre_etages": _parse_int(record.get("nbr_etage") or record.get("nombre_etages")),
+        "nombre_logements": _parse_int(record.get("nbr_logement") or record.get("nombre_logements")),
+        "nombre_sous_sol": _parse_int(record.get("nbr_sous_sol")),
+        "nombre_attique": _parse_int(record.get("nbr_attique")),
+        "nombre_autres_locaux": _parse_int(record.get("nbr_autres_locaux")),
+        "annee_construction": _parse_int(record.get("annee_construction")),
+        "annee_renovation": _parse_int(record.get("annee_dern_renov") or record.get("annee_renovation")),
+        "aire_au_sol": record.get("qte_aire_au_sol") or "",
+        "aire_terrain": record.get("qte_aire_au_sol_terrain") or "",
+        # Valeurs foncières
+        "valeur_fonciere": _parse_float(record.get("valeur")),
+        "valeur_immeuble": _parse_float(record.get("valeur_immeuble")),
+        "valeur_terrain": _parse_float(record.get("valeur_terrain")),
+        # Classification / types (labels textuels de PremLigne)
+        "niveau_risque": record.get("id_categ_risque") or record.get("categorie_risque") or "Faible",
+        "sous_type_batiment": record.get("id_type_batiment") or record.get("type_batiment") or "",
+        "classification": record.get("id_classification") or "",
+        "type_construction": record.get("id_type_construction") or "",
+        "type_chauffage": record.get("id_type_chauffage") or "",
+        "type_toit": record.get("id_type_toit") or "",
+        "parement": record.get("id_parement_exterieur") or record.get("id_parement") or "",
+        "plancher": record.get("id_plancher") or "",
+        "usage_principal": record.get("id_usage_principal") or "",
+        "usage_local": record.get("id_usage_du_local") or "",
+        # Notes
+        "notes": record.get("note") or record.get("notes") or "",
+        # Contacts
+        "contact_nom": contact_nom,
+        "contact_telephone": contact_telephone,
+        "contact_courriel": contact_courriel,
+        # Sous-entités embarquées (JSONB)
+        "personnes_ressources": record.get("liste_personne_ressource"),
+        "produits_dangereux": record.get("liste_produit_dangereux"),
+        "protections": record.get("protection"),
+        "codes_reference": record.get("liste_code_reference"),
+        "periodicites": record.get("liste_periodicite"),
+        # État
+        "etat": record.get("etat") or "Actif",
+        "actif": record.get("etat") != "Inactif",
         "pfm_record": record,
         "import_source": source,
         "imported_at": datetime.now(timezone.utc).isoformat(),
