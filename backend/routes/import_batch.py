@@ -153,6 +153,69 @@ def _get_file_refs(record: dict) -> list:
     return refs
 
 
+def _get_premligne_id(record: dict) -> str:
+    """Extrait l'ID PremLigne d'origine pour audit/traçabilité."""
+    attrs = record.get("@attributes", {})
+    if isinstance(attrs, dict):
+        return str(attrs.get("id", ""))
+    return ""
+
+
+def _get_duplicate_match_field(entity_type: str) -> str:
+    """Retourne le champ utilisé pour la détection de doublons."""
+    match_fields = {
+        "Intervention": "num_activite",
+        "DossierAdresse": "adresse_civique+ville",
+        "Prevention": "num_activite",
+        "RCCI": "num_activite",
+        "Employe": "matricule",
+        "BorneIncendie": "nom",
+        "BorneSeche": "nom",
+        "PointEau": "nom",
+        "MaintenanceBorne": "num_activite",
+        "Travail": "num_activite",
+        "PlanIntervention": "num_activite",
+        "Vehicule": "numero",
+        "EquipExist": "numero_serie",
+        "MaintEquip": "num_activite",
+    }
+    return match_fields.get(entity_type, "nom")
+
+
+def _parse_bool(value) -> Optional[bool]:
+    """Convertit Oui/Non PremLigne en booléen."""
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    s = str(value).strip().lower()
+    if s in ("oui", "true", "1", "yes"):
+        return True
+    if s in ("non", "false", "0", "no"):
+        return False
+    return None
+
+
+def _parse_float(value) -> Optional[float]:
+    """Parse un nombre avec unité potentielle (ex: '650 GPM')."""
+    if value is None or value == "":
+        return None
+    try:
+        return float(str(value).split(" ")[0].replace(",", ".").replace(" ", ""))
+    except (ValueError, TypeError):
+        return None
+
+
+def _parse_int(value) -> Optional[int]:
+    """Parse un entier depuis un string PremLigne."""
+    if value is None or value == "" or value == "-1":
+        return None
+    try:
+        return int(float(str(value).replace(" ", "")))
+    except (ValueError, TypeError):
+        return None
+
+
 @router.post("/{tenant_slug}/import/batch")
 async def import_batch(
     tenant_slug: str,
@@ -187,14 +250,20 @@ async def import_batch(
         "PointEau": _handle_point_eau,
         "MaintenanceBorne": _handle_maintenance_borne,
         "Travail": _handle_travail,
+        "Vehicule": _handle_vehicule,
+        "EquipExist": _handle_equip_exist,
+        "MaintEquip": _handle_maint_equip,
     }
 
     # Référentiels (petites tables — stockage générique)
     referentiels = {
-        "Caserne", "Grade", "Equipe", "Vehicule", "CodeAppel",
+        "Caserne", "Grade", "Equipe", "Groupe", "CodeAppel",
         "TypePrevention", "TypeBatiment", "TypeEquipement",
+        "TypeChauffage", "TypeToit", "Parement", "Plancher",
+        "TypeAnomalie", "TypeMaint",
         "ModeleBorne", "TypeValve", "UsageBorne", "Raccord",
         "Classification", "ReferenceCode",
+        "Fournisseur", "Programme", "Cours", "TypeChampPerso",
     }
 
     handler = main_handlers.get(entity_type)
@@ -231,8 +300,9 @@ async def purge_import_history(
 async def _queue_duplicate(tenant_id: str, entity_type: str, collection: str,
                            existing_id: str, new_record: dict, user_id: str) -> dict:
     """
-    Met un doublon en file d'attente pour résolution par l'utilisateur.
-    Retourne status=pending_review (le record est accepté mais pas encore intégré).
+    Détecte un doublon. Retourne status=duplicate avec l'id existant.
+    PFM Transfer utilise cet id pour uploader les fichiers sur le record existant.
+    Met aussi le doublon en file d'attente pour résolution manuelle si nécessaire.
     """
     dup_id = str(uuid.uuid4())
     await db.import_duplicates.insert_one({
@@ -247,12 +317,10 @@ async def _queue_duplicate(tenant_id: str, entity_type: str, collection: str,
         "created_by": user_id,
     })
     return {
-        "status": "pending_review",
+        "status": "duplicate",
         "entity_type": entity_type,
         "id": existing_id,
-        "existing_id": existing_id,
-        "duplicate_id": dup_id,
-        "message": "Doublon détecté — en attente de résolution dans ProFireManager",
+        "duplicate_match": _get_duplicate_match_field(entity_type),
     }
 
 
@@ -926,8 +994,9 @@ def _extract_intervention_fields(record: dict) -> dict:
 # ======================== INTERVENTION ========================
 
 async def _handle_intervention(record: dict, tenant, user, source: str) -> dict:
-    """Crée ou REMPLACE une intervention depuis un record PremLigne."""
+    """Crée ou détecte doublon d'une intervention depuis un record PremLigne."""
     ext_id = _get_ext_id(record)
+    premligne_id = _get_premligne_id(record)
     fields = _extract_intervention_fields(record)
 
     # Log pour debug en production
@@ -937,7 +1006,7 @@ async def _handle_intervention(record: dict, tenant, user, source: str) -> dict:
     }
     logger.info(f"[IMPORT] Intervention {ext_id}: extraction key fields = {key_fields_status}")
 
-    # Si doublon → REMPLACER (mettre à jour avec les nouvelles données)
+    # Doublon → retourner l'id existant (Transfer uploadera les fichiers dessus)
     if ext_id:
         existing = await db.interventions.find_one(
             {"tenant_id": tenant.id, "external_call_id": ext_id}, {"_id": 0, "id": 1}
@@ -945,10 +1014,17 @@ async def _handle_intervention(record: dict, tenant, user, source: str) -> dict:
         if existing:
             return await _queue_duplicate(tenant.id, "Intervention", "interventions", existing["id"], record, user.id)
 
+    # FK matching
+    matched_fks = {}
+    bat_id = await _match_address(fields.get("address_full", ""), fields.get("municipality", ""), tenant.id)
+    if bat_id:
+        matched_fks["batiment_id"] = bat_id
+
     doc_id = str(uuid.uuid4())
     doc = {
         "id": doc_id,
         "tenant_id": tenant.id,
+        "premligne_id": premligne_id,
         "external_call_id": ext_id,
         **fields,
         "status": "signed",
@@ -962,54 +1038,75 @@ async def _handle_intervention(record: dict, tenant, user, source: str) -> dict:
         "assigned_reporters": [],
     }
 
-    bat_id = await _match_address(fields.get("address_full", ""), fields.get("municipality", ""), tenant.id)
     if bat_id:
         doc["batiment_id"] = bat_id
         doc["match_method"] = "auto_address"
 
     await db.interventions.insert_one(doc)
-    return {"status": "created", "entity_type": "Intervention", "id": doc_id, "batiment_id": doc.get("batiment_id")}
+    return {"status": "created", "entity_type": "Intervention", "id": doc_id, "batiment_id": bat_id, "matched_fks": matched_fks}
 
 
 # ======================== DOSSIER ADRESSE (BÂTIMENT) ========================
 
 async def _handle_dossier_adresse(record: dict, tenant, user, source: str) -> dict:
-    addr, city = _extract_address_city(record)
+    """Crée ou détecte doublon d'un bâtiment depuis un record PremLigne."""
+    premligne_id = _get_premligne_id(record)
+
+    # Extraire l'adresse — format Transfer: adresse.adresse.{no_civ, type_rue, rue, ville}
+    addr_obj = record.get("adresse", {})
+    if isinstance(addr_obj, dict) and "adresse" in addr_obj:
+        addr_obj = addr_obj["adresse"]
+    if isinstance(addr_obj, dict) and addr_obj.get("no_civ"):
+        no_civ = addr_obj.get("no_civ", "")
+        type_rue = addr_obj.get("type_rue", "")
+        rue = addr_obj.get("rue", "")
+        addr = f"{no_civ} {type_rue} {rue}".strip()
+        city = addr_obj.get("ville", "")
+        code_postal = addr_obj.get("code_post", "") or addr_obj.get("code_postal", "")
+    else:
+        addr, city = _extract_address_city(record)
+        code_postal = record.get("code_postal") or ""
+
     if not addr:
         return {"status": "error", "entity_type": "DossierAdresse", "message": "Adresse manquante"}
 
-    # Doublon par adresse → REMPLACER
+    # Doublon par adresse + ville
     existing = await db.batiments.find_one(
         {"tenant_id": tenant.id, "adresse_civique": addr, "ville": city}, {"_id": 0, "id": 1}
     )
     if existing:
         return await _queue_duplicate(tenant.id, "DossierAdresse", "batiments", existing["id"], record, user.id)
 
-    def safe_int(v):
-        if not v or v == "-1":
-            return None
-        try:
-            return int(float(str(v).replace(" ", "")))
-        except (ValueError, TypeError):
-            return None
-
     doc_id = str(uuid.uuid4())
     doc = {
         "id": doc_id,
         "tenant_id": tenant.id,
+        "premligne_id": premligne_id,
         "adresse_civique": addr,
         "ville": city,
-        "code_postal": record.get("code_postal") or "",
+        "code_postal": code_postal,
         "province": record.get("province") or "Québec",
         "pays": "Canada",
-        "nom_etablissement": record.get("proprietaire_nom") or "",
-        "nombre_etages": safe_int(record.get("nombre_etages")),
-        "annee_construction": safe_int(record.get("annee_construction")),
-        "niveau_risque": record.get("categorie_risque") or "Faible",
-        "sous_type_batiment": record.get("type_batiment") or "",
-        "notes": record.get("notes") or "",
-        "contact_nom": record.get("proprietaire_nom") or "",
+        "nom_etablissement": record.get("proprietaire_nom") or record.get("prop_nom") or "",
+        "nombre_etages": _parse_int(record.get("nombre_etages")),
+        "annee_construction": _parse_int(record.get("annee_construction")),
+        "nombre_logements": _parse_int(record.get("nombre_logements") or record.get("nbr_logement")),
+        "niveau_risque": record.get("categorie_risque") or record.get("id_categ_risque") or "Faible",
+        "sous_type_batiment": record.get("type_batiment") or record.get("id_type_batiment") or "",
+        "type_chauffage": record.get("id_type_chauffage") or "",
+        "type_toit": record.get("id_type_toit") or "",
+        "parement": record.get("id_parement") or "",
+        "plancher": record.get("id_plancher") or "",
+        "notes": record.get("note") or record.get("notes") or "",
+        "contact_nom": record.get("proprietaire_nom") or record.get("prop_nom") or "",
         "contact_telephone": record.get("telephone") or "",
+        "raison_sociale": record.get("raison_sociale") or "",
+        "subdivision": record.get("subdivision") or "",
+        # Sous-entités embarquées
+        "personnes_ressources": record.get("vect_personne_ress"),
+        "produits_dangereux": record.get("vect_prod_dang"),
+        "protections": record.get("vect_protection"),
+        "champs_personnalises": record.get("vect_champ_perso"),
         "actif": True,
         "pfm_record": record,
         "import_source": source,
@@ -1035,6 +1132,7 @@ async def _handle_dossier_adresse(record: dict, tenant, user, source: str) -> di
 
 async def _handle_prevention(record: dict, tenant, user, source: str) -> dict:
     ext_id = _get_ext_id(record)
+    premligne_id = _get_premligne_id(record)
     if ext_id:
         existing = await db.inspections.find_one(
             {"tenant_id": tenant.id, "external_id": ext_id}, {"_id": 0, "id": 1}
@@ -1048,15 +1146,22 @@ async def _handle_prevention(record: dict, tenant, user, source: str) -> dict:
     doc = {
         "id": doc_id,
         "tenant_id": tenant.id,
+        "premligne_id": premligne_id,
         "external_id": ext_id,
-        "type_inspection": record.get("type_prev") or "Prévention",
+        "type_inspection": record.get("type_prev") or record.get("id_type_prev") or "Prévention",
         "adresse": addr,
         "ville": city,
         "date_inspection": record.get("date_activite") or "",
-        "inspecteur": record.get("auteur") or record.get("responsable") or "",
+        "date_completee": record.get("date_completee") or "",
+        "inspecteur": record.get("id_auteur") or record.get("auteur") or record.get("id_responsable") or "",
         "resultat": record.get("statut") or "",
         "notes": record.get("narratif") or "",
-        "anomalies": record.get("anomalies") or [],
+        "anomalies": record.get("liste_anomalie") or record.get("anomalies") or [],
+        "avis_emis": _parse_bool(record.get("avis_emission")),
+        "texte_avis": record.get("texte_avis") or "",
+        "champs_personnalises": record.get("liste_champ_personnalise"),
+        "etapes": record.get("liste_etape"),
+        "reports": record.get("liste_report"),
         "status": record.get("statut") or "completed",
         "pfm_record": record,
         "import_source": source,
@@ -1077,6 +1182,7 @@ async def _handle_prevention(record: dict, tenant, user, source: str) -> dict:
 
 async def _handle_rcci(record: dict, tenant, user, source: str) -> dict:
     ext_id = _get_ext_id(record)
+    premligne_id = _get_premligne_id(record)
     if ext_id:
         existing = await db.rcci.find_one(
             {"tenant_id": tenant.id, "external_id": ext_id}, {"_id": 0, "id": 1}
@@ -1086,15 +1192,33 @@ async def _handle_rcci(record: dict, tenant, user, source: str) -> dict:
 
     addr, city = _extract_address_city(record)
 
+    # Extraire cause RCCI depuis les sous-sections
+    cause = record.get("rci_cause", {}) or record.get("cause_incendie", {}).get("interv_cause_incendie", {}) or {}
+    if not isinstance(cause, dict):
+        cause = {}
+
     doc_id = str(uuid.uuid4())
     doc = {
         "id": doc_id,
         "tenant_id": tenant.id,
+        "premligne_id": premligne_id,
         "external_id": ext_id,
         "adresse": addr,
         "ville": city,
         "date": record.get("date_activite") or "",
-        "auteur": record.get("auteur") or "",
+        "auteur": record.get("id_auteur") or record.get("auteur") or "",
+        "responsable": record.get("id_responsable") or "",
+        # Cause RCCI
+        "source_chaleur": cause.get("source_chaleur") or "",
+        "cause_probable": cause.get("cause_probable") or "",
+        "combustible": cause.get("combustible") or "",
+        "mode_inflammation": cause.get("mode_inflamation") or cause.get("mode_inflammation") or "",
+        "lieu_origine": cause.get("lieu_origine") or "",
+        "premier_materiau": cause.get("prem_mat_enflamme") or "",
+        "propagation": cause.get("propagation") or "",
+        "ampleur_incendie": cause.get("ampleur_incendie") or "",
+        "energie": cause.get("energie") or "",
+        "dommage": cause.get("dommage") or "",
         "pfm_record": record,
         "import_source": source,
         "imported_at": datetime.now(timezone.utc).isoformat(),
@@ -1146,9 +1270,11 @@ async def _handle_plan_intervention(record: dict, tenant, user, source: str) -> 
 # ======================== EMPLOYE ========================
 
 async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
+    """Crée ou détecte doublon d'un employé depuis un record PremLigne."""
     matricule = record.get("matricule") or ""
     nom = record.get("nom") or ""
     prenom = record.get("prenom") or ""
+    premligne_id = _get_premligne_id(record)
 
     if matricule:
         existing = await db.imported_personnel.find_one(
@@ -1157,19 +1283,64 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
         if existing:
             return await _queue_duplicate(tenant.id, "Employe", "imported_personnel", existing["id"], record, user.id)
 
+    # FK matching
+    matched_fks = {}
+    caserne_label = record.get("id_caserne") or record.get("caserne") or ""
+    if caserne_label:
+        clean_caserne = str(caserne_label).lstrip("*").strip()
+        cas = await db.ref_caserne.find_one(
+            {"tenant_id": tenant.id, "nom": {"$regex": f"^{re.escape(clean_caserne)}$", "$options": "i"}},
+            {"_id": 0, "id": 1}
+        )
+        if cas:
+            matched_fks["caserne_id"] = cas["id"]
+
+    # Adresse employé (peut être un sous-objet)
+    adresse_data = record.get("adresse", {})
+    if isinstance(adresse_data, dict) and "adresse" in adresse_data:
+        adresse_data = adresse_data["adresse"]
+    if not isinstance(adresse_data, dict):
+        adresse_data = {}
+
     doc_id = str(uuid.uuid4())
     doc = {
         "id": doc_id,
         "tenant_id": tenant.id,
+        "premligne_id": premligne_id,
         "nom": nom,
         "prenom": prenom,
         "matricule": matricule,
+        "code_permanent": record.get("code_permanent") or "",
         "email": record.get("couriel") or record.get("courriel") or "",
-        "telephone": record.get("cell") or record.get("tel_bureau") or "",
-        "caserne": record.get("caserne") or "",
+        "telephone_cellulaire": record.get("cell") or "",
+        "telephone_bureau": record.get("tel_bureau") or "",
+        "telephone_domicile": record.get("tel_domicile") or "",
+        "caserne": caserne_label,
         "type_employe": record.get("type_employe") or "",
         "date_embauche": record.get("date_embauche") or "",
+        "date_naissance": record.get("date_nais") or "",
         "actif": record.get("inactif") != "Oui",
+        # Documents sensibles
+        "nas": record.get("nas") or record.get("NAS") or record.get("numero_assurance_sociale") or "",
+        "numero_passeport": record.get("numero_passeport") or record.get("passeport") or "",
+        "note": record.get("note") or record.get("notes") or "",
+        # Permis de conduire
+        "permis_conduire": _parse_bool(record.get("permis_conduire")),
+        "permis_classe": record.get("permis_classe") or "",
+        "permis_expiration": record.get("permis_expiration") or "",
+        # Adresse postale
+        "adresse_rue": adresse_data.get("rue") or adresse_data.get("no_civ", "") + " " + adresse_data.get("rue", "") if isinstance(adresse_data, dict) else "",
+        "adresse_ville": adresse_data.get("ville") or "" if isinstance(adresse_data, dict) else "",
+        "adresse_code_postal": adresse_data.get("code_post") or adresse_data.get("code_postal") or "" if isinstance(adresse_data, dict) else "",
+        "adresse_province": adresse_data.get("province") or "" if isinstance(adresse_data, dict) else "",
+        # Langue
+        "langue": record.get("i_d_langue") or record.get("langue") or "",
+        # Sous-entités embarquées
+        "nominations": record.get("liste_nomination"),
+        "contacts_urgence": record.get("liste_contact_urgence"),
+        "taux_horaires": record.get("liste_employe_date_taux"),
+        # FK
+        **{k: v for k, v in matched_fks.items() if v},
         "pfm_record": record,
         "import_source": source,
         "imported_at": datetime.now(timezone.utc).isoformat(),
@@ -1177,7 +1348,7 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
     }
 
     await db.imported_personnel.insert_one(doc)
-    return {"status": "created", "entity_type": "Employe", "id": doc_id}
+    return {"status": "created", "entity_type": "Employe", "id": doc_id, "matched_fks": matched_fks}
 
 
 # ======================== BORNE INCENDIE ========================
@@ -1205,6 +1376,7 @@ async def _handle_borne_incendie(record: dict, tenant, user, source: str) -> dic
     doc = {
         "id": doc_id,
         "tenant_id": tenant.id,
+        "premligne_id": _get_premligne_id(record),
         "type": "borne_fontaine",
         "nom": nom,
         "adresse": addr,
@@ -1242,6 +1414,7 @@ async def _handle_borne_seche(record: dict, tenant, user, source: str) -> dict:
     doc = {
         "id": doc_id,
         "tenant_id": tenant.id,
+        "premligne_id": _get_premligne_id(record),
         "type": "borne_seche",
         "nom": nom,
         "adresse": record.get("adresse") or "",
@@ -1271,6 +1444,7 @@ async def _handle_point_eau(record: dict, tenant, user, source: str) -> dict:
     doc = {
         "id": doc_id,
         "tenant_id": tenant.id,
+        "premligne_id": _get_premligne_id(record),
         "type": record.get("type_point_eau") or "point_eau",
         "nom": nom,
         "adresse": record.get("adresse") or "",
@@ -1300,6 +1474,7 @@ async def _handle_maintenance_borne(record: dict, tenant, user, source: str) -> 
     doc = {
         "id": doc_id,
         "tenant_id": tenant.id,
+        "premligne_id": _get_premligne_id(record),
         "external_id": ext_id,
         "pfm_record": record,
         "import_source": source,
@@ -1326,7 +1501,10 @@ async def _handle_travail(record: dict, tenant, user, source: str) -> dict:
     doc = {
         "id": doc_id,
         "tenant_id": tenant.id,
+        "premligne_id": _get_premligne_id(record),
         "external_id": ext_id,
+        "date_activite": record.get("date_activite") or "",
+        "auteur": record.get("id_auteur") or record.get("auteur") or "",
         "pfm_record": record,
         "import_source": source,
         "imported_at": datetime.now(timezone.utc).isoformat(),
@@ -1337,30 +1515,177 @@ async def _handle_travail(record: dict, tenant, user, source: str) -> dict:
     return {"status": "created", "entity_type": "Travail", "id": doc_id}
 
 
+# ======================== VEHICULE ========================
+
+async def _handle_vehicule(record: dict, tenant, user, source: str) -> dict:
+    """Crée ou détecte doublon d'un véhicule depuis un record PremLigne."""
+    premligne_id = _get_premligne_id(record)
+    numero = record.get("numero") or record.get("nom") or ""
+
+    if numero:
+        existing = await db.ref_vehicule.find_one(
+            {"tenant_id": tenant.id, "$or": [{"numero": numero}, {"nom": numero}]},
+            {"_id": 0, "id": 1}
+        )
+        if existing:
+            return await _queue_duplicate(tenant.id, "Vehicule", "ref_vehicule", existing["id"], record, user.id)
+
+    matched_fks = {}
+    caserne_label = record.get("id_caserne") or ""
+    if caserne_label:
+        clean = str(caserne_label).lstrip("*").strip()
+        cas = await db.ref_caserne.find_one(
+            {"tenant_id": tenant.id, "nom": {"$regex": f"^{re.escape(clean)}$", "$options": "i"}},
+            {"_id": 0, "id": 1}
+        )
+        if cas:
+            matched_fks["caserne_id"] = cas["id"]
+
+    doc_id = str(uuid.uuid4())
+    doc = {
+        "id": doc_id,
+        "tenant_id": tenant.id,
+        "premligne_id": premligne_id,
+        "numero": numero,
+        "nom": record.get("nom") or numero,
+        "type_vehicule": record.get("type_vehicule") or record.get("id_type_vehicule") or "",
+        "marque": record.get("marque") or "",
+        "modele": record.get("modele") or "",
+        "annee": record.get("annee") or "",
+        "plaque": record.get("plaque") or "",
+        "vin": record.get("vin") or "",
+        "capacite_eau": record.get("capacite_eau") or "",
+        "capacite_mousse": record.get("capacite_mousse") or "",
+        "pompe": record.get("pompe") or "",
+        "etat": record.get("etat") or "En service",
+        "date_achat": record.get("date_achat") or "",
+        "note": record.get("note") or "",
+        **{k: v for k, v in matched_fks.items() if v},
+        "pfm_record": record,
+        "import_source": source,
+        "imported_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    await db.ref_vehicule.insert_one(doc)
+    return {"status": "created", "entity_type": "Vehicule", "id": doc_id, "matched_fks": matched_fks}
+
+
+# ======================== EQUIPEMENT EXISTANT ========================
+
+async def _handle_equip_exist(record: dict, tenant, user, source: str) -> dict:
+    """Crée ou détecte doublon d'un équipement depuis un record PremLigne."""
+    premligne_id = _get_premligne_id(record)
+    numero_serie = record.get("numero_serie") or record.get("no_serie") or ""
+    nom = record.get("nom") or ""
+
+    # Doublon par numéro de série ou nom
+    if numero_serie:
+        existing = await db.equipements.find_one(
+            {"tenant_id": tenant.id, "numero_serie": numero_serie}, {"_id": 0, "id": 1}
+        )
+        if existing:
+            return await _queue_duplicate(tenant.id, "EquipExist", "equipements", existing["id"], record, user.id)
+    elif nom:
+        existing = await db.equipements.find_one(
+            {"tenant_id": tenant.id, "nom": nom}, {"_id": 0, "id": 1}
+        )
+        if existing:
+            return await _queue_duplicate(tenant.id, "EquipExist", "equipements", existing["id"], record, user.id)
+
+    doc_id = str(uuid.uuid4())
+    doc = {
+        "id": doc_id,
+        "tenant_id": tenant.id,
+        "premligne_id": premligne_id,
+        "nom": nom,
+        "numero_serie": numero_serie,
+        "type_equipement": record.get("id_type_equipement") or record.get("type_equipement") or "",
+        "marque": record.get("marque") or "",
+        "modele": record.get("modele") or "",
+        "date_achat": record.get("date_achat") or "",
+        "date_expiration": record.get("date_expiration") or "",
+        "date_prochaine_inspection": record.get("date_prochaine_inspection") or "",
+        "etat": record.get("etat") or "",
+        "localisation": record.get("localisation") or record.get("id_caserne") or "",
+        "note": record.get("note") or "",
+        "pfm_record": record,
+        "import_source": source,
+        "imported_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    await db.equipements.insert_one(doc)
+    return {"status": "created", "entity_type": "EquipExist", "id": doc_id}
+
+
+# ======================== MAINTENANCE EQUIPEMENT ========================
+
+async def _handle_maint_equip(record: dict, tenant, user, source: str) -> dict:
+    """Crée ou détecte doublon d'une maintenance d'équipement depuis un record PremLigne."""
+    premligne_id = _get_premligne_id(record)
+    ext_id = _get_ext_id(record)
+
+    if ext_id:
+        existing = await db.maintenance_equipements.find_one(
+            {"tenant_id": tenant.id, "external_id": ext_id}, {"_id": 0, "id": 1}
+        )
+        if existing:
+            return await _queue_duplicate(tenant.id, "MaintEquip", "maintenance_equipements", existing["id"], record, user.id)
+
+    doc_id = str(uuid.uuid4())
+    doc = {
+        "id": doc_id,
+        "tenant_id": tenant.id,
+        "premligne_id": premligne_id,
+        "external_id": ext_id,
+        "type_maintenance": record.get("id_type_maint") or record.get("type_maintenance") or "",
+        "equipement_ref": record.get("id_equip_exist") or "",
+        "date_activite": record.get("date_activite") or "",
+        "date_completee": record.get("date_completee") or "",
+        "statut": record.get("statut") or "",
+        "auteur": record.get("id_auteur") or record.get("auteur") or "",
+        "note": record.get("note") or record.get("narratif") or "",
+        "pfm_record": record,
+        "import_source": source,
+        "imported_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    await db.maintenance_equipements.insert_one(doc)
+    return {"status": "created", "entity_type": "MaintEquip", "id": doc_id}
+
+
 # ======================== RÉFÉRENTIELS (générique) ========================
 
 async def _handle_referentiel(entity_type: str, record: dict, tenant, user, source: str) -> dict:
     """Handler générique pour les petites tables de référence."""
     collection_name = f"ref_{entity_type.lower()}"
-    nom = record.get("nom") or record.get("code") or record.get("description") or ""
+    premligne_id = _get_premligne_id(record)
+    nom = record.get("nom") or record.get("description") or record.get("code") or ""
 
     if nom:
         existing = await db[collection_name].find_one(
             {"tenant_id": tenant.id, "nom": nom}, {"_id": 0, "id": 1}
         )
         if existing:
-            return await _queue_duplicate(tenant.id, entity_type, collection_name, existing["id"], record, "system")
+            return await _queue_duplicate(tenant.id, entity_type, collection_name, existing["id"], record, user.id)
 
     doc_id = str(uuid.uuid4())
     doc = {
         "id": doc_id,
         "tenant_id": tenant.id,
+        "premligne_id": premligne_id,
         "nom": nom,
         "pfm_record": record,
         "import_source": source,
         "imported_at": datetime.now(timezone.utc).isoformat(),
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
+    # Copier tous les champs simples du record (pas dict/list)
+    for key, value in record.items():
+        if key not in doc and key != "@attributes" and not isinstance(value, (dict, list)):
+            doc[key] = value
 
     await db[collection_name].insert_one(doc)
     return {"status": "created", "entity_type": entity_type, "id": doc_id}
