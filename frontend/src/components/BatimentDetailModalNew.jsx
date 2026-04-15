@@ -230,6 +230,7 @@ const BatimentForm = ({
   const [inspections, setInspections] = useState([]);
   const [nonConformites, setNonConformites] = useState([]);
   const [dependancesCount, setDependancesCount] = useState(0);
+  const [contacts, setContacts] = useState([]);
   const autocompleteInputRef = useRef(null);
   const autocompleteRef = useRef(null);
   const [preventionnistes, setPreventionnistes] = useState([]);
@@ -344,6 +345,67 @@ const BatimentForm = ({
       fetchNonConformites();
       fetchDependancesCount();
       
+      // Initialiser les contacts depuis les données existantes
+      const existingContacts = [];
+      // 1. contacts_ressources importés (PFM Transfer)
+      if (batiment.contacts_ressources?.length) {
+        batiment.contacts_ressources.forEach((c, i) => {
+          existingContacts.push({
+            type: i === 0 ? 'Propriétaire' : 'Autre',
+            nom: c.nom || '',
+            prenom: c.prenom || '',
+            telephone: c.telephone || '',
+            courriel: c.courriel || '',
+            adresse: c.adresse || '',
+            ville: c.ville || '',
+            code_postal: c.code_postal || '',
+          });
+        });
+      }
+      // 2. Champs legacy proprietaire/locataire/gestionnaire
+      if (!existingContacts.length) {
+        if (batiment.proprietaire_nom || batiment.proprietaire_prenom) {
+          existingContacts.push({
+            type: 'Propriétaire',
+            nom: batiment.proprietaire_nom || '',
+            prenom: batiment.proprietaire_prenom || '',
+            telephone: batiment.proprietaire_telephone || '',
+            courriel: batiment.proprietaire_courriel || '',
+            adresse: batiment.proprietaire_adresse || '',
+            ville: batiment.proprietaire_ville || '',
+            code_postal: batiment.proprietaire_code_postal || '',
+          });
+        }
+        if (batiment.locataire_nom || batiment.locataire_prenom) {
+          existingContacts.push({
+            type: 'Locataire',
+            nom: batiment.locataire_nom || '',
+            prenom: batiment.locataire_prenom || '',
+            telephone: batiment.locataire_telephone || '',
+            courriel: batiment.locataire_courriel || '',
+            adresse: '', ville: '', code_postal: '',
+          });
+        }
+        if (batiment.gestionnaire_nom || batiment.gestionnaire_prenom) {
+          existingContacts.push({
+            type: 'Gestionnaire',
+            nom: batiment.gestionnaire_nom || '',
+            prenom: batiment.gestionnaire_prenom || '',
+            telephone: batiment.gestionnaire_telephone || '',
+            courriel: batiment.gestionnaire_courriel || '',
+            adresse: batiment.gestionnaire_adresse || '',
+            ville: batiment.gestionnaire_ville || '',
+            code_postal: batiment.gestionnaire_code_postal || '',
+          });
+        }
+      }
+      // 3. contacts array direct
+      if (batiment.contacts?.length && !existingContacts.length) {
+        setContacts(batiment.contacts);
+      } else {
+        setContacts(existingContacts);
+      }
+      
       // Charger la photo si elle existe dans le bâtiment
       if (batiment.photo_url) {
         console.log('📸 Chargement de la photo existante du bâtiment');
@@ -352,7 +414,6 @@ const BatimentForm = ({
           source: 'uploaded'
         });
       } else {
-        // Pas de photo uploadée, on cherchera automatiquement via Mapillary
         setBuildingPhoto(null);
       }
     }
@@ -838,6 +899,39 @@ const BatimentForm = ({
       // S'assurer que risques est un array
       if (!Array.isArray(dataToSave.risques)) {
         dataToSave.risques = [];
+      }
+      
+      // Ajouter les contacts dynamiques
+      dataToSave.contacts = contacts;
+      // Mapper aussi vers les champs legacy pour rétro-compatibilité
+      const proprietaire = contacts.find(c => c.type === 'Propriétaire');
+      if (proprietaire) {
+        dataToSave.proprietaire_nom = proprietaire.nom;
+        dataToSave.proprietaire_prenom = proprietaire.prenom;
+        dataToSave.proprietaire_telephone = proprietaire.telephone;
+        dataToSave.proprietaire_courriel = proprietaire.courriel;
+        dataToSave.proprietaire_adresse = proprietaire.adresse;
+        dataToSave.proprietaire_ville = proprietaire.ville;
+        dataToSave.proprietaire_code_postal = proprietaire.code_postal;
+        dataToSave.contact_nom = `${proprietaire.prenom} ${proprietaire.nom}`.trim();
+        dataToSave.contact_telephone = proprietaire.telephone;
+      }
+      const locataire = contacts.find(c => c.type === 'Locataire');
+      if (locataire) {
+        dataToSave.locataire_nom = locataire.nom;
+        dataToSave.locataire_prenom = locataire.prenom;
+        dataToSave.locataire_telephone = locataire.telephone;
+        dataToSave.locataire_courriel = locataire.courriel;
+      }
+      const gestionnaire = contacts.find(c => c.type === 'Gestionnaire');
+      if (gestionnaire) {
+        dataToSave.gestionnaire_nom = gestionnaire.nom;
+        dataToSave.gestionnaire_prenom = gestionnaire.prenom;
+        dataToSave.gestionnaire_telephone = gestionnaire.telephone;
+        dataToSave.gestionnaire_courriel = gestionnaire.courriel;
+        dataToSave.gestionnaire_adresse = gestionnaire.adresse;
+        dataToSave.gestionnaire_ville = gestionnaire.ville;
+        dataToSave.gestionnaire_code_postal = gestionnaire.code_postal;
       }
       
       // Si pas de nom, générer un nom basé sur l'adresse
@@ -1784,429 +1878,113 @@ const BatimentForm = ({
                 )}
               </h3>
               
-              {/* Propriétaire */}
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h4 style={{ fontWeight: '600', marginBottom: '0.75rem', color: '#374151', fontSize: '1rem' }}>
-                  Propriétaire
-                </h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <div>
-                    <label style={{ fontWeight: '500', fontSize: '0.875rem', color: '#6b7280', display: 'block', marginBottom: '0.5rem' }}>
-                      Nom
-                    </label>
-                    <input
-                      type="text"
-                      value={editData.proprietaire_nom || ''}
-                      onChange={(e) => handleChange('proprietaire_nom', e.target.value)}
-                      disabled={!isEditing}
-                      style={{
-                        width: '100%',
-                        padding: '0.625rem',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '0.875rem'
-                      }}
-                    />
+              {/* Contacts dynamiques */}
+              {contacts.map((contact, idx) => (
+                <div key={idx} data-testid={`contact-${idx}`} style={{ marginBottom: '1.5rem', padding: '1rem', border: '1px solid #e5e7eb', borderRadius: '8px', backgroundColor: '#fafafa' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                    {isEditing ? (
+                      <select
+                        data-testid={`contact-type-${idx}`}
+                        value={contact.type || 'Propriétaire'}
+                        onChange={(e) => {
+                          const updated = [...contacts];
+                          updated[idx] = { ...updated[idx], type: e.target.value };
+                          setContacts(updated);
+                        }}
+                        style={{ fontWeight: '600', fontSize: '1rem', color: '#374151', border: '1px solid #d1d5db', borderRadius: '6px', padding: '0.375rem 0.75rem' }}
+                      >
+                        <option value="Propriétaire">Propriétaire</option>
+                        <option value="Locataire">Locataire</option>
+                        <option value="Gestionnaire">Gestionnaire</option>
+                        <option value="Autre">Autre</option>
+                      </select>
+                    ) : (
+                      <h4 style={{ fontWeight: '600', color: '#374151', fontSize: '1rem' }}>
+                        {contact.type || 'Contact'}
+                      </h4>
+                    )}
+                    {isEditing && (
+                      <button
+                        data-testid={`contact-delete-${idx}`}
+                        onClick={() => setContacts(contacts.filter((_, i) => i !== idx))}
+                        style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.875rem', fontWeight: '500' }}
+                      >
+                        Supprimer
+                      </button>
+                    )}
                   </div>
-                  <div>
-                    <label style={{ fontWeight: '500', fontSize: '0.875rem', color: '#6b7280', display: 'block', marginBottom: '0.5rem' }}>
-                      Prénom
-                    </label>
-                    <input
-                      type="text"
-                      value={editData.proprietaire_prenom || ''}
-                      onChange={(e) => handleChange('proprietaire_prenom', e.target.value)}
-                      disabled={!isEditing}
-                      style={{
-                        width: '100%',
-                        padding: '0.625rem',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '0.875rem'
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ fontWeight: '500', fontSize: '0.875rem', color: '#6b7280', display: 'block', marginBottom: '0.5rem' }}>
-                      Téléphone
-                    </label>
-                    <input
-                      type="tel"
-                      value={editData.proprietaire_telephone || ''}
-                      onChange={(e) => handleChange('proprietaire_telephone', e.target.value)}
-                      disabled={!isEditing}
-                      style={{
-                        width: '100%',
-                        padding: '0.625rem',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '0.875rem'
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ fontWeight: '500', fontSize: '0.875rem', color: '#6b7280', display: 'block', marginBottom: '0.5rem' }}>
-                      Courriel
-                    </label>
-                    <input
-                      type="email"
-                      value={editData.proprietaire_courriel || ''}
-                      onChange={(e) => handleChange('proprietaire_courriel', e.target.value)}
-                      disabled={!isEditing}
-                      style={{
-                        width: '100%',
-                        padding: '0.625rem',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '0.875rem'
-                      }}
-                    />
-                  </div>
-                </div>
-                {/* Adresse postale du propriétaire */}
-                <h5 style={{ fontWeight: '500', marginTop: '1rem', marginBottom: '0.5rem', color: '#6b7280', fontSize: '0.875rem' }}>
-                  📬 Adresse postale (si différente du bâtiment)
-                </h5>
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '0.75rem' }}>
-                  <div>
-                    <label style={{ fontWeight: '500', fontSize: '0.75rem', color: '#9ca3af', display: 'block', marginBottom: '0.25rem' }}>
-                      Adresse
-                    </label>
-                    <input
-                      type="text"
-                      value={editData.proprietaire_adresse || ''}
-                      onChange={(e) => handleChange('proprietaire_adresse', e.target.value)}
-                      disabled={!isEditing}
-                      placeholder="123 rue Exemple"
-                      style={{
-                        width: '100%',
-                        padding: '0.5rem',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '0.875rem'
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ fontWeight: '500', fontSize: '0.75rem', color: '#9ca3af', display: 'block', marginBottom: '0.25rem' }}>
-                      Ville
-                    </label>
-                    <input
-                      type="text"
-                      value={editData.proprietaire_ville || ''}
-                      onChange={(e) => handleChange('proprietaire_ville', e.target.value)}
-                      disabled={!isEditing}
-                      style={{
-                        width: '100%',
-                        padding: '0.5rem',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '0.875rem'
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ fontWeight: '500', fontSize: '0.75rem', color: '#9ca3af', display: 'block', marginBottom: '0.25rem' }}>
-                      Code Postal
-                    </label>
-                    <input
-                      type="text"
-                      value={editData.proprietaire_code_postal || ''}
-                      onChange={(e) => handleChange('proprietaire_code_postal', e.target.value.toUpperCase())}
-                      disabled={!isEditing}
-                      placeholder="J2X 1X1"
-                      style={{
-                        width: '100%',
-                        padding: '0.5rem',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '0.875rem'
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Locataire */}
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h4 style={{ fontWeight: '600', marginBottom: '0.75rem', color: '#374151', fontSize: '1rem' }}>
-                  Locataire
-                </h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <div>
-                    <label style={{ fontWeight: '500', fontSize: '0.875rem', color: '#6b7280', display: 'block', marginBottom: '0.5rem' }}>
-                      Nom
-                    </label>
-                    <input
-                      type="text"
-                      value={editData.locataire_nom || ''}
-                      onChange={(e) => handleChange('locataire_nom', e.target.value)}
-                      disabled={!isEditing}
-                      style={{
-                        width: '100%',
-                        padding: '0.625rem',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '0.875rem'
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ fontWeight: '500', fontSize: '0.875rem', color: '#6b7280', display: 'block', marginBottom: '0.5rem' }}>
-                      Prénom
-                    </label>
-                    <input
-                      type="text"
-                      value={editData.locataire_prenom || ''}
-                      onChange={(e) => handleChange('locataire_prenom', e.target.value)}
-                      disabled={!isEditing}
-                      style={{
-                        width: '100%',
-                        padding: '0.625rem',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '0.875rem'
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ fontWeight: '500', fontSize: '0.875rem', color: '#6b7280', display: 'block', marginBottom: '0.5rem' }}>
-                      Téléphone
-                    </label>
-                    <input
-                      type="tel"
-                      value={editData.locataire_telephone || ''}
-                      onChange={(e) => handleChange('locataire_telephone', e.target.value)}
-                      disabled={!isEditing}
-                      style={{
-                        width: '100%',
-                        padding: '0.625rem',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '0.875rem'
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ fontWeight: '500', fontSize: '0.875rem', color: '#6b7280', display: 'block', marginBottom: '0.5rem' }}>
-                      Courriel
-                    </label>
-                    <input
-                      type="email"
-                      value={editData.locataire_courriel || ''}
-                      onChange={(e) => handleChange('locataire_courriel', e.target.value)}
-                      disabled={!isEditing}
-                      style={{
-                        width: '100%',
-                        padding: '0.625rem',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '0.875rem'
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Gestionnaire */}
-              <div>
-                <h4 style={{ fontWeight: '600', marginBottom: '0.75rem', color: '#374151', fontSize: '1rem' }}>
-                  Gestionnaire
-                </h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <div>
-                    <label style={{ fontWeight: '500', fontSize: '0.875rem', color: '#6b7280', display: 'block', marginBottom: '0.5rem' }}>
-                      Nom
-                    </label>
-                    <input
-                      type="text"
-                      value={editData.gestionnaire_nom || ''}
-                      onChange={(e) => handleChange('gestionnaire_nom', e.target.value)}
-                      disabled={!isEditing}
-                      style={{
-                        width: '100%',
-                        padding: '0.625rem',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '0.875rem'
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ fontWeight: '500', fontSize: '0.875rem', color: '#6b7280', display: 'block', marginBottom: '0.5rem' }}>
-                      Prénom
-                    </label>
-                    <input
-                      type="text"
-                      value={editData.gestionnaire_prenom || ''}
-                      onChange={(e) => handleChange('gestionnaire_prenom', e.target.value)}
-                      disabled={!isEditing}
-                      style={{
-                        width: '100%',
-                        padding: '0.625rem',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '0.875rem'
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ fontWeight: '500', fontSize: '0.875rem', color: '#6b7280', display: 'block', marginBottom: '0.5rem' }}>
-                      Téléphone
-                    </label>
-                    <input
-                      type="tel"
-                      value={editData.gestionnaire_telephone || ''}
-                      onChange={(e) => handleChange('gestionnaire_telephone', e.target.value)}
-                      disabled={!isEditing}
-                      style={{
-                        width: '100%',
-                        padding: '0.625rem',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '0.875rem'
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ fontWeight: '500', fontSize: '0.875rem', color: '#6b7280', display: 'block', marginBottom: '0.5rem' }}>
-                      Courriel
-                    </label>
-                    <input
-                      type="email"
-                      value={editData.gestionnaire_courriel || ''}
-                      onChange={(e) => handleChange('gestionnaire_courriel', e.target.value)}
-                      disabled={!isEditing}
-                      style={{
-                        width: '100%',
-                        padding: '0.625rem',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '0.875rem'
-                      }}
-                    />
-                  </div>
-                </div>
-                {/* Adresse postale du gestionnaire */}
-                <h5 style={{ fontWeight: '500', marginTop: '1rem', marginBottom: '0.5rem', color: '#6b7280', fontSize: '0.875rem' }}>
-                  📬 Adresse postale (si différente du bâtiment)
-                </h5>
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '0.75rem' }}>
-                  <div>
-                    <label style={{ fontWeight: '500', fontSize: '0.75rem', color: '#9ca3af', display: 'block', marginBottom: '0.25rem' }}>
-                      Adresse
-                    </label>
-                    <input
-                      type="text"
-                      value={editData.gestionnaire_adresse || ''}
-                      onChange={(e) => handleChange('gestionnaire_adresse', e.target.value)}
-                      disabled={!isEditing}
-                      placeholder="123 rue Exemple"
-                      style={{
-                        width: '100%',
-                        padding: '0.5rem',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '0.875rem'
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ fontWeight: '500', fontSize: '0.75rem', color: '#9ca3af', display: 'block', marginBottom: '0.25rem' }}>
-                      Ville
-                    </label>
-                    <input
-                      type="text"
-                      value={editData.gestionnaire_ville || ''}
-                      onChange={(e) => handleChange('gestionnaire_ville', e.target.value)}
-                      disabled={!isEditing}
-                      style={{
-                        width: '100%',
-                        padding: '0.5rem',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '0.875rem'
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ fontWeight: '500', fontSize: '0.75rem', color: '#9ca3af', display: 'block', marginBottom: '0.25rem' }}>
-                      Code Postal
-                    </label>
-                    <input
-                      type="text"
-                      value={editData.gestionnaire_code_postal || ''}
-                      onChange={(e) => handleChange('gestionnaire_code_postal', e.target.value.toUpperCase())}
-                      disabled={!isEditing}
-                      placeholder="J2X 1X1"
-                      style={{
-                        width: '100%',
-                        padding: '0.5rem',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '0.875rem'
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            {/* Section - PERSONNES RESSOURCES (Multi-contacts importés PFM Transfer) */}
-            {(batiment?.contacts_ressources?.length > 0) && (
-              <Card style={{ padding: '1.5rem', border: '2px solid #fef3c7' }}>
-                <h3 style={{ 
-                  fontSize: '1.25rem', 
-                  fontWeight: '600', 
-                  marginBottom: '1rem',
-                  color: '#d97706',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem'
-                }}>
-                  Personnes ressources
-                  <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: '#9ca3af' }}>
-                    ({batiment.contacts_ressources.length})
-                  </span>
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {batiment.contacts_ressources.map((contact, idx) => (
-                    <div key={idx} data-testid={`contact-ressource-${idx}`} style={{ 
-                      padding: '1rem', 
-                      border: '1px solid #e5e7eb', 
-                      borderRadius: '8px',
-                      backgroundColor: idx === 0 ? '#fffbeb' : '#f9fafb'
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                        <span style={{ fontWeight: '600', color: '#374151' }}>
-                          {contact.prenom} {contact.nom}
-                        </span>
-                        {contact.statut && (
-                          <span style={{ 
-                            fontSize: '0.75rem', 
-                            padding: '0.125rem 0.5rem', 
-                            borderRadius: '9999px',
-                            backgroundColor: contact.statut === 'En cours' ? '#dcfce7' : '#f3f4f6',
-                            color: contact.statut === 'En cours' ? '#166534' : '#6b7280'
-                          }}>
-                            {contact.statut}
-                          </span>
-                        )}
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
-                        {contact.telephone && <div>Tel: {contact.telephone}</div>}
-                        {contact.courriel && <div>{contact.courriel}</div>}
-                        {contact.adresse && (
-                          <div style={{ gridColumn: 'span 2' }}>
-                            {contact.adresse}{contact.ville ? `, ${contact.ville}` : ''}{contact.code_postal ? ` ${contact.code_postal}` : ''}
-                          </div>
-                        )}
-                      </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div>
+                      <label style={{ fontWeight: '500', fontSize: '0.875rem', color: '#6b7280', display: 'block', marginBottom: '0.5rem' }}>Nom</label>
+                      <input type="text" value={contact.nom || ''} disabled={!isEditing}
+                        onChange={(e) => { const u = [...contacts]; u[idx] = { ...u[idx], nom: e.target.value }; setContacts(u); }}
+                        style={{ width: '100%', padding: '0.625rem', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '0.875rem' }} />
                     </div>
-                  ))}
+                    <div>
+                      <label style={{ fontWeight: '500', fontSize: '0.875rem', color: '#6b7280', display: 'block', marginBottom: '0.5rem' }}>Prénom</label>
+                      <input type="text" value={contact.prenom || ''} disabled={!isEditing}
+                        onChange={(e) => { const u = [...contacts]; u[idx] = { ...u[idx], prenom: e.target.value }; setContacts(u); }}
+                        style={{ width: '100%', padding: '0.625rem', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '0.875rem' }} />
+                    </div>
+                    <div>
+                      <label style={{ fontWeight: '500', fontSize: '0.875rem', color: '#6b7280', display: 'block', marginBottom: '0.5rem' }}>Téléphone</label>
+                      <input type="tel" value={contact.telephone || ''} disabled={!isEditing}
+                        onChange={(e) => { const u = [...contacts]; u[idx] = { ...u[idx], telephone: e.target.value }; setContacts(u); }}
+                        style={{ width: '100%', padding: '0.625rem', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '0.875rem' }} />
+                    </div>
+                    <div>
+                      <label style={{ fontWeight: '500', fontSize: '0.875rem', color: '#6b7280', display: 'block', marginBottom: '0.5rem' }}>Courriel</label>
+                      <input type="email" value={contact.courriel || ''} disabled={!isEditing}
+                        onChange={(e) => { const u = [...contacts]; u[idx] = { ...u[idx], courriel: e.target.value }; setContacts(u); }}
+                        style={{ width: '100%', padding: '0.625rem', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '0.875rem' }} />
+                    </div>
+                  </div>
+                  <h5 style={{ fontWeight: '500', marginTop: '1rem', marginBottom: '0.5rem', color: '#6b7280', fontSize: '0.875rem' }}>
+                    Adresse postale (si différente du bâtiment)
+                  </h5>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '0.75rem' }}>
+                    <div>
+                      <label style={{ fontWeight: '500', fontSize: '0.75rem', color: '#9ca3af', display: 'block', marginBottom: '0.25rem' }}>Adresse</label>
+                      <input type="text" value={contact.adresse || ''} disabled={!isEditing} placeholder="123 rue Exemple"
+                        onChange={(e) => { const u = [...contacts]; u[idx] = { ...u[idx], adresse: e.target.value }; setContacts(u); }}
+                        style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '0.875rem' }} />
+                    </div>
+                    <div>
+                      <label style={{ fontWeight: '500', fontSize: '0.75rem', color: '#9ca3af', display: 'block', marginBottom: '0.25rem' }}>Ville</label>
+                      <input type="text" value={contact.ville || ''} disabled={!isEditing}
+                        onChange={(e) => { const u = [...contacts]; u[idx] = { ...u[idx], ville: e.target.value }; setContacts(u); }}
+                        style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '0.875rem' }} />
+                    </div>
+                    <div>
+                      <label style={{ fontWeight: '500', fontSize: '0.75rem', color: '#9ca3af', display: 'block', marginBottom: '0.25rem' }}>Code Postal</label>
+                      <input type="text" value={contact.code_postal || ''} disabled={!isEditing} placeholder="J2X 1X1"
+                        onChange={(e) => { const u = [...contacts]; u[idx] = { ...u[idx], code_postal: e.target.value.toUpperCase() }; setContacts(u); }}
+                        style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '0.875rem' }} />
+                    </div>
+                  </div>
                 </div>
-              </Card>
-            )}
+              ))}
+
+              {/* Bouton Ajouter un contact */}
+              {isEditing && (
+                <button
+                  data-testid="add-contact-btn"
+                  onClick={() => setContacts([...contacts, { type: 'Propriétaire', nom: '', prenom: '', telephone: '', courriel: '', adresse: '', ville: '', code_postal: '' }])}
+                  style={{
+                    width: '100%', padding: '0.75rem', border: '2px dashed #d1d5db', borderRadius: '8px',
+                    backgroundColor: 'transparent', color: '#6b7280', cursor: 'pointer', fontSize: '0.875rem',
+                    fontWeight: '500', transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={(e) => { e.target.style.borderColor = '#10b981'; e.target.style.color = '#10b981'; }}
+                  onMouseLeave={(e) => { e.target.style.borderColor = '#d1d5db'; e.target.style.color = '#6b7280'; }}
+                >
+                  + Ajouter un contact
+                </button>
+              )}
+              {!isEditing && contacts.length === 0 && (
+                <p style={{ color: '#9ca3af', fontSize: '0.875rem', fontStyle: 'italic' }}>Aucun contact enregistré</p>
+              )}
+            </Card>
 
             {/* Section 2 - TYPE DE BÂTIMENT & CLASSIFICATION */}
             <Card style={{ padding: '1.5rem', border: '2px solid #dbeafe', opacity: (!canEditAll && isEditing) ? 0.7 : 1 }}>

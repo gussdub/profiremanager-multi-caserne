@@ -1,47 +1,44 @@
 # PRD.md — ProFireManager v2.0
 
 ## Problem Statement
-Application de gestion complète pour les services d'incendie canadiens. Multi-tenant, planning, remplacements, prévention, EPI, bâtiments, interventions, approvisionnement en eau.
+Application de gestion complète pour les services d'incendie canadiens. Multi-tenant.
 
 ## Architecture
 - **Frontend**: React (CRA) + Tailwind + Shadcn/UI
 - **Backend**: FastAPI + MongoDB (via MONGO_URL)
-- **Stockage fichiers**: Azure Blob Storage (profiremanagerdata / fichiers-clients)
-- **Emails**: Resend (RESEND_API_KEY) + `services/email_builder.py`
+- **Stockage**: Azure Blob Storage
+- **Emails**: Resend
 
 ## Import PFM Transfer — `/api/{tenant}/import/batch`
+- 38 entity_types (14 principaux + 24 référentiels)
+- Doublons: retourne `status: "duplicate"` + `id` existant
+- `premligne_id` pour audit
+- Employe enrichi: NAS, passeport, notes, permis
 
-### Flux
-1. Transfer envoie record JSON → reçoit `{status, id}`
-2. Transfer upload chaque fichier (photo/PDF) via `/files/upload?entity_id=uuid`
-3. Frontend lit les fichiers depuis `stored_files` et les affiche
+### DossierAdresse → Bâtiment
+- Adresse séparée (civique / ville / code_postal)
+- cadastre_matricule, annee_construction/renovation, etages, logements, sous-sol
+- valeur_fonciere = valeur_immeuble, superficie_totale_m2
+- classification, type_batiment, toit, parement, usage
+- Personnes ressources → contacts dynamiques multi-types
+- Photos depuis stored_files (Upload Transfer)
 
-### Entity Types supportés (38 total)
+### Contacts dynamiques bâtiment
+- Remplacement des 3 sections fixes (Propriétaire/Locataire/Gestionnaire)
+- Liste dynamique avec bouton "Ajouter un contact"
+- Chaque contact: type (Propriétaire/Locataire/Gestionnaire/Autre) + nom/prénom/tel/courriel/adresse
+- Rétro-compatibilité: mapping vers champs legacy proprietaire_*/locataire_*/gestionnaire_*
 
-**14 Entités principales** : Intervention, DossierAdresse, Prevention, RCCI, PlanIntervention, Employe, BorneIncendie, BorneSeche, PointEau, MaintenanceBorne, Travail, Vehicule, EquipExist, MaintEquip
-
-**24 Référentiels** : Caserne, Grade, Equipe, Groupe, CodeAppel, TypePrevention, TypeBatiment, TypeEquipement, TypeChauffage, TypeToit, Parement, Plancher, TypeAnomalie, TypeMaint, ModeleBorne, TypeValve, UsageBorne, Raccord, Classification, ReferenceCode, Fournisseur, Programme, Cours, TypeChampPerso
-
-### Fonctionnalités
-- Extraction profonde (deep_get) des données PremLigne imbriquées
-- Détection de doublons → retourne `status: "duplicate"` + `id` existant (Transfer peut uploader les fichiers)
-- `premligne_id` stocké sur chaque record pour audit/traçabilité
-- `matched_fks` dans la réponse pour confirmer les FK résolues
-- Employé enrichi : NAS, passeport, notes, permis de conduire, langue, contacts urgence, nominations
-- RCCI lazy : créé à la demande avec normalisation cause_probable/ignition_source
-- Protection : valeurs "worked"/"not_worked" conformes au frontend
-- PDF Remise de Propriété : fallback génération à la volée
-
-## Completed Features
+## Completed
 - Multi-tenant auth, planning, remplacements, prévention, EPI, bâtiments
 - Migration Azure Blob Storage 100%
-- Import historique interventions avec mapping intelligent et rétroactif
-- Import PFM Transfer complet (38 entity_types, avr 2026)
-- Correction onglets RCCI/Protection/DSI vides (avr 2026)
-- Correction PDF Remise de Propriété 404 (avr 2026)
-- Format réponse compatible Transfer (avr 2026)
-- Gestion doublons avec retour id existant (avr 2026)
-- UI Gestion des Doublons (Paramètres > Imports CSV)
+- Import PFM Transfer complet (38 types, avr 2026)
+- Fix RCCI/Protection/DSI/PDF Remise (avr 2026)
+- Fix CORS pour Transfer (avr 2026)
+- Fix page blanche adresse objet (avr 2026)
+- Enrichissement DossierAdresse complet (avr 2026)
+- Contacts dynamiques multi-types (avr 2026)
 
 ## Backlog
+- P1: Historique inspections/prévention sur fiche bâtiment
 - P2: Aperçu d'emails en temps réel dans les paramètres admin
