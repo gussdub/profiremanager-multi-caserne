@@ -6533,10 +6533,12 @@ app.include_router(dsi_transmissions_router, prefix="/api")
 app.include_router(access_types_router, prefix="/api")  # Module Types d'accès personnalisés
 
 # Add CORS middleware
+_cors_origins_raw = os.environ.get('CORS_ORIGINS', '*')
+_cors_allow_all = _cors_origins_raw.strip() == '*'
 app.add_middleware(
     CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_credentials=not _cors_allow_all,
+    allow_origins=["*"] if _cors_allow_all else _cors_origins_raw.split(','),
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
