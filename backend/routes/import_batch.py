@@ -649,20 +649,30 @@ async def fix_existing_batiments(
         # Contacts depuis liste_personne_ressource → proprietaire
         pers_ress = record.get("liste_personne_ressource", {})
         if isinstance(pers_ress, dict) and not doc.get("proprietaire_nom"):
-            items = pers_ress.get("item", [])
+            # Format PremLigne: {personne_ress: [{nom: "NOM PRENOM", adresse: {...}}]}
+            # OU: {item: [{personne_ressource: {nom: ..., prenom: ...}}]}
+            items = pers_ress.get("personne_ress", []) or pers_ress.get("item", [])
             if isinstance(items, dict):
                 items = [items]
             if isinstance(items, list) and items:
                 first = items[0]
                 if isinstance(first, dict):
-                    pr = first.get("personne_ressource", first)
-                    if pr.get("nom"):
-                        update["proprietaire_nom"] = pr["nom"]
-                        update["contact_nom"] = f"{pr.get('prenom', '')} {pr['nom']}".strip()
-                    if pr.get("prenom"):
-                        update["proprietaire_prenom"] = pr["prenom"]
-                    if pr.get("telephone") or pr.get("cell"):
-                        tel = pr.get("telephone") or pr.get("cell")
+                    pr = first.get("personne_ressource", first) if isinstance(first.get("personne_ressource"), dict) else first
+                    full_name = pr.get("nom", "") or ""
+                    prenom = pr.get("prenom", "") or ""
+                    nom = full_name
+                    # Si le nom contient prénom+nom combiné ("MILO FRANCOIS"), séparer
+                    if full_name and not prenom and " " in full_name:
+                        parts = full_name.strip().split(" ", 1)
+                        nom = parts[0]
+                        prenom = parts[1] if len(parts) > 1 else ""
+                    if nom:
+                        update["proprietaire_nom"] = nom
+                        update["contact_nom"] = full_name or f"{prenom} {nom}".strip()
+                    if prenom:
+                        update["proprietaire_prenom"] = prenom
+                    tel = pr.get("telephone", "") or pr.get("cell", "") or ""
+                    if tel:
                         update["proprietaire_telephone"] = tel
                         update["contact_telephone"] = tel
                     if pr.get("courriel"):
@@ -680,6 +690,33 @@ async def fix_existing_batiments(
                             update["proprietaire_ville"] = pr_addr["ville"]
                         if pr_addr.get("code_post"):
                             update["proprietaire_code_postal"] = pr_addr["code_post"]
+
+            # Stocker TOUS les contacts dans un tableau pour le frontend multi-contacts
+            all_contacts = []
+            for item in items:
+                if isinstance(item, dict):
+                    pr = item.get("personne_ressource", item) if isinstance(item.get("personne_ressource"), dict) else item
+                    c_name = pr.get("nom", "") or ""
+                    c_prenom = pr.get("prenom", "") or ""
+                    if c_name and not c_prenom and " " in c_name:
+                        parts = c_name.strip().split(" ", 1)
+                        c_name = parts[0]
+                        c_prenom = parts[1] if len(parts) > 1 else ""
+                    c_addr = pr.get("adresse", {})
+                    if isinstance(c_addr, dict) and "adresse" in c_addr:
+                        c_addr = c_addr["adresse"]
+                    all_contacts.append({
+                        "nom": c_name,
+                        "prenom": c_prenom,
+                        "telephone": pr.get("telephone", "") or pr.get("cell", "") or "",
+                        "courriel": pr.get("courriel", "") or "",
+                        "adresse": f"{c_addr.get('no_civ', '')} {c_addr.get('rue', '')}".strip() if isinstance(c_addr, dict) else "",
+                        "ville": c_addr.get("ville", "") if isinstance(c_addr, dict) else "",
+                        "code_postal": c_addr.get("code_post", "") if isinstance(c_addr, dict) else "",
+                        "statut": pr.get("statut", "") or "",
+                    })
+            if all_contacts:
+                update["contacts_ressources"] = all_contacts
 
         # Sous-entités
         for pfm_key, db_key in [
@@ -1313,7 +1350,7 @@ async def _handle_dossier_adresse(record: dict, tenant, user, source: str) -> di
     if existing:
         return await _queue_duplicate(tenant.id, "DossierAdresse", "batiments", existing["id"], record, user.id)
 
-    # Personnes ressources → propriétaire (format frontend PFM)
+    # Personnes ressources → propriétaire + tableau de contacts
     proprietaire_nom = ""
     proprietaire_prenom = ""
     proprietaire_telephone = ""
@@ -1321,29 +1358,48 @@ async def _handle_dossier_adresse(record: dict, tenant, user, source: str) -> di
     proprietaire_adresse = ""
     proprietaire_ville = ""
     proprietaire_code_postal = ""
+    all_contacts = []
     pers_ress = record.get("liste_personne_ressource", {})
     if isinstance(pers_ress, dict):
-        items = pers_ress.get("item", [])
+        items = pers_ress.get("personne_ress", []) or pers_ress.get("item", [])
         if isinstance(items, dict):
             items = [items]
-        if isinstance(items, list) and items:
-            first = items[0]
-            if isinstance(first, dict):
-                pr = first.get("personne_ressource", first)
-                proprietaire_nom = pr.get("nom", "") or ""
-                proprietaire_prenom = pr.get("prenom", "") or ""
-                proprietaire_telephone = pr.get("telephone", "") or pr.get("cell", "") or ""
-                proprietaire_courriel = pr.get("courriel", "") or ""
-                # Adresse de la personne ressource
-                pr_addr = pr.get("adresse", {})
-                if isinstance(pr_addr, dict) and "adresse" in pr_addr:
-                    pr_addr = pr_addr["adresse"]
-                if isinstance(pr_addr, dict):
-                    pr_no = str(pr_addr.get("no_civ", "") or "").strip()
-                    pr_rue = str(pr_addr.get("rue", "") or "").strip()
-                    proprietaire_adresse = f"{pr_no} {pr_rue}".strip() if pr_no else pr_rue
-                    proprietaire_ville = str(pr_addr.get("ville", "") or "").strip()
-                    proprietaire_code_postal = str(pr_addr.get("code_post", "") or "").strip()
+        if isinstance(items, list):
+            for idx, raw_item in enumerate(items):
+                if not isinstance(raw_item, dict):
+                    continue
+                pr = raw_item.get("personne_ressource", raw_item) if isinstance(raw_item.get("personne_ressource"), dict) else raw_item
+                full_name = pr.get("nom", "") or ""
+                c_prenom = pr.get("prenom", "") or ""
+                c_nom = full_name
+                if full_name and not c_prenom and " " in full_name:
+                    parts = full_name.strip().split(" ", 1)
+                    c_nom = parts[0]
+                    c_prenom = parts[1] if len(parts) > 1 else ""
+                c_addr = pr.get("adresse", {})
+                if isinstance(c_addr, dict) and "adresse" in c_addr:
+                    c_addr = c_addr["adresse"]
+                if not isinstance(c_addr, dict):
+                    c_addr = {}
+                contact = {
+                    "nom": c_nom,
+                    "prenom": c_prenom,
+                    "telephone": pr.get("telephone", "") or pr.get("cell", "") or "",
+                    "courriel": pr.get("courriel", "") or "",
+                    "adresse": f"{c_addr.get('no_civ', '')} {c_addr.get('rue', '')}".strip(),
+                    "ville": c_addr.get("ville", "") or "",
+                    "code_postal": c_addr.get("code_post", "") or "",
+                    "statut": pr.get("statut", "") or "",
+                }
+                all_contacts.append(contact)
+                if idx == 0:
+                    proprietaire_nom = c_nom
+                    proprietaire_prenom = c_prenom
+                    proprietaire_telephone = contact["telephone"]
+                    proprietaire_courriel = contact["courriel"]
+                    proprietaire_adresse = contact["adresse"]
+                    proprietaire_ville = contact["ville"]
+                    proprietaire_code_postal = contact["code_postal"]
     if not proprietaire_nom:
         proprietaire_nom = record.get("proprietaire_nom") or record.get("prop_nom") or ""
 
@@ -1409,6 +1465,8 @@ async def _handle_dossier_adresse(record: dict, tenant, user, source: str) -> di
         "proprietaire_code_postal": proprietaire_code_postal,
         "contact_nom": f"{proprietaire_prenom} {proprietaire_nom}".strip() or proprietaire_nom,
         "contact_telephone": proprietaire_telephone,
+        # Multi-contacts (tableau structuré)
+        "contacts_ressources": all_contacts,
         # Sous-entités embarquées (JSONB)
         "personnes_ressources": record.get("liste_personne_ressource"),
         "produits_dangereux": record.get("liste_produit_dangereux"),

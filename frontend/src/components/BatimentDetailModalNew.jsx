@@ -2152,6 +2152,62 @@ const BatimentForm = ({
               </div>
             </Card>
 
+            {/* Section - PERSONNES RESSOURCES (Multi-contacts importés PFM Transfer) */}
+            {(batiment?.contacts_ressources?.length > 0) && (
+              <Card style={{ padding: '1.5rem', border: '2px solid #fef3c7' }}>
+                <h3 style={{ 
+                  fontSize: '1.25rem', 
+                  fontWeight: '600', 
+                  marginBottom: '1rem',
+                  color: '#d97706',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  Personnes ressources
+                  <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: '#9ca3af' }}>
+                    ({batiment.contacts_ressources.length})
+                  </span>
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {batiment.contacts_ressources.map((contact, idx) => (
+                    <div key={idx} data-testid={`contact-ressource-${idx}`} style={{ 
+                      padding: '1rem', 
+                      border: '1px solid #e5e7eb', 
+                      borderRadius: '8px',
+                      backgroundColor: idx === 0 ? '#fffbeb' : '#f9fafb'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <span style={{ fontWeight: '600', color: '#374151' }}>
+                          {contact.prenom} {contact.nom}
+                        </span>
+                        {contact.statut && (
+                          <span style={{ 
+                            fontSize: '0.75rem', 
+                            padding: '0.125rem 0.5rem', 
+                            borderRadius: '9999px',
+                            backgroundColor: contact.statut === 'En cours' ? '#dcfce7' : '#f3f4f6',
+                            color: contact.statut === 'En cours' ? '#166534' : '#6b7280'
+                          }}>
+                            {contact.statut}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
+                        {contact.telephone && <div>Tel: {contact.telephone}</div>}
+                        {contact.courriel && <div>{contact.courriel}</div>}
+                        {contact.adresse && (
+                          <div style={{ gridColumn: 'span 2' }}>
+                            {contact.adresse}{contact.ville ? `, ${contact.ville}` : ''}{contact.code_postal ? ` ${contact.code_postal}` : ''}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+
             {/* Section 2 - TYPE DE BÂTIMENT & CLASSIFICATION */}
             <Card style={{ padding: '1.5rem', border: '2px solid #dbeafe', opacity: (!canEditAll && isEditing) ? 0.7 : 1 }}>
               <h3 style={{ 
