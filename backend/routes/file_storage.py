@@ -74,6 +74,9 @@ async def upload_file(
         "content_type": content_type,
         "size": file_doc["size"],
         "url": result.get("url", ""),
+        # Aliases pour compatibilité PFM Transfer
+        "size_bytes": file_doc["size"],
+        "mime": content_type,
     }
 
 
