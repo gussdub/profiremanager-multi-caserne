@@ -221,6 +221,23 @@ def _parse_int(value) -> Optional[int]:
         return None
 
 
+def _classification_to_groupe(classification: str) -> str:
+    """Convertit une classification PremLigne (*C - Habitations) en code groupe (C)."""
+    if not classification:
+        return ""
+    c = classification.strip().lstrip("*").strip()
+    # Extraire la lettre de code (premier caractère avant " - ")
+    if " - " in c:
+        code = c.split(" - ")[0].strip()
+        if len(code) == 1 and code.isalpha():
+            return code.upper()
+    # Fallback: premier caractère alpha
+    for ch in c:
+        if ch.isalpha():
+            return ch.upper()
+    return ""
+
+
 def _safe_address_str(value) -> str:
     """
     Convertit une adresse PremLigne en string propre.
@@ -640,6 +657,13 @@ async def fix_existing_batiments(
             val = record.get(pfm_key)
             if val and isinstance(val, str) and val.strip():
                 update[db_key] = val.strip()
+
+        # Groupe d'occupation depuis classification
+        classif = record.get("id_classification") or ""
+        if classif:
+            groupe = _classification_to_groupe(classif)
+            if groupe:
+                update["groupe_occupation"] = groupe
 
         # Notes (ne pas écraser si déjà rempli manuellement)
         note = record.get("note") or record.get("notes") or ""
@@ -1446,6 +1470,7 @@ async def _handle_dossier_adresse(record: dict, tenant, user, source: str) -> di
         "niveau_risque": record.get("id_categ_risque") or record.get("categorie_risque") or "Faible",
         "sous_type_batiment": record.get("id_type_batiment") or record.get("type_batiment") or "",
         "classification": record.get("id_classification") or "",
+        "groupe_occupation": _classification_to_groupe(record.get("id_classification") or ""),
         "type_construction": record.get("id_type_construction") or "",
         "type_chauffage": record.get("id_type_chauffage") or "",
         "type_toit": record.get("id_type_toit") or "",
