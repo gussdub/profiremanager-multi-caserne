@@ -2330,6 +2330,55 @@ const BatimentForm = ({
               </div>
             </Card>
 
+            {/* Section - PRODUITS DANGEREUX */}
+            {(() => {
+              const pd = editData.produits_dangereux;
+              if (!pd) return null;
+              // Normaliser en tableau
+              let items = [];
+              if (Array.isArray(pd)) items = pd;
+              else if (pd.produit_dangereux) {
+                items = Array.isArray(pd.produit_dangereux) ? pd.produit_dangereux : [pd.produit_dangereux];
+              }
+              if (!items.length) return null;
+              return (
+                <Card data-testid="produits-dangereux-section" style={{ padding: '1.5rem', border: '2px solid #ef4444' }}>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    Produits dangereux
+                    <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: '#9ca3af', backgroundColor: '#fef2f2', padding: '0.125rem 0.5rem', borderRadius: '9999px' }}>
+                      {items.length}
+                    </span>
+                  </h3>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '2px solid #fecaca', textAlign: 'left' }}>
+                          <th style={{ padding: '0.5rem 0.75rem', color: '#991b1b', fontWeight: '600' }}>Équip. raccordé</th>
+                          <th style={{ padding: '0.5rem 0.75rem', color: '#991b1b', fontWeight: '600' }}>Page jaune</th>
+                          <th style={{ padding: '0.5rem 0.75rem', color: '#991b1b', fontWeight: '600' }}>Localisation</th>
+                          <th style={{ padding: '0.5rem 0.75rem', color: '#991b1b', fontWeight: '600' }}>Contenant</th>
+                          <th style={{ padding: '0.5rem 0.75rem', color: '#991b1b', fontWeight: '600' }}>Nbr</th>
+                          <th style={{ padding: '0.5rem 0.75rem', color: '#991b1b', fontWeight: '600' }}>Volume</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {items.map((p, idx) => (
+                          <tr key={idx} style={{ borderBottom: '1px solid #fee2e2', backgroundColor: idx % 2 === 0 ? '#fff5f5' : 'white' }}>
+                            <td style={{ padding: '0.5rem 0.75rem' }}>{p.equip_raccorde || '-'}</td>
+                            <td style={{ padding: '0.5rem 0.75rem' }}>{p.id_page_jaune || '-'}</td>
+                            <td style={{ padding: '0.5rem 0.75rem' }}>{p.localisation || (p.secteur ? `Secteur ${p.secteur}` : '-')}</td>
+                            <td style={{ padding: '0.5rem 0.75rem' }}>{p.contenant || '-'}</td>
+                            <td style={{ padding: '0.5rem 0.75rem' }}>{p.nbr_contenant || '-'}</td>
+                            <td style={{ padding: '0.5rem 0.75rem', fontWeight: '500' }}>{p.volume || '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              );
+            })()}
+
             {/* Section 7 - NOTES ET COMPLÉMENTS - Accessible à tous */}
             <Card style={{ padding: '1.5rem', border: '2px solid #10b981' }}>
               <h3 style={{ 
