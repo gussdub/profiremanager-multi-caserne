@@ -242,6 +242,9 @@ def _normalize_sous_type(label: str) -> str:
     """Convertit un label PremLigne (Unifamiliale, Chalet) en code frontend (unifamiliale, chalet)."""
     if not label:
         return ""
+    # Valeurs invalides PremLigne
+    if label.strip().startswith("-") or label.strip() == "0":
+        return ""
     mapping = {
         "unifamiliale": "unifamiliale", "bifamiliale": "bifamiliale", "duplex": "bifamiliale",
         "triplex": "multi_3_8", "multifamiliale": "multi_3_8",
@@ -253,9 +256,18 @@ def _normalize_sous_type(label: str) -> str:
         "chsld": "chsld", "église": "eglise", "eglise": "eglise",
         "entrepôt": "entrepot", "entrepot": "entrepot", "usine": "usine",
         "atelier": "atelier", "ferme": "ferme", "grange": "grange",
+        "résidence personnes agées": "residence_ainee",
+        "résidence personnes âgées": "residence_ainee",
+        "residence personnes agees": "residence_ainee",
+        "rpa": "residence_ainee",
     }
     key = label.strip().lower()
-    return mapping.get(key, key.replace(" ", "_").replace("-", "_"))
+    if key in mapping:
+        return mapping[key]
+    # Condo / unités
+    if "condo" in key or "unité" in key or "unite" in key:
+        return "copropriete"
+    return key.replace(" ", "_").replace("-", "_")
 
 
 def _normalize_niveau_risque(label: str) -> str:
