@@ -32,8 +32,25 @@ const GaleriePhotosBatiment = ({
 
       let importedPhotos = [];
       try {
-        const data = await apiGet(tenantSlug, `/files/by-entity/batiment/${batimentId}`);
-        importedPhotos = (data?.files || [])
+        // Chercher avec entity_type=batiment ET DossierAdresse (PFM Transfer)
+        const results = await Promise.allSettled([
+          apiGet(tenantSlug, `/files/by-entity/batiment/${batimentId}`),
+          apiGet(tenantSlug, `/files/by-entity/DossierAdresse/${batimentId}`),
+          apiGet(tenantSlug, `/files/by-entity/Intervention/${batimentId}`),
+        ]);
+        const allFiles = [];
+        const seenIds = new Set();
+        for (const r of results) {
+          if (r.status === 'fulfilled' && r.value?.files) {
+            for (const f of r.value.files) {
+              if (!seenIds.has(f.id)) {
+                seenIds.add(f.id);
+                allFiles.push(f);
+              }
+            }
+          }
+        }
+        importedPhotos = allFiles
           .filter(f => f.content_type && f.content_type.startsWith('image/'))
           .map(f => ({
             id: f.id,

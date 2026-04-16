@@ -1495,33 +1495,6 @@ const BatimentForm = ({
             )}
           </div>
           
-          {/* Galerie photos (imports PFM Transfer) */}
-          {editData.photos?.length > 1 && (
-            <div style={{ padding: '0.5rem 1rem', display: 'flex', gap: '0.5rem', overflowX: 'auto', backgroundColor: '#1e293b' }}>
-              {editData.photos.filter(p => p.url).map((photo, idx) => (
-                <img
-                  key={photo.id || idx}
-                  src={photo.url}
-                  alt={photo.description || `Photo ${idx + 1}`}
-                  title={photo.description || `Photo ${idx + 1}`}
-                  data-testid={`gallery-photo-${idx}`}
-                  onClick={() => setBuildingPhoto({ url: photo.url, source: 'uploaded' })}
-                  style={{
-                    width: '60px', height: '45px', objectFit: 'cover', borderRadius: '4px',
-                    cursor: 'pointer', border: buildingPhoto?.url === photo.url ? '2px solid #3b82f6' : '2px solid transparent',
-                    flexShrink: 0, opacity: buildingPhoto?.url === photo.url ? 1 : 0.7,
-                    transition: 'all 0.15s',
-                  }}
-                  onMouseEnter={(e) => e.target.style.opacity = 1}
-                  onMouseLeave={(e) => { if (buildingPhoto?.url !== photo.url) e.target.style.opacity = 0.7; }}
-                />
-              ))}
-              <span style={{ color: '#94a3b8', fontSize: '0.75rem', alignSelf: 'center', whiteSpace: 'nowrap', paddingLeft: '0.5rem' }}>
-                {editData.photos.length} photos
-              </span>
-            </div>
-          )}
-          
           <Button 
             variant="ghost" 
             onClick={handleCloseWithSave}
