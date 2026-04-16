@@ -838,6 +838,42 @@ async def fix_existing_batiments(
             )
             fixed += 1
 
+        # Matcher les titres des photos depuis liste_piece_jointe → stored_files
+        lp = record.get("liste_piece_jointe", {})
+        if isinstance(lp, dict):
+            pj_items = lp.get("piece_jointe", [])
+            if isinstance(pj_items, dict):
+                pj_items = [pj_items]
+            if isinstance(pj_items, list) and pj_items:
+                # Construire un map id_fichier → nom/titre
+                title_map = {}
+                for pj in pj_items:
+                    if not isinstance(pj, dict):
+                        continue
+                    raw_id = pj.get("id_fichier", "")
+                    nom = pj.get("nom", "")
+                    if raw_id and nom:
+                        # Extraire le numéro depuis "📄 Fichier #40534"
+                        num = re.sub(r"[^\d]", "", str(raw_id))
+                        if num:
+                            title_map[num] = nom
+
+                if title_map:
+                    # Chercher les stored_files pour ce bâtiment
+                    files = await db.stored_files.find(
+                        {"entity_id": doc["id"]},
+                        {"_id": 0, "id": 1, "original_filename": 1}
+                    ).to_list(100)
+                    for f in files:
+                        fname = f.get("original_filename", "")
+                        # Extraire le numéro depuis "40534.jpg"
+                        file_num = re.sub(r"\.[^.]+$", "", fname)
+                        if file_num in title_map:
+                            await db.stored_files.update_one(
+                                {"id": f["id"]},
+                                {"$set": {"description": title_map[file_num]}}
+                            )
+
     return {"fixed": fixed, "message": f"{fixed} bâtiment(s) enrichi(s) depuis pfm_record"}
 
 
