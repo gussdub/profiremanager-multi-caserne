@@ -114,7 +114,7 @@ async def _match_address(address: str, city: str, tenant_id: str) -> Optional[st
 
 def _extract_address_city(record: dict) -> tuple:
     """Extrait adresse et ville d'un record (plusieurs formats possibles)."""
-    addr = record.get("dossier_adresse") or record.get("adresse") or record.get("adresse_appel") or ""
+    addr = record.get("id_dossier_adresse") or record.get("dossier_adresse") or record.get("adresse") or record.get("adresse_appel") or ""
     # Sécuriser si addr est un objet PremLigne
     if isinstance(addr, dict):
         addr = _safe_address_str(addr)
@@ -1678,6 +1678,23 @@ async def _handle_prevention(record: dict, tenant, user, source: str) -> dict:
 
     addr, city = _extract_address_city(record)
 
+    # Match bâtiment par adresse
+    bat_id = await _match_address(addr, city, tenant.id)
+
+    # Si pas de match par adresse, chercher par premligne_id du dossier_adresse
+    if not bat_id:
+        dossier_ref = record.get("id_dossier_adresse") or ""
+        if dossier_ref and isinstance(dossier_ref, str):
+            # Parfois c'est un label "*40428 - 10 chemin JORDAN" contenant un ID numérique
+            num_match = re.match(r"\*?(\d+)", dossier_ref.strip())
+            if num_match:
+                bat = await db.batiments.find_one(
+                    {"tenant_id": tenant.id, "premligne_id": num_match.group(1)},
+                    {"_id": 0, "id": 1}
+                )
+                if bat:
+                    bat_id = bat["id"]
+
     doc_id = str(uuid.uuid4())
     doc = {
         "id": doc_id,
@@ -1706,12 +1723,13 @@ async def _handle_prevention(record: dict, tenant, user, source: str) -> dict:
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
 
-    bat_id = await _match_address(addr, city, tenant.id)
+    matched_fks = {}
     if bat_id:
         doc["batiment_id"] = bat_id
+        matched_fks["batiment_id"] = bat_id
 
     await db.inspections.insert_one(doc)
-    return {"status": "created", "entity_type": "Prevention", "id": doc_id, "batiment_id": doc.get("batiment_id")}
+    return {"status": "created", "entity_type": "Prevention", "id": doc_id, "batiment_id": bat_id, "matched_fks": matched_fks}
 
 
 # ======================== RCCI ========================
