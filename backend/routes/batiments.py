@@ -289,6 +289,28 @@ async def get_batiments(
         {"_id": 0}
     ).sort("nom_etablissement", 1).to_list(5000)
     
+    # Enrichir les photo_url depuis stored_files pour les bâtiments importés sans photo
+    bat_ids_without_photo = [b["id"] for b in batiments if not b.get("photo_url") and not b.get("photo_blob_name")]
+    if bat_ids_without_photo:
+        from services.azure_storage import generate_sas_url
+        # Chercher la première image par bâtiment dans stored_files
+        pipeline = [
+            {"$match": {"entity_id": {"$in": bat_ids_without_photo}, "is_deleted": False, "content_type": {"$regex": "^image/"}}},
+            {"$sort": {"uploaded_at": 1}},
+            {"$group": {"_id": "$entity_id", "blob_name": {"$first": "$blob_name"}, "storage_path": {"$first": "$storage_path"}}},
+        ]
+        photo_map = {}
+        async for doc in db.stored_files.aggregate(pipeline):
+            blob = doc.get("blob_name") or doc.get("storage_path")
+            if blob:
+                try:
+                    photo_map[doc["_id"]] = generate_sas_url(blob)
+                except Exception:
+                    pass
+        for b in batiments:
+            if b["id"] in photo_map:
+                b["photo_url"] = photo_map[b["id"]]
+    
     return batiments
 
 
