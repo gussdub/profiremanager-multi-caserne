@@ -386,6 +386,58 @@ async def fix_object_fields(
     return {"fixed": fixed, "message": f"{fixed} champ(s) objet converti(s) en string"}
 
 
+@router.post("/{tenant_slug}/import/merge-duplicate-files")
+async def merge_duplicate_files(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Détecte les bâtiments en doublon (même adresse+ville) et migre les stored_files
+    du doublon vers le bâtiment le plus récent (celui qui a pfm_record le plus complet).
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Grouper les bâtiments par adresse+ville
+    cursor = db.batiments.find(
+        {"tenant_id": tenant.id},
+        {"_id": 0, "id": 1, "adresse_civique": 1, "ville": 1, "created_at": 1, "pfm_record": 1}
+    )
+    by_addr = {}
+    async for doc in cursor:
+        key = f"{(doc.get('adresse_civique') or '').strip().lower()}|{(doc.get('ville') or '').strip().lower()}"
+        if key not in by_addr:
+            by_addr[key] = []
+        by_addr[key].append(doc)
+    
+    migrated = 0
+    duplicates_resolved = 0
+    
+    for key, docs in by_addr.items():
+        if len(docs) < 2:
+            continue
+        
+        # Trier : le plus récent en premier
+        docs.sort(key=lambda d: d.get("created_at", ""), reverse=True)
+        target = docs[0]  # Le plus récent (celui affiché)
+        
+        for source_doc in docs[1:]:
+            # Migrer les stored_files du doublon vers le target
+            result = await db.stored_files.update_many(
+                {"entity_id": source_doc["id"]},
+                {"$set": {"entity_id": target["id"]}}
+            )
+            if result.modified_count > 0:
+                migrated += result.modified_count
+                logger.info(f"[MERGE] Migré {result.modified_count} fichiers de {source_doc['id']} vers {target['id']} ({key})")
+            duplicates_resolved += 1
+    
+    return {
+        "duplicates_found": duplicates_resolved,
+        "files_migrated": migrated,
+        "message": f"{migrated} fichier(s) migré(s) depuis {duplicates_resolved} doublon(s)"
+    }
+
+
 # ======================== GESTION DES DOUBLONS ========================
 
 async def _queue_duplicate(tenant_id: str, entity_type: str, collection: str,
