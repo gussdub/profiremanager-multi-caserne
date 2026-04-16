@@ -340,84 +340,90 @@ const BatimentForm = ({
 
   useEffect(() => {
     if (batiment) {
+      // Charger le bâtiment enrichi via le detail endpoint (photos, contacts)
+      const loadEnrichedBatiment = async () => {
+        try {
+          const token = getTenantToken();
+          const response = await axios.get(
+            buildApiUrl(tenantSlug, `/batiments/${batiment.id}`),
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          const enriched = response.data;
+          setEditData({ ...enriched });
+          
+          // Photos
+          if (enriched.photo_url) {
+            setBuildingPhoto({ url: enriched.photo_url, source: 'uploaded' });
+          } else if (batiment.photo_url) {
+            setBuildingPhoto({ url: batiment.photo_url, source: 'uploaded' });
+          } else {
+            setBuildingPhoto(null);
+          }
+          
+          // Contacts
+          initContacts(enriched);
+        } catch {
+          // Fallback: utiliser les données de la liste
+          setEditData({ ...batiment });
+          if (batiment.photo_url) {
+            setBuildingPhoto({ url: batiment.photo_url, source: 'uploaded' });
+          } else {
+            setBuildingPhoto(null);
+          }
+          initContacts(batiment);
+        }
+      };
+      
+      // Initialiser immédiatement avec les données de la liste
       setEditData({ ...batiment });
+      loadEnrichedBatiment();
       fetchInspections();
       fetchNonConformites();
       fetchDependancesCount();
-      
-      // Initialiser les contacts depuis les données existantes
-      const existingContacts = [];
-      // 1. contacts_ressources importés (PFM Transfer)
-      if (batiment.contacts_ressources?.length) {
-        batiment.contacts_ressources.forEach((c, i) => {
-          existingContacts.push({
-            type: i === 0 ? 'Propriétaire' : 'Autre',
-            nom: c.nom || '',
-            prenom: c.prenom || '',
-            telephone: c.telephone || '',
-            courriel: c.courriel || '',
-            adresse: c.adresse || '',
-            ville: c.ville || '',
-            code_postal: c.code_postal || '',
-          });
-        });
-      }
-      // 2. Champs legacy proprietaire/locataire/gestionnaire
-      if (!existingContacts.length) {
-        if (batiment.proprietaire_nom || batiment.proprietaire_prenom) {
-          existingContacts.push({
-            type: 'Propriétaire',
-            nom: batiment.proprietaire_nom || '',
-            prenom: batiment.proprietaire_prenom || '',
-            telephone: batiment.proprietaire_telephone || '',
-            courriel: batiment.proprietaire_courriel || '',
-            adresse: batiment.proprietaire_adresse || '',
-            ville: batiment.proprietaire_ville || '',
-            code_postal: batiment.proprietaire_code_postal || '',
-          });
-        }
-        if (batiment.locataire_nom || batiment.locataire_prenom) {
-          existingContacts.push({
-            type: 'Locataire',
-            nom: batiment.locataire_nom || '',
-            prenom: batiment.locataire_prenom || '',
-            telephone: batiment.locataire_telephone || '',
-            courriel: batiment.locataire_courriel || '',
-            adresse: '', ville: '', code_postal: '',
-          });
-        }
-        if (batiment.gestionnaire_nom || batiment.gestionnaire_prenom) {
-          existingContacts.push({
-            type: 'Gestionnaire',
-            nom: batiment.gestionnaire_nom || '',
-            prenom: batiment.gestionnaire_prenom || '',
-            telephone: batiment.gestionnaire_telephone || '',
-            courriel: batiment.gestionnaire_courriel || '',
-            adresse: batiment.gestionnaire_adresse || '',
-            ville: batiment.gestionnaire_ville || '',
-            code_postal: batiment.gestionnaire_code_postal || '',
-          });
-        }
-      }
-      // 3. contacts array direct
-      if (batiment.contacts?.length && !existingContacts.length) {
-        setContacts(batiment.contacts);
-      } else {
-        setContacts(existingContacts);
-      }
-      
-      // Charger la photo si elle existe dans le bâtiment
-      if (batiment.photo_url) {
-        console.log('📸 Chargement de la photo existante du bâtiment');
-        setBuildingPhoto({ 
-          url: batiment.photo_url,
-          source: 'uploaded'
-        });
-      } else {
-        setBuildingPhoto(null);
-      }
     }
   }, [batiment]);
+  
+  const initContacts = (bat) => {
+    const existingContacts = [];
+    if (bat.contacts?.length) {
+      setContacts(bat.contacts);
+      return;
+    }
+    if (bat.contacts_ressources?.length) {
+      bat.contacts_ressources.forEach((c, i) => {
+        existingContacts.push({
+          type: i === 0 ? 'Propriétaire' : 'Autre',
+          nom: c.nom || '', prenom: c.prenom || '',
+          telephone: c.telephone || '', courriel: c.courriel || '',
+          adresse: c.adresse || '', ville: c.ville || '', code_postal: c.code_postal || '',
+        });
+      });
+    }
+    if (!existingContacts.length) {
+      if (bat.proprietaire_nom || bat.proprietaire_prenom) {
+        existingContacts.push({
+          type: 'Propriétaire', nom: bat.proprietaire_nom || '', prenom: bat.proprietaire_prenom || '',
+          telephone: bat.proprietaire_telephone || '', courriel: bat.proprietaire_courriel || '',
+          adresse: bat.proprietaire_adresse || '', ville: bat.proprietaire_ville || '', code_postal: bat.proprietaire_code_postal || '',
+        });
+      }
+      if (bat.locataire_nom || bat.locataire_prenom) {
+        existingContacts.push({
+          type: 'Locataire', nom: bat.locataire_nom || '', prenom: bat.locataire_prenom || '',
+          telephone: bat.locataire_telephone || '', courriel: bat.locataire_courriel || '',
+          adresse: '', ville: '', code_postal: '',
+        });
+      }
+      if (bat.gestionnaire_nom || bat.gestionnaire_prenom) {
+        existingContacts.push({
+          type: 'Gestionnaire', nom: bat.gestionnaire_nom || '', prenom: bat.gestionnaire_prenom || '',
+          telephone: bat.gestionnaire_telephone || '', courriel: bat.gestionnaire_courriel || '',
+          adresse: bat.gestionnaire_adresse || '', ville: bat.gestionnaire_ville || '', code_postal: bat.gestionnaire_code_postal || '',
+        });
+      }
+    }
+    setContacts(existingContacts);
+  };
 
   // Charger le nombre de dépendances
   const fetchDependancesCount = async () => {
@@ -1488,6 +1494,33 @@ const BatimentForm = ({
               </div>
             )}
           </div>
+          
+          {/* Galerie photos (imports PFM Transfer) */}
+          {editData.photos?.length > 1 && (
+            <div style={{ padding: '0.5rem 1rem', display: 'flex', gap: '0.5rem', overflowX: 'auto', backgroundColor: '#1e293b' }}>
+              {editData.photos.filter(p => p.url).map((photo, idx) => (
+                <img
+                  key={photo.id || idx}
+                  src={photo.url}
+                  alt={photo.description || `Photo ${idx + 1}`}
+                  title={photo.description || `Photo ${idx + 1}`}
+                  data-testid={`gallery-photo-${idx}`}
+                  onClick={() => setBuildingPhoto({ url: photo.url, source: 'uploaded' })}
+                  style={{
+                    width: '60px', height: '45px', objectFit: 'cover', borderRadius: '4px',
+                    cursor: 'pointer', border: buildingPhoto?.url === photo.url ? '2px solid #3b82f6' : '2px solid transparent',
+                    flexShrink: 0, opacity: buildingPhoto?.url === photo.url ? 1 : 0.7,
+                    transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={(e) => e.target.style.opacity = 1}
+                  onMouseLeave={(e) => { if (buildingPhoto?.url !== photo.url) e.target.style.opacity = 0.7; }}
+                />
+              ))}
+              <span style={{ color: '#94a3b8', fontSize: '0.75rem', alignSelf: 'center', whiteSpace: 'nowrap', paddingLeft: '0.5rem' }}>
+                {editData.photos.length} photos
+              </span>
+            </div>
+          )}
           
           <Button 
             variant="ghost" 
