@@ -297,6 +297,7 @@ const BatimentForm = ({
       { value: 'multi_3_8', label: 'Multifamiliale (3-8 logements)' },
       { value: 'multi_9', label: 'Multifamiliale (9+ logements)' },
       { value: 'copropriete', label: 'Copropriété' },
+      { value: 'chalet', label: 'Chalet' },
       { value: 'maison_mobile', label: 'Maison mobile / Parc de maisons mobiles' }
     ],
     'D': [

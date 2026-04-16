@@ -238,6 +238,27 @@ def _classification_to_groupe(classification: str) -> str:
     return ""
 
 
+def _normalize_sous_type(label: str) -> str:
+    """Convertit un label PremLigne (Unifamiliale, Chalet) en code frontend (unifamiliale, chalet)."""
+    if not label:
+        return ""
+    mapping = {
+        "unifamiliale": "unifamiliale", "bifamiliale": "bifamiliale", "duplex": "bifamiliale",
+        "triplex": "multi_3_8", "multifamiliale": "multi_3_8",
+        "copropriété": "copropriete", "copropriete": "copropriete", "condo": "copropriete",
+        "chalet": "chalet", "maison mobile": "maison_mobile", "roulotte": "maison_mobile",
+        "bureau": "bureau", "magasin": "magasin", "restaurant": "restaurant",
+        "hôtel": "hotel", "hotel": "hotel", "motel": "hotel",
+        "école": "ecole", "ecole": "ecole", "hôpital": "hopital", "hopital": "hopital",
+        "chsld": "chsld", "église": "eglise", "eglise": "eglise",
+        "entrepôt": "entrepot", "entrepot": "entrepot", "usine": "usine",
+        "atelier": "atelier", "ferme": "ferme", "grange": "grange",
+    }
+    key = label.strip().lower()
+    return mapping.get(key, key.replace(" ", "_").replace("-", "_"))
+
+
+
 def _safe_address_str(value) -> str:
     """
     Convertit une adresse PremLigne en string propre.
@@ -716,6 +737,11 @@ async def fix_existing_batiments(
             groupe = _classification_to_groupe(classif)
             if groupe:
                 update["groupe_occupation"] = groupe
+
+        # Normaliser sous_type_batiment (Unifamiliale → unifamiliale, Chalet → chalet)
+        type_bat = record.get("id_type_batiment") or ""
+        if type_bat:
+            update["sous_type_batiment"] = _normalize_sous_type(type_bat)
 
         # Notes (ne pas écraser si déjà rempli manuellement)
         note = record.get("note") or record.get("notes") or ""
@@ -1520,7 +1546,7 @@ async def _handle_dossier_adresse(record: dict, tenant, user, source: str) -> di
         "valeur_terrain": _parse_float(record.get("valeur_terrain")),
         # Classification / types (labels textuels de PremLigne)
         "niveau_risque": record.get("id_categ_risque") or record.get("categorie_risque") or "Faible",
-        "sous_type_batiment": record.get("id_type_batiment") or record.get("type_batiment") or "",
+        "sous_type_batiment": _normalize_sous_type(record.get("id_type_batiment") or record.get("type_batiment") or ""),
         "classification": record.get("id_classification") or "",
         "groupe_occupation": _classification_to_groupe(record.get("id_classification") or ""),
         "type_construction": record.get("id_type_construction") or "",
