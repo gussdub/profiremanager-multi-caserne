@@ -258,6 +258,20 @@ def _normalize_sous_type(label: str) -> str:
     return mapping.get(key, key.replace(" ", "_").replace("-", "_"))
 
 
+def _normalize_niveau_risque(label: str) -> str:
+    """Convertit un label PremLigne (Risques faibles) en code frontend (Faible)."""
+    if not label:
+        return "Moyen"
+    mapping = {
+        "risques faibles": "Faible", "risque faible": "Faible", "faible": "Faible",
+        "risques moyens": "Moyen", "risque moyen": "Moyen", "moyen": "Moyen",
+        "risques élevés": "Élevé", "risque élevé": "Élevé", "élevé": "Élevé", "eleve": "Élevé",
+        "risques très élevés": "Très élevé", "très élevé": "Très élevé", "tres eleve": "Très élevé",
+    }
+    return mapping.get(label.strip().lower(), label)
+
+
+
 
 def _safe_address_str(value) -> str:
     """
@@ -715,8 +729,6 @@ async def fix_existing_batiments(
 
         # Champs texte
         for pfm_key, db_key in [
-            ("id_categ_risque", "niveau_risque"),
-            ("id_type_batiment", "sous_type_batiment"),
             ("id_classification", "classification"),
             ("id_type_construction", "type_construction"),
             ("id_type_toit", "type_toit"),
@@ -742,6 +754,11 @@ async def fix_existing_batiments(
         type_bat = record.get("id_type_batiment") or ""
         if type_bat:
             update["sous_type_batiment"] = _normalize_sous_type(type_bat)
+
+        # Normaliser niveau_risque (Risques faibles → Faible)
+        risque = record.get("id_categ_risque") or ""
+        if risque:
+            update["niveau_risque"] = _normalize_niveau_risque(risque)
 
         # Notes (ne pas écraser si déjà rempli manuellement)
         note = record.get("note") or record.get("notes") or ""
@@ -1581,7 +1598,7 @@ async def _handle_dossier_adresse(record: dict, tenant, user, source: str) -> di
         "valeur_fonciere": valeur_fonciere,
         "valeur_terrain": _parse_float(record.get("valeur_terrain")),
         # Classification / types (labels textuels de PremLigne)
-        "niveau_risque": record.get("id_categ_risque") or record.get("categorie_risque") or "Faible",
+        "niveau_risque": _normalize_niveau_risque(record.get("id_categ_risque") or record.get("categorie_risque") or ""),
         "sous_type_batiment": _normalize_sous_type(record.get("id_type_batiment") or record.get("type_batiment") or ""),
         "classification": record.get("id_classification") or "",
         "groupe_occupation": _classification_to_groupe(record.get("id_classification") or ""),
