@@ -99,16 +99,38 @@ async def _match_address(address: str, city: str, tenant_id: str) -> Optional[st
     if not address:
         return None
     batiments = await _get_batiments_cached(tenant_id)
+
+    # Nettoyer l'adresse PremLigne — retirer les préfixes (ex: "2 A + 1 E, 10 chemin JORDAN")
+    clean_input = address
+    # Format PremLigne id_dossier_adresse: "prefixe, NUM rue NOM, *Ville"
+    # Extraire le numéro civique + rue en cherchant le pattern numéro+rue
+    input_variants = [clean_input]
+    if "," in clean_input:
+        parts = [p.strip().lstrip("*") for p in clean_input.split(",")]
+        input_variants.extend(parts)
+        # Essayer aussi les parties qui commencent par un numéro (adresse civique)
+        for p in parts:
+            if p and p[0].isdigit():
+                input_variants.append(p)
+
     for bat in batiments:
         bat_addr = bat.get("adresse_civique", "")
         bat_ville = bat.get("ville", "")
-        clean_addr = bat_addr
+        clean_bat = bat_addr
         if "," in bat_addr:
-            parts = bat_addr.split(",")
-            clean_addr = ",".join(parts[:-1]).strip()
-        match, _ = is_same_address(address, city, clean_addr, bat_ville)
-        if match:
-            return bat["id"]
+            bat_parts = bat_addr.split(",")
+            clean_bat = ",".join(bat_parts[:-1]).strip()
+
+        for variant in input_variants:
+            match, _ = is_same_address(variant, city, clean_bat, bat_ville)
+            if match:
+                return bat["id"]
+            # Match partiel: si l'adresse bâtiment est contenue dans le variant ou vice versa
+            v_lower = variant.lower().strip()
+            b_lower = clean_bat.lower().strip()
+            if b_lower and len(b_lower) > 5 and (b_lower in v_lower or v_lower in b_lower):
+                return bat["id"]
+
     return None
 
 
@@ -483,6 +505,66 @@ async def merge_duplicate_files(
         "files_migrated": migrated,
         "message": f"{migrated} fichier(s) migré(s) depuis {duplicates_resolved} doublon(s)"
     }
+
+
+@router.post("/{tenant_slug}/import/fix-orphan-inspections")
+async def fix_orphan_inspections(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Relie les inspections importées sans batiment_id au bon bâtiment par matching d'adresse.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+
+    # Invalider le cache des bâtiments
+    _batiments_cache.pop(tenant.id, None)
+
+    cursor = db.inspections.find(
+        {"tenant_id": tenant.id, "batiment_id": {"$in": [None, ""]}},
+        {"_id": 0, "id": 1, "adresse": 1, "ville": 1, "external_id": 1, "pfm_record": 1}
+    )
+
+    fixed = 0
+    async for doc in cursor:
+        addr = doc.get("adresse") or ""
+        city = doc.get("ville") or ""
+
+        # Essayer aussi depuis pfm_record.id_dossier_adresse
+        if not addr and doc.get("pfm_record"):
+            addr = doc["pfm_record"].get("id_dossier_adresse") or ""
+            if isinstance(addr, dict):
+                addr = _safe_address_str(addr)
+            if "," in addr:
+                parts = addr.split(",")
+                city_candidate = parts[-1].strip().lstrip("*").strip()
+                if city_candidate and not city:
+                    city = city_candidate
+
+        bat_id = await _match_address(addr, city, tenant.id)
+
+        # Fallback: chercher par premligne_id du dossier_adresse
+        if not bat_id and doc.get("pfm_record"):
+            dossier_ref = doc["pfm_record"].get("id_dossier_adresse") or ""
+            if isinstance(dossier_ref, str):
+                num_match = re.match(r"\*?(\d+)", dossier_ref.strip())
+                if num_match:
+                    bat = await db.batiments.find_one(
+                        {"tenant_id": tenant.id, "premligne_id": num_match.group(1)},
+                        {"_id": 0, "id": 1}
+                    )
+                    if bat:
+                        bat_id = bat["id"]
+
+        if bat_id:
+            await db.inspections.update_one(
+                {"id": doc["id"]},
+                {"$set": {"batiment_id": bat_id}}
+            )
+            fixed += 1
+            logger.info(f"[FIX] Inspection {doc.get('external_id', doc['id'])} → batiment {bat_id}")
+
+    return {"fixed": fixed, "message": f"{fixed} inspection(s) reliée(s) à un bâtiment"}
 
 
 # ======================== GESTION DES DOUBLONS ========================
