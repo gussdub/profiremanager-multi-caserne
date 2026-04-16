@@ -2334,13 +2334,48 @@ const BatimentForm = ({
             {(() => {
               const pd = editData.produits_dangereux;
               if (!pd) return null;
-              // Normaliser en tableau
               let items = [];
               if (Array.isArray(pd)) items = pd;
               else if (pd.produit_dangereux) {
                 items = Array.isArray(pd.produit_dangereux) ? pd.produit_dangereux : [pd.produit_dangereux];
               }
               if (!items.length) return null;
+              
+              // Mapping ERG (Guide des mesures d'urgence) — codes page jaune → substance
+              const pageJauneMap = {
+                '115': 'Gaz inflammables (hydrogène)', '116': 'Gaz inflammables (méthane)',
+                '117': 'Gaz inflammables (butane)', '118': 'Gaz inflammables (acétylène)',
+                '124': 'Gaz toxiques/corrosifs', '125': 'Gaz corrosifs (chlore)',
+                '127': 'Liquides inflammables (essence)', '128': 'Liquides inflammables (diesel)',
+                '129': 'Propane', '130': 'Liquides inflammables (solvants)',
+                '131': 'Liquides inflammables (toluène)', '132': 'Liquides inflammables (kérosène)',
+                '133': 'Liquides inflammables', '134': 'Liquides combustibles (mazout)',
+                '135': 'Solides inflammables', '136': 'Solides inflammables (soufre)',
+                '137': 'Solides oxydants', '138': 'Gaz inertes',
+                '139': 'Liquides toxiques', '140': 'Oxydants',
+                '141': 'Peroxydes organiques', '142': 'Acides',
+                '143': 'Pesticides', '144': 'Matières corrosives',
+                '145': 'Substances radioactives', '146': 'Substances réactives à l\'eau',
+                '147': 'Lithium', '148': 'Matières dangereuses diverses',
+                '149': 'Ammoniac', '150': 'Gaz toxiques (CO)',
+                '151': 'Huiles essentielles', '152': 'Peintures/Laques',
+                '153': 'Matières dangereuses diverses', '154': 'Engrais chimiques',
+                '155': 'Explosifs', '156': 'Produits chimiques organiques',
+                '157': 'Produits chimiques organiques', '158': 'Matières infectieuses',
+                '159': 'Halogénures', '160': 'Métaux réactifs',
+                '161': 'Métaux radioactifs', '162': 'Cyanures',
+                '163': 'Fluorures', '164': 'Composés arsenicaux',
+                '165': 'Composés de plomb', '166': 'Composés de mercure',
+                '167': 'Composés de sélénium', '168': 'Acide fluorhydrique',
+                '170': 'Métaux (magnésium)', '171': 'Métaux (aluminium)',
+              };
+              
+              const getPageJauneLabel = (code) => {
+                if (!code) return '-';
+                const name = pageJauneMap[String(code)];
+                return name || `Code ${code}`;
+              };
+              
               return (
                 <Card data-testid="produits-dangereux-section" style={{ padding: '1.5rem', border: '2px solid #ef4444' }}>
                   <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -2353,8 +2388,8 @@ const BatimentForm = ({
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
                       <thead>
                         <tr style={{ borderBottom: '2px solid #fecaca', textAlign: 'left' }}>
+                          <th style={{ padding: '0.5rem 0.75rem', color: '#991b1b', fontWeight: '600' }}>Produit</th>
                           <th style={{ padding: '0.5rem 0.75rem', color: '#991b1b', fontWeight: '600' }}>Équip. raccordé</th>
-                          <th style={{ padding: '0.5rem 0.75rem', color: '#991b1b', fontWeight: '600' }}>Page jaune</th>
                           <th style={{ padding: '0.5rem 0.75rem', color: '#991b1b', fontWeight: '600' }}>Localisation</th>
                           <th style={{ padding: '0.5rem 0.75rem', color: '#991b1b', fontWeight: '600' }}>Contenant</th>
                           <th style={{ padding: '0.5rem 0.75rem', color: '#991b1b', fontWeight: '600' }}>Nbr</th>
@@ -2364,8 +2399,12 @@ const BatimentForm = ({
                       <tbody>
                         {items.map((p, idx) => (
                           <tr key={idx} style={{ borderBottom: '1px solid #fee2e2', backgroundColor: idx % 2 === 0 ? '#fff5f5' : 'white' }}>
+                            <td style={{ padding: '0.5rem 0.75rem', fontWeight: '600' }}>
+                              <span style={{ backgroundColor: '#fef3c7', color: '#92400e', padding: '0.125rem 0.5rem', borderRadius: '4px', fontSize: '0.8rem' }}>
+                                {getPageJauneLabel(p.id_page_jaune)}
+                              </span>
+                            </td>
                             <td style={{ padding: '0.5rem 0.75rem' }}>{p.equip_raccorde || '-'}</td>
-                            <td style={{ padding: '0.5rem 0.75rem' }}>{p.id_page_jaune || '-'}</td>
                             <td style={{ padding: '0.5rem 0.75rem' }}>{p.localisation || (p.secteur ? `Secteur ${p.secteur}` : '-')}</td>
                             <td style={{ padding: '0.5rem 0.75rem' }}>{p.contenant || '-'}</td>
                             <td style={{ padding: '0.5rem 0.75rem' }}>{p.nbr_contenant || '-'}</td>
