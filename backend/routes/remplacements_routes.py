@@ -119,7 +119,7 @@ async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
         # C'est là que le frontend sauvegarde les paramètres
         parametres_data = await db.parametres_remplacements.find_one({"tenant_id": tenant_id})
         if not parametres_data:
-            mode_notification = "un_par_un"
+            mode_notification = "sequentiel"
             # Délais par défaut selon la priorité
             delais_par_priorite = {
                 "urgent": 5,
@@ -134,7 +134,7 @@ async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
             heure_fin_silence = "07:00"
             logger.info(f"⚙️ Paramètres remplacements: Aucun trouvé, utilisation des valeurs par défaut")
         else:
-            mode_notification = parametres_data.get("mode_notification", "un_par_un")
+            mode_notification = parametres_data.get("mode_notification", "sequentiel")
             # Nouveaux délais par priorité (avec fallback sur l'ancien délai unique)
             delai_fallback = parametres_data.get("delai_attente_minutes") or (parametres_data.get("delai_attente_heures", 2) * 60)
             delais_par_priorite = {
@@ -336,10 +336,20 @@ async def lancer_recherche_remplacant(demande_id: str, tenant_id: str):
             
             return
         
-        if mode_notification == "multiple":
-            nombre_a_contacter = min(nombre_simultane, len(remplacants))
-        else:
+        # Déterminer le nombre de remplaçants à contacter selon le mode
+        if mode_notification == "simultane":
+            # Mode Simultané : contacter TOUS les remplaçants potentiels (avec limite max_contacts)
+            nombre_a_contacter = min(len(remplacants), max_contacts)
+            logger.info(f"🎯 Mode SIMULTANÉ: contact de {nombre_a_contacter}/{len(remplacants)} remplaçants (limite: {max_contacts})")
+        elif mode_notification == "groupe_sequentiel":
+            # Mode Groupes Séquentiels : contacter un groupe de taille N
+            taille_groupe = parametres_data.get("taille_groupe", 3) if parametres_data else 3
+            nombre_a_contacter = min(taille_groupe, len(remplacants))
+            logger.info(f"🎯 Mode GROUPE SÉQUENTIEL: contact de {nombre_a_contacter} remplaçants (taille groupe: {taille_groupe})")
+        else:  # "sequentiel" ou valeur par défaut
+            # Mode Séquentiel : contacter UNE personne à la fois
             nombre_a_contacter = 1
+            logger.info(f"🎯 Mode SÉQUENTIEL: contact de 1 remplaçant à la fois")
         
         remplacants_a_contacter = remplacants[:nombre_a_contacter]
         
