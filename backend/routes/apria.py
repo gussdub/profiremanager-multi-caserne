@@ -1152,6 +1152,19 @@ async def create_inspection_unifiee(
     
     await db.inspections_unifiees.insert_one(inspection)
     
+    # Mettre à jour le point d'eau / actif avec la date et le statut de l'inspection
+    if asset_type in ["point_eau", "borne_seche", "borne_fontaine", "borne"]:
+        update_fields = {
+            "date_derniere_inspection": date_inspection,
+            "statut_inspection": "ok" if inspection_data.get("conforme", True) else "anomalie",
+            "etat": "fonctionnelle" if inspection_data.get("conforme", True) else "defectueux",
+            "statut_couleur": "vert" if inspection_data.get("conforme", True) else "rouge",
+        }
+        await db.points_eau.update_one(
+            {"id": asset_id, "tenant_id": tenant.id},
+            {"$set": update_fields}
+        )
+    
     # Si non conforme et demande de remplacement activée (pour équipements et EPI)
     if asset_type in ["equipement", "epi"] and not inspection_data.get("conforme") and inspection_data.get("creer_demande_remplacement"):
         demande = {

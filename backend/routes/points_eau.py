@@ -795,3 +795,60 @@ async def import_points_eau(
     logger.info(f"Import points d'eau terminé: {results['created']} créés, {results['updated']} mis à jour, {results['skipped']} ignorés, {len(results['errors'])} erreurs")
     
     return results
+
+
+@router.post("/{tenant_slug}/points-eau/sync-inspections")
+async def sync_inspections_status(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Synchronise le statut des bornes depuis les inspections unifiées existantes.
+    Met à jour date_derniere_inspection, statut_inspection, etat, statut_couleur.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    points = await db.points_eau.find(
+        {"tenant_id": tenant.id},
+        {"_id": 0, "id": 1}
+    ).to_list(length=None)
+    
+    fixed = 0
+    for point in points:
+        # Chercher la dernière inspection (unifiee ou bornes_seches)
+        last_unifiee = await db.inspections_unifiees.find_one(
+            {"asset_id": point["id"], "tenant_id": tenant.id},
+            {"_id": 0, "date_inspection": 1, "conforme": 1, "has_defaut": 1},
+            sort=[("date_inspection", -1)]
+        )
+        last_bs = await db.inspections_bornes_seches.find_one(
+            {"point_eau_id": point["id"], "tenant_id": tenant.id},
+            {"_id": 0, "date_inspection": 1, "conforme": 1, "has_defaut": 1},
+            sort=[("date_inspection", -1)]
+        )
+        
+        # Prendre la plus récente
+        last = None
+        if last_unifiee and last_bs:
+            last = last_unifiee if (last_unifiee.get("date_inspection", "") >= last_bs.get("date_inspection", "")) else last_bs
+        else:
+            last = last_unifiee or last_bs
+        
+        if last:
+            conforme = last.get("conforme", True)
+            has_defaut = last.get("has_defaut", False)
+            is_ok = conforme and not has_defaut
+            
+            update = {
+                "date_derniere_inspection": last["date_inspection"],
+                "statut_inspection": "ok" if is_ok else "anomalie",
+                "etat": "fonctionnelle" if is_ok else "defectueux",
+                "statut_couleur": "vert" if is_ok else "rouge",
+            }
+            await db.points_eau.update_one(
+                {"id": point["id"], "tenant_id": tenant.id},
+                {"$set": update}
+            )
+            fixed += 1
+    
+    return {"fixed": fixed, "message": f"{fixed} borne(s) synchronisée(s) depuis les inspections"}
