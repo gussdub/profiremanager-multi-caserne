@@ -101,59 +101,20 @@ const InspectionsBornesSeches = ({ user }) => {
 
   // Calculer la couleur selon le STATUT D'INSPECTION (pas l'état du point)
   const getInspectionColor = (point) => {
-    // PRIORITÉ 1 : Vérifier l'état explicite du point (hors_service)
-    if (point.etat === 'hors_service') {
-      return '#ef4444'; // Rouge - Hors service
-    }
-
-    // PRIORITÉ 2 : Si statut manuel "à refaire" par admin
-    if (point.statut_inspection === 'a_refaire') {
-      return '#f59e0b'; // Orange - À refaire
-    }
-
-    // PRIORITÉ 3 : Vérifier les dates de tests configurées
-    const today = new Date();
-    const passedTestDates = datesTests
-      .map(dt => new Date(dt.date))
-      .filter(d => today > d)
-      .sort((a, b) => b - a);
-
-    if (passedTestDates.length > 0) {
-      const mostRecentPassedTest = passedTestDates[0];
-      
-      if (point.date_derniere_inspection) {
-        const derniereInspection = new Date(point.date_derniere_inspection);
-        const isAfterTestDate = derniereInspection >= mostRecentPassedTest;
-        
-        if (isAfterTestDate) {
-          // Inspectée APRÈS la date de remise à zéro
-          const isConforme = point.statut_inspection === 'ok' || 
-                            point.etat === 'fonctionnel' || 
-                            point.etat === 'fonctionnelle';
-          if (isConforme) {
-            return '#10b981'; // Vert - Conforme
-          }
-          return '#ef4444'; // Rouge - Non conforme / défectueuse
-        }
-      }
-      
-      // Pas d'inspection après la date de remise à zéro → À inspecter (gris)
-      return '#9ca3af';
-    }
-
-    // PRIORITÉ 4 : Pas de date de test configurée
-    if (!point.date_derniere_inspection && !point.derniere_inspection_date) {
-      return '#9ca3af'; // Gris - Non inspectée
-    }
-
-    // PRIORITÉ 5 : Inspection existante mais pas de campagne active
+    // Utiliser le statut_couleur calculé par le backend (remise à zéro incluse)
+    if (point.statut_couleur === 'vert') return '#10b981';
+    if (point.statut_couleur === 'rouge') return '#ef4444';
+    if (point.statut_couleur === 'gris') return '#9ca3af';
+    
+    // Fallback si pas de statut_couleur (ancien format)
+    if (point.etat === 'hors_service') return '#ef4444';
+    if (point.statut_inspection === 'a_refaire') return '#f59e0b';
+    if (!point.date_derniere_inspection) return '#9ca3af';
+    
     const isConforme = point.statut_inspection === 'ok' || 
                       point.etat === 'fonctionnel' || 
                       point.etat === 'fonctionnelle';
-    if (isConforme) {
-      return '#10b981'; // Vert
-    }
-    return '#ef4444'; // Rouge - Non conforme
+    return isConforme ? '#10b981' : '#ef4444';
   };
   
   // Obtenir le label du statut d'inspection
