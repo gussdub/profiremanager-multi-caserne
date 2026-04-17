@@ -233,7 +233,7 @@ async def get_points_eau(
     type_filter: Optional[str] = None,
     current_user: User = Depends(get_current_user)
 ):
-    """Récupérer tous les points d'eau avec le nombre d'inspections"""
+    """Récupérer tous les points d'eau avec le nombre d'inspections et statut dynamique"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
     query = {"tenant_id": tenant.id}
@@ -245,11 +245,23 @@ async def get_points_eau(
         {"_id": 0}
     ).to_list(length=None)
     
-    # Ajouter le nombre d'inspections pour chaque point
+    # Récupérer la date de remise à zéro (la plus récente dans les paramètres)
+    parametres = tenant.parametres if hasattr(tenant, 'parametres') and tenant.parametres else {}
+    actifs_params = parametres.get('actifs', {})
+    dates_tests = actifs_params.get('dates_tests_bornes_seches', [])
+    date_remise_zero = None
+    if dates_tests:
+        # Trouver la date de remise à zéro la plus récente (dans le passé ou aujourd'hui)
+        now = datetime.now(timezone.utc).isoformat()[:10]
+        dates_passees = [d for d in dates_tests if d.get("date") and d["date"] <= now]
+        if dates_passees:
+            dates_passees.sort(key=lambda d: d["date"], reverse=True)
+            date_remise_zero = dates_passees[0]["date"]
+    
+    # Ajouter le nombre d'inspections et calculer le statut dynamique
     for point in points:
         point_id = point.get("id")
         if point_id:
-            # Compter les inspections dans les deux collections possibles
             count_bornes_seches = await db.inspections_bornes_seches.count_documents({
                 "point_eau_id": point_id,
                 "tenant_id": tenant.id
@@ -259,6 +271,20 @@ async def get_points_eau(
                 "tenant_id": tenant.id
             })
             point["nombre_inspections"] = count_bornes_seches + count_unifiees
+        
+        # Calculer le statut_couleur dynamique selon la date de remise à zéro
+        if date_remise_zero:
+            date_derniere = point.get("date_derniere_inspection", "")
+            if date_derniere and date_derniere[:10] >= date_remise_zero:
+                # Inspection faite APRÈS la remise à zéro → utiliser le résultat
+                if point.get("statut_inspection") == "anomalie" or point.get("etat") in ("defectueux", "défectueux"):
+                    point["statut_couleur"] = "rouge"
+                else:
+                    point["statut_couleur"] = "vert"
+            else:
+                # Pas d'inspection après la remise à zéro → gris
+                point["statut_couleur"] = "gris"
+                point["date_derniere_inspection"] = None  # Afficher "Jamais" pour ce cycle
     
     return points
 
@@ -619,9 +645,10 @@ async def get_dates_tests_bornes_seches(
     """Récupérer les dates de tests configurées pour les bornes sèches"""
     tenant = await get_tenant_from_slug(tenant_slug)
     
-    # Chercher dans les paramètres du tenant
+    # Chercher dans les paramètres du tenant (actifs > dates_tests_bornes_seches)
     parametres = tenant.parametres if hasattr(tenant, 'parametres') and tenant.parametres else {}
-    dates_tests = parametres.get('dates_tests_bornes_seches', [])
+    actifs_params = parametres.get('actifs', {})
+    dates_tests = actifs_params.get('dates_tests_bornes_seches', [])
     
     return {"dates": dates_tests}
 
