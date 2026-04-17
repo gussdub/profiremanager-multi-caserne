@@ -549,9 +549,11 @@ async def create_inspection_point_eau(
     if inspection_data.get("has_defaut"):
         update_point["etat"] = "defectueux"
         update_point["statut_inspection"] = "anomalie"
+        update_point["statut_couleur"] = "rouge"
     else:
-        update_point["etat"] = "fonctionnel"
+        update_point["etat"] = "fonctionnelle"
         update_point["statut_inspection"] = "ok"
+        update_point["statut_couleur"] = "vert"
     
     await db.points_eau.update_one(
         {"id": point_id, "tenant_id": tenant.id},

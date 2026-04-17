@@ -92,9 +92,9 @@ const ApprovisionnementEau = () => {
   // Déterminer la couleur effective du point (priorité à l'état manuel)
   const getEffectiveColor = (point) => {
     // Priorité à l'état manuel
-    if (point.etat === 'fonctionnelle') return 'vert';
+    if (point.etat === 'fonctionnelle' || point.etat === 'fonctionnel') return 'vert';
     if (point.etat === 'en_reparation' || point.etat === 'attention') return 'orange';
-    if (point.etat === 'hors_service') return 'rouge';
+    if (point.etat === 'hors_service' || point.etat === 'defectueux') return 'rouge';
     // Sinon, utiliser statut_couleur
     return point.statut_couleur || 'gris';
   };
