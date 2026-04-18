@@ -15,7 +15,7 @@ load_dotenv('/app/backend/.env')
 MONGO_URL = os.environ.get("MONGO_URL")
 DB_NAME = "profiremanager-dev"
 
-TENANTS_VOULUS = ["demo", "shefford", "magog"]
+TENANTS_VOULUS = ["sutton", "demo", "demonstration", "shefford"]
 
 async def cleanup():
     client = AsyncIOMotorClient(MONGO_URL)

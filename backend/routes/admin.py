@@ -271,7 +271,7 @@ async def cleanup_database(
     logger.warning(f"🗑️  NETTOYAGE BASE DE DONNÉES déclenché par {admin.email}")
     
     # Tenants à conserver
-    TENANTS_VOULUS = ["demo", "shefford", "magog"]
+    TENANTS_VOULUS = ["sutton", "demo", "demonstration", "shefford"]
     
     # 1. Récupérer tous les tenants
     tenants = await db.tenants.find({}, {"_id": 0, "id": 1, "slug": 1}).to_list(100)
