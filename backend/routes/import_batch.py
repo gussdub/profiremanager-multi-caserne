@@ -334,6 +334,32 @@ def _safe_address_str(value) -> str:
     return str(value)
 
 
+def _extract_photo_titles(record: dict) -> dict:
+    """
+    Extrait depuis liste_piece_jointe un dict {num_fichier: titre}.
+    Ex: {"40534": "DEVANT MAISON", "40535": "PROPANE SECTEUR 3"}
+    """
+    titles = {}
+    lp = record.get("liste_piece_jointe", {})
+    if not isinstance(lp, dict):
+        return titles
+    items = lp.get("piece_jointe", [])
+    if isinstance(items, dict):
+        items = [items]
+    if not isinstance(items, list):
+        return titles
+    for pj in items:
+        if not isinstance(pj, dict):
+            continue
+        raw_id = str(pj.get("id_fichier", "") or "")
+        nom = str(pj.get("nom", "") or "").strip()
+        if nom:
+            num = re.sub(r"[^\d]", "", raw_id)
+            if num:
+                titles[num] = nom
+    return titles
+
+
 @router.post("/{tenant_slug}/import/batch")
 async def import_batch(
     tenant_slug: str,
@@ -980,40 +1006,26 @@ async def fix_existing_batiments(
             fixed += 1
 
         # Matcher les titres des photos depuis liste_piece_jointe → stored_files
-        lp = record.get("liste_piece_jointe", {})
-        if isinstance(lp, dict):
-            pj_items = lp.get("piece_jointe", [])
-            if isinstance(pj_items, dict):
-                pj_items = [pj_items]
-            if isinstance(pj_items, list) and pj_items:
-                # Construire un map id_fichier → nom/titre
-                title_map = {}
-                for pj in pj_items:
-                    if not isinstance(pj, dict):
-                        continue
-                    raw_id = pj.get("id_fichier", "")
-                    nom = pj.get("nom", "")
-                    if raw_id and nom:
-                        # Extraire le numéro depuis "📄 Fichier #40534"
-                        num = re.sub(r"[^\d]", "", str(raw_id))
-                        if num:
-                            title_map[num] = nom
-
-                if title_map:
-                    # Chercher les stored_files pour ce bâtiment
-                    files = await db.stored_files.find(
-                        {"entity_id": doc["id"]},
-                        {"_id": 0, "id": 1, "original_filename": 1}
-                    ).to_list(100)
-                    for f in files:
-                        fname = f.get("original_filename", "")
-                        # Extraire le numéro depuis "40534.jpg"
-                        file_num = re.sub(r"\.[^.]+$", "", fname)
-                        if file_num in title_map:
-                            await db.stored_files.update_one(
-                                {"id": f["id"]},
-                                {"$set": {"description": title_map[file_num]}}
-                            )
+        title_map = _extract_photo_titles(record)
+        if title_map:
+            # Sauvegarder sur le bâtiment pour les futurs uploads
+            await db.batiments.update_one(
+                {"tenant_id": tenant.id, "id": doc["id"]},
+                {"$set": {"pfm_photo_titles": title_map}}
+            )
+            # Mettre à jour les stored_files déjà uploadés
+            files = await db.stored_files.find(
+                {"entity_id": doc["id"]},
+                {"_id": 0, "id": 1, "original_filename": 1}
+            ).to_list(100)
+            for f in files:
+                fname = f.get("original_filename", "")
+                file_num = re.sub(r"\.[^.]+$", "", fname)
+                if file_num in title_map:
+                    await db.stored_files.update_one(
+                        {"id": f["id"]},
+                        {"$set": {"description": title_map[file_num]}}
+                    )
 
     return {"fixed": fixed, "message": f"{fixed} bâtiment(s) enrichi(s) depuis pfm_record"}
 
@@ -1755,6 +1767,8 @@ async def _handle_dossier_adresse(record: dict, tenant, user, source: str) -> di
         "periodicites": record.get("liste_periodicite"),
         # 🔗 Références (pour linking automatique avec Préventions)
         "references": record.get("references"),  # Structure PFM Transfer contenant les liens prévention
+        # 📸 Titres des photos PFM Transfer (id_fichier numérique → nom)
+        "pfm_photo_titles": _extract_photo_titles(record),
         # État
         "etat": record.get("etat") or "Actif",
         "actif": record.get("etat") != "Inactif",

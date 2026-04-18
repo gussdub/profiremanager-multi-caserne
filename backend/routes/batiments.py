@@ -396,7 +396,7 @@ async def get_batiment(
                         "id": sf.get("id", ""),
                         "url": generate_sas_url(blob),
                         "blob_name": blob,
-                        "description": sf.get("original_filename", ""),
+                        "description": sf.get("description") or sf.get("nom") or sf.get("original_filename", ""),
                         "uploaded_at": sf.get("uploaded_at", ""),
                         "imported": True,
                     })

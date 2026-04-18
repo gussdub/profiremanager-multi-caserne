@@ -49,6 +49,19 @@ async def upload_file(
 
     result = put_object(path, data, content_type)
 
+    # Résoudre le titre depuis pfm_photo_titles du bâtiment (si import PFM Transfer)
+    description = None
+    if entity_type == "batiment" and entity_id and file.filename:
+        import re as _re
+        file_num = _re.sub(r"\.[^.]+$", "", file.filename)  # "40534.jpg" → "40534"
+        batiment = await db.batiments.find_one(
+            {"id": entity_id, "tenant_id": tenant.id},
+            {"_id": 0, "pfm_photo_titles": 1}
+        )
+        if batiment:
+            titles = batiment.get("pfm_photo_titles") or {}
+            description = titles.get(file_num)
+
     file_doc = {
         "id": str(uuid.uuid4()),
         "tenant_id": tenant.id,
@@ -65,6 +78,9 @@ async def upload_file(
         "uploaded_at": datetime.now(timezone.utc).isoformat(),
         "is_deleted": False,
     }
+    if description:
+        file_doc["description"] = description
+
     await db.stored_files.insert_one(file_doc)
 
     return {
