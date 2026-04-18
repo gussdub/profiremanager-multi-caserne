@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { Button } from './ui/button';
-import { ChevronDown, ChevronRight, AlertTriangle, CheckCircle, Clock, User, Calendar, FileText, Tag, List } from 'lucide-react';
+import { ChevronDown, ChevronRight, AlertTriangle, FileText, Tag, List, Calendar } from 'lucide-react';
 
 // ─── Utilitaires ────────────────────────────────────────────────────────────
 
 const formatDate = (dateStr) => {
   if (!dateStr) return '—';
   try {
-    return new Date(dateStr).toLocaleDateString('fr-FR', {
+    const d = new Date(dateStr);
+    if (isNaN(d)) return dateStr;
+    return d.toLocaleDateString('fr-FR', {
       year: 'numeric', month: 'long', day: 'numeric',
       hour: '2-digit', minute: '2-digit'
     });
@@ -17,10 +19,29 @@ const formatDate = (dateStr) => {
 const formatDateShort = (dateStr) => {
   if (!dateStr) return '—';
   try {
-    return new Date(dateStr).toLocaleDateString('fr-FR', {
-      year: 'numeric', month: 'short', day: 'numeric'
-    });
+    const d = new Date(dateStr);
+    if (isNaN(d)) return dateStr;
+    return d.toLocaleDateString('fr-FR', { year: 'numeric', month: 'short', day: 'numeric' });
   } catch { return dateStr; }
+};
+
+/** Nettoie les noms PFM : retire * et (123) */
+const cleanName = (s) => {
+  if (!s) return '';
+  return s
+    .replace(/\*/g, '')          // retire les astérisques
+    .replace(/\(\d+\)\s*$/,'')   // retire "(411)" en fin
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+/** Nettoie un label d'anomalie PFM : "*P- Propane" → "Propane" */
+const cleanAnomalieLabel = (s) => {
+  if (!s) return '';
+  return s
+    .replace(/^\*[A-Z]+-?\s*/i, '')  // retire "*P- " ou "*A- "
+    .replace(/\*/g, '')
+    .trim() || s;
 };
 
 /** Normalise n'importe quelle structure PFM en tableau plat */
@@ -28,33 +49,32 @@ const toArray = (val) => {
   if (!val) return [];
   if (Array.isArray(val)) return val;
   if (typeof val === 'object') {
-    // Chercher la première clé tableau
+    // Chercher la première clé qui contient un tableau ou un objet
     for (const key of Object.keys(val)) {
       const v = val[key];
       if (Array.isArray(v)) return v;
-      if (v && typeof v === 'object' && !Array.isArray(v)) return [v];
+      if (v && typeof v === 'object') return [v];
     }
   }
   return [];
 };
 
-/** Statut d'une anomalie PFM Transfer */
-const anomalieStatut = (anomalie) => {
-  const s = (anomalie.statut || anomalie.etat || '').toLowerCase();
-  if (s.includes('résol') || s.includes('resol') || s === 'fermé' || s === 'ferme' || s === 'corrigé') {
+/** Résolution d'une anomalie PFM Transfer : utilise le champ `corrige` */
+const getAnomalieStatut = (anomalie) => {
+  const corrige = (anomalie.corrige || '').toLowerCase();
+  const reinspection = (anomalie.reinspection || '').toLowerCase();
+  if (corrige === 'oui' || corrige === 'true' || corrige === '1') {
     return { label: 'Résolu', color: '#16a34a', bg: '#dcfce7', icon: '✓' };
   }
-  if (s.includes('progress') || s.includes('cours')) {
-    return { label: 'En cours', color: '#d97706', bg: '#fef3c7', icon: '↻' };
+  if (reinspection === 'oui') {
+    return { label: 'Réinspection requise', color: '#d97706', bg: '#fef3c7', icon: '↻' };
   }
   return { label: 'Non résolu', color: '#dc2626', bg: '#fee2e2', icon: '!' };
 };
 
-const statutPrevention = (insp) => {
+const getStatutPrevention = (insp) => {
   const s = (insp.statut || insp.status || insp.resultat || '').toLowerCase();
-  if (s === 'valide' || s === 'validé' || s === 'complété' || s === 'complétée' || s.includes('complet')) {
-    return { label: 'Complétée', color: '#16a34a', bg: '#dcfce7' };
-  }
+  if (s === 'valide' || s === 'validé' || s.includes('complet')) return { label: 'Complétée', color: '#16a34a', bg: '#dcfce7' };
   if (s === 'brouillon') return { label: 'Brouillon', color: '#6b7280', bg: '#f3f4f6' };
   if (s === 'absent') return { label: 'Absent', color: '#f97316', bg: '#ffedd5' };
   if (s) return { label: s, color: '#6b7280', bg: '#f3f4f6' };
@@ -63,15 +83,15 @@ const statutPrevention = (insp) => {
 
 // ─── Composants UI ──────────────────────────────────────────────────────────
 
-const InfoField = ({ label, value, fullWidth }) => (
+const InfoField = ({ label, value }) => (
   <div style={{
-    padding: '10px 14px',
-    backgroundColor: 'white',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    gridColumn: fullWidth ? '1 / -1' : undefined
+    padding: '10px 14px', backgroundColor: 'white',
+    border: '1px solid #e5e7eb', borderRadius: '8px'
   }}>
-    <div style={{ fontSize: '11px', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>
+    <div style={{
+      fontSize: '11px', fontWeight: '700', color: '#9ca3af',
+      textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px'
+    }}>
       {label}
     </div>
     <div style={{ fontSize: '14px', color: '#111827', fontWeight: '500', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
@@ -80,14 +100,14 @@ const InfoField = ({ label, value, fullWidth }) => (
   </div>
 );
 
-const SectionHeader = ({ icon: Icon, title, count }) => (
+const SectionTitle = ({ icon: Icon, title, count }) => (
   <div style={{
     display: 'flex', alignItems: 'center', gap: '8px',
     fontSize: '15px', fontWeight: '700', color: '#1f2937',
     marginBottom: '14px', paddingBottom: '10px',
     borderBottom: '2px solid #e5e7eb'
   }}>
-    {Icon && <Icon size={17} color="#6b7280" />}
+    {Icon && <Icon size={16} color="#6b7280" />}
     {title}
     {count !== undefined && (
       <span style={{
@@ -134,66 +154,69 @@ const CollapsibleSection = ({ icon: Icon, title, count, children, defaultOpen = 
 const InspectionDetailView = ({ inspection, batiment, onBack }) => {
   const [showRaw, setShowRaw] = useState(false);
 
-  // Normaliser les anomalies
-  const anomalies = (() => {
-    const raw = inspection.anomalies;
-    if (!raw) return [];
-    if (Array.isArray(raw)) return raw;
-    // dict avec clé "anomalie" ou "item"
-    const arr = toArray(raw);
-    return arr;
-  })();
+  const pfm = inspection.pfm_record || {};
 
-  // Normaliser les champs personnalisés
+  // Anomalies — structure PFM: liste_anomalie → { anomalie: [...] }
+  const anomalies = toArray(inspection.anomalies);
+
+  // Champs personnalisés
   const champsPerso = toArray(inspection.champs_personnalises);
 
-  // Normaliser les étapes
+  // Étapes
   const etapes = toArray(inspection.etapes);
 
-  // Normaliser les reports
+  // Reports
   const reports = toArray(inspection.reports);
 
+  // Inspecteur nettoyé
+  const inspecteur = cleanName(
+    inspection.inspecteur || inspection.inspecteur_nom ||
+    inspection.inspection_realisee_par || pfm.id_auteur || ''
+  );
+
+  // Type nettoyé
+  const typeInspection = cleanName(
+    inspection.type_inspection || pfm.type_prev || pfm.id_type_prev || ''
+  );
+
+  // Numéro PFM
+  const pfmNumero = inspection.external_id || inspection.premligne_id || pfm.numero || '';
+
   // Statut badge
-  const statut = statutPrevention(inspection);
+  const statut = getStatutPrevention(inspection);
 
-  // Inspecteur — peut être un label "M. Dupont" ou un ID "*12345 - Dupont"
-  const inspecteur = (() => {
-    const raw = inspection.inspecteur || inspection.inspecteur_nom || inspection.inspection_realisee_par || '';
-    // Nettoyer "*12345 - Nom Prenom" → "Nom Prenom"
-    return raw.replace(/^\*?\d+\s*-\s*/, '').trim() || raw;
-  })();
-
-  // Extraire des champs supplémentaires depuis pfm_record si disponibles
-  const pfm = inspection.pfm_record || {};
-  const pfmType = pfm.type_prev || pfm.id_type_prev || inspection.type_inspection || '';
-  const pfmNumero = pfm.numero || pfm.id || pfm.code || inspection.external_id || inspection.premligne_id || '';
-  const pfmDateReport = inspection.reports?.[0]?.date || '';
+  // Résumé anomalies
+  const anomaliesNonResolues = anomalies.filter(a => getAnomalieStatut(a).label !== 'Résolu').length;
+  const anomaliesResolues = anomalies.filter(a => getAnomalieStatut(a).label === 'Résolu').length;
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#f9fafb' }}>
+    <div style={{
+      display: 'flex', flexDirection: 'column',
+      height: '100%', minHeight: 0,  /* clé pour que flex scroll fonctionne */
+      backgroundColor: '#f9fafb'
+    }}>
 
-      {/* ── Header ── */}
+      {/* ── Header fixe ── */}
       <div style={{
-        padding: '20px 24px',
+        flexShrink: 0,
+        padding: '16px 24px',
         borderBottom: '1px solid #e5e7eb',
         backgroundColor: 'white'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-          <Button variant="outline" onClick={onBack} style={{ fontSize: '13px' }}>
-            ← Retour à l'historique
-          </Button>
-        </div>
+        <Button variant="outline" onClick={onBack} style={{ fontSize: '13px', marginBottom: '12px' }}>
+          ← Retour à l'historique
+        </Button>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap' }}>
           <div>
-            <h2 style={{ fontSize: '20px', fontWeight: '800', margin: 0, marginBottom: '4px', color: '#111827' }}>
+            <h2 style={{ fontSize: '20px', fontWeight: '800', margin: '0 0 4px', color: '#111827' }}>
               Rapport de prévention
             </h2>
-            <p style={{ margin: 0, color: '#4b5563', fontSize: '14px', fontWeight: '500' }}>
+            <p style={{ margin: '0 0 2px', color: '#4b5563', fontSize: '14px', fontWeight: '500' }}>
               {batiment?.nom_etablissement || batiment?.adresse_civique || ''}
               {batiment?.ville ? ` — ${batiment.ville}` : ''}
             </p>
-            <p style={{ margin: '4px 0 0', color: '#9ca3af', fontSize: '13px' }}>
+            <p style={{ margin: 0, color: '#9ca3af', fontSize: '13px' }}>
               {formatDate(inspection.date_inspection)}
               {pfmNumero ? ` · #${pfmNumero}` : ''}
             </p>
@@ -207,22 +230,22 @@ const InspectionDetailView = ({ inspection, batiment, onBack }) => {
         </div>
       </div>
 
-      {/* ── Contenu ── */}
-      <div style={{ flex: 1, overflow: 'auto', padding: '24px' }}>
-        <div style={{ maxWidth: '860px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '0' }}>
+      {/* ── Corps scrollable ── */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '24px', minHeight: 0 }}>
+        <div style={{ maxWidth: '860px', margin: '0 auto' }}>
 
           {/* Informations générales */}
           <section style={{ marginBottom: '24px' }}>
-            <SectionHeader icon={FileText} title="Informations générales" />
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
-              {pfmType && <InfoField label="Type de prévention" value={pfmType} />}
+            <SectionTitle icon={FileText} title="Informations générales" />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+              {typeInspection && <InfoField label="Type de prévention" value={typeInspection} />}
               <InfoField label="Date d'inspection" value={formatDate(inspection.date_inspection)} />
               {inspection.date_completee && (
                 <InfoField label="Date complétée" value={formatDate(inspection.date_completee)} />
               )}
               {inspecteur && <InfoField label="Réalisée par" value={inspecteur} />}
-              {(inspection.resultat || inspection.statut || inspection.status) && (
-                <InfoField label="Résultat / Statut" value={inspection.resultat || inspection.statut || inspection.status} />
+              {(inspection.resultat || pfm.statut) && (
+                <InfoField label="Résultat" value={cleanName(inspection.resultat || pfm.statut)} />
               )}
               {pfm.id_dossier_adresse && (
                 <InfoField label="Dossier adresse (PFM)" value={pfm.id_dossier_adresse} />
@@ -243,18 +266,16 @@ const InspectionDetailView = ({ inspection, batiment, onBack }) => {
             </CollapsibleSection>
           )}
 
-          {/* Avis émis */}
-          {(inspection.avis_emis !== null && inspection.avis_emis !== undefined) && (
+          {/* Avis */}
+          {(inspection.avis_emis === true || inspection.avis_emis === false || inspection.texte_avis) && (
             <section style={{ marginBottom: '24px' }}>
-              <SectionHeader icon={AlertTriangle} title="Avis" />
+              <SectionTitle icon={AlertTriangle} title="Avis" />
               <div style={{
-                padding: '14px 16px',
-                borderRadius: '8px',
+                padding: '14px 16px', borderRadius: '8px',
                 backgroundColor: inspection.avis_emis ? '#fef3c7' : '#f0fdf4',
-                border: `1px solid ${inspection.avis_emis ? '#fbbf24' : '#86efac'}`,
-                display: 'flex', flexDirection: 'column', gap: '8px'
+                border: `1px solid ${inspection.avis_emis ? '#fbbf24' : '#86efac'}`
               }}>
-                <div style={{ fontWeight: '700', fontSize: '14px', color: inspection.avis_emis ? '#92400e' : '#16a34a' }}>
+                <div style={{ fontWeight: '700', fontSize: '14px', color: inspection.avis_emis ? '#92400e' : '#16a34a', marginBottom: inspection.texte_avis ? '8px' : 0 }}>
                   {inspection.avis_emis ? '⚠️ Avis émis' : '✓ Aucun avis émis'}
                 </div>
                 {inspection.texte_avis && (
@@ -272,63 +293,51 @@ const InspectionDetailView = ({ inspection, batiment, onBack }) => {
               icon={AlertTriangle}
               title="Anomalies"
               count={anomalies.length}
+              defaultOpen={true}
             >
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {/* Résumé résolution */}
-                {anomalies.length > 1 && (
-                  <div style={{ display: 'flex', gap: '12px', marginBottom: '4px' }}>
-                    {[
-                      { label: 'Non résolues', color: '#dc2626', count: anomalies.filter(a => {
-                        const s = anomalieStatut(a).label;
-                        return s === 'Non résolu';
-                      }).length },
-                      { label: 'En cours', color: '#d97706', count: anomalies.filter(a => anomalieStatut(a).label === 'En cours').length },
-                      { label: 'Résolues', color: '#16a34a', count: anomalies.filter(a => anomalieStatut(a).label === 'Résolu').length },
-                    ].filter(x => x.count > 0).map(x => (
-                      <span key={x.label} style={{ fontSize: '12px', fontWeight: '700', color: x.color }}>
-                        {x.count} {x.label}
-                      </span>
-                    ))}
-                  </div>
+              {/* Résumé */}
+              <div style={{ display: 'flex', gap: '16px', marginBottom: '14px', flexWrap: 'wrap' }}>
+                {anomaliesNonResolues > 0 && (
+                  <span style={{ fontSize: '13px', fontWeight: '700', color: '#dc2626' }}>
+                    ● {anomaliesNonResolues} non résolu{anomaliesNonResolues > 1 ? 'es' : 'e'}
+                  </span>
                 )}
+                {anomaliesResolues > 0 && (
+                  <span style={{ fontSize: '13px', fontWeight: '700', color: '#16a34a' }}>
+                    ● {anomaliesResolues} résolu{anomaliesResolues > 1 ? 'es' : 'e'}
+                  </span>
+                )}
+                {anomalies.filter(a => getAnomalieStatut(a).label === 'Réinspection requise').length > 0 && (
+                  <span style={{ fontSize: '13px', fontWeight: '700', color: '#d97706' }}>
+                    ● {anomalies.filter(a => getAnomalieStatut(a).label === 'Réinspection requise').length} réinspection requise
+                  </span>
+                )}
+              </div>
 
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {anomalies.map((anomalie, idx) => {
-                  const s = anomalieStatut(anomalie);
-                  const desc = anomalie.description || anomalie.libelle || anomalie.nom || anomalie.texte || (typeof anomalie === 'string' ? anomalie : JSON.stringify(anomalie));
+                  const s = getAnomalieStatut(anomalie);
+                  // Description : id_type_anomalie ou libelle ou description
+                  const description = cleanAnomalieLabel(
+                    anomalie.id_type_anomalie || anomalie.description ||
+                    anomalie.libelle || anomalie.nom || anomalie.texte ||
+                    (typeof anomalie === 'string' ? anomalie : '')
+                  );
+                  const dateCorrige = anomalie.date_corrige || anomalie.date_resolution;
+                  const delai = parseInt(anomalie.delai_nbr_jour) || 0;
+
                   return (
                     <div key={idx} style={{
-                      border: `1px solid ${s.color}40`,
+                      borderRadius: '8px', backgroundColor: 'white',
+                      border: `1px solid ${s.color}30`,
                       borderLeft: `4px solid ${s.color}`,
-                      borderRadius: '8px',
-                      backgroundColor: 'white',
                       overflow: 'hidden'
                     }}>
-                      <div style={{ padding: '12px 14px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827', marginBottom: '4px' }}>
-                              {desc}
-                            </div>
-                            {(anomalie.commentaire || anomalie.notes || anomalie.observation) && (
-                              <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
-                                {anomalie.commentaire || anomalie.notes || anomalie.observation}
-                              </div>
-                            )}
-                            <div style={{ display: 'flex', gap: '16px', marginTop: '8px', flexWrap: 'wrap' }}>
-                              {(anomalie.date_anomalie || anomalie.date) && (
-                                <span style={{ fontSize: '12px', color: '#9ca3af' }}>
-                                  Signalée : {formatDateShort(anomalie.date_anomalie || anomalie.date)}
-                                </span>
-                              )}
-                              {anomalie.date_resolution && (
-                                <span style={{ fontSize: '12px', color: '#16a34a' }}>
-                                  Résolue : {formatDateShort(anomalie.date_resolution)}
-                                </span>
-                              )}
-                              {anomalie.type && (
-                                <span style={{ fontSize: '12px', color: '#6b7280' }}>Type : {anomalie.type}</span>
-                              )}
-                            </div>
+                      <div style={{ padding: '14px 16px' }}>
+                        {/* En-tête anomalie */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', marginBottom: '10px' }}>
+                          <div style={{ fontSize: '14px', fontWeight: '700', color: '#111827', flex: 1 }}>
+                            {description || `Anomalie ${idx + 1}`}
                           </div>
                           <span style={{
                             padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: '700',
@@ -337,6 +346,62 @@ const InspectionDetailView = ({ inspection, batiment, onBack }) => {
                             {s.icon} {s.label}
                           </span>
                         </div>
+
+                        {/* Détails */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px' }}>
+                          {/* Corrigé */}
+                          <div style={{ backgroundColor: '#f8fafc', borderRadius: '6px', padding: '8px 10px' }}>
+                            <div style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '600', textTransform: 'uppercase', marginBottom: '3px' }}>Corrigé</div>
+                            <div style={{ fontSize: '13px', fontWeight: '600', color: s.color }}>
+                              {anomalie.corrige === 'Oui' ? '✓ Oui' : anomalie.corrige === 'Non' ? '✗ Non' : anomalie.corrige || '—'}
+                            </div>
+                          </div>
+
+                          {/* Réinspection */}
+                          <div style={{ backgroundColor: '#f8fafc', borderRadius: '6px', padding: '8px 10px' }}>
+                            <div style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '600', textTransform: 'uppercase', marginBottom: '3px' }}>Réinspection</div>
+                            <div style={{ fontSize: '13px', fontWeight: '600', color: anomalie.reinspection === 'Oui' ? '#d97706' : '#6b7280' }}>
+                              {anomalie.reinspection || '—'}
+                            </div>
+                          </div>
+
+                          {/* Délai */}
+                          {delai > 0 && (
+                            <div style={{ backgroundColor: '#f8fafc', borderRadius: '6px', padding: '8px 10px' }}>
+                              <div style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '600', textTransform: 'uppercase', marginBottom: '3px' }}>Délai</div>
+                              <div style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>
+                                {delai} jour{delai > 1 ? 's' : ''}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Date correction */}
+                          {dateCorrige && (
+                            <div style={{ backgroundColor: '#f8fafc', borderRadius: '6px', padding: '8px 10px' }}>
+                              <div style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '600', textTransform: 'uppercase', marginBottom: '3px' }}>Date correction</div>
+                              <div style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>
+                                {formatDateShort(dateCorrige)}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Compteur réinspection */}
+                          {anomalie.cmpt_reinspect_lors_ajout && parseInt(anomalie.cmpt_reinspect_lors_ajout) > 0 && (
+                            <div style={{ backgroundColor: '#f8fafc', borderRadius: '6px', padding: '8px 10px' }}>
+                              <div style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '600', textTransform: 'uppercase', marginBottom: '3px' }}>Nb réinspections</div>
+                              <div style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>
+                                {anomalie.cmpt_reinspect_lors_ajout}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Commentaire */}
+                        {(anomalie.commentaire || anomalie.notes || anomalie.observation) && (
+                          <div style={{ marginTop: '10px', padding: '8px 10px', backgroundColor: '#f8fafc', borderRadius: '6px', fontSize: '13px', color: '#4b5563' }}>
+                            {anomalie.commentaire || anomalie.notes || anomalie.observation}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -350,9 +415,9 @@ const InspectionDetailView = ({ inspection, batiment, onBack }) => {
             <CollapsibleSection icon={Tag} title="Champs personnalisés" count={champsPerso.length} defaultOpen={false}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
                 {champsPerso.map((champ, idx) => {
-                  const label = champ.libelle || champ.nom || champ.label || champ.code || `Champ ${idx + 1}`;
-                  const value = champ.valeur || champ.value || champ.val || '';
-                  return <InfoField key={idx} label={label} value={String(value)} />;
+                  const label = cleanName(champ.libelle || champ.nom || champ.label || champ.code || `Champ ${idx + 1}`);
+                  const value = String(champ.valeur || champ.value || champ.val || '');
+                  return <InfoField key={idx} label={label} value={value} />;
                 })}
               </div>
             </CollapsibleSection>
@@ -370,19 +435,18 @@ const InspectionDetailView = ({ inspection, batiment, onBack }) => {
                   }}>
                     <div style={{
                       width: '24px', height: '24px', borderRadius: '50%',
-                      backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '11px', fontWeight: '700', color: '#6b7280', flexShrink: 0
+                      backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center',
+                      justifyContent: 'center', fontSize: '11px', fontWeight: '700',
+                      color: '#6b7280', flexShrink: 0
                     }}>
                       {idx + 1}
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: '13px', fontWeight: '600', color: '#111827' }}>
-                        {etape.description || etape.libelle || etape.nom || etape.action || JSON.stringify(etape)}
+                        {cleanName(etape.description || etape.libelle || etape.nom || etape.action || '')}
                       </div>
                       {etape.date && (
-                        <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>
-                          {formatDateShort(etape.date)}
-                        </div>
+                        <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>{formatDateShort(etape.date)}</div>
                       )}
                       {etape.statut && (
                         <span style={{ fontSize: '11px', color: '#6b7280' }}>{etape.statut}</span>
@@ -405,15 +469,15 @@ const InspectionDetailView = ({ inspection, batiment, onBack }) => {
                     fontSize: '13px', color: '#374151'
                   }}>
                     {report.date && <span style={{ fontWeight: '600' }}>{formatDateShort(report.date)} — </span>}
-                    {report.description || report.motif || report.raison || JSON.stringify(report)}
+                    {report.description || report.motif || report.raison || ''}
                   </div>
                 ))}
               </div>
             </CollapsibleSection>
           )}
 
-          {/* Données brutes PFM (pour débogage, masquées par défaut) */}
-          <section style={{ marginBottom: '8px' }}>
+          {/* Données brutes PFM */}
+          <section style={{ marginBottom: '24px' }}>
             <button
               onClick={() => setShowRaw(!showRaw)}
               style={{
@@ -424,7 +488,7 @@ const InspectionDetailView = ({ inspection, batiment, onBack }) => {
               }}
             >
               {showRaw ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-              {showRaw ? 'Masquer les données brutes PFM' : 'Voir toutes les données brutes PFM'}
+              {showRaw ? 'Masquer les données brutes PFM' : 'Voir les données brutes PFM Transfer'}
             </button>
             {showRaw && (
               <div style={{
