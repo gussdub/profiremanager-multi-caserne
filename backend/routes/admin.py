@@ -246,3 +246,94 @@ async def get_audit_logs_summary(admin: SuperAdmin = Depends(get_super_admin)):
             for a in admins_activity
         ]
     }
+
+
+
+# ==================== NETTOYAGE BASE DE DONNÉES ====================
+
+@router.post("/admin/cleanup-database")
+async def cleanup_database(
+    confirm: bool = False,
+    admin: SuperAdmin = Depends(get_super_admin)
+):
+    """
+    Nettoie complètement la base de données (DANGER)
+    - Supprime TOUS les bâtiments et inspections
+    - Conserve uniquement les tenants: demo, shefford, magog
+    - Supprime les données orphelines
+    """
+    if not confirm:
+        raise HTTPException(
+            status_code=400, 
+            detail="Vous devez confirmer avec confirm=true"
+        )
+    
+    logger.warning(f"🗑️  NETTOYAGE BASE DE DONNÉES déclenché par {admin.email}")
+    
+    # Tenants à conserver
+    TENANTS_VOULUS = ["demo", "shefford", "magog"]
+    
+    # 1. Récupérer tous les tenants
+    tenants = await db.tenants.find({}, {"_id": 0, "id": 1, "slug": 1}).to_list(100)
+    tenants_valides = [t['id'] for t in tenants if t.get('slug', '').lower() in TENANTS_VOULUS]
+    tenants_a_supprimer = [t for t in tenants if t.get('slug', '').lower() not in TENANTS_VOULUS]
+    
+    results = {
+        "tenants_conserves": [t.get('slug') for t in tenants if t['id'] in tenants_valides],
+        "tenants_supprimes": [],
+        "batiments_supprimes": 0,
+        "inspections_supprimees": 0,
+        "orphelins_supprimes": {}
+    }
+    
+    # 2. Supprimer les tenants indésirables
+    for tenant in tenants_a_supprimer:
+        await db.tenants.delete_one({"id": tenant['id']})
+        results["tenants_supprimes"].append(tenant.get('slug'))
+        
+        # Supprimer toutes les données associées
+        collections = await db.list_collection_names()
+        for coll_name in collections:
+            if coll_name not in ['super_admins', 'system.indexes', 'centrales_911']:
+                result = await db[coll_name].delete_many({"tenant_id": tenant['id']})
+                if result.deleted_count > 0:
+                    results["orphelins_supprimes"][coll_name] = result.deleted_count
+    
+    # 3. Supprimer TOUS les bâtiments et inspections
+    result_bat = await db.batiments.delete_many({})
+    results["batiments_supprimes"] = result_bat.deleted_count
+    
+    result_insp = await db.inspections.delete_many({})
+    results["inspections_supprimees"] = result_insp.deleted_count
+    
+    # 4. Nettoyer historiques et imports
+    await db.batiments_historique.delete_many({})
+    await db.import_dossier_adresses.delete_many({})
+    
+    # 5. Supprimer les données orphelines
+    collections_to_clean = [
+        "users", "types_garde", "assignations", "demandes_remplacement",
+        "formations", "disponibilites", "interventions", "equipements", "stored_files"
+    ]
+    
+    for coll_name in collections_to_clean:
+        result = await db[coll_name].delete_many({"tenant_id": {"$nin": tenants_valides}})
+        if result.deleted_count > 0:
+            if "orphelins_supprimes" not in results:
+                results["orphelins_supprimes"] = {}
+            results["orphelins_supprimes"][coll_name] = result.deleted_count
+    
+    # Log de l'action
+    await log_super_admin_action(
+        admin=admin,
+        action="cleanup_database",
+        details=results
+    )
+    
+    logger.warning(f"✅ Nettoyage terminé: {results}")
+    
+    return {
+        "success": True,
+        "message": "Base de données nettoyée avec succès",
+        "results": results
+    }
