@@ -844,7 +844,11 @@ const BatimentForm = ({
         buildApiUrl(tenantSlug, `/prevention/inspections?batiment_id=${batiment.id}&limit=5`),
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setInspections(response.data.slice(0, 5));
+      setInspections(
+        response.data
+          .sort((a, b) => new Date(b.date_inspection) - new Date(a.date_inspection))
+          .slice(0, 5)
+      );
     } catch (error) {
       console.error('Erreur chargement inspections:', error);
     }
@@ -2542,18 +2546,21 @@ const BatimentForm = ({
                             📅 {new Date(insp.date_inspection).toLocaleDateString('fr-CA')}
                           </p>
                           <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-                            Type: {insp.type_inspection}
+                            Type: {(insp.type_inspection || '').replace(/^\*/, '')}
                           </p>
                         </div>
-                        <span style={{
-                          padding: '0.25rem 0.75rem',
-                          borderRadius: '1rem',
-                          fontSize: '0.75rem',
-                          backgroundColor: insp.conformite === 'conforme' ? '#d1fae5' : '#fee2e2',
-                          color: insp.conformite === 'conforme' ? '#065f46' : '#991b1b'
-                        }}>
-                          {insp.conformite === 'conforme' ? '✅ Conforme' : '❌ Non-conforme'}
-                        </span>
+                        {/* Badge : uniquement si conformité explicitement définie ou avis émis */}
+                        {(insp.conformite === 'conforme' || insp.conformite === 'non_conforme' || insp.avis_emis === true) && (
+                          <span style={{
+                            padding: '0.25rem 0.75rem',
+                            borderRadius: '1rem',
+                            fontSize: '0.75rem',
+                            backgroundColor: insp.conformite === 'conforme' ? '#d1fae5' : '#fee2e2',
+                            color: insp.conformite === 'conforme' ? '#065f46' : '#991b1b'
+                          }}>
+                            {insp.conformite === 'conforme' ? '✅ Conforme' : '⚠️ Avis émis'}
+                          </span>
+                        )}
                       </div>
                     </div>
                   ))}

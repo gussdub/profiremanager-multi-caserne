@@ -57,7 +57,7 @@ const HistoriqueInspections = ({ batiment, tenantSlug, onBack, onViewInspection 
   }
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       {/* Header avec bouton retour */}
       <div style={{
         padding: '1.5rem',
