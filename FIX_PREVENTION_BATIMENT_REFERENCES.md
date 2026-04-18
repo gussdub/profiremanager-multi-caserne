@@ -105,7 +105,7 @@ Si vous avez déjà importé des préventions qui ne sont pas liées aux bâtime
 
 **Étape 2** : Appeler l'endpoint de réparation
 ```bash
-curl -X POST "https://workflow-test-3.preview.emergentagent.com/api/demo/import/fix-orphan-inspections" \
+curl -X POST "https://data-wipe-tool-2.preview.emergentagent.com/api/demo/import/fix-orphan-inspections" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 

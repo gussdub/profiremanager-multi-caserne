@@ -114,14 +114,14 @@ mobile/
 ## 🔗 Backend
 
 L'application se connecte au backend ProFireManager :
-- **URL** : https://workflow-test-3.preview.emergentagent.com
+- **URL** : https://data-wipe-tool-2.preview.emergentagent.com
 - **API** : FastAPI (Python)
 - **Base de données** : MongoDB Atlas
 
 Configuration dans `app.json` :
 ```json
 "extra": {
-  "apiUrl": "https://workflow-test-3.preview.emergentagent.com"
+  "apiUrl": "https://data-wipe-tool-2.preview.emergentagent.com"
 }
 ```
 
