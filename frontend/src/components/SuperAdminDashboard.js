@@ -8,6 +8,7 @@ import { useToast } from "../hooks/use-toast";
 import Debogage from "./Debogage";
 import PayrollProvidersAdmin from "./PayrollProvidersAdmin";
 import { useConfirmDialog } from "./ui/ConfirmDialog";
+import CleanupDataModal from "./CleanupDataModal";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -98,6 +99,7 @@ const SuperAdminDashboard = ({ onLogout }) => {
   const [centralesLoading, setCentralesLoading] = useState(false);
   const [showCentraleModal, setShowCentraleModal] = useState(false);
   const [editingCentrale, setEditingCentrale] = useState(null);
+  const [showCleanupModal, setShowCleanupModal] = useState(false);
   const [newTenant, setNewTenant] = useState({
     nom: '',
     slug: '',
@@ -1479,6 +1481,13 @@ const SuperAdminDashboard = ({ onLogout }) => {
             style={{ fontSize: '0.8rem', padding: '8px 12px', background: '#8b5cf6', color: 'white', border: 'none' }}
           >
             🔄 Changer de tenant
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => setShowCleanupModal(true)}
+            style={{ fontSize: '0.8rem', padding: '8px 12px', background: '#dc2626', color: 'white', border: 'none' }}
+          >
+            🧹 Nettoyage
           </Button>
           <Button variant="outline" onClick={onLogout} style={{ fontSize: '0.8rem', padding: '8px 12px' }}>
             Déconnexion
@@ -3391,6 +3400,12 @@ const SuperAdminDashboard = ({ onLogout }) => {
       )}
         </>
       )}
+      
+      {/* Modal de nettoyage des données */}
+      <CleanupDataModal 
+        isOpen={showCleanupModal}
+        onClose={() => setShowCleanupModal(false)}
+      />
     </div>
   );
 };

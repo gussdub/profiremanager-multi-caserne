@@ -337,3 +337,66 @@ async def cleanup_database(
         "message": "Base de données nettoyée avec succès",
         "results": results
     }
+
+
+
+@router.post("/admin/cleanup-collections")
+async def cleanup_collections(
+    request: dict,
+    admin: SuperAdmin = Depends(get_super_admin)
+):
+    """
+    Nettoie des collections spécifiques de la base de données
+    """
+    collections = request.get('collections', [])
+    confirm = request.get('confirm', False)
+    
+    if not confirm:
+        raise HTTPException(status_code=400, detail="Confirmation requise")
+    
+    if not collections:
+        raise HTTPException(status_code=400, detail="Aucune collection sélectionnée")
+    
+    logger.warning(f"🗑️  Nettoyage collections par {admin.email}: {collections}")
+    
+    # Mapping des collections
+    collection_mapping = {
+        'batiments': ['batiments', 'batiments_historique', 'import_dossier_adresses', 'dependances_batiments'],
+        'inspections': ['inspections'],
+        'users': ['users'],
+        'equipements': ['equipements', 'inventaire_epi'],
+        'interventions': ['interventions', 'interventions_historique'],
+        'formations': ['formations', 'sessions_formation', 'inscriptions_formation'],
+        'disponibilites': ['disponibilites'],
+        'remplacements': ['demandes_remplacement', 'tentatives_remplacement'],
+        'files': ['stored_files']
+    }
+    
+    results = {}
+    
+    for coll_key in collections:
+        if coll_key not in collection_mapping:
+            continue
+            
+        for coll_name in collection_mapping[coll_key]:
+            try:
+                result = await db[coll_name].delete_many({})
+                if result.deleted_count > 0:
+                    results[coll_name] = result.deleted_count
+                    logger.info(f"  ✅ {coll_name}: {result.deleted_count} documents supprimés")
+            except Exception as e:
+                logger.error(f"  ❌ {coll_name}: {e}")
+                results[f"{coll_name}_error"] = str(e)
+    
+    # Log de l'action
+    await log_super_admin_action(
+        admin=admin,
+        action="cleanup_collections",
+        details={"collections": collections, "results": results}
+    )
+    
+    return {
+        "success": True,
+        "message": f"{len(collections)} type(s) de données nettoyées",
+        "results": results
+    }
