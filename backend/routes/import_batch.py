@@ -1845,6 +1845,34 @@ async def _handle_prevention(record: dict, tenant, user, source: str) -> dict:
                     bat_id = bat["id"]
 
     doc_id = str(uuid.uuid4())
+
+    # Enrichir les champs personnalisés avec les labels depuis ref_typechampperso
+    raw_champs = record.get("liste_champ_personnalise")
+    enriched_champs = []
+    if raw_champs:
+        items = raw_champs.get("champ_personnalise", []) if isinstance(raw_champs, dict) else []
+        if isinstance(items, dict):
+            items = [items]
+        for champ in (items or []):
+            if not isinstance(champ, dict):
+                continue
+            type_id = str(champ.get("id_type_champ_personnalise") or "").strip()
+            label = ""
+            if type_id:
+                type_doc = await db.ref_typechampperso.find_one(
+                    {"tenant_id": tenant.id, "premligne_id": type_id},
+                    {"_id": 0, "nom": 1}
+                )
+                if not type_doc:
+                    type_doc = await db.ref_typechampperso.find_one(
+                        {"premligne_id": type_id}, {"_id": 0, "nom": 1}
+                    )
+                label = (type_doc or {}).get("nom", "")
+            enriched_champs.append({
+                "id_type_champ_personnalise": label or type_id,
+                "valeur": champ.get("valeur") or "",
+            })
+
     doc = {
         "id": doc_id,
         "tenant_id": tenant.id,
@@ -1861,7 +1889,7 @@ async def _handle_prevention(record: dict, tenant, user, source: str) -> dict:
         "anomalies": record.get("liste_anomalie") or record.get("anomalies") or [],
         "avis_emis": _parse_bool(record.get("avis_emission")),
         "texte_avis": record.get("texte_avis") or "",
-        "champs_personnalises": record.get("liste_champ_personnalise"),
+        "champs_personnalises": enriched_champs if enriched_champs else raw_champs,
         "etapes": record.get("liste_etape"),
         "reports": record.get("liste_report"),
         "status": record.get("statut") or "completed",

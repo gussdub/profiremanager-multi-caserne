@@ -2532,13 +2532,20 @@ const BatimentForm = ({
                   {inspections.map(insp => (
                     <div 
                       key={insp.id}
+                      onClick={() => {
+                        setSelectedInspection(insp);
+                        setViewMode('inspection-detail');
+                      }}
                       style={{
                         padding: '1rem',
                         backgroundColor: '#f9fafb',
                         borderRadius: '0.5rem',
                         border: '1px solid #e5e7eb',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        transition: 'all 0.15s'
                       }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(59,130,246,0.15)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.boxShadow = 'none'; }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
@@ -2561,6 +2568,9 @@ const BatimentForm = ({
                             {insp.conformite === 'conforme' ? '✅ Conforme' : '⚠️ Avis émis'}
                           </span>
                         )}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#3b82f6', marginTop: '0.5rem', fontWeight: '500' }}>
+                        Voir le rapport →
                       </div>
                     </div>
                   ))}
