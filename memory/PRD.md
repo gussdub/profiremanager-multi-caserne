@@ -38,6 +38,11 @@ Application de gestion complète pour les services d'incendie canadiens. Multi-t
 - Fix page blanche adresse objet (avr 2026)
 - Enrichissement DossierAdresse complet (avr 2026)
 - Contacts dynamiques multi-types (avr 2026)
+- Fix géolocalisation Android (maximumAge: 0) (avr 2026)
+- Fix logique remplacements séquentiel/simultané/groupe (avr 2026)
+- Import PFM: matching Préventions via references DossierAdresse (avr 2026)
+- Outil nettoyage Super Admin (CleanupDataModal + API /admin/cleanup-collections) (avr 2026)
+- Correction erreur syntaxe JSX CleanupDataModal.jsx (build Vercel réparé) (avr 2026)
 
 ## Backlog
 - P1: Historique inspections/prévention sur fiche bâtiment

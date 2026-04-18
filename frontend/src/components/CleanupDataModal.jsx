@@ -72,17 +72,21 @@ const CleanupDataModal = ({ isOpen, onClose }) => {
       return;
     }
 
-    const confirmation = window.confirm(
+    const tenantLabel = selectedTenant
+      ? tenants.find(t => t.id === selectedTenant)?.slug || selectedTenant
+      : '⚠️ TOUS LES TENANTS';
+
+    const confirmed = window.confirm(
       `⚠️ ATTENTION : Vous allez supprimer DÉFINITIVEMENT :\n\n` +
-      `Tenant : ${selectedTenant ? tenants.find(t => t.id === selectedTenant)?.slug || 'Sélectionné' : '⚠️ TOUS LES TENANTS'}\n\n` +
+      `Tenant : ${tenantLabel}\n\n` +
       selectedCollections.map(id => {
         const coll = collections.find(c => c.id === id);
         return `• ${coll.label}`;
       }).join('\n') +
-      `\n\nCette action est IRRÉVERSIBLE.\n\nTapez "SUPPRIMER" pour confirmer :`
+      `\n\nCette action est IRRÉVERSIBLE. Confirmez-vous ?`
     );
 
-    if (confirmation !== 'SUPPRIMER') {
+    if (!confirmed) {
       return;
     }
 
@@ -282,49 +286,6 @@ const CleanupDataModal = ({ isOpen, onClose }) => {
               </pre>
             </div>
           )}
-
-          {/* Boutons d'action */}
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-            <Button
-              onClick={onClose}
-              variant="outline"
-              disabled={loading}
-            >
-              Annuler
-            </Button>
-            <Button
-              onClick={handleCleanup}
-              disabled={loading || selectedCollections.length === 0}
-              style={{ 
-                backgroundColor: '#dc2626',
-                opacity: (loading || selectedCollections.length === 0) ? 0.5 : 1
-              }}
-            >
-              {loading ? '⏳ Nettoyage...' : `🗑️ Nettoyer (${selectedCollections.length})`}
-            </Button>
-          </div>
-
-          {selectedCollections.length > 0 && !loading && (
-            <div style={{
-              marginTop: '16px',
-              padding: '12px',
-              backgroundColor: '#fef2f2',
-              border: '1px solid #fecaca',
-              borderRadius: '6px',
-              fontSize: '13px',
-              color: '#991b1b'
-            }}>
-              ⚠️ Vous allez supprimer <strong>{selectedCollections.length}</strong> type(s) de données. Cette action est irréversible.
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
-
-export default CleanupDataModal;
-  )}
 
           {/* Boutons d'action */}
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
