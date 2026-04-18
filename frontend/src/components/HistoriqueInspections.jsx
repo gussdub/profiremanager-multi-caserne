@@ -187,14 +187,36 @@ const HistoriqueInspections = ({ batiment, tenantSlug, onBack, onViewInspection 
                       }}>
                         📅 {formatDate(inspection.date_inspection)}
                       </div>
-                      {inspection.preventionniste_id && (
-                        <div style={{
-                          fontSize: '0.875rem',
-                          color: '#6b7280'
-                        }}>
-                          👤 Préventionniste
+                      {/* Type de prévention */}
+                      {(inspection.type_inspection || inspection.pfm_record?.type_prev) && (
+                        <div style={{ fontSize: '0.8rem', color: '#4b5563', fontWeight: '500', marginBottom: '2px' }}>
+                          {inspection.type_inspection || inspection.pfm_record?.type_prev}
                         </div>
                       )}
+                      {/* Inspecteur */}
+                      {(inspection.inspecteur || inspection.inspecteur_nom || inspection.pfm_record?.id_auteur) && (
+                        <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                          👤 {(inspection.inspecteur || inspection.inspecteur_nom || inspection.pfm_record?.id_auteur || '').replace(/^\*?\d+\s*-\s*/, '')}
+                        </div>
+                      )}
+                      {/* Anomalies */}
+                      {(() => {
+                        const raw = inspection.anomalies;
+                        if (!raw) return null;
+                        const arr = Array.isArray(raw) ? raw : (raw.anomalie ? [].concat(raw.anomalie) : raw.item ? [].concat(raw.item) : []);
+                        if (!arr.length) return null;
+                        const nonRes = arr.filter(a => {
+                          const s = (a.statut || a.etat || '').toLowerCase();
+                          return !s.includes('résol') && !s.includes('resol') && s !== 'fermé';
+                        }).length;
+                        return (
+                          <div style={{ fontSize: '0.8rem', marginTop: '4px', display: 'flex', gap: '8px' }}>
+                            <span style={{ color: nonRes > 0 ? '#dc2626' : '#16a34a', fontWeight: '600' }}>
+                              ⚠ {arr.length} anomalie{arr.length > 1 ? 's' : ''}{nonRes > 0 ? ` (${nonRes} non résolu${nonRes > 1 ? 'es' : 'e'})` : ' (toutes résolues)'}
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </div>
                     <div style={{
                       padding: '0.375rem 0.75rem',
