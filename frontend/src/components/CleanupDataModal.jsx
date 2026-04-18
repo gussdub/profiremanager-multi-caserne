@@ -1,21 +1,137 @@
 import React, { useState } from 'react';
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { ChevronDown, ChevronRight, Trash2, CheckSquare, Square } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Définition des groupes et de leurs tables MongoDB
+const GROUPS = [
+  {
+    id: 'batiments',
+    label: 'Bâtiments',
+    icon: '🏢',
+    description: 'Bâtiments, historique, dossiers adresses, plans',
+    tables: [
+      { name: 'batiments', label: 'Bâtiments' },
+      { name: 'batiments_historique', label: 'Historique bâtiments' },
+      { name: 'import_dossier_adresses', label: 'Dossiers adresses (import PFM)' },
+      { name: 'dependances_batiments', label: 'Dépendances' },
+      { name: 'plans_intervention', label: 'Plans d\'intervention' },
+      { name: 'import_duplicates', label: 'Doublons import' },
+      { name: 'symboles_personnalises', label: 'Symboles personnalisés' },
+      { name: 'secteurs_geographiques', label: 'Secteurs géographiques' },
+    ],
+  },
+  {
+    id: 'inspections',
+    label: 'Préventions / Inspections',
+    icon: '📋',
+    description: 'Inspections, préventions, bornes, grilles, points d\'eau',
+    tables: [
+      { name: 'inspections', label: 'Inspections prévention' },
+      { name: 'inspections_visuelles', label: 'Inspections visuelles' },
+      { name: 'inspections_bornes_seches', label: 'Inspections bornes sèches' },
+      { name: 'inspections_unifiees', label: 'Inspections unifiées' },
+      { name: 'inspections_bornes', label: 'Inspections bornes' },
+      { name: 'inspections_saaq', label: 'Inspections SAAQ' },
+      { name: 'inspections_inventaire', label: 'Inspections inventaire' },
+      { name: 'grilles_inspection', label: 'Grilles d\'inspection' },
+      { name: 'avis_non_conformite', label: 'Avis de non-conformité' },
+      { name: 'points_eau', label: 'Points d\'eau' },
+      { name: 'maintenance_bornes', label: 'Maintenance bornes' },
+      { name: 'travaux', label: 'Travaux' },
+    ],
+  },
+  {
+    id: 'users',
+    label: 'Personnel',
+    icon: '👤',
+    description: 'Utilisateurs (sauf super-admins)',
+    tables: [
+      { name: 'users', label: 'Utilisateurs' },
+      { name: 'imported_personnel', label: 'Personnel importé (PFM)' },
+    ],
+  },
+  {
+    id: 'equipements',
+    label: 'EPI / Équipements',
+    icon: '🧯',
+    description: 'Équipements, inventaire, maintenance',
+    tables: [
+      { name: 'equipements', label: 'Équipements' },
+      { name: 'inventaire_epi', label: 'Inventaire EPI' },
+      { name: 'maintenance_equipements', label: 'Maintenance équipements' },
+    ],
+  },
+  {
+    id: 'interventions',
+    label: 'Interventions',
+    icon: '🚒',
+    description: 'Interventions, historique, RCCI',
+    tables: [
+      { name: 'interventions', label: 'Interventions' },
+      { name: 'interventions_historique', label: 'Historique interventions' },
+      { name: 'rcci', label: 'Rapports RCCI' },
+    ],
+  },
+  {
+    id: 'formations',
+    label: 'Formations',
+    icon: '📚',
+    description: 'Sessions de formation et inscriptions',
+    tables: [
+      { name: 'formations', label: 'Formations' },
+      { name: 'sessions_formation', label: 'Sessions' },
+      { name: 'inscriptions_formation', label: 'Inscriptions' },
+    ],
+  },
+  {
+    id: 'disponibilites',
+    label: 'Disponibilités',
+    icon: '📅',
+    description: 'Disponibilités et congés du personnel',
+    tables: [
+      { name: 'disponibilites', label: 'Disponibilités' },
+      { name: 'conges', label: 'Congés' },
+    ],
+  },
+  {
+    id: 'remplacements',
+    label: 'Remplacements',
+    icon: '🔄',
+    description: 'Demandes et tentatives de remplacement',
+    tables: [
+      { name: 'demandes_remplacement', label: 'Demandes de remplacement' },
+      { name: 'tentatives_remplacement', label: 'Tentatives de remplacement' },
+    ],
+  },
+  {
+    id: 'files',
+    label: 'Fichiers',
+    icon: '📎',
+    description: 'Documents et fichiers stockés',
+    tables: [
+      { name: 'stored_files', label: 'Fichiers stockés (Azure)' },
+    ],
+  },
+];
+
+const ALL_TABLES = GROUPS.flatMap(g => g.tables.map(t => t.name));
+
 const CleanupDataModal = ({ isOpen, onClose }) => {
-  const [selectedCollections, setSelectedCollections] = useState([]);
-  const [selectedTenant, setSelectedTenant] = useState(''); // '' = tous les tenants
+  const [selectedTables, setSelectedTables] = useState(new Set());
+  const [expandedGroups, setExpandedGroups] = useState(new Set());
+  const [selectedTenant, setSelectedTenant] = useState('');
   const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
 
-  // Charger la liste des tenants
   React.useEffect(() => {
     if (isOpen) {
       fetchTenants();
+      setResults(null);
     }
   }, [isOpen]);
 
@@ -27,48 +143,62 @@ const CleanupDataModal = ({ isOpen, onClose }) => {
       });
       if (response.ok) {
         const data = await response.json();
-        // L'endpoint retourne un tableau directement
         const list = Array.isArray(data) ? data : (data.tenants || data.items || []);
         setTenants(list);
-      } else {
-        console.error('Erreur chargement tenants:', response.status);
       }
     } catch (error) {
       console.error('Erreur chargement tenants:', error);
     }
   };
 
-  const collections = [
-    { id: 'batiments', label: '🏢 Bâtiments', description: 'Tous les bâtiments et dossiers d\'adresses' },
-    { id: 'inspections', label: '📋 Préventions/Inspections', description: 'Toutes les inspections et préventions' },
-    { id: 'users', label: '👤 Personnel', description: 'Tous les utilisateurs (sauf admins)' },
-    { id: 'equipements', label: '🧯 EPI/Équipements', description: 'Tous les équipements et inventaire' },
-    { id: 'interventions', label: '🚒 Interventions', description: 'Toutes les interventions' },
-    { id: 'formations', label: '📚 Formations', description: 'Sessions et inscriptions de formation' },
-    { id: 'disponibilites', label: '📅 Disponibilités', description: 'Disponibilités du personnel' },
-    { id: 'remplacements', label: '🔄 Remplacements', description: 'Demandes de remplacement' },
-    { id: 'files', label: '📎 Fichiers', description: 'Fichiers et documents stockés' },
-  ];
+  // --- Helpers état des cases ---
 
-  const toggleCollection = (id) => {
-    setSelectedCollections(prev => 
-      prev.includes(id) 
-        ? prev.filter(c => c !== id)
-        : [...prev, id]
-    );
+  const toggleTable = (tableName) => {
+    setSelectedTables(prev => {
+      const next = new Set(prev);
+      next.has(tableName) ? next.delete(tableName) : next.add(tableName);
+      return next;
+    });
   };
 
-  const selectAll = () => {
-    setSelectedCollections(collections.map(c => c.id));
+  const groupState = (group) => {
+    const names = group.tables.map(t => t.name);
+    const checked = names.filter(n => selectedTables.has(n));
+    if (checked.length === 0) return 'none';
+    if (checked.length === names.length) return 'all';
+    return 'some';
   };
 
-  const deselectAll = () => {
-    setSelectedCollections([]);
+  const toggleGroup = (group) => {
+    const state = groupState(group);
+    setSelectedTables(prev => {
+      const next = new Set(prev);
+      if (state === 'all') {
+        group.tables.forEach(t => next.delete(t.name));
+      } else {
+        group.tables.forEach(t => next.add(t.name));
+      }
+      return next;
+    });
   };
+
+  const toggleExpand = (groupId, e) => {
+    e.stopPropagation();
+    setExpandedGroups(prev => {
+      const next = new Set(prev);
+      next.has(groupId) ? next.delete(groupId) : next.add(groupId);
+      return next;
+    });
+  };
+
+  const selectAll = () => setSelectedTables(new Set(ALL_TABLES));
+  const deselectAll = () => setSelectedTables(new Set());
+
+  // --- Soumission ---
 
   const handleCleanup = async () => {
-    if (selectedCollections.length === 0) {
-      alert('Veuillez sélectionner au moins une collection à nettoyer');
+    if (selectedTables.size === 0) {
+      alert('Veuillez sélectionner au moins une table à nettoyer.');
       return;
     }
 
@@ -76,35 +206,31 @@ const CleanupDataModal = ({ isOpen, onClose }) => {
       ? tenants.find(t => t.id === selectedTenant)?.slug || selectedTenant
       : '⚠️ TOUS LES TENANTS';
 
+    const tableList = [...selectedTables].sort();
     const confirmed = window.confirm(
-      `⚠️ ATTENTION : Vous allez supprimer DÉFINITIVEMENT :\n\n` +
-      `Tenant : ${tenantLabel}\n\n` +
-      selectedCollections.map(id => {
-        const coll = collections.find(c => c.id === id);
-        return `• ${coll.label}`;
-      }).join('\n') +
+      `⚠️ SUPPRESSION DÉFINITIVE\n\n` +
+      `Tenant : ${tenantLabel}\n` +
+      `Tables (${tableList.length}) :\n` +
+      tableList.map(t => `  • ${t}`).join('\n') +
       `\n\nCette action est IRRÉVERSIBLE. Confirmez-vous ?`
     );
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     setLoading(true);
     setResults(null);
 
     try {
       const token = localStorage.getItem('admin_token') || localStorage.getItem('token');
-      
-      const response = await fetch(`${API}/admin/cleanup-collections`, {
+      const response = await fetch(`${API}/admin/cleanup-tables`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          collections: selectedCollections,
-          tenant_id: selectedTenant || null, // null = tous les tenants
+          tables: tableList,
+          tenant_id: selectedTenant || null,
           confirm: true
         })
       });
@@ -113,12 +239,10 @@ const CleanupDataModal = ({ isOpen, onClose }) => {
 
       if (response.ok) {
         setResults(data.results);
-        alert(`✅ Nettoyage terminé !\n\n${JSON.stringify(data.results, null, 2)}`);
       } else {
         alert(`❌ Erreur : ${data.detail || data.message}`);
       }
     } catch (error) {
-      console.error('Erreur nettoyage:', error);
       alert(`❌ Erreur de connexion : ${error.message}`);
     } finally {
       setLoading(false);
@@ -127,200 +251,218 @@ const CleanupDataModal = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
+  const totalSelected = selectedTables.size;
+
   return (
     <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.7)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 99999,
-      padding: '20px'
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.75)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 99999, padding: '20px'
     }}>
-      <Card style={{ 
-        maxWidth: '700px', 
-        width: '100%', 
-        maxHeight: '90vh',
-        overflow: 'auto'
-      }}>
-        <CardHeader>
+      <Card style={{ maxWidth: '720px', width: '100%', maxHeight: '92vh', overflow: 'auto' }}>
+        <CardHeader style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '16px' }}>
           <CardTitle style={{ color: '#dc2626', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '24px' }}>🧹</span>
+            <Trash2 size={22} />
             Nettoyage des Données
           </CardTitle>
-          <p style={{ color: '#64748b', fontSize: '14px', marginTop: '8px' }}>
-            ⚠️ Sélectionnez les collections à nettoyer. Cette action est irréversible.
+          <p style={{ color: '#64748b', fontSize: '13px', marginTop: '6px' }}>
+            Sélectionnez les tables à vider. Dépliez un groupe pour choisir table par table.
           </p>
         </CardHeader>
 
-        <CardContent>
-          {/* Sélecteur de tenant - AJOUTÉ */}
-          <div style={{ 
-            marginBottom: '24px', 
-            padding: '16px', 
-            backgroundColor: '#fef3c7',
-            border: '2px solid #fbbf24',
-            borderRadius: '8px' 
+        <CardContent style={{ paddingTop: '20px' }}>
+
+          {/* Sélecteur de tenant */}
+          <div style={{
+            marginBottom: '20px', padding: '14px',
+            backgroundColor: '#fef3c7', border: '2px solid #fbbf24', borderRadius: '8px'
           }}>
-            <label style={{ 
-              display: 'block', 
-              fontWeight: '600', 
-              marginBottom: '8px',
-              color: '#92400e'
-            }}>
-              🏢 Tenant à nettoyer
+            <label style={{ display: 'block', fontWeight: '600', marginBottom: '8px', color: '#92400e', fontSize: '13px' }}>
+              Caserne à nettoyer
             </label>
             <select
               value={selectedTenant}
               onChange={(e) => setSelectedTenant(e.target.value)}
               style={{
-                width: '100%',
-                padding: '10px',
-                border: '2px solid #fbbf24',
-                borderRadius: '6px',
-                fontSize: '14px',
-                backgroundColor: 'white',
-                cursor: 'pointer'
+                width: '100%', padding: '9px 12px',
+                border: '1.5px solid #fbbf24', borderRadius: '6px',
+                fontSize: '14px', backgroundColor: 'white', cursor: 'pointer'
               }}
             >
-              <option value="">⚠️ TOUS LES TENANTS (DANGER)</option>
-              {tenants.length === 0 ? (
-                <>
-                  <option value="demo">demo - Démonstration</option>
-                  <option value="shefford">shefford - Shefford</option>
-                  <option value="sutton">sutton - Sutton</option>
-                </>
-              ) : (
-                tenants.map(tenant => (
-                  <option key={tenant.id || tenant.slug} value={tenant.id}>
-                    {tenant.slug} - {tenant.nom || tenant.name || 'Service Incendie'}
-                  </option>
-                ))
-              )}
+              <option value="">⚠️ TOUTES LES CASERNES (DANGER)</option>
+              {tenants.map(tenant => (
+                <option key={tenant.id || tenant.slug} value={tenant.id}>
+                  {tenant.slug} — {tenant.nom || tenant.name || 'Service Incendie'}
+                </option>
+              ))}
             </select>
             {!selectedTenant && (
-              <div style={{ 
-                marginTop: '8px', 
-                fontSize: '12px', 
-                color: '#dc2626',
-                fontWeight: '600'
-              }}>
-                ⚠️ Aucun tenant sélectionné = nettoyage de TOUS les tenants !
-              </div>
+              <p style={{ marginTop: '6px', fontSize: '12px', color: '#dc2626', fontWeight: '600' }}>
+                Aucune caserne sélectionnée = suppression pour TOUTES les casernes !
+              </p>
             )}
           </div>
 
-          {/* Boutons de sélection rapide */}
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-            <Button 
-              onClick={selectAll}
-              variant="outline"
-              size="sm"
-              style={{ flex: 1 }}
-            >
-              ✓ Tout sélectionner
+          {/* Barre de sélection rapide + compteur */}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', alignItems: 'center' }}>
+            <Button onClick={selectAll} variant="outline" size="sm" style={{ fontSize: '12px' }}>
+              Tout sélectionner
             </Button>
-            <Button 
-              onClick={deselectAll}
-              variant="outline"
-              size="sm"
-              style={{ flex: 1 }}
-            >
-              ✗ Tout désélectionner
+            <Button onClick={deselectAll} variant="outline" size="sm" style={{ fontSize: '12px' }}>
+              Tout désélectionner
             </Button>
+            <span style={{ marginLeft: 'auto', fontSize: '13px', color: '#64748b', fontWeight: '500' }}>
+              {totalSelected} table{totalSelected !== 1 ? 's' : ''} sélectionnée{totalSelected !== 1 ? 's' : ''}
+            </span>
           </div>
 
-          {/* Liste des collections */}
-          <div style={{ display: 'grid', gap: '12px', marginBottom: '24px' }}>
-            {collections.map(collection => (
-              <div
-                key={collection.id}
-                onClick={() => toggleCollection(collection.id)}
-                style={{
-                  padding: '16px',
-                  border: `2px solid ${selectedCollections.includes(collection.id) ? '#dc2626' : '#e2e8f0'}`,
+          {/* Accordéon des groupes */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
+            {GROUPS.map(group => {
+              const state = groupState(group);
+              const isExpanded = expandedGroups.has(group.id);
+              const borderColor = state === 'all' ? '#dc2626' : state === 'some' ? '#f59e0b' : '#e2e8f0';
+              const bgColor = state === 'all' ? '#fef2f2' : state === 'some' ? '#fffbeb' : 'white';
+
+              return (
+                <div key={group.id} style={{
+                  border: `2px solid ${borderColor}`,
                   borderRadius: '8px',
-                  cursor: 'pointer',
-                  backgroundColor: selectedCollections.includes(collection.id) ? '#fef2f2' : 'white',
-                  transition: 'all 0.2s'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedCollections.includes(collection.id)}
-                    onChange={() => {}}
-                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                  />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: '600', marginBottom: '4px' }}>
-                      {collection.label}
+                  backgroundColor: bgColor,
+                  overflow: 'hidden',
+                  transition: 'border-color 0.2s, background-color 0.2s'
+                }}>
+                  {/* En-tête du groupe */}
+                  <div
+                    onClick={() => toggleGroup(group)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '10px',
+                      padding: '12px 14px', cursor: 'pointer', userSelect: 'none'
+                    }}
+                  >
+                    {/* Icône checkbox groupe */}
+                    <div onClick={(e) => { e.stopPropagation(); toggleGroup(group); }}
+                      style={{ flexShrink: 0 }}>
+                      {state === 'all'
+                        ? <CheckSquare size={20} color="#dc2626" />
+                        : state === 'some'
+                          ? <CheckSquare size={20} color="#f59e0b" />
+                          : <Square size={20} color="#94a3b8" />
+                      }
                     </div>
-                    <div style={{ fontSize: '13px', color: '#64748b' }}>
-                      {collection.description}
+
+                    <span style={{ fontSize: '18px' }}>{group.icon}</span>
+
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: '600', fontSize: '14px' }}>{group.label}</div>
+                      <div style={{ fontSize: '12px', color: '#64748b' }}>
+                        {group.tables.filter(t => selectedTables.has(t.name)).length}/{group.tables.length} tables sélectionnées
+                      </div>
                     </div>
+
+                    {/* Bouton expand/collapse */}
+                    <button
+                      onClick={(e) => toggleExpand(group.id, e)}
+                      style={{
+                        background: 'none', border: 'none', cursor: 'pointer',
+                        padding: '4px', borderRadius: '4px', color: '#64748b',
+                        display: 'flex', alignItems: 'center'
+                      }}
+                      title={isExpanded ? 'Réduire' : 'Déplier les tables'}
+                    >
+                      {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                    </button>
                   </div>
+
+                  {/* Tables individuelles (accordéon) */}
+                  {isExpanded && (
+                    <div style={{
+                      borderTop: '1px solid #e2e8f0',
+                      backgroundColor: 'rgba(255,255,255,0.7)',
+                      padding: '8px 14px 12px 14px',
+                      display: 'flex', flexDirection: 'column', gap: '6px'
+                    }}>
+                      {group.tables.map(table => (
+                        <label
+                          key={table.name}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: '10px',
+                            padding: '7px 10px', borderRadius: '6px', cursor: 'pointer',
+                            backgroundColor: selectedTables.has(table.name) ? '#fef2f2' : '#f8fafc',
+                            border: `1px solid ${selectedTables.has(table.name) ? '#fca5a5' : '#e2e8f0'}`,
+                            transition: 'all 0.15s'
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedTables.has(table.name)}
+                            onChange={() => toggleTable(table.name)}
+                            style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#dc2626' }}
+                          />
+                          <span style={{ flex: 1, fontSize: '13px', fontWeight: '500' }}>
+                            {table.label}
+                          </span>
+                          <code style={{
+                            fontSize: '11px', color: '#94a3b8',
+                            backgroundColor: '#f1f5f9', padding: '2px 6px', borderRadius: '4px',
+                            fontFamily: 'monospace'
+                          }}>
+                            {table.name}
+                          </code>
+                        </label>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Résultats */}
           {results && (
             <div style={{
-              padding: '16px',
-              backgroundColor: '#f0fdf4',
-              border: '2px solid #86efac',
-              borderRadius: '8px',
-              marginBottom: '20px'
+              padding: '14px', backgroundColor: '#f0fdf4',
+              border: '2px solid #86efac', borderRadius: '8px', marginBottom: '16px'
             }}>
-              <div style={{ fontWeight: '600', marginBottom: '8px', color: '#16a34a' }}>
-                ✅ Nettoyage terminé
+              <div style={{ fontWeight: '600', marginBottom: '8px', color: '#16a34a', fontSize: '14px' }}>
+                ✅ Nettoyage terminé — {Object.values(results).reduce((a, b) => a + (typeof b === 'number' ? b : 0), 0)} document(s) supprimé(s)
               </div>
-              <pre style={{ fontSize: '12px', margin: 0, whiteSpace: 'pre-wrap' }}>
-                {JSON.stringify(results, null, 2)}
-              </pre>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {Object.entries(results).map(([table, count]) => (
+                  <div key={table} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                    <code style={{ color: '#374151' }}>{table}</code>
+                    <span style={{ fontWeight: '600', color: count > 0 ? '#dc2626' : '#94a3b8' }}>
+                      {count > 0 ? `−${count}` : '0'}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
           {/* Boutons d'action */}
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-            <Button
-              onClick={onClose}
-              variant="outline"
-              disabled={loading}
-            >
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', alignItems: 'center' }}>
+            {totalSelected > 0 && !loading && (
+              <span style={{ fontSize: '12px', color: '#991b1b', flex: 1 }}>
+                ⚠️ {totalSelected} table{totalSelected > 1 ? 's' : ''} — action irréversible
+              </span>
+            )}
+            <Button onClick={onClose} variant="outline" disabled={loading}>
               Annuler
             </Button>
             <Button
               onClick={handleCleanup}
-              disabled={loading || selectedCollections.length === 0}
-              style={{ 
+              disabled={loading || totalSelected === 0}
+              style={{
                 backgroundColor: '#dc2626',
-                opacity: (loading || selectedCollections.length === 0) ? 0.5 : 1
+                opacity: (loading || totalSelected === 0) ? 0.5 : 1
               }}
             >
-              {loading ? '⏳ Nettoyage...' : `🗑️ Nettoyer (${selectedCollections.length})`}
+              {loading ? '⏳ En cours...' : `Nettoyer (${totalSelected})`}
             </Button>
           </div>
 
-          {selectedCollections.length > 0 && !loading && (
-            <div style={{
-              marginTop: '16px',
-              padding: '12px',
-              backgroundColor: '#fef2f2',
-              border: '1px solid #fecaca',
-              borderRadius: '6px',
-              fontSize: '13px',
-              color: '#991b1b'
-            }}>
-              ⚠️ Vous allez supprimer <strong>{selectedCollections.length}</strong> type(s) de données. Cette action est irréversible.
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

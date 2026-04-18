@@ -430,3 +430,74 @@ async def cleanup_collections(
         "message": f"{len(collections)} type(s) de données nettoyées" + (f" pour tenant {resolved_tenant_id}" if resolved_tenant_id else " pour TOUS les tenants"),
         "results": results
     }
+
+
+
+@router.post("/admin/cleanup-tables")
+async def cleanup_tables(
+    request: dict,
+    admin: SuperAdmin = Depends(get_super_admin)
+):
+    """
+    Nettoie des tables MongoDB individuelles (sélection fine par table).
+    Accepte une liste de noms de collections bruts + tenant_id optionnel.
+    """
+    tables = request.get('tables', [])
+    confirm = request.get('confirm', False)
+    tenant_id = request.get('tenant_id')
+
+    if not confirm:
+        raise HTTPException(status_code=400, detail="Confirmation requise")
+    if not tables:
+        raise HTTPException(status_code=400, detail="Aucune table sélectionnée")
+
+    # Collections protégées — ne jamais toucher
+    PROTECTED = {'super_admins', 'tenants', 'centrales_911', 'system.indexes'}
+
+    tenant_info = f"tenant {tenant_id}" if tenant_id else "TOUS LES TENANTS"
+    logger.warning(f"🗑️  Nettoyage tables par {admin.email} ({tenant_info}): {tables}")
+
+    # Résoudre le tenant_id : UUID ou slug
+    resolved_tenant_id = None
+    if tenant_id:
+        tenant_doc = await db.tenants.find_one({"id": tenant_id}, {"_id": 0, "id": 1, "slug": 1})
+        if not tenant_doc:
+            tenant_doc = await db.tenants.find_one({"slug": tenant_id}, {"_id": 0, "id": 1, "slug": 1})
+        if tenant_doc:
+            resolved_tenant_id = tenant_doc["id"]
+            logger.info(f"  Tenant résolu: slug={tenant_doc.get('slug')} id={resolved_tenant_id}")
+        else:
+            raise HTTPException(status_code=404, detail=f"Tenant '{tenant_id}' non trouvé")
+
+    results = {}
+    filter_query = {}
+    if resolved_tenant_id:
+        filter_query["tenant_id"] = resolved_tenant_id
+
+    for table_name in tables:
+        if table_name in PROTECTED:
+            logger.warning(f"  ⛔ {table_name} est protégée, ignorée")
+            continue
+        try:
+            result = await db[table_name].delete_many(filter_query)
+            results[table_name] = result.deleted_count
+            if result.deleted_count > 0:
+                logger.info(f"  ✅ {table_name}: {result.deleted_count} supprimés")
+        except Exception as e:
+            logger.error(f"  ❌ {table_name}: {e}")
+            results[f"{table_name}_error"] = str(e)
+
+    total = sum(v for v in results.values() if isinstance(v, int))
+
+    await log_super_admin_action(
+        admin=admin,
+        action="cleanup_tables",
+        details={"tables": tables, "tenant_id": tenant_id, "results": results, "total_deleted": total}
+    )
+
+    return {
+        "success": True,
+        "message": f"{len(tables)} table(s) nettoyée(s) — {total} document(s) supprimé(s)" +
+                   (f" pour tenant {tenant_doc.get('slug')}" if resolved_tenant_id else " pour TOUS les tenants"),
+        "results": results
+    }
