@@ -22,14 +22,14 @@ const CleanupDataModal = ({ isOpen, onClose }) => {
   const fetchTenants = async () => {
     try {
       const token = localStorage.getItem('admin_token') || localStorage.getItem('token');
-      const response = await fetch(`${API}/admin/super-admin/tenants`, {
+      const response = await fetch(`${API}/admin/tenants`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
         const data = await response.json();
-        console.log('Tenants chargés:', data);
-        // Le format peut être différent, essayons plusieurs possibilités
-        setTenants(data.tenants || data.items || data || []);
+        // L'endpoint retourne un tableau directement
+        const list = Array.isArray(data) ? data : (data.tenants || data.items || []);
+        setTenants(list);
       } else {
         console.error('Erreur chargement tenants:', response.status);
       }

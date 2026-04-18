@@ -363,29 +363,52 @@ async def cleanup_collections(
     
     # Mapping des collections
     collection_mapping = {
-        'batiments': ['batiments', 'batiments_historique', 'import_dossier_adresses', 'dependances_batiments'],
-        'inspections': ['inspections'],
+        'batiments': [
+            'batiments', 'batiments_historique', 'import_dossier_adresses',
+            'dependances_batiments', 'plans_intervention', 'import_duplicates',
+            'symboles_personnalises', 'secteurs_geographiques'
+        ],
+        'inspections': [
+            'inspections', 'inspections_visuelles',
+            'inspections_bornes_seches', 'inspections_unifiees',
+            'inspections_bornes', 'inspections_saaq', 'inspections_inventaire',
+            'grilles_inspection', 'avis_non_conformite', 'points_eau',
+            'maintenance_bornes', 'travaux'
+        ],
         'users': ['users'],
-        'equipements': ['equipements', 'inventaire_epi'],
-        'interventions': ['interventions', 'interventions_historique'],
+        'equipements': ['equipements', 'inventaire_epi', 'maintenance_equipements'],
+        'interventions': ['interventions', 'interventions_historique', 'rcci'],
         'formations': ['formations', 'sessions_formation', 'inscriptions_formation'],
-        'disponibilites': ['disponibilites'],
+        'disponibilites': ['disponibilites', 'conges'],
         'remplacements': ['demandes_remplacement', 'tentatives_remplacement'],
         'files': ['stored_files']
     }
     
     results = {}
     
+    # Résoudre le tenant_id : accepte UUID ou slug
+    resolved_tenant_id = None
+    if tenant_id:
+        # Chercher par id (UUID) d'abord, puis par slug
+        tenant_doc = await db.tenants.find_one({"id": tenant_id}, {"_id": 0, "id": 1, "slug": 1})
+        if not tenant_doc:
+            tenant_doc = await db.tenants.find_one({"slug": tenant_id}, {"_id": 0, "id": 1, "slug": 1})
+        if tenant_doc:
+            resolved_tenant_id = tenant_doc["id"]
+            logger.info(f"  Tenant résolu: slug={tenant_doc.get('slug')} id={resolved_tenant_id}")
+        else:
+            raise HTTPException(status_code=404, detail=f"Tenant '{tenant_id}' non trouvé")
+
     for coll_key in collections:
         if coll_key not in collection_mapping:
             continue
             
         for coll_name in collection_mapping[coll_key]:
             try:
-                # Construire le filtre
+                # Construire le filtre avec l'UUID résolu
                 filter_query = {}
-                if tenant_id:
-                    filter_query["tenant_id"] = tenant_id
+                if resolved_tenant_id:
+                    filter_query["tenant_id"] = resolved_tenant_id
                 
                 result = await db[coll_name].delete_many(filter_query)
                 if result.deleted_count > 0:
@@ -404,6 +427,6 @@ async def cleanup_collections(
     
     return {
         "success": True,
-        "message": f"{len(collections)} type(s) de données nettoyées" + (f" pour tenant {tenant_id}" if tenant_id else " pour TOUS les tenants"),
+        "message": f"{len(collections)} type(s) de données nettoyées" + (f" pour tenant {resolved_tenant_id}" if resolved_tenant_id else " pour TOUS les tenants"),
         "results": results
     }
