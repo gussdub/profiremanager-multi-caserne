@@ -513,7 +513,10 @@ async def fix_orphan_inspections(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Relie les inspections importées sans batiment_id au bon bâtiment par matching d'adresse.
+    Relie les inspections importées sans batiment_id au bon bâtiment par:
+    1. Matching via références PFM Transfer (plus fiable)
+    2. Matching d'adresse
+    3. Matching par premligne_id du dossier_adresse
     """
     tenant = await get_tenant_from_slug(tenant_slug)
 
@@ -522,28 +525,51 @@ async def fix_orphan_inspections(
 
     cursor = db.inspections.find(
         {"tenant_id": tenant.id, "batiment_id": {"$in": [None, ""]}},
-        {"_id": 0, "id": 1, "adresse": 1, "ville": 1, "external_id": 1, "pfm_record": 1}
+        {"_id": 0, "id": 1, "adresse": 1, "ville": 1, "external_id": 1, "pfm_record": 1, "premligne_id": 1}
     )
 
     fixed = 0
+    fixed_by_refs = 0
     async for doc in cursor:
-        addr = doc.get("adresse") or ""
-        city = doc.get("ville") or ""
+        bat_id = None
+        
+        # 🔗 STRATÉGIE 1 : Matching par références (plus fiable)
+        if doc.get("premligne_id"):
+            bat = await db.batiments.find_one(
+                {
+                    "tenant_id": tenant.id,
+                    "$or": [
+                        {"references.item.id": doc["premligne_id"]},
+                        {"references.item.num": doc["premligne_id"]},
+                        {"references.prevention": doc["premligne_id"]},
+                    ]
+                },
+                {"_id": 0, "id": 1}
+            )
+            if bat:
+                bat_id = bat["id"]
+                fixed_by_refs += 1
+                logger.info(f"[FIX-REF] Inspection {doc.get('external_id', doc['id'])} → batiment {bat_id} via références")
+        
+        # STRATÉGIE 2 : Matching par adresse
+        if not bat_id:
+            addr = doc.get("adresse") or ""
+            city = doc.get("ville") or ""
 
-        # Essayer aussi depuis pfm_record.id_dossier_adresse
-        if not addr and doc.get("pfm_record"):
-            addr = doc["pfm_record"].get("id_dossier_adresse") or ""
-            if isinstance(addr, dict):
-                addr = _safe_address_str(addr)
-            if "," in addr:
-                parts = addr.split(",")
-                city_candidate = parts[-1].strip().lstrip("*").strip()
-                if city_candidate and not city:
-                    city = city_candidate
+            # Essayer aussi depuis pfm_record.id_dossier_adresse
+            if not addr and doc.get("pfm_record"):
+                addr = doc["pfm_record"].get("id_dossier_adresse") or ""
+                if isinstance(addr, dict):
+                    addr = _safe_address_str(addr)
+                if "," in addr:
+                    parts = addr.split(",")
+                    city_candidate = parts[-1].strip().lstrip("*").strip()
+                    if city_candidate and not city:
+                        city = city_candidate
 
-        bat_id = await _match_address(addr, city, tenant.id)
+            bat_id = await _match_address(addr, city, tenant.id)
 
-        # Fallback: chercher par premligne_id du dossier_adresse
+        # STRATÉGIE 3 : Fallback par premligne_id du dossier_adresse
         if not bat_id and doc.get("pfm_record"):
             dossier_ref = doc["pfm_record"].get("id_dossier_adresse") or ""
             if isinstance(dossier_ref, str):
@@ -564,7 +590,11 @@ async def fix_orphan_inspections(
             fixed += 1
             logger.info(f"[FIX] Inspection {doc.get('external_id', doc['id'])} → batiment {bat_id}")
 
-    return {"fixed": fixed, "message": f"{fixed} inspection(s) reliée(s) à un bâtiment"}
+    return {
+        "fixed": fixed, 
+        "fixed_by_references": fixed_by_refs,
+        "message": f"{fixed} inspection(s) reliée(s) à un bâtiment ({fixed_by_refs} via références PFM Transfer)"
+    }
 
 
 # ======================== GESTION DES DOUBLONS ========================
@@ -1723,6 +1753,8 @@ async def _handle_dossier_adresse(record: dict, tenant, user, source: str) -> di
         "protections": record.get("protection"),
         "codes_reference": record.get("liste_code_reference"),
         "periodicites": record.get("liste_periodicite"),
+        # 🔗 Références (pour linking automatique avec Préventions)
+        "references": record.get("references"),  # Structure PFM Transfer contenant les liens prévention
         # État
         "etat": record.get("etat") or "Actif",
         "actif": record.get("etat") != "Inactif",
@@ -1762,6 +1794,27 @@ async def _handle_prevention(record: dict, tenant, user, source: str) -> dict:
 
     # Match bâtiment par adresse
     bat_id = await _match_address(addr, city, tenant.id)
+
+    # 🔗 NOUVELLE STRATÉGIE : Matching par références (plus fiable que l'adresse)
+    # Si le bâtiment a importé des "references" depuis PFM Transfer qui pointent vers cette prévention
+    if not bat_id and premligne_id:
+        # Chercher un bâtiment dont les "references" contiennent ce premligne_id de prévention
+        bat = await db.batiments.find_one(
+            {
+                "tenant_id": tenant.id,
+                "$or": [
+                    # Les références peuvent être sous forme de liste avec id/num
+                    {"references.item.id": premligne_id},
+                    {"references.item.num": premligne_id},
+                    # Ou directement comme valeur de champ
+                    {"references.prevention": premligne_id},
+                ]
+            },
+            {"_id": 0, "id": 1}
+        )
+        if bat:
+            bat_id = bat["id"]
+            logger.info(f"✅ Prévention {ext_id} liée au bâtiment {bat_id} via références PFM Transfer")
 
     # Si pas de match par adresse, chercher par premligne_id du dossier_adresse
     if not bat_id:
