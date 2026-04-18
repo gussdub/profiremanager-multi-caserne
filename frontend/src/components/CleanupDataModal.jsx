@@ -22,12 +22,16 @@ const CleanupDataModal = ({ isOpen, onClose }) => {
   const fetchTenants = async () => {
     try {
       const token = localStorage.getItem('admin_token') || localStorage.getItem('token');
-      const response = await fetch(`${API}/admin/tenants`, {
+      const response = await fetch(`${API}/admin/super-admin/tenants`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
         const data = await response.json();
-        setTenants(data.tenants || []);
+        console.log('Tenants chargés:', data);
+        // Le format peut être différent, essayons plusieurs possibilités
+        setTenants(data.tenants || data.items || data || []);
+      } else {
+        console.error('Erreur chargement tenants:', response.status);
       }
     } catch (error) {
       console.error('Erreur chargement tenants:', error);
@@ -150,6 +154,62 @@ const CleanupDataModal = ({ isOpen, onClose }) => {
         </CardHeader>
 
         <CardContent>
+          {/* Sélecteur de tenant - AJOUTÉ */}
+          <div style={{ 
+            marginBottom: '24px', 
+            padding: '16px', 
+            backgroundColor: '#fef3c7',
+            border: '2px solid #fbbf24',
+            borderRadius: '8px' 
+          }}>
+            <label style={{ 
+              display: 'block', 
+              fontWeight: '600', 
+              marginBottom: '8px',
+              color: '#92400e'
+            }}>
+              🏢 Tenant à nettoyer
+            </label>
+            <select
+              value={selectedTenant}
+              onChange={(e) => setSelectedTenant(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px',
+                border: '2px solid #fbbf24',
+                borderRadius: '6px',
+                fontSize: '14px',
+                backgroundColor: 'white',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="">⚠️ TOUS LES TENANTS (DANGER)</option>
+              {tenants.length === 0 ? (
+                <>
+                  <option value="demo">demo - Démonstration</option>
+                  <option value="shefford">shefford - Shefford</option>
+                  <option value="sutton">sutton - Sutton</option>
+                </>
+              ) : (
+                tenants.map(tenant => (
+                  <option key={tenant.id || tenant.slug} value={tenant.id}>
+                    {tenant.slug} - {tenant.nom || tenant.name || 'Service Incendie'}
+                  </option>
+                ))
+              )}
+            </select>
+            {!selectedTenant && (
+              <div style={{ 
+                marginTop: '8px', 
+                fontSize: '12px', 
+                color: '#dc2626',
+                fontWeight: '600'
+              }}>
+                ⚠️ Aucun tenant sélectionné = nettoyage de TOUS les tenants !
+              </div>
+            )}
+          </div>
+
           {/* Boutons de sélection rapide */}
           <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
             <Button 
