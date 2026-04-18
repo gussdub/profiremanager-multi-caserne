@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nettoyage Cache - ProFireManager</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #e53935;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #e53935;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #c62828;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+        }
+        .status.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-left: 4px solid #4caf50;
+        }
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+            border-left: 4px solid #f44336;
+        }
+        .log {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🧹 Nettoyage du Cache</h1>
+        <p>Utilisez cette page pour nettoyer complètement le cache de l'application si vous voyez des données obsolètes.</p>
+        
+        <button onclick="clearAll()">🗑️ Nettoyer Tout</button>
+        <button onclick="clearServiceWorkers()">⚙️ Service Workers</button>
+        <button onclick="clearStorage()">💾 Storage</button>
+        <button onclick="clearCaches()">📦 Caches</button>
+        
+        <div id="status" class="status"></div>
+        <div id="log" class="log" style="display:none;"></div>
+    </div>
+
+    <script>
+        const status = document.getElementById('status');
+        const log = document.getElementById('log');
+        
+        function showStatus(message, isError = false) {
+            status.textContent = message;
+            status.className = 'status ' + (isError ? 'error' : 'success');
+            status.style.display = 'block';
+        }
+        
+        function addLog(message) {
+            log.style.display = 'block';
+            log.innerHTML += message + '<br>';
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        async function clearServiceWorkers() {
+            addLog('🔍 Recherche des service workers...');
+            try {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                addLog(`Trouvé: ${registrations.length} service worker(s)`);
+                
+                for (let registration of registrations) {
+                    await registration.unregister();
+                    addLog(`✅ Service worker désenregistré: ${registration.scope}`);
+                }
+                
+                if (registrations.length === 0) {
+                    addLog('ℹ️  Aucun service worker trouvé');
+                }
+                
+                showStatus('✅ Service workers nettoyés');
+            } catch (error) {
+                addLog(`❌ Erreur: ${error.message}`);
+                showStatus('❌ Erreur lors du nettoyage des service workers', true);
+            }
+        }
+        
+        async function clearStorage() {
+            addLog('🗑️  Nettoyage du storage...');
+            try {
+                localStorage.clear();
+                addLog('✅ localStorage vidé');
+                
+                sessionStorage.clear();
+                addLog('✅ sessionStorage vidé');
+                
+                // IndexedDB
+                if (window.indexedDB) {
+                    const databases = await indexedDB.databases();
+                    for (let db of databases) {
+                        indexedDB.deleteDatabase(db.name);
+                        addLog(`✅ IndexedDB supprimée: ${db.name}`);
+                    }
+                }
+                
+                showStatus('✅ Storage nettoyé');
+            } catch (error) {
+                addLog(`❌ Erreur: ${error.message}`);
+                showStatus('❌ Erreur lors du nettoyage du storage', true);
+            }
+        }
+        
+        async function clearCaches() {
+            addLog('📦 Nettoyage des caches...');
+            try {
+                const cacheNames = await caches.keys();
+                addLog(`Trouvé: ${cacheNames.length} cache(s)`);
+                
+                for (let cacheName of cacheNames) {
+                    await caches.delete(cacheName);
+                    addLog(`✅ Cache supprimé: ${cacheName}`);
+                }
+                
+                if (cacheNames.length === 0) {
+                    addLog('ℹ️  Aucun cache trouvé');
+                }
+                
+                showStatus('✅ Caches nettoyés');
+            } catch (error) {
+                addLog(`❌ Erreur: ${error.message}`);
+                showStatus('❌ Erreur lors du nettoyage des caches', true);
+            }
+        }
+        
+        async function clearAll() {
+            log.innerHTML = '';
+            log.style.display = 'block';
+            
+            addLog('🧹 NETTOYAGE COMPLET...');
+            addLog('');
+            
+            await clearServiceWorkers();
+            addLog('');
+            
+            await clearStorage();
+            addLog('');
+            
+            await clearCaches();
+            addLog('');
+            
+            addLog('✅ NETTOYAGE TERMINÉ !');
+            showStatus('✅ Nettoyage complet terminé. Rechargement dans 2 secondes...');
+            
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

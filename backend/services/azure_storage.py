@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 ACCOUNT_NAME = os.environ.get("AZURE_STORAGE_ACCOUNT_NAME")
 ACCOUNT_KEY = os.environ.get("AZURE_STORAGE_ACCOUNT_KEY")
 CONTAINER_NAME = os.environ.get("AZURE_STORAGE_CONTAINER_NAME")
-SAS_EXPIRY_MINUTES = 15
+SAS_EXPIRY_MINUTES = 240  # 4 heures au lieu de 15 minutes pour éviter les erreurs 403 fréquentes
 
 APP_NAME = "profiremanager"
 
