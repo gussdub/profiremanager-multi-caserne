@@ -7,8 +7,32 @@ const API = `${BACKEND_URL}/api`;
 
 const CleanupDataModal = ({ isOpen, onClose }) => {
   const [selectedCollections, setSelectedCollections] = useState([]);
+  const [selectedTenant, setSelectedTenant] = useState(''); // '' = tous les tenants
+  const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
+
+  // Charger la liste des tenants
+  React.useEffect(() => {
+    if (isOpen) {
+      fetchTenants();
+    }
+  }, [isOpen]);
+
+  const fetchTenants = async () => {
+    try {
+      const token = localStorage.getItem('admin_token') || localStorage.getItem('token');
+      const response = await fetch(`${API}/admin/tenants`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setTenants(data.tenants || []);
+      }
+    } catch (error) {
+      console.error('Erreur chargement tenants:', error);
+    }
+  };
 
   const collections = [
     { id: 'batiments', label: '🏢 Bâtiments', description: 'Tous les bâtiments et dossiers d\'adresses' },
@@ -46,6 +70,7 @@ const CleanupDataModal = ({ isOpen, onClose }) => {
 
     const confirmation = window.confirm(
       `⚠️ ATTENTION : Vous allez supprimer DÉFINITIVEMENT :\n\n` +
+      `Tenant : ${selectedTenant ? tenants.find(t => t.id === selectedTenant)?.slug || 'Sélectionné' : '⚠️ TOUS LES TENANTS'}\n\n` +
       selectedCollections.map(id => {
         const coll = collections.find(c => c.id === id);
         return `• ${coll.label}`;
@@ -71,6 +96,7 @@ const CleanupDataModal = ({ isOpen, onClose }) => {
         },
         body: JSON.stringify({
           collections: selectedCollections,
+          tenant_id: selectedTenant || null, // null = tous les tenants
           confirm: true
         })
       });
@@ -196,6 +222,49 @@ const CleanupDataModal = ({ isOpen, onClose }) => {
               </pre>
             </div>
           )}
+
+          {/* Boutons d'action */}
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+            <Button
+              onClick={onClose}
+              variant="outline"
+              disabled={loading}
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={handleCleanup}
+              disabled={loading || selectedCollections.length === 0}
+              style={{ 
+                backgroundColor: '#dc2626',
+                opacity: (loading || selectedCollections.length === 0) ? 0.5 : 1
+              }}
+            >
+              {loading ? '⏳ Nettoyage...' : `🗑️ Nettoyer (${selectedCollections.length})`}
+            </Button>
+          </div>
+
+          {selectedCollections.length > 0 && !loading && (
+            <div style={{
+              marginTop: '16px',
+              padding: '12px',
+              backgroundColor: '#fef2f2',
+              border: '1px solid #fecaca',
+              borderRadius: '6px',
+              fontSize: '13px',
+              color: '#991b1b'
+            }}>
+              ⚠️ Vous allez supprimer <strong>{selectedCollections.length}</strong> type(s) de données. Cette action est irréversible.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default CleanupDataModal;
+  )}
 
           {/* Boutons d'action */}
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>

@@ -350,6 +350,7 @@ async def cleanup_collections(
     """
     collections = request.get('collections', [])
     confirm = request.get('confirm', False)
+    tenant_id = request.get('tenant_id')  # None = tous les tenants
     
     if not confirm:
         raise HTTPException(status_code=400, detail="Confirmation requise")
@@ -357,7 +358,8 @@ async def cleanup_collections(
     if not collections:
         raise HTTPException(status_code=400, detail="Aucune collection sélectionnée")
     
-    logger.warning(f"🗑️  Nettoyage collections par {admin.email}: {collections}")
+    tenant_info = f"tenant {tenant_id}" if tenant_id else "TOUS LES TENANTS"
+    logger.warning(f"🗑️  Nettoyage collections par {admin.email} ({tenant_info}): {collections}")
     
     # Mapping des collections
     collection_mapping = {
@@ -380,7 +382,12 @@ async def cleanup_collections(
             
         for coll_name in collection_mapping[coll_key]:
             try:
-                result = await db[coll_name].delete_many({})
+                # Construire le filtre
+                filter_query = {}
+                if tenant_id:
+                    filter_query["tenant_id"] = tenant_id
+                
+                result = await db[coll_name].delete_many(filter_query)
                 if result.deleted_count > 0:
                     results[coll_name] = result.deleted_count
                     logger.info(f"  ✅ {coll_name}: {result.deleted_count} documents supprimés")
@@ -392,11 +399,11 @@ async def cleanup_collections(
     await log_super_admin_action(
         admin=admin,
         action="cleanup_collections",
-        details={"collections": collections, "results": results}
+        details={"collections": collections, "tenant_id": tenant_id, "results": results}
     )
     
     return {
         "success": True,
-        "message": f"{len(collections)} type(s) de données nettoyées",
+        "message": f"{len(collections)} type(s) de données nettoyées" + (f" pour tenant {tenant_id}" if tenant_id else " pour TOUS les tenants"),
         "results": results
     }
