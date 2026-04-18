@@ -230,10 +230,28 @@ const GeolocationField = ({ value, onChange }) => {
         setLoading(false);
       },
       (err) => {
-        setError('Erreur: ' + err.message);
+        let errorMsg = 'Erreur: ';
+        switch(err.code) {
+          case err.PERMISSION_DENIED:
+            errorMsg += 'Permission refusée. Vérifiez les paramètres de localisation.';
+            break;
+          case err.POSITION_UNAVAILABLE:
+            errorMsg += 'Position indisponible. Activez le GPS.';
+            break;
+          case err.TIMEOUT:
+            errorMsg += 'Délai dépassé. Réessayez.';
+            break;
+          default:
+            errorMsg += err.message;
+        }
+        setError(errorMsg);
         setLoading(false);
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { 
+        enableHighAccuracy: true, 
+        timeout: 20000,
+        maximumAge: 0  // Force une nouvelle position (critique pour Android)
+      }
     );
   };
 
@@ -348,10 +366,28 @@ const MeteoField = ({ value, onChange }) => {
         }
       },
       (err) => {
-        setError('Erreur géolocalisation: ' + err.message);
+        let errorMsg = '';
+        switch(err.code) {
+          case err.PERMISSION_DENIED:
+            errorMsg = '❌ Permission refusée. Activez la localisation dans les paramètres de votre téléphone et actualisez la page.';
+            break;
+          case err.POSITION_UNAVAILABLE:
+            errorMsg = '📡 Position indisponible. Assurez-vous que le GPS est activé et que vous êtes à l\'extérieur.';
+            break;
+          case err.TIMEOUT:
+            errorMsg = '⏱️ Délai dépassé. Vérifiez votre signal GPS et réessayez.';
+            break;
+          default:
+            errorMsg = 'Erreur géolocalisation: ' + err.message;
+        }
+        setError(errorMsg);
         setLoading(false);
       },
-      { enableHighAccuracy: true, timeout: 15000 }
+      { 
+        enableHighAccuracy: true, 
+        timeout: 20000,
+        maximumAge: 0  // Force une nouvelle position (critique pour Android)
+      }
     );
   };
 

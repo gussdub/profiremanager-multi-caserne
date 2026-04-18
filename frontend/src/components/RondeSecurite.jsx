@@ -149,7 +149,7 @@ const RondeSecurite = ({ vehicule, user, onClose, onSuccess }) => {
           console.log('GPS non disponible:', error);
           setGpsLoading(false);
         },
-        { enableHighAccuracy: true, timeout: 10000 }
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
       );
     }
   }, []);

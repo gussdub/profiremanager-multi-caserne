@@ -277,10 +277,22 @@ const InspectionUnifieeModal = ({
       },
       (error) => {
         console.error('Erreur GPS:', error);
-        alert('Impossible d\'obtenir votre position. Veuillez saisir l\'adresse manuellement.');
+        let errorMsg = 'Impossible d\'obtenir votre position';
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            errorMsg += ': Permission refusée. Vérifiez les paramètres.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMsg += ': GPS indisponible. Activez le GPS.';
+            break;
+          case error.TIMEOUT:
+            errorMsg += ': Délai dépassé. Réessayez.';
+            break;
+        }
+        alert(errorMsg + ' Veuillez saisir l\'adresse manuellement.');
         setGettingLocation(false);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
     );
   };
 
