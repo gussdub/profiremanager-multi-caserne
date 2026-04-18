@@ -149,6 +149,184 @@ const CollapsibleSection = ({ icon: Icon, title, count, children, defaultOpen = 
   );
 };
 
+// ─── Champs personnalisés (tableau PFM) ─────────────────────────────────────
+
+const isNumericId = (s) => /^\d{6,}$/.test(String(s || '').trim());
+
+const ValeurBadge = ({ value }) => {
+  const v = String(value || '').trim();
+  if (!v || v === '—') return <span style={{ color: '#9ca3af' }}>—</span>;
+  if (v.toLowerCase() === 'oui') return (
+    <span style={{ padding: '2px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: '700', backgroundColor: '#dcfce7', color: '#16a34a' }}>Oui</span>
+  );
+  if (v.toLowerCase() === 'non') return (
+    <span style={{ padding: '2px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: '700', backgroundColor: '#fee2e2', color: '#dc2626' }}>Non</span>
+  );
+  return <span style={{ fontSize: '13px', color: '#111827' }}>{v}</span>;
+};
+
+const ChampsPersonnalisesSection = ({ champsPerso }) => {
+  const [showEmpty, setShowEmpty] = useState(false);
+
+  const withValue = champsPerso.filter(c => {
+    const v = String(c.valeur || c.value || c.val || '').trim();
+    return v !== '' && v !== '—';
+  });
+  const empty = champsPerso.filter(c => {
+    const v = String(c.valeur || c.value || c.val || '').trim();
+    return v === '' || v === '—';
+  });
+
+  const displayed = showEmpty ? champsPerso : withValue;
+
+  return (
+    <CollapsibleSection icon={Tag} title="Champs personnalisés" count={champsPerso.length} defaultOpen={true}>
+      <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden', backgroundColor: 'white' }}>
+        {/* En-tête */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: '1fr 180px',
+          backgroundColor: '#f8fafc', padding: '8px 16px',
+          borderBottom: '2px solid #e5e7eb'
+        }}>
+          <span style={{ fontSize: '11px', fontWeight: '800', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Type de champ</span>
+          <span style={{ fontSize: '11px', fontWeight: '800', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Valeur</span>
+        </div>
+
+        {/* Lignes */}
+        {displayed.map((champ, idx) => {
+          const label = champ.id_type_champ_personnalise || champ.libelle || champ.nom || champ.label || champ.code || `Champ ${idx + 1}`;
+          const value = champ.valeur || champ.value || champ.val;
+          const isEmpty = !value || String(value).trim() === '';
+          return (
+            <div key={idx} style={{
+              display: 'grid', gridTemplateColumns: '1fr 180px',
+              padding: '10px 16px', alignItems: 'center',
+              borderBottom: idx < displayed.length - 1 ? '1px solid #f1f5f9' : 'none',
+              backgroundColor: idx % 2 === 0 ? 'white' : '#fafafa'
+            }}>
+              <span style={{ fontSize: '13px', fontWeight: '500', color: isEmpty ? '#9ca3af' : '#374151' }}>
+                {label}
+              </span>
+              <div style={{ textAlign: 'right' }}>
+                <ValeurBadge value={isEmpty ? '—' : value} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Toggle afficher vides */}
+      {empty.length > 0 && (
+        <button
+          onClick={() => setShowEmpty(!showEmpty)}
+          style={{
+            marginTop: '8px', width: '100%', padding: '8px',
+            background: 'none', border: '1px dashed #d1d5db', borderRadius: '8px',
+            fontSize: '12px', color: '#9ca3af', cursor: 'pointer'
+          }}
+        >
+          {showEmpty
+            ? `Masquer les ${empty.length} champs vides`
+            : `Afficher les ${empty.length} champs vides`}
+        </button>
+      )}
+    </CollapsibleSection>
+  );
+};
+
+// ─── Étapes (liste_etape PFM) ────────────────────────────────────────────────
+
+const statutEtapeStyle = (statut) => {
+  const s = (statut || '').toLowerCase();
+  if (isNumericId(statut)) return { label: '—', color: '#9ca3af', bg: '#f3f4f6' };
+  if (s.includes('complet') || s === 'complété') return { label: statut, color: '#16a34a', bg: '#dcfce7' };
+  if (s.includes('cours')) return { label: statut, color: '#d97706', bg: '#fef3c7' };
+  if (s.includes('annul') || s.includes('refus')) return { label: statut, color: '#dc2626', bg: '#fee2e2' };
+  return { label: statut, color: '#6b7280', bg: '#f3f4f6' };
+};
+
+const EtapesSection = ({ etapes }) => (
+  <CollapsibleSection icon={List} title="Étapes" count={etapes.length} defaultOpen={false}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {etapes.map((etape, idx) => {
+        const date = etape.date_note || etape.date || '';
+        const employe = cleanName(etape.employe || etape.id_employe || etape.nom_employe || '');
+        const typeNote = isNumericId(etape.type_note) ? null : (etape.type_note || '');
+        const operation = isNumericId(etape.operation) ? null : (etape.operation || '');
+        const statutInfo = statutEtapeStyle(etape.statut);
+        const mobile = etape.mobile || '';
+        const dejaLu = etape.deja_lu;
+
+        return (
+          <div key={idx} style={{
+            backgroundColor: 'white', border: '1px solid #e5e7eb',
+            borderRadius: '8px', padding: '12px 16px',
+            display: 'grid', gridTemplateColumns: 'auto 1fr auto',
+            gap: '12px', alignItems: 'start'
+          }}>
+            {/* Numéro */}
+            <div style={{
+              width: '26px', height: '26px', borderRadius: '50%',
+              backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', fontSize: '12px', fontWeight: '700',
+              color: '#6b7280', flexShrink: 0, marginTop: '2px'
+            }}>
+              {idx + 1}
+            </div>
+
+            {/* Contenu */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '6px' }}>
+                {operation && (
+                  <span style={{ fontSize: '14px', fontWeight: '700', color: '#111827' }}>{operation}</span>
+                )}
+                {typeNote && (
+                  <span style={{
+                    fontSize: '11px', fontWeight: '600', padding: '2px 8px',
+                    borderRadius: '10px', backgroundColor: '#eff6ff', color: '#2563eb'
+                  }}>{typeNote}</span>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                {date && (
+                  <span style={{ fontSize: '12px', color: '#6b7280' }}>
+                    📅 {formatDate(date)}
+                  </span>
+                )}
+                {employe && (
+                  <span style={{ fontSize: '12px', color: '#6b7280' }}>
+                    👤 {employe}
+                  </span>
+                )}
+                {mobile && (
+                  <span style={{ fontSize: '12px', color: '#9ca3af' }}>
+                    📱 {mobile}
+                  </span>
+                )}
+                {dejaLu !== undefined && dejaLu !== null && !isNumericId(String(dejaLu)) && (
+                  <span style={{ fontSize: '12px', color: dejaLu === 'Oui' || dejaLu === true ? '#16a34a' : '#9ca3af' }}>
+                    {dejaLu === 'Oui' || dejaLu === true ? '✓ Lu' : '○ Non lu'}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Statut */}
+            {statutInfo.label && statutInfo.label !== '—' && (
+              <span style={{
+                padding: '3px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: '700',
+                backgroundColor: statutInfo.bg, color: statutInfo.color, whiteSpace: 'nowrap'
+              }}>
+                {statutInfo.label}
+              </span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  </CollapsibleSection>
+);
+
 // ─── Composant principal ─────────────────────────────────────────────────────
 
 const InspectionDetailView = ({ inspection, batiment, onBack }) => {
@@ -412,50 +590,12 @@ const InspectionDetailView = ({ inspection, batiment, onBack }) => {
 
           {/* Champs personnalisés */}
           {champsPerso.length > 0 && (
-            <CollapsibleSection icon={Tag} title="Champs personnalisés" count={champsPerso.length} defaultOpen={false}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
-                {champsPerso.map((champ, idx) => {
-                  const label = cleanName(champ.libelle || champ.nom || champ.label || champ.code || `Champ ${idx + 1}`);
-                  const value = String(champ.valeur || champ.value || champ.val || '');
-                  return <InfoField key={idx} label={label} value={value} />;
-                })}
-              </div>
-            </CollapsibleSection>
+            <ChampsPersonnalisesSection champsPerso={champsPerso} />
           )}
 
           {/* Étapes */}
           {etapes.length > 0 && (
-            <CollapsibleSection icon={List} title="Étapes" count={etapes.length} defaultOpen={false}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {etapes.map((etape, idx) => (
-                  <div key={idx} style={{
-                    padding: '12px 14px', backgroundColor: 'white',
-                    border: '1px solid #e5e7eb', borderRadius: '8px',
-                    display: 'flex', alignItems: 'flex-start', gap: '12px'
-                  }}>
-                    <div style={{
-                      width: '24px', height: '24px', borderRadius: '50%',
-                      backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center',
-                      justifyContent: 'center', fontSize: '11px', fontWeight: '700',
-                      color: '#6b7280', flexShrink: 0
-                    }}>
-                      {idx + 1}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '13px', fontWeight: '600', color: '#111827' }}>
-                        {cleanName(etape.description || etape.libelle || etape.nom || etape.action || '')}
-                      </div>
-                      {etape.date && (
-                        <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>{formatDateShort(etape.date)}</div>
-                      )}
-                      {etape.statut && (
-                        <span style={{ fontSize: '11px', color: '#6b7280' }}>{etape.statut}</span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CollapsibleSection>
+            <EtapesSection etapes={etapes} />
           )}
 
           {/* Reports */}
