@@ -27,6 +27,7 @@ const MOTIFS_FIN_EMPLOI = [
 
 // Fonction pour vérifier si un employé est un ancien (date de fin d'embauche passée)
 const isFormerEmployee = (user) => {
+  if (user.statut === 'Inactif') return true;
   if (!user.date_fin_embauche) return false;
   const dateFin = new Date(user.date_fin_embauche);
   const today = new Date();
@@ -39,6 +40,199 @@ const parseDateLocal = (dateStr) => {
   if (!dateStr) return new Date();
   const [year, month, day] = dateStr.split('-').map(Number);
   return new Date(year, month - 1, day);
+};
+
+// ─── Composant : Section Données PFM dans le modal personnel ──────────────────
+const PfmDataSection = ({ user, tenantSlug, canEdit }) => {
+  const [pfmPhotos, setPfmPhotos] = useState([]);
+  const [loadingPhotos, setLoadingPhotos] = useState(false);
+  const [expanded, setExpanded] = useState(true);
+
+  useEffect(() => {
+    if (user.imported_personnel_id) {
+      setLoadingPhotos(true);
+      apiGet(tenantSlug, `/files/by-entity/employe_pfm/${user.imported_personnel_id}`)
+        .then(files => setPfmPhotos(files || []))
+        .catch(() => setPfmPhotos([]))
+        .finally(() => setLoadingPhotos(false));
+    }
+  }, [user.imported_personnel_id, tenantSlug]);
+
+  const rowStyle = {
+    display: 'flex', justifyContent: 'space-between', gap: '2rem',
+    padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px',
+    marginBottom: '0.5rem', alignItems: 'flex-start'
+  };
+  const labelStyle = { minWidth: '160px', color: '#64748b', fontSize: '0.875rem' };
+  const valueStyle = { textAlign: 'right', flex: 1, fontSize: '0.875rem', fontWeight: '500' };
+
+  const nominations = (() => {
+    const n = user.pfm_nominations;
+    if (!n) return [];
+    if (Array.isArray(n)) return n;
+    const arr = n.nomination ? [].concat(n.nomination) : n.item ? [].concat(n.item) : [];
+    return arr;
+  })();
+
+  const contacts = (() => {
+    const c = user.pfm_contacts_urgence;
+    if (!c) return [];
+    if (Array.isArray(c)) return c;
+    const arr = c.contact ? [].concat(c.contact) : c.item ? [].concat(c.item) : [];
+    return arr;
+  })();
+
+  return (
+    <div style={{
+      border: '2px solid #1e40af',
+      borderRadius: '10px',
+      marginBottom: '1.5rem',
+      overflow: 'hidden'
+    }}>
+      {/* Header accordéon */}
+      <button
+        onClick={() => setExpanded(!expanded)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '0.85rem 1.1rem', background: '#1e40af', border: 'none', cursor: 'pointer',
+          color: 'white'
+        }}
+      >
+        <span style={{ fontWeight: '700', fontSize: '0.95rem', letterSpacing: '0.05em' }}>
+          PFM TRANSFER — Données importées
+        </span>
+        <span style={{ fontSize: '0.8rem', opacity: 0.85 }}>{expanded ? '▲' : '▼'}</span>
+      </button>
+
+      {expanded && (
+        <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: 'white' }}>
+
+          {/* Infos sensibles */}
+          <div>
+            <h6 style={{ fontSize: '0.8rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.75rem' }}>
+              Documents d'identité
+            </h6>
+            {user.nas && (
+              <div style={rowStyle}>
+                <span style={labelStyle}>N° assurance sociale (NAS)</span>
+                <span style={{ ...valueStyle, fontFamily: 'monospace', letterSpacing: '0.12em' }}>
+                  {user.nas}
+                </span>
+              </div>
+            )}
+            {user.numero_passeport && (
+              <div style={rowStyle}>
+                <span style={labelStyle}>N° passeport</span>
+                <span style={{ ...valueStyle, fontFamily: 'monospace', letterSpacing: '0.1em' }}>
+                  {user.numero_passeport}
+                </span>
+              </div>
+            )}
+            {user.pfm_matricule && (
+              <div style={rowStyle}>
+                <span style={labelStyle}>Matricule PFM</span>
+                <span style={valueStyle}>{user.pfm_matricule}</span>
+              </div>
+            )}
+            {user.pfm_caserne && (
+              <div style={rowStyle}>
+                <span style={labelStyle}>Caserne PFM</span>
+                <span style={valueStyle}>{user.pfm_caserne}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Nominations */}
+          {nominations.length > 0 && (
+            <div>
+              <h6 style={{ fontSize: '0.8rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.75rem' }}>
+                Nominations / Grades PFM
+              </h6>
+              {nominations.map((nom, idx) => (
+                <div key={idx} style={{ ...rowStyle, flexDirection: 'column', gap: '0.25rem' }}>
+                  <span style={{ fontWeight: '600', fontSize: '0.875rem' }}>
+                    {nom.titre || nom.grade || nom.type_nomination || `Nomination ${idx + 1}`}
+                  </span>
+                  {(nom.date_debut || nom.date_obtention) && (
+                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                      Depuis : {nom.date_debut || nom.date_obtention}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Contacts d'urgence PFM */}
+          {contacts.length > 0 && (
+            <div>
+              <h6 style={{ fontSize: '0.8rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.75rem' }}>
+                Contacts d'urgence (PFM)
+              </h6>
+              {contacts.map((c, idx) => (
+                <div key={idx} style={{ ...rowStyle, flexDirection: 'column', gap: '0.2rem' }}>
+                  <span style={{ fontWeight: '600', fontSize: '0.875rem' }}>
+                    {[c.prenom, c.nom].filter(Boolean).join(' ') || `Contact ${idx + 1}`}
+                    {c.lien && <span style={{ color: '#64748b', fontWeight: '400', marginLeft: '0.5rem' }}>({c.lien})</span>}
+                  </span>
+                  {c.telephone && <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{c.telephone}</span>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Photos PFM */}
+          <div>
+            <h6 style={{ fontSize: '0.8rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.75rem' }}>
+              Photos / Documents (PFM)
+            </h6>
+            {loadingPhotos ? (
+              <p style={{ fontSize: '0.8rem', color: '#64748b' }}>Chargement des photos...</p>
+            ) : pfmPhotos.length === 0 ? (
+              <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Aucune photo importée depuis PFM</p>
+            ) : (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+                {pfmPhotos.map(photo => (
+                  <div key={photo.id} style={{ position: 'relative' }}>
+                    <a href={photo.sas_url || photo.url} target="_blank" rel="noopener noreferrer">
+                      <img
+                        src={photo.sas_url || photo.url}
+                        alt={photo.description || photo.filename}
+                        style={{
+                          width: '100px', height: '100px', objectFit: 'cover',
+                          borderRadius: '8px', border: '1px solid #e2e8f0',
+                          cursor: 'pointer'
+                        }}
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                      />
+                    </a>
+                    {photo.description && (
+                      <p style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '2px', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {photo.description}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Statut PFM */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid #f1f5f9' }}>
+            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Statut dans PFM :</span>
+            <span style={{
+              padding: '2px 10px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '600',
+              backgroundColor: user.pfm_actif ? '#dcfce7' : '#fee2e2',
+              color: user.pfm_actif ? '#16a34a' : '#dc2626'
+            }}>
+              {user.pfm_actif ? 'Actif' : 'Inactif'}
+            </span>
+          </div>
+
+        </div>
+      )}
+    </div>
+  );
 };
 
 const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
@@ -1571,6 +1765,19 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         🎯
                       </span>
                     )}
+                    {user.imported_from_pfm && (
+                      <span title="Importé depuis PFM Transfer" style={{
+                        marginLeft: '0.5rem',
+                        fontSize: '0.65rem',
+                        fontWeight: '700',
+                        backgroundColor: '#1e40af',
+                        color: 'white',
+                        borderRadius: '4px',
+                        padding: '1px 5px',
+                        verticalAlign: 'middle',
+                        letterSpacing: '0.05em'
+                      }}>PFM</span>
+                    )}
                   </p>
                   <p className="user-detail-modern">
                     {isFormer 
@@ -2131,8 +2338,15 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         {selectedUser.type_emploi === 'temps_plein' ? 'Temps plein' : selectedUser.type_emploi === 'temporaire' ? 'Temporaire' : 'Temps partiel'}
                       </span>
                       <span className={`status-badge ${isFormerEmployee(selectedUser) ? 'ancien' : 'actif'}`}>
-                        {isFormerEmployee(selectedUser) ? 'Ancien' : 'Actif'}
+                        {isFormerEmployee(selectedUser) ? (selectedUser.statut === 'Inactif' ? 'Inactif PFM' : 'Ancien') : 'Actif'}
                       </span>
+                      {selectedUser.imported_from_pfm && (
+                        <span style={{
+                          fontSize: '0.65rem', fontWeight: '700',
+                          backgroundColor: '#1e40af', color: 'white',
+                          borderRadius: '4px', padding: '2px 6px', letterSpacing: '0.05em'
+                        }}>PFM Transfer</span>
+                      )}
                     </div>
                     <p className="employee-id">#{selectedUser.numero_employe}</p>
                   </div>
@@ -2406,6 +2620,11 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       )
                     )}
                   </div>
+                )}
+
+                {/* ─── Section Données PFM ──────────────────────────── */}
+                {selectedUser.imported_from_pfm && (
+                  <PfmDataSection user={selectedUser} tenantSlug={tenantSlug} canEdit={canEditPersonnel} />
                 )}
 
                 {/* Actions rapides */}

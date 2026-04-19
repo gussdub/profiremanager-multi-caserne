@@ -48,6 +48,10 @@ Application de gestion complète pour les services d'incendie canadiens. Multi-t
 - Fix tri chronologique inspections (avr 2026)
 - Fix pfm_photo_titles: noms descriptifs des photos conservés (avr 2026)
 - Ajout filtres Année + Avec avis dans HistoriqueInspections (avr 2026)
+- Import PFM personnel : création automatique de comptes utilisateurs (actif/inactif), liaison si compte existant. Mot de passe par défaut : Pompier@2024 (avr 2026)
+- Section "Données PFM" dans modal Personnel : NAS, passeport, nominations, contacts urgence, photos, statut PFM (avr 2026)
+- Badge "PFM" dans la liste et modal personnel pour le personnel importé (avr 2026)
+- isFormerEmployee mis à jour pour gérer statut "Inactif" PFM (avr 2026)
 
 ## Backlog
 - P1: Invalidation cache Service Worker (webPushNotifications.js) pour éviter données obsolètes

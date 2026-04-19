@@ -19,6 +19,7 @@ from routes.dependencies import (
     get_current_user,
     get_super_admin,
     get_tenant_from_slug,
+    get_password_hash,
     User,
     SuperAdmin,
 )
@@ -2141,11 +2142,15 @@ async def _handle_plan_intervention(record: dict, tenant, user, source: str) -> 
 # ======================== EMPLOYE ========================
 
 async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
-    """Crée ou détecte doublon d'un employé depuis un record PremLigne."""
+    """Crée ou détecte doublon d'un employé depuis un record PremLigne.
+    Crée ou lie automatiquement un compte utilisateur dans l'app.
+    """
     matricule = record.get("matricule") or ""
     nom = record.get("nom") or ""
     prenom = record.get("prenom") or ""
+    email_pfm = (record.get("couriel") or record.get("courriel") or "").strip().lower()
     premligne_id = _get_premligne_id(record)
+    pfm_actif = record.get("inactif") != "Oui"
 
     if matricule:
         existing = await db.imported_personnel.find_one(
@@ -2173,6 +2178,9 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
     if not isinstance(adresse_data, dict):
         adresse_data = {}
 
+    nas = record.get("nas") or record.get("NAS") or record.get("numero_assurance_sociale") or ""
+    numero_passeport = record.get("numero_passeport") or record.get("passeport") or ""
+
     doc_id = str(uuid.uuid4())
     doc = {
         "id": doc_id,
@@ -2182,7 +2190,7 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
         "prenom": prenom,
         "matricule": matricule,
         "code_permanent": record.get("code_permanent") or "",
-        "email": record.get("couriel") or record.get("courriel") or "",
+        "email": email_pfm,
         "telephone_cellulaire": record.get("cell") or "",
         "telephone_bureau": record.get("tel_bureau") or "",
         "telephone_domicile": record.get("tel_domicile") or "",
@@ -2190,10 +2198,10 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
         "type_employe": record.get("type_employe") or "",
         "date_embauche": record.get("date_embauche") or "",
         "date_naissance": record.get("date_nais") or "",
-        "actif": record.get("inactif") != "Oui",
+        "actif": pfm_actif,
         # Documents sensibles
-        "nas": record.get("nas") or record.get("NAS") or record.get("numero_assurance_sociale") or "",
-        "numero_passeport": record.get("numero_passeport") or record.get("passeport") or "",
+        "nas": nas,
+        "numero_passeport": numero_passeport,
         "note": record.get("note") or record.get("notes") or "",
         # Permis de conduire
         "permis_conduire": _parse_bool(record.get("permis_conduire")),
@@ -2219,7 +2227,87 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
     }
 
     await db.imported_personnel.insert_one(doc)
-    return {"status": "created", "entity_type": "Employe", "id": doc_id, "matched_fks": matched_fks}
+
+    # ─── Création / liaison automatique du compte utilisateur ───────────────
+    account_status = "skipped"
+    account_user_id = None
+    PFM_DEFAULT_PASSWORD = "Pompier@2024"
+
+    # Champs PFM à injecter dans le doc user
+    pfm_user_fields = {
+        "imported_from_pfm": True,
+        "imported_personnel_id": doc_id,
+        "nas": nas,
+        "numero_passeport": numero_passeport,
+        "pfm_matricule": matricule,
+        "pfm_caserne": caserne_label,
+        "pfm_nominations": record.get("liste_nomination"),
+        "pfm_contacts_urgence": record.get("liste_contact_urgence"),
+        "pfm_actif": pfm_actif,
+    }
+
+    # Recherche d'un compte existant (email puis matricule)
+    existing_user = None
+    if email_pfm:
+        existing_user = await db.users.find_one(
+            {"tenant_id": tenant.id, "email": email_pfm}, {"_id": 0, "id": 1}
+        )
+    if not existing_user and matricule:
+        existing_user = await db.users.find_one(
+            {"tenant_id": tenant.id, "numero_employe": matricule}, {"_id": 0, "id": 1}
+        )
+
+    if existing_user:
+        # Lier le compte existant aux données PFM
+        await db.users.update_one(
+            {"id": existing_user["id"]},
+            {"$set": pfm_user_fields}
+        )
+        account_status = "linked"
+        account_user_id = existing_user["id"]
+    else:
+        # Créer un nouveau compte utilisateur
+        new_user_id = str(uuid.uuid4())
+        adresse_str = " ".join(filter(None, [
+            doc.get("adresse_rue", ""),
+            doc.get("adresse_ville", ""),
+            doc.get("adresse_province", ""),
+            doc.get("adresse_code_postal", ""),
+        ])).strip()
+        new_user = {
+            "id": new_user_id,
+            "tenant_id": tenant.id,
+            "email": email_pfm or f"pfm.{matricule or doc_id[:8]}@import.local",
+            "mot_de_passe_hash": get_password_hash(PFM_DEFAULT_PASSWORD),
+            "nom": nom,
+            "prenom": prenom,
+            "role": "employe",
+            "grade": record.get("grade") or record.get("titre") or "",
+            "type_emploi": "temps_partiel",
+            "telephone": doc.get("telephone_cellulaire") or doc.get("telephone_bureau") or "",
+            "adresse": adresse_str,
+            "date_embauche": doc.get("date_embauche") or "",
+            "date_naissance": doc.get("date_naissance") or "",
+            "numero_employe": matricule or "",
+            "statut": "Actif" if pfm_actif else "Inactif",
+            "formations": [],
+            "competences": [],
+            "created_at": datetime.now(timezone.utc),
+            **pfm_user_fields,
+        }
+        await db.users.insert_one(new_user)
+        account_status = "created"
+        account_user_id = new_user_id
+
+    return {
+        "status": "created",
+        "entity_type": "Employe",
+        "id": doc_id,
+        "matched_fks": matched_fks,
+        "account_status": account_status,
+        "account_user_id": account_user_id,
+        "temp_password": PFM_DEFAULT_PASSWORD if account_status == "created" else None,
+    }
 
 
 # ======================== BORNE INCENDIE ========================
