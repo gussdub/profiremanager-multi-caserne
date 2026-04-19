@@ -17,8 +17,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from routes.dependencies import (
     db,
     get_current_user,
+    get_super_admin,
     get_tenant_from_slug,
     User,
+    SuperAdmin,
 )
 from utils.address_utils import normalize_address, extract_civic_number, is_same_address
 
@@ -1084,7 +1086,7 @@ async def get_cauca_codes(tenant_slug: str):
 @router.get("/{tenant_slug}/import/debug-champs")
 async def debug_champs(
     tenant_slug: str,
-    current_user: User = Depends(get_current_user),
+    admin: SuperAdmin = Depends(get_super_admin),
 ):
     """Diagnostic : affiche la structure réelle des champs personnalisés pour déboguer."""
     tenant = await get_tenant_from_slug(tenant_slug)
@@ -1151,7 +1153,7 @@ async def debug_champs(
 @router.post("/{tenant_slug}/import/fix-existing-preventions")
 async def fix_existing_preventions(
     tenant_slug: str,
-    current_user: User = Depends(get_current_user),
+    admin: SuperAdmin = Depends(get_super_admin),
 ):
     """
     Ré-enrichit les champs personnalisés des inspections déjà importées
