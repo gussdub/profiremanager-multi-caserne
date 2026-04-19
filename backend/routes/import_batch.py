@@ -1128,12 +1128,17 @@ async def debug_champs(
         result["anomalies_type"] = type(insp.get("anomalies")).__name__
         result["anomalies_value"] = str(insp.get("anomalies"))[:200]
 
-    # Chercher une inspection qui AURAIT des champs
+    # Chercher une inspection qui AURAIT des champs dans le pfm_record
     insp_with_champs = await db.inspections.find_one(
         {"tenant_id": tenant.id, "pfm_record.liste_champ_personnalise": {"$ne": None}},
         {"_id": 0, "id": 1, "pfm_record": 1}
     )
     result["inspection_with_champs_found"] = insp_with_champs is not None
+    if insp_with_champs:
+        pfm2 = insp_with_champs.get("pfm_record") or {}
+        raw2 = pfm2.get("liste_champ_personnalise")
+        result["sample_champs_type"] = type(raw2).__name__
+        result["sample_champs_preview"] = str(raw2)[:800]
 
     # Lister les collections ref_* disponibles avec leur compte
     ref_collections = {}
@@ -2008,69 +2013,6 @@ async def _handle_prevention(record: dict, tenant, user, source: str) -> dict:
 
     doc_id = str(uuid.uuid4())
 
-    # Enrichir les champs personnalisés avec les labels depuis ref_typechampperso
-    raw_champs = record.get("liste_champ_personnalise")
-    enriched_champs = []
-    if raw_champs:
-        items = raw_champs.get("champ_personnalise", []) if isinstance(raw_champs, dict) else []
-        if isinstance(items, dict):
-            items = [items]
-        items = [c for c in (items or []) if isinstance(c, dict)]
-
-        # Charger TOUS les TypeChampPerso du tenant triés numériquement (pour le fallback positionnel)
-        def _num_sort(d):
-            try:
-                return int(d.get("premligne_id") or 0)
-            except Exception:
-                return 0
-
-        all_types = await db.ref_typechampperso.find(
-            {"tenant_id": tenant.id}, {"_id": 0, "nom": 1, "premligne_id": 1}
-        ).to_list(500)
-        if not all_types:
-            all_types = await db.ref_typechampperso.find(
-                {}, {"_id": 0, "nom": 1, "premligne_id": 1}
-            ).to_list(500)
-        all_types.sort(key=_num_sort)
-
-        for i, champ in enumerate(items):
-            # Chercher l'ID dans le champ direct ou dans @attributes (attribut XML)
-            attrs = champ.get("@attributes") or {}
-            type_id = str(
-                champ.get("id_type_champ_personnalise") or
-                attrs.get("id_type_champ_personnalise") or
-                attrs.get("id") or
-                champ.get("@id_type_champ_personnalise") or
-                ""
-            ).strip()
-
-            label = ""
-            # Stratégie 1 : lookup par ID dans ref_typechampperso
-            if type_id:
-                type_doc = await db.ref_typechampperso.find_one(
-                    {"tenant_id": tenant.id, "premligne_id": type_id},
-                    {"_id": 0, "nom": 1}
-                )
-                if not type_doc:
-                    type_doc = await db.ref_typechampperso.find_one(
-                        {"premligne_id": type_id}, {"_id": 0, "nom": 1}
-                    )
-                if type_doc:
-                    label = type_doc.get("nom", "")
-
-            # Stratégie 2 : si le type_id EST déjà le texte (commence par une lettre)
-            if not label and type_id and not type_id.isdigit():
-                label = type_id
-
-            # Stratégie 3 (fallback) : correspondance positionnelle
-            if not label and i < len(all_types):
-                label = all_types[i].get("nom", "")
-
-            enriched_champs.append({
-                "id_type_champ_personnalise": label or type_id,
-                "valeur": champ.get("valeur") or "",
-            })
-
     doc = {
         "id": doc_id,
         "tenant_id": tenant.id,
@@ -2087,7 +2029,7 @@ async def _handle_prevention(record: dict, tenant, user, source: str) -> dict:
         "anomalies": record.get("liste_anomalie") or record.get("anomalies") or [],
         "avis_emis": _parse_bool(record.get("avis_emission")),
         "texte_avis": record.get("texte_avis") or "",
-        "champs_personnalises": enriched_champs if enriched_champs else raw_champs,
+        "champs_personnalises": record.get("liste_champ_personnalise"),
         "etapes": record.get("liste_etape"),
         "reports": record.get("liste_report"),
         "status": record.get("statut") or "completed",
