@@ -1117,19 +1117,36 @@ async def debug_champs(
         # Montrer TOUS les champs de haut niveau du pfm_record
         pfm = insp.get("pfm_record") or {}
         result["pfm_record_all_keys"] = list(pfm.keys())
-        result["pfm_champ_related_keys"] = [k for k in pfm.keys() if "champ" in k.lower() or "perso" in k.lower()]
+        result["pfm_champ_related_keys"] = [k for k in pfm.keys() if "champ" in k.lower() or "perso" in k.lower() or "anomal" in k.lower() or "defaut" in k.lower()]
 
-        # Chercher liste_champ_personnalise
-        raw = pfm.get("liste_champ_personnalise")
-        result["pfm_liste_champ_perso_type"] = type(raw).__name__
-        if raw:
-            result["pfm_liste_champ_perso_sample"] = str(raw)[:500]
+        # Chercher liste_champ_personnalise et liste_anomalie
+        result["pfm_liste_champ_perso_type"] = type(pfm.get("liste_champ_personnalise")).__name__
+        result["pfm_liste_anomalie_type"] = type(pfm.get("liste_anomalie")).__name__
 
         # Champs stockés dans l'inspection
-        champs = insp.get("champs_personnalises")
-        result["champs_personnalises_type"] = type(champs).__name__
-        if champs:
-            result["champs_sample"] = str(champs)[:500]
+        result["champs_personnalises_type"] = type(insp.get("champs_personnalises")).__name__
+        result["anomalies_type"] = type(insp.get("anomalies")).__name__
+        result["anomalies_value"] = str(insp.get("anomalies"))[:200]
+
+    # Chercher une inspection qui AURAIT des champs
+    insp_with_champs = await db.inspections.find_one(
+        {"tenant_id": tenant.id, "pfm_record.liste_champ_personnalise": {"$ne": None}},
+        {"_id": 0, "id": 1, "pfm_record": 1}
+    )
+    result["inspection_with_champs_found"] = insp_with_champs is not None
+
+    # Lister les collections ref_* disponibles avec leur compte
+    ref_collections = {}
+    for coll_name in await db.list_collection_names():
+        if coll_name.startswith("ref_"):
+            count = await db[coll_name].count_documents({})
+            if count > 0:
+                ref_collections[coll_name] = count
+    result["ref_collections_with_data"] = ref_collections
+
+    # Compter les inspections totales
+    result["inspections_total"] = await db.inspections.count_documents({"tenant_id": tenant.id})
+    result["inspections_with_pfm_record"] = await db.inspections.count_documents({"tenant_id": tenant.id, "pfm_record": {"$exists": True, "$ne": None}})
 
     return result
 
