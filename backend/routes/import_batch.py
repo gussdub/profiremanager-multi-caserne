@@ -1080,6 +1080,97 @@ async def get_cauca_codes(tenant_slug: str):
 
 
 
+
+@router.post("/{tenant_slug}/import/fix-existing-preventions")
+async def fix_existing_preventions(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Ré-enrichit les champs personnalisés des inspections déjà importées
+    en faisant la correspondance positionnelle avec ref_typechampperso.
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+
+    # Charger tous les TypeChampPerso triés numériquement
+    def _num_sort(d):
+        try:
+            return int(d.get("premligne_id") or 0)
+        except Exception:
+            return 0
+
+    all_types = await db.ref_typechampperso.find(
+        {"tenant_id": tenant.id}, {"_id": 0, "nom": 1, "premligne_id": 1}
+    ).to_list(500)
+    if not all_types:
+        all_types = await db.ref_typechampperso.find(
+            {}, {"_id": 0, "nom": 1, "premligne_id": 1}
+        ).to_list(500)
+    all_types.sort(key=_num_sort)
+
+    if not all_types:
+        return {"success": False, "message": "Aucun TypeChampPerso trouvé. Importez d'abord les référentiels."}
+
+    inspections = await db.inspections.find(
+        {"tenant_id": tenant.id, "pfm_record": {"$exists": True}},
+        {"_id": 0, "id": 1, "pfm_record": 1}
+    ).to_list(5000)
+
+    updated = 0
+    for insp in inspections:
+        record = insp.get("pfm_record") or {}
+        raw_champs = record.get("liste_champ_personnalise")
+        if not raw_champs:
+            continue
+        items = raw_champs.get("champ_personnalise", []) if isinstance(raw_champs, dict) else []
+        if isinstance(items, dict):
+            items = [items]
+        items = [c for c in (items or []) if isinstance(c, dict)]
+        if not items:
+            continue
+
+        enriched = []
+        for i, champ in enumerate(items):
+            attrs = champ.get("@attributes") or {}
+            type_id = str(
+                champ.get("id_type_champ_personnalise") or
+                attrs.get("id_type_champ_personnalise") or
+                attrs.get("id") or ""
+            ).strip()
+
+            label = ""
+            if type_id and not type_id.isdigit():
+                label = type_id
+            if not label and type_id:
+                td = await db.ref_typechampperso.find_one(
+                    {"premligne_id": type_id, "tenant_id": tenant.id},
+                    {"_id": 0, "nom": 1}
+                )
+                if td:
+                    label = td.get("nom", "")
+            if not label and i < len(all_types):
+                label = all_types[i].get("nom", "")
+
+            enriched.append({
+                "id_type_champ_personnalise": label or type_id,
+                "valeur": champ.get("valeur") or "",
+            })
+
+        await db.inspections.update_one(
+            {"id": insp["id"]},
+            {"$set": {"champs_personnalises": enriched}}
+        )
+        updated += 1
+
+    return {
+        "success": True,
+        "message": f"{updated} inspection(s) enrichie(s) avec {len(all_types)} types de champs.",
+        "types_count": len(all_types),
+        "inspections_updated": updated,
+    }
+
+
+
 @router.post("/{tenant_slug}/import/fix-existing-interventions")
 async def fix_existing_interventions(
     tenant_slug: str,
@@ -1853,11 +1944,37 @@ async def _handle_prevention(record: dict, tenant, user, source: str) -> dict:
         items = raw_champs.get("champ_personnalise", []) if isinstance(raw_champs, dict) else []
         if isinstance(items, dict):
             items = [items]
-        for champ in (items or []):
-            if not isinstance(champ, dict):
-                continue
-            type_id = str(champ.get("id_type_champ_personnalise") or "").strip()
+        items = [c for c in (items or []) if isinstance(c, dict)]
+
+        # Charger TOUS les TypeChampPerso du tenant triés numériquement (pour le fallback positionnel)
+        def _num_sort(d):
+            try:
+                return int(d.get("premligne_id") or 0)
+            except Exception:
+                return 0
+
+        all_types = await db.ref_typechampperso.find(
+            {"tenant_id": tenant.id}, {"_id": 0, "nom": 1, "premligne_id": 1}
+        ).to_list(500)
+        if not all_types:
+            all_types = await db.ref_typechampperso.find(
+                {}, {"_id": 0, "nom": 1, "premligne_id": 1}
+            ).to_list(500)
+        all_types.sort(key=_num_sort)
+
+        for i, champ in enumerate(items):
+            # Chercher l'ID dans le champ direct ou dans @attributes (attribut XML)
+            attrs = champ.get("@attributes") or {}
+            type_id = str(
+                champ.get("id_type_champ_personnalise") or
+                attrs.get("id_type_champ_personnalise") or
+                attrs.get("id") or
+                champ.get("@id_type_champ_personnalise") or
+                ""
+            ).strip()
+
             label = ""
+            # Stratégie 1 : lookup par ID dans ref_typechampperso
             if type_id:
                 type_doc = await db.ref_typechampperso.find_one(
                     {"tenant_id": tenant.id, "premligne_id": type_id},
@@ -1867,7 +1984,17 @@ async def _handle_prevention(record: dict, tenant, user, source: str) -> dict:
                     type_doc = await db.ref_typechampperso.find_one(
                         {"premligne_id": type_id}, {"_id": 0, "nom": 1}
                     )
-                label = (type_doc or {}).get("nom", "")
+                if type_doc:
+                    label = type_doc.get("nom", "")
+
+            # Stratégie 2 : si le type_id EST déjà le texte (commence par une lettre)
+            if not label and type_id and not type_id.isdigit():
+                label = type_id
+
+            # Stratégie 3 (fallback) : correspondance positionnelle
+            if not label and i < len(all_types):
+                label = all_types[i].get("nom", "")
+
             enriched_champs.append({
                 "id_type_champ_personnalise": label or type_id,
                 "valeur": champ.get("valeur") or "",
