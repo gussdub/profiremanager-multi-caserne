@@ -1081,6 +1081,73 @@ async def get_cauca_codes(tenant_slug: str):
 
 
 
+@router.get("/{tenant_slug}/import/debug-champs")
+async def debug_champs(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user),
+):
+    """Diagnostic : affiche la structure réelle des champs personnalisés pour déboguer."""
+    tenant = await get_tenant_from_slug(tenant_slug)
+
+    # 1. Compter les TypeChampPerso en base
+    count_types = await db.ref_typechampperso.count_documents({"tenant_id": tenant.id})
+    count_types_global = await db.ref_typechampperso.count_documents({})
+    sample_types = await db.ref_typechampperso.find(
+        {}, {"_id": 0, "nom": 1, "premligne_id": 1, "tenant_id": 1}
+    ).limit(5).to_list(5)
+
+    # 2. Trouver une inspection importée
+    insp = await db.inspections.find_one(
+        {"tenant_id": tenant.id},
+        {"_id": 0, "id": 1, "champs_personnalises": 1, "pfm_record": 1}
+    )
+
+    result = {
+        "ref_typechampperso": {
+            "count_tenant": count_types,
+            "count_global": count_types_global,
+            "sample": sample_types,
+        },
+        "inspection_found": insp is not None,
+    }
+
+    if insp:
+        # Montrer les 3 premiers champs personnalisés stockés
+        champs = insp.get("champs_personnalises")
+        result["champs_personnalises_type"] = type(champs).__name__
+        if isinstance(champs, list):
+            result["champs_sample"] = champs[:3]
+        elif isinstance(champs, dict):
+            # Montrer la structure brute du dict
+            keys = list(champs.keys())[:5]
+            first_val = champs.get(keys[0]) if keys else None
+            result["champs_dict_keys"] = keys
+            result["champs_dict_first_val_type"] = type(first_val).__name__ if first_val is not None else "none"
+            if isinstance(first_val, list):
+                result["champs_dict_first_val_sample"] = first_val[:2]
+            elif isinstance(first_val, dict):
+                result["champs_dict_first_item_keys"] = list(first_val.keys())
+
+        # Montrer la structure brute du pfm_record.liste_champ_personnalise
+        pfm = insp.get("pfm_record") or {}
+        raw = pfm.get("liste_champ_personnalise")
+        result["pfm_liste_champ_perso_type"] = type(raw).__name__
+        if isinstance(raw, dict):
+            result["pfm_liste_champ_perso_keys"] = list(raw.keys())
+            items = raw.get("champ_personnalise")
+            if isinstance(items, list) and items:
+                result["pfm_first_champ_keys"] = list(items[0].keys()) if isinstance(items[0], dict) else str(items[0])
+                result["pfm_first_champ_sample"] = items[:2]
+            elif isinstance(items, dict):
+                result["pfm_first_champ_keys"] = list(items.keys())
+                result["pfm_first_champ_sample"] = items
+        elif isinstance(raw, list) and raw:
+            result["pfm_liste_champ_perso_sample"] = raw[:2]
+
+    return result
+
+
+
 @router.post("/{tenant_slug}/import/fix-existing-preventions")
 async def fix_existing_preventions(
     tenant_slug: str,
