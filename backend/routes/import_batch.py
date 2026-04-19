@@ -1114,37 +1114,22 @@ async def debug_champs(
     }
 
     if insp:
-        # Montrer les 3 premiers champs personnalisés stockés
-        champs = insp.get("champs_personnalises")
-        result["champs_personnalises_type"] = type(champs).__name__
-        if isinstance(champs, list):
-            result["champs_sample"] = champs[:3]
-        elif isinstance(champs, dict):
-            # Montrer la structure brute du dict
-            keys = list(champs.keys())[:5]
-            first_val = champs.get(keys[0]) if keys else None
-            result["champs_dict_keys"] = keys
-            result["champs_dict_first_val_type"] = type(first_val).__name__ if first_val is not None else "none"
-            if isinstance(first_val, list):
-                result["champs_dict_first_val_sample"] = first_val[:2]
-            elif isinstance(first_val, dict):
-                result["champs_dict_first_item_keys"] = list(first_val.keys())
-
-        # Montrer la structure brute du pfm_record.liste_champ_personnalise
+        # Montrer TOUS les champs de haut niveau du pfm_record
         pfm = insp.get("pfm_record") or {}
+        result["pfm_record_all_keys"] = list(pfm.keys())
+        result["pfm_champ_related_keys"] = [k for k in pfm.keys() if "champ" in k.lower() or "perso" in k.lower()]
+
+        # Chercher liste_champ_personnalise
         raw = pfm.get("liste_champ_personnalise")
         result["pfm_liste_champ_perso_type"] = type(raw).__name__
-        if isinstance(raw, dict):
-            result["pfm_liste_champ_perso_keys"] = list(raw.keys())
-            items = raw.get("champ_personnalise")
-            if isinstance(items, list) and items:
-                result["pfm_first_champ_keys"] = list(items[0].keys()) if isinstance(items[0], dict) else str(items[0])
-                result["pfm_first_champ_sample"] = items[:2]
-            elif isinstance(items, dict):
-                result["pfm_first_champ_keys"] = list(items.keys())
-                result["pfm_first_champ_sample"] = items
-        elif isinstance(raw, list) and raw:
-            result["pfm_liste_champ_perso_sample"] = raw[:2]
+        if raw:
+            result["pfm_liste_champ_perso_sample"] = str(raw)[:500]
+
+        # Champs stockés dans l'inspection
+        champs = insp.get("champs_personnalises")
+        result["champs_personnalises_type"] = type(champs).__name__
+        if champs:
+            result["champs_sample"] = str(champs)[:500]
 
     return result
 
