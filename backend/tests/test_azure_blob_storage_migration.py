@@ -17,7 +17,7 @@ import requests
 import os
 import io
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://data-wipe-tool-2.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://data-mapping-sync.preview.emergentagent.com').rstrip('/')
 TENANT_SLUG = "demo"
 
 # Test credentials

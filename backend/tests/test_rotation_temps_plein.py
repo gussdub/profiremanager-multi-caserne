@@ -26,7 +26,7 @@ import time
 from datetime import datetime, timedelta
 
 # Get backend URL from environment
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://data-wipe-tool-2.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://data-mapping-sync.preview.emergentagent.com').rstrip('/')
 TENANT = "demo"
 
 # Test credentials

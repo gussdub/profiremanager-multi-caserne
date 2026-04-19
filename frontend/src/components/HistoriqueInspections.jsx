@@ -6,6 +6,8 @@ const HistoriqueInspections = ({ batiment, tenantSlug, onBack, onViewInspection 
   const [inspections, setInspections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filtreStatut, setFiltreStatut] = useState('tous');
+  const [filtreAnnee, setFiltreAnnee] = useState('toutes');
+  const [filtreAvis, setFiltreAvis] = useState(false);
 
   useEffect(() => {
     fetchInspections();
@@ -37,6 +39,31 @@ const HistoriqueInspections = ({ batiment, tenantSlug, onBack, onViewInspection 
     };
     return labels[statut] || { label: statut, color: '#6b7280' };
   };
+
+  // Années disponibles dans les données
+  const anneesDisponibles = [...new Set(
+    inspections
+      .map(i => i.date_inspection ? new Date(i.date_inspection).getFullYear() : null)
+      .filter(Boolean)
+  )].sort((a, b) => b - a);
+
+  // Vérification si une inspection a un avis émis
+  const hasAvis = (insp) => {
+    return insp.avis_emis === true ||
+      (insp.avis_emission_texte && insp.avis_emission_texte.trim() !== '') ||
+      (insp.pfm_record?.avis_emission && insp.pfm_record.avis_emission !== '0' && insp.pfm_record.avis_emission !== 'false');
+  };
+
+  // Inspections filtrées (statut + année + avis)
+  const inspectionsFiltrees = inspections.filter(i => {
+    if (filtreStatut !== 'tous' && i.statut !== filtreStatut) return false;
+    if (filtreAnnee !== 'toutes') {
+      const annee = i.date_inspection ? new Date(i.date_inspection).getFullYear() : null;
+      if (annee !== parseInt(filtreAnnee)) return false;
+    }
+    if (filtreAvis && !hasAvis(i)) return false;
+    return true;
+  });
 
   const formatDate = (dateStr) => {
     return new Date(dateStr).toLocaleDateString('fr-FR', {
@@ -84,42 +111,45 @@ const HistoriqueInspections = ({ batiment, tenantSlug, onBack, onViewInspection 
         <div style={{
           padding: '1rem 1.5rem',
           borderBottom: '1px solid #e5e7eb',
-          backgroundColor: '#f9fafb'
+          backgroundColor: '#f9fafb',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.75rem'
         }}>
+          {/* Filtre Statut */}
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.875rem', fontWeight: '600', color: '#6b7280' }}>
-              Filtrer par statut:
+            <span style={{ fontSize: '0.8rem', fontWeight: '600', color: '#6b7280', minWidth: '80px' }}>
+              Statut :
             </span>
             {['tous', 'valide', 'brouillon', 'absent', 'non_disponible', 'personne_mineure'].map(statut => {
-              const count = statut === 'tous' 
-                ? inspections.length 
+              const count = statut === 'tous'
+                ? inspections.length
                 : inspections.filter(i => i.statut === statut).length;
-              
               if (count === 0 && statut !== 'tous') return null;
-              
               const labels = {
-                'tous': '🔘 Tous',
-                'valide': '✅ Validées',
-                'brouillon': '📝 Brouillons',
-                'absent': '🟠 Absent',
-                'non_disponible': '🟠 Non disponible',
-                'personne_mineure': '🟠 Personne mineure'
+                'tous': 'Tous',
+                'valide': 'Validées',
+                'brouillon': 'Brouillons',
+                'absent': 'Absent',
+                'non_disponible': 'Non disponible',
+                'personne_mineure': 'Personne mineure'
               };
-              
+              const isActive = filtreStatut === statut;
               return (
                 <button
                   key={statut}
+                  data-testid={`filtre-statut-${statut}`}
                   onClick={() => setFiltreStatut(statut)}
                   style={{
-                    padding: '0.5rem 1rem',
-                    borderRadius: '6px',
-                    border: filtreStatut === statut ? '2px solid #3b82f6' : '1px solid #d1d5db',
-                    backgroundColor: filtreStatut === statut ? '#eff6ff' : 'white',
-                    color: filtreStatut === statut ? '#3b82f6' : '#374151',
-                    fontSize: '0.875rem',
-                    fontWeight: filtreStatut === statut ? '600' : '500',
+                    padding: '0.35rem 0.75rem',
+                    borderRadius: '20px',
+                    border: isActive ? '2px solid #3b82f6' : '1px solid #d1d5db',
+                    backgroundColor: isActive ? '#3b82f6' : 'white',
+                    color: isActive ? 'white' : '#374151',
+                    fontSize: '0.8rem',
+                    fontWeight: isActive ? '600' : '500',
                     cursor: 'pointer',
-                    transition: 'all 0.2s'
+                    transition: 'all 0.15s'
                   }}
                 >
                   {labels[statut]} ({count})
@@ -127,12 +157,97 @@ const HistoriqueInspections = ({ batiment, tenantSlug, onBack, onViewInspection 
               );
             })}
           </div>
+
+          {/* Filtre Année */}
+          {anneesDisponibles.length > 1 && (
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: '600', color: '#6b7280', minWidth: '80px' }}>
+                Année :
+              </span>
+              {['toutes', ...anneesDisponibles.map(String)].map(annee => {
+                const count = annee === 'toutes'
+                  ? inspections.length
+                  : inspections.filter(i => i.date_inspection && new Date(i.date_inspection).getFullYear() === parseInt(annee)).length;
+                const isActive = filtreAnnee === annee;
+                return (
+                  <button
+                    key={annee}
+                    data-testid={`filtre-annee-${annee}`}
+                    onClick={() => setFiltreAnnee(annee)}
+                    style={{
+                      padding: '0.35rem 0.75rem',
+                      borderRadius: '20px',
+                      border: isActive ? '2px solid #8b5cf6' : '1px solid #d1d5db',
+                      backgroundColor: isActive ? '#8b5cf6' : 'white',
+                      color: isActive ? 'white' : '#374151',
+                      fontSize: '0.8rem',
+                      fontWeight: isActive ? '600' : '500',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s'
+                    }}
+                  >
+                    {annee === 'toutes' ? `Toutes (${count})` : `${annee} (${count})`}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Filtre Avis émis */}
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: '600', color: '#6b7280', minWidth: '80px' }}>
+              Avis :
+            </span>
+            <button
+              data-testid="filtre-avec-avis"
+              onClick={() => setFiltreAvis(!filtreAvis)}
+              style={{
+                padding: '0.35rem 0.75rem',
+                borderRadius: '20px',
+                border: filtreAvis ? '2px solid #dc2626' : '1px solid #d1d5db',
+                backgroundColor: filtreAvis ? '#dc2626' : 'white',
+                color: filtreAvis ? 'white' : '#374151',
+                fontSize: '0.8rem',
+                fontWeight: filtreAvis ? '600' : '500',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem'
+              }}
+            >
+              {filtreAvis ? '✓ ' : ''}Avec avis ({inspections.filter(i => hasAvis(i)).length})
+            </button>
+            {(filtreStatut !== 'tous' || filtreAnnee !== 'toutes' || filtreAvis) && (
+              <button
+                data-testid="filtre-reinitialiser"
+                onClick={() => { setFiltreStatut('tous'); setFiltreAnnee('toutes'); setFiltreAvis(false); }}
+                style={{
+                  padding: '0.35rem 0.75rem',
+                  borderRadius: '20px',
+                  border: '1px solid #d1d5db',
+                  backgroundColor: 'white',
+                  color: '#6b7280',
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  marginLeft: '0.5rem'
+                }}
+              >
+                Réinitialiser les filtres
+              </button>
+            )}
+          </div>
+
+          {/* Compteur résultats */}
+          <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+            {inspectionsFiltrees.length} résultat{inspectionsFiltrees.length !== 1 ? 's' : ''} sur {inspections.length} inspection{inspections.length !== 1 ? 's' : ''}
+          </div>
         </div>
       )}
 
       {/* Liste des inspections */}
       <div style={{ flex: 1, overflow: 'auto', padding: '1.5rem' }}>
-        {inspections.filter(i => filtreStatut === 'tous' || i.statut === filtreStatut).length === 0 ? (
+        {inspectionsFiltrees.length === 0 ? (
           <div style={{
             textAlign: 'center',
             padding: '3rem',
@@ -147,9 +262,7 @@ const HistoriqueInspections = ({ batiment, tenantSlug, onBack, onViewInspection 
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {inspections
-              .filter(i => filtreStatut === 'tous' || i.statut === filtreStatut)
-              .map((inspection) => {
+            {inspectionsFiltrees.map((inspection) => {
               const statutInfo = getStatutLabel(inspection.statut);
               
               return (

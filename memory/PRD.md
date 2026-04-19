@@ -43,7 +43,12 @@ Application de gestion complète pour les services d'incendie canadiens. Multi-t
 - Import PFM: matching Préventions via references DossierAdresse (avr 2026)
 - Outil nettoyage Super Admin (CleanupDataModal + API /admin/cleanup-collections) (avr 2026)
 - Correction erreur syntaxe JSX CleanupDataModal.jsx (build Vercel réparé) (avr 2026)
+- Refonte InspectionDetailView: anomalies, workflow étapes, champs personnalisés PFM (avr 2026)
+- Fix défilement bloqué modale historique (minHeight: 0) (avr 2026)
+- Fix tri chronologique inspections (avr 2026)
+- Fix pfm_photo_titles: noms descriptifs des photos conservés (avr 2026)
+- Ajout filtres Année + Avec avis dans HistoriqueInspections (avr 2026)
 
 ## Backlog
-- P1: Historique inspections/prévention sur fiche bâtiment
+- P1: Invalidation cache Service Worker (webPushNotifications.js) pour éviter données obsolètes
 - P2: Aperçu d'emails en temps réel dans les paramètres admin
