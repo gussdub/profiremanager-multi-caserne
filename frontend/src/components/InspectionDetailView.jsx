@@ -44,19 +44,33 @@ const cleanAnomalieLabel = (s) => {
     .trim() || s;
 };
 
-/** Normalise n'importe quelle structure PFM en tableau plat */
-const toArray = (val) => {
-  if (!val) return [];
-  if (Array.isArray(val)) return val;
-  if (typeof val === 'object') {
-    // Chercher la première clé qui contient un tableau ou un objet
-    for (const key of Object.keys(val)) {
-      const v = val[key];
-      if (Array.isArray(v)) return v;
-      if (v && typeof v === 'object') return [v];
-    }
+/** Convertit snake_case en label lisible : absent → Absent, acces_a_un_responsable → Acces a un responsable */
+const snakeToLabel = (key) =>
+  key.replace(/_/g, ' ').replace(/^./, c => c.toUpperCase());
+
+/** Extrait les champs depuis n'importe quelle structure PFM :
+ *  - {"champ_perso": {"absent": "Oui", ...}}  ← structure réelle PFM Transfer
+ *  - {"champ_personnalise": [{id_type_champ_personnalise: "...", valeur: "..."}]}
+ *  - [{id_type_champ_personnalise: "...", valeur: "..."}]
+ */
+const extractChamps = (raw) => {
+  if (!raw) return [];
+
+  // Structure réelle PFM Transfer : {"champ_perso": {"absent": "Oui", ...}}
+  const flatDict = raw.champ_perso || raw.champs_perso;
+  if (flatDict && typeof flatDict === 'object' && !Array.isArray(flatDict)) {
+    return Object.entries(flatDict).map(([key, value]) => ({
+      id_type_champ_personnalise: snakeToLabel(key),
+      valeur: value,
+    }));
   }
-  return [];
+
+  // Structure tableau : [{id_type_champ_personnalise: "...", valeur: "..."}]
+  if (Array.isArray(raw)) return raw;
+
+  // Structure dict avec clé tableau : {"champ_personnalise": [...]}
+  const arr = toArray(raw);
+  return arr;
 };
 
 /** Résolution d'une anomalie PFM Transfer : utilise le champ `corrige` */
@@ -337,8 +351,8 @@ const InspectionDetailView = ({ inspection, batiment, onBack }) => {
   // Anomalies — structure PFM: liste_anomalie → { anomalie: [...] }
   const anomalies = toArray(inspection.anomalies);
 
-  // Champs personnalisés
-  const champsPerso = toArray(inspection.champs_personnalises);
+  // Champs personnalisés — structure réelle PFM: {"champ_perso": {"absent": "Oui", ...}}
+  const champsPerso = extractChamps(inspection.champs_personnalises);
 
   // Étapes
   const etapes = toArray(inspection.etapes);
