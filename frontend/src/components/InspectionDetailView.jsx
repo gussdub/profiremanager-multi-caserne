@@ -44,7 +44,21 @@ const cleanAnomalieLabel = (s) => {
     .trim() || s;
 };
 
-/** Convertit snake_case en label lisible : absent → Absent, acces_a_un_responsable → Acces a un responsable */
+/** Normalise n'importe quelle structure PFM en tableau plat */
+const toArray = (val) => {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'object') {
+    for (const key of Object.keys(val)) {
+      const v = val[key];
+      if (Array.isArray(v)) return v;
+      if (v && typeof v === 'object') return [v];
+    }
+  }
+  return [];
+};
+
+/** Convertit snake_case en label lisible : absent → Absent */
 const snakeToLabel = (key) =>
   key.replace(/_/g, ' ').replace(/^./, c => c.toUpperCase());
 
