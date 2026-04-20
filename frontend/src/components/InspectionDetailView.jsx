@@ -473,7 +473,7 @@ const InspectionDetailView = ({ inspection, batiment, onBack }) => {
           )}
 
           {/* Avis */}
-          {(inspection.avis_emis === true || inspection.avis_emis === false || inspection.texte_avis) && (
+          {(inspection.avis_emis || inspection.texte_avis) && (
             <section style={{ marginBottom: '24px' }}>
               <SectionTitle icon={AlertTriangle} title="Avis" />
               <div style={{
@@ -481,8 +481,8 @@ const InspectionDetailView = ({ inspection, batiment, onBack }) => {
                 backgroundColor: inspection.avis_emis ? '#fef3c7' : '#f0fdf4',
                 border: `1px solid ${inspection.avis_emis ? '#fbbf24' : '#86efac'}`
               }}>
-                <div style={{ fontWeight: '700', fontSize: '14px', color: inspection.avis_emis ? '#92400e' : '#16a34a', marginBottom: inspection.texte_avis ? '8px' : 0 }}>
-                  {inspection.avis_emis ? '⚠️ Avis émis' : '✓ Aucun avis émis'}
+                <div style={{ fontWeight: '700', fontSize: '14px', color: inspection.avis_emis ? '#92400e' : '#16a34a', marginBottom: (inspection.avis_emis || inspection.texte_avis) ? '8px' : 0 }}>
+                  {inspection.avis_emis ? `⚠️ ${inspection.avis_emis}` : '✓ Aucun avis émis'}
                 </div>
                 {inspection.texte_avis && (
                   <div style={{ fontSize: '13px', color: '#374151', whiteSpace: 'pre-wrap' }}>

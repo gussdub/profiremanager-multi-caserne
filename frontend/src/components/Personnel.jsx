@@ -826,10 +826,11 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
   };
 
   const handleUpdateUser = async () => {
-    if (!newUser.nom || !newUser.prenom || !newUser.email || !newUser.grade || !newUser.type_emploi) {
+    // Email optionnel pour les employés importés de PFM sans adresse courriel
+    if (!newUser.nom || !newUser.prenom || !newUser.grade || !newUser.type_emploi) {
       toast({
         title: "Champs requis",
-        description: "Veuillez remplir tous les champs obligatoires",
+        description: "Veuillez remplir tous les champs obligatoires (nom, prénom, grade, type d'emploi)",
         variant: "destructive"
       });
       return;

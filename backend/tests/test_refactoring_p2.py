@@ -16,7 +16,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://data-mapping-sync.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://employ-sync-portal.preview.emergentagent.com').rstrip('/')
 TENANT = "demo"
 
 # Test credentials

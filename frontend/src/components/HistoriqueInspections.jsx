@@ -49,9 +49,14 @@ const HistoriqueInspections = ({ batiment, tenantSlug, onBack, onViewInspection 
 
   // Vérification si une inspection a un avis émis
   const hasAvis = (insp) => {
-    return insp.avis_emis === true ||
-      (insp.avis_emission_texte && insp.avis_emission_texte.trim() !== '') ||
-      (insp.pfm_record?.avis_emission && insp.pfm_record.avis_emission !== '0' && insp.pfm_record.avis_emission !== 'false');
+    // avis_emis peut être un booléen (anciens enregistrements) ou une chaîne de texte (nouveaux imports)
+    const avisEmis = insp.avis_emis;
+    if (avisEmis === true) return true;
+    if (typeof avisEmis === 'string' && avisEmis.trim() !== '' && avisEmis !== '0' && avisEmis.toLowerCase() !== 'false') return true;
+    if (insp.avis_emission_texte && insp.avis_emission_texte.trim() !== '') return true;
+    if (insp.texte_avis && insp.texte_avis.trim() !== '') return true;
+    if (insp.pfm_record?.avis_emission && insp.pfm_record.avis_emission !== '0' && insp.pfm_record.avis_emission !== 'false') return true;
+    return false;
   };
 
   // Inspections filtrées (statut + année + avis)

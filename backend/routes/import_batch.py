@@ -811,13 +811,16 @@ async def resolve_duplicate(
                         emp.get("adresse_rue", ""), emp.get("adresse_ville", ""),
                         emp.get("adresse_province", ""), emp.get("adresse_code_postal", ""),
                     ])).strip()
+                    # Extraire le grade depuis les nominations ou type_employe PFM
+                    pfm_record = emp.get("pfm_record", {})
+                    grade_pfm = pfm_record.get("type_employe") or pfm_record.get("grade") or pfm_record.get("titre") or ""
                     new_uid = str(uuid.uuid4())
                     await db.users.insert_one({
                         "id": new_uid, "tenant_id": tenant.id,
                         "email": email_pfm or None,
                         "mot_de_passe_hash": get_password_hash(PFM_DEFAULT_PASSWORD),
                         "nom": emp.get("nom", ""), "prenom": emp.get("prenom", ""),
-                        "role": "employe", "grade": "",
+                        "role": "employe", "grade": grade_pfm,
                         "type_emploi": "temps_partiel",
                         "telephone": emp.get("telephone_cellulaire") or emp.get("telephone_bureau") or "",
                         "adresse": adresse_str,
@@ -2089,7 +2092,7 @@ async def _handle_prevention(record: dict, tenant, user, source: str) -> dict:
         "resultat": record.get("statut") or "",
         "notes": record.get("narratif") or "",
         "anomalies": record.get("liste_anomalie") or record.get("anomalies") or [],
-        "avis_emis": _parse_bool(record.get("avis_emission")),
+        "avis_emis": record.get("avis_emission") or "",  # Garder le texte brut de l'avis
         "texte_avis": record.get("texte_avis") or "",
         "champs_personnalises": record.get("liste_champ_personnalise"),
         "etapes": record.get("liste_etape"),
