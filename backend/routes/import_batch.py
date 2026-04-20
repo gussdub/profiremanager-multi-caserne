@@ -2233,7 +2233,7 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
     account_user_id = None
     PFM_DEFAULT_PASSWORD = "Pompier@2024"
 
-    # Champs PFM à injecter dans le doc user
+    # Champs PFM à injecter dans le doc user (sans statut ni role — préservés pour fusion)
     pfm_user_fields = {
         "imported_from_pfm": True,
         "imported_personnel_id": doc_id,
@@ -2258,15 +2258,15 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
         )
 
     if existing_user:
-        # Lier le compte existant aux données PFM
+        # Lier le compte existant aux données PFM — sans toucher au statut existant
         await db.users.update_one(
             {"id": existing_user["id"]},
             {"$set": pfm_user_fields}
         )
         account_status = "linked"
         account_user_id = existing_user["id"]
-    else:
-        # Créer un nouveau compte utilisateur
+    elif pfm_actif:
+        # Créer un compte uniquement pour le personnel ACTIF
         new_user_id = str(uuid.uuid4())
         adresse_str = " ".join(filter(None, [
             doc.get("adresse_rue", ""),
@@ -2289,7 +2289,7 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
             "date_embauche": doc.get("date_embauche") or "",
             "date_naissance": doc.get("date_naissance") or "",
             "numero_employe": matricule or "",
-            "statut": "Actif" if pfm_actif else "Inactif",
+            "statut": "Actif",
             "formations": [],
             "competences": [],
             "created_at": datetime.now(timezone.utc),
@@ -2298,6 +2298,9 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
         await db.users.insert_one(new_user)
         account_status = "created"
         account_user_id = new_user_id
+    else:
+        # Personnel inactif PFM → pas de création de compte
+        account_status = "skipped_inactive"
 
     return {
         "status": "created",
