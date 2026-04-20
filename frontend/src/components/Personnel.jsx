@@ -1778,7 +1778,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                   <p className="user-detail-modern">
                     {isFormer 
                       ? `Fin: ${user.date_fin_embauche}${user.motif_fin_emploi ? ` (${MOTIFS_FIN_EMPLOI.find(m => m.value === user.motif_fin_emploi)?.label || user.motif_fin_emploi})` : ''}`
-                      : `Embauché le ${user.date_embauche}`
+                      : `Embauché le ${(user.date_embauche || '').substring(0, 10) || 'N/A'}`
                     }
                   </p>
                 </div>
