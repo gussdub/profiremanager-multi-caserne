@@ -348,7 +348,11 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     taille_pantalon_bunker: '',
     taille_gants: '',
     taille_masque_apria: '',
-    taille_cagoule: ''
+    taille_cagoule: '',
+    // Documents & Nominations
+    nas: '',
+    numero_passeport: '',
+    nominations: []
   });
   
   // État pour afficher les anciens employés
@@ -802,7 +806,10 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       accepte_gardes_externes: user.accepte_gardes_externes !== false,
       caserne_ids: user.caserne_ids || [],
       tailles_epi: user.tailles_epi || {},
-      mot_de_passe: ''
+      mot_de_passe: '',
+      nas: user.nas || '',
+      numero_passeport: user.numero_passeport || '',
+      nominations: user.nominations || []
     });
     
     setShowEditModal(true);
@@ -2222,6 +2229,78 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                   </div>
                 </div>
 
+                {/* Section Documents & Nominations */}
+                <div className="form-section">
+                  <h4 className="section-title">🪪 Documents &amp; Nominations</h4>
+                  <div className="form-row">
+                    <div className="form-field">
+                      <Label>N° assurance sociale (NAS)</Label>
+                      <Input
+                        value={newUser.nas || ''}
+                        onChange={(e) => setNewUser({...newUser, nas: e.target.value})}
+                        placeholder="Ex: 123 456 789"
+                        data-testid="user-nas-input"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <Label>N° passeport</Label>
+                      <Input
+                        value={newUser.numero_passeport || ''}
+                        onChange={(e) => setNewUser({...newUser, numero_passeport: e.target.value})}
+                        placeholder="Ex: AB123456"
+                        data-testid="user-passeport-input"
+                      />
+                    </div>
+                  </div>
+                  {/* Nominations */}
+                  <div className="form-field" style={{ marginTop: '0.75rem' }}>
+                    <Label>Historique des nominations</Label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+                      {(newUser.nominations || []).map((nom, idx) => (
+                        <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                          <Input
+                            value={nom.titre || ''}
+                            onChange={(e) => {
+                              const updated = [...newUser.nominations];
+                              updated[idx] = { ...updated[idx], titre: e.target.value };
+                              setNewUser({ ...newUser, nominations: updated });
+                            }}
+                            placeholder="Titre / grade / fonction"
+                            style={{ flex: 2 }}
+                            data-testid={`nomination-titre-${idx}`}
+                          />
+                          <Input
+                            type="date"
+                            value={nom.date_obtention || ''}
+                            onChange={(e) => {
+                              const updated = [...newUser.nominations];
+                              updated[idx] = { ...updated[idx], date_obtention: e.target.value };
+                              setNewUser({ ...newUser, nominations: updated });
+                            }}
+                            style={{ flex: 1 }}
+                            data-testid={`nomination-date-${idx}`}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = newUser.nominations.filter((_, i) => i !== idx);
+                              setNewUser({ ...newUser, nominations: updated });
+                            }}
+                            style={{ padding: '0.4rem 0.6rem', background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: '6px', cursor: 'pointer', color: '#dc2626', fontSize: '0.85rem' }}
+                            data-testid={`nomination-remove-${idx}`}
+                          >✕</button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setNewUser({ ...newUser, nominations: [...(newUser.nominations || []), { titre: '', date_obtention: '' }] })}
+                        style={{ padding: '0.4rem 1rem', background: '#f1f5f9', border: '1px dashed #94a3b8', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem', color: '#475569', textAlign: 'left' }}
+                        data-testid="nomination-add-btn"
+                      >+ Ajouter une nomination</button>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Section 2.5: Préférences gardes externes */}
                 <div className="form-section">
                   <h4 className="section-title">⚡ Préférences d'assignation</h4>
@@ -2436,9 +2515,40 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       </div>
                     </div>
 
+                    {/* Documents & Nominations (natif + PFM) */}
+                    {(selectedUser.nas || selectedUser.numero_passeport || (selectedUser.nominations && selectedUser.nominations.length > 0)) && (
+                      <div className="detail-section detail-section-optimized" style={{ marginBottom: '1.5rem' }}>
+                        <h5>🪪 Documents &amp; Nominations</h5>
+                        <div className="detail-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          {selectedUser.nas && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
+                              <span style={{ minWidth: '140px', color: '#64748b', fontSize: '0.875rem' }}>N° assurance sociale</span>
+                              <span style={{ textAlign: 'right', flex: 1, fontFamily: 'monospace', letterSpacing: '0.1em', fontWeight: '600' }}>{selectedUser.nas}</span>
+                            </div>
+                          )}
+                          {selectedUser.numero_passeport && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
+                              <span style={{ minWidth: '140px', color: '#64748b', fontSize: '0.875rem' }}>N° passeport</span>
+                              <span style={{ textAlign: 'right', flex: 1, fontFamily: 'monospace', letterSpacing: '0.1em', fontWeight: '600' }}>{selectedUser.numero_passeport}</span>
+                            </div>
+                          )}
+                          {selectedUser.nominations && selectedUser.nominations.length > 0 && (
+                            <div style={{ marginTop: '0.5rem' }}>
+                              <p style={{ fontSize: '0.8rem', fontWeight: '600', color: '#64748b', marginBottom: '0.5rem' }}>Nominations</p>
+                              {selectedUser.nominations.map((nom, idx) => (
+                                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.35rem' }}>
+                                  <span style={{ fontWeight: '500', fontSize: '0.875rem' }}>{nom.titre || `Nomination ${idx + 1}`}</span>
+                                  {nom.date_obtention && <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{nom.date_obtention}</span>}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="detail-section detail-section-optimized" style={{ marginBottom: '1.5rem' }}>
-                      <h5>📏 Tailles EPI</h5>
-                      <p style={{ fontSize: '0.813rem', color: '#64748b', marginBottom: '0.75rem' }}>
+                      <h5>📏 Tailles EPI</h5>                      <p style={{ fontSize: '0.813rem', color: '#64748b', marginBottom: '0.75rem' }}>
                         Tailles déclarées par l'employé dans "Mon profil" (lecture seule)
                       </p>
                       {selectedUser.tailles_epi && Object.keys(selectedUser.tailles_epi).length > 0 ? (

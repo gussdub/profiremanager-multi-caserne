@@ -65,6 +65,10 @@ class UserCreate(BaseModel):
     formations: Optional[List[str]] = []
     competences: Optional[List[str]] = []
     statut: str = "Actif"
+    # Documents sensibles & nominations
+    nas: Optional[str] = None
+    numero_passeport: Optional[str] = None
+    nominations: Optional[List[Dict]] = []
 
 
 class UserUpdate(BaseModel):
@@ -86,8 +90,12 @@ class UserUpdate(BaseModel):
     competences: Optional[List[str]] = None
     statut: Optional[str] = None
     tailles_epi: Optional[Dict[str, str]] = None
-    mot_de_passe: Optional[str] = None  # Pour changement de mot de passe
-    
+    mot_de_passe: Optional[str] = None
+    # Documents sensibles & nominations
+    nas: Optional[str] = None
+    numero_passeport: Optional[str] = None
+    nominations: Optional[List[Dict]] = None
+
     class Config:
         extra = "allow"
 
