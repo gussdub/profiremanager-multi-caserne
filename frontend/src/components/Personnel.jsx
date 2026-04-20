@@ -52,7 +52,7 @@ const PfmDataSection = ({ user, tenantSlug, canEdit }) => {
     if (user.imported_personnel_id) {
       setLoadingPhotos(true);
       apiGet(tenantSlug, `/files/by-entity/employe_pfm/${user.imported_personnel_id}`)
-        .then(files => setPfmPhotos(files || []))
+        .then(files => setPfmPhotos(Array.isArray(files) ? files : []))
         .catch(() => setPfmPhotos([]))
         .finally(() => setLoadingPhotos(false));
     }
