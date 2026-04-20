@@ -2496,9 +2496,12 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                           <span className="detail-label" style={{ minWidth: '140px', color: '#64748b' }}>Ancienneté</span>
                           <span className="detail-value" style={{ marginLeft: '1.5rem', textAlign: 'right', flex: 1 }}>
                             {(() => {
-                              const embauche = new Date(selectedUser.date_embauche.split('/').reverse().join('-'));
-                              const annees = Math.floor((new Date() - embauche) / (365.25 * 24 * 60 * 60 * 1000));
-                              return `${annees} an(s)`;
+                              if (!selectedUser.date_embauche) return 'Non renseignée';
+                              try {
+                                const embauche = new Date(selectedUser.date_embauche.split('/').reverse().join('-'));
+                                const annees = Math.floor((new Date() - embauche) / (365.25 * 24 * 60 * 60 * 1000));
+                                return `${annees} an(s)`;
+                              } catch(e) { return 'Non renseignée'; }
                             })()}
                           </span>
                         </div>
