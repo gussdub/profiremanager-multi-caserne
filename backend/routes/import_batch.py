@@ -1851,20 +1851,19 @@ async def sync_pfm_user_data(
             noms_pfm = pfm.get("liste_nomination") or emp.get("nominations")
             nominations_app = _pfm_noms_to_app(noms_pfm)
 
-            # ── Email : nettoyer le faux email ──────────────────────────────
-            current_email = u.get("email") or ""
-            new_email = None if "@import.local" in current_email else current_email
+            # ── Email : ne pas toucher (index unique MongoDB bloque null) ──
+            # L'admin mettra à jour l'email manuellement
 
             # ── Champs à mettre à jour ──────────────────────────────────────
             update_fields = {
-                "nas": emp.get("nas") or pfm.get("nas") or pfm.get("NAS") or "",
+                "nas": emp.get("nas") or pfm.get("nas") or pfm.get("NAS") or pfm.get("no_assurance_sociale") or "",
                 "code_permanent": emp.get("code_permanent") or pfm.get("code_permanent") or "",
                 "numero_passeport": emp.get("numero_passeport") or pfm.get("numero_passeport") or "",
                 "date_embauche": (emp.get("date_embauche") or pfm.get("date_embauche") or "")[:10],
-                "date_naissance": (emp.get("date_naissance") or pfm.get("date_nais") or "")[:10],
+                "date_naissance": (emp.get("date_naissance") or pfm.get("date_nais") or pfm.get("date_naissance") or "")[:10],
                 "grade": pfm.get("type_employe") or pfm.get("grade") or u.get("grade") or "",
                 "numero_employe": emp.get("matricule") or pfm.get("matricule") or u.get("numero_employe") or "",
-                "telephone": emp.get("telephone_cellulaire") or emp.get("telephone_bureau") or u.get("telephone") or "",
+                "telephone": emp.get("telephone_cellulaire") or emp.get("telephone_bureau") or pfm.get("cell") or pfm.get("tel_bureau") or u.get("telephone") or "",
                 "pfm_actif": emp.get("actif", True),
                 "pfm_nominations": noms_pfm,
                 "pfm_contacts_urgence": pfm.get("liste_contact_urgence") or emp.get("contacts_urgence"),
@@ -1873,10 +1872,6 @@ async def sync_pfm_user_data(
                 update_fields["nominations"] = nominations_app
             if adresse_update:
                 update_fields["adresse"] = adresse_update
-            if new_email is not None:
-                update_fields["email"] = new_email
-            elif "@import.local" in current_email:
-                update_fields["email"] = None
 
             await db.users.update_one({"id": u["id"]}, {"$set": update_fields})
             stats["updated"] += 1
@@ -1884,9 +1879,9 @@ async def sync_pfm_user_data(
                 "nom": f"{u.get('prenom','')} {u.get('nom','')}",
                 "nas": update_fields["nas"],
                 "code_permanent": update_fields["code_permanent"],
-                "adresse": update_fields.get("adresse", ""),
+                "adresse": update_fields.get("adresse", "(inchangée)"),
                 "nominations_count": len(nominations_app),
-                "email_cleared": "@import.local" in current_email,
+                "grade": update_fields["grade"],
             })
 
         except Exception as e:
