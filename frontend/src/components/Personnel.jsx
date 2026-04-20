@@ -2490,7 +2490,9 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       <div className="detail-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                         <div className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
                           <span className="detail-label" style={{ minWidth: '140px', color: '#64748b' }}>Date d'embauche</span>
-                          <span className="detail-value" style={{ marginLeft: '1.5rem', textAlign: 'right', flex: 1 }}>{selectedUser.date_embauche}</span>
+                          <span className="detail-value" style={{ marginLeft: '1.5rem', textAlign: 'right', flex: 1 }}>
+                            {selectedUser.date_embauche ? selectedUser.date_embauche.substring(0, 10) : 'Non renseignée'}
+                          </span>
                         </div>
                         <div className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
                           <span className="detail-label" style={{ minWidth: '140px', color: '#64748b' }}>Ancienneté</span>
@@ -3384,6 +3386,27 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       data-testid="edit-user-emergency-input"
                     />
                   </div>
+
+                  <div className="form-row">
+                    <div className="form-field">
+                      <Label>N° assurance sociale (NAS)</Label>
+                      <Input
+                        value={newUser.nas || ''}
+                        onChange={(e) => setNewUser({...newUser, nas: e.target.value})}
+                        placeholder="Ex: 123 456 789"
+                        data-testid="edit-user-nas-input"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <Label>N° passeport</Label>
+                      <Input
+                        value={newUser.numero_passeport || ''}
+                        onChange={(e) => setNewUser({...newUser, numero_passeport: e.target.value})}
+                        placeholder="Ex: AB123456"
+                        data-testid="edit-user-passeport-input"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 {/* Section 2: Informations professionnelles */}
@@ -3698,6 +3721,50 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                           ? "Modifiable uniquement par les administrateurs (5-168h)"
                           : "Les employés temps partiel modifient ce champ dans leur profil"}
                       </small>
+                    </div>
+                  </div>
+
+                  {/* Historique des nominations */}
+                  <div className="form-field" style={{ marginTop: '0.75rem' }}>
+                    <Label>Historique des nominations</Label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+                      {(newUser.nominations || []).map((nom, idx) => (
+                        <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                          <Input
+                            value={nom.titre || ''}
+                            onChange={(e) => {
+                              const updated = [...newUser.nominations];
+                              updated[idx] = { ...updated[idx], titre: e.target.value };
+                              setNewUser({ ...newUser, nominations: updated });
+                            }}
+                            placeholder="Titre / grade / fonction"
+                            style={{ flex: 2 }}
+                          />
+                          <Input
+                            type="date"
+                            value={nom.date_obtention || ''}
+                            onChange={(e) => {
+                              const updated = [...newUser.nominations];
+                              updated[idx] = { ...updated[idx], date_obtention: e.target.value };
+                              setNewUser({ ...newUser, nominations: updated });
+                            }}
+                            style={{ flex: 1 }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = newUser.nominations.filter((_, i) => i !== idx);
+                              setNewUser({ ...newUser, nominations: updated });
+                            }}
+                            style={{ padding: '0.4rem 0.6rem', background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: '6px', cursor: 'pointer', color: '#dc2626', fontSize: '0.85rem' }}
+                          >✕</button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setNewUser({ ...newUser, nominations: [...(newUser.nominations || []), { titre: '', date_obtention: '' }] })}
+                        style={{ padding: '0.4rem 1rem', background: '#f1f5f9', border: '1px dashed #94a3b8', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem', color: '#475569', textAlign: 'left' }}
+                      >+ Ajouter une nomination</button>
                     </div>
                   </div>
                 </div>

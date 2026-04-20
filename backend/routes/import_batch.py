@@ -2257,8 +2257,8 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
         "telephone_domicile": record.get("tel_domicile") or "",
         "caserne": caserne_label,
         "type_employe": record.get("type_employe") or "",
-        "date_embauche": record.get("date_embauche") or "",
-        "date_naissance": record.get("date_nais") or "",
+        "date_embauche": (record.get("date_embauche") or "")[:10],
+        "date_naissance": (record.get("date_nais") or "")[:10],
         "actif": pfm_actif,
         # Documents sensibles
         "nas": nas,
@@ -2269,7 +2269,11 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
         "permis_classe": record.get("permis_classe") or "",
         "permis_expiration": record.get("permis_expiration") or "",
         # Adresse postale
-        "adresse_rue": adresse_data.get("rue") or adresse_data.get("no_civ", "") + " " + adresse_data.get("rue", "") if isinstance(adresse_data, dict) else "",
+        "adresse_rue": " ".join(filter(None, [
+            str(adresse_data.get("no_civ", "") or "").strip(),
+            str(adresse_data.get("type_rue", "") or "").strip(),
+            str(adresse_data.get("rue", "") or "").strip(),
+        ])).strip() if isinstance(adresse_data, dict) else "",
         "adresse_ville": adresse_data.get("ville") or "" if isinstance(adresse_data, dict) else "",
         "adresse_code_postal": adresse_data.get("code_post") or adresse_data.get("code_postal") or "" if isinstance(adresse_data, dict) else "",
         "adresse_province": adresse_data.get("province") or "" if isinstance(adresse_data, dict) else "",
