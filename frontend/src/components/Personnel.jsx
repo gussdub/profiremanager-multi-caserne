@@ -353,7 +353,11 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     nas: '',
     numero_passeport: '',
     code_permanent: '',
-    nominations: []
+    nominations: [],
+    note: '',
+    permis_conduire: false,
+    permis_classe: '',
+    permis_expiration: ''
   });
   
   // État pour afficher les anciens employés
@@ -811,7 +815,11 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       nas: user.nas || '',
       numero_passeport: user.numero_passeport || '',
       code_permanent: user.code_permanent || '',
-      nominations: user.nominations || []
+      nominations: user.nominations || [],
+      note: user.note || '',
+      permis_conduire: user.permis_conduire || false,
+      permis_classe: user.permis_classe || '',
+      permis_expiration: user.permis_expiration || ''
     });
     
     setShowEditModal(true);
@@ -2051,6 +2059,58 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       data-testid="user-code-permanent-input"
                     />
                   </div>
+
+                  {/* Permis de conduire */}
+                  <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '0.75rem', marginTop: '0.25rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                      <input
+                        type="checkbox"
+                        id="permis_conduire_create"
+                        checked={!!newUser.permis_conduire}
+                        onChange={(e) => setNewUser({...newUser, permis_conduire: e.target.checked})}
+                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                        data-testid="user-permis-conduire-input"
+                      />
+                      <label htmlFor="permis_conduire_create" style={{ fontSize: '0.875rem', fontWeight: '500', cursor: 'pointer' }}>
+                        Permis de conduire
+                      </label>
+                    </div>
+                    {newUser.permis_conduire && (
+                      <div className="form-row">
+                        <div className="form-field">
+                          <Label>Classe(s)</Label>
+                          <Input
+                            value={newUser.permis_classe || ''}
+                            onChange={(e) => setNewUser({...newUser, permis_classe: e.target.value})}
+                            placeholder="Ex: 4A, 5"
+                            data-testid="user-permis-classe-input"
+                          />
+                        </div>
+                        <div className="form-field">
+                          <Label>Expiration</Label>
+                          <Input
+                            type="date"
+                            value={newUser.permis_expiration || ''}
+                            onChange={(e) => setNewUser({...newUser, permis_expiration: e.target.value})}
+                            data-testid="user-permis-expiration-input"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Note libre */}
+                  <div className="form-field">
+                    <Label>Note</Label>
+                    <textarea
+                      value={newUser.note || ''}
+                      onChange={(e) => setNewUser({...newUser, note: e.target.value})}
+                      placeholder="Notes internes (passeport, informations diverses...)"
+                      rows={3}
+                      style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.875rem', resize: 'vertical' }}
+                      data-testid="user-note-input"
+                    />
+                  </div>
                 </div>
 
                 {/* Section 2: Informations professionnelles */}
@@ -2458,6 +2518,23 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                           <div className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
                             <span className="detail-label" style={{ minWidth: '140px', color: '#64748b' }}>Code permanent</span>
                             <span style={{ fontFamily: 'monospace', letterSpacing: '0.06em', fontWeight: '600', textAlign: 'right', flex: 1 }}>{selectedUser.code_permanent}</span>
+                          </div>
+                        )}
+                        {/* Permis de conduire */}
+                        {selectedUser.permis_conduire && (
+                          <div className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
+                            <span className="detail-label" style={{ minWidth: '140px', color: '#64748b' }}>Permis de conduire</span>
+                            <span style={{ textAlign: 'right', flex: 1, fontSize: '0.875rem' }}>
+                              {selectedUser.permis_classe && <span style={{ fontWeight: '600', marginRight: '0.5rem' }}>Classe {selectedUser.permis_classe}</span>}
+                              {selectedUser.permis_expiration && <span style={{ color: '#64748b' }}>· Exp. {selectedUser.permis_expiration?.substring(0, 10)}</span>}
+                            </span>
+                          </div>
+                        )}
+                        {/* Note */}
+                        {selectedUser.note && (
+                          <div style={{ padding: '0.65rem 0.85rem', background: '#fffbeb', borderRadius: '6px', marginBottom: '0.5rem', border: '1px solid #fde68a' }}>
+                            <p style={{ fontSize: '0.75rem', fontWeight: '600', color: '#92400e', marginBottom: '0.25rem' }}>Note</p>
+                            <p style={{ fontSize: '0.875rem', color: '#374151', whiteSpace: 'pre-wrap' }}>{selectedUser.note}</p>
                           </div>
                         )}
                       </div>
@@ -3408,6 +3485,58 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       onChange={(e) => setNewUser({...newUser, code_permanent: e.target.value})}
                       placeholder="Ex: DUBG12345678"
                       data-testid="edit-user-code-permanent-input"
+                    />
+                  </div>
+
+                  {/* Permis de conduire */}
+                  <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '0.75rem', marginTop: '0.25rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                      <input
+                        type="checkbox"
+                        id="permis_conduire_edit"
+                        checked={!!newUser.permis_conduire}
+                        onChange={(e) => setNewUser({...newUser, permis_conduire: e.target.checked})}
+                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                        data-testid="edit-user-permis-conduire-input"
+                      />
+                      <label htmlFor="permis_conduire_edit" style={{ fontSize: '0.875rem', fontWeight: '500', cursor: 'pointer' }}>
+                        Permis de conduire
+                      </label>
+                    </div>
+                    {newUser.permis_conduire && (
+                      <div className="form-row">
+                        <div className="form-field">
+                          <Label>Classe(s)</Label>
+                          <Input
+                            value={newUser.permis_classe || ''}
+                            onChange={(e) => setNewUser({...newUser, permis_classe: e.target.value})}
+                            placeholder="Ex: 4A, 5"
+                            data-testid="edit-user-permis-classe-input"
+                          />
+                        </div>
+                        <div className="form-field">
+                          <Label>Expiration</Label>
+                          <Input
+                            type="date"
+                            value={newUser.permis_expiration || ''}
+                            onChange={(e) => setNewUser({...newUser, permis_expiration: e.target.value})}
+                            data-testid="edit-user-permis-expiration-input"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Note libre */}
+                  <div className="form-field">
+                    <Label>Note</Label>
+                    <textarea
+                      value={newUser.note || ''}
+                      onChange={(e) => setNewUser({...newUser, note: e.target.value})}
+                      placeholder="Notes internes (passeport, informations diverses...)"
+                      rows={3}
+                      style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.875rem', resize: 'vertical' }}
+                      data-testid="edit-user-note-input"
                     />
                   </div>
                 </div>

@@ -2211,7 +2211,9 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
     prenom = record.get("prenom") or ""
     email_pfm = (record.get("couriel") or record.get("courriel") or "").strip().lower()
     premligne_id = _get_premligne_id(record)
-    pfm_actif = record.get("inactif") != "Oui"
+    # Statut actif : inactif=Oui OU date_fin présente
+    date_fin = (record.get("date_fin") or "").strip()
+    pfm_actif = record.get("inactif") != "Oui" and not date_fin
 
     if matricule:
         existing = await db.imported_personnel.find_one(
@@ -2239,8 +2241,26 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
     if not isinstance(adresse_data, dict):
         adresse_data = {}
 
-    nas = record.get("nas") or record.get("NAS") or record.get("numero_assurance_sociale") or ""
+    nas = record.get("n_as") or record.get("nas") or record.get("NAS") or ""
     numero_passeport = record.get("numero_passeport") or record.get("passeport") or ""
+
+    # Nominations : liste_nomination.employe_nomination[]
+    noms_raw = record.get("liste_nomination") or {}
+    if isinstance(noms_raw, dict):
+        noms_items = noms_raw.get("employe_nomination") or []
+        if isinstance(noms_items, dict):
+            noms_items = [noms_items]
+    elif isinstance(noms_raw, list):
+        noms_items = noms_raw
+    else:
+        noms_items = []
+    nominations_app = [
+        {
+            "titre": str(n.get("id_grade") or n.get("grade") or ""),
+            "date_obtention": (n.get("date_nomin") or "")[:10]
+        }
+        for n in noms_items if isinstance(n, dict)
+    ]
 
     doc_id = str(uuid.uuid4())
     doc = {
@@ -2259,6 +2279,7 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
         "type_employe": record.get("type_employe") or "",
         "date_embauche": (record.get("date_embauche") or "")[:10],
         "date_naissance": (record.get("date_nais") or "")[:10],
+        "date_fin_embauche": date_fin[:10] if date_fin else "",
         "actif": pfm_actif,
         # Documents sensibles
         "nas": nas,
@@ -2267,7 +2288,9 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
         # Permis de conduire
         "permis_conduire": _parse_bool(record.get("permis_conduire")),
         "permis_classe": record.get("permis_classe") or "",
-        "permis_expiration": record.get("permis_expiration") or "",
+        "permis_expiration": (record.get("permis_expiration") or "")[:10],
+        # Nominations converties
+        "nominations": nominations_app,
         # Adresse postale
         "adresse_rue": " ".join(filter(None, [
             str(adresse_data.get("no_civ", "") or "").strip(),
@@ -2305,6 +2328,11 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
         "nas": nas,
         "numero_passeport": numero_passeport,
         "code_permanent": doc.get("code_permanent", ""),
+        "note": doc.get("note", ""),
+        "permis_conduire": doc.get("permis_conduire", False),
+        "permis_classe": doc.get("permis_classe", ""),
+        "permis_expiration": doc.get("permis_expiration", ""),
+        "nominations": nominations_app,
         "pfm_matricule": matricule,
         "pfm_caserne": caserne_label,
         "pfm_nominations": record.get("liste_nomination"),
@@ -2348,11 +2376,12 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
             "nom": nom,
             "prenom": prenom,
             "role": "employe",
-            "grade": record.get("grade") or record.get("titre") or "",
+            "grade": record.get("type_employe") or record.get("grade") or record.get("titre") or "",
             "type_emploi": "temps_partiel",
             "telephone": doc.get("telephone_cellulaire") or doc.get("telephone_bureau") or "",
             "adresse": adresse_str,
             "date_embauche": doc.get("date_embauche") or "",
+            "date_fin_embauche": date_fin[:10] if date_fin else "",
             "date_naissance": doc.get("date_naissance") or "",
             "numero_employe": matricule or "",
             "statut": "Actif",
@@ -2380,11 +2409,12 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
             "mot_de_passe_hash": get_password_hash(PFM_DEFAULT_PASSWORD),
             "nom": nom, "prenom": prenom,
             "role": "employe",
-            "grade": record.get("grade") or record.get("titre") or "",
+            "grade": record.get("type_employe") or record.get("grade") or record.get("titre") or "",
             "type_emploi": "temps_partiel",
             "telephone": doc.get("telephone_cellulaire") or doc.get("telephone_bureau") or "",
             "adresse": adresse_str,
             "date_embauche": doc.get("date_embauche") or "",
+            "date_fin_embauche": date_fin[:10] if date_fin else "",
             "date_naissance": doc.get("date_naissance") or "",
             "numero_employe": matricule or "",
             "statut": "Inactif",

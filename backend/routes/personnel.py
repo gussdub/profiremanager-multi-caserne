@@ -70,6 +70,10 @@ class UserCreate(BaseModel):
     numero_passeport: Optional[str] = None
     code_permanent: Optional[str] = None
     nominations: Optional[List[Dict]] = []
+    note: Optional[str] = None
+    permis_conduire: Optional[bool] = None
+    permis_classe: Optional[str] = None
+    permis_expiration: Optional[str] = None
 
 
 class UserUpdate(BaseModel):
@@ -97,6 +101,10 @@ class UserUpdate(BaseModel):
     numero_passeport: Optional[str] = None
     code_permanent: Optional[str] = None
     nominations: Optional[List[Dict]] = None
+    note: Optional[str] = None
+    permis_conduire: Optional[bool] = None
+    permis_classe: Optional[str] = None
+    permis_expiration: Optional[str] = None
 
     class Config:
         extra = "allow"
