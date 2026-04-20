@@ -5,10 +5,12 @@ import { Label } from './ui/label';
 import { useToast } from '../hooks/use-toast';
 import { useTenant } from '../contexts/TenantContext';
 import { apiGet, apiPost } from '../utils/api';
+import { useCacheInvalidation } from '../hooks/useCacheInvalidation';
 
 const ImportBatiments = ({ onImportComplete }) => {
   const { tenantSlug } = useTenant();
   const { toast } = useToast();
+  const { invalidateAfterImport } = useCacheInvalidation();
   const [step, setStep] = useState(1); // 1: Upload, 2: Mapping, 3: Preview, 4: Conflicts, 5: Import
   const [uploadedFile, setUploadedFile] = useState(null);
   const [fileType, setFileType] = useState(null); // 'csv', 'excel', 'html'
@@ -474,6 +476,9 @@ const ImportBatiments = ({ onImportComplete }) => {
 
       setImportResults(response);
       setStep(4);
+      
+      // Invalider le cache pour garantir des données fraîches
+      await invalidateAfterImport();
 
       toast({
         title: "Import terminé",

@@ -2,28 +2,85 @@
 /**
  * Service Worker pour ProFireManager PWA
  * Gère le cache offline et permet le fonctionnement sans connexion
+ * 
+ * Stratégie de cache:
+ * - Assets statiques: Cache First (CSS, JS, images)
+ * - API: Network First avec TTL court (données fraîches prioritaires)
+ * - Navigation: Network First avec fallback offline
  */
 
-const CACHE_NAME = 'profiremanager-v1';
-const urlsToCache = [
+// Version du cache - incrémenter pour forcer la mise à jour
+const CACHE_VERSION = 'v2';
+const STATIC_CACHE_NAME = `profiremanager-static-${CACHE_VERSION}`;
+const API_CACHE_NAME = `profiremanager-api-${CACHE_VERSION}`;
+
+// TTL pour le cache API (en millisecondes)
+const API_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+// Assets à pré-cacher (fichiers critiques pour le mode offline)
+const STATIC_ASSETS = [
   '/',
-  '/static/css/main.css',
-  '/static/js/main.js',
-  '/static/js/bundle.js'
+  '/manifest.json',
+  '/logo192.png'
 ];
+
+// Patterns pour identifier les requêtes API (à ne pas cacher longtemps)
+const API_PATTERNS = [
+  /\/api\//,
+  /\/users/,
+  /\/personnel/,
+  /\/inspections/,
+  /\/batiments/,
+  /\/interventions/,
+  /\/planning/,
+  /\/notifications/
+];
+
+/**
+ * Vérifie si une URL correspond à une requête API
+ */
+function isApiRequest(url) {
+  return API_PATTERNS.some(pattern => pattern.test(url));
+}
+
+/**
+ * Vérifie si une réponse cachée est encore valide (non expirée)
+ */
+function isCacheValid(cachedResponse) {
+  if (!cachedResponse) return false;
+  
+  const cachedTime = cachedResponse.headers.get('sw-cache-time');
+  if (!cachedTime) return true; // Pas de timestamp = toujours valide (assets statiques)
+  
+  const age = Date.now() - parseInt(cachedTime, 10);
+  return age < API_CACHE_TTL;
+}
+
+/**
+ * Ajoute un timestamp à une réponse pour le TTL
+ */
+function addCacheTimestamp(response) {
+  const headers = new Headers(response.headers);
+  headers.set('sw-cache-time', Date.now().toString());
+  
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
+}
 
 // Installation du Service Worker
 self.addEventListener('install', (event) => {
-  console.log('[Service Worker] Installation...');
+  console.log('[Service Worker] Installation...', CACHE_VERSION);
   
   event.waitUntil(
-    caches.open(CACHE_NAME)
+    caches.open(STATIC_CACHE_NAME)
       .then((cache) => {
-        console.log('[Service Worker] Cache ouvert');
-        // Ne pas bloquer l'installation si certains fichiers échouent
+        console.log('[Service Worker] Pré-cache des assets statiques');
         return Promise.allSettled(
-          urlsToCache.map(url => 
-            cache.add(url).catch(err => console.log(`[Service Worker] Échec cache ${url}:`, err))
+          STATIC_ASSETS.map(url => 
+            cache.add(url).catch(err => console.log(`[SW] Échec cache ${url}:`, err))
           )
         );
       })
@@ -31,79 +88,175 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activation du Service Worker
+// Activation du Service Worker - Nettoyage des anciens caches
 self.addEventListener('activate', (event) => {
-  console.log('[Service Worker] Activation...');
+  console.log('[Service Worker] Activation...', CACHE_VERSION);
   
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
+          // Supprimer tous les caches qui ne correspondent pas à la version actuelle
+          if (!cacheName.includes(CACHE_VERSION)) {
             console.log('[Service Worker] Suppression ancien cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
-    }).then(() => self.clients.claim())
-  );
-});
-
-// Stratégie de cache: Network First avec fallback sur Cache
-self.addEventListener('fetch', (event) => {
-  // Ignorer les requêtes non-GET
-  if (event.request.method !== 'GET') {
-    return;
-  }
-
-  // Ignorer les requêtes vers des domaines externes (sauf API)
-  const url = new URL(event.request.url);
-  if (url.origin !== self.location.origin && !url.pathname.startsWith('/api/')) {
-    return;
-  }
-
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Si la réponse est valide, la mettre en cache
-        if (response && response.status === 200) {
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-        }
-        return response;
-      })
-      .catch(() => {
-        // En cas d'échec réseau, essayer le cache
-        return caches.match(event.request).then((cachedResponse) => {
-          if (cachedResponse) {
-            console.log('[Service Worker] Réponse depuis cache:', event.request.url);
-            return cachedResponse;
-          }
-          
-          // Si pas en cache et que c'est une navigation, retourner la page d'accueil cachée
-          if (event.request.mode === 'navigate') {
-            return caches.match('/');
-          }
-          
-          // Sinon, réponse offline générique
-          return new Response('Contenu non disponible hors ligne', {
-            status: 503,
-            statusText: 'Service Unavailable',
-            headers: new Headers({
-              'Content-Type': 'text/plain'
-            })
-          });
+    }).then(() => {
+      // Prendre le contrôle immédiatement de toutes les pages
+      return self.clients.claim();
+    }).then(() => {
+      // Notifier les clients que le SW est mis à jour
+      return self.clients.matchAll({ type: 'window' }).then(clients => {
+        clients.forEach(client => {
+          client.postMessage({ type: 'SW_UPDATED', version: CACHE_VERSION });
         });
-      })
+      });
+    })
   );
 });
 
-// Écouter les messages du client (pour forcer la mise à jour)
+// Gestion des requêtes fetch
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  const url = new URL(request.url);
+  
+  // Ignorer les requêtes non-GET
+  if (request.method !== 'GET') {
+    return;
+  }
+  
+  // Ignorer les requêtes externes (sauf Azure Blob pour les images)
+  if (url.origin !== self.location.origin && 
+      !url.hostname.includes('blob.core.windows.net')) {
+    return;
+  }
+  
+  // Stratégie différente selon le type de requête
+  if (isApiRequest(url.pathname)) {
+    // API: Network First avec cache TTL court
+    event.respondWith(networkFirstWithTTL(request));
+  } else {
+    // Assets statiques: Network First avec fallback cache
+    event.respondWith(networkFirstWithCache(request));
+  }
+});
+
+/**
+ * Stratégie Network First avec TTL pour les API
+ * - Essaie le réseau en premier
+ * - Cache la réponse avec un timestamp
+ * - Utilise le cache seulement si réseau indisponible ET cache non expiré
+ */
+async function networkFirstWithTTL(request) {
+  try {
+    const response = await fetch(request);
+    
+    if (response && response.status === 200) {
+      const cache = await caches.open(API_CACHE_NAME);
+      const responseToCache = addCacheTimestamp(response.clone());
+      cache.put(request, responseToCache);
+    }
+    
+    return response;
+  } catch (error) {
+    // Réseau indisponible - vérifier le cache
+    const cachedResponse = await caches.match(request);
+    
+    if (cachedResponse && isCacheValid(cachedResponse)) {
+      console.log('[SW] API depuis cache (TTL valide):', request.url);
+      return cachedResponse;
+    }
+    
+    // Cache expiré ou absent - retourner erreur
+    console.log('[SW] Requête API échouée, pas de cache valide:', request.url);
+    return new Response(JSON.stringify({ 
+      error: 'offline', 
+      message: 'Données non disponibles hors ligne' 
+    }), {
+      status: 503,
+      statusText: 'Service Unavailable',
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+/**
+ * Stratégie Network First avec fallback cache pour les assets
+ */
+async function networkFirstWithCache(request) {
+  try {
+    const response = await fetch(request);
+    
+    if (response && response.status === 200) {
+      const cache = await caches.open(STATIC_CACHE_NAME);
+      cache.put(request, response.clone());
+    }
+    
+    return response;
+  } catch (error) {
+    const cachedResponse = await caches.match(request);
+    
+    if (cachedResponse) {
+      console.log('[SW] Asset depuis cache:', request.url);
+      return cachedResponse;
+    }
+    
+    // Si c'est une navigation, retourner la page d'accueil
+    if (request.mode === 'navigate') {
+      return caches.match('/');
+    }
+    
+    return new Response('Contenu non disponible hors ligne', {
+      status: 503,
+      statusText: 'Service Unavailable',
+      headers: { 'Content-Type': 'text/plain' }
+    });
+  }
+}
+
+// Écouter les messages du client
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
+  const { type, data } = event.data || {};
+  
+  switch (type) {
+    case 'SKIP_WAITING':
+      self.skipWaiting();
+      break;
+      
+    case 'CLEAR_API_CACHE':
+      // Invalider tout le cache API
+      caches.delete(API_CACHE_NAME).then(() => {
+        console.log('[SW] Cache API invalidé');
+        event.source.postMessage({ type: 'CACHE_CLEARED', cache: 'api' });
+      });
+      break;
+      
+    case 'CLEAR_ALL_CACHE':
+      // Invalider tous les caches
+      caches.keys().then(names => {
+        return Promise.all(names.map(name => caches.delete(name)));
+      }).then(() => {
+        console.log('[SW] Tous les caches invalidés');
+        event.source.postMessage({ type: 'CACHE_CLEARED', cache: 'all' });
+      });
+      break;
+      
+    case 'GET_CACHE_STATUS':
+      // Retourner le statut du cache
+      Promise.all([
+        caches.open(STATIC_CACHE_NAME).then(c => c.keys()),
+        caches.open(API_CACHE_NAME).then(c => c.keys())
+      ]).then(([staticKeys, apiKeys]) => {
+        event.source.postMessage({
+          type: 'CACHE_STATUS',
+          version: CACHE_VERSION,
+          static: staticKeys.length,
+          api: apiKeys.length
+        });
+      });
+      break;
   }
 });
 

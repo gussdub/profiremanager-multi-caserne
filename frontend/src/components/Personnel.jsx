@@ -4631,4 +4631,3 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
 
 
 export default Personnel;
-fault Personnel;

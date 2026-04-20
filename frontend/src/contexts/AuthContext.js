@@ -3,6 +3,7 @@ import axios from "axios";
 import { useTenant } from "./TenantContext";
 import PushNotificationService from "../services/pushNotifications";
 import WebSocketService from "../services/websocket";
+import CacheManager from "../services/cacheManager";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const API = BACKEND_URL ? `${BACKEND_URL}/api` : '/api';
@@ -208,6 +209,13 @@ export const AuthProvider = ({ children }) => {
       // Réinitialiser la page courante vers le dashboard après connexion
       localStorage.setItem('currentPage', 'dashboard');
       
+      // Invalider le cache API pour garantir des données fraîches après connexion
+      CacheManager.clearApiCache().then(() => {
+        console.log('✅ Cache API invalidé après connexion');
+      }).catch(() => {
+        // Silently ignore if SW not ready
+      });
+      
       return { success: true };
     } catch (error) {
       console.error('[AuthContext] Erreur de connexion:', error.response?.status, error.response?.data);
@@ -231,6 +239,11 @@ export const AuthProvider = ({ children }) => {
     PushNotificationService.unregister().catch(err => 
       console.error('Error unregistering push notifications:', err)
     );
+    
+    // Invalider le cache API pour éviter les données obsolètes
+    CacheManager.clearApiCache().catch(() => {
+      // Silently ignore if SW not ready
+    });
     
     // NE PAS effacer les credentials sauvegardés ("Se souvenir de moi")
     // L'utilisateur pourra ainsi voir ses identifiants pré-remplis au prochain login

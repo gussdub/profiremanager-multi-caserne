@@ -56,7 +56,9 @@ Application de gestion complète pour les services d'incendie canadiens. Multi-t
 - Fix extraction du grade lors de resolve_duplicate (import_batch.py) — grade PFM correctement mappé (avr 2026)
 - Fix avis_emis stocké comme texte (pas booléen) + affichage du contenu dans InspectionDetailView (avr 2026)
 - Fix hasAvis() dans HistoriqueInspections pour supporter booléen ET string (rétrocompatibilité) (avr 2026)
+- Refonte complète du Service Worker (cache versionné, TTL 5min pour API, invalidation automatique) (avr 2026)
+- CacheManager: service client pour invalider le cache après login/logout/import (avr 2026)
+- Hook useCacheInvalidation pour faciliter l'invalidation après mutations (avr 2026)
 
 ## Backlog
-- P1: Invalidation cache Service Worker (webPushNotifications.js) pour éviter données obsolètes
 - P2: Aperçu d'emails en temps réel dans les paramètres admin

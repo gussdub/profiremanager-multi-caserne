@@ -21,6 +21,7 @@ import { useGlobalModalScrollLock } from "./hooks/useModalScrollLock";
 const SecteursMap = lazy(() => import("./components/SecteursMap"));
 import { apiGet, apiPost, apiPut, apiPatch, apiDelete, apiCall } from "./utils/api";
 import PushNotificationService from "./services/pushNotifications";
+import CacheManager from "./services/cacheManager";
 import { initDeepLinkHandler } from "./services/deepLinking";
 import { fr } from "date-fns/locale";
 // Chart dynamique pour réduire bundle initial
@@ -345,10 +346,31 @@ const AppLayout = () => {
   // Enregistrer le Service Worker PWA et le manifest dynamique
   useEffect(() => {
     if ('serviceWorker' in navigator && tenantSlug) {
+      // Initialiser le CacheManager pour écouter les événements du SW
+      CacheManager.init();
+      
+      // Écouter les mises à jour du Service Worker
+      const unsubscribe = CacheManager.addListener((eventType, data) => {
+        if (eventType === 'newVersion') {
+          console.log('[App] Nouvelle version disponible - rechargement automatique');
+          // Forcer la mise à jour et recharger
+          CacheManager.forceUpdate().then(() => {
+            window.location.reload();
+          });
+        } else if (eventType === 'update') {
+          console.log('[App] Service Worker mis à jour vers:', data.version);
+        }
+      });
+      
       // Enregistrer le Service Worker
       navigator.serviceWorker.register('/service-worker.js')
         .then((registration) => {
           console.log('✅ Service Worker enregistré:', registration.scope);
+          
+          // Vérifier les mises à jour toutes les heures
+          setInterval(() => {
+            registration.update();
+          }, 60 * 60 * 1000);
         })
         .catch((error) => {
           console.log('❌ Erreur Service Worker:', error);
@@ -396,6 +418,11 @@ const AppLayout = () => {
         link.href = `${process.env.REACT_APP_BACKEND_URL}/api/${tenantSlug}/manifest.json`;
         document.head.appendChild(link);
       }
+      
+      // Cleanup
+      return () => {
+        unsubscribe();
+      };
       
       // Initialiser le gestionnaire de deep links pour les apps mobiles
       initDeepLinkHandler((path) => {
