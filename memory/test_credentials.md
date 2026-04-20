@@ -6,3 +6,12 @@
 - **Login endpoint**: `POST /api/demo/auth/login`
 - **Body**: `{"email": "...", "mot_de_passe": "..."}`
 - **Token field**: `access_token`
+
+## Tenant: shefford
+- **Admin**: gussdub@gmail.com / 230685Juin+ (role: admin, grade: Lieutenant)
+- **Flow connexion**: Page d'accueil → saisir "shefford" comme code caserne → Valider → Formulaire login
+- **Login endpoint**: `POST /api/shefford/auth/login`
+
+## Employés importés PFM (tous tenants)
+- **Mot de passe par défaut**: Pompier@2024
+- **Note**: Les employés importés depuis PFM Transfer n'ont pas nécessairement d'email

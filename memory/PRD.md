@@ -52,6 +52,10 @@ Application de gestion complète pour les services d'incendie canadiens. Multi-t
 - Section "Données PFM" dans modal Personnel : NAS, passeport, nominations, contacts urgence, photos, statut PFM (avr 2026)
 - Badge "PFM" dans la liste et modal personnel pour le personnel importé (avr 2026)
 - isFormerEmployee mis à jour pour gérer statut "Inactif" PFM (avr 2026)
+- Fix bug "Champs requis" modale Personnel : email rendu optionnel pour employés importés PFM sans courriel (avr 2026)
+- Fix extraction du grade lors de resolve_duplicate (import_batch.py) — grade PFM correctement mappé (avr 2026)
+- Fix avis_emis stocké comme texte (pas booléen) + affichage du contenu dans InspectionDetailView (avr 2026)
+- Fix hasAvis() dans HistoriqueInspections pour supporter booléen ET string (rétrocompatibilité) (avr 2026)
 
 ## Backlog
 - P1: Invalidation cache Service Worker (webPushNotifications.js) pour éviter données obsolètes

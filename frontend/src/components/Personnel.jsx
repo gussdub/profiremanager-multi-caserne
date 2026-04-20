@@ -3420,7 +3420,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                   </div>
 
                   <div className="form-field">
-                    <Label>Email *</Label>
+                    <Label>Email <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>(optionnel)</span></Label>
                     <Input
                       type="email"
                       value={newUser.email}
@@ -4631,3 +4631,4 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
 
 
 export default Personnel;
+fault Personnel;
