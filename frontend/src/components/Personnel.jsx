@@ -2032,6 +2032,27 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       data-testid="user-emergency-input"
                     />
                   </div>
+
+                  <div className="form-row">
+                    <div className="form-field">
+                      <Label>N° assurance sociale (NAS)</Label>
+                      <Input
+                        value={newUser.nas || ''}
+                        onChange={(e) => setNewUser({...newUser, nas: e.target.value})}
+                        placeholder="Ex: 123 456 789"
+                        data-testid="user-nas-input"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <Label>N° passeport</Label>
+                      <Input
+                        value={newUser.numero_passeport || ''}
+                        onChange={(e) => setNewUser({...newUser, numero_passeport: e.target.value})}
+                        placeholder="Ex: AB123456"
+                        data-testid="user-passeport-input"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 {/* Section 2: Informations professionnelles */}
@@ -2227,32 +2248,8 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       </span>
                     </div>
                   </div>
-                </div>
 
-                {/* Section Documents & Nominations */}
-                <div className="form-section">
-                  <h4 className="section-title">🪪 Documents &amp; Nominations</h4>
-                  <div className="form-row">
-                    <div className="form-field">
-                      <Label>N° assurance sociale (NAS)</Label>
-                      <Input
-                        value={newUser.nas || ''}
-                        onChange={(e) => setNewUser({...newUser, nas: e.target.value})}
-                        placeholder="Ex: 123 456 789"
-                        data-testid="user-nas-input"
-                      />
-                    </div>
-                    <div className="form-field">
-                      <Label>N° passeport</Label>
-                      <Input
-                        value={newUser.numero_passeport || ''}
-                        onChange={(e) => setNewUser({...newUser, numero_passeport: e.target.value})}
-                        placeholder="Ex: AB123456"
-                        data-testid="user-passeport-input"
-                      />
-                    </div>
-                  </div>
-                  {/* Nominations */}
+                  {/* Historique des nominations */}
                   <div className="form-field" style={{ marginTop: '0.75rem' }}>
                     <Label>Historique des nominations</Label>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
@@ -2454,6 +2451,18 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                           <span className="detail-label" style={{ minWidth: '140px', color: '#64748b' }}>Contact d'urgence</span>
                           <span className="detail-value emergency" style={{ marginLeft: '1.5rem', textAlign: 'right', flex: 1 }}>{selectedUser.contact_urgence || 'Non renseigné'}</span>
                         </div>
+                        {selectedUser.nas && (
+                          <div className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
+                            <span className="detail-label" style={{ minWidth: '140px', color: '#64748b' }}>N° assurance sociale</span>
+                            <span style={{ fontFamily: 'monospace', letterSpacing: '0.1em', fontWeight: '600', textAlign: 'right', flex: 1 }}>{selectedUser.nas}</span>
+                          </div>
+                        )}
+                        {selectedUser.numero_passeport && (
+                          <div className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
+                            <span className="detail-label" style={{ minWidth: '140px', color: '#64748b' }}>N° passeport</span>
+                            <span style={{ fontFamily: 'monospace', letterSpacing: '0.1em', fontWeight: '600', textAlign: 'right', flex: 1 }}>{selectedUser.numero_passeport}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -2512,38 +2521,36 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                             <span>{selectedUser.heures_max_semaine || 40}h</span>
                           </span>
                         </div>
+                        {/* Nominations */}
+                        {selectedUser.nominations && selectedUser.nominations.length > 0 && (
+                          <div style={{ marginTop: '0.5rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.75rem' }}>
+                            <p style={{ fontSize: '0.8rem', fontWeight: '600', color: '#64748b', marginBottom: '0.5rem' }}>Historique des nominations</p>
+                            {selectedUser.nominations.map((nom, idx) => (
+                              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.35rem' }}>
+                                <span style={{ fontWeight: '500', fontSize: '0.875rem' }}>{nom.titre || `Nomination ${idx + 1}`}</span>
+                                {nom.date_obtention && <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{nom.date_obtention}</span>}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    {/* Documents & Nominations (natif + PFM) */}
-                    {(selectedUser.nas || selectedUser.numero_passeport || (selectedUser.nominations && selectedUser.nominations.length > 0)) && (
-                      <div className="detail-section detail-section-optimized" style={{ marginBottom: '1.5rem' }}>
-                        <h5>🪪 Documents &amp; Nominations</h5>
-                        <div className="detail-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                          {selectedUser.nas && (
-                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
-                              <span style={{ minWidth: '140px', color: '#64748b', fontSize: '0.875rem' }}>N° assurance sociale</span>
-                              <span style={{ textAlign: 'right', flex: 1, fontFamily: 'monospace', letterSpacing: '0.1em', fontWeight: '600' }}>{selectedUser.nas}</span>
-                            </div>
-                          )}
-                          {selectedUser.numero_passeport && (
-                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
-                              <span style={{ minWidth: '140px', color: '#64748b', fontSize: '0.875rem' }}>N° passeport</span>
-                              <span style={{ textAlign: 'right', flex: 1, fontFamily: 'monospace', letterSpacing: '0.1em', fontWeight: '600' }}>{selectedUser.numero_passeport}</span>
-                            </div>
-                          )}
-                          {selectedUser.nominations && selectedUser.nominations.length > 0 && (
-                            <div style={{ marginTop: '0.5rem' }}>
-                              <p style={{ fontSize: '0.8rem', fontWeight: '600', color: '#64748b', marginBottom: '0.5rem' }}>Nominations</p>
-                              {selectedUser.nominations.map((nom, idx) => (
-                                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.35rem' }}>
-                                  <span style={{ fontWeight: '500', fontSize: '0.875rem' }}>{nom.titre || `Nomination ${idx + 1}`}</span>
-                                  {nom.date_obtention && <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{nom.date_obtention}</span>}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                    {/* Documents & Nominations (natif + PFM) — dans la section personnelle */}
+                    {(selectedUser.nas || selectedUser.numero_passeport) && (
+                      <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                        {selectedUser.nas && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.55rem 0.85rem', background: '#f8fafc', borderRadius: '6px' }}>
+                            <span style={{ color: '#64748b', fontSize: '0.875rem' }}>N° assurance sociale</span>
+                            <span style={{ fontFamily: 'monospace', letterSpacing: '0.1em', fontWeight: '600', fontSize: '0.875rem' }}>{selectedUser.nas}</span>
+                          </div>
+                        )}
+                        {selectedUser.numero_passeport && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.55rem 0.85rem', background: '#f8fafc', borderRadius: '6px' }}>
+                            <span style={{ color: '#64748b', fontSize: '0.875rem' }}>N° passeport</span>
+                            <span style={{ fontFamily: 'monospace', letterSpacing: '0.1em', fontWeight: '600', fontSize: '0.875rem' }}>{selectedUser.numero_passeport}</span>
+                          </div>
+                        )}
                       </div>
                     )}
 

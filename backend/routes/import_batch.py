@@ -1835,7 +1835,8 @@ async def backfill_employes_accounts(
                 await db.users.update_one({"id": existing_user["id"]}, {"$set": pfm_fields})
                 stats["linked"] += 1
                 details.append({"action": "linked", "nom": f"{prenom} {nom}"})
-            elif pfm_actif:
+            else:
+                # Actif → statut Actif, Inactif → statut Inactif (apparaît dans "Anciens employés")
                 adresse_str = " ".join(filter(None, [
                     emp.get("adresse_rue", ""), emp.get("adresse_ville", ""),
                     emp.get("adresse_province", ""), emp.get("adresse_code_postal", ""),
@@ -1845,22 +1846,22 @@ async def backfill_employes_accounts(
                     "id": new_uid, "tenant_id": tenant.id,
                     "email": email_pfm or f"pfm.{matricule or doc_id[:8]}@import.local",
                     "mot_de_passe_hash": get_password_hash(PFM_DEFAULT_PASSWORD),
-                    "nom": nom, "prenom": prenom, "role": "employe", "grade": "",
+                    "nom": nom, "prenom": prenom,
+                    "role": "employe", "grade": "",
                     "type_emploi": "temps_partiel",
                     "telephone": emp.get("telephone_cellulaire") or emp.get("telephone_bureau") or "",
                     "adresse": adresse_str,
                     "date_embauche": emp.get("date_embauche") or "",
                     "date_naissance": emp.get("date_naissance") or "",
                     "numero_employe": matricule or "",
-                    "statut": "Actif", "formations": [], "competences": [],
+                    "statut": "Actif" if pfm_actif else "Inactif",
+                    "formations": [], "competences": [],
                     "created_at": datetime.now(timezone.utc),
                     **pfm_fields,
                 })
+                action_label = "created" if pfm_actif else "created_inactive"
                 stats["created"] += 1
-                details.append({"action": "created", "nom": f"{prenom} {nom}", "email": email_pfm or f"pfm.{matricule or doc_id[:8]}@import.local"})
-            else:
-                stats["skipped_inactive"] += 1
-                details.append({"action": "skipped_inactive", "nom": f"{prenom} {nom}"})
+                details.append({"action": action_label, "nom": f"{prenom} {nom}", "email": email_pfm or f"pfm.{matricule or doc_id[:8]}@import.local"})
 
         except Exception as e:
             stats["errors"] += 1
@@ -2450,8 +2451,35 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
         account_status = "created"
         account_user_id = new_user_id
     else:
-        # Personnel inactif PFM → pas de création de compte
-        account_status = "skipped_inactive"
+        # Personnel inactif PFM → compte créé avec statut Inactif (apparaît dans "Anciens employés")
+        new_user_id = str(uuid.uuid4())
+        adresse_str = " ".join(filter(None, [
+            doc.get("adresse_rue", ""),
+            doc.get("adresse_ville", ""),
+            doc.get("adresse_province", ""),
+            doc.get("adresse_code_postal", ""),
+        ])).strip()
+        await db.users.insert_one({
+            "id": new_user_id,
+            "tenant_id": tenant.id,
+            "email": email_pfm or f"pfm.{matricule or doc_id[:8]}@import.local",
+            "mot_de_passe_hash": get_password_hash(PFM_DEFAULT_PASSWORD),
+            "nom": nom, "prenom": prenom,
+            "role": "employe",
+            "grade": record.get("grade") or record.get("titre") or "",
+            "type_emploi": "temps_partiel",
+            "telephone": doc.get("telephone_cellulaire") or doc.get("telephone_bureau") or "",
+            "adresse": adresse_str,
+            "date_embauche": doc.get("date_embauche") or "",
+            "date_naissance": doc.get("date_naissance") or "",
+            "numero_employe": matricule or "",
+            "statut": "Inactif",
+            "formations": [], "competences": [],
+            "created_at": datetime.now(timezone.utc),
+            **pfm_user_fields,
+        })
+        account_status = "created_inactive"
+        account_user_id = new_user_id
 
     return {
         "status": "created",
