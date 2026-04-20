@@ -352,6 +352,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     // Documents & Nominations
     nas: '',
     numero_passeport: '',
+    code_permanent: '',
     nominations: []
   });
   
@@ -809,6 +810,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       mot_de_passe: '',
       nas: user.nas || '',
       numero_passeport: user.numero_passeport || '',
+      code_permanent: user.code_permanent || '',
       nominations: user.nominations || []
     });
     
@@ -1772,19 +1774,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         🎯
                       </span>
                     )}
-                    {user.imported_from_pfm && (
-                      <span title="Importé depuis PFM Transfer" style={{
-                        marginLeft: '0.5rem',
-                        fontSize: '0.65rem',
-                        fontWeight: '700',
-                        backgroundColor: '#1e40af',
-                        color: 'white',
-                        borderRadius: '4px',
-                        padding: '1px 5px',
-                        verticalAlign: 'middle',
-                        letterSpacing: '0.05em'
-                      }}>PFM</span>
-                    )}
                   </p>
                   <p className="user-detail-modern">
                     {isFormer 
@@ -2052,6 +2041,15 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         data-testid="user-passeport-input"
                       />
                     </div>
+                  </div>
+                  <div className="form-field">
+                    <Label>Code permanent</Label>
+                    <Input
+                      value={newUser.code_permanent || ''}
+                      onChange={(e) => setNewUser({...newUser, code_permanent: e.target.value})}
+                      placeholder="Ex: DUBG12345678"
+                      data-testid="user-code-permanent-input"
+                    />
                   </div>
                 </div>
 
@@ -2416,13 +2414,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       <span className={`status-badge ${isFormerEmployee(selectedUser) ? 'ancien' : 'actif'}`}>
                         {isFormerEmployee(selectedUser) ? (selectedUser.statut === 'Inactif' ? 'Inactif PFM' : 'Ancien') : 'Actif'}
                       </span>
-                      {selectedUser.imported_from_pfm && (
-                        <span style={{
-                          fontSize: '0.65rem', fontWeight: '700',
-                          backgroundColor: '#1e40af', color: 'white',
-                          borderRadius: '4px', padding: '2px 6px', letterSpacing: '0.05em'
-                        }}>PFM Transfer</span>
-                      )}
                     </div>
                     <p className="employee-id">#{selectedUser.numero_employe}</p>
                   </div>
@@ -2461,6 +2452,12 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                           <div className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
                             <span className="detail-label" style={{ minWidth: '140px', color: '#64748b' }}>N° passeport</span>
                             <span style={{ fontFamily: 'monospace', letterSpacing: '0.1em', fontWeight: '600', textAlign: 'right', flex: 1 }}>{selectedUser.numero_passeport}</span>
+                          </div>
+                        )}
+                        {selectedUser.code_permanent && (
+                          <div className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
+                            <span className="detail-label" style={{ minWidth: '140px', color: '#64748b' }}>Code permanent</span>
+                            <span style={{ fontFamily: 'monospace', letterSpacing: '0.06em', fontWeight: '600', textAlign: 'right', flex: 1 }}>{selectedUser.code_permanent}</span>
                           </div>
                         )}
                       </div>
@@ -2744,10 +2741,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                   </div>
                 )}
 
-                {/* ─── Section Données PFM ──────────────────────────── */}
-                {selectedUser.imported_from_pfm && (
-                  <PfmDataSection user={selectedUser} tenantSlug={tenantSlug} canEdit={canEditPersonnel} />
-                )}
+                {/* Section Données PFM supprimée — données fusionnées dans les sections standard */}
 
                 {/* Actions rapides */}
                 <div className="profile-actions">
@@ -3406,6 +3400,15 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                         data-testid="edit-user-passeport-input"
                       />
                     </div>
+                  </div>
+                  <div className="form-field">
+                    <Label>Code permanent</Label>
+                    <Input
+                      value={newUser.code_permanent || ''}
+                      onChange={(e) => setNewUser({...newUser, code_permanent: e.target.value})}
+                      placeholder="Ex: DUBG12345678"
+                      data-testid="edit-user-code-permanent-input"
+                    />
                   </div>
                 </div>
 

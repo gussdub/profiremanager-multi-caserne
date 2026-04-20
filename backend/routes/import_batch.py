@@ -814,7 +814,7 @@ async def resolve_duplicate(
                     new_uid = str(uuid.uuid4())
                     await db.users.insert_one({
                         "id": new_uid, "tenant_id": tenant.id,
-                        "email": email_pfm or f"pfm.{matricule or existing_id[:8]}@import.local",
+                        "email": email_pfm or None,
                         "mot_de_passe_hash": get_password_hash(PFM_DEFAULT_PASSWORD),
                         "nom": emp.get("nom", ""), "prenom": emp.get("prenom", ""),
                         "role": "employe", "grade": "",
@@ -2304,6 +2304,7 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
         "imported_personnel_id": doc_id,
         "nas": nas,
         "numero_passeport": numero_passeport,
+        "code_permanent": doc.get("code_permanent", ""),
         "pfm_matricule": matricule,
         "pfm_caserne": caserne_label,
         "pfm_nominations": record.get("liste_nomination"),
@@ -2342,7 +2343,7 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
         new_user = {
             "id": new_user_id,
             "tenant_id": tenant.id,
-            "email": email_pfm or f"pfm.{matricule or doc_id[:8]}@import.local",
+            "email": email_pfm or None,
             "mot_de_passe_hash": get_password_hash(PFM_DEFAULT_PASSWORD),
             "nom": nom,
             "prenom": prenom,
@@ -2375,7 +2376,7 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
         await db.users.insert_one({
             "id": new_user_id,
             "tenant_id": tenant.id,
-            "email": email_pfm or f"pfm.{matricule or doc_id[:8]}@import.local",
+            "email": email_pfm or None,
             "mot_de_passe_hash": get_password_hash(PFM_DEFAULT_PASSWORD),
             "nom": nom, "prenom": prenom,
             "role": "employe",

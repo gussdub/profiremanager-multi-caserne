@@ -68,6 +68,7 @@ class UserCreate(BaseModel):
     # Documents sensibles & nominations
     nas: Optional[str] = None
     numero_passeport: Optional[str] = None
+    code_permanent: Optional[str] = None
     nominations: Optional[List[Dict]] = []
 
 
@@ -94,6 +95,7 @@ class UserUpdate(BaseModel):
     # Documents sensibles & nominations
     nas: Optional[str] = None
     numero_passeport: Optional[str] = None
+    code_permanent: Optional[str] = None
     nominations: Optional[List[Dict]] = None
 
     class Config:
