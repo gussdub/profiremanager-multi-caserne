@@ -48,11 +48,11 @@ const GROUPS = [
     id: 'users',
     label: 'Personnel',
     icon: '👤',
-    description: 'Utilisateurs (sauf super-admins)',
+    description: 'Utilisateurs (sauf super-admins et admins)',
     tables: [
-      { id: 'users_all', name: 'users', label: 'Tous les utilisateurs' },
-      { id: 'users_pfm', name: 'users', label: 'Utilisateurs PFM uniquement', filter: 'pfm_only', badge: '🔄 Import PFM' },
-      { id: 'imported_personnel', name: 'imported_personnel', label: 'Personnel importé (cache PFM)' },
+      { id: 'users_all', name: 'users', label: '⚠️ TOUS les utilisateurs (DANGER)', warning: true },
+      { id: 'users_pfm', name: 'users', label: 'Seulement les imports PFM Transfer', filter: 'pfm_only', badge: '🔄 Sécuritaire', description: 'Employés avec pfm_record uniquement - ne touche PAS aux comptes créés manuellement' },
+      { id: 'imported_personnel', name: 'imported_personnel', label: 'Cache des données PFM (table technique)', description: 'Table temporaire pour le matching - peut être vidée sans risque' },
     ],
   },
   {
@@ -415,54 +415,66 @@ const CleanupDataModal = ({ isOpen, onClose }) => {
                         const tableId = getTableId(table);
                         const isSelected = selectedTables.has(tableId);
                         const isPfmFilter = table.filter === 'pfm_only';
+                        const isWarning = table.warning;
                         
                         return (
                           <label
                             key={tableId}
                             style={{
-                              display: 'flex', alignItems: 'center', gap: '10px',
-                              padding: '7px 10px', borderRadius: '6px', cursor: 'pointer',
+                              display: 'flex', flexDirection: 'column', gap: '4px',
+                              padding: '10px 12px', borderRadius: '6px', cursor: 'pointer',
                               backgroundColor: isSelected 
-                                ? (isPfmFilter ? '#fef3c7' : '#fef2f2') 
+                                ? (isWarning ? '#fef2f2' : isPfmFilter ? '#f0fdf4' : '#fef3c7') 
                                 : '#f8fafc',
-                              border: `1px solid ${isSelected 
-                                ? (isPfmFilter ? '#fbbf24' : '#fca5a5') 
+                              border: `2px solid ${isSelected 
+                                ? (isWarning ? '#fca5a5' : isPfmFilter ? '#86efac' : '#fbbf24') 
                                 : '#e2e8f0'}`,
                               transition: 'all 0.15s'
                             }}
                           >
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => toggleTable(tableId)}
-                              style={{ 
-                                width: '16px', height: '16px', cursor: 'pointer', 
-                                accentColor: isPfmFilter ? '#f59e0b' : '#dc2626' 
-                              }}
-                            />
-                            <span style={{ flex: 1, fontSize: '13px', fontWeight: '500' }}>
-                              {table.label}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => toggleTable(tableId)}
+                                style={{ 
+                                  width: '18px', height: '18px', cursor: 'pointer', 
+                                  accentColor: isWarning ? '#dc2626' : isPfmFilter ? '#16a34a' : '#f59e0b' 
+                                }}
+                              />
+                              <span style={{ flex: 1, fontSize: '13px', fontWeight: '600', color: isWarning ? '#dc2626' : '#374151' }}>
+                                {table.label}
+                              </span>
                               {table.badge && (
                                 <span style={{
-                                  marginLeft: '8px',
                                   fontSize: '10px',
-                                  backgroundColor: '#fef3c7',
-                                  color: '#92400e',
-                                  padding: '2px 6px',
+                                  backgroundColor: isPfmFilter ? '#dcfce7' : '#fef3c7',
+                                  color: isPfmFilter ? '#166534' : '#92400e',
+                                  padding: '3px 8px',
                                   borderRadius: '4px',
                                   fontWeight: '600'
                                 }}>
                                   {table.badge}
                                 </span>
                               )}
-                            </span>
-                            <code style={{
-                              fontSize: '11px', color: '#94a3b8',
-                              backgroundColor: '#f1f5f9', padding: '2px 6px', borderRadius: '4px',
-                              fontFamily: 'monospace'
-                            }}>
-                              {table.name}{table.filter ? `:${table.filter}` : ''}
-                            </code>
+                              <code style={{
+                                fontSize: '10px', color: '#94a3b8',
+                                backgroundColor: '#f1f5f9', padding: '2px 6px', borderRadius: '4px',
+                                fontFamily: 'monospace'
+                              }}>
+                                {table.name}{table.filter ? `:${table.filter}` : ''}
+                              </code>
+                            </div>
+                            {table.description && (
+                              <div style={{ 
+                                fontSize: '11px', 
+                                color: '#6b7280', 
+                                marginLeft: '28px',
+                                fontStyle: 'italic'
+                              }}>
+                                {table.description}
+                              </div>
+                            )}
                           </label>
                         );
                       })}

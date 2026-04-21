@@ -602,17 +602,13 @@ async def cleanup_tables(
         # Appliquer les filtres spéciaux
         result_key = table_name
         if table_filter == "pfm_only":
-            # Supprimer uniquement les utilisateurs importés de PFM Transfer
-            filter_query["$or"] = [
-                {"pfm_record": {"$exists": True}},
-                {"source": "PFM Transfer"},
-                {"source": "pfm_transfer"},
-                {"imported_from_pfm": True}
-            ]
-            # Ne pas supprimer les super_admins ou admins créés manuellement
+            # Supprimer UNIQUEMENT les utilisateurs qui ont été importés de PFM Transfer
+            # Condition STRICTE : doit avoir imported_from_pfm=True (ajouté par _handle_employe)
+            filter_query["imported_from_pfm"] = True
+            # Double protection: ne pas supprimer les admins même s'ils ont pfm_record
             filter_query["role"] = {"$nin": ["super_admin", "admin"]}
             result_key = f"{table_name}:pfm_only"
-            logger.info(f"  🔄 Filtre PFM activé pour {table_name}")
+            logger.info(f"  🔄 Filtre PFM STRICT activé pour {table_name} - ne supprime que imported_from_pfm=True")
         elif table_name == "users":
             # Protection: Ne JAMAIS supprimer les admins lors d'un cleanup général
             filter_query["role"] = {"$nin": ["super_admin", "admin"]}
