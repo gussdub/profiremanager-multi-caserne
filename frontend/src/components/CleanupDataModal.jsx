@@ -51,8 +51,8 @@ const GROUPS = [
     description: 'Utilisateurs (sauf super-admins et admins)',
     tables: [
       { id: 'users_all', name: 'users', label: '⚠️ TOUS les utilisateurs (DANGER)', warning: true },
-      { id: 'users_pfm', name: 'users', label: 'Seulement les imports PFM Transfer', filter: 'pfm_only', badge: '🔄 Sécuritaire', description: 'Employés avec pfm_record uniquement - ne touche PAS aux comptes créés manuellement' },
-      { id: 'imported_personnel', name: 'imported_personnel', label: 'Cache des données PFM (table technique)', description: 'Table temporaire pour le matching - peut être vidée sans risque' },
+      { id: 'users_pfm', name: 'users', label: 'Comptes PFM Transfer (users)', filter: 'pfm_only', badge: '🔄 Sécuritaire', description: 'Supprime les comptes utilisateurs importés de PFM' },
+      { id: 'imported_personnel', name: 'imported_personnel', label: 'Cache PFM (imported_personnel)', badge: '🔄 Sécuritaire', description: 'Table de matching - doit être vidée avec les comptes PFM pour éviter les doublons' },
     ],
   },
   {

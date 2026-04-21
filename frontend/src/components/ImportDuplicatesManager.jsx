@@ -179,7 +179,58 @@ const ImportDuplicatesManager = ({ tenantSlug }) => {
       if (key === 'code_postal' && typeof adresse === 'object') return adresse.code_post || '';
     }
     
+    if (entityType === 'Employe') {
+      // Parser l'adresse depuis l'objet PFM
+      if (key === 'adresse') {
+        const adresse = newRec.adresse?.adresse || newRec.adresse || {};
+        if (typeof adresse === 'object' && (adresse.no_civ || adresse.rue)) {
+          return `${adresse.no_civ || ''} ${adresse.type_rue || ''} ${adresse.rue || ''}`.trim();
+        }
+      }
+      if (key === 'ville') {
+        const adresse = newRec.adresse?.adresse || newRec.adresse || {};
+        if (typeof adresse === 'object') return adresse.ville || '';
+      }
+    }
+    
     return '';
+  };
+
+  // Formate une valeur pour l'affichage (dates, objets, etc.)
+  const formatValue = (val, key) => {
+    if (val == null || val === '') return '';
+    
+    // Si c'est un objet adresse, le parser
+    if (typeof val === 'object') {
+      // Adresse PFM format: {adresse: {no_civ, type_rue, rue, ville, code_post}}
+      const adresse = val.adresse || val;
+      if (adresse.no_civ || adresse.rue) {
+        const parts = [
+          adresse.no_civ,
+          adresse.type_rue,
+          adresse.rue
+        ].filter(Boolean).join(' ');
+        if (adresse.ville) {
+          return `${parts}, ${adresse.ville}`.trim();
+        }
+        return parts;
+      }
+      return JSON.stringify(val);
+    }
+    
+    // Si c'est une date avec T00:00:00, la raccourcir
+    if (typeof val === 'string') {
+      // Format ISO avec temps à minuit -> garder juste la date
+      if (/^\d{4}-\d{2}-\d{2}T00:00:00/.test(val)) {
+        return val.substring(0, 10);
+      }
+      // Format ISO complet -> garder juste la date
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(val)) {
+        return val.substring(0, 10);
+      }
+    }
+    
+    return String(val);
   };
 
   // Compare les données et retourne les champs avec leur statut
@@ -191,16 +242,17 @@ const ImportDuplicatesManager = ({ tenantSlug }) => {
 
     for (const key of keysToCompare) {
       const oldVal = existing[key];
-      const newVal = extractNewValue(newRec, key, dup.entity_type);
+      const newVal = extractNewValue(newRec, key, dup.entity_type) || newRec[key];
       
-      const oldStr = oldVal != null && oldVal !== '' ? String(typeof oldVal === 'object' ? JSON.stringify(oldVal) : oldVal) : '';
-      const newStr = newVal != null && newVal !== '' ? String(typeof newVal === 'object' ? JSON.stringify(newVal) : newVal) : '';
+      // Formater les valeurs pour l'affichage
+      const oldStr = formatValue(oldVal, key);
+      const newStr = formatValue(newVal, key);
       
-      // Déterminer le type de changement
+      // Comparer les valeurs formatées (pas les objets bruts)
       let changeType = 'unchanged';
-      if (oldStr && !newStr) changeType = 'removed'; // Existant a une valeur, nouveau non
-      else if (!oldStr && newStr) changeType = 'added'; // Nouveau a une valeur, existant non
-      else if (oldStr !== newStr && newStr) changeType = 'modified'; // Les deux diffèrent
+      if (oldStr && !newStr) changeType = 'removed';
+      else if (!oldStr && newStr) changeType = 'added';
+      else if (oldStr !== newStr && newStr) changeType = 'modified';
       
       // Calculer le résultat de fusion (garde existant si présent, sinon prend nouveau)
       const mergeResult = oldStr || newStr;
@@ -211,7 +263,7 @@ const ImportDuplicatesManager = ({ tenantSlug }) => {
         existing: oldStr || '—',
         new: newStr || '—',
         mergeResult: mergeResult || '—',
-        replaceResult: newStr || '—',
+        replaceResult: newStr || oldStr || '—',
         changeType,
         willChange: changeType !== 'unchanged'
       });
