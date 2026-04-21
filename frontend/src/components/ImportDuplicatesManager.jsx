@@ -323,6 +323,7 @@ const ImportDuplicatesManager = ({ tenantSlug }) => {
                 <div className="flex gap-2 mb-4">
                   <button
                     onClick={() => setPreviewMode(prev => ({ ...prev, [dup.id]: currentPreview === 'merge' ? null : 'merge' }))}
+                    data-testid={`preview-merge-${dup.id}`}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 transition-colors ${
                       currentPreview === 'merge' 
                         ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' 
@@ -333,6 +334,7 @@ const ImportDuplicatesManager = ({ tenantSlug }) => {
                   </button>
                   <button
                     onClick={() => setPreviewMode(prev => ({ ...prev, [dup.id]: currentPreview === 'replace' ? null : 'replace' }))}
+                    data-testid={`preview-replace-${dup.id}`}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 transition-colors ${
                       currentPreview === 'replace' 
                         ? 'bg-blue-100 text-blue-700 border border-blue-300' 

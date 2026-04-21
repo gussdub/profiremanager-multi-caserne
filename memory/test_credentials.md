@@ -8,7 +8,7 @@
 - **Token field**: `access_token`
 
 ## Tenant: shefford
-- **Admin**: gussdub@gmail.com / 230685Juin+ (role: admin, grade: Lieutenant)
+- **Note**: Le compte admin gussdub@gmail.com n'existe PAS sur ce tenant actuellement
 - **Flow connexion**: Page d'accueil → saisir "shefford" comme code caserne → Valider → Formulaire login
 - **Login endpoint**: `POST /api/shefford/auth/login`
 
