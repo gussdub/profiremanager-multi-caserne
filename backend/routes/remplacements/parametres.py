@@ -220,13 +220,19 @@ async def debug_recherche_remplacant(
                 user_info["eligible"] = False
                 user_info["raisons_exclusion"].append(f"Compétences manquantes: {', '.join(manquantes)}")
         
-        # Vérifier si officier requis
+        # Vérifier si officier requis (avec fallback fonction supérieure)
         if officier_obligatoire:
             grades_officier = ["lieutenant", "capitaine", "chef", "directeur"]
             user_grade = user.get("grade", "").lower()
-            if user_grade not in grades_officier:
+            user_fonction_superieure = user.get("fonction_superieur", False) or user.get("fonction_superieure", False)
+            
+            # Un utilisateur est éligible s'il est officier OU s'il peut agir en fonction supérieure
+            if user_grade not in grades_officier and not user_fonction_superieure:
                 user_info["eligible"] = False
                 user_info["raisons_exclusion"].append(f"Officier requis, grade actuel: {user_grade or 'non défini'}")
+            elif user_fonction_superieure and user_grade not in grades_officier:
+                # Éligible via fonction supérieure (fallback)
+                user_info["raisons_exclusion"].append(f"✅ Éligible fonction supérieure (grade: {user_grade})")
         
         debug_info["details_utilisateurs"].append(user_info)
     
@@ -273,7 +279,7 @@ async def debug_recherche_remplacant(
         "officier_obligatoire": officier_obligatoire,
         "demandeur_est_officier": demandeur_est_officier,
         "autre_officier_present_sur_garde": autre_officier_present,
-        "explication": "Un officier doit être présent sur cette garde" if officier_obligatoire else "Aucune restriction d'officier pour cette garde"
+        "explication": "Un officier doit être présent sur cette garde. Si aucun officier n'est disponible, un pompier avec fonction supérieure peut remplacer." if officier_obligatoire else "Aucune restriction d'officier pour cette garde"
     }
     
     return debug_info
