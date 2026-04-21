@@ -440,25 +440,42 @@ async def cleanup_tables(
 ):
     """
     Nettoie des tables MongoDB individuelles (sélection fine par table).
-    Accepte une liste de noms de collections bruts + tenant_id optionnel.
+    Accepte une liste de tables (avec filtres optionnels) + tenant_id optionnel.
+    
+    Format tables: 
+      - Liste simple de noms: ["users", "batiments"]
+      - Liste avec filtres: [{"name": "users", "filter": "pfm_only"}, {"name": "batiments"}]
+    
+    Filtres supportés:
+      - pfm_only: Supprime uniquement les documents avec pfm_record ou source="PFM Transfer"
     """
-    tables = request.get('tables', [])
+    tables_input = request.get('tables', [])
     confirm = request.get('confirm', False)
     tenant_id = request.get('tenant_id')
 
     if not confirm:
         raise HTTPException(status_code=400, detail="Confirmation requise")
-    if not tables:
+    if not tables_input:
         raise HTTPException(status_code=400, detail="Aucune table sélectionnée")
+
+    # Normaliser l'input (supporter l'ancien format string et le nouveau format dict)
+    tables_config = []
+    for item in tables_input:
+        if isinstance(item, str):
+            tables_config.append({"name": item, "filter": None})
+        elif isinstance(item, dict):
+            tables_config.append({"name": item.get("name"), "filter": item.get("filter")})
 
     # Collections protégées — ne jamais toucher
     PROTECTED = {'super_admins', 'tenants', 'centrales_911', 'system.indexes'}
 
     tenant_info = f"tenant {tenant_id}" if tenant_id else "TOUS LES TENANTS"
-    logger.warning(f"🗑️  Nettoyage tables par {admin.email} ({tenant_info}): {tables}")
+    table_names = [t["name"] for t in tables_config]
+    logger.warning(f"🗑️  Nettoyage tables par {admin.email} ({tenant_info}): {table_names}")
 
     # Résoudre le tenant_id : UUID ou slug
     resolved_tenant_id = None
+    tenant_doc = None
     if tenant_id:
         tenant_doc = await db.tenants.find_one({"id": tenant_id}, {"_id": 0, "id": 1, "slug": 1})
         if not tenant_doc:
@@ -470,34 +487,54 @@ async def cleanup_tables(
             raise HTTPException(status_code=404, detail=f"Tenant '{tenant_id}' non trouvé")
 
     results = {}
-    filter_query = {}
-    if resolved_tenant_id:
-        filter_query["tenant_id"] = resolved_tenant_id
 
-    for table_name in tables:
+    for table_cfg in tables_config:
+        table_name = table_cfg["name"]
+        table_filter = table_cfg.get("filter")
+        
         if table_name in PROTECTED:
             logger.warning(f"  ⛔ {table_name} est protégée, ignorée")
             continue
+        
+        # Construire la requête de filtre
+        filter_query = {}
+        if resolved_tenant_id:
+            filter_query["tenant_id"] = resolved_tenant_id
+        
+        # Appliquer les filtres spéciaux
+        result_key = table_name
+        if table_filter == "pfm_only":
+            # Supprimer uniquement les utilisateurs importés de PFM Transfer
+            filter_query["$or"] = [
+                {"pfm_record": {"$exists": True}},
+                {"source": "PFM Transfer"},
+                {"source": "pfm_transfer"}
+            ]
+            # Ne pas supprimer les super_admins ou admins créés manuellement
+            filter_query["role"] = {"$nin": ["super_admin"]}
+            result_key = f"{table_name}:pfm_only"
+            logger.info(f"  🔄 Filtre PFM activé pour {table_name}")
+        
         try:
             result = await db[table_name].delete_many(filter_query)
-            results[table_name] = result.deleted_count
+            results[result_key] = result.deleted_count
             if result.deleted_count > 0:
-                logger.info(f"  ✅ {table_name}: {result.deleted_count} supprimés")
+                logger.info(f"  ✅ {result_key}: {result.deleted_count} supprimés")
         except Exception as e:
             logger.error(f"  ❌ {table_name}: {e}")
-            results[f"{table_name}_error"] = str(e)
+            results[f"{result_key}_error"] = str(e)
 
     total = sum(v for v in results.values() if isinstance(v, int))
 
     await log_super_admin_action(
         admin=admin,
         action="cleanup_tables",
-        details={"tables": tables, "tenant_id": tenant_id, "results": results, "total_deleted": total}
+        details={"tables": [t["name"] for t in tables_config], "filters": [t.get("filter") for t in tables_config], "tenant_id": tenant_id, "results": results, "total_deleted": total}
     )
 
     return {
         "success": True,
-        "message": f"{len(tables)} table(s) nettoyée(s) — {total} document(s) supprimé(s)" +
+        "message": f"{len(tables_config)} table(s) nettoyée(s) — {total} document(s) supprimé(s)" +
                    (f" pour tenant {tenant_doc.get('slug')}" if resolved_tenant_id else " pour TOUS les tenants"),
         "results": results
     }

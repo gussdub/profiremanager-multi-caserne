@@ -63,6 +63,7 @@ Application de gestion complète pour les services d'incendie canadiens. Multi-t
 - Badge persistant sur menu Paramètres pour signaler les doublons non résolus (avr 2026)
 - Notification toast in-app avec détail par type d'entité lors de détection de doublons (avr 2026)
 - Endpoint backend GET /import/duplicates/count-by-type pour agrégation par type (avr 2026)
+- Option nettoyage "PFM uniquement" dans CleanupDataModal pour supprimer seulement le personnel importé PFM (avr 2026)
 
 ## Backlog
 - P2: Aperçu d'emails en temps réel dans les paramètres admin

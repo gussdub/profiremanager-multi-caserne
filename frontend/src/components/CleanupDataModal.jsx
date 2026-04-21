@@ -50,8 +50,9 @@ const GROUPS = [
     icon: '👤',
     description: 'Utilisateurs (sauf super-admins)',
     tables: [
-      { name: 'users', label: 'Utilisateurs' },
-      { name: 'imported_personnel', label: 'Personnel importé (PFM)' },
+      { id: 'users_all', name: 'users', label: 'Tous les utilisateurs' },
+      { id: 'users_pfm', name: 'users', label: 'Utilisateurs PFM uniquement', filter: 'pfm_only', badge: '🔄 Import PFM' },
+      { id: 'imported_personnel', name: 'imported_personnel', label: 'Personnel importé (cache PFM)' },
     ],
   },
   {
@@ -118,7 +119,9 @@ const GROUPS = [
   },
 ];
 
-const ALL_TABLES = GROUPS.flatMap(g => g.tables.map(t => t.name));
+// Générer un ID unique pour chaque table (pour différencier users avec/sans filtre)
+const getTableId = (table) => table.id || table.name;
+const ALL_TABLE_IDS = GROUPS.flatMap(g => g.tables.map(t => getTableId(t)));
 
 const CleanupDataModal = ({ isOpen, onClose }) => {
   const [selectedTables, setSelectedTables] = useState(new Set());
@@ -153,19 +156,19 @@ const CleanupDataModal = ({ isOpen, onClose }) => {
 
   // --- Helpers état des cases ---
 
-  const toggleTable = (tableName) => {
+  const toggleTable = (tableId) => {
     setSelectedTables(prev => {
       const next = new Set(prev);
-      next.has(tableName) ? next.delete(tableName) : next.add(tableName);
+      next.has(tableId) ? next.delete(tableId) : next.add(tableId);
       return next;
     });
   };
 
   const groupState = (group) => {
-    const names = group.tables.map(t => t.name);
-    const checked = names.filter(n => selectedTables.has(n));
+    const ids = group.tables.map(t => getTableId(t));
+    const checked = ids.filter(id => selectedTables.has(id));
     if (checked.length === 0) return 'none';
-    if (checked.length === names.length) return 'all';
+    if (checked.length === ids.length) return 'all';
     return 'some';
   };
 
@@ -174,9 +177,9 @@ const CleanupDataModal = ({ isOpen, onClose }) => {
     setSelectedTables(prev => {
       const next = new Set(prev);
       if (state === 'all') {
-        group.tables.forEach(t => next.delete(t.name));
+        group.tables.forEach(t => next.delete(getTableId(t)));
       } else {
-        group.tables.forEach(t => next.add(t.name));
+        group.tables.forEach(t => next.add(getTableId(t)));
       }
       return next;
     });
@@ -191,7 +194,7 @@ const CleanupDataModal = ({ isOpen, onClose }) => {
     });
   };
 
-  const selectAll = () => setSelectedTables(new Set(ALL_TABLES));
+  const selectAll = () => setSelectedTables(new Set(ALL_TABLE_IDS));
   const deselectAll = () => setSelectedTables(new Set());
 
   // --- Soumission ---
@@ -202,16 +205,34 @@ const CleanupDataModal = ({ isOpen, onClose }) => {
       return;
     }
 
+    // Construire la liste des tables avec leurs filtres
+    const allTables = GROUPS.flatMap(g => g.tables);
+    const selectedItems = [...selectedTables].map(tableId => {
+      const tableConfig = allTables.find(t => getTableId(t) === tableId);
+      return tableConfig ? {
+        name: tableConfig.name,
+        filter: tableConfig.filter || null,
+        label: tableConfig.label
+      } : null;
+    }).filter(Boolean);
+
     const tenantLabel = selectedTenant
       ? tenants.find(t => t.id === selectedTenant)?.slug || selectedTenant
       : '⚠️ TOUS LES TENANTS';
 
-    const tableList = [...selectedTables].sort();
+    // Construire le message de confirmation avec les filtres
+    const tableListFormatted = selectedItems.map(item => {
+      if (item.filter === 'pfm_only') {
+        return `  • ${item.name} (🔄 PFM Transfer seulement)`;
+      }
+      return `  • ${item.name}`;
+    }).join('\n');
+
     const confirmed = window.confirm(
       `⚠️ SUPPRESSION DÉFINITIVE\n\n` +
       `Tenant : ${tenantLabel}\n` +
-      `Tables (${tableList.length}) :\n` +
-      tableList.map(t => `  • ${t}`).join('\n') +
+      `Tables (${selectedItems.length}) :\n` +
+      tableListFormatted +
       `\n\nCette action est IRRÉVERSIBLE. Confirmez-vous ?`
     );
 
@@ -222,6 +243,13 @@ const CleanupDataModal = ({ isOpen, onClose }) => {
 
     try {
       const token = localStorage.getItem('admin_token') || localStorage.getItem('token');
+      
+      // Construire le payload avec les filtres
+      const tablesPayload = selectedItems.map(item => ({
+        name: item.name,
+        filter: item.filter
+      }));
+
       const response = await fetch(`${API}/admin/cleanup-tables`, {
         method: 'POST',
         headers: {
@@ -229,7 +257,7 @@ const CleanupDataModal = ({ isOpen, onClose }) => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          tables: tableList,
+          tables: tablesPayload,
           tenant_id: selectedTenant || null,
           confirm: true
         })
@@ -383,35 +411,61 @@ const CleanupDataModal = ({ isOpen, onClose }) => {
                       padding: '8px 14px 12px 14px',
                       display: 'flex', flexDirection: 'column', gap: '6px'
                     }}>
-                      {group.tables.map(table => (
-                        <label
-                          key={table.name}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: '10px',
-                            padding: '7px 10px', borderRadius: '6px', cursor: 'pointer',
-                            backgroundColor: selectedTables.has(table.name) ? '#fef2f2' : '#f8fafc',
-                            border: `1px solid ${selectedTables.has(table.name) ? '#fca5a5' : '#e2e8f0'}`,
-                            transition: 'all 0.15s'
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedTables.has(table.name)}
-                            onChange={() => toggleTable(table.name)}
-                            style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#dc2626' }}
-                          />
-                          <span style={{ flex: 1, fontSize: '13px', fontWeight: '500' }}>
-                            {table.label}
-                          </span>
-                          <code style={{
-                            fontSize: '11px', color: '#94a3b8',
-                            backgroundColor: '#f1f5f9', padding: '2px 6px', borderRadius: '4px',
-                            fontFamily: 'monospace'
-                          }}>
-                            {table.name}
-                          </code>
-                        </label>
-                      ))}
+                      {group.tables.map(table => {
+                        const tableId = getTableId(table);
+                        const isSelected = selectedTables.has(tableId);
+                        const isPfmFilter = table.filter === 'pfm_only';
+                        
+                        return (
+                          <label
+                            key={tableId}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: '10px',
+                              padding: '7px 10px', borderRadius: '6px', cursor: 'pointer',
+                              backgroundColor: isSelected 
+                                ? (isPfmFilter ? '#fef3c7' : '#fef2f2') 
+                                : '#f8fafc',
+                              border: `1px solid ${isSelected 
+                                ? (isPfmFilter ? '#fbbf24' : '#fca5a5') 
+                                : '#e2e8f0'}`,
+                              transition: 'all 0.15s'
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleTable(tableId)}
+                              style={{ 
+                                width: '16px', height: '16px', cursor: 'pointer', 
+                                accentColor: isPfmFilter ? '#f59e0b' : '#dc2626' 
+                              }}
+                            />
+                            <span style={{ flex: 1, fontSize: '13px', fontWeight: '500' }}>
+                              {table.label}
+                              {table.badge && (
+                                <span style={{
+                                  marginLeft: '8px',
+                                  fontSize: '10px',
+                                  backgroundColor: '#fef3c7',
+                                  color: '#92400e',
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                  fontWeight: '600'
+                                }}>
+                                  {table.badge}
+                                </span>
+                              )}
+                            </span>
+                            <code style={{
+                              fontSize: '11px', color: '#94a3b8',
+                              backgroundColor: '#f1f5f9', padding: '2px 6px', borderRadius: '4px',
+                              fontFamily: 'monospace'
+                            }}>
+                              {table.name}{table.filter ? `:${table.filter}` : ''}
+                            </code>
+                          </label>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
