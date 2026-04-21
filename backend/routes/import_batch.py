@@ -862,7 +862,9 @@ async def resolve_duplicate(
 
                 if existing_user:
                     await db.users.update_one({"id": existing_user["id"]}, {"$set": pfm_fields})
-                elif pfm_actif:
+                    logger.info(f"  ✅ Compte existant lié: {existing_user['id']}")
+                else:
+                    # Créer le compte pour TOUS les employés (actifs et inactifs)
                     adresse_str = " ".join(filter(None, [
                         emp.get("adresse_rue", ""), emp.get("adresse_ville", ""),
                         emp.get("adresse_province", ""), emp.get("adresse_code_postal", ""),
@@ -871,7 +873,8 @@ async def resolve_duplicate(
                     pfm_record = emp.get("pfm_record", {})
                     grade_pfm = pfm_record.get("type_employe") or pfm_record.get("grade") or pfm_record.get("titre") or ""
                     new_uid = str(uuid.uuid4())
-                    await db.users.insert_one({
+                    
+                    user_doc = {
                         "id": new_uid, "tenant_id": tenant.id,
                         "email": email_pfm or None,
                         "mot_de_passe_hash": get_password_hash(PFM_DEFAULT_PASSWORD),
@@ -883,11 +886,13 @@ async def resolve_duplicate(
                         "date_embauche": emp.get("date_embauche") or "",
                         "date_naissance": emp.get("date_naissance") or "",
                         "numero_employe": matricule or "",
-                        "statut": "Actif",
+                        "statut": "Actif" if pfm_actif else "Inactif",
                         "formations": [], "competences": [],
                         "created_at": datetime.now(timezone.utc),
                         **pfm_fields,
-                    })
+                    }
+                    await db.users.insert_one(user_doc)
+                    logger.info(f"  ✅ Compte créé via résolution doublon: {new_uid} ({emp.get('nom')} {emp.get('prenom')}) - Statut: {'Actif' if pfm_actif else 'Inactif'}")
 
     return {"status": "resolved", "action": action, "message": result_msg}
 
