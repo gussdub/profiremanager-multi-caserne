@@ -609,6 +609,11 @@ async def cleanup_tables(
             filter_query["role"] = {"$nin": ["super_admin", "admin"]}
             result_key = f"{table_name}:pfm_only"
             logger.info(f"  🔄 Filtre PFM STRICT activé pour {table_name} - ne supprime que imported_from_pfm=True")
+        elif table_filter == "employe_only":
+            # Supprimer seulement les doublons de type Employe dans import_duplicates
+            filter_query["entity_type"] = "Employe"
+            result_key = f"{table_name}:employe_only"
+            logger.info(f"  👤 Filtre Employe activé pour {table_name}")
         elif table_name == "users":
             # Protection: Ne JAMAIS supprimer les admins lors d'un cleanup général
             filter_query["role"] = {"$nin": ["super_admin", "admin"]}

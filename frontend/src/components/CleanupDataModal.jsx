@@ -53,6 +53,7 @@ const GROUPS = [
       { id: 'users_all', name: 'users', label: '⚠️ TOUS les utilisateurs (DANGER)', warning: true },
       { id: 'users_pfm', name: 'users', label: 'Comptes PFM Transfer (users)', filter: 'pfm_only', badge: '🔄 Sécuritaire', description: 'Supprime les comptes utilisateurs importés de PFM' },
       { id: 'imported_personnel', name: 'imported_personnel', label: 'Cache PFM (imported_personnel)', badge: '🔄 Sécuritaire', description: 'Table de matching - doit être vidée avec les comptes PFM pour éviter les doublons' },
+      { id: 'import_duplicates_employe', name: 'import_duplicates', label: 'Doublons en attente (personnel)', filter: 'employe_only', badge: '🧹 Nettoyage', description: 'Vide la file des doublons personnel non résolus' },
     ],
   },
   {
