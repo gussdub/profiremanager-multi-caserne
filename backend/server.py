@@ -269,7 +269,20 @@ async def create_database_indexes():
         
         # Index pour les utilisateurs (CRITIQUE - chargement dashboard)
         await safe_create_index(db.users, [("tenant_id", 1)])
-        await safe_create_index(db.users, [("tenant_id", 1), ("email", 1)])
+        # Index partiel sur email - ignore les valeurs null pour permettre plusieurs utilisateurs sans email
+        try:
+            # D'abord supprimer l'ancien index unique s'il existe
+            await db.users.drop_index("tenant_id_1_email_1")
+            logger.info("  Ancien index tenant_id_1_email_1 supprimé")
+        except Exception:
+            pass  # L'index n'existait pas
+        # Créer un index partiel qui n'inclut que les documents avec un email non-null
+        await db.users.create_index(
+            [("tenant_id", 1), ("email", 1)],
+            partialFilterExpression={"email": {"$type": "string", "$ne": ""}},
+            name="tenant_id_email_partial",
+            background=True
+        )
         await safe_create_index(db.users, [("tenant_id", 1), ("statut", 1)])
         
         # Index pour les types de garde (chargement dashboard)
