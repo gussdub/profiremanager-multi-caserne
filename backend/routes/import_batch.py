@@ -906,24 +906,150 @@ async def resolve_all_duplicates(
     """Résoudre tous les doublons en attente avec la même action."""
     tenant = await get_tenant_from_slug(tenant_slug)
     action = body.get("action")
+    entity_type_filter = body.get("entity_type")  # Optionnel: filtrer par type
+    
     if action not in ("merge", "replace", "ignore"):
         raise HTTPException(status_code=400, detail="Action invalide")
 
-    pending = await db.import_duplicates.find(
-        {"tenant_id": tenant.id, "status": "pending"}, {"_id": 0}
-    ).to_list(length=None)
+    query = {"tenant_id": tenant.id, "status": "pending"}
+    if entity_type_filter:
+        query["entity_type"] = entity_type_filter
+        
+    pending = await db.import_duplicates.find(query, {"_id": 0}).to_list(length=None)
+    
+    logger.info(f"[resolve_all] Tenant {tenant_slug}: {len(pending)} doublons pending à traiter avec action={action}")
 
     resolved = 0
+    errors = []
     for dup in pending:
-        # Réutiliser la logique de résolution individuelle
-        fake_body = {"action": action}
         try:
-            await resolve_duplicate(tenant_slug, dup["id"], fake_body, current_user)
-            resolved += 1
-        except Exception:
-            pass
+            # Appeler directement la logique au lieu de passer par l'endpoint
+            dup_id = dup["id"]
+            collection = dup["collection"]
+            existing_id = dup["existing_id"]
+            new_record = dup["new_record"]
+            
+            if action == "ignore":
+                pass  # Ne rien faire
+            elif action == "replace":
+                if dup["entity_type"] == "Intervention":
+                    fields = _extract_intervention_fields(new_record)
+                    fields["pfm_record"] = new_record
+                    fields["updated_at"] = datetime.now(timezone.utc).isoformat()
+                else:
+                    fields = {"pfm_record": new_record, "updated_at": datetime.now(timezone.utc).isoformat()}
+                await db[collection].update_one(
+                    {"tenant_id": tenant.id, "id": existing_id},
+                    {"$set": fields}
+                )
+            elif action == "merge":
+                existing = await db[collection].find_one(
+                    {"tenant_id": tenant.id, "id": existing_id}, {"_id": 0}
+                )
+                if existing:
+                    if dup["entity_type"] == "Intervention":
+                        new_fields = _extract_intervention_fields(new_record)
+                    else:
+                        new_fields = {}
+                    merged = {}
+                    for key, val in new_fields.items():
+                        existing_val = existing.get(key)
+                        if val and (not existing_val or existing_val in ("", [], None, {}, "-")):
+                            merged[key] = val
+                    merged["pfm_record"] = new_record
+                    merged["updated_at"] = datetime.now(timezone.utc).isoformat()
+                    if merged:
+                        await db[collection].update_one(
+                            {"tenant_id": tenant.id, "id": existing_id},
+                            {"$set": merged}
+                        )
 
-    return {"resolved": resolved, "total": len(pending), "action": action}
+            # Marquer comme résolu
+            await db.import_duplicates.update_one(
+                {"id": dup_id},
+                {"$set": {"status": action, "resolved_at": datetime.now(timezone.utc).isoformat(), "resolved_by": current_user.id}}
+            )
+            
+            # Créer le compte utilisateur si Employe
+            if dup["entity_type"] == "Employe" and action != "ignore":
+                emp = await db.imported_personnel.find_one(
+                    {"tenant_id": tenant.id, "id": existing_id}, {"_id": 0}
+                )
+                if emp:
+                    already_has_account = await db.users.find_one(
+                        {"tenant_id": tenant.id, "imported_personnel_id": existing_id}, {"_id": 0, "id": 1}
+                    )
+                    if not already_has_account:
+                        pfm_actif = emp.get("actif", True)
+                        matricule = emp.get("matricule", "")
+                        email_pfm = (emp.get("email") or "").strip().lower()
+                        PFM_DEFAULT_PASSWORD = "Pompier@2024"
+
+                        pfm_fields = {
+                            "imported_from_pfm": True, "imported_personnel_id": existing_id,
+                            "nas": emp.get("nas", ""), "numero_passeport": emp.get("numero_passeport", ""),
+                            "pfm_matricule": matricule, "pfm_caserne": emp.get("caserne", ""),
+                            "pfm_nominations": emp.get("nominations"),
+                            "pfm_contacts_urgence": emp.get("contacts_urgence"),
+                            "pfm_actif": pfm_actif,
+                        }
+
+                        # Chercher un compte existant
+                        existing_user = None
+                        if email_pfm:
+                            existing_user = await db.users.find_one(
+                                {"tenant_id": tenant.id, "email": email_pfm}, {"_id": 0, "id": 1}
+                            )
+                        if not existing_user and matricule:
+                            existing_user = await db.users.find_one(
+                                {"tenant_id": tenant.id, "numero_employe": matricule}, {"_id": 0, "id": 1}
+                            )
+
+                        if existing_user:
+                            await db.users.update_one({"id": existing_user["id"]}, {"$set": pfm_fields})
+                            logger.info(f"  [resolve_all] Compte existant lié: {existing_user['id']}")
+                        else:
+                            adresse_str = " ".join(filter(None, [
+                                emp.get("adresse_rue", ""), emp.get("adresse_ville", ""),
+                                emp.get("adresse_province", ""), emp.get("adresse_code_postal", ""),
+                            ])).strip()
+                            pfm_record = emp.get("pfm_record", {})
+                            grade_pfm = pfm_record.get("type_employe") or pfm_record.get("grade") or pfm_record.get("titre") or ""
+                            new_uid = str(uuid.uuid4())
+                            
+                            await db.users.insert_one({
+                                "id": new_uid, "tenant_id": tenant.id,
+                                "email": email_pfm or None,
+                                "mot_de_passe_hash": get_password_hash(PFM_DEFAULT_PASSWORD),
+                                "nom": emp.get("nom", ""), "prenom": emp.get("prenom", ""),
+                                "role": "employe", "grade": grade_pfm,
+                                "type_emploi": "temps_partiel",
+                                "telephone": emp.get("telephone_cellulaire") or emp.get("telephone_bureau") or "",
+                                "adresse": adresse_str,
+                                "date_embauche": emp.get("date_embauche") or "",
+                                "date_naissance": emp.get("date_naissance") or "",
+                                "numero_employe": matricule or "",
+                                "statut": "Actif" if pfm_actif else "Inactif",
+                                "formations": [], "competences": [],
+                                "created_at": datetime.now(timezone.utc),
+                                **pfm_fields,
+                            })
+                            logger.info(f"  [resolve_all] ✅ Compte créé: {new_uid} ({emp.get('nom')} {emp.get('prenom')})")
+            
+            resolved += 1
+        except Exception as e:
+            error_msg = f"Doublon {dup.get('id', '?')}: {str(e)}"
+            errors.append(error_msg)
+            logger.error(f"  [resolve_all] ❌ Erreur: {error_msg}")
+
+    logger.info(f"[resolve_all] Terminé: {resolved}/{len(pending)} résolus, {len(errors)} erreurs")
+    
+    return {
+        "resolved": resolved, 
+        "total": len(pending), 
+        "action": action,
+        "errors": errors[:10] if errors else []  # Max 10 erreurs retournées
+    }
 
 
 @router.post("/{tenant_slug}/import/fix-existing-batiments")
