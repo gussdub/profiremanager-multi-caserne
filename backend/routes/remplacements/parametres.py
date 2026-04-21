@@ -230,9 +230,50 @@ async def debug_recherche_remplacant(
         
         debug_info["details_utilisateurs"].append(user_info)
     
-    # Résumé
+    # Résumé - Format attendu par le frontend
     eligibles = [u for u in debug_info["details_utilisateurs"] if u["eligible"]]
-    debug_info["total_eligibles"] = len(eligibles)
-    debug_info["eligibles"] = [u["nom"] for u in eligibles]
+    non_eligibles = [u for u in debug_info["details_utilisateurs"] if not u["eligible"]]
+    
+    # Structurer la réponse selon ce que le frontend attend
+    debug_info["resume"] = {
+        "total_utilisateurs": len(all_users),
+        "eligibles": len(eligibles),
+        "non_eligibles": len(non_eligibles)
+    }
+    
+    # Liste détaillée des éligibles et non-éligibles
+    debug_info["eligibles"] = eligibles
+    debug_info["non_eligibles"] = non_eligibles
+    
+    # Informations sur la demande formatées pour l'affichage
+    debug_info["demande"] = {
+        "type_garde": type_garde.get("nom", "N/A") if type_garde else "N/A",
+        "horaires": f"{heure_debut_garde} - {heure_fin_garde}",
+        "date": date_garde
+    }
+    
+    # Règle officier (si applicable)
+    demandeur = await db.users.find_one({"id": demandeur_id, "tenant_id": tenant.id})
+    demandeur_grade = demandeur.get("grade", "").lower() if demandeur else ""
+    demandeur_est_officier = demandeur_grade in ["lieutenant", "capitaine", "chef", "directeur"]
+    
+    # Vérifier s'il y a un autre officier sur la garde
+    autre_officier_present = False
+    for assignation in assignations_date:
+        if assignation.get("type_garde_id") == type_garde_id and assignation.get("user_id") != demandeur_id:
+            user_assign = await db.users.find_one({"id": assignation.get("user_id"), "tenant_id": tenant.id})
+            if user_assign:
+                grade_assign = user_assign.get("grade", "").lower()
+                if grade_assign in ["lieutenant", "capitaine", "chef", "directeur"]:
+                    autre_officier_present = True
+                    break
+    
+    debug_info["regle_officier"] = {
+        "regle_active": officier_obligatoire and not autre_officier_present,
+        "officier_obligatoire": officier_obligatoire,
+        "demandeur_est_officier": demandeur_est_officier,
+        "autre_officier_present_sur_garde": autre_officier_present,
+        "explication": "Un officier doit être présent sur cette garde" if officier_obligatoire else "Aucune restriction d'officier pour cette garde"
+    }
     
     return debug_info
