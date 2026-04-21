@@ -6532,17 +6532,79 @@ app.include_router(dsi_router, prefix="/api")
 app.include_router(dsi_transmissions_router, prefix="/api")
 app.include_router(access_types_router, prefix="/api")  # Module Types d'accès personnalisés
 
-# Add CORS middleware
+# Add CORS middleware with enhanced localhost support
 _cors_origins_raw = os.environ.get('CORS_ORIGINS', '*')
 _cors_allow_all = _cors_origins_raw.strip() == '*'
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=not _cors_allow_all,
-    allow_origins=["*"] if _cors_allow_all else _cors_origins_raw.split(','),
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["*"],
-)
+
+# Parse origins and add localhost support
+def _parse_cors_origins(raw: str) -> list:
+    if raw.strip() == '*':
+        return ["*"]
+    origins = [o.strip() for o in raw.split(',') if o.strip()]
+    # Always allow localhost with any port for development tools like PFM Transfer
+    localhost_patterns = [
+        "http://localhost",
+        "http://127.0.0.1",
+    ]
+    for pattern in localhost_patterns:
+        if pattern not in origins:
+            origins.append(pattern)
+    return origins
+
+_cors_origins = _parse_cors_origins(_cors_origins_raw)
+print(f"[CORS] Origins configurés: {_cors_origins}")
+
+# Custom CORS middleware to handle localhost with dynamic ports
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
+
+class CustomCORSMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        origin = request.headers.get("origin", "")
+        
+        # Check if origin should be allowed
+        allow_origin = "*"
+        if _cors_allow_all:
+            allow_origin = "*"
+        elif origin:
+            # Allow localhost with any port
+            if origin.startswith("http://localhost:") or origin.startswith("http://127.0.0.1:"):
+                allow_origin = origin
+            elif origin in _cors_origins:
+                allow_origin = origin
+            else:
+                # Check for partial match (e.g., profiremanager.ca)
+                for allowed in _cors_origins:
+                    if allowed in origin or origin in allowed:
+                        allow_origin = origin
+                        break
+        
+        # Handle preflight requests
+        if request.method == "OPTIONS":
+            return Response(
+                status_code=200,
+                headers={
+                    "Access-Control-Allow-Origin": allow_origin,
+                    "Access-Control-Allow-Methods": "*",
+                    "Access-Control-Allow-Headers": "*",
+                    "Access-Control-Allow-Credentials": "true" if allow_origin != "*" else "false",
+                    "Access-Control-Max-Age": "86400",
+                }
+            )
+        
+        response = await call_next(request)
+        
+        # Add CORS headers to response
+        response.headers["Access-Control-Allow-Origin"] = allow_origin
+        response.headers["Access-Control-Allow-Methods"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        if allow_origin != "*":
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+        
+        return response
+
+# Use custom middleware instead of standard CORSMiddleware
+app.add_middleware(CustomCORSMiddleware)
 
 
 # Exception handler pour garantir les headers CORS sur les erreurs 500
@@ -6552,9 +6614,35 @@ from starlette.responses import JSONResponse
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error("Erreur non gérée: %s %s - %s", request.method, request.url.path, str(exc))
+    
+    # Récupérer l'origine de la requête pour les headers CORS
+    origin = request.headers.get("origin", "*")
+    
     return JSONResponse(
         status_code=500,
         content={"detail": str(exc)},
+        headers={
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    # Récupérer l'origine de la requête pour les headers CORS
+    origin = request.headers.get("origin", "*")
+    
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers={
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+        }
     )
 
 
