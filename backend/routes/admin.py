@@ -20,9 +20,107 @@ from routes.dependencies import (
     SuperAdmin,
     clean_mongo_doc
 )
+from passlib.context import CryptContext
 
 router = APIRouter(tags=["Super Admin"])
 logger = logging.getLogger(__name__)
+
+# Pour le hachage des mots de passe
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+def get_password_hash(password: str) -> str:
+    return pwd_context.hash(password)
+
+
+# ==================== ROUTE DE RÉCUPÉRATION D'URGENCE ====================
+
+@router.post("/admin/emergency-restore-admin")
+async def emergency_restore_admin(
+    request: dict,
+    admin: SuperAdmin = Depends(get_super_admin)
+):
+    """
+    Endpoint d'urgence pour restaurer un compte admin supprimé accidentellement.
+    Nécessite l'authentification super_admin.
+    
+    Body:
+        tenant_slug: str - Le slug du tenant
+        email: str - L'email de l'admin à restaurer
+        password: str - Le nouveau mot de passe (optionnel, défaut: mot de passe existant ou généré)
+    """
+    tenant_slug = request.get("tenant_slug")
+    email = request.get("email", "").strip().lower()
+    password = request.get("password")
+    
+    if not tenant_slug or not email:
+        raise HTTPException(status_code=400, detail="tenant_slug et email requis")
+    
+    # Trouver le tenant
+    tenant = await db.tenants.find_one({"slug": tenant_slug}, {"_id": 0, "id": 1, "slug": 1, "nom": 1})
+    if not tenant:
+        raise HTTPException(status_code=404, detail=f"Tenant '{tenant_slug}' non trouvé")
+    
+    # Vérifier si l'utilisateur existe
+    existing = await db.users.find_one(
+        {"tenant_id": tenant["id"], "email": email},
+        {"_id": 0, "id": 1, "email": 1, "role": 1, "statut": 1}
+    )
+    
+    if existing:
+        # Mettre à jour en admin actif
+        update_data = {"role": "admin", "statut": "Actif"}
+        if password:
+            update_data["mot_de_passe_hash"] = get_password_hash(password)
+        
+        await db.users.update_one({"id": existing["id"]}, {"$set": update_data})
+        
+        await log_super_admin_action(
+            admin=admin,
+            action="emergency_restore_admin",
+            details={"tenant_slug": tenant_slug, "email": email, "action": "upgraded_to_admin", "user_id": existing["id"]}
+        )
+        
+        return {
+            "success": True,
+            "action": "upgraded",
+            "message": f"Utilisateur {email} restauré en admin pour {tenant_slug}",
+            "user_id": existing["id"]
+        }
+    else:
+        # Créer un nouveau compte admin
+        new_id = str(uuid.uuid4())
+        default_password = password or "Admin@2024!"
+        
+        await db.users.insert_one({
+            "id": new_id,
+            "tenant_id": tenant["id"],
+            "email": email,
+            "mot_de_passe_hash": get_password_hash(default_password),
+            "nom": "Admin",
+            "prenom": "Restauré",
+            "role": "admin",
+            "grade": "Administrateur",
+            "type_emploi": "temps_plein",
+            "statut": "Actif",
+            "telephone": "",
+            "adresse": "",
+            "formations": [],
+            "competences": [],
+            "created_at": datetime.now(timezone.utc),
+        })
+        
+        await log_super_admin_action(
+            admin=admin,
+            action="emergency_restore_admin",
+            details={"tenant_slug": tenant_slug, "email": email, "action": "created_new_admin", "user_id": new_id}
+        )
+        
+        return {
+            "success": True,
+            "action": "created",
+            "message": f"Nouveau compte admin créé pour {email} sur {tenant_slug}",
+            "user_id": new_id,
+            "temp_password": default_password if not password else "(mot de passe fourni)"
+        }
 
 
 # ==================== ROUTES CENTRALES 911 ====================
@@ -508,12 +606,17 @@ async def cleanup_tables(
             filter_query["$or"] = [
                 {"pfm_record": {"$exists": True}},
                 {"source": "PFM Transfer"},
-                {"source": "pfm_transfer"}
+                {"source": "pfm_transfer"},
+                {"imported_from_pfm": True}
             ]
             # Ne pas supprimer les super_admins ou admins créés manuellement
-            filter_query["role"] = {"$nin": ["super_admin"]}
+            filter_query["role"] = {"$nin": ["super_admin", "admin"]}
             result_key = f"{table_name}:pfm_only"
             logger.info(f"  🔄 Filtre PFM activé pour {table_name}")
+        elif table_name == "users":
+            # Protection: Ne JAMAIS supprimer les admins lors d'un cleanup général
+            filter_query["role"] = {"$nin": ["super_admin", "admin"]}
+            logger.warning(f"  🛡️ Protection admin activée pour {table_name} - les admins ne seront PAS supprimés")
         
         try:
             result = await db[table_name].delete_many(filter_query)
