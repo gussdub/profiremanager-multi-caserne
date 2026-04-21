@@ -2616,24 +2616,6 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                       </div>
                     </div>
 
-                    {/* Documents & Nominations (natif + PFM) — dans la section personnelle */}
-                    {(selectedUser.nas || selectedUser.numero_passeport) && (
-                      <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                        {selectedUser.nas && (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.55rem 0.85rem', background: '#f8fafc', borderRadius: '6px' }}>
-                            <span style={{ color: '#64748b', fontSize: '0.875rem' }}>N° assurance sociale</span>
-                            <span style={{ fontFamily: 'monospace', letterSpacing: '0.1em', fontWeight: '600', fontSize: '0.875rem' }}>{selectedUser.nas}</span>
-                          </div>
-                        )}
-                        {selectedUser.numero_passeport && (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.55rem 0.85rem', background: '#f8fafc', borderRadius: '6px' }}>
-                            <span style={{ color: '#64748b', fontSize: '0.875rem' }}>N° passeport</span>
-                            <span style={{ fontFamily: 'monospace', letterSpacing: '0.1em', fontWeight: '600', fontSize: '0.875rem' }}>{selectedUser.numero_passeport}</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
                     <div className="detail-section detail-section-optimized" style={{ marginBottom: '1.5rem' }}>
                       <h5>📏 Tailles EPI</h5>                      <p style={{ fontSize: '0.813rem', color: '#64748b', marginBottom: '0.75rem' }}>
                         Tailles déclarées par l'employé dans "Mon profil" (lecture seule)
