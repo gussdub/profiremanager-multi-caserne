@@ -2401,9 +2401,10 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
     prenom = record.get("prenom") or ""
     email_pfm = (record.get("couriel") or record.get("courriel") or "").strip().lower()
     premligne_id = _get_premligne_id(record)
-    # Statut actif : inactif=Oui OU date_fin présente
+    # Statut actif : déterminé UNIQUEMENT par le champ "inactif" de PFM Transfer
+    # La date_fin ne doit PAS influencer le statut actif/inactif
     date_fin = (record.get("date_fin") or "").strip()
-    pfm_actif = record.get("inactif") != "Oui" and not date_fin
+    pfm_actif = record.get("inactif") != "Oui"
 
     if matricule:
         existing = await db.imported_personnel.find_one(
@@ -2492,8 +2493,8 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
         "adresse_province": adresse_data.get("province") or "" if isinstance(adresse_data, dict) else "",
         # Langue
         "langue": record.get("i_d_langue") or record.get("langue") or "",
-        # Sous-entités embarquées
-        "nominations": record.get("liste_nomination"),
+        # Sous-entités embarquées (données brutes PFM)
+        "pfm_nominations": record.get("liste_nomination"),
         "contacts_urgence": record.get("liste_contact_urgence"),
         "taux_horaires": record.get("liste_employe_date_taux"),
         # FK

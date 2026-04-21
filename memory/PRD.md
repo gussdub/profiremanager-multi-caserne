@@ -64,6 +64,7 @@ Application de gestion complète pour les services d'incendie canadiens. Multi-t
 - Notification toast in-app avec détail par type d'entité lors de détection de doublons (avr 2026)
 - Endpoint backend GET /import/duplicates/count-by-type pour agrégation par type (avr 2026)
 - Option nettoyage "PFM uniquement" dans CleanupDataModal pour supprimer seulement le personnel importé PFM (avr 2026)
+- **FIX CRITIQUE** : Correction logique statut actif/inactif PFM Transfer — Suppression condition date_fin. Seul le champ `inactif` de PFM détermine désormais le statut (import_batch.py ligne 2407) (avr 2026)
 
 ## Backlog
 - P2: Aperçu d'emails en temps réel dans les paramètres admin

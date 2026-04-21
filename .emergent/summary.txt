@@ -1,141 +1,134 @@
 <analysis>**original_problem_statement**: 
-L'utilisateur a demandé plusieurs évolutions et corrections de bugs sur l'application :
-1. **Export PDF** : Ajouter un export PDF de la fiche du bâtiment incluant la galerie de photos et les légendes.
-2. **Bug Planning (Notifications)** : Empêcher l'envoi de notifications d'attribution/suppression lorsque le planning est encore en mode brouillon (non validé).
-3. **Bug PWA iOS (QR Code)** : Corriger le deep linking des QR codes (scan de véhicules) sur iPhone, qui redirigeait vers le sélecteur de tenant au lieu du formulaire spécifique.
-4. **Bug Prévention (Points d'eau)** : Corriger la logique de couleur (rouge/vert) des bornes d'incendie sur la carte, qui ne prenait pas en compte les dates réelles des dernières inspections par rapport aux dates de test configurées.
-5. **Architecture & Sécurité (Azure Blob Storage)** : Migrer le stockage des fichiers lourds (PDF, Photos) de MongoDB (Base64) et Emergent Object Storage vers **Microsoft Azure Blob Storage**. Exigence stricte : stocker uniquement les métadonnées dans MongoDB et utiliser des jetons SAS (Shared Access Signature) de 15 minutes pour la lecture.
+Application de gestion complète pour les services d'incendie canadiens. Multi-tenant. L'utilisateur souhaite automatiser la création des comptes utilisateurs (personnel) lors de l'import depuis PFM Transfer, gérer proprement les doublons, permettre le nettoyage ciblé des données de test (PFM) et invalider le cache du Service Worker.
+PRODUCT REQUIREMENTS : App multi-tenant, synchronisation PFM Transfer complète (champs personnalisés, workflows, employés actifs/inactifs), système de notification de doublons, mode hors-ligne via PWA.
 
-**User's preferred language**: French (You MUST INSTRUCT the next agent to respond in **FRANÇAIS** only).
+**User's preferred language**: French (INSTRUCT next agent to respond in FRANÇAIS only)
 
 **what currently exists?** 
-- **Export PDF Bâtiment** : Le PDF intègre désormais la galerie photos. Un bouton d'export est présent dans .
-- **Planning Brouillon** : Le modèle  a pour statut par défaut . Les notifications ne partent que si l'assignation est créée sur un mois déjà validé ().
-- **QR Codes PWA** : Le composant QR sauvegarde l'action + le  dans le . À la racine de l'app,  détecte cette action et auto-redirige vers le bon tenant.
-- **Points d'eau (Bornes)** : La logique de couleur () vérifie désormais correctement si une inspection ok a été réalisée *après* la dernière date de test configurée.
-- **Stockage Azure** : Le SDK Azure est installé. Le service  gère upload/download/suppression et génération de SAS URL (15 min).  et  ont été refactorisés.
-- **Script de Migration** :  a migré avec succès toutes les images Base64 de MongoDB vers Azure.
+L'application possède un système complet d'import PFM avec détection de doublons. Un système d'invalidation de cache Service Worker est en place pour la PWA. Une interface permet de prévisualiser la fusion/remplacement des doublons. Un nettoyage ciblé (PFM uniquement) est disponible dans l'interface admin. Le backend a été adapté pour accepter des utilisateurs sans email () en retirant la validation stricte de Pydantic et en modifiant les index uniques MongoDB.
 
-**Last working item**:
-- **Last item agent was working**: L'agent exécutait le script  pour migrer les 46 anciens fichiers stockés sur l'ancien *Emergent Object Storage* (legacy) vers *Azure Blob Storage*. L'agent venait de corriger l'accès à l'API Emergent via une clé de session et le script téléchargeait/téléversait avec succès les fichiers.
-- **Status**: IN PROGRESS
-- **Agent Testing Done**: Y (L'agent a vérifié que le téléchargement via l'ancienne API fonctionnait pour le premier fichier)
-- **Which testing method agent to use?** backend manual testing by python script / bash (Vérifier dans MongoDB que la collection  n'a plus de fichiers avec , et que tout est à ).
-- **User Testing Done**: N
+**Last working item**: 
+    - **Last item agent was working**: Correction de la logique déterminant le statut Actif ou Inactif des employés importés depuis PFM Transfer. Actuellement, le système marque les pompiers comme Inactif s'ils n'ont pas de courriel ou s'ils possèdent une . L'utilisateur a précisé que seul le champ  de PFM () doit déterminer s'ils sont actifs, peu importe l'email ou la date de fin.
+    - **Status**: IN PROGRESS
+    - **Agent Testing Done**: N
+    - **Which testing method agent to use?**: backend testing agent / manual testing by python -c (to verify the logic on payload parsing)
+    - **User Testing Done**: N
 
-**All Pending/In progress Issue list**:
-Aucun bug n'est actuellement en attente.
-
-**In progress Task List**:
-Task 1: Finaliser la migration des 46 fichiers legacy vers Azure Blob Storage (P1)
-
- Task Detail:
-  - Task 1: 
-     - **Where to resume**: Vérifier les logs du script  ou lancer une requête MongoDB pour s'assurer que les 46 fichiers legacy restants dans  ont bien été transférés vers Azure.
-     - **What will be achieved with this?**: 100% des fichiers lourds de l'application seront centralisés sur Azure Blob Storage, permettant de décommissionner définitivement l'ancien système de stockage.
+**All Pending/In progress Issue list**:  
+  - Issue 1: Le personnel importé est incorrectement classé comme Inactif (Priorité: P0)
+     - **Attempted fixes**: L'agent a identifié l'erreur à la ligne 2406 de  (). 
+     - **Next debug checklist**: 
+       1. Dans , localiser la définition de .
+       2. Retirer la condition  pour ne garder que la vérification sur le champ PFM .
+       3. S'assurer que le champ  /  est correctement assigné lors de la création d'un  dans  ET dans , même si le champ email est .
+     - **Why fix this issue and what will be achieved with the fix?**: Les pompiers actifs sans adresse courriel (qui ne se connectent pas mais sont en service) sont relégués dans Anciens employés, faussant les données de l'application.
      - **Status**: IN PROGRESS
-     - **Should Test frontend/backend/both after fix?**: backend (vérification DB)
-     - **Blocked on something**: Rien.
+     - **Is recurring issue?**: Y (problème d'import récurrent suite à divers edge cases)
+     - **Should Test frontend/backend/both after fix?**: Both
+     - **Blocked on other issue**: None
+
+**In progress Task List**: 
+  None
 
 **Upcoming and Future Tasks**
-Upcoming Tasks:
-- P1: Tester rigoureusement l'import d'historique d'interventions (CSV/XML/ZIP) avec des fichiers réels.
-
-Future Tasks:
-- Backlog: Créer un aperçu d'emails en temps réel dans les paramètres admin pour permettre la personnalisation des couleurs/logos par caserne sans toucher au code.
+    Upcoming Tasks:
+    - P2: Créer un aperçu d'emails en temps réel dans les paramètres admin pour permettre la personnalisation (couleurs/logos).
 
 **Completed work in this session**
-- Feature: Export PDF de la fiche bâtiment avec photos annotées (DONE)
-- Fix: Blocage des notifications de planning lorsque le mois est en brouillon (DONE)
-- Fix: Deep linking des QR codes sur iPhone (PWA iOS) via  (DONE)
-- Fix: Correction de la logique des couleurs (rouge/vert) des bornes d'incendie (DONE)
-- Architecture: Implémentation complète de Microsoft Azure Blob Storage avec jetons SAS (DONE)
-- Migration: Transfert de toutes les photos Base64 (Inventaires, Profils, QR Codes, Bâtiments) de MongoDB vers Azure (DONE)
+- P1: Mettre en place un mécanisme propre d'invalidation du cache du Service Worker ( / ) (DONE)
+- Amélioration de la vue de prévisualisation des doublons (Fusion/Remplacement) (DONE)
+- Ajout d'un badge persistant de notification de doublons dans le Sidebar (DONE)
+- Ajout d'une option de nettoyage Données PFM uniquement dans le modal Admin (DONE)
+- Protection du Super Admin (empêche la suppression d'un compte admin lors du cleanup complet) (DONE)
+- Correction d'un crash API 500 (CORS manquant sur erreur globale) (DONE)
+- Correction d'un crash API 500 dû au modèle Pydantic  qui exigeait  ; rendu optionnel (DONE)
+- Correction d'un crash MongoDB (Duplicate key error) causé par l'index unique  avec plusieurs  ; conversion en index partiel (DONE)
+- Correction du bug visuel  dans  (DONE)
 
 **Earlier issues found/mentioned but not fixed**
-Aucun.
+None
 
 **Known issue recurrence from previous fork**
-- Issue recurrence in previous fork: None.
-- Recurrence count: 0
-- Status: RESOLVED
+  - Issue recurrence in previous fork: Gestion capricieuse des imports PFM (Doublons et statuts).
+  - Recurrence count: 1
+  - Status: IN PROGRESS
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Azure Blob Storage & SAS URLs**: Tous les fichiers lourds sont désormais sur Azure. Le backend ne renvoie *jamais* une URL statique au frontend. Il renvoie une URL  (Shared Access Signature) générée à la volée, valide pour **15 minutes**. Le nom du blob ( ou ) est stocké dans MongoDB.
-- **PWA Deep Linking (iOS)**: Safari/iOS écrase les paramètres d'URL (comme ) au lancement de l'application installée (PWA). La solution utilise  () pour passer le contexte du composant QR à la racine (), intercepté par .
+- React, FastAPI, MongoDB
+- **Gestion des Index MongoDB** : Utilisation d'index partiels pour autoriser de multiples champs à  (ex: email).
+- **Service Worker / PWA** : Cache busting implémenté via .
 
 **key DB schema**
-  - :  (brouillon ou publie)
-  - :  (azure ou legacy), , 
-  - :  contient désormais  pour Azure.  en Base64 a été supprimé.
+  - : Modèle Pydantic mis à jour.  est . .
+  - : Table de staging pour résoudre les doublons avant injection dans .
 
 **changes in tech stack**
-  - Installation du SDK Azure ().
-  - Suppression de l'utilisation d'Emergent Object Storage pour les nouveaux uploads.
+  - Aucun.
 
 **All files of reference** 
--  (Service critique pour toute interaction avec les fichiers)
--  (Script en cours d'exécution)
--  (Pour comprendre le routing PWA)
--  (Pour comprendre la gestion des brouillons de planning)
+  - 
+  - 
+  - 
+  - 
+  - 
 
-**Areas that need refactoring**: 
-Le fichier  sert actuellement de proxy (wrapper) vers  pour éviter de casser les anciens imports. Il pourra être supprimé quand toutes les dépendances seront directement branchées sur le module azure.
+**Areas that need refactoring**:
+  -  : La méthode  a été lourdement patchée et le fichier complet est énorme (> 2800 lignes).
 
 **key api endpoints**
-- 
-- 
--  (Génération de SAS URL pour les documents généraux)
+  - 
+  - 
 
 **Critical Info for New Agent** 
-- **Stockage des Fichiers** : Ne stockez *jamais* d'images en Base64 dans la BDD. Utilisez toujours le service .
-- **SAS URLs** : Ne sauvegardez *jamais* l'URL complète avec le token SAS dans MongoDB. Stockez le chemin () et générez l'URL côté backend avant de l'envoyer au frontend.
-- **Accès API** : Les variables d'environnement Azure (, , ) sont configurées.
-- **Mot de passe Admin** : L'agent a réinitialisé le mot de passe de  durant ses tests. Consultez  pour vous connecter.
-- **Langue** : L'utilisateur communique en français, vous DEVEZ répondre en français.
+- **Attention absolue sur ** : La logique qui détermine si un compte est actif ou non () ne doit dépendre QUE du champ PFM  (). Actuellement la condition  fait bugger le système et cache les employés sans courriel dans les anciens employés (Inactif).
+- L'utilisateur a déjà testé le nettoyage et l'import de bout en bout. MongoDB a été nettoyé de ses index bloquants (sur email) et Pydantic accepte les emails vides.
 
 **documents and test reports created in this job** 
-  -  (Mis à jour)
-  -  (Mis à jour)
-  -  (Succès - Export PDF)
-  -  (Succès - Bug Planning)
-  -  (Succès - Intégration Azure Blob Storage)
+  - /app/test_reports/iteration_31.json
+  - /app/test_reports/iteration_32.json
+  - /app/memory/PRD.md
 
 **Last 10 User Messages and any pending HUMAN messages** 
-1. **User**: en mode production, lorsque je scanne les codes QR avec mon iPhone... je veux que le choix me soit proposé et redirigé direct...
-2. **Assistant**: Comprend que le PWA perd l'URL, propose d'utiliser  et intercepte via . Demande approbation.
-3. **User**: le résultat attendu est parfait
-4. **Assistant**: Corrige le code PWA, vérifie le flux. Termine la tâche.
-5. **User**: dans gestion des actifs/paramètre/approvisionnement en eau... la logique des bornes ne fonctionne pas...
-6. **Assistant**: Identifie que l'état 'fonctionnelle' forçait le vert, et la comparaison de dates ignorait les inspections réelles. Corrige . Termine.
-7. **User**: Agis en tant que développeur senior... Je veux implémenter Azure Blob Storage... Les fichiers lourds sur Azure, juste les métadonnées sur MongoDB avec jeton SAS 15 minutes... Fournit les clés Azure.
-8. **Assistant**: Met en place , refactorise les routes pour les photos, vérifie les SAS URLs. Suggère de migrer les données existantes.
-9. **User**: oui merci de transférer toutes les anciennes photos vers azure également.
-10. **Assistant**: Migre les Base64 avec succès. Essaie de migrer les fichiers de l'ancien Object Storage.
-11. **User**: go p2 (Pour migrer les 46 fichiers restants). -> *Dernier message, tâche de migration en cours de finalisation*.
+ 1. (User) dans tenant admin, ajouter option effacer uniquement données importées de PFM - *Fixed*
+ 2. (User) erreur, liste vide après import PFM - *Agent discovered user auto-deleted himself via the cleanup tool.*
+ 3. (User) jai effacé mes propres données, jai restauré MongoDB - *Fixed, added admin protection.*
+ 4. (User) bug visuel dans paramètres gardes - *Fixed.*
+ 5. (User) CORS error on 500 errors - *Fixed global exception handler in server.py.*
+ 6. (User) 11 doublons détectés malgré le nettoyage complet - *Fixed the duplicate DB query to actually clear  and .*
+ 7. (User) 11 fusions faites, mais 0 résultat dans personnel - *Agent fixed Pydantic missing email string validation.*
+ 8. (User) Toujours 11 doublons et 0 traité, erreur - *Agent dropped unique email index in MongoDB.*
+ 9. (User) Ça fonctionne, mais tous les employés sont Inactifs car pas demail/ont une date de fin, alors quils sont actifs dans PFM - **PENDING (Current Blocker)**
 
 **Project Health Check:**
-- **Broken**: Aucun.
-- **Mocked**: Aucun.
+- Broken: Import marks active employees with  as Inactif. 
+- Mocked: None
 
 **3rd Party Integrations** 
-- Microsoft Azure Blob Storage — requires User API Key (Stockage fichiers/images)
-- Resend (Emails) — requires User API Key
-- Twilio SMS — requires User API Key
+  - Microsoft Azure Blob Storage — requires User API Key
+  - Twilio (SMS) — requires User API Key
+  - Resend (Emails) — requires User API Key
 
 **Testing status**
-  - Testing agent used after significant changes: YES (itérations 25, 26, 27)
+  - Testing agent used after significant changes: YES
   - Troubleshoot agent used after agent stuck in loop: NO
-  - Test files created: None retained
-  - Known regressions: None
+  - Test files created: None
+  - Known regressions:  logic in .
 
 **Credentials to test flow:**
-Consulter . 
-Tenant:  
-Email: 
+  -  /  (Tenant: )
 
 **What agent forgot to execute**
-Rien n'a été oublié, mais le script  était en cours de téléchargement/téléversement pour les 46 fichiers finaux. L'agent n'a pas formellement terminé (finish) cette étape pour confirmer que la base de données est complètement nettoyée des fichiers legacy.</analysis>
+Rien d'oublié, l'agent a identifié l'origine du dernier bug  mais le contexte a pris fin avant la complétion.
+
+**Debugging checklist for current issue**
+    Issue: Les pompiers importés sont marqués inactifs alors qu'ils sont actifs dans PFM.
+
+    Backend files to check:
+    -  (Ligne ~2406)
+      Recherchez : 
+      Modifiez en : 
+      
+      Assurez-vous également que la logique de  crée correctement un compte (ou met à jour le statut) en se basant sur cette nouvelle définition de .</analysis>

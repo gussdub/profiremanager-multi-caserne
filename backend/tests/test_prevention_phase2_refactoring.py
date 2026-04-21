@@ -19,7 +19,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://employ-sync-portal.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://active-employees.preview.emergentagent.com').rstrip('/')
 TENANT_SLUG = "demo"
 
 # Test credentials
