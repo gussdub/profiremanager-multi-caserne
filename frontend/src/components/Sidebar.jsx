@@ -86,6 +86,10 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
   const [remplacementCommentaire, setRemplacementCommentaire] = useState('');
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   
+  // État pour les doublons d'import (badge sur Paramètres)
+  const [duplicatesCount, setDuplicatesCount] = useState(0);
+  const [duplicatesMessage, setDuplicatesMessage] = useState('');
+  
   // État pour les paramètres du module interventions (pour vérifier personnes_ressources)
   const [interventionSettings, setInterventionSettings] = useState(null);
   
@@ -149,6 +153,57 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
     if (user) {
       loadNotifications();
       const interval = setInterval(loadNotifications, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user, tenantSlug]);
+
+  // Charger le compteur de doublons (badge sur Paramètres)
+  const loadDuplicatesCount = async () => {
+    if (!tenantSlug || !user) return;
+    // Seulement pour les admins et utilisateurs avec accès aux paramètres
+    if (!['admin', 'super_admin', 'directeur'].includes(user.role)) return;
+    
+    try {
+      const data = await apiGet(tenantSlug, '/import/duplicates/count-by-type');
+      setDuplicatesCount(data.total || 0);
+      setDuplicatesMessage(data.message || '');
+      
+      // Si des doublons ont été détectés et qu'on ne les a pas encore notifiés cette session
+      const lastNotifiedCount = parseInt(sessionStorage.getItem('lastDuplicatesNotified') || '0');
+      if (data.total > 0 && data.total !== lastNotifiedCount) {
+        // Afficher un toast de notification
+        toast({
+          title: `📋 ${data.total} doublon(s) détecté(s)`,
+          description: data.message,
+          duration: 8000,
+          action: (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                setCurrentPage('parametres');
+                // Déclencher l'ouverture de l'onglet doublons
+                setTimeout(() => {
+                  window.dispatchEvent(new CustomEvent('openParametresTab', { detail: { tab: 'import' } }));
+                }, 300);
+              }}
+            >
+              Voir
+            </Button>
+          )
+        });
+        sessionStorage.setItem('lastDuplicatesNotified', String(data.total));
+      }
+    } catch (error) {
+      console.error('Erreur chargement compteur doublons:', error);
+    }
+  };
+
+  // Charger les doublons au montage et toutes les 60 secondes
+  useEffect(() => {
+    if (user && ['admin', 'super_admin', 'directeur'].includes(user.role)) {
+      loadDuplicatesCount();
+      const interval = setInterval(loadDuplicatesCount, 60000);
       return () => clearInterval(interval);
     }
   }, [user, tenantSlug]);
@@ -1125,9 +1180,34 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
                   setIsMobileMenuOpen(false);
                 }}
                 data-testid={`nav-${item.id}-btn`}
+                style={{ position: 'relative' }}
               >
                 <span className="nav-icon">{item.icon}</span>
                 {item.label}
+                {/* Badge pour les doublons sur Paramètres */}
+                {item.id === 'parametres' && duplicatesCount > 0 && (
+                  <span 
+                    className="duplicates-badge"
+                    title={`${duplicatesCount} doublon(s): ${duplicatesMessage}`}
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: '#ef4444',
+                      color: 'white',
+                      fontSize: '0.7rem',
+                      fontWeight: '600',
+                      padding: '2px 6px',
+                      borderRadius: '10px',
+                      minWidth: '20px',
+                      textAlign: 'center',
+                      animation: 'pulse 2s infinite'
+                    }}
+                  >
+                    {duplicatesCount > 99 ? '99+' : duplicatesCount}
+                  </span>
+                )}
               </button>
             ))}
           </nav>

@@ -1,0 +1,52 @@
+{
+  "summary": "Tested duplicates preview + persistent badge feature end-to-end on demo tenant (shefford had no seeded admin). Backend endpoint GET /{tenant}/import/duplicates/count-by-type works correctly: proper aggregation, auth required, consistent shape. Frontend sidebar badge, in-app toast notification, Paramètres>Imports CSV>Doublons tab, side-by-side comparison table, and 'Prévisualiser fusion' / 'Prévisualiser remplacement' toggle buttons all verified working by seeding a test duplicate and observing UI behavior. Test duplicate was cleaned up.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_duplicates_count_by_type.py",
+    "/app/test_reports/pytest/pytest_duplicates_count.xml"
+  ],
+  "action_items": [
+    "Shefford tenant currently has NO user 'gussdub@gmail.com' seeded (login returns 401 with 'found=False' in backend logs). Iteration_31 claimed this user existed in shefford - it does NOT exist now. If shefford testing credentials are required, main agent should reseed the admin via the appropriate tenant migration script, OR update /app/memory/test_credentials.md to reflect that shefford has no seeded admin.",
+    "Minor UX: Add data-testid attributes to 'Prévisualiser fusion' (e.g., data-testid='preview-merge-{dup.id}') and 'Prévisualiser remplacement' (data-testid='preview-replace-{dup.id}') buttons in ImportDuplicatesManager.jsx for more robust automation. Currently these rely on get_by_text which worked but less reliable."
+  ],
+  "critical_code_review_comments": [
+    "Backend routes/import_batch.py L688-741: count_duplicates_by_type uses clean Mongo aggregation, returns total + by_type dict + pre-formatted french message. Labels dict covers main entity types. Good.",
+    "Sidebar.jsx L160-209: loadDuplicatesCount polls every 60s, RBAC gate (admin/super_admin/directeur), session-scoped toast dedup via sessionStorage['lastDuplicatesNotified']. Correctly re-notifies only when total changes. Good.",
+    "ImportDuplicatesManager.jsx L320-343: Preview buttons lack data-testid (they use text only). Consider adding for test robustness. currentPreview state is per-dup.id which correctly scopes preview independently for each duplicate card.",
+    "ParametresImports.jsx L29-99: Tab 'doublons' has its own badge (duplicatesCount) independent of Sidebar's state - two separate fetches. Minor duplication but acceptable since tabs can be opened directly.",
+    "No console errors observed during full flow. Toast has 8s duration - may feel short if message is long, acceptable."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_duplicates_count_by_type.py"
+  ],
+  "success_rate": {
+    "backend": "100% (5/5 passed)",
+    "frontend": "100% - All 5 testable flows verified: sidebar badge, toast, tab badge, preview fusion, preview remplacement"
+  },
+  "test_credentials": {
+    "tenant_used": "demo (shefford admin not seeded)",
+    "email": "gussdub@gmail.com",
+    "password": "230685Juin+"
+  },
+  "seed_data_creation": "Temporarily inserted 1 import_duplicates document (id=TEST_DUP_12696506, entity_type=DossierAdresse) in demo tenant to verify badge+toast+preview UI, then deleted it after testing. DB state restored.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "To test on shefford tenant, first seed an admin user (gussdub@gmail.com or any) because login currently fails with 'found=False'. For testing the duplicates UI flow when no real duplicates exist, seed a test duplicate directly via MongoDB (see /tmp/seed_duplicate.py for template). The endpoint /{tenant}/import/duplicates/count-by-type is tenant-scoped so works for any tenant.",
+  "verification_evidence": {
+    "endpoint_response_with_1_dup": "{\"total\":1,\"by_type\":{\"DossierAdresse\":1},\"message\":\"1 bâtiment(s)\",\"details\":[\"1 bâtiment(s)\"]}",
+    "endpoint_response_empty": "{\"total\":0,\"by_type\":{},\"message\":\"Aucun doublon\",\"details\":[]}",
+    "sidebar_badge": "Red circular badge with text '1' and title '1 doublon(s): 1 bâtiment(s)' shown on Paramètres nav item",
+    "toast": "Toast '📋 1 doublon(s) détecté(s)' displayed bottom-right with 'Voir' action button",
+    "tab_badge": "Doublons tab in Imports CSV shows badge with '1' count",
+    "preview_merge": "Clicking 'Prévisualiser fusion' turns button green-highlighted, comparison table adds 'Résultat fusion' column (green heading)",
+    "preview_replace": "Clicking 'Prévisualiser remplacement' turns button blue-highlighted, comparison table swaps to 'Résultat remplacement' column (blue heading)"
+  }
+}

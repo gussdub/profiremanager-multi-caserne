@@ -685,6 +685,62 @@ async def list_duplicates(
     return {"duplicates": duplicates, "total": total}
 
 
+@router.get("/{tenant_slug}/import/duplicates/count-by-type")
+async def count_duplicates_by_type(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user),
+):
+    """Compte les doublons en attente par type d'entité pour les notifications."""
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    # Aggregation pour compter par entity_type
+    pipeline = [
+        {"$match": {"tenant_id": tenant.id, "status": "pending"}},
+        {"$group": {"_id": "$entity_type", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    
+    results = await db.import_duplicates.aggregate(pipeline).to_list(None)
+    
+    # Formatter les résultats
+    by_type = {}
+    total = 0
+    for r in results:
+        entity_type = r["_id"]
+        count = r["count"]
+        by_type[entity_type] = count
+        total += count
+    
+    # Labels français pour les types
+    labels = {
+        'Intervention': 'intervention(s)',
+        'DossierAdresse': 'bâtiment(s)',
+        'Prevention': 'prévention(s)',
+        'RCCI': 'RCCI',
+        'Employe': 'employé(s)',
+        'BorneIncendie': 'borne(s) fontaine',
+        'BorneSeche': 'borne(s) sèche(s)',
+        'PointEau': "point(s) d'eau",
+        'Vehicule': 'véhicule(s)',
+        'EquipExist': 'équipement(s)',
+    }
+    
+    # Construire le message de notification
+    details = []
+    for entity_type, count in by_type.items():
+        label = labels.get(entity_type, entity_type.lower())
+        details.append(f"{count} {label}")
+    
+    message = ", ".join(details) if details else "Aucun doublon"
+    
+    return {
+        "total": total,
+        "by_type": by_type,
+        "message": message,
+        "details": details
+    }
+
+
 @router.post("/{tenant_slug}/import/duplicates/{duplicate_id}/resolve")
 async def resolve_duplicate(
     tenant_slug: str,
