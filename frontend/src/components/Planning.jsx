@@ -2895,12 +2895,12 @@ const Planning = () => {
                         </div>
                         <div className="personnel-actions">
                           <span className="assignment-method">
-                            {personAssignation?.assignation_type === 'auto' 
-                              ? '🤖 Auto' 
-                              : personAssignation?.assignation_type === 'rotation_temps_plein'
-                                ? '🔄 Rotation'
-                                : personAssignation?.est_remplacement 
-                                  ? '🔄 Remplacement' 
+                            {personAssignation?.est_remplacement 
+                              ? '🔄 Remplacement' 
+                              : personAssignation?.assignation_type === 'auto' 
+                                ? '🤖 Auto' 
+                                : personAssignation?.assignation_type === 'rotation_temps_plein'
+                                  ? '🔄 Rotation'
                                   : '👤 Manuel'}
                           </span>
                           {canEditPlanning && (personAssignation?.assignation_type === 'auto' || personAssignation?.assignation_type === 'rotation_temps_plein') && (
