@@ -95,7 +95,6 @@ const ParametresTypesGarde = ({
               ))}
             </div>
           </div>
-        )}
 
         {/* Modal d'édition de type de garde */}
         {showEditTypeModal && editingItem && (
