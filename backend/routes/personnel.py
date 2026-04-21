@@ -48,8 +48,8 @@ router = APIRouter(tags=["Personnel"])
 
 class UserCreate(BaseModel):
     """Modèle pour la création d'un utilisateur"""
-    email: str
-    mot_de_passe: str
+    email: Optional[str] = None  # Optionnel pour les imports PFM sans email
+    mot_de_passe: Optional[str] = None  # Optionnel pour les imports PFM (mot de passe par défaut)
     nom: str
     prenom: str
     role: str = "employe"

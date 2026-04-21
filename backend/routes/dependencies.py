@@ -80,7 +80,7 @@ security = HTTPBearer()
 class User(BaseModel):
     """Modèle utilisateur de base"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    email: str
+    email: Optional[str] = None  # Optionnel pour les imports PFM sans email
     nom: str
     prenom: str
     role: str = "employe"  # admin, superviseur, employe
