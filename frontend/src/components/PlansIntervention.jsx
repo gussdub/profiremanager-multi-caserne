@@ -15,6 +15,7 @@ const PlansIntervention = ({ tenantSlug, filteredBatimentId, setFilteredBatiment
   const [selectedBatiment, setSelectedBatiment] = useState(null);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [filterStatut, setFilterStatut] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   console.log('🔍 PlansIntervention - tenantSlug reçu:', tenantSlug, 'Type:', typeof tenantSlug);
 
@@ -279,15 +280,12 @@ const PlansIntervention = ({ tenantSlug, filteredBatimentId, setFilteredBatiment
         </Button>
       </div>
 
-      {/* Section: Créer nouveau plan */}
+      {/* Section: Créer nouveau plan avec recherche prédictive */}
       <Card style={{ marginBottom: '2rem', position: 'relative', zIndex: 1 }}>
         <CardHeader>
           <CardTitle>➕ Créer un nouveau plan d'intervention</CardTitle>
         </CardHeader>
-        <CardContent style={{ position: 'relative', zIndex: 1 }}>
-          <p style={{ marginBottom: '1rem', color: '#6b7280' }}>
-            Sélectionnez un bâtiment pour créer son plan d'intervention ({batiments.length} bâtiment(s) trouvé(s))
-          </p>
+        <CardContent style={{ position: 'relative', zIndex: 100 }}>
           {batiments.length === 0 ? (
             <div style={{ 
               padding: '2rem', 
@@ -302,55 +300,158 @@ const PlansIntervention = ({ tenantSlug, filteredBatimentId, setFilteredBatiment
               </p>
             </div>
           ) : (
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-            gap: '1rem'
-          }}>
-            {batiments.map(bat => {
-              const hasPlans = plans.some(p => p.batiment_id === bat.id && p.statut !== 'archive');
-              return (
-                <div 
-                  key={bat.id}
-                  style={{
-                    padding: '1rem',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '0.5rem',
-                    backgroundColor: hasPlans ? '#f9fafb' : 'white'
-                  }}
-                >
-                  <h3 style={{ fontWeight: '600', marginBottom: '0.5rem' }}>
-                    {bat.nom_etablissement || 'Sans nom'}
-                  </h3>
-                  <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>
-                    {bat.adresse_civique}, {bat.ville}
-                  </p>
-                  <p style={{ fontSize: '0.75rem', marginBottom: '0.75rem' }}>
-                    Risque: <strong>{bat.niveau_risque}</strong>
-                  </p>
-                  {hasPlans ? (
-                    <span style={{ fontSize: '0.75rem', color: '#059669' }}>
-                      ✅ Plan existant
-                    </span>
-                  ) : (
-                    <Button 
-                      onClick={() => handleCreatePlan(bat.id)}
-                      style={{ 
-                        width: '100%', 
-                        fontSize: '0.875rem',
-                        cursor: 'pointer',
-                        pointerEvents: 'auto',
-                        zIndex: 10,
-                        position: 'relative'
-                      }}
-                    >
-                      ➕ Créer plan
-                    </Button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+            <div style={{ position: 'relative' }}>
+              {/* Recherche prédictive */}
+              <input
+                type="text"
+                placeholder="🔍 Rechercher un bâtiment sans plan d'intervention..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '1rem 1.25rem',
+                  border: '2px solid #e2e8f0',
+                  borderRadius: '10px',
+                  fontSize: '1rem',
+                  outline: 'none',
+                  transition: 'border-color 0.2s',
+                  backgroundColor: 'white'
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#3b82f6'}
+                onBlur={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
+              />
+              
+              {/* Résultats de recherche (dropdown) */}
+              {searchQuery && (() => {
+                // Filtrer les bâtiments SANS plan
+                const batimentsSansPlan = batiments.filter(bat => {
+                  const hasPlans = plans.some(p => p.batiment_id === bat.id && p.statut !== 'archive');
+                  return !hasPlans;
+                });
+                
+                // Recherche prédictive
+                const filteredBatiments = batimentsSansPlan.filter(bat => {
+                  const query = searchQuery.toLowerCase();
+                  const nom = (bat.nom_etablissement || '').toLowerCase();
+                  const adresse = `${bat.adresse_civique || ''} ${bat.rue || ''} ${bat.ville || ''}`.toLowerCase();
+                  return nom.includes(query) || adresse.includes(query);
+                });
+                
+                return filteredBatiments.length > 0 ? (
+                  <div style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 0.5rem)',
+                    left: 0,
+                    right: 0,
+                    backgroundColor: 'white',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '10px',
+                    marginTop: '0.5rem',
+                    maxHeight: '400px',
+                    overflowY: 'auto',
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+                    zIndex: 200
+                  }}>
+                    <div style={{ 
+                      padding: '0.75rem 1rem', 
+                      borderBottom: '1px solid #f3f4f6',
+                      fontSize: '0.875rem',
+                      color: '#6b7280',
+                      fontWeight: '600'
+                    }}>
+                      {filteredBatiments.length} bâtiment(s) sans plan trouvé(s)
+                    </div>
+                    {filteredBatiments.map(bat => (
+                      <div
+                        key={bat.id}
+                        onClick={() => {
+                          handleCreatePlan(bat.id);
+                          setSearchQuery('');
+                        }}
+                        style={{
+                          padding: '1rem 1.25rem',
+                          borderBottom: '1px solid #f9fafb',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          backgroundColor: 'white'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f0f9ff';
+                          e.currentTarget.style.borderLeft = '4px solid #3b82f6';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'white';
+                          e.currentTarget.style.borderLeft = 'none';
+                        }}
+                      >
+                        <div style={{ 
+                          fontWeight: '600',
+                          fontSize: '1rem',
+                          marginBottom: '0.25rem',
+                          color: '#1e293b'
+                        }}>
+                          {bat.nom_etablissement || 'Sans nom'}
+                        </div>
+                        <div style={{ 
+                          fontSize: '0.875rem', 
+                          color: '#64748b',
+                          display: 'flex',
+                          gap: '1rem',
+                          flexWrap: 'wrap'
+                        }}>
+                          <span>📍 {bat.adresse_civique}, {bat.ville}</span>
+                          {bat.niveau_risque && (
+                            <span style={{ 
+                              padding: '0.125rem 0.5rem',
+                              background: bat.niveau_risque === 'Élevé' ? '#fee2e2' : bat.niveau_risque === 'Moyen' ? '#fef3c7' : '#dcfce7',
+                              color: bat.niveau_risque === 'Élevé' ? '#dc2626' : bat.niveau_risque === 'Moyen' ? '#d97706' : '#16a34a',
+                              borderRadius: '12px',
+                              fontSize: '0.75rem',
+                              fontWeight: '600'
+                            }}>
+                              Risque: {bat.niveau_risque}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 0.5rem)',
+                    left: 0,
+                    right: 0,
+                    backgroundColor: 'white',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '10px',
+                    padding: '2rem',
+                    textAlign: 'center',
+                    color: '#6b7280',
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                    zIndex: 200
+                  }}>
+                    <p style={{ fontSize: '0.875rem', margin: 0 }}>
+                      Aucun bâtiment sans plan ne correspond à "{searchQuery}"
+                    </p>
+                    <p style={{ fontSize: '0.75rem', marginTop: '0.5rem', color: '#9ca3af' }}>
+                      Tous les bâtiments correspondants ont déjà un plan d'intervention
+                    </p>
+                  </div>
+                );
+              })()}
+              
+              {!searchQuery && (
+                <p style={{ 
+                  marginTop: '1rem', 
+                  fontSize: '0.875rem', 
+                  color: '#6b7280',
+                  textAlign: 'center'
+                }}>
+                  💡 Tapez le nom ou l'adresse d'un bâtiment pour créer son plan d'intervention
+                </p>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>

@@ -1638,8 +1638,18 @@ const BatimentForm = ({
                 {[
                   canEdit && { label: 'Modifier', icon: Pencil, action: () => setIsEditing(true), primary: true },
                   onInspect && { label: 'Inspecter', icon: ClipboardCheck, action: () => onInspect(batiment) },
-                  onCreatePlan && hasPlan && { label: 'Plan', icon: Map, action: () => setViewMode('plan-intervention') },
-                  hasPlanPFM && { label: 'Plan PFM', icon: Map, action: () => setViewMode('plan-pfm'), danger: true },
+                  (hasPlan || hasPlanPFM) && { 
+                    label: 'Plan', 
+                    icon: Map, 
+                    action: () => {
+                      // Priorité : Plan PFM (app) > Plan PFM Transfer (importé)
+                      if (hasPlan) {
+                        setViewMode('plan-intervention');
+                      } else if (hasPlanPFM) {
+                        setViewMode('plan-pfm');
+                      }
+                    }
+                  },
                   onViewHistory && { label: 'Inspections', icon: ScrollText, action: () => setViewMode('history') },
                   { label: 'Historique', icon: Clock, action: () => setViewMode('full-history'), testid: 'btn-full-history' },
                   onGenerateReport && { label: 'Rapport', icon: FileText, action: () => setViewMode('rapport') },
