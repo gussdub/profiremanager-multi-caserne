@@ -977,12 +977,6 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
         logging.info(f"📊 [ÉQUITÉ] Heures calculées pour {len(users)} utilisateurs sur la période")
         
         # ==================== RÉCUPÉRATION DES PARAMÈTRES ====================
-        # Lire les paramètres de remplacement pour heures_supplementaires_activees
-        params_remplacements = await db.parametres_remplacements.find_one({"tenant_id": tenant.id})
-        heures_sup_from_params = False
-        if params_remplacements:
-            heures_sup_from_params = params_remplacements.get("heures_supplementaires_activees", False)
-        
         # Charger les niveaux depuis les paramètres du TENANT
         tenant_params = tenant.parametres or {}
         logging.info(f"📊 [NIVEAUX] Paramètres tenant: {tenant_params}")
@@ -992,16 +986,17 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
             "niveau_4": tenant_params.get("niveau_4_actif", True),  # Temps plein INCOMPLETS
             "niveau_5": tenant_params.get("niveau_5_actif", True)   # Temps plein COMPLETS (heures sup)
         }
-        # Activer heures sup si:
-        # - Le paramètre dans la requête est True OU
-        # - Le paramètre dans parametres_remplacements est True
-        autoriser_heures_sup = activer_heures_sup or heures_sup_from_params or tenant_params.get("autoriser_heures_supplementaires", False)
+        
+        # CORRECTION : Utiliser UNIQUEMENT le paramètre activer_heures_sup depuis parametres_remplacements
+        # (déjà lu à la ligne 717 depuis parametres_remplacements.activer_gestion_heures_sup)
+        # Ne PAS combiner avec d'autres sources pour éviter les incohérences
+        autoriser_heures_sup = activer_heures_sup
         
         # Si heures sup non autorisées, désactiver niveau 5
         if not autoriser_heures_sup:
             niveaux_actifs["niveau_5"] = False
         
-        logging.info(f"📋 Niveaux actifs: {niveaux_actifs}, Heures sup: {autoriser_heures_sup} (from_params={heures_sup_from_params}, activer_heures_sup={activer_heures_sup})")
+        logging.info(f"📋 Niveaux actifs: {niveaux_actifs}, Heures sup: {autoriser_heures_sup} (activer_heures_sup={activer_heures_sup})")
         
         # Paramètres de paie pour seuil hebdomadaire temps plein
         params_paie = await db.parametres_paie.find_one({"tenant_id": tenant.id})
