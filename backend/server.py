@@ -94,6 +94,7 @@ from routes.rapports_interventions import router as rapports_interventions_route
 from routes.secteurs import router as secteurs_router
 from routes.super_admin import router as super_admin_router
 from routes.access_types import router as access_types_router
+from routes.plan_intervention import router as plan_intervention_router
 from routes.utils import router as utils_router
 from routes.emails_history import router as emails_history_router, log_email_sent
 from routes.horaires_personnalises import router as horaires_personnalises_router
@@ -6544,6 +6545,7 @@ app.include_router(pwa_router, prefix="/api")
 app.include_router(dsi_router, prefix="/api")
 app.include_router(dsi_transmissions_router, prefix="/api")
 app.include_router(access_types_router, prefix="/api")  # Module Types d'accès personnalisés
+app.include_router(plan_intervention_router, prefix="/api")  # Module Plans d'intervention
 
 # Add CORS middleware with enhanced localhost support
 _cors_origins_raw = os.environ.get('CORS_ORIGINS', '*')
