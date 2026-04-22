@@ -54,7 +54,8 @@ const GaleriePhotosBatiment = ({
           .filter(f => f.content_type && f.content_type.startsWith('image/'))
           .map(f => ({
             id: f.id,
-            nom: f.description || f.original_filename,
+            nom: f.original_filename,
+            legende: f.description || f.original_filename?.replace(/\.[^/.]+$/, ''), // Utiliser description comme légende, ou filename sans extension
             url: buildApiUrl(tenantSlug, `/files/${f.id}/download`) + `?auth=${getTenantToken()}`,
             source: 'imported',
             uploaded_at: f.uploaded_at,
