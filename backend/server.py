@@ -55,6 +55,7 @@ from routes.planning_exports import router as planning_exports_router
 from routes.planning_auto import router as planning_auto_router
 from routes.planning_audit import router as planning_audit_router
 from routes.sftp import router as sftp_router
+from routes.cauca_api import router as cauca_api_router
 from routes.websocket import router as websocket_router
 from routes.billing import router as billing_router
 from routes.admin import router as admin_router
@@ -431,16 +432,22 @@ async def startup_event():
     
     # Initialiser le service SFTP
     from services.sftp_service import init_sftp_service
+    from services.cauca_api_service import init_cauca_service
     from services.websocket_manager import get_websocket_manager
     ws_manager = get_websocket_manager()
     sftp_service = init_sftp_service(db, ws_manager)
+    cauca_service = init_cauca_service(db, ws_manager)
     
     # Nettoyage initial - fermer toute connexion orpheline d'une session précédente
     await sftp_service.cleanup_all_connections()
     logger.info("Service SFTP initialisé (état propre)")
+    logger.info("Service CAUCA API initialisé")
     
     # Démarrer le polling SFTP pour les tenants actifs
     asyncio.create_task(start_sftp_polling_for_active_tenants())
+    
+    # Démarrer le polling CAUCA API pour les tenants actifs
+    asyncio.create_task(start_cauca_polling_for_active_tenants())
     
     # Démarrer le job périodique pour vérifier les timeouts de remplacement
     asyncio.create_task(job_verifier_timeouts_remplacements())
@@ -482,6 +489,32 @@ async def start_sftp_polling_for_active_tenants():
                 interval=config.get("polling_interval", 30)
             )
             logger.info(f"Polling SFTP démarré pour tenant {tenant.get('slug', tenant_id)}")
+
+
+async def start_cauca_polling_for_active_tenants():
+    """Démarre le polling CAUCA API pour tous les tenants avec une config active"""
+    await asyncio.sleep(5)  # Attendre que l'app soit prête
+    
+    from services.cauca_api_service import get_cauca_service
+    cauca_service = get_cauca_service()
+    
+    # Récupérer tous les configs CAUCA actives avec certificats
+    configs = await db.cauca_configs.find({
+        "actif": True,
+        "certificate_blob_name": {"$exists": True, "$ne": None},
+        "private_key_blob_name": {"$exists": True, "$ne": None}
+    }, {"_id": 0}).to_list(100)
+    
+    for config in configs:
+        tenant_id = config["tenant_id"]
+        tenant = await db.tenants.find_one({"id": tenant_id}, {"_id": 0})
+        if tenant:
+            result = await cauca_service.start_polling(tenant_id)
+            if result["success"]:
+                logger.info(f"Polling CAUCA API démarré pour tenant {tenant.get('slug', tenant_id)}")
+            else:
+                logger.warning(f"Échec démarrage polling CAUCA pour {tenant.get('slug', tenant_id)}: {result.get('error')}")
+
 
 # ==================== SYSTÈME DE PROGRESSION TEMPS RÉEL ====================
 # Dictionnaire global pour stocker les progressions des attributions auto
@@ -6492,6 +6525,7 @@ app.include_router(planning_auto_router, prefix="/api")  # Module Planning - Aut
 app.include_router(planning_audit_router, prefix="/api")  # Module Planning - Rapports d'audit
 app.include_router(planning_router, prefix="/api")  # Module Planning (assignations, rapports heures) - DOIT ETRE EN DERNIER (route catch-all {semaine_debut})
 app.include_router(sftp_router, prefix="/api")  # Module SFTP (cartes d'appel 911, WebSocket)
+app.include_router(cauca_api_router, prefix="/api")  # Module CAUCA API CAD Transfert
 app.include_router(websocket_router)  # WebSocket temps réel (pas de prefix /api)
 app.include_router(billing_router, prefix="/api")  # Module Billing (Stripe, facturation)
 app.include_router(admin_router, prefix="/api")  # Module Admin (centrales 911, audit logs)
@@ -6682,6 +6716,16 @@ async def shutdown_db_client():
             logger.info("✅ Connexions SFTP fermées")
     except Exception as e:
         logger.error(f"Erreur fermeture SFTP: {e}")
+    
+    # Arrêter tous les pollings CAUCA actifs
+    try:
+        from services.cauca_api_service import get_cauca_service
+        cauca_service = get_cauca_service()
+        if cauca_service:
+            await cauca_service.stop_all_polling()
+            logger.info("✅ Polling CAUCA arrêté")
+    except Exception as e:
+        logger.error(f"Erreur arrêt CAUCA: {e}")
     
     # Fermer la connexion MongoDB
     client.close()
