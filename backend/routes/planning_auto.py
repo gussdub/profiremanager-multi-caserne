@@ -1868,6 +1868,13 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                                     f"mais candidat n'est ni officier ni éligible fonction supérieure"
                                 )
                                 continue  # SKIP cet utilisateur
+                        elif besoin_officier and officier_assigne_cette_iteration:
+                            # Un officier a déjà été assigné, on peut maintenant assigner des non-officiers
+                            if not est_officier(user) and not est_eligible_fonction_superieure(user):
+                                logging.info(
+                                    f"✅ {user.get('prenom', '')} {user.get('nom', '')} ACCEPTÉ: "
+                                    f"Non-officier accepté car un officier est déjà présent sur la garde"
+                                )
                         
                         # Si on arrive ici et besoin_officier, c'est qu'on a un officier ou fonction sup
                         if besoin_officier and not officier_assigne_cette_iteration:
