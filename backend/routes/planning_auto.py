@@ -1856,34 +1856,26 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                         user_heures_max = get_heures_max_semaine(user)
                         user_has_dispo = est_disponible_pour_garde(user_id, date_str, heure_debut, heure_fin, type_garde_id)
                         
-                        # RÈGLE CRITIQUE: Si officier obligatoire et pas encore d'officier assigné
-                        # On NE PEUT PAS assigner un non-officier
-                        if besoin_officier and not officier_assigne_cette_iteration:
-                            if not est_officier(user) and not est_eligible_fonction_superieure(user):
-                                # Ce candidat n'est ni officier ni éligible fonction supérieure
-                                # On ne peut PAS l'assigner sur une garde officier obligatoire
-                                logging.warning(
-                                    f"⚠️ {user.get('prenom', '')} {user.get('nom', '')} BLOQUÉ: "
-                                    f"Officier obligatoire pour '{type_garde_nom}' le {date_str}, "
-                                    f"mais candidat n'est ni officier ni éligible fonction supérieure"
-                                )
-                                continue  # SKIP cet utilisateur
-                        elif besoin_officier and officier_assigne_cette_iteration:
-                            # Un officier a déjà été assigné, on peut maintenant assigner des non-officiers
-                            if not est_officier(user) and not est_eligible_fonction_superieure(user):
-                                logging.info(
-                                    f"✅ {user.get('prenom', '')} {user.get('nom', '')} ACCEPTÉ: "
-                                    f"Non-officier accepté car un officier est déjà présent sur la garde"
-                                )
+                        # Vérifier si c'est un officier ou fonction supérieure
+                        user_est_officier = est_officier(user)
+                        user_est_fonction_sup = est_eligible_fonction_superieure(user)
                         
-                        # Si on arrive ici et besoin_officier, c'est qu'on a un officier ou fonction sup
+                        # Si besoin d'un officier et qu'on n'en a pas encore assigné
                         if besoin_officier and not officier_assigne_cette_iteration:
-                            if est_officier(user) or est_eligible_fonction_superieure(user):
+                            if user_est_officier or user_est_fonction_sup:
                                 officier_assigne_cette_iteration = True
                                 logging.info(
                                     f"✅ Officier assigné: {user.get('prenom', '')} {user.get('nom', '')} "
-                                    f"({'Officier' if est_officier(user) else 'Fonction supérieure'})"
+                                    f"({'Officier' if user_est_officier else 'Fonction supérieure'})"
                                 )
+                        
+                        # Log si c'est un non-officier assigné alors qu'un officier était souhaité
+                        # (Cela indique qu'aucun officier n'était disponible, on remplit quand même les autres slots)
+                        if besoin_officier and not user_est_officier and not user_est_fonction_sup:
+                            logging.info(
+                                f"ℹ️ {user.get('prenom', '')} {user.get('nom', '')} assigné: "
+                                f"Pompier assigné sur garde officier obligatoire (remplissage slot pompier)"
+                            )
                         
                         # Construire la liste des autres candidats (ceux qui n'ont pas été sélectionnés)
                         other_candidates_list = []
