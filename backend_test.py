@@ -48,7 +48,7 @@ import os
 class NotificationModesTester:
     def __init__(self):
         # Utiliser l'URL depuis frontend/.env comme spécifié
-        self.base_url = "https://active-employees.preview.emergentagent.com/api"
+        self.base_url = "https://fire-alert-cauca.preview.emergentagent.com/api"
         self.headers = {}
         self.token = None
         self.tenant_slug = "demo"

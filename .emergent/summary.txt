@@ -1,69 +1,75 @@
 <analysis>**original_problem_statement**: 
-Application de gestion complète pour les services d'incendie canadiens. Multi-tenant. L'utilisateur souhaite automatiser la création des comptes utilisateurs (personnel) lors de l'import depuis PFM Transfer, gérer proprement les doublons, permettre le nettoyage ciblé des données de test (PFM) et invalider le cache du Service Worker.
-PRODUCT REQUIREMENTS : App multi-tenant, synchronisation PFM Transfer complète (champs personnalisés, workflows, employés actifs/inactifs), système de notification de doublons, mode hors-ligne via PWA.
+Application de gestion complète pour les services d'incendie canadiens. L'utilisateur souhaite désormais migrer les alertes de la centrale CAUCA d'un format SMTP (actuellement configuré dans les réglages du tenant) vers leur nouvelle API CAD Transfert. Les autres centrales (comme alerte santé / Premiers répondants) doivent continuer de fonctionner via SMTP. 
+
+PRODUCT REQUIREMENTS: Intégrer l'API CAUCA CAD Transfert, maintenir le support SMTP pour les autres types d'alertes, importer les plans d'intervention (PFM Transfer), et gérer l'auto-attribution des horaires avec des règles strictes sur les heures supplémentaires et les officiers obligatoires.
 
 **User's preferred language**: French (INSTRUCT next agent to respond in FRANÇAIS only)
 
 **what currently exists?** 
-L'application possède un système complet d'import PFM avec détection de doublons. Un système d'invalidation de cache Service Worker est en place pour la PWA. Une interface permet de prévisualiser la fusion/remplacement des doublons. Un nettoyage ciblé (PFM uniquement) est disponible dans l'interface admin. Le backend a été adapté pour accepter des utilisateurs sans email () en retirant la validation stricte de Pydantic et en modifiant les index uniques MongoDB.
+Le système gère l'import complet des données (personnel, bâtiments, plans d'intervention) et l'auto-attribution du personnel aux gardes. Les plans d'intervention (photos, PDF) sont stockés sur Azure Blob Storage. Les alertes de répartition fonctionnent actuellement toutes via SMTP configuré au niveau du tenant. L'agent vient de récupérer les documentations API de CAUCA via le web scraper.
 
 **Last working item**: 
-    - **Last item agent was working**: Correction de la logique déterminant le statut Actif ou Inactif des employés importés depuis PFM Transfer. Actuellement, le système marque les pompiers comme Inactif s'ils n'ont pas de courriel ou s'ils possèdent une . L'utilisateur a précisé que seul le champ  de PFM () doit déterminer s'ils sont actifs, peu importe l'email ou la date de fin.
-    - **Status**: IN PROGRESS
+    - **Last item agent was working**: Planification et compréhension de l'intégration de la nouvelle API CAD Transfert de CAUCA. L'agent a utilisé le scraper pour lire la documentation de l'API fournie par l'utilisateur et les codes d'intervention.
+    - **Status**: NOT STARTED
     - **Agent Testing Done**: N
-    - **Which testing method agent to use?**: backend testing agent / manual testing by python -c (to verify the logic on payload parsing)
+    - **Which testing method agent to use?**: backend testing agent / manual testing by curl
     - **User Testing Done**: N
 
 **All Pending/In progress Issue list**:  
-  - Issue 1: Le personnel importé est incorrectement classé comme Inactif (Priorité: P0)
-     - **Attempted fixes**: L'agent a identifié l'erreur à la ligne 2406 de  (). 
+  - Issue 1: Intégration API CAUCA CAD Transfert (Priorité: P0)
+     - **Attempted fixes**: L'agent a crawlé les pages de documentation (Authentification, Transfert, Codes d'interventions). Aucun code n'a encore été écrit.
      - **Next debug checklist**: 
-       1. Dans , localiser la définition de .
-       2. Retirer la condition  pour ne garder que la vérification sur le champ PFM .
-       3. S'assurer que le champ  /  est correctement assigné lors de la création d'un  dans  ET dans , même si le champ email est .
-     - **Why fix this issue and what will be achieved with the fix?**: Les pompiers actifs sans adresse courriel (qui ne se connectent pas mais sont en service) sont relégués dans Anciens employés, faussant les données de l'application.
-     - **Status**: IN PROGRESS
-     - **Is recurring issue?**: Y (problème d'import récurrent suite à divers edge cases)
-     - **Should Test frontend/backend/both after fix?**: Both
+       1. Analyser le payload attendu/reçu par l'API CAUCA.
+       2. Créer une route webhooks/API dans FastAPI pour réceptionner les alertes CAUCA (ou un worker si c'est du polling, selon la doc lue).
+       3. Expliquer le plan d'intégration à l'utilisateur et lui demander les clés API/Auth nécessaires.
+       4. S'assurer que l'ancien système SMTP reste ACTIF pour les alertes de type Premiers répondants (Alerte santé).
+     - **Why fix this issue and what will be achieved with the fix?**: CAUCA est passé à une API. Sans cela, le tenant ne recevra plus les alertes incendie de cette centrale.
+     - **Status**: NOT STARTED
+     - **Is recurring issue?**: N
+     - **Should Test frontend/backend/both after fix?**: Backend
      - **Blocked on other issue**: None
 
 **In progress Task List**: 
-  None
+None
 
 **Upcoming and Future Tasks**
     Upcoming Tasks:
     - P2: Créer un aperçu d'emails en temps réel dans les paramètres admin pour permettre la personnalisation (couleurs/logos).
+    
+    Future Tasks:
+    - Refactoring des gros fichiers (ex:  > 2800 lignes,  > 2000 lignes).
 
 **Completed work in this session**
-- P1: Mettre en place un mécanisme propre d'invalidation du cache du Service Worker ( / ) (DONE)
-- Amélioration de la vue de prévisualisation des doublons (Fusion/Remplacement) (DONE)
-- Ajout d'un badge persistant de notification de doublons dans le Sidebar (DONE)
-- Ajout d'une option de nettoyage Données PFM uniquement dans le modal Admin (DONE)
-- Protection du Super Admin (empêche la suppression d'un compte admin lors du cleanup complet) (DONE)
-- Correction d'un crash API 500 (CORS manquant sur erreur globale) (DONE)
-- Correction d'un crash API 500 dû au modèle Pydantic  qui exigeait  ; rendu optionnel (DONE)
-- Correction d'un crash MongoDB (Duplicate key error) causé par l'index unique  avec plusieurs  ; conversion en index partiel (DONE)
-- Correction du bug visuel  dans  (DONE)
+- Correction P0 statut actif/inactif lors des imports PFM () (DONE)
+- Suppression de l'affichage en double du NAS dans la vue du personnel (DONE)
+- Correction P1 du backend API pour le modal d'audit des remplacements (structure JSON) (DONE)
+- Correction de la priorité d'affichage du badge 🔄 Remplacement au lieu de 🤖 Auto () (DONE)
+- Implémentation du fallback fonction supérieure pour la règle officier () (DONE)
+- Création du backend et du frontend complets pour l'import et l'affichage des Plans d'Intervention via PFM Transfer (, ) (DONE)
+- Résolution du crash backend (erreur d'import de  dans ) (DONE)
+- Correction des légendes de photos des bâtiments qui affichaient le nom de fichier (fallback sur description) (DONE)
+- Correction P0 critique : Heures supplémentaires forcées dans l'auto-attribution à cause d'une condition OR obsolète () (DONE)
+- Correction P0 critique : Assignation automatique (garde de 2) bloquait le poste du pompier normal s'il n'y avait pas d'officier disponible. Maintenant, assigne 1/2 avec un flag  (DONE)
 
 **Earlier issues found/mentioned but not fixed**
 None
 
 **Known issue recurrence from previous fork**
-  - Issue recurrence in previous fork: Gestion capricieuse des imports PFM (Doublons et statuts).
-  - Recurrence count: 1
-  - Status: IN PROGRESS
+  - Issue recurrence in previous fork: Gestion complexe de l'auto-assignation (règles complexes qui s'écrasent).
+  - Recurrence count: 2 (Heures sup et Règle Officier corrigées dans cette session).
+  - Status: RESOLVED
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
 - React, FastAPI, MongoDB
-- **Gestion des Index MongoDB** : Utilisation d'index partiels pour autoriser de multiples champs à  (ex: email).
-- **Service Worker / PWA** : Cache busting implémenté via .
+- **Azure Blob Storage** : Upload et récupération d'images/PDFs.
+- **Règles d'auto-attribution** : Prise en charge stricte des heures sup, des officiers obligatoires, et du fallback des fonctions supérieures.
 
 **key DB schema**
-  - : Modèle Pydantic mis à jour.  est . .
-  - : Table de staging pour résoudre les doublons avant injection dans .
+  - : Contient  (booleen strict).
+  - : Contient la config SMTP ().
 
 **changes in tech stack**
   - Aucun.
@@ -76,59 +82,59 @@ None
   - 
 
 **Areas that need refactoring**:
-  -  : La méthode  a été lourdement patchée et le fichier complet est énorme (> 2800 lignes).
+  -  : Fichier gigantesque contenant toute la logique critique d'attribution. Très sensible aux régressions.
 
 **key api endpoints**
   - 
-  - 
+  - NOUVEAU (à créer):  (ou similaire selon la doc)
 
 **Critical Info for New Agent** 
-- **Attention absolue sur ** : La logique qui détermine si un compte est actif ou non () ne doit dépendre QUE du champ PFM  (). Actuellement la condition  fait bugger le système et cache les employés sans courriel dans les anciens employés (Inactif).
-- L'utilisateur a déjà testé le nettoyage et l'import de bout en bout. MongoDB a été nettoyé de ses index bloquants (sur email) et Pydantic accepte les emails vides.
+- **Action immédiate requise** : L'utilisateur vous a posé une question directe (Explique moi comment tu veux procéder pour cette modification et fait moi des suggestions) concernant l'intégration API CAUCA CAD. Vous devez formuler une proposition claire en vous basant sur la documentation scrappée lors des toutes dernières étapes. Demandez-lui ensuite les identifiants/clés d'authentification API si nécessaire via .
+- **Rétrocompatibilité Alerte Santé** : Le système existant de parsing SMTP DOIT être conservé pour les autres centrales.
+- **Logique d'auto-assignation ()** : Les règles ont été minutieusement équilibrées (1. Interdire formellement les heures sup si la case est décochée. 2. Si une garde nécessite 1 officier et 1 pompier, et que 0 officier n'est dispo, on assigne quand même le pompier et la garde finit à 1/2 avec un marqueur ). Ne touchez pas à ce fichier sans grande précaution.
 
 **documents and test reports created in this job** 
-  - /app/test_reports/iteration_31.json
-  - /app/test_reports/iteration_32.json
-  - /app/memory/PRD.md
+  - /app/CORRECTION_P0_STATUT_ACTIF.md
+  - /app/CORRECTION_AUDIT_REMPLACEMENTS.md
+  - /app/CORRECTION_BADGE_REMPLACEMENT.md
+  - /app/CORRECTION_FONCTION_SUPERIEURE.md
+  - /app/GUIDE_INTEGRATION_PLAN_INTERVENTION.md
+  - /app/test_import_plan_intervention.py
 
 **Last 10 User Messages and any pending HUMAN messages** 
- 1. (User) dans tenant admin, ajouter option effacer uniquement données importées de PFM - *Fixed*
- 2. (User) erreur, liste vide après import PFM - *Agent discovered user auto-deleted himself via the cleanup tool.*
- 3. (User) jai effacé mes propres données, jai restauré MongoDB - *Fixed, added admin protection.*
- 4. (User) bug visuel dans paramètres gardes - *Fixed.*
- 5. (User) CORS error on 500 errors - *Fixed global exception handler in server.py.*
- 6. (User) 11 doublons détectés malgré le nettoyage complet - *Fixed the duplicate DB query to actually clear  and .*
- 7. (User) 11 fusions faites, mais 0 résultat dans personnel - *Agent fixed Pydantic missing email string validation.*
- 8. (User) Toujours 11 doublons et 0 traité, erreur - *Agent dropped unique email index in MongoDB.*
- 9. (User) Ça fonctionne, mais tous les employés sont Inactifs car pas demail/ont une date de fin, alors quils sont actifs dans PFM - **PENDING (Current Blocker)**
+ 1. (User) oups en production/demo suite a limportation de bâtiment et doublons détecté" - *Fixed (backend reload)*
+ 2. (User) "dans bâtiment, le nom des photos ne comporte pas les légendes comme demandé." - *Fixed*
+ 3. (User) "dans production/shefford, il y a un pompier qui a été affecté plus de 40h sur la semaine en automatique alors que le bouton est décoché" - *Fixed (removed obsolete OR conditions)*
+ 4. (User) "dans production/shefford, il y a une journée ou 2 pompiers ont été affecté en automatique, alors que cela prends un officier obligatoire sur la garde." - *Fixed*
+ 5. (User) "oui option B. Mais je ne comprends pas, il y a deja un élément visuel existant normalement." - *Re-adjusted fix to retain visual error flag.*
+ 6. (User) "ok mais cest juste 1 officier obligatoire, donc lautre affectation sera quand même donné a un pompier. donc meme sil ny a pas dofficier, tu devrais avoir un 1/2 quand meme dans ce cas-ci. - *Agent fixed logic to not block firefighters when officer is missing.*
+ 7. (User) CAUCA vient de mettre un API en place. avant je passais par un SMTP... Ceci reste comme ceci pour alerte santé... mais pour CAUCA cela est devenu une API. Explique moi comment tu veux procéder... - **PENDING HUMAN MESSAGE (Next step is to answer this request based on crawled doc)**
 
 **Project Health Check:**
-- Broken: Import marks active employees with  as Inactif. 
+- Broken: None
 - Mocked: None
 
 **3rd Party Integrations** 
   - Microsoft Azure Blob Storage — requires User API Key
   - Twilio (SMS) — requires User API Key
   - Resend (Emails) — requires User API Key
+  - CAUCA CAD API (Upcoming) - Will require User API Key / Auth 
 
 **Testing status**
-  - Testing agent used after significant changes: YES
+  - Testing agent used after significant changes: NO (Tested manually and via scripts).
   - Troubleshoot agent used after agent stuck in loop: NO
-  - Test files created: None
-  - Known regressions:  logic in .
+  - Test files created: 
+  - Known regressions: None currently.
 
 **Credentials to test flow:**
   -  /  (Tenant: )
 
 **What agent forgot to execute**
-Rien d'oublié, l'agent a identifié l'origine du dernier bug  mais le contexte a pris fin avant la complétion.
+L'agent précédent n'a pas eu le temps de répondre au dernier message de l'utilisateur expliquant le plan d'intégration de CAUCA. C'est votre toute première tâche.
 
 **Debugging checklist for current issue**
-    Issue: Les pompiers importés sont marqués inactifs alors qu'ils sont actifs dans PFM.
-
-    Backend files to check:
-    -  (Ligne ~2406)
-      Recherchez : 
-      Modifiez en : 
-      
-      Assurez-vous également que la logique de  crée correctement un compte (ou met à jour le statut) en se basant sur cette nouvelle définition de .</analysis>
+    Issue: Intégration CAUCA CAD Transfert
+    - Lire attentivement les informations JSON extraites par le crawl_tool à la fin de l'historique (Messages 475-476).
+    - Formuler une architecture (Webhook vs Polling ?).
+    - Expliquer à l'utilisateur que l'on va créer un module séparé pour CAUCA, sans désactiver l'écoute SMTP pour Alerte Santé.
+    - Demander à l'utilisateur de fournir le Token API / Identifiants nécessaires pour configurer les appels vers ou depuis CAUCA.</analysis>
