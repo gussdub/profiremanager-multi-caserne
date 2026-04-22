@@ -1986,6 +1986,28 @@ async def traiter_semaine_attribution_auto(tenant, semaine_debut: str, semaine_f
                 # Log si garde non remplie après tous les niveaux
                 if assignes_cette_garde == 0 and places_restantes > 0:
                     logging.warning(f"❌ [NON REMPLIE] {type_garde_nom} @ {date_str}: 0 assignation sur {places_restantes} places. Candidats avec compétences: {len(users_avec_competences)}")
+                    
+                    # Si la garde nécessitait un officier ET qu'aucun officier n'a été trouvé
+                    # Créer un marqueur pour indiquer que c'est à cause de l'officier manquant
+                    if besoin_officier and not officier_assigne_cette_iteration:
+                        marqueur_officier = {
+                            "id": str(uuid.uuid4()),
+                            "tenant_id": tenant.id,
+                            "type_garde_id": type_garde_id,
+                            "date": date_str,
+                            "statut": "officier_manquant",
+                            "officier_manquant": True,
+                            "auto_attribue": True,
+                            "assignation_type": "marqueur",
+                            "caserne_id": caserne_filter_id,
+                            "created_at": datetime.now(timezone.utc).isoformat(),
+                            "raison": f"Officier obligatoire pour '{type_garde_nom}' mais aucun officier ou fonction supérieure disponible"
+                        }
+                        await db.assignations.insert_one(marqueur_officier)
+                        logging.warning(
+                            f"⚠️ [OFFICIER MANQUANT] {type_garde_nom} @ {date_str}: "
+                            f"Garde bloquée - Officier obligatoire mais aucun disponible dans tous les niveaux"
+                        )
             
             current_date += timedelta(days=1)
         
