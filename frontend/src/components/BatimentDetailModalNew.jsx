@@ -7,6 +7,7 @@ import imageCompression from 'browser-image-compression';
 import HistoriqueInspections from './HistoriqueInspections';
 import InspectionDetailView from './InspectionDetailView';
 import PlanInterventionViewerNew from './PlanInterventionViewerNew';
+import PlanInterventionTab from './PlanInterventionTab';
 import RapportBatimentComplet from './RapportBatimentComplet';
 import DependancesBatiment from './DependancesBatiment';
 import GaleriePhotosBatiment from './GaleriePhotosBatiment';
@@ -167,10 +168,11 @@ const BatimentForm = ({
   
   const isCreating = !batiment;
   const [isEditing, setIsEditing] = useState(isCreating);
-  const [viewMode, setViewMode] = useState('form'); // 'form', 'history', 'inspection-detail', 'plan-intervention', 'rapport'
+  const [viewMode, setViewMode] = useState('form'); // 'form', 'history', 'inspection-detail', 'plan-intervention', 'rapport', 'plan-pfm'
   const [selectedInspection, setSelectedInspection] = useState(null);
   const [selectedPlanId, setSelectedPlanId] = useState(null);
   const [hasPlan, setHasPlan] = useState(false);
+  const [hasPlanPFM, setHasPlanPFM] = useState(false);
   
   // Permissions granulaires
   // Les préventionnistes et admins peuvent tout modifier
@@ -239,6 +241,7 @@ const BatimentForm = ({
   // Vérifier si un plan d'intervention existe pour ce bâtiment
   useEffect(() => {
     if (!batiment?.id || !tenantSlug) return;
+    
     const checkPlan = async () => {
       try {
         const token = getTenantToken();
@@ -258,7 +261,22 @@ const BatimentForm = ({
         setHasPlan(false);
       }
     };
+    
+    const checkPlanPFM = async () => {
+      try {
+        const token = getTenantToken();
+        const response = await axios.get(
+          buildApiUrl(tenantSlug, `/plan-intervention/batiment/${batiment.id}`),
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setHasPlanPFM(response.data?.plan_disponible || false);
+      } catch {
+        setHasPlanPFM(false);
+      }
+    };
+    
     checkPlan();
+    checkPlanPFM();
   }, [batiment?.id, tenantSlug]);
 
   const typesBatiment = {
@@ -1153,6 +1171,72 @@ const BatimentForm = ({
     );
   }
 
+  // Gestion du plan PFM Transfer
+  if (viewMode === 'plan-pfm') {
+    return (
+      <>
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: isMobile ? 0 : '280px',
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 100000,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center'
+          }}
+          onClick={() => setViewMode('form')}
+        >
+          <div 
+            style={{
+              width: isMobile ? '100%' : '95%',
+              maxWidth: isMobile ? '100%' : '1400px',
+              height: isMobile ? '95vh' : '90vh',
+              backgroundColor: 'white',
+              borderRadius: isMobile ? '16px 16px 0 0' : '12px',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              position: 'relative'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setViewMode('form')}
+              style={{
+                position: 'absolute',
+                top: '1rem',
+                right: '1rem',
+                background: '#ef4444',
+                color: 'white',
+                border: 'none',
+                borderRadius: '50%',
+                width: '40px',
+                height: '40px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                zIndex: 10,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+              }}
+            >
+              <X size={24} />
+            </button>
+            <PlanInterventionTab
+              batimentId={batiment.id}
+              tenantSlug={tenantSlug}
+              onClose={() => setViewMode('form')}
+            />
+          </div>
+        </div>
+      </>
+    );
+  }
+
   // Gestion de l'historique complet (modifications, inspections, NC, interventions)
   if (viewMode === 'full-history') {
     return (
@@ -1555,6 +1639,7 @@ const BatimentForm = ({
                   canEdit && { label: 'Modifier', icon: Pencil, action: () => setIsEditing(true), primary: true },
                   onInspect && { label: 'Inspecter', icon: ClipboardCheck, action: () => onInspect(batiment) },
                   onCreatePlan && hasPlan && { label: 'Plan', icon: Map, action: () => setViewMode('plan-intervention') },
+                  hasPlanPFM && { label: 'Plan PFM', icon: Map, action: () => setViewMode('plan-pfm'), danger: true },
                   onViewHistory && { label: 'Inspections', icon: ScrollText, action: () => setViewMode('history') },
                   { label: 'Historique', icon: Clock, action: () => setViewMode('full-history'), testid: 'btn-full-history' },
                   onGenerateReport && { label: 'Rapport', icon: FileText, action: () => setViewMode('rapport') },
