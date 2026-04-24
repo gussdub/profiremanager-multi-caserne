@@ -40,6 +40,10 @@ class User(BaseModel):
         "sms_actif": True,
         "push_actif": True
     })  # Préférences de notification
+    # Permis de conduire
+    permis_numero: Optional[str] = None  # Numéro de permis de conduire
+    permis_classe: Optional[str] = None  # Classes de permis (ex: "Ex 4A, 5")
+    permis_expiration: Optional[str] = None  # Date d'expiration du permis
     mot_de_passe_hash: str = ""
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 

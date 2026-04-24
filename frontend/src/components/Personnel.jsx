@@ -356,6 +356,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
     nominations: [],
     note: '',
     permis_conduire: false,
+    permis_numero: '',
     permis_classe: '',
     permis_expiration: ''
   });
@@ -818,6 +819,7 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
       nominations: user.nominations || [],
       note: user.note || '',
       permis_conduire: user.permis_conduire || false,
+      permis_numero: user.permis_numero || '',
       permis_classe: user.permis_classe || '',
       permis_expiration: user.permis_expiration || ''
     });
@@ -2079,6 +2081,15 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                     {newUser.permis_conduire && (
                       <div className="form-row">
                         <div className="form-field">
+                          <Label>Numéro de permis</Label>
+                          <Input
+                            value={newUser.permis_numero || ''}
+                            onChange={(e) => setNewUser({...newUser, permis_numero: e.target.value})}
+                            placeholder="Ex: M8433-060570-00"
+                            data-testid="user-permis-numero-input"
+                          />
+                        </div>
+                        <div className="form-field">
                           <Label>Classe(s)</Label>
                           <Input
                             value={newUser.permis_classe || ''}
@@ -2522,10 +2533,11 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                           </div>
                         )}
                         {/* Permis de conduire */}
-                        {selectedUser.permis_conduire && (
+                        {(selectedUser.permis_numero || selectedUser.permis_classe || selectedUser.permis_expiration) && (
                           <div className="detail-item-optimized" style={{ display: 'flex', justifyContent: 'space-between', gap: '2.5rem', padding: '0.65rem 0.85rem', background: '#f8fafc', borderRadius: '6px', marginBottom: '0.5rem' }}>
                             <span className="detail-label" style={{ minWidth: '140px', color: '#64748b' }}>Permis de conduire</span>
                             <span style={{ textAlign: 'right', flex: 1, fontSize: '0.875rem' }}>
+                              {selectedUser.permis_numero && <span style={{ fontWeight: '600', display: 'block', marginBottom: '0.25rem' }}>{selectedUser.permis_numero}</span>}
                               {selectedUser.permis_classe && <span style={{ fontWeight: '600', marginRight: '0.5rem' }}>Classe {selectedUser.permis_classe}</span>}
                               {selectedUser.permis_expiration && <span style={{ color: '#64748b' }}>· Exp. {selectedUser.permis_expiration?.substring(0, 10)}</span>}
                             </span>
@@ -3488,6 +3500,15 @@ const Personnel = ({ setCurrentPage, setManagingUserDisponibilites }) => {
                     </div>
                     {newUser.permis_conduire && (
                       <div className="form-row">
+                        <div className="form-field">
+                          <Label>Numéro de permis</Label>
+                          <Input
+                            value={newUser.permis_numero || ''}
+                            onChange={(e) => setNewUser({...newUser, permis_numero: e.target.value})}
+                            placeholder="Ex: M8433-060570-00"
+                            data-testid="edit-user-permis-numero-input"
+                          />
+                        </div>
                         <div className="form-field">
                           <Label>Classe(s)</Label>
                           <Input

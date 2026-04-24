@@ -2477,7 +2477,7 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
         "numero_passeport": numero_passeport,
         "note": record.get("note") or record.get("notes") or "",
         # Permis de conduire
-        "permis_conduire": _parse_bool(record.get("permis_conduire")),
+        "permis_numero": record.get("permis_conduire") or "",  # PFM: "Permis conduire" contient le numéro
         "permis_classe": record.get("permis_classe") or "",
         "permis_expiration": (record.get("permis_expiration") or "")[:10],
         # Nominations converties
@@ -2520,7 +2520,7 @@ async def _handle_employe(record: dict, tenant, user, source: str) -> dict:
         "numero_passeport": numero_passeport,
         "code_permanent": doc.get("code_permanent", ""),
         "note": doc.get("note", ""),
-        "permis_conduire": doc.get("permis_conduire", False),
+        "permis_numero": doc.get("permis_numero", ""),
         "permis_classe": doc.get("permis_classe", ""),
         "permis_expiration": doc.get("permis_expiration", ""),
         "nominations": nominations_app,
