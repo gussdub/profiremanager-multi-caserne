@@ -655,7 +655,13 @@ async def update_user(
     text_fields = [
         "nom", "prenom", "email", "telephone", "adresse", "grade",
         "type_emploi", "numero_employe", "date_embauche", "date_fin_embauche",
-        "motif_fin_emploi", "equipe_garde", "contact_urgence"
+        "motif_fin_emploi", "equipe_garde", "contact_urgence",
+        # Documents sensibles
+        "nas", "numero_passeport", "code_permanent",
+        # Permis de conduire
+        "permis_numero", "permis_classe", "permis_expiration",
+        # Note
+        "note"
     ]
     for field in text_fields:
         if field in user_data and user_data[field] is not None:
