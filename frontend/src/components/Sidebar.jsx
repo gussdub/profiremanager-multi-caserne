@@ -204,7 +204,17 @@ const Sidebar = ({ currentPage, setCurrentPage, tenant }) => {
     if (user && ['admin', 'super_admin', 'directeur'].includes(user.role)) {
       loadDuplicatesCount();
       const interval = setInterval(loadDuplicatesCount, 60000);
-      return () => clearInterval(interval);
+      
+      // Écouter l'événement de résolution de doublon pour recharger immédiatement
+      const handleDuplicateResolved = () => {
+        loadDuplicatesCount();
+      };
+      window.addEventListener('duplicateResolved', handleDuplicateResolved);
+      
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener('duplicateResolved', handleDuplicateResolved);
+      };
     }
   }, [user, tenantSlug]);
 

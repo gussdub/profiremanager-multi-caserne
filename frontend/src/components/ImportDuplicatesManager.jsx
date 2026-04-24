@@ -72,6 +72,9 @@ const ImportDuplicatesManager = ({ tenantSlug }) => {
         const data = await res.json();
         toast({ title: `${data.resolved} doublon(s) résolus`, description: `Action: ${actionLabel(action)}` });
         fetchDuplicates();
+        
+        // Émettre un événement pour que le Sidebar recharge le compteur
+        window.dispatchEvent(new CustomEvent('duplicateResolved'));
       }
     } catch (err) {
       toast({ title: 'Erreur', description: err.message, variant: 'destructive' });
