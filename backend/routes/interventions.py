@@ -2886,18 +2886,82 @@ async def get_remise_propriete_pdf(
 
 # ==================== SECTION RCCI (ENQUÊTE) ====================
 
+# Modèles pour les sous-structures
+class RCCITestimony(BaseModel):
+    """Modèle pour un témoignage"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    witness_name: str = ""
+    witness_type: str = "temoin"  # propriétaire, locataire, temoin, voisin, employe, autre
+    witness_phone: str = ""
+    interview_datetime: Optional[datetime] = None
+    testimony: str = ""
+
+
+class RCCIEvidence(BaseModel):
+    """Modèle pour une preuve saisie"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    description: str = ""
+    location: str = ""
+    seized_datetime: Optional[datetime] = None
+    seized_by: str = ""
+    photo_blob_name: Optional[str] = None
+    handed_to_police: bool = False
+    police_investigator_name: Optional[str] = None
+    handover_date: Optional[datetime] = None
+
+
 class RCCICreate(BaseModel):
     """Modèle pour créer/mettre à jour un rapport RCCI"""
-    # Données de l'enquête
+    # ===== 1. MÉCANIQUE DE L'INCENDIE =====
     origin_area: str = ""  # Point d'origine précis
     probable_cause: str = "indeterminee"  # accidentelle, intentionnelle, naturelle, indeterminee
     ignition_source: str = ""  # Source de chaleur
     material_first_ignited: str = ""  # Premier matériau enflammé
+    ignition_factor: str = ""  # Circonstance/facteur allumage (inattention, defaillance, mauvais_usage, surchauffe, malveillant, enfant, autre)
+    propagation_factors: List[str] = []  # Facteurs de propagation (portes_ouvertes, finition_combustible, retard_decouverte, accumulation_matieres, absence_gicleurs, ventilation, autre)
+    
     smoke_detector_status: str = "indetermine"  # absent, present_fonctionnel, present_non_fonctionnel, indetermine
     investigator_id: Optional[str] = None  # Matricule officier responsable
-    narrative: str = ""  # Description des circonstances
     
-    # Transfert dossier
+    # ===== 2. RAPPORT STRUCTURÉ (4 ÉTAPES) =====
+    structured_narrative_step1: str = ""  # Découverte de l'incendie
+    structured_narrative_step2: str = ""  # Observations à l'arrivée
+    structured_narrative_step3: str = ""  # Démarche d'enquête
+    structured_narrative_step4: str = ""  # Conclusion
+    
+    # ===== 3. TÉMOIGNAGES (DYNAMIQUE) =====
+    testimonies: List[Dict[str, Any]] = []  # Liste de témoignages
+    
+    # ===== 4. GESTION DE LA SCÈNE =====
+    scene_secured_at: Optional[datetime] = None  # Heure de sécurisation
+    scene_secured_by: str = ""  # Officier qui a sécurisé
+    scene_handed_to: str = ""  # Nom enquêteur SQ/Police
+    investigator_badge: str = ""  # Matricule enquêteur
+    police_event_number: str = ""  # N° événement police
+    handover_datetime: Optional[datetime] = None  # Date/heure remise scène
+    
+    # ===== 5. REGISTRE DES PREUVES (DYNAMIQUE) =====
+    evidence_registry: List[Dict[str, Any]] = []  # Liste des preuves saisies
+    
+    # ===== 6. INTERVENANTS EXTERNES & UTILITÉS =====
+    hydro_quebec_intervention: bool = False
+    hydro_quebec_time: Optional[str] = None  # Format HH:MM
+    energir_intervention: bool = False
+    energir_time: Optional[str] = None
+    croix_rouge_intervention: bool = False  # Déplacé de Pertes & Victimes
+    municipal_inspector: bool = False
+    municipal_inspector_name: str = ""
+    civil_security: bool = False
+    other_intervenants: str = ""  # Texte libre
+    
+    # ===== 7. MÉTÉO (COPIÉ DEPUIS INTERVENTION) =====
+    weather_temp: Optional[float] = None
+    weather_conditions: str = ""
+    
+    # ===== 8. NARRATIF CLASSIQUE (CONSERVÉ) =====
+    narrative: str = ""  # Description des circonstances (texte libre classique)
+    
+    # ===== 9. TRANSFERT DOSSIER (CONSERVÉ) =====
     transfert_police: bool = False
     motif_transfert: Optional[str] = None
     date_transfert: Optional[datetime] = None
@@ -3041,18 +3105,62 @@ async def create_or_update_rcci(
     rcci_data = {
         "tenant_id": tenant.id,
         "intervention_id": intervention_id,
+        
+        # 1. Mécanique incendie
         "origin_area": data.origin_area,
         "probable_cause": data.probable_cause,
         "ignition_source": data.ignition_source,
         "material_first_ignited": data.material_first_ignited,
+        "ignition_factor": data.ignition_factor,
+        "propagation_factors": data.propagation_factors,
         "smoke_detector_status": data.smoke_detector_status,
         "investigator_id": data.investigator_id,
+        
+        # 2. Rapport structuré
+        "structured_narrative_step1": data.structured_narrative_step1,
+        "structured_narrative_step2": data.structured_narrative_step2,
+        "structured_narrative_step3": data.structured_narrative_step3,
+        "structured_narrative_step4": data.structured_narrative_step4,
+        
+        # 3. Témoignages
+        "testimonies": data.testimonies,
+        
+        # 4. Gestion scène
+        "scene_secured_at": data.scene_secured_at,
+        "scene_secured_by": data.scene_secured_by,
+        "scene_handed_to": data.scene_handed_to,
+        "investigator_badge": data.investigator_badge,
+        "police_event_number": data.police_event_number,
+        "handover_datetime": data.handover_datetime,
+        
+        # 5. Registre preuves
+        "evidence_registry": data.evidence_registry,
+        
+        # 6. Intervenants externes
+        "hydro_quebec_intervention": data.hydro_quebec_intervention,
+        "hydro_quebec_time": data.hydro_quebec_time,
+        "energir_intervention": data.energir_intervention,
+        "energir_time": data.energir_time,
+        "croix_rouge_intervention": data.croix_rouge_intervention,
+        "municipal_inspector": data.municipal_inspector,
+        "municipal_inspector_name": data.municipal_inspector_name,
+        "civil_security": data.civil_security,
+        "other_intervenants": data.other_intervenants,
+        
+        # 7. Météo
+        "weather_temp": data.weather_temp,
+        "weather_conditions": data.weather_conditions,
+        
+        # 8. Narratif classique
         "narrative": data.narrative,
+        
+        # 9. Transfert police
         "transfert_police": data.transfert_police,
         "motif_transfert": data.motif_transfert,
         "date_transfert": data.date_transfert,
         "numero_dossier_police": data.numero_dossier_police,
         "requires_transfer_alert": requires_transfer and not data.transfert_police,
+        
         "updated_at": now,
         "updated_by": current_user.id
     }
