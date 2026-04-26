@@ -635,9 +635,10 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {parametres.dates_tests_bornes_seches
-                  .sort((a, b) => new Date(a.date) - new Date(b.date))
+                  .sort((a, b) => new Date(a.date + 'T12:00:00') - new Date(b.date + 'T12:00:00'))
                   .map((dateTest, index) => {
-                    const dateObj = new Date(dateTest.date);
+                    // Forcer l'interprétation locale en ajoutant une heure (midi) pour éviter les problèmes UTC
+                    const dateObj = new Date(dateTest.date + 'T12:00:00');
                     const estPasse = dateObj < new Date();
                     const estProche = !estPasse && (dateObj - new Date()) < (30 * 24 * 60 * 60 * 1000);
 
@@ -658,7 +659,7 @@ const ParametresActifsTab = ({ tenantSlug, user }) => {
                       >
                         <div style={{ flex: '1 1 200px', minWidth: '150px' }}>
                           <div style={{ fontWeight: '600', fontSize: '13px', marginBottom: '2px', color: '#2c3e50' }}>
-                            📅 {new Date(dateTest.date).toLocaleDateString('fr-FR', { 
+                            📅 {new Date(dateTest.date + 'T12:00:00').toLocaleDateString('fr-FR', { 
                               year: 'numeric', 
                               month: 'short', 
                               day: 'numeric' 
