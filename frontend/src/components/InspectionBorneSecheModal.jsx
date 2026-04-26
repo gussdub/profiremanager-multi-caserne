@@ -212,6 +212,7 @@ const CountdownField = ({ value, onChange, config }) => {
 const GeolocationField = ({ value, onChange }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [requestingPermission, setRequestingPermission] = useState(false);
 
   const getLocation = () => {
     if (!navigator.geolocation) {
@@ -220,6 +221,8 @@ const GeolocationField = ({ value, onChange }) => {
     }
     setLoading(true);
     setError('');
+    setRequestingPermission(true);
+    
     navigator.geolocation.getCurrentPosition(
       (position) => {
         onChange({
@@ -228,6 +231,7 @@ const GeolocationField = ({ value, onChange }) => {
           accuracy: position.coords.accuracy
         });
         setLoading(false);
+        setRequestingPermission(false);
       },
       (err) => {
         let errorMsg = 'Erreur: ';
@@ -246,17 +250,36 @@ const GeolocationField = ({ value, onChange }) => {
         }
         setError(errorMsg);
         setLoading(false);
+        setRequestingPermission(false);
       },
       { 
         enableHighAccuracy: true, 
         timeout: 20000,
-        maximumAge: 0  // Force une nouvelle position (critique pour Android)
+        maximumAge: 60000  // Cache la position pendant 60 secondes pour éviter de redemander l'autorisation
       }
     );
   };
 
   return (
     <div style={{ padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '0.5rem', border: '1px solid #e5e7eb' }}>
+      {requestingPermission && !value?.latitude && (
+        <div style={{
+          padding: '1rem',
+          backgroundColor: '#dbeafe',
+          border: '2px solid #3b82f6',
+          borderRadius: '0.5rem',
+          marginBottom: '1rem',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📍</div>
+          <p style={{ fontWeight: '600', color: '#1e40af', marginBottom: '0.25rem' }}>
+            Demande d'autorisation en cours...
+          </p>
+          <p style={{ fontSize: '0.875rem', color: '#1e40af' }}>
+            Veuillez autoriser l'accès à votre position sur votre appareil
+          </p>
+        </div>
+      )}
       {value?.latitude ? (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
@@ -386,7 +409,7 @@ const MeteoField = ({ value, onChange }) => {
       { 
         enableHighAccuracy: true, 
         timeout: 20000,
-        maximumAge: 0  // Force une nouvelle position (critique pour Android)
+        maximumAge: 60000  // Cache pendant 60 secondes
       }
     );
   };

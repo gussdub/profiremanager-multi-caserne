@@ -39,7 +39,7 @@ const CarteApprovisionnementEau = ({ user }) => {
   const [currentView, setCurrentView] = useState('carte');
   const [pointsEau, setPointsEau] = useState([]);
   const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);  // Changer true pour attendre les données
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [showPointModal, setShowPointModal] = useState(false);
   const [showInspectionModal, setShowInspectionModal] = useState(false);
@@ -47,7 +47,7 @@ const CarteApprovisionnementEau = ({ user }) => {
   const [statutFilter, setStatutFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [map, setMap] = useState(null);
-  const [mapCenter, setMapCenter] = useState([45.5017, -73.5673]); // Montréal par défaut
+  const [mapCenter, setMapCenter] = useState(null); // null par défaut, sera défini après chargement
   const [mapZoom, setMapZoom] = useState(12);
   const [mapLayer, setMapLayer] = useState('plan'); // 'plan' ou 'satellite'
   const [personnalisation, setPersonnalisation] = useState(null);
@@ -92,9 +92,13 @@ const CarteApprovisionnementEau = ({ user }) => {
       const data = await apiGet(tenantSlug, url);
       setPointsEau(data);
       
-      // Centrer la carte sur le premier point si disponible
+      // Centrer la carte sur les points ou sur un point par défaut
       if (data.length > 0 && data[0].latitude && data[0].longitude) {
+        // Centrer sur le premier point d'eau
         setMapCenter([data[0].latitude, data[0].longitude]);
+      } else if (mapCenter === null) {
+        // Si aucun point et pas encore de centre, utiliser Montréal comme fallback
+        setMapCenter([45.5017, -73.5673]);
       }
     } catch (error) {
       console.error('Erreur chargement points d\'eau:', error);
@@ -103,6 +107,10 @@ const CarteApprovisionnementEau = ({ user }) => {
         description: "Impossible de charger les points d'eau",
         variant: "destructive"
       });
+      // En cas d'erreur, définir un centre par défaut
+      if (mapCenter === null) {
+        setMapCenter([45.5017, -73.5673]);
+      }
     } finally {
       setLoading(false);
     }
@@ -646,30 +654,45 @@ const CarteApprovisionnementEau = ({ user }) => {
           🛰️ Satellite
         </button>
       </div>
-      <MapContainer 
-        center={mapCenter} 
-        zoom={mapZoom} 
-        maxZoom={19}
-        style={{ height: '100%', width: '100%', background: '#d3d3d3' }}
-        whenCreated={setMap}
-      >
-        <MapRefCapture />
-        {mapLayer === 'plan' ? (
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            maxZoom={19}
-          />
-        ) : (
-          <TileLayer
-            attribution='&copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-            maxZoom={19}
-          />
-        )}
-        <MapClickHandler />
-        {filteredPoints.map(point => (
-          point.latitude && point.longitude && (
+      {/* Afficher un loader pendant le chargement initial */}
+      {loading || mapCenter === null ? (
+        <div style={{
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#f3f4f6',
+          flexDirection: 'column',
+          gap: '1rem'
+        }}>
+          <div style={{ fontSize: '3rem' }}>🗺️</div>
+          <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>Chargement de la carte...</p>
+        </div>
+      ) : (
+        <MapContainer 
+          center={mapCenter} 
+          zoom={mapZoom} 
+          maxZoom={19}
+          style={{ height: '100%', width: '100%', background: '#d3d3d3' }}
+          whenCreated={setMap}
+        >
+          <MapRefCapture />
+          {mapLayer === 'plan' ? (
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              maxZoom={19}
+            />
+          ) : (
+            <TileLayer
+              attribution='&copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+              maxZoom={19}
+            />
+          )}
+          <MapClickHandler />
+          {filteredPoints.map(point => (
+            point.latitude && point.longitude && (
             <Marker
               key={point.id}
               position={[point.latitude, point.longitude]}
@@ -756,7 +779,8 @@ const CarteApprovisionnementEau = ({ user }) => {
             </Marker>
           )
         ))}
-      </MapContainer>
+        </MapContainer>
+      )}
     </div>
   );
 
