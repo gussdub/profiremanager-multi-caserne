@@ -23,10 +23,11 @@ const Planning = () => {
   const token = localStorage.getItem('token');
   
   // Hook RBAC pour les permissions
-  const { hasModuleAccess, hasModuleAction } = usePermissions(tenantSlug, user);
+  const { hasModuleAccess, hasModuleAction, hasTabAccess } = usePermissions(tenantSlug, user);
   const canCreatePlanning = hasModuleAction('planning', 'creer');
   const canEditPlanning = hasModuleAction('planning', 'modifier');
   const canDeletePlanning = hasModuleAction('planning', 'supprimer');
+  const canViewRapportHeures = hasTabAccess('planning', 'rapport-heures');
   
   const [currentWeek, setCurrentWeek] = useState(() => {
     const today = new Date();
@@ -2125,8 +2126,8 @@ const Planning = () => {
         )}
       </div>
 
-      {/* Boutons d'Assignation - Responsive Mobile/Desktop */}
-      {canCreatePlanning && (
+      {/* Boutons d'Assignation et Actions - Responsive Mobile/Desktop */}
+      {(canCreatePlanning || canViewRapportHeures) && (
         <div className="planning-action-buttons" style={{
           display: 'flex', 
           flexWrap: 'wrap',
@@ -2135,39 +2136,45 @@ const Planning = () => {
           justifyContent: 'center',
           padding: '0 0.5rem'
         }}>
-          <Button 
-            className="planning-btn planning-btn-auto"
-            onClick={() => {
-              setAutoAttributionConfig({
-                periode: viewMode,
-                date: viewMode === 'semaine' ? currentWeek : currentMonth
-              });
-              setShowAutoAttributionModal(true);
-            }}
-            data-testid="auto-assign-btn"
-          >
-            <span className="btn-icon">✨</span>
-            <span className="btn-text-short">Auto</span>
-            <span className="btn-text-full">Attribution Automatique</span>
-          </Button>
-          <Button 
-            className="planning-btn planning-btn-manual"
-            onClick={() => setShowAdvancedAssignModal(true)}
-            data-testid="manual-assign-btn"
-          >
-            <span className="btn-icon">👤</span>
-            <span className="btn-text-short">Manuelle</span>
-            <span className="btn-text-full">Assignation Manuelle</span>
-          </Button>
-          <Button 
-            className="planning-btn planning-btn-rapport"
-            onClick={() => setShowRapportHeuresModal(true)}
-            data-testid="rapport-heures-btn"
-          >
-            <span className="btn-icon">📊</span>
-            <span className="btn-text-short">Rapport</span>
-            <span className="btn-text-full">Rapport d'Heures</span>
-          </Button>
+          {canCreatePlanning && (
+            <>
+              <Button 
+                className="planning-btn planning-btn-auto"
+                onClick={() => {
+                  setAutoAttributionConfig({
+                    periode: viewMode,
+                    date: viewMode === 'semaine' ? currentWeek : currentMonth
+                  });
+                  setShowAutoAttributionModal(true);
+                }}
+                data-testid="auto-assign-btn"
+              >
+                <span className="btn-icon">✨</span>
+                <span className="btn-text-short">Auto</span>
+                <span className="btn-text-full">Attribution Automatique</span>
+              </Button>
+              <Button 
+                className="planning-btn planning-btn-manual"
+                onClick={() => setShowAdvancedAssignModal(true)}
+                data-testid="manual-assign-btn"
+              >
+                <span className="btn-icon">👤</span>
+                <span className="btn-text-short">Manuelle</span>
+                <span className="btn-text-full">Assignation Manuelle</span>
+              </Button>
+            </>
+          )}
+          {canViewRapportHeures && (
+            <Button 
+              className="planning-btn planning-btn-rapport"
+              onClick={() => setShowRapportHeuresModal(true)}
+              data-testid="rapport-heures-btn"
+            >
+              <span className="btn-icon">📊</span>
+              <span className="btn-text-short">Rapport</span>
+              <span className="btn-text-full">Rapport d'Heures</span>
+            </Button>
+          )}
         </div>
       )}
 
