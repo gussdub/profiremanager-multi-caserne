@@ -246,10 +246,36 @@ const SectionRemisePropriete = ({ intervention, tenantSlug, user, getToken, toas
   // Composant signature avec prévisualisation
   const SignaturePad = ({ onSave, label, existingSignature }) => {
     const canvasRef = useRef(null);
+    const containerRef = useRef(null);
     const [isDrawing, setIsDrawing] = useState(false);
     const [hasDrawn, setHasDrawn] = useState(false);
     const [savedSignature, setSavedSignature] = useState(existingSignature || null);
     const [isEditing, setIsEditing] = useState(!existingSignature);
+    const [canvasWidth, setCanvasWidth] = useState(350);
+    
+    // Calculer la largeur du canvas dynamiquement
+    useEffect(() => {
+      const updateCanvasWidth = () => {
+        if (containerRef.current) {
+          const containerWidth = containerRef.current.offsetWidth;
+          // Soustraire les bordures (2px * 2 = 4px)
+          setCanvasWidth(containerWidth > 0 ? containerWidth - 4 : 350);
+        }
+      };
+
+      updateCanvasWidth();
+      window.addEventListener('resize', updateCanvasWidth);
+      
+      const resizeObserver = new ResizeObserver(updateCanvasWidth);
+      if (containerRef.current) {
+        resizeObserver.observe(containerRef.current);
+      }
+
+      return () => {
+        window.removeEventListener('resize', updateCanvasWidth);
+        resizeObserver.disconnect();
+      };
+    }, []);
     
     useEffect(() => {
       if (isEditing && canvasRef.current) {
@@ -261,7 +287,7 @@ const SectionRemisePropriete = ({ intervention, tenantSlug, user, getToken, toas
         ctx.lineWidth = 2;
         ctx.lineCap = 'round';
       }
-    }, [isEditing]);
+    }, [isEditing, canvasWidth]);
     
     const getCoords = (e) => {
       const rect = canvasRef.current.getBoundingClientRect();
@@ -340,12 +366,16 @@ const SectionRemisePropriete = ({ intervention, tenantSlug, user, getToken, toas
     return (
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700">{label}</label>
-        <div className="border-2 border-gray-300 rounded-lg bg-white">
+        <div 
+          ref={containerRef}
+          className="border-2 border-gray-300 rounded-lg bg-white overflow-hidden"
+        >
           <canvas 
             ref={canvasRef} 
-            width={350} 
+            width={canvasWidth} 
             height={120} 
-            className="w-full touch-none cursor-crosshair" 
+            className="block touch-none cursor-crosshair" 
+            style={{ display: 'block' }}
             onMouseDown={start} 
             onMouseMove={draw} 
             onMouseUp={stop} 

@@ -19,6 +19,7 @@ import { apiGet, apiPost } from '../utils/api';
 const RondeSecuriteSAAQ = ({ vehicule, user, onClose, onSuccess }) => {
   const { tenantSlug } = useTenant();
   const signatureMandateeRef = useRef(null);
+  const signatureContainerRef = useRef(null);
 
   // États
   const [pointsVerification, setPointsVerification] = useState({});
@@ -27,6 +28,7 @@ const RondeSecuriteSAAQ = ({ vehicule, user, onClose, onSuccess }) => {
   const [saving, setSaving] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [addressLoading, setAddressLoading] = useState(false);
+  const [canvasWidth, setCanvasWidth] = useState(600);
 
   // Fonctions helper pour les dates
   const getLocalDate = () => {
@@ -67,6 +69,31 @@ const RondeSecuriteSAAQ = ({ vehicule, user, onClose, onSuccess }) => {
     if (hasMineur) return 'MINEUR';
     return 'CONFORME';
   }, [defautsSelectionnes]);
+
+  // Calculer la largeur du canvas dynamiquement
+  useEffect(() => {
+    const updateCanvasWidth = () => {
+      if (signatureContainerRef.current) {
+        const containerWidth = signatureContainerRef.current.offsetWidth;
+        // Soustraire les bordures (2px * 2 = 4px)
+        setCanvasWidth(containerWidth > 0 ? containerWidth - 4 : 600);
+      }
+    };
+
+    updateCanvasWidth();
+    window.addEventListener('resize', updateCanvasWidth);
+    
+    // Observer pour les changements de taille du conteneur
+    const resizeObserver = new ResizeObserver(updateCanvasWidth);
+    if (signatureContainerRef.current) {
+      resizeObserver.observe(signatureContainerRef.current);
+    }
+
+    return () => {
+      window.removeEventListener('resize', updateCanvasWidth);
+      resizeObserver.disconnect();
+    };
+  }, []);
 
   // Charger les points de vérification SAAQ
   useEffect(() => {
@@ -617,14 +644,27 @@ const RondeSecuriteSAAQ = ({ vehicule, user, onClose, onSuccess }) => {
             {/* Signature */}
             <div style={{ marginBottom: '20px' }}>
               <Label>✍️ Signature de la personne mandatée *</Label>
-              <div style={{ border: '2px solid #dee2e6', borderRadius: '8px', background: '#fff', maxWidth: '100%' }}>
+              <div 
+                ref={signatureContainerRef}
+                style={{ 
+                  border: '2px solid #dee2e6', 
+                  borderRadius: '8px', 
+                  background: '#fff', 
+                  maxWidth: '100%',
+                  overflow: 'hidden'
+                }}
+              >
                 <SignatureCanvas
                   ref={signatureMandateeRef}
                   canvasProps={{
-                    width: 600,
+                    width: canvasWidth,
                     height: 150,
                     className: 'signature-canvas',
-                    style: { width: '100%', height: '150px' }
+                    style: { 
+                      display: 'block',
+                      touchAction: 'none',
+                      cursor: 'crosshair'
+                    }
                   }}
                 />
               </div>

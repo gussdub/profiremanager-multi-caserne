@@ -37,7 +37,9 @@ const parseDateLocal = (dateStr) => {
 const ContreSignatureModal = ({ ronde, vehicule, user, onClose, onSuccess, onRefuser }) => {
   const { tenantSlug } = useTenant();
   const signatureRef = useRef(null);
+  const signatureContainerRef = useRef(null);
   const [mode, setMode] = useState('choix'); // 'choix', 'accepter', 'refuser'
+  const [canvasWidth, setCanvasWidth] = useState(600);
   const [saving, setSaving] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -51,6 +53,30 @@ const ContreSignatureModal = ({ ronde, vehicule, user, onClose, onSuccess, onRef
       signatureRef.current.clear();
     }
   };
+
+  // Calculer la largeur du canvas dynamiquement pour éviter le décalage de la souris
+  React.useEffect(() => {
+    const updateCanvasWidth = () => {
+      if (signatureContainerRef.current) {
+        const containerWidth = signatureContainerRef.current.offsetWidth;
+        // Soustraire les bordures (2px * 2 = 4px)
+        setCanvasWidth(containerWidth > 0 ? containerWidth - 4 : 600);
+      }
+    };
+
+    updateCanvasWidth();
+    window.addEventListener('resize', updateCanvasWidth);
+    
+    const resizeObserver = new ResizeObserver(updateCanvasWidth);
+    if (signatureContainerRef.current) {
+      resizeObserver.observe(signatureContainerRef.current);
+    }
+
+    return () => {
+      window.removeEventListener('resize', updateCanvasWidth);
+      resizeObserver.disconnect();
+    };
+  }, []);
 
   const handleAccepter = async (e) => {
     e.preventDefault();
@@ -201,14 +227,27 @@ const ContreSignatureModal = ({ ronde, vehicule, user, onClose, onSuccess, onRef
 
                 <div>
                   <Label>Signature *</Label>
-                  <div style={{ border: '2px solid #dee2e6', borderRadius: '8px', background: '#fff', maxWidth: '600px' }}>
+                  <div 
+                    ref={signatureContainerRef}
+                    style={{ 
+                      border: '2px solid #dee2e6', 
+                      borderRadius: '8px', 
+                      background: '#fff', 
+                      maxWidth: '600px',
+                      overflow: 'hidden'
+                    }}
+                  >
                     <SignatureCanvas
                       ref={signatureRef}
                       canvasProps={{
-                        width: 600,
+                        width: canvasWidth,
                         height: 150,
                         className: 'signature-canvas',
-                        style: { width: '100%', height: '150px' }
+                        style: { 
+                          display: 'block',
+                          touchAction: 'none',
+                          cursor: 'crosshair'
+                        }
                       }}
                     />
                   </div>
