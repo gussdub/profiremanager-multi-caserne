@@ -32,6 +32,8 @@ export const usePermissions = (tenantSlug, user) => {
       }
 
       try {
+        console.log('🔍 [usePermissions] Fetching for user:', user.id, 'role:', user.role, 'tenant:', tenantSlug);
+        
         // Pour admin, accès complet
         if (user.role === 'admin') {
           const fullAccess = { is_full_access: true };
@@ -39,18 +41,25 @@ export const usePermissions = (tenantSlug, user) => {
           cacheUserId = user.id;
           setPermissions(fullAccess);
           setLoading(false);
+          console.log('🔍 [usePermissions] Admin detected - Full access granted');
           return;
         }
 
         // Récupérer les permissions du type d'accès de l'utilisateur
+        console.log('🔍 [usePermissions] Calling API:', `/users/${user.id}/permissions`);
         const response = await apiGet(tenantSlug, `/users/${user.id}/permissions`);
+        console.log('🔍 [usePermissions] API Response:', response);
         permissionsCache = response.permissions || {};
         cacheUserId = user.id;
         setPermissions(permissionsCache);
+        console.log('🔍 [usePermissions] Permissions set:', permissionsCache);
       } catch (error) {
-        console.error('Erreur chargement permissions:', error);
+        console.error('❌ [usePermissions] Erreur chargement permissions:', error);
+        console.error('❌ [usePermissions] Error details:', error.response || error.message);
         // Fallback sur les permissions par défaut du rôle
-        setPermissions(getDefaultPermissionsForRole(user.role));
+        const fallback = getDefaultPermissionsForRole(user.role);
+        console.log('🔍 [usePermissions] Using fallback permissions:', fallback);
+        setPermissions(fallback);
       } finally {
         setLoading(false);
       }
@@ -199,7 +208,16 @@ const getDefaultPermissionsForRole = (role) => {
       actifs: { access: true, actions: ['voir'] },
       interventions: { access: false, actions: [], tabs: {} },
       paie: { access: false, actions: [] },
-      planning: { access: true, actions: ['voir'] },
+      planning: { 
+        access: true, 
+        actions: ['voir'],
+        tabs: {
+          calendrier: { access: true, actions: ['voir'] },
+          assignation: { access: false, actions: [] },
+          'rapport-heures': { access: true, actions: ['voir', 'exporter'] },
+          export: { access: false, actions: [] }
+        }
+      },
       remplacements: { access: true, actions: ['voir', 'creer'] },
       formations: { access: true, actions: ['voir'] },
       prevention: { access: false, actions: [] },
