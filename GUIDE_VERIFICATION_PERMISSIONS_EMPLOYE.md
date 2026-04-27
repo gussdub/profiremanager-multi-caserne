@@ -27,7 +27,7 @@
 ## 🧪 Checklist de test pour vous
 
 ### Étape 1 : Vérifier le type d'accès de l'employé
-1. Connexion admin : https://fire-inquiry-portal.preview.emergentagent.com
+1. Connexion admin : https://employee-access-ui.preview.emergentagent.com
 2. **Personnel → Liste des employés**
 3. Trouver votre employé de test
 4. Vérifier que son **Type d'accès = "Employé"** (pas "Pompier", pas autre chose)

@@ -6,7 +6,7 @@ import requests
 import json
 
 # Configuration
-API_URL = "https://fire-inquiry-portal.preview.emergentagent.com/api"
+API_URL = "https://employee-access-ui.preview.emergentagent.com/api"
 TENANT = "shefford"
 EMAIL = "gussdub@gmail.com"
 PASSWORD = "230685Juin+"
