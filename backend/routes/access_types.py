@@ -1072,7 +1072,10 @@ async def update_access_type(
     # Rôles système éditables (superviseur, employe) : stocker les overrides en DB
     if access_type_id in ["superviseur", "employe"]:
         if data.permissions is None:
+            logger.error(f"❌ PUT employe: permissions is None")
             raise HTTPException(status_code=400, detail="Les permissions sont requises")
+        
+        logger.info(f"🔍 PUT {access_type_id}: Payload reçu = {type(data.permissions).__name__}, keys = {list(data.permissions.keys()) if isinstance(data.permissions, dict) else 'N/A'}")
         
         permissions_to_store = data.permissions
         # Si le format inclut "modules", le garder tel quel
