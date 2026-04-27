@@ -1071,38 +1071,73 @@ async def change_user_password(
 
 # PUT users/{user_id}/access
 @router.put("/{tenant_slug}/users/{user_id}/access", response_model=User)
-async def update_user_access(tenant_slug: str, user_id: str, role: str, statut: str, current_user: User = Depends(get_current_user)):
+async def update_user_access(
+    tenant_slug: str, 
+    user_id: str, 
+    role: Optional[str] = None,  # Accepter "role" pour rétrocompatibilité
+    access_type: Optional[str] = None,  # Nouveau paramètre
+    statut: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
     # Vérifier le tenant
     tenant = await get_tenant_from_slug(tenant_slug)
     
     # RBAC: Vérifier permission de modification sur le module personnel
     await require_permission(tenant.id, current_user, "personnel", "modifier")
     
-    # Validation des valeurs
-    valid_roles = ["admin", "superviseur", "employe"]
-    valid_statuts = ["Actif", "Inactif"]
+    # Le nouveau paramètre est access_type, mais on accepte aussi role pour rétrocompatibilité
+    type_acces = access_type or role
     
-    if role not in valid_roles:
-        raise HTTPException(status_code=400, detail="Rôle invalide")
-    if statut not in valid_statuts:
-        raise HTTPException(status_code=400, detail="Statut invalide")
+    # Validation des valeurs
+    valid_access_types = ["admin", "superviseur", "employe"]
+    valid_statuts = ["Actif", "Inactif"]
     
     # Check if user exists in this tenant
     existing_user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
     if not existing_user:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
     
+    # Préparer les champs à mettre à jour
+    update_fields = {}
+    
+    if type_acces:
+        if type_acces not in valid_access_types:
+            # Vérifier si c'est un type personnalisé
+            custom_type = await db.access_types.find_one({
+                "id": type_acces,
+                "tenant_id": tenant.id
+            })
+            if not custom_type and type_acces not in valid_access_types:
+                raise HTTPException(status_code=400, detail=f"Type d'accès invalide: {type_acces}")
+        
+        # Mettre à jour access_type (nouveau) et role (ancien) pour compatibilité
+        update_fields["access_type"] = type_acces
+        update_fields["role"] = type_acces  # Pour rétrocompatibilité
+    
+    if statut:
+        if statut not in valid_statuts:
+            raise HTTPException(status_code=400, detail="Statut invalide")
+        update_fields["statut"] = statut
+        update_fields["actif"] = (statut == "Actif")  # Synchroniser actif avec statut
+    
+    if not update_fields:
+        raise HTTPException(status_code=400, detail="Aucune modification fournie")
+    
     # Update user access
     result = await db.users.update_one(
         {"id": user_id, "tenant_id": tenant.id}, 
-        {"$set": {"role": role, "statut": statut}}
+        {"$set": update_fields}
     )
     
     if result.modified_count == 0:
-        raise HTTPException(status_code=400, detail="Impossible de mettre à jour l'accès")
+        # Peut-être que les valeurs sont identiques, ce n'est pas forcément une erreur
+        logger.info(f"Aucune modification pour user {user_id} (valeurs identiques?)")
     
     updated_user = await db.users.find_one({"id": user_id, "tenant_id": tenant.id})
     updated_user = clean_mongo_doc(updated_user)
+    
+    logger.info(f"Type d'accès de {updated_user.get('email')} modifié vers {type_acces} par {current_user.email}")
+    
     return User(**updated_user)
 
 
