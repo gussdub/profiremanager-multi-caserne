@@ -29,6 +29,7 @@ const ImportHydrants = ({ tenantSlug, onImportComplete, onClose }) => {
   const [importing, setImporting] = useState(false);
   const [importResults, setImportResults] = useState(null);
   const [existingPoints, setExistingPoints] = useState([]);
+  const [dragActive, setDragActive] = useState(false);
 
   // Types de points d'eau disponibles
   const typeOptions = [
@@ -72,7 +73,31 @@ const ImportHydrants = ({ tenantSlug, onImportComplete, onClose }) => {
   const handleFileUpload = async (event) => {
     const uploadedFile = event.target.files[0];
     if (!uploadedFile) return;
+    processFile(uploadedFile);
+  };
 
+  // Gestionnaires Drag & Drop
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      processFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const processFile = (uploadedFile) => {
     const fileName = uploadedFile.name.toLowerCase();
     const extension = fileName.split('.').pop();
     
@@ -639,19 +664,29 @@ const ImportHydrants = ({ tenantSlug, onImportComplete, onClose }) => {
             </div>
 
             <label htmlFor="file-upload-hydrants" className="cursor-pointer block">
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors">
+              <div 
+                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                  dragActive 
+                    ? 'border-blue-500 bg-blue-50' 
+                    : 'border-gray-300 hover:border-blue-500'
+                }`}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+              >
                 <Upload className="mx-auto h-12 w-12 text-gray-400" />
                 <p className="mt-2 text-sm font-medium text-gray-900">
-                  {file ? file.name : 'Cliquez pour sélectionner un fichier'}
+                  {file ? file.name : dragActive ? 'Déposez le fichier ici' : 'Cliquez ou glissez-déposez un fichier'}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  <strong>CSV, XLS, XLSX, KML, KMZ</strong> acceptés
+                  <strong>CSV, XLS, XLSX, KML, KMZ, XML</strong> acceptés
                 </p>
               </div>
               <input 
                 id="file-upload-hydrants"
                 type="file"
-                accept=".csv,.CSV,.xls,.XLS,.xlsx,.XLSX,.kml,.KML,.kmz,.KMZ"
+                accept=".csv,.CSV,.txt,.TXT,.xls,.XLS,.xlsx,.XLSX,.kml,.KML,.kmz,.KMZ,.xml,.XML"
                 onChange={handleFileUpload}
                 className="hidden"
               />
