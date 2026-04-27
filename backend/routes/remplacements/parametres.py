@@ -178,14 +178,23 @@ async def debug_recherche_remplacant(
     }
     
     for user in all_users:
+        user_grade = user.get("grade", "").lower()
+        grades_officier = ["lieutenant", "capitaine", "chef", "directeur"]
+        est_officier = user_grade in grades_officier
+        
         user_info = {
             "id": user["id"],
             "nom": f"{user.get('prenom', '')} {user.get('nom', '')}",
             "role": user.get("role", ""),
             "grade": user.get("grade", ""),
+            "niveau": user.get("grade", ""),  # Utilisé pour l'affichage
+            "type_emploi": user.get("type_emploi", ""),
             "competences": user.get("competences", []),
+            "est_officier": est_officier,
+            "est_eligible_fonction_sup": user.get("fonction_superieur", False) or user.get("fonction_superieure", False),
             "eligible": True,
-            "raisons_exclusion": []
+            "raisons_exclusion": [],
+            "assignations_sans_conflit": []  # Pour afficher les autres assignations
         }
         
         # Vérifications
