@@ -890,7 +890,10 @@ async def list_access_types(
             "is_system": True,
             "is_editable": True,
             "has_overrides": "superviseur" in role_overrides,
-            "permissions": role_overrides.get("superviseur", DEFAULT_PERMISSIONS["superviseur"])
+            "permissions": merge_permissions(
+                DEFAULT_PERMISSIONS["superviseur"], 
+                role_overrides.get("superviseur", {})
+            ) if "superviseur" in role_overrides else DEFAULT_PERMISSIONS["superviseur"]
         },
         {
             "id": "employe",
@@ -900,7 +903,10 @@ async def list_access_types(
             "is_system": True,
             "is_editable": True,
             "has_overrides": "employe" in role_overrides,
-            "permissions": role_overrides.get("employe", DEFAULT_PERMISSIONS["employe"])
+            "permissions": merge_permissions(
+                DEFAULT_PERMISSIONS["employe"], 
+                role_overrides.get("employe", {})
+            ) if "employe" in role_overrides else DEFAULT_PERMISSIONS["employe"]
         }
     ]
     
@@ -1284,7 +1290,7 @@ async def get_user_permissions(
 # ==================== HELPER FUNCTIONS ====================
 
 def merge_permissions(base: Dict, custom: Dict) -> Dict:
-    """Fusionne les permissions personnalisées avec les permissions de base"""
+    """Fusionne les permissions personnalisées avec les permissions de base (deep merge)"""
     if not custom:
         return base.copy()
     
@@ -1306,19 +1312,30 @@ def merge_permissions(base: Dict, custom: Dict) -> Dict:
                 "access": custom_modules[module_id].get("access", module_config.get("access", False)),
                 "actions": custom_modules[module_id].get("actions", module_config.get("actions", [])),
             }
-            # Fusionner les tabs si présents
+            # Fusionner les tabs si présents (DEEP MERGE)
             if "tabs" in module_config or "tabs" in custom_modules[module_id]:
                 result["modules"][module_id]["tabs"] = {}
                 base_tabs = module_config.get("tabs", {})
                 custom_tabs = custom_modules[module_id].get("tabs", {})
                 
-                for tab_id, tab_config in base_tabs.items():
-                    if tab_id in custom_tabs:
-                        result["modules"][module_id]["tabs"][tab_id] = custom_tabs[tab_id]
+                # Merger tous les tabs (base + custom)
+                all_tab_ids = set(base_tabs.keys()) | set(custom_tabs.keys())
+                for tab_id in all_tab_ids:
+                    base_tab = base_tabs.get(tab_id, {})
+                    custom_tab = custom_tabs.get(tab_id, {})
+                    
+                    # Si custom_tab existe, on le prend, sinon on prend base_tab
+                    if custom_tab:
+                        result["modules"][module_id]["tabs"][tab_id] = custom_tab
                     else:
-                        result["modules"][module_id]["tabs"][tab_id] = tab_config
+                        result["modules"][module_id]["tabs"][tab_id] = base_tab
         else:
             result["modules"][module_id] = module_config.copy()
+    
+    # Ajouter les modules custom qui n'existent pas dans base
+    for module_id in custom_modules:
+        if module_id not in result["modules"]:
+            result["modules"][module_id] = custom_modules[module_id]
     
     return result
 
