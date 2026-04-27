@@ -1318,9 +1318,22 @@ async def get_user_permissions(
                 "permissions": filtered_perms
             }
     
-    # Sinon, utiliser les permissions par défaut du rôle
+    # Sinon, utiliser les permissions par défaut du rôle (+ overrides éventuels)
     role = target_user.get("role", "employe")
     default_perms = DEFAULT_PERMISSIONS.get(role, DEFAULT_PERMISSIONS["employe"])
+    
+    # Vérifier s'il existe des overrides pour ce rôle
+    role_override = await db.role_overrides.find_one(
+        {"tenant_id": tenant.id, "role": role},
+        {"_id": 0}
+    )
+    
+    # Fusionner avec les overrides si présents
+    if role_override and role_override.get("permissions"):
+        logger.info(f"✅ [GET User Permissions] Role overrides trouvés pour {role} sur tenant {tenant.slug}")
+        default_perms = merge_permissions(default_perms, role_override["permissions"])
+    else:
+        logger.info(f"ℹ️ [GET User Permissions] Aucun override pour {role} sur tenant {tenant.slug}, utilisation des permissions par défaut")
     
     # Filtrer selon les modules actifs du tenant
     active_modules = get_active_modules_for_tenant(tenant)
