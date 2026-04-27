@@ -1050,8 +1050,17 @@ async def update_access_type(
         # Si le format inclut "modules", le garder tel quel
         # Sinon, on fait confiance au frontend qui envoie le bon format
         
+        # DEBUG: Logger ce qu'on va sauvegarder
+        if access_type_id == "employe":
+            modules_count = len(permissions_to_store.get("modules", {})) if permissions_to_store else 0
+            logger.info(f"🔍 DEBUG PUT: Sauvegarde employe avec {modules_count} modules")
+            if permissions_to_store and "modules" in permissions_to_store:
+                planning_tabs = permissions_to_store.get("modules", {}).get("planning", {}).get("tabs", {})
+                if "rapport-heures" in planning_tabs:
+                    logger.info(f"🔍 DEBUG PUT: rapport-heures = {planning_tabs['rapport-heures']}")
+        
         # Upsert dans la collection role_overrides
-        await db.role_overrides.update_one(
+        result = await db.role_overrides.update_one(
             {"tenant_id": tenant.id, "role": access_type_id},
             {"$set": {
                 "tenant_id": tenant.id,
@@ -1063,7 +1072,7 @@ async def update_access_type(
             upsert=True
         )
         
-        logger.info(f"Permissions du rôle système '{access_type_id}' mises à jour par {current_user.email} pour tenant {tenant.id}")
+        logger.info(f"Permissions du rôle système '{access_type_id}' mises à jour par {current_user.email} pour tenant {tenant.id} (modified={result.modified_count}, upserted={result.upserted_id})")
         
         return {"success": True, "message": f"Permissions du rôle {access_type_id} mises à jour"}
     
@@ -1290,7 +1299,7 @@ async def get_user_permissions(
 # ==================== HELPER FUNCTIONS ====================
 
 def merge_permissions(base: Dict, custom: Dict) -> Dict:
-    """Fusionne les permissions personnalisées avec les permissions de base (deep merge)"""
+    """Fusionne les permissions personnalisées avec les permissions de base (deep merge complet)"""
     if not custom:
         return base.copy()
     
@@ -1305,37 +1314,47 @@ def merge_permissions(base: Dict, custom: Dict) -> Dict:
     
     result["modules"] = {}
     
-    for module_id, module_config in base_modules.items():
-        if module_id in custom_modules:
-            # Fusionner les configurations
+    # Merger tous les modules (base + custom)
+    all_module_ids = set(base_modules.keys()) | set(custom_modules.keys())
+    
+    for module_id in all_module_ids:
+        base_module = base_modules.get(module_id, {})
+        custom_module = custom_modules.get(module_id, {})
+        
+        if custom_module:
+            # Module personnalisé : utiliser custom
             result["modules"][module_id] = {
-                "access": custom_modules[module_id].get("access", module_config.get("access", False)),
-                "actions": custom_modules[module_id].get("actions", module_config.get("actions", [])),
+                "access": custom_module.get("access", base_module.get("access", False)),
+                "actions": custom_module.get("actions", base_module.get("actions", [])),
             }
-            # Fusionner les tabs si présents (DEEP MERGE)
-            if "tabs" in module_config or "tabs" in custom_modules[module_id]:
+            
+            # Deep merge des tabs
+            if "tabs" in base_module or "tabs" in custom_module:
                 result["modules"][module_id]["tabs"] = {}
-                base_tabs = module_config.get("tabs", {})
-                custom_tabs = custom_modules[module_id].get("tabs", {})
+                base_tabs = base_module.get("tabs", {})
+                custom_tabs = custom_module.get("tabs", {})
                 
                 # Merger tous les tabs (base + custom)
                 all_tab_ids = set(base_tabs.keys()) | set(custom_tabs.keys())
+                
                 for tab_id in all_tab_ids:
                     base_tab = base_tabs.get(tab_id, {})
                     custom_tab = custom_tabs.get(tab_id, {})
                     
-                    # Si custom_tab existe, on le prend, sinon on prend base_tab
                     if custom_tab:
+                        # Tab personnalisé : prendre le custom
                         result["modules"][module_id]["tabs"][tab_id] = custom_tab
                     else:
+                        # Tab non modifié : prendre le base
                         result["modules"][module_id]["tabs"][tab_id] = base_tab
         else:
-            result["modules"][module_id] = module_config.copy()
-    
-    # Ajouter les modules custom qui n'existent pas dans base
-    for module_id in custom_modules:
-        if module_id not in result["modules"]:
-            result["modules"][module_id] = custom_modules[module_id]
+            # Module non personnalisé : prendre tel quel du base
+            result["modules"][module_id] = base_module.copy()
+            if "tabs" in base_module:
+                result["modules"][module_id]["tabs"] = {
+                    tab_id: tab_config.copy() 
+                    for tab_id, tab_config in base_module["tabs"].items()
+                }
     
     return result
 
