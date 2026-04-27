@@ -864,12 +864,25 @@ async def list_access_types(
     
     # Récupérer les overrides de rôles système
     role_overrides = {}
+    logger.info(f"🔍 QUERY: Chargement overrides pour tenant {tenant.id}")
     overrides_cursor = db.role_overrides.find(
         {"tenant_id": tenant.id},
         {"_id": 0}
     )
+    override_count = 0
     async for override in overrides_cursor:
+        override_count += 1
         role_overrides[override["role"]] = override.get("permissions")
+        # DEBUG
+        if override["role"] == "employe":
+            perms = override.get("permissions", {})
+            logger.info(f"🔍 LOAD: Override employe chargé")
+            logger.info(f"🔍 LOAD: Keys = {list(perms.keys())}")
+            if "modules" in perms:
+                planning = perms["modules"].get("planning", {})
+                if "tabs" in planning and "rapport-heures" in planning["tabs"]:
+                    logger.info(f"🔍 LOAD: rapport-heures = {planning['tabs']['rapport-heures']}")
+    logger.info(f"🔍 QUERY: {override_count} override(s) chargés")
     
     # Construire la réponse avec les rôles de base (+ overrides éventuels)
     base_roles = [
@@ -934,11 +947,26 @@ async def get_access_type(
     
     # Vérifier si c'est un rôle de base
     if access_type_id in DEFAULT_PERMISSIONS:
+        # Charger l'override s'il existe
+        override = await db.role_overrides.find_one(
+            {"tenant_id": tenant.id, "role": access_type_id},
+            {"_id": 0}
+        )
+        
+        permissions = DEFAULT_PERMISSIONS[access_type_id]
+        
+        # Merger avec l'override si présent
+        if override and "permissions" in override:
+            permissions = merge_permissions(DEFAULT_PERMISSIONS[access_type_id], override["permissions"])
+            logger.info(f"🔍 GET SINGLE: Override trouvé pour {access_type_id}, merge effectué")
+        
         return {
             "id": access_type_id,
             "nom": access_type_id.capitalize(),
             "is_system": True,
-            "permissions": DEFAULT_PERMISSIONS[access_type_id]
+            "is_editable": access_type_id in ["superviseur", "employe"],
+            "has_overrides": override is not None,
+            "permissions": permissions
         }
     
     # Sinon chercher dans les types personnalisés
@@ -1054,6 +1082,7 @@ async def update_access_type(
         if access_type_id == "employe":
             modules_count = len(permissions_to_store.get("modules", {})) if permissions_to_store else 0
             logger.info(f"🔍 DEBUG PUT: Sauvegarde employe avec {modules_count} modules")
+            logger.info(f"🔍 DEBUG PUT: Tenant ID = {tenant.id} (type: {type(tenant.id).__name__})")
             if permissions_to_store and "modules" in permissions_to_store:
                 planning_tabs = permissions_to_store.get("modules", {}).get("planning", {}).get("tabs", {})
                 if "rapport-heures" in planning_tabs:
@@ -1071,6 +1100,12 @@ async def update_access_type(
             }},
             upsert=True
         )
+        
+        if access_type_id == "employe":
+            logger.info(f"🔍 DEBUG PUT: Result - matched={result.matched_count}, modified={result.modified_count}, upserted={result.upserted_id}")
+            # Vérifier immédiatement
+            check = await db.role_overrides.find_one({"tenant_id": tenant.id, "role": "employe"})
+            logger.info(f"🔍 DEBUG PUT: Vérification immédiate - Found: {check is not None}")
         
         logger.info(f"Permissions du rôle système '{access_type_id}' mises à jour par {current_user.email} pour tenant {tenant.id} (modified={result.modified_count}, upserted={result.upserted_id})")
         
@@ -1312,6 +1347,12 @@ def merge_permissions(base: Dict, custom: Dict) -> Dict:
     base_modules = base.get("modules", {})
     custom_modules = custom.get("modules", {})
     
+    # DEBUG pour employe
+    if base_modules.get("planning", {}).get("tabs", {}).get("rapport-heures"):
+        logger.info(f"🔍 MERGE: Base rapport-heures = {base_modules['planning']['tabs']['rapport-heures']}")
+    if custom_modules.get("planning", {}).get("tabs", {}).get("rapport-heures"):
+        logger.info(f"🔍 MERGE: Custom rapport-heures = {custom_modules['planning']['tabs']['rapport-heures']}")
+    
     result["modules"] = {}
     
     # Merger tous les modules (base + custom)
@@ -1355,6 +1396,10 @@ def merge_permissions(base: Dict, custom: Dict) -> Dict:
                     tab_id: tab_config.copy() 
                     for tab_id, tab_config in base_module["tabs"].items()
                 }
+    
+    # DEBUG résultat
+    if result["modules"].get("planning", {}).get("tabs", {}).get("rapport-heures"):
+        logger.info(f"🔍 MERGE RESULT: rapport-heures = {result['modules']['planning']['tabs']['rapport-heures']}")
     
     return result
 
