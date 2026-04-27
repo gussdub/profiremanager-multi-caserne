@@ -11,7 +11,7 @@ import JSZip from 'jszip';
 
 /**
  * ImportHydrants - Import de points d'eau (bornes sèches, fontaines, etc.)
- * Supporte: CSV, Excel (XLS/XLSX), KML, KMZ
+ * Supporte: CSV, Excel (XLS/XLSX), KML, KMZ, XML avec parsing intelligent
  */
 const ImportHydrants = ({ tenantSlug, onImportComplete, onClose }) => {
   const [step, setStep] = useState(1); // 1: Upload, 2: Config/Mapping, 3: Preview, 4: Duplicates, 5: Results
@@ -76,7 +76,7 @@ const ImportHydrants = ({ tenantSlug, onImportComplete, onClose }) => {
     const fileName = uploadedFile.name.toLowerCase();
     const extension = fileName.split('.').pop();
     
-    const supportedExtensions = ['csv', 'xls', 'xlsx', 'txt', 'kml', 'kmz'];
+    const supportedExtensions = ['csv', 'xls', 'xlsx', 'txt', 'kml', 'kmz', 'xml'];
     if (!supportedExtensions.includes(extension)) {
       alert(`Format non supporté. Formats acceptés: ${supportedExtensions.join(', ').toUpperCase()}`);
       return;
@@ -89,8 +89,8 @@ const ImportHydrants = ({ tenantSlug, onImportComplete, onClose }) => {
       parseCSV(uploadedFile);
     } else if (extension === 'xls' || extension === 'xlsx') {
       parseExcel(uploadedFile);
-    } else if (extension === 'kml') {
-      parseKML(uploadedFile);
+    } else if (extension === 'kml' || extension === 'xml') {
+      parseKML(uploadedFile);  // XML utilise le même parser que KML
     } else if (extension === 'kmz') {
       parseKMZ(uploadedFile);
     }
@@ -162,59 +162,164 @@ const ImportHydrants = ({ tenantSlug, onImportComplete, onClose }) => {
       const parser = new DOMParser();
       const xmlDoc = parser.parseFromString(text, 'text/xml');
       
-      const placemarks = xmlDoc.getElementsByTagName('Placemark');
+      // Vérifier s'il y a des erreurs de parsing XML
+      const parserError = xmlDoc.getElementsByTagName('parsererror');
+      if (parserError.length > 0) {
+        throw new Error('Format XML invalide');
+      }
+      
+      // Essayer de trouver des placemarks (KML standard)
+      let placemarks = xmlDoc.getElementsByTagName('Placemark');
       const data = [];
       
-      for (let i = 0; i < placemarks.length; i++) {
-        const placemark = placemarks[i];
-        
-        // Extraire le nom
-        const nameEl = placemark.getElementsByTagName('name')[0];
-        const nom = nameEl ? nameEl.textContent : `Point ${i + 1}`;
-        
-        // Extraire la description
-        const descEl = placemark.getElementsByTagName('description')[0];
-        const description = descEl ? descEl.textContent : '';
-        
-        // Extraire les coordonnées
-        const coordEl = placemark.getElementsByTagName('coordinates')[0];
-        if (coordEl) {
-          const coordText = coordEl.textContent.trim();
-          const [lng, lat, alt] = coordText.split(',').map(c => parseFloat(c.trim()));
-          
-          if (!isNaN(lat) && !isNaN(lng)) {
-            data.push({
-              _index: i,
-              _type: '',
-              nom: nom,
-              latitude: lat,
-              longitude: lng,
-              description: description,
-              altitude: alt || 0
-            });
+      // Si pas de Placemark, essayer d'autres structures XML communes
+      if (placemarks.length === 0) {
+        // Chercher des balises génériques pour points/bornes
+        const possibleTags = ['point', 'marker', 'location', 'hydrant', 'borne', 'fontaine', 'feature'];
+        for (const tag of possibleTags) {
+          const elements = xmlDoc.getElementsByTagName(tag);
+          if (elements.length > 0) {
+            placemarks = elements;
+            break;
           }
         }
       }
       
+      if (placemarks.length === 0) {
+        alert("Format XML non reconnu. Le fichier doit contenir des balises <Placemark> (KML) ou des balises de points géographiques.");
+        return;
+      }
+      
+      for (let i = 0; i < placemarks.length; i++) {
+        const placemark = placemarks[i];
+        
+        // Extraire le nom (plusieurs variantes possibles)
+        let nom = null;
+        const nameVariants = ['name', 'nom', 'title', 'id', 'label'];
+        for (const variant of nameVariants) {
+          const el = placemark.getElementsByTagName(variant)[0];
+          if (el && el.textContent.trim()) {
+            nom = el.textContent.trim();
+            break;
+          }
+        }
+        if (!nom) nom = `Point ${i + 1}`;
+        
+        // Extraire la description
+        let description = '';
+        const descVariants = ['description', 'desc', 'info', 'details'];
+        for (const variant of descVariants) {
+          const el = placemark.getElementsByTagName(variant)[0];
+          if (el && el.textContent.trim()) {
+            description = el.textContent.trim();
+            break;
+          }
+        }
+        
+        // Extraire les coordonnées (plusieurs formats possibles)
+        let lat = null, lng = null, alt = 0;
+        
+        // Format 1: KML <coordinates>longitude,latitude,altitude</coordinates>
+        const coordEl = placemark.getElementsByTagName('coordinates')[0];
+        if (coordEl) {
+          const coordText = coordEl.textContent.trim();
+          const parts = coordText.split(',').map(c => parseFloat(c.trim()));
+          if (parts.length >= 2) {
+            lng = parts[0];
+            lat = parts[1];
+            alt = parts[2] || 0;
+          }
+        }
+        
+        // Format 2: Balises séparées <lat> et <lon> (ou lng/long)
+        if (lat === null || lng === null) {
+          const latVariants = ['lat', 'latitude', 'y'];
+          const lngVariants = ['lon', 'lng', 'longitude', 'long', 'x'];
+          
+          for (const variant of latVariants) {
+            const el = placemark.getElementsByTagName(variant)[0];
+            if (el) {
+              const val = parseFloat(el.textContent.trim());
+              if (!isNaN(val)) {
+                lat = val;
+                break;
+              }
+            }
+          }
+          
+          for (const variant of lngVariants) {
+            const el = placemark.getElementsByTagName(variant)[0];
+            if (el) {
+              const val = parseFloat(el.textContent.trim());
+              if (!isNaN(val)) {
+                lng = val;
+                break;
+              }
+            }
+          }
+        }
+        
+        // Format 3: Attributs XML (ex: <point lat="45.5" lng="-73.5" />)
+        if (lat === null || lng === null) {
+          if (placemark.hasAttribute('lat') || placemark.hasAttribute('latitude')) {
+            lat = parseFloat(placemark.getAttribute('lat') || placemark.getAttribute('latitude'));
+          }
+          if (placemark.hasAttribute('lon') || placemark.hasAttribute('lng') || placemark.hasAttribute('longitude')) {
+            lng = parseFloat(placemark.getAttribute('lon') || placemark.getAttribute('lng') || placemark.getAttribute('longitude'));
+          }
+        }
+        
+        // Vérifier si on a des coordonnées valides
+        if (!isNaN(lat) && !isNaN(lng) && lat !== null && lng !== null) {
+          // Extraire d'autres champs possibles
+          const extractField = (fieldNames) => {
+            for (const name of fieldNames) {
+              const el = placemark.getElementsByTagName(name)[0];
+              if (el && el.textContent.trim()) {
+                return el.textContent.trim();
+              }
+            }
+            return '';
+          };
+          
+          data.push({
+            _index: i,
+            _type: '',
+            nom: nom,
+            latitude: lat,
+            longitude: lng,
+            description: description,
+            altitude: alt || 0,
+            adresse: extractField(['adresse', 'address', 'location']),
+            type: extractField(['type', 'category', 'classe']),
+            capacite: extractField(['capacite', 'capacity', 'volume']),
+            debit: extractField(['debit', 'flow', 'flow_rate']),
+            remarques: extractField(['remarques', 'remarks', 'notes', 'comment'])
+          });
+        }
+      }
+      
       if (data.length === 0) {
-        alert("Aucun point avec coordonnées trouvé dans le fichier KML");
+        alert("Aucun point avec coordonnées valides trouvé dans le fichier XML/KML");
         return;
       }
       
       setFileData(data);
-      setFileHeaders(['nom', 'latitude', 'longitude', 'description']);
-      // Pour KML, pas besoin de mapping - les champs sont déjà extraits
+      setFileHeaders(['nom', 'latitude', 'longitude', 'description', 'adresse', 'type']);
+      // Pour KML/XML, pré-mapper automatiquement les champs détectés
       setColumnMapping({
         nom: 'nom',
         latitude: 'latitude',
         longitude: 'longitude',
-        description: 'description'
+        description: 'description',
+        adresse: 'adresse',
+        type: 'type'
       });
       setStep(2);
       
     } catch (error) {
-      console.error('Erreur parsing KML:', error);
-      alert(`Erreur de lecture du fichier KML: ${error.message}`);
+      console.error('Erreur parsing KML/XML:', error);
+      alert(`Erreur de lecture du fichier KML/XML: ${error.message}`);
     }
   };
 
@@ -499,7 +604,7 @@ const ImportHydrants = ({ tenantSlug, onImportComplete, onClose }) => {
     link.click();
   };
 
-  const isKMLFormat = fileType === 'kml' || fileType === 'kmz';
+  const isKMLFormat = fileType === 'kml' || fileType === 'kmz' || fileType === 'xml';
 
   return (
     <Card className="w-full">
@@ -509,7 +614,7 @@ const ImportHydrants = ({ tenantSlug, onImportComplete, onClose }) => {
           Import Points d'eau (Hydrants)
         </CardTitle>
         <CardDescription>
-          Importez vos points d'eau depuis CSV, Excel, KML ou KMZ
+          Importez vos points d'eau depuis CSV, Excel, KML, KMZ ou XML
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -527,9 +632,9 @@ const ImportHydrants = ({ tenantSlug, onImportComplete, onClose }) => {
               <div className="bg-green-50 p-3 rounded-lg border border-green-200">
                 <div className="flex items-center gap-2 mb-1">
                   <Globe className="h-4 w-4 text-green-600" />
-                  <span className="font-medium text-sm">KML / KMZ</span>
+                  <span className="font-medium text-sm">KML / KMZ / XML</span>
                 </div>
-                <p className="text-xs text-gray-600">Export Google Earth / Maps</p>
+                <p className="text-xs text-gray-600">Export Google Earth / Maps ou XML générique</p>
               </div>
             </div>
 

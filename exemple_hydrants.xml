@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Exemple de fichier XML pour import de bornes d'incendie -->
+<!-- Ce fichier peut être importé dans ProFireManager → Paramètres → Import Hydrants -->
+<hydrants>
+  <!-- Exemple 1: Borne sèche avec tous les champs -->
+  <hydrant>
+    <nom>Borne Darby</nom>
+    <latitude>45.5017</latitude>
+    <longitude>-73.5673</longitude>
+    <type>borne_seche</type>
+    <adresse>Lac Darby, Chemin du Lac</adresse>
+    <description>Borne sèche principale au bord du lac</description>
+    <capacite>50000</capacite>
+    <debit>1500</debit>
+    <remarques>Accès facile, près du stationnement</remarques>
+  </hydrant>
+
+  <!-- Exemple 2: Borne fontaine avec champs minimaux -->
+  <hydrant>
+    <nom>Fontaine Municipale</nom>
+    <lat>45.5123</lat>
+    <lon>-73.5789</lon>
+    <type>borne_fontaine</type>
+    <description>Fontaine municipale centre-ville</description>
+  </hydrant>
+
+  <!-- Exemple 3: Lac avec format alternatif -->
+  <point>
+    <id>Lac-Nord</id>
+    <latitude>45.5234</latitude>
+    <longitude>-73.5456</longitude>
+    <type>lac</type>
+    <adresse>Chemin du Lac Nord</adresse>
+    <capacite>500000</capacite>
+    <remarques>Accessible en été seulement</remarques>
+  </point>
+
+  <!-- Exemple 4: Piscine municipale -->
+  <marker>
+    <nom>Piscine Centre Sportif</nom>
+    <latitude>45.5156</latitude>
+    <longitude>-73.5712</longitude>
+    <type>piscine</type>
+    <adresse>456 Avenue du Sport</adresse>
+    <capacite>75000</capacite>
+  </marker>
+
+  <!-- Exemple 5: Rivière (point d'accès) -->
+  <hydrant>
+    <nom>Rivière Saint-Charles - Accès 1</nom>
+    <lat>45.5289</lat>
+    <lon>-73.5623</lon>
+    <type>riviere</type>
+    <description>Point d'accès pompier à la rivière</description>
+    <remarques>Pente douce, bonne accessibilité</remarques>
+  </hydrant>
+</hydrants>
