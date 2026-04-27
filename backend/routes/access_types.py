@@ -55,6 +55,7 @@ ACTION_DESCRIPTIONS = {
     "accepter": "Permet d'accepter des propositions",
     "refuser": "Permet de refuser des propositions",
     "annuler": "Permet d'annuler des demandes en cours",
+    "historique": "Permet de consulter l'historique des inspections et modifications",
     "voir_anciens": "Permet de consulter les données archivées"
 }
 
@@ -194,8 +195,8 @@ MODULES_STRUCTURE = {
         "tabs": {
             "vehicules": {"label": "Véhicules", "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
             "inventaires": {"label": "Inventaires véhicules", "actions": ["voir", "creer", "modifier", "supprimer"]},
-            "eau": {"label": "Approvisionnement Eau", "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
-            "bornes": {"label": "Bornes sèches", "actions": ["voir", "creer", "modifier", "supprimer"]},
+            "eau": {"label": "Approvisionnement Eau", "actions": ["voir", "creer", "modifier", "supprimer", "exporter", "historique"]},
+            "bornes": {"label": "Bornes sèches", "actions": ["voir", "creer", "modifier", "supprimer", "historique"]},
             "points-eau": {"label": "Points d'eau", "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
             "materiel": {"label": "Matériel & Équipements", "actions": ["voir", "creer", "modifier", "supprimer", "exporter"]},
             "categories": {"label": "Catégories équipements", "actions": ["voir", "creer", "modifier", "supprimer"]},

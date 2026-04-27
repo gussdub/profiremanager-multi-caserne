@@ -4,7 +4,7 @@ import { Input } from '../ui/input';
 import { 
   Plus, Edit, Trash2, Users, Shield, ChevronDown, ChevronRight, 
   Check, X, Eye, PenLine, FilePlus, FileX, Download, FileSignature,
-  CheckCircle, ThumbsUp, ThumbsDown, ArrowLeft
+  CheckCircle, ThumbsUp, ThumbsDown, ArrowLeft, History
 } from 'lucide-react';
 import { apiGet, apiPost, apiPut, apiDelete } from '../../utils/api';
 
@@ -20,7 +20,8 @@ const ACTION_ICONS = {
   approuver: ThumbsUp,
   accepter: Check,
   refuser: ThumbsDown,
-  voir_anciens: Users
+  voir_anciens: Users,
+  historique: History
 };
 
 const ACTION_LABELS = {
@@ -34,7 +35,8 @@ const ACTION_LABELS = {
   approuver: "Approuver",
   accepter: "Accepter",
   refuser: "Refuser",
-  voir_anciens: "Voir anciens"
+  voir_anciens: "Voir anciens",
+  historique: "Historique"
 };
 
 const GestionTypesAcces = ({ tenantSlug, toast }) => {
@@ -758,12 +760,10 @@ const GestionTypesAcces = ({ tenantSlug, toast }) => {
                                         {tabConfig.actions.map(action => {
                                           const ActionIcon = ACTION_ICONS[action] || Eye;
                                           const isEnabled = isTabActionEnabled(moduleId, tabId, action);
-                                          const moduleHasAction = isModuleActionEnabled(moduleId, action) || action === 'voir';
                                           const actionDescription = getActionDescription(moduleId, action);
                                           
-                                          // L'action n'est disponible que si le module l'autorise
-                                          const canEnable = moduleHasAction || action === 'voir' || 
-                                            ['signer', 'valider', 'approuver', 'accepter', 'refuser'].includes(action);
+                                          // Autoriser toutes les actions en mode édition (pas de restriction canEnable)
+                                          const canEnable = true;
                                           
                                           return (
                                             <label
@@ -779,7 +779,7 @@ const GestionTypesAcces = ({ tenantSlug, toast }) => {
                                                 fontSize: '0.7rem',
                                                 opacity: canEnable ? 1 : 0.5
                                               }}
-                                              title={!canEnable ? `Action "${action}" non autorisée au niveau module` : actionDescription}
+                                              title={actionDescription}
                                             >
                                               {canEdit && (
                                                 <input
