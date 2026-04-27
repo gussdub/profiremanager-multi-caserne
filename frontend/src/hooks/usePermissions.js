@@ -83,11 +83,27 @@ export const usePermissions = (tenantSlug, user) => {
    * Vérifie si l'utilisateur a accès à un onglet
    */
   const hasTabAccess = useCallback((moduleId, tabId) => {
-    if (!permissions) return false;
-    if (permissions.is_full_access) return true;
+    console.log('🔍 [hasTabAccess] Called with:', { moduleId, tabId });
+    console.log('🔍 [hasTabAccess] Permissions:', permissions);
+    
+    if (!permissions) {
+      console.log('🔍 [hasTabAccess] No permissions loaded yet');
+      return false;
+    }
+    if (permissions.is_full_access) {
+      console.log('🔍 [hasTabAccess] Full access granted');
+      return true;
+    }
     const modulePerms = permissions.modules?.[moduleId];
-    if (!modulePerms?.access) return false;
-    return modulePerms.tabs?.[tabId]?.access === true;
+    console.log('🔍 [hasTabAccess] Module perms:', modulePerms);
+    
+    if (!modulePerms?.access) {
+      console.log('🔍 [hasTabAccess] No module access');
+      return false;
+    }
+    const result = modulePerms.tabs?.[tabId]?.access === true;
+    console.log('🔍 [hasTabAccess] Result:', result, 'Tab data:', modulePerms.tabs?.[tabId]);
+    return result;
   }, [permissions]);
 
   /**

@@ -29,6 +29,14 @@ const Planning = () => {
   const canDeletePlanning = hasModuleAction('planning', 'supprimer');
   const canViewRapportHeures = hasTabAccess('planning', 'rapport-heures');
   
+  // DEBUG: Log des permissions
+  React.useEffect(() => {
+    console.log('🔍 [DEBUG Planning] User:', user?.email, 'Role:', user?.role);
+    console.log('🔍 [DEBUG Planning] canViewRapportHeures:', canViewRapportHeures);
+    console.log('🔍 [DEBUG Planning] canCreatePlanning:', canCreatePlanning);
+    console.log('🔍 [DEBUG Planning] hasTabAccess function:', typeof hasTabAccess);
+  }, [user, canViewRapportHeures, canCreatePlanning, hasTabAccess]);
+  
   const [currentWeek, setCurrentWeek] = useState(() => {
     const today = new Date();
     // Utiliser UTC pour éviter les problèmes de fuseau horaire
