@@ -178,12 +178,18 @@ const Prevention = () => {
   }, [tenantSlug]);
 
   // Gestion des query params (?action=inspecter&batiment=ID, ?action=plan&batiment=ID, ?action=rapport&batiment=ID)
+  const [actionProcessed, setActionProcessed] = useState(false);
   useEffect(() => {
+    if (actionProcessed) return;
     if (!batiments || batiments.length === 0) return;
+
     const params = new URLSearchParams(window.location.search);
     const action = params.get('action');
     const batimentId = params.get('batiment');
     if (!action || !batimentId) return;
+
+    // Pour l'action 'inspecter', on a besoin que les grilles soient également chargées
+    if (action === 'inspecter' && (!grilles || grilles.length === 0)) return;
 
     const targetBatiment = batiments.find(b => b.id === batimentId);
     if (!targetBatiment) {
@@ -192,15 +198,69 @@ const Prevention = () => {
         description: "Le bâtiment demandé n'a pas été trouvé.",
         variant: "destructive"
       });
+      setActionProcessed(true);
       return;
     }
 
     setSelectedBatiment(targetBatiment);
 
-    switch (action) {
-      case 'inspecter':
+    const cleanUrl = () => {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    };
+
+    if (action === 'inspecter') {
+      // Trouver la grille appropriée selon le groupe d'occupation
+      const grille = getDefaultGrille(targetBatiment);
+      if (!grille) {
+        // Aucune grille → ouvrir le formulaire "Nouvelle Inspection" en fallback
+        toast({
+          title: "Aucune grille disponible",
+          description: "Créez une grille d'inspection dans les paramètres avant de démarrer.",
+          variant: "destructive"
+        });
         setCurrentView('nouvelle-inspection');
-        break;
+        setActionProcessed(true);
+        cleanUrl();
+        return;
+      }
+
+      // Créer directement l'inspection et ouvrir le formulaire approprié
+      (async () => {
+        try {
+          const inspection = await apiPost(tenantSlug, '/prevention/inspections', {
+            batiment_id: targetBatiment.id,
+            grille_inspection_id: grille.id,
+            date_inspection: getLocalDateString(),
+            type_inspection: 'reguliere',
+            preventionniste_id: user.id,
+            heure_debut: new Date().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' }),
+            resultats: {},
+            statut_global: 'en_cours',
+            score_conformite: 0
+          });
+          localStorage.setItem('current_inspection_id', inspection.id);
+          setCurrentView('realiser-inspection');
+          toast({
+            title: "Inspection démarrée",
+            description: `Grille « ${grille.nom} » pour ${targetBatiment.nom_etablissement || targetBatiment.adresse_civique}`
+          });
+        } catch (error) {
+          console.error('Erreur création inspection auto:', error);
+          toast({
+            title: "Erreur",
+            description: "Impossible de démarrer l'inspection. Veuillez sélectionner manuellement.",
+            variant: "destructive"
+          });
+          setCurrentView('nouvelle-inspection');
+        } finally {
+          setActionProcessed(true);
+          cleanUrl();
+        }
+      })();
+      return;
+    }
+
+    switch (action) {
       case 'plan':
         setSelectedPlanId(null);
         setCurrentView('plans-intervention');
@@ -213,11 +273,9 @@ const Prevention = () => {
       default:
         break;
     }
-
-    // Nettoyer l'URL pour éviter de rejouer l'action au refresh
-    const cleanUrl = window.location.pathname;
-    window.history.replaceState({}, document.title, cleanUrl);
-  }, [batiments]);
+    setActionProcessed(true);
+    cleanUrl();
+  }, [batiments, grilles, actionProcessed]);
 
   const fetchPreventionnistes = async () => {
     try {

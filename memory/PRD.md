@@ -65,6 +65,15 @@ Application de gestion complète pour les services d'incendie canadiens. Multi-t
 - Endpoint backend GET /import/duplicates/count-by-type pour agrégation par type (avr 2026)
 - Option nettoyage "PFM uniquement" dans CleanupDataModal pour supprimer seulement le personnel importé PFM (avr 2026)
 - **FIX CRITIQUE** : Correction logique statut actif/inactif PFM Transfer — Suppression condition date_fin. Seul le champ `inactif` de PFM détermine désormais le statut (import_batch.py ligne 2407) (avr 2026)
+- Refonte complète Module Prévention — grilles avec 23 types de champs, auto-save 10s, auto-fill intelligent, bibliothèque globale 51 articles québécois (avr 2026)
+- **FIX P0** : Seed 51 référentiels québécois exécuté sur DB production `profiremanager` (avr 2026)
+- **FIX P0** : Bouton "Inspecter" sur fiche bâtiment ouvre maintenant DIRECTEMENT la grille appropriée selon `groupe_occupation` du bâtiment (auto-création de l'inspection) (avr 2026)
+- **FIX** : App.js détecte maintenant le chemin URL pour router vers le bon module (ex: `/tenant/prevention?action=...`) (avr 2026)
+- **FIX** : Bouton "Inspecter" masqué quand `module_prevention_active=false` sur le tenant (Batiments.jsx) (avr 2026)
 
 ## Backlog
+- P1: Mettre à jour PDF rapport intervention avec nouvelles données RCCI
 - P2: Aperçu d'emails en temps réel dans les paramètres admin
+- P2: Audit complet du module Prévention
+- P3: Refactoring `import_batch.py` (>2800 lignes), `planning_auto.py` (>2000 lignes), `GrillesInspectionComponents.jsx` (>1500 lignes)
+- BLOQUÉ: Intégration CAUCA CAD (en attente certificats SSL utilisateur)

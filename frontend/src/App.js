@@ -331,15 +331,33 @@ const AppLayout = () => {
 
   // Détecter si l'utilisateur vient d'un lien email et rediriger vers la bonne page
   useEffect(() => {
+    if (!user) return;
     const urlParams = new URLSearchParams(window.location.search);
     const pageParam = urlParams.get('page');
-    
-    if (pageParam && user) {
+    const actionParam = urlParams.get('action');
+
+    if (pageParam) {
       setCurrentPage(pageParam);
-      
-      // Nettoyer l'URL pour éviter les rechargements avec les paramètres
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, '', newUrl);
+      // Nettoyer l'URL si pas d'action à conserver pour le sous-module
+      if (!actionParam) {
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+      }
+      return;
+    }
+
+    // Fallback: déduire la page depuis le chemin URL (utile pour redirections cross-module avec query params)
+    // Ex: /tenant/prevention?action=inspecter&batiment=ID
+    const path = window.location.pathname;
+    const pathParts = path.split('/').filter(Boolean);
+    const moduleFromPath = pathParts[1]; // [0]=tenantSlug, [1]=module
+    const knownModules = ['dashboard', 'personnel', 'actifs', 'interventions', 'paie',
+      'planning', 'remplacements', 'disponibilites', 'formations',
+      'batiments', 'prevention', 'rapports', 'parametres', 'profil', 'epi'];
+    if (moduleFromPath && knownModules.includes(moduleFromPath)) {
+      const targetPage = moduleFromPath === 'epi' ? 'actifs' : moduleFromPath;
+      setCurrentPage(targetPage);
+      // Conserver les query params si présents (ils seront lus par le sous-module)
     }
   }, [user]);
 

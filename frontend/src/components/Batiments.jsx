@@ -54,7 +54,7 @@ const LoadingComponent = () => (
  */
 const Batiments = () => {
   const { tenantSlug } = useTenant();
-  const { user } = useAuth();
+  const { user, tenant } = useAuth();
   const { toast } = useToast();
   const { hasModuleAction, hasModuleAccess } = usePermissions(tenantSlug, user);
   
@@ -114,7 +114,9 @@ const Batiments = () => {
   const canExport = hasModuleAction('batiments', 'exporter');
   
   // Permissions Prévention (pour onglets conditionnels)
-  const hasPreventionAccess = hasModuleAccess('prevention');
+  // Visible uniquement si l'utilisateur a accès ET que le module est actif pour le tenant
+  const tenantPreventionActive = tenant?.parametres?.module_prevention_active === true;
+  const hasPreventionAccess = hasModuleAccess('prevention') && tenantPreventionActive;
   
   // États pour les secteurs (si Prévention actif)
   const [secteurs, setSecteurs] = useState([]);
