@@ -25,7 +25,10 @@ import {
   Camera,
   Clipboard,
   ExternalLink,
-  Home
+  Home,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown
 } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 
@@ -64,6 +67,13 @@ const Batiments = () => {
   const [modalMode, setModalMode] = useState('view');
   const [exporting, setExporting] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  
+  // État pour le tri des colonnes
+  const [sortConfig, setSortConfig] = useState(() => {
+    // Charger les préférences de tri depuis localStorage
+    const saved = localStorage.getItem(`batiments_sort_${tenantSlug}_${user?.id}`);
+    return saved ? JSON.parse(saved) : [];
+  });
   
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -217,10 +227,136 @@ const Batiments = () => {
     }
   };
 
+  // ==================== SYSTÈME DE TRI ====================
+  
+  /**
+   * Gestion du tri multi-colonnes
+   * Shift+Clic pour ajouter une colonne de tri secondaire
+   */
+  const handleSort = (column, event) => {
+    let newSortConfig = [...sortConfig];
+    
+    // Trouver si cette colonne est déjà dans le tri
+    const existingIndex = newSortConfig.findIndex(s => s.column === column);
+    
+    if (event?.shiftKey && existingIndex === -1) {
+      // Shift+Clic : Ajouter une colonne de tri secondaire
+      newSortConfig.push({ column, direction: 'asc' });
+    } else if (existingIndex !== -1) {
+      // Colonne déjà triée : Changer la direction ou retirer
+      const currentDirection = newSortConfig[existingIndex].direction;
+      if (currentDirection === 'asc') {
+        newSortConfig[existingIndex].direction = 'desc';
+      } else {
+        // Retirer cette colonne du tri
+        newSortConfig.splice(existingIndex, 1);
+      }
+    } else {
+      // Nouveau tri simple
+      newSortConfig = [{ column, direction: 'asc' }];
+    }
+    
+    setSortConfig(newSortConfig);
+    
+    // Sauvegarder dans localStorage
+    localStorage.setItem(
+      `batiments_sort_${tenantSlug}_${user?.id}`,
+      JSON.stringify(newSortConfig)
+    );
+  };
+  
+  /**
+   * Fonction de comparaison pour le tri
+   */
+  const compareValues = (a, b, column) => {
+    let aVal = a[column];
+    let bVal = b[column];
+    
+    // Gestion des valeurs null/undefined
+    if (aVal == null && bVal == null) return 0;
+    if (aVal == null) return 1;
+    if (bVal == null) return -1;
+    
+    // Tri par importance pour niveau_risque
+    if (column === 'niveau_risque') {
+      const risqueOrder = {
+        'Faible': 1,
+        'Moyen': 2,
+        'Élevé': 3,
+        'Très élevé': 4
+      };
+      const aOrder = risqueOrder[aVal] || 0;
+      const bOrder = risqueOrder[bVal] || 0;
+      return aOrder - bOrder;
+    }
+    
+    // Tri numérique
+    if (typeof aVal === 'number' && typeof bVal === 'number') {
+      return aVal - bVal;
+    }
+    
+    // Tri numérique pour les champs qui peuvent être des strings numériques
+    if (['cadastre_matricule', 'valeur_fonciere', 'nombre_etages', 'nombre_logements', 'superficie', 'annee_construction'].includes(column)) {
+      const aNum = parseFloat(aVal);
+      const bNum = parseFloat(bVal);
+      if (!isNaN(aNum) && !isNaN(bNum)) {
+        return aNum - bNum;
+      }
+    }
+    
+    // Tri alphabétique par défaut
+    return String(aVal).localeCompare(String(bVal), 'fr-CA', { numeric: true, sensitivity: 'base' });
+  };
+  
+  /**
+   * Applique le tri multi-colonnes
+   */
+  const getSortedBatiments = (batiments) => {
+    if (sortConfig.length === 0) return batiments;
+    
+    return [...batiments].sort((a, b) => {
+      for (const { column, direction } of sortConfig) {
+        const comparison = compareValues(a, b, column);
+        if (comparison !== 0) {
+          return direction === 'asc' ? comparison : -comparison;
+        }
+      }
+      return 0;
+    });
+  };
+  
+  /**
+   * Rendu de l'icône de tri dans les en-têtes
+   */
+  const renderSortIcon = (column) => {
+    const sortIndex = sortConfig.findIndex(s => s.column === column);
+    
+    if (sortIndex === -1) {
+      return <ArrowUpDown size={14} className="ml-1 opacity-30" />;
+    }
+    
+    const sort = sortConfig[sortIndex];
+    const Icon = sort.direction === 'asc' ? ArrowUp : ArrowDown;
+    
+    return (
+      <span className="flex items-center gap-1">
+        <Icon size={14} className="ml-1" />
+        {sortConfig.length > 1 && (
+          <span className="text-xs bg-blue-600 text-white rounded-full w-4 h-4 flex items-center justify-center">
+            {sortIndex + 1}
+          </span>
+        )}
+      </span>
+    );
+  };
+  
+  // ==================== FIN SYSTÈME DE TRI ====================
+
   const filteredBatiments = getFilteredBatiments();
-  const batimentsAvecCoords = filteredBatiments.filter(b => b.latitude && b.longitude);
-  const visibleBatiments = filteredBatiments.slice(0, visibleCount);
-  const hasMore = visibleCount < filteredBatiments.length;
+  const sortedBatiments = getSortedBatiments(filteredBatiments);
+  const batimentsAvecCoords = sortedBatiments.filter(b => b.latitude && b.longitude);
+  const visibleBatiments = sortedBatiments.slice(0, visibleCount);
+  const hasMore = visibleCount < sortedBatiments.length;
 
   // Vérification des permissions
   if (!canView) {
@@ -342,7 +478,32 @@ const Batiments = () => {
         <LoadingComponent />
       ) : viewMode === 'liste' ? (
         /* Vue Liste */
-        <Card>
+        <>
+          {sortConfig.length > 0 && (
+            <div className="mb-2 flex items-center gap-2 text-sm text-gray-600 px-2">
+              <span>Tri actif :</span>
+              {sortConfig.map((sort, index) => (
+                <span key={sort.column} className="bg-blue-50 px-2 py-1 rounded flex items-center gap-1">
+                  {sort.column === 'adresse_civique' ? 'Adresse' : 
+                   sort.column === 'ville' ? 'Ville' : 
+                   sort.column === 'contact_nom' ? 'Contact' : 
+                   sort.column}
+                  {sort.direction === 'asc' ? ' ↑' : ' ↓'}
+                  {index < sortConfig.length - 1 && <span className="text-gray-400">→</span>}
+                </span>
+              ))}
+              <button 
+                onClick={() => {
+                  setSortConfig([]);
+                  localStorage.removeItem(`batiments_sort_${tenantSlug}_${user?.id}`);
+                }}
+                className="text-xs text-red-600 hover:underline ml-2"
+              >
+                Réinitialiser
+              </button>
+            </div>
+          )}
+          <Card>
           <div className="overflow-x-auto">
             {isMobile ? (
               /* Vue Cards Mobile */
@@ -392,15 +553,44 @@ const Batiments = () => {
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 border-b">
-                  <th className="px-4 py-3 text-left font-semibold text-sm">Photo</th>
-                  <th className="px-4 py-3 text-left font-semibold text-sm">Adresse</th>
-                  <th className="px-4 py-3 text-left font-semibold text-sm">Ville</th>
-                  <th className="px-4 py-3 text-left font-semibold text-sm">Contact</th>
+                  <th className="px-4 py-3 text-left font-semibold text-sm">
+                    Photo
+                  </th>
+                  <th 
+                    className="px-4 py-3 text-left font-semibold text-sm cursor-pointer hover:bg-gray-100 select-none"
+                    onClick={(e) => handleSort('adresse_civique', e)}
+                    title="Cliquer pour trier • Shift+Clic pour tri multi-colonnes"
+                  >
+                    <div className="flex items-center">
+                      Adresse
+                      {renderSortIcon('adresse_civique')}
+                    </div>
+                  </th>
+                  <th 
+                    className="px-4 py-3 text-left font-semibold text-sm cursor-pointer hover:bg-gray-100 select-none"
+                    onClick={(e) => handleSort('ville', e)}
+                    title="Cliquer pour trier • Shift+Clic pour tri multi-colonnes"
+                  >
+                    <div className="flex items-center">
+                      Ville
+                      {renderSortIcon('ville')}
+                    </div>
+                  </th>
+                  <th 
+                    className="px-4 py-3 text-left font-semibold text-sm cursor-pointer hover:bg-gray-100 select-none"
+                    onClick={(e) => handleSort('contact_nom', e)}
+                    title="Cliquer pour trier • Shift+Clic pour tri multi-colonnes"
+                  >
+                    <div className="flex items-center">
+                      Contact
+                      {renderSortIcon('contact_nom')}
+                    </div>
+                  </th>
                   <th className="px-4 py-3 text-center font-semibold text-sm">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredBatiments.length === 0 ? (
+                {sortedBatiments.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
                       {searchQuery ? 'Aucun bâtiment ne correspond à la recherche' : 'Aucun bâtiment enregistré'}
@@ -491,6 +681,7 @@ const Batiments = () => {
             </div>
           )}
         </Card>
+        </>
       ) : (
         /* Vue Carte avec secteurs */
         <Card className="overflow-hidden">
