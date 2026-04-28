@@ -259,7 +259,43 @@ const BibliothequeReferentiels = () => {
   if (loading) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <div>⏳ Chargement des référentiels...</div>
+        <div style={{ fontSize: '1.25rem' }}>⏳ Chargement des référentiels...</div>
+        <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem' }}>
+          Tenant: {tenantSlug || 'Non défini'}
+        </div>
+      </div>
+    );
+  }
+  
+  // Afficher un message si pas de données ET pas d'erreur
+  if (referentiels.total === 0 && !loading) {
+    return (
+      <div style={{ padding: '2rem' }}>
+        <h1 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '1rem' }}>
+          📚 Bibliothèque de Référentiels
+        </h1>
+        <div style={{ 
+          padding: '2rem',
+          backgroundColor: '#fef3c7',
+          borderRadius: '12px',
+          border: '1px solid #f59e0b'
+        }}>
+          <div style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+            ⚠️ Aucun référentiel trouvé
+          </div>
+          <div style={{ fontSize: '0.875rem', color: '#92400e' }}>
+            Tenant actuel: <strong>{tenantSlug || 'Non défini'}</strong>
+          </div>
+          <div style={{ fontSize: '0.875rem', color: '#92400e', marginTop: '0.25rem' }}>
+            Vérifiez la console navigateur (F12) pour plus de détails.
+          </div>
+          <Button
+            onClick={loadReferentiels}
+            style={{ marginTop: '1rem' }}
+          >
+            🔄 Réessayer
+          </Button>
+        </div>
       </div>
     );
   }
@@ -283,9 +319,10 @@ const BibliothequeReferentiels = () => {
         gap: '1rem', 
         marginBottom: '2rem',
         flexWrap: 'wrap',
-        alignItems: 'center'
+        alignItems: 'center',
+        justifyContent: 'space-between'
       }}>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           <Button
             size="sm"
             variant={filterCategory === 'all' ? 'default' : 'outline'}
@@ -330,12 +367,24 @@ const BibliothequeReferentiels = () => {
           </Button>
         </div>
         
-        <Input
-          placeholder="🔍 Rechercher un article..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          style={{ maxWidth: '300px' }}
-        />
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <Input
+            placeholder="🔍 Rechercher un article..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ width: '300px' }}
+          />
+          
+          {/* Bouton Ajouter règlement municipal - Visible quand filtre Municipal */}
+          {filterCategory === 'municipal' && (
+            <Button
+              onClick={() => setShowCreateModal(true)}
+              style={{ backgroundColor: '#10b981', color: 'white', whiteSpace: 'nowrap' }}
+            >
+              ➕ Ajouter règlement municipal
+            </Button>
+          )}
+        </div>
       </div>
       
       {/* Liste des codes */}
@@ -407,22 +456,6 @@ const BibliothequeReferentiels = () => {
                 </div>
                 
                 <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
-                  {(codeSource === 'S3-R4' || codeSource === 'RVQ-2241' || codeSource.startsWith('MUNICIPAL-')) && (
-                    <Button
-                      size="sm"
-                      variant="default"
-                      onClick={() => {
-                        setNewReglementForm({
-                          ...newReglementForm,
-                          code_source: codeSource === 'S3-R4' || codeSource === 'RVQ-2241' ? codeSource : 'MUNICIPAL-CUSTOM'
-                        });
-                        setShowCreateModal(true);
-                      }}
-                      style={{ backgroundColor: '#10b981', color: 'white' }}
-                    >
-                      ➕ Ajouter règlement
-                    </Button>
-                  )}
                   {!allActive && (
                     <Button
                       size="sm"
