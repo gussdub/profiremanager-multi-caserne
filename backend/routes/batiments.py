@@ -348,6 +348,108 @@ async def search_batiments(
     return batiments
 
 
+@router.get("/{tenant_slug}/batiments/export")
+async def export_batiments(
+    tenant_slug: str,
+    db = Depends(get_db),
+    tenant = Depends(get_tenant_from_slug),
+    current_user = Depends(get_current_user)
+):
+    """
+    Export de tous les bâtiments en Excel
+    Requiert la permission 'exporter' sur le module 'batiments'
+    """
+    # Vérifier la permission
+    if not await user_has_module_action(tenant.id, current_user, "batiments", "exporter"):
+        raise HTTPException(status_code=403, detail="Permission refusée")
+    
+    # Récupérer tous les bâtiments
+    batiments = await db.batiments.find(
+        {"tenant_id": tenant.id},
+        {"_id": 0}
+    ).to_list(10000)
+    
+    # Créer un fichier Excel avec openpyxl
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment, PatternFill
+    from io import BytesIO
+    
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Bâtiments"
+    
+    # En-têtes
+    headers = [
+        "Adresse", "Ville", "Code Postal", "Province", "Pays",
+        "Nom Établissement", "Catégorie", "Niveau de Risque",
+        "Nombre d'Étages", "Nombre de Logements", "Superficie (m²)",
+        "Année Construction", "Cadastre/Matricule", "Valeur Foncière",
+        "Contact Nom", "Contact Téléphone", "Contact Email",
+        "Description", "Statut"
+    ]
+    
+    # Style des en-têtes
+    header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+    
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num, value=header)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+    
+    # Données
+    for row_num, batiment in enumerate(batiments, 2):
+        ws.cell(row=row_num, column=1, value=batiment.get("adresse_civique", ""))
+        ws.cell(row=row_num, column=2, value=batiment.get("ville", ""))
+        ws.cell(row=row_num, column=3, value=batiment.get("code_postal", ""))
+        ws.cell(row=row_num, column=4, value=batiment.get("province", ""))
+        ws.cell(row=row_num, column=5, value=batiment.get("pays", ""))
+        ws.cell(row=row_num, column=6, value=batiment.get("nom_etablissement", ""))
+        ws.cell(row=row_num, column=7, value=batiment.get("groupe_occupation", ""))
+        ws.cell(row=row_num, column=8, value=batiment.get("niveau_risque", ""))
+        ws.cell(row=row_num, column=9, value=batiment.get("nombre_etages", ""))
+        ws.cell(row=row_num, column=10, value=batiment.get("nombre_logements", ""))
+        ws.cell(row=row_num, column=11, value=batiment.get("superficie", ""))
+        ws.cell(row=row_num, column=12, value=batiment.get("annee_construction", ""))
+        ws.cell(row=row_num, column=13, value=batiment.get("cadastre_matricule", ""))
+        ws.cell(row=row_num, column=14, value=batiment.get("valeur_fonciere", ""))
+        ws.cell(row=row_num, column=15, value=batiment.get("contact_nom", ""))
+        ws.cell(row=row_num, column=16, value=batiment.get("contact_telephone", ""))
+        ws.cell(row=row_num, column=17, value=batiment.get("contact_email", ""))
+        ws.cell(row=row_num, column=18, value=batiment.get("description", ""))
+        ws.cell(row=row_num, column=19, value="Actif" if batiment.get("actif", True) else "Inactif")
+    
+    # Ajuster la largeur des colonnes
+    for col in ws.columns:
+        max_length = 0
+        column = col[0].column_letter
+        for cell in col:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column].width = adjusted_width
+    
+    # Sauvegarder dans un buffer
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    
+    # Retourner le fichier
+    from fastapi.responses import StreamingResponse
+    
+    filename = f"batiments_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.xlsx"
+    
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
 @router.get("/{tenant_slug}/batiments/{batiment_id}")
 async def get_batiment(
     tenant_slug: str,
