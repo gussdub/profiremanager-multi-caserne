@@ -611,6 +611,89 @@ const RealiserInspection = ({ setCurrentView }) => {
   const [notes, setNotes] = useState('');
   const [recommandations, setRecommandations] = useState('');
 
+  // Fonction de mapping intelligent entre labels de questions et données du bâtiment
+  const smartAutoFill = (label, batimentData, lastInspectionData) => {
+    if (!label) return null;
+    
+    const labelLower = label.toLowerCase().trim();
+    
+    // Pattern matching pour chaque type de champ
+    const patterns = {
+      // Propriétaire
+      proprietaire: ['propriétaire', 'proprietaire', 'nom du propriétaire', 'nom proprietaire', 'owner'],
+      // Téléphone
+      telephone: ['téléphone', 'telephone', 'tél', 'tel', 'phone', 'numéro de téléphone', 'numero telephone'],
+      // Email
+      email: ['courriel', 'email', 'e-mail', 'adresse courriel', 'adresse email', 'mail'],
+      // Type de bâtiment
+      type: ['type de bâtiment', 'type de batiment', 'type batiment', 'type', 'catégorie', 'categorie'],
+      // Nombre d'étages
+      etages: ['nombre d\'étages', 'nombre d\'etages', 'étages', 'etages', 'nombre étages', 'nombre etages', 'nbre étages'],
+      // Nombre de logements
+      logements: ['nombre de logements', 'nombre logements', 'logements', 'nbre logements', 'unités', 'unites'],
+      // Superficie
+      superficie: ['superficie', 'surface', 'superficie totale', 'aire'],
+      // Année construction
+      annee: ['année de construction', 'annee construction', 'année construction', 'annee', 'année'],
+      // Adresse
+      adresse: ['adresse', 'lieu', 'emplacement', 'localisation'],
+      // Ville
+      ville: ['ville', 'municipalité', 'municipalite'],
+      // Code postal
+      codePostal: ['code postal', 'code_postal', 'postal'],
+      // Matricule
+      matricule: ['matricule', 'numéro matricule', 'numero matricule'],
+      // Risque
+      risque: ['risque', 'niveau de risque', 'cote de risque'],
+      // Secteur
+      secteur: ['secteur', 'secteur géographique', 'zone']
+    };
+    
+    // Vérifier chaque pattern
+    for (const [key, keywords] of Object.entries(patterns)) {
+      if (keywords.some(keyword => labelLower.includes(keyword))) {
+        // Priorité 1: Données du bâtiment (source officielle)
+        switch (key) {
+          case 'proprietaire':
+            return batimentData.proprietaire_nom || batimentData.proprietaire || null;
+          case 'telephone':
+            return batimentData.telephone || batimentData.telephone_contact || null;
+          case 'email':
+            return batimentData.email_contact || batimentData.email || null;
+          case 'type':
+            return batimentData.type || batimentData.categorie || null;
+          case 'etages':
+            return batimentData.nombre_etages || batimentData.etages || null;
+          case 'logements':
+            return batimentData.nombre_logements || batimentData.logements || null;
+          case 'superficie':
+            return batimentData.superficie || batimentData.superficie_totale || null;
+          case 'annee':
+            return batimentData.annee_construction || batimentData.annee || null;
+          case 'adresse':
+            return `${batimentData.adresse_civique || ''}, ${batimentData.ville || ''}`.trim() || null;
+          case 'ville':
+            return batimentData.ville || null;
+          case 'codePostal':
+            return batimentData.code_postal || null;
+          case 'matricule':
+            return batimentData.matricule || null;
+          case 'risque':
+            return batimentData.risque || batimentData.niveau_risque || null;
+          case 'secteur':
+            return batimentData.secteur || batimentData.secteur_geographique || null;
+        }
+      }
+    }
+    
+    // Priorité 2: Si aucun mapping bâtiment, essayer dernière inspection
+    if (lastInspectionData) {
+      return lastInspectionData;
+    }
+    
+    return null;
+  };
+
   useEffect(() => {
     const loadInspection = async () => {
       try {
@@ -632,29 +715,78 @@ const RealiserInspection = ({ setCurrentView }) => {
         setGrille(grilleData);
         setBatiment(batimentData);
 
-        // Auto-remplir les champs "lieu_auto" avec l'adresse du bâtiment
+        // === SYSTÈME D'AUTO-REMPLISSAGE INTELLIGENT ===
         if (grilleData && batimentData) {
-          const adresseBatiment = `${batimentData.adresse_civique || ''}, ${batimentData.ville || ''}`.trim();
-          const newResultats = { ...(inspData.resultats || {}) };
-          let hasLieuAuto = false;
+          // 1. Charger la dernière inspection du même bâtiment avec la même grille
+          let derniereInspection = null;
+          try {
+            const inspections = await apiGet(tenantSlug, `/prevention/inspections?batiment_id=${inspData.batiment_id}`);
+            // Filtrer pour trouver la dernière inspection avec la même grille (exclure l'inspection actuelle)
+            const inspectionsMemeGrille = inspections
+              .filter(insp => 
+                insp.grille_inspection_id === inspData.grille_inspection_id && 
+                insp.id !== inspectionId &&
+                insp.statut === 'terminee'
+              )
+              .sort((a, b) => new Date(b.date_inspection) - new Date(a.date_inspection));
+            
+            if (inspectionsMemeGrille.length > 0) {
+              derniereInspection = inspectionsMemeGrille[0];
+            }
+          } catch (error) {
+            console.log('Aucune inspection précédente trouvée');
+          }
 
-          // Parcourir toutes les sections et items pour trouver les champs "lieu_auto"
+          // 2. Auto-remplir intelligemment tous les champs
+          const newResultats = { ...(inspData.resultats || {}) };
+          let autoFilledCount = 0;
+
           grilleData.sections?.forEach((section, sectionIdx) => {
             const items = section.items || section.questions || [];
             items.forEach((item, itemIdx) => {
-              if (typeof item === 'object' && item.type === 'lieu_auto') {
-                const fieldKey = `section_${sectionIdx}_item_${itemIdx}`;
-                // Auto-remplir uniquement si le champ est vide
-                if (!newResultats[fieldKey] && adresseBatiment) {
-                  newResultats[fieldKey] = adresseBatiment;
-                  hasLieuAuto = true;
+              const fieldKey = `section_${sectionIdx}_item_${itemIdx}`;
+              
+              // Auto-remplir uniquement si le champ est vide
+              if (!newResultats[fieldKey]) {
+                let valueToFill = null;
+
+                // Type "lieu_auto" spécial
+                if (typeof item === 'object' && item.type === 'lieu_auto') {
+                  valueToFill = `${batimentData.adresse_civique || ''}, ${batimentData.ville || ''}`.trim();
+                } 
+                // Type "inspecteur_auto" spécial (déjà géré par le composant)
+                else if (typeof item === 'object' && item.type === 'inspecteur_auto') {
+                  // Laisser le composant gérer
+                  return;
+                }
+                // Type "meteo_auto" spécial (déjà géré par le composant)
+                else if (typeof item === 'object' && item.type === 'meteo_auto') {
+                  // Laisser le composant gérer
+                  return;
+                }
+                // Autres types: mapping intelligent
+                else {
+                  const itemLabel = typeof item === 'string' ? item : item.label;
+                  const lastInspValue = derniereInspection?.resultats?.[fieldKey];
+                  valueToFill = smartAutoFill(itemLabel, batimentData, lastInspValue);
+                }
+
+                if (valueToFill) {
+                  newResultats[fieldKey] = valueToFill;
+                  autoFilledCount++;
                 }
               }
             });
           });
 
-          if (hasLieuAuto) {
+          if (autoFilledCount > 0) {
             setResultats(newResultats);
+            // Toast informatif
+            toast({
+              title: "✨ Champs pré-remplis",
+              description: `${autoFilledCount} champ(s) complété(s) automatiquement depuis la fiche bâtiment${derniereInspection ? ' et la dernière inspection' : ''}`,
+              duration: 3000
+            });
           }
         }
       } catch (error) {
