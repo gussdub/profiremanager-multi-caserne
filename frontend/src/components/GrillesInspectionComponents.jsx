@@ -126,6 +126,9 @@ const EditerGrille = ({ grille, onClose, onSave }) => {
   const { toast } = useToast();
   const { confirm } = useConfirmDialog();
   const [saving, setSaving] = useState(false);
+  const [autoSaving, setAutoSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
   // État du formulaire
   const [formData, setFormData] = useState({
@@ -152,6 +155,72 @@ const EditerGrille = ({ grille, onClose, onSave }) => {
     actif: grille.actif !== false,
     version: grille.version || '1.0'
   });
+
+  // Auto-sauvegarde automatique
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+
+    const autoSaveTimer = setTimeout(async () => {
+      try {
+        setAutoSaving(true);
+        
+        // Convertir les sections au format attendu par le backend
+        const dataToSave = {
+          ...formData,
+          sections: formData.sections.map(section => ({
+            ...section,
+            items: section.items,
+            questions: section.items.map(item => item.label)
+          }))
+        };
+
+        await apiPut(tenantSlug, `/prevention/grilles-inspection/${grille.id}`, dataToSave);
+        setLastSaved(new Date());
+        setHasUnsavedChanges(false);
+        
+        // Sauvegarder aussi en localStorage comme backup
+        localStorage.setItem(`grille_draft_${grille.id}`, JSON.stringify(formData));
+      } catch (error) {
+        console.error('Erreur auto-sauvegarde:', error);
+        // En cas d'erreur, sauvegarder au moins en localStorage
+        localStorage.setItem(`grille_draft_${grille.id}`, JSON.stringify(formData));
+      } finally {
+        setAutoSaving(false);
+      }
+    }, 10000); // Auto-save après 10 secondes d'inactivité
+
+    return () => clearTimeout(autoSaveTimer);
+  }, [formData, hasUnsavedChanges, tenantSlug, grille.id]);
+
+  // Marquer comme modifié à chaque changement
+  useEffect(() => {
+    setHasUnsavedChanges(true);
+  }, [formData]);
+
+  // Restaurer le brouillon au chargement si disponible
+  useEffect(() => {
+    const savedDraft = localStorage.getItem(`grille_draft_${grille.id}`);
+    if (savedDraft) {
+      try {
+        const draft = JSON.parse(savedDraft);
+        // Demander à l'utilisateur s'il veut restaurer
+        const shouldRestore = window.confirm(
+          '📝 Un brouillon non sauvegardé a été trouvé. Voulez-vous le restaurer?'
+        );
+        if (shouldRestore) {
+          setFormData(draft);
+          toast({ 
+            title: "Brouillon restauré", 
+            description: "Vos modifications ont été récupérées" 
+          });
+        } else {
+          localStorage.removeItem(`grille_draft_${grille.id}`);
+        }
+      } catch (error) {
+        console.error('Erreur restauration brouillon:', error);
+      }
+    }
+  }, [grille.id]);
 
   // Configuration des capteurs pour drag & drop
   const sensors = useSensors(
@@ -448,6 +517,11 @@ const EditerGrille = ({ grille, onClose, onSave }) => {
       };
 
       await apiPut(tenantSlug, `/prevention/grilles-inspection/${grille.id}`, dataToSave);
+      
+      // Nettoyer le brouillon localStorage après sauvegarde réussie
+      localStorage.removeItem(`grille_draft_${grille.id}`);
+      setHasUnsavedChanges(false);
+      
       toast({ title: "Succès", description: "Grille mise à jour avec succès" });
       onSave();
     } catch (error) {
@@ -765,9 +839,29 @@ const EditerGrille = ({ grille, onClose, onSave }) => {
         backgroundColor: '#f8fafc',
         borderRadius: '12px'
       }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: '600', margin: 0 }}>
-          ✏️ Modifier la Grille: {grille.nom}
-        </h2>
+        <div>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', margin: 0 }}>
+            ✏️ Modifier la Grille: {grille.nom}
+          </h2>
+          {/* Indicateur d'auto-sauvegarde */}
+          <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {autoSaving && (
+              <span style={{ color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <span className="animate-spin">⏳</span> Sauvegarde en cours...
+              </span>
+            )}
+            {!autoSaving && lastSaved && (
+              <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                ✅ Dernière sauvegarde: {lastSaved.toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
+            {!autoSaving && !lastSaved && hasUnsavedChanges && (
+              <span style={{ color: '#6b7280', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                💾 Sauvegarde automatique activée
+              </span>
+            )}
+          </div>
+        </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <Button variant="outline" onClick={onClose}>✕ Annuler</Button>
           <Button onClick={handleSave} disabled={saving}>
