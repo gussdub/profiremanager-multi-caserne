@@ -631,6 +631,32 @@ const RealiserInspection = ({ setCurrentView }) => {
 
         setGrille(grilleData);
         setBatiment(batimentData);
+
+        // Auto-remplir les champs "lieu_auto" avec l'adresse du bâtiment
+        if (grilleData && batimentData) {
+          const adresseBatiment = `${batimentData.adresse_civique || ''}, ${batimentData.ville || ''}`.trim();
+          const newResultats = { ...(inspData.resultats || {}) };
+          let hasLieuAuto = false;
+
+          // Parcourir toutes les sections et items pour trouver les champs "lieu_auto"
+          grilleData.sections?.forEach((section, sectionIdx) => {
+            const items = section.items || section.questions || [];
+            items.forEach((item, itemIdx) => {
+              if (typeof item === 'object' && item.type === 'lieu_auto') {
+                const fieldKey = `section_${sectionIdx}_item_${itemIdx}`;
+                // Auto-remplir uniquement si le champ est vide
+                if (!newResultats[fieldKey] && adresseBatiment) {
+                  newResultats[fieldKey] = adresseBatiment;
+                  hasLieuAuto = true;
+                }
+              }
+            });
+          });
+
+          if (hasLieuAuto) {
+            setResultats(newResultats);
+          }
+        }
       } catch (error) {
         console.error('Erreur chargement inspection:', error);
         toast({

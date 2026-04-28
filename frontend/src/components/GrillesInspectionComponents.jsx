@@ -1031,19 +1031,56 @@ const EditerGrille = ({ grille, onClose, onSave }) => {
                           <Label style={{ margin: 0 }}>
                             Éléments à vérifier ({(section.items || []).length})
                           </Label>
-                          <div style={{ display: 'flex', gap: '0.25rem' }}>
-                            <Button size="sm" variant="outline" onClick={() => addItem(sectionIndex, 'conforme_non_conforme')}>
-                              + Conforme/NC
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={() => addItem(sectionIndex, 'radio')}>
-                              + Radio
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={() => addItem(sectionIndex, 'texte')}>
-                              + Texte
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={() => addItem(sectionIndex, 'photo')}>
-                              + Photo
-                            </Button>
+                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <select
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  addItem(sectionIndex, e.target.value);
+                                  e.target.value = ''; // Reset après ajout
+                                }
+                              }}
+                              style={{
+                                padding: '0.375rem 0.75rem',
+                                borderRadius: '6px',
+                                border: '1px solid #d1d5db',
+                                fontSize: '0.875rem',
+                                backgroundColor: 'white',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              <option value="">➕ Ajouter un élément...</option>
+                              <optgroup label="Prévention">
+                                <option value="conforme_non_conforme">✅ Conforme/Non conforme/N/A</option>
+                                <option value="oui_non">✓✗ Oui/Non</option>
+                                <option value="etat">🔴🟡🟢 État (Bon/Moyen/Mauvais)</option>
+                              </optgroup>
+                              <optgroup label="Basique">
+                                <option value="radio">🔘 Boutons radio</option>
+                                <option value="checkbox">☑️ Cases à cocher</option>
+                                <option value="texte">📝 Texte libre</option>
+                                <option value="nombre">🔢 Nombre</option>
+                                <option value="nombre_unite">🔢 Nombre avec unité</option>
+                                <option value="date">📅 Date</option>
+                                <option value="liste">📋 Liste déroulante</option>
+                              </optgroup>
+                              <optgroup label="Média">
+                                <option value="photo">📷 Photo</option>
+                                <option value="signature">✍️ Signature</option>
+                                <option value="note_audio">🎤 Note vocale</option>
+                              </optgroup>
+                              <optgroup label="Avancé">
+                                <option value="curseur">📊 Curseur (slider)</option>
+                                <option value="chronometre">⏱️ Chronomètre</option>
+                                <option value="compte_rebours">⏲️ Compte à rebours</option>
+                                <option value="qr_code">📱 QR/Code-barres</option>
+                                <option value="calcul_auto">🧮 Calcul automatique</option>
+                              </optgroup>
+                              <optgroup label="Auto-rempli">
+                                <option value="inspecteur_auto">👤 Inspecteur</option>
+                                <option value="lieu_auto">📍 Lieu (GPS/adresse)</option>
+                                <option value="meteo_auto">🌤️ Météo</option>
+                              </optgroup>
+                            </select>
                           </div>
                         </div>
 
