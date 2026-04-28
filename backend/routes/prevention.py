@@ -1782,10 +1782,12 @@ async def get_referentiels_globaux(
     for ref in all_globals:
         ref_id = ref["id"]
         if ref_id in activation_map:
+            # Le tenant a personnalisé ce référentiel
             ref["actif"] = activation_map[ref_id]["actif"]
             ref["frequence_utilisation"] = activation_map[ref_id]["frequence_utilisation"]
         else:
             # Par défaut, les référentiels globaux sont activés pour tous les tenants
+            # C'EST ICI LE FIX: Si pas dans tenant_referentiels, c'est activé par défaut
             ref["actif"] = True
             ref["frequence_utilisation"] = 0
     

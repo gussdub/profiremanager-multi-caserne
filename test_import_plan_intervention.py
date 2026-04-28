@@ -8,7 +8,7 @@ import sys
 import requests
 
 # Configuration
-BACKEND_URL = "https://romantic-moser-2.preview.emergentagent.com/api"
+BACKEND_URL = "https://prevention-module-qa.preview.emergentagent.com/api"
 TENANT_SLUG = "demo"
 EMAIL = "gussdub@gmail.com"
 PASSWORD = "230685Juin+"

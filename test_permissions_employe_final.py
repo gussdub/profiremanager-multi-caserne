@@ -7,7 +7,7 @@ import requests
 import json
 
 # Configuration
-API_URL = "https://romantic-moser-2.preview.emergentagent.com/api"
+API_URL = "https://prevention-module-qa.preview.emergentagent.com/api"
 TENANT = "shefford"
 EMAIL = "gussdub@gmail.com"
 PASSWORD = "230685Juin+"

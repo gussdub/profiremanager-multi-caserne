@@ -15,7 +15,7 @@ import os
 import uuid
 import time
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://romantic-moser-2.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://prevention-module-qa.preview.emergentagent.com')
 TENANT = "demo"
 API_URL = f"{BASE_URL}/api/{TENANT}"
 

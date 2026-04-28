@@ -1,40 +1,52 @@
 <analysis>**original_problem_statement**: 
-Application de gestion complète pour les services d'incendie canadiens. Le système RBAC avait un bug critique empêchant l'affichage conditionnel des onglets dans le frontend (P0). L'utilisateur a ensuite demandé l'ajout d'une fonctionnalité de tri multi-colonnes et d'un modal de personnalisation des colonnes dans le module Bâtiments, ainsi que la réparation de l'export Excel. Enfin, l'utilisateur a demandé une refonte majeure du module Prévention (Création de grilles d'inspection) pour supporter tous les types de champs, l'auto-remplissage, la création automatique d'anomalies (non-conformités), et un menu déroulant intelligent pour les référentiels de violation.
-
+Application de gestion complète pour les services d'incendie canadiens. L'utilisateur a demandé une refonte majeure du module Prévention (Création de grilles d'inspection) pour supporter tous les types de champs, l'auto-remplissage intelligent (depuis les données du bâtiment ou la dernière inspection), la création automatique d'anomalies, un système d'auto-sauvegarde, et une gestion centralisée des référentiels de violation (codes du bâtiment québécois) partageable entre les tenants.
 PRODUCT REQUIREMENTS: 
-1. Fix RBAC bug completely (Frontend and Backend).
-2. Add sorting and customizable columns to Bâtiments, fix Export API.
-3. Overhaul Prévention module (Grilles d'inspection) to include all 23 field types, auto-fill capabilities, conditional non-compliance creation, and searchable violation references.
-4. Integrate CAUCA CAD Transfert API (Blocked on credentials).
+1. Overhaul Prévention module to include 23 field types and dynamic rendering.
+2. Implement Smart Auto-fill for inspections (Building data + previous inspection data).
+3. Implement 10-second auto-save in the grid builder.
+4. Build a shared global violation reference library (Quebec fire codes) with tenant-specific toggles.
+5. Fix UI issues related to the inspection module.
 
 **User's preferred language**: French (INSTRUCT next agent to respond in FRANÇAIS only)
 
 **what currently exists?** 
-The RBAC system (Role-Based Access Control) is now 100% functional; the backend correctly saves and reads  from MongoDB Atlas, and the frontend dynamically displays tabs (like Rapport dheures") based on the payload. The "Bâtiments" module has been upgraded with multi-column sorting and a settings modal allowing users to customize displayed columns (e.g., Cadastre, Risque, Catégorie). The Bâtiments Excel export is fully functional via `openpyxl`. The "Prévention" module overhaul has just been scoped and prepared for this fork. 
+The Prévention module has been massively upgraded. The grid builder () now supports all field types via a dropdown, features 10-second auto-save, and supports dynamic rendering during inspections. A smart auto-fill system () pre-fills inspection data from the building object or the previous inspection. A new global Bibliothèque de Référentiels architecture exists in the backend () with over 51 seeded Quebec code articles, and a frontend interface (). However, the frontend currently shows 0 articles due to a fallback logic bug, and there is a critical routing bug when trying to inspect a building.
 
 **Last working item**: 
-    - Last item agent was working: Refonte du constructeur de "Grilles dinspection (Module Prévention). L'agent a commencé à ajouter les types de champs manquants (Nombre avec unité, Curseur, QR Code, Calcul, Auto-remplissage) dans , mais a créé un document de handoff et forké car la tâche est très volumineuse (estimée à 6-7h).
-    - Status: NOT STARTED
+    - Last item agent was working: Correction de deux bugs critiques remontés par l'utilisateur: 1) L'API des référentiels affiche 0 article car la logique de fallback (retourner les articles globaux par défaut) échoue. 2) Le bouton Inspecter sur une fiche bâtiment redirige vers la liste des bâtiments au lieu d'ouvrir la grille d'inspection appropriée (ex: Catégorie C). L'agent a appliqué un correctif  à la toute fin du dernier fork, mais n'a rien pu tester.
+    - Status: IN PROGRESS
     - Agent Testing Done: N
-    - Which testing method agent to use?: Frontend/Backend testing agent
+    - Which testing method agent to use?: both (curl for the API response + screenshot/frontend testing agent for the Inspecter button flow)
     - User Testing Done: N
 
 **All Pending/In progress Issue list**:  
-  - Issue 1: Intégration CAUCA CAD Transfert (Priorité: P1)
-     - Attempted fixes: Infrastructure de base prête.
+  - Issue 1: Bibliothèque de Référentiels affiche 0 article (Priorité: P0)
+     - Attempted fixes: Agent modified the backend route to fallback to returning all global references if the tenant has no active selections, and added an error display on the frontend. Unverified.
+     - Next debug checklist: Check  route . Ensure the MongoDB Atlas query correctly aggregates  with . Verify frontend  correctly receives and parses .
+     - Why fix this issue and what will be achieved with the fix?: Users cannot see, select, or manage violation references without this working.
+     - Status: TESTING PENDING
+     - Is recurring issue?: Y (Reported 3 times by user)
+     - Should Test frontend/backend/both after fix?: Both
+     - Blocked on other issue: None
+  - Issue 2: Bouton Inspecter depuis une fiche bâtiment redirige vers la liste (Priorité: P0)
+     - Attempted fixes: Agent pushed a final edit in  to fix the redirect logic right before the session ended.
+     - Next debug checklist: Check  inside  around line 614. It likely fails a validation check (missing  or  in localStorage) and hits the  block or  block that triggers .
+     - Why fix this issue and what will be achieved with the fix?: Core functionality is broken; users cannot perform building inspections.
+     - Status: TESTING PENDING
+     - Is recurring issue?: N
+     - Should Test frontend/backend/both after fix?: Frontend
+     - Blocked on other issue: None
+  - Issue 3: Intégration CAUCA CAD Transfert (Priorité: P1)
+     - Attempted fixes: Infrastructure de base prête depuis un précédent fork.
      - Next debug checklist: Attendre que l'utilisateur fournisse les certificats SSL et Token API.
      - Why fix this issue and what will be achieved with the fix?: Réception automatique des alertes incendie.
      - Status: BLOCKED (en attente des credentials)
      - Is recurring issue?: N
      - Should Test frontend/backend/both after fix?: Both
+     - Blocked on other issue: None
 
 **In progress Task List**:
-  Task 1: Refonte du constructeur de Grilles d'Inspection - Module Prévention (Priorité: P0)
-     - Where to resume: **LISEZ ABSOLUMENT LE FICHIER **. Il contient tout le plan détaillé. Vous devez modifier  pour rendre les nouveaux champs, implémenter l'auto-remplissage (Inspecteur, Météo, Lieu), lier les réponses à des anomalies (non-conformités), et connecter le référentiel de violations via un dropdown intelligent.
-     - What will be achieved with this?: Un module d'inspection dynamique, complet et interconnecté, similairement aux autres générateurs de formulaires de l'application.
-     - Status: NOT STARTED
-     - Should Test frontend/backend/both after fix?: Both
-     - Blocked on something: N/A
+None. The main feature tasks were finished, currently in the bug-fixing phase.
 
 **Upcoming and Future Tasks**
     Upcoming Tasks:
@@ -43,60 +55,60 @@ The RBAC system (Role-Based Access Control) is now 100% functional; the backend 
     
     Future Tasks:
     - Audit complet du module de Prévention pour s'assurer que tout fonctionne bien après la refonte des grilles.
-    - Refactoring des gros fichiers backend (ex:  > 2800 lignes,  > 2000 lignes) et du frontend  (1200+ lignes).
+    - Refactoring des gros fichiers backend (ex:  > 2800 lignes,  > 2000 lignes) et du frontend  (1500+ lignes).
 
 **Completed work in this session**
-- Frontend RBAC conditional rendering applied in  &  (DONE)
-- Backend RBAC  corrected to read  from MongoDB (DONE)
-- Bâtiments module: Multi-column sorting and UI configuration implemented (DONE)
-- Bâtiments module: Dynamic Column settings modal implemented (DONE)
-- Bâtiments module: Excel Export API endpoint  created using  (DONE)
-- Bâtiments module: Export icon updated from Download to Upload (DONE)
+- Module Prévention : Ajout de tous les types de champs et rendu dynamique (DONE)
+- Amélioration UI : Ajout d'éléments par liste déroulante au lieu de boutons multiples (DONE)
+- Auto-remplissage intelligent des inspections (bâtiment ou inspection précédente) (DONE)
+- Auto-sauvegarde (10s) pour l'édition de grilles (DONE)
+- Architecture globale des référentiels de violation + Seed de 51 articles québécois (DONE)
+- UI Paramètres Bibliothèque de Référentiels (DONE)
+- Modal de création de règlements municipaux personnalisés (DONE)
 
 **Earlier issues found/mentioned but not fixed**
-None.
+None apart from the active P0 bugs.
 
 **Known issue recurrence from previous fork**
-  - Issue recurrence in previous fork: RBAC bug was carried over but is now RESOLVED.
-  - Recurrence count: 0
-  - Status: RESOLVED
+  - Issue recurrence in previous fork: Bibliothèque de Référentiels returning 0 articles.
+  - Recurrence count: 2
+  - Status: IN PROGRESS
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
 - React, FastAPI, MongoDB Atlas (Cloud).
-- **RBAC (Role-Based Access Control)** : Overrides stored per tenant. The backend does a deep merge of  and custom .
-- **openpyxl** : Used for generating Excel  exports in the backend.
-- **dnd-kit** : Used for drag-and-drop in the inspection grid builder.
+- **Dnd-kit**: Used for drag-and-drop in the inspection grid builder.
+- **Smart Auto-fill**: Logic compares building properties and previous inspection responses against field labels via regex/pattern matching.
+- **Global DB sharing**: Referentiels are split into  (read-only for all tenants) and  (active toggles/usage stats per tenant).
 
 **key DB schema**
-  - : Custom permissions per role/tenant.
-  - : Building data schema.
-  - : Schemas defining the dynamic form templates for prevention inspections.
+  - : {code_source, article, titre, description, gravite, delai_correction, categorie, global: true}
+  - : {tenant_id, referentiel_global_id, actif, frequence_utilisation}
+  - : Used for tenant-specific custom references.
 
 **changes in tech stack**
-  - None, but confirmed usage of  for Excel generation.
+  - None.
 
 **All files of reference** 
-  -  (CRITICAL - Detailed guide for the Prevention task)
-  -  (Target for current task)
-  -  (Updated, reference for UI patterns)
-  -  (Updated)
-  -  (Updated)
+  - 
+  - 
+  - 
+  - 
 
 **Areas that need refactoring**:
-  -  is growing massive (>1200 lines). Once the new fields are added, consider breaking it down into smaller sub-components for maintainability.
+  -  (>1500 lines) and  (>2000 lines). Break them down when time permits.
 
 **key api endpoints**
-  -  (New Excel export route)
-  -  (Fixed RBAC route)
+  - 
+  - 
+  - 
 
 **Critical Info for New Agent** 
-- **Start by reading **. The previous agent prepared this specifically for you so you know exactly how to tackle the massive  module task.
-- The backend connects to **MongoDB Atlas**, not localhost. Use environment variables.
-- The user deploys their app on Vercel/Render by using Save to GitHub. Keep all code functional and clean for deployment.
-- Testing: You MUST test your API routes locally via curl/screenshot before assuming they work. The user catches bugs very quickly in their production environment.
+- The application connects to **MongoDB Atlas**, not localhost. The environment variables are correctly set, but be mindful of your data queries (ensure tenant isolation logic is sound).
+- The very last changes pushed by the previous agent (handling the 0 articles bug and the inspection redirect bug) **have not been tested**. You must start by validating those two P0 bugs.
+- Always use  for API testing via curl to ensure the ingress routing functions properly.
 
 **documents and test reports created in this job** 
   - 
@@ -105,19 +117,19 @@ None.
   - 
 
 **Last 10 User Messages and any pending HUMAN messages** 
- 1. (User) A -> *Requested to fork the session to handle the massive Prevention module task.*
- 2. (User) Answered choices regarding the prevention module, requesting all steps at once. -> *Pending task.*
- 3. (User) Outlined requirements for the Prevention module: add all field types, auto-fill fields, conditional anomaly creation, and searchable violation references. -> *Pending task.*
- 4. (User) Confirmed wanting the Upload icon for the export button. -> *Resolved.*
- 5. (User) Reported an error when clicking the Export button in the Bâtiments module. -> *Resolved (added missing API route).*
- 6. (User) oui go -> *Approved proceeding to Step 2 for Bâtiments columns.*
- 7. (User) Answered questions about column customizations (save user choice, multi-column, cadastre). -> *Resolved.*
- 8. (User) Clarified the multi-column sorting requirement. -> *Resolved.*
- 9. (User) Requested a Settings button in Bâtiments to select visible columns (address, contact, risk, matricule, etc.). -> *Resolved.*
- 10. (User) oui nettoie -> *Approved removing debug logs from Planning.jsx after RBAC was confirmed working.* -> *Resolved.*
+ 1. (User) Asked to pre-fill fields with building data or data from previous inspection. -> *Resolved*
+ 2. (User) Provided answers for auto-fill options. -> *Resolved*
+ 3. (User) Complained that searching for fumée yields no violation articles. -> *Resolved*
+ 4. (User) Asked to scrape internet for all Quebec codes, add to global DB, allow tenants to check/uncheck them. -> *Resolved*
+ 5. (User) Provided answers for the global DB structure configuration. -> *Resolved*
+ 6. (User) Confirmed proceeding with frontend for global DB. -> *Resolved*
+ 7. (User) Reported aucun article disponibles in the UI. -> *Resolved (Attempted)*
+ 8. (User) Asked to move municipal add button up, add abbreviations tooltips, and custom creation modal. -> *Resolved*
+ 9. (User) Reported STILL 0 articles, and button is still inside the regulation section. -> *Resolved (Attempted)*
+ 10. (User) Reported 0 articles again, and a NEW BUG: clicking Inspecter on a building card fails to open the grid and redirects to building list. -> *In Progress (Pending verification)*
 
 **Project Health Check:**
-- Broken: None.
+- Broken:  (No data displaying),  (Redirects user unexpectedly when starting inspection).
 - Mocked: None.
 
 **3rd Party Integrations** 
@@ -128,25 +140,25 @@ None.
 
 **Testing status**
   - Testing agent used after significant changes: NO (Used standard curl & screenshot).
-  - Troubleshoot agent used after agent stuck in loop: YES (Diagnosed backend RBAC omission).
+  - Troubleshoot agent used after agent stuck in loop: NO.
   - Test files created: None.
-  - Known regressions: None.
+  - Known regressions: Inspecter routing logic is currently broken.
 
 **Credentials to test flow:**
   - Admin:  /  (Tenant:  ou )
   - Employee:  / 
 
 **What agent forgot to execute**
-The agent didn't forget anything; they correctly scoped the massive Prévention module task, generated a handoff document, and initiated a fork to give the new agent a clean context window for implementation.
+Agent forgot to test the final code replacements before the fork ended, leaving two P0 bugs unverified.
 
 **Debugging checklist for current issue**
-    Issue: Refonte des grilles d'inspection (Prévention)
-    - Frontend files to check: 
-    - Check: 
-    - Actions: 
-      1. Read the Handoff MD file.
-      2. Add all missing field types to the component.
-      3. Create the rendering logic for sliders, auto-fill, GPS, etc.
-      4. Link Referentiel de violation drop-down.
-      5. Build the anomaly generation logic based on specific field answers.
-      6. Test thoroughly with screenshots and frontend tools.</analysis>
+    Issue: Inspecter redirige vers la liste & 0 articles dans la bibliothèque
+    Frontend files to check: 
+    -  (check  for the load failure/redirect logic)
+    -  (check the response parsing and loading states)
+  
+    Backend files to check:
+    -  (Verify the  route)
+
+    Database to check:
+    - MongoDB Atlas:  and  collections. Ensure the aggregation pipeline accurately matches tenant ids and returns the defaults.</analysis>
