@@ -161,18 +161,36 @@ const EditerGrille = ({ grille, onClose, onSave }) => {
 
   // Types de champs disponibles
   const typesChamp = [
+    // === BASIQUE ===
     { value: 'radio', label: '🔘 Boutons radio (choix unique)', category: 'basic' },
     { value: 'checkbox', label: '☑️ Cases à cocher (choix multiples)', category: 'basic' },
     { value: 'texte', label: '📝 Texte libre', category: 'basic' },
     { value: 'nombre', label: '🔢 Nombre', category: 'basic' },
+    { value: 'nombre_unite', label: '🔢 Nombre avec unité', category: 'basic' },
     { value: 'date', label: '📅 Date', category: 'basic' },
     { value: 'liste', label: '📋 Liste déroulante', category: 'basic' },
+    
+    // === MÉDIA ===
     { value: 'photo', label: '📷 Photo/Image', category: 'media' },
     { value: 'signature', label: '✍️ Signature', category: 'media' },
-    { value: 'oui_non', label: '✓✗ Oui/Non', category: 'basic' },
+    { value: 'note_audio', label: '🎤 Note vocale', category: 'media' },
+    
+    // === PRÉVENTION ===
+    { value: 'oui_non', label: '✓✗ Oui/Non', category: 'prevention' },
     { value: 'conforme_non_conforme', label: '✅ Conforme/Non conforme/N/A', category: 'prevention' },
     { value: 'etat', label: '🔴🟡🟢 État (Bon/Moyen/Mauvais)', category: 'prevention' },
-    { value: 'note_audio', label: '🎤 Note vocale', category: 'media' },
+    
+    // === AVANCÉ ===
+    { value: 'curseur', label: '📊 Curseur (slider)', category: 'advanced' },
+    { value: 'chronometre', label: '⏱️ Chronomètre', category: 'advanced' },
+    { value: 'compte_rebours', label: '⏲️ Compte à rebours', category: 'advanced' },
+    { value: 'qr_code', label: '📱 Scan QR/Code-barres', category: 'advanced' },
+    { value: 'calcul_auto', label: '🧮 Calcul automatique', category: 'advanced' },
+    
+    // === AUTO-REMPLI ===
+    { value: 'inspecteur_auto', label: '👤 Inspecteur (auto-rempli)', category: 'auto' },
+    { value: 'lieu_auto', label: '📍 Lieu (GPS ou adresse)', category: 'auto' },
+    { value: 'meteo_auto', label: '🌤️ Météo (auto-rempli)', category: 'auto' },
   ];
 
   // ====== DRAG & DROP HANDLERS ======
