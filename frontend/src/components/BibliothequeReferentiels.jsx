@@ -23,19 +23,23 @@ const BibliothequeReferentiels = () => {
   
   // Charger les référentiels
   useEffect(() => {
-    loadReferentiels();
+    if (tenantSlug) {
+      loadReferentiels();
+    }
   }, [tenantSlug]);
   
   const loadReferentiels = async () => {
     try {
       setLoading(true);
+      console.log('🔍 Loading referentiels for tenant:', tenantSlug);
       const data = await apiGet(tenantSlug, '/prevention/referentiels-globaux');
+      console.log('✅ Referentiels loaded:', data);
       setReferentiels(data);
     } catch (error) {
-      console.error('Erreur chargement référentiels:', error);
+      console.error('❌ Erreur chargement référentiels:', error);
       toast({
         title: "Erreur",
-        description: "Impossible de charger les référentiels",
+        description: `Impossible de charger les référentiels: ${error.message}`,
         variant: "destructive"
       });
     } finally {
