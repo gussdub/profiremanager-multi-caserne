@@ -443,11 +443,9 @@ async def update_inspection(
     inspection_data: InspectionCreate,
     current_user: User = Depends(get_current_user)
 ):
-    """Mettre à jour une inspection"""
+    """Mettre à jour une inspection + créer automatiquement les anomalies si nécessaire"""
     tenant = await get_tenant_from_slug(tenant_slug)
     await require_permission(tenant.id, current_user, "prevention", "modifier", "inspections")
-    
-    tenant = await get_tenant_from_slug(tenant_slug)
     
     if not tenant.parametres.get('module_prevention_active', False):
         raise HTTPException(status_code=403, detail="Module prévention non activé")
@@ -463,6 +461,68 @@ async def update_inspection(
         {"id": inspection_id, "tenant_id": tenant.id},
         {"$set": update_data}
     )
+    
+    # === CRÉATION AUTOMATIQUE DES ANOMALIES ===
+    # Récupérer la grille pour analyser les alertes configurées
+    grille = await db.grilles_inspection.find_one(
+        {"id": inspection_data.grille_inspection_id},
+        {"_id": 0}
+    )
+    
+    if grille and grille.get("sections"):
+        resultats = inspection_data.resultats or {}
+        
+        for section_idx, section in enumerate(grille["sections"]):
+            items = section.get("items", [])
+            
+            for item_idx, item in enumerate(items):
+                # Vérifier si cet item a une alerte configurée
+                if isinstance(item, dict) and item.get("alerte", {}).get("actif"):
+                    alerte = item["alerte"]
+                    field_key = f"section_{section_idx}_item_{item_idx}"
+                    reponse_value = resultats.get(field_key)
+                    
+                    # Vérifier si la réponse correspond au déclencheur
+                    if reponse_value == alerte.get("declencheur") and alerte.get("creer_anomalie"):
+                        article_ref = alerte.get("article_ref")
+                        
+                        # Vérifier si une anomalie n'a pas déjà été créée pour cette question
+                        existing_anomalie = await db.anomalies.find_one({
+                            "tenant_id": tenant.id,
+                            "inspection_id": inspection_id,
+                            "question_id": field_key
+                        })
+                        
+                        if not existing_anomalie:
+                            # Créer l'anomalie
+                            anomalie = {
+                                "id": str(uuid.uuid4()),
+                                "tenant_id": tenant.id,
+                                "batiment_id": inspection_data.batiment_id,
+                                "inspection_id": inspection_id,
+                                "question_id": field_key,
+                                "question": item.get("label", ""),
+                                "reponse": reponse_value,
+                                "section_grille": section.get("titre", f"Section {section_idx + 1}"),
+                                "article": article_ref.get("article", "") if article_ref else "",
+                                "titre": article_ref.get("titre", item.get("label", "")) if article_ref else item.get("label", ""),
+                                "description": f"Non-conformité détectée lors de l'inspection: {item.get('label', '')}",
+                                "gravite": article_ref.get("gravite", "moyen") if article_ref else "moyen",
+                                "date_detection": datetime.now(timezone.utc),
+                                "date_correction_prevue": datetime.now(timezone.utc) + timedelta(days=article_ref.get("delai_correction", 30) if article_ref else 30),
+                                "statut": "ouverte",
+                                "created_at": datetime.now(timezone.utc),
+                                "updated_at": datetime.now(timezone.utc)
+                            }
+                            
+                            await db.anomalies.insert_one(anomalie)
+                            
+                            # Incrémenter la fréquence d'utilisation du référentiel
+                            if article_ref and article_ref.get("id"):
+                                await db.referentiels_violation.update_one(
+                                    {"id": article_ref["id"], "tenant_id": tenant.id},
+                                    {"$inc": {"frequence_utilisation": 1}}
+                                )
     
     updated = await db.inspections.find_one({"id": inspection_id, "tenant_id": tenant.id}, {"_id": 0})
     return updated
@@ -1601,6 +1661,41 @@ async def delete_symbole_personnalise(
     
     return {"message": "Symbole supprimé avec succès"}
 
+
+# ==================== RÉFÉRENTIELS DE VIOLATION ====================
+
+@router.get("/{tenant_slug}/prevention/referentiels")
+async def search_referentiels_violation(
+    tenant_slug: str,
+    search: str = "",
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Recherche intelligente dans les référentiels de violation
+    Tri par pertinence + fréquence d'utilisation
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    query = {"tenant_id": tenant.id}
+    
+    if search:
+        # Recherche full-text sur article, titre, description
+        query["$or"] = [
+            {"article": {"$regex": search, "$options": "i"}},
+            {"titre": {"$regex": search, "$options": "i"}},
+            {"description": {"$regex": search, "$options": "i"}}
+        ]
+    
+    # Récupérer les référentiels triés par fréquence d'utilisation (les plus utilisés en premier)
+    referentiels = await db.referentiels_violation.find(
+        query,
+        {"_id": 0}
+    ).sort("frequence_utilisation", -1).to_list(100)
+    
+    return referentiels
 
 
 # ==================== SECTEURS GÉOGRAPHIQUES ====================

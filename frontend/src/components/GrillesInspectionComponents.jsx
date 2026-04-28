@@ -7,6 +7,7 @@ import { useToast } from '../hooks/use-toast';
 import { useConfirmDialog } from './ui/ConfirmDialog';
 import { useTenant } from '../contexts/TenantContext';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
+import ReferentielSearch from './ReferentielSearch';
 import {
   DndContext,
   closestCenter,
@@ -498,6 +499,16 @@ const EditerGrille = ({ grille, onClose, onSave }) => {
                 <option key={t.value} value={t.value}>{t.label}</option>
               ))}
             </optgroup>
+            <optgroup label="Avancé">
+              {typesChamp.filter(t => t.category === 'advanced').map(t => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </optgroup>
+            <optgroup label="Auto-rempli">
+              {typesChamp.filter(t => t.category === 'auto').map(t => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </optgroup>
           </select>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.875rem', whiteSpace: 'nowrap' }}>
             <input
@@ -557,6 +568,175 @@ const EditerGrille = ({ grille, onClose, onSave }) => {
             >
               + Ajouter option
             </Button>
+          </div>
+        )}
+
+        {/* Configuration spécifique pour nombre_unite */}
+        {item.type === 'nombre_unite' && (
+          <div style={{ marginLeft: '1rem', padding: '0.5rem', backgroundColor: '#f0f9ff', borderRadius: '6px', border: '1px solid #bae6fd' }}>
+            <Label style={{ fontSize: '0.75rem' }}>Unité par défaut (optionnel)</Label>
+            <Input
+              value={item.config?.unite_defaut || ''}
+              onChange={(e) => updateItem(sectionIndex, itemIndex, 'config', { ...item.config, unite_defaut: e.target.value })}
+              placeholder="Ex: mètres, kg, litres"
+              style={{ marginTop: '0.25rem' }}
+            />
+          </div>
+        )}
+
+        {/* Configuration spécifique pour curseur */}
+        {item.type === 'curseur' && (
+          <div style={{ marginLeft: '1rem', padding: '0.5rem', backgroundColor: '#f0f9ff', borderRadius: '6px', border: '1px solid #bae6fd' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
+              <div>
+                <Label style={{ fontSize: '0.75rem' }}>Min</Label>
+                <Input
+                  type="number"
+                  value={item.config?.min || 0}
+                  onChange={(e) => updateItem(sectionIndex, itemIndex, 'config', { ...item.config, min: parseInt(e.target.value) })}
+                />
+              </div>
+              <div>
+                <Label style={{ fontSize: '0.75rem' }}>Max</Label>
+                <Input
+                  type="number"
+                  value={item.config?.max || 100}
+                  onChange={(e) => updateItem(sectionIndex, itemIndex, 'config', { ...item.config, max: parseInt(e.target.value) })}
+                />
+              </div>
+              <div>
+                <Label style={{ fontSize: '0.75rem' }}>Pas</Label>
+                <Input
+                  type="number"
+                  value={item.config?.step || 1}
+                  onChange={(e) => updateItem(sectionIndex, itemIndex, 'config', { ...item.config, step: parseInt(e.target.value) })}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Configuration spécifique pour compte_rebours */}
+        {item.type === 'compte_rebours' && (
+          <div style={{ marginLeft: '1rem', padding: '0.5rem', backgroundColor: '#f0f9ff', borderRadius: '6px', border: '1px solid #bae6fd' }}>
+            <Label style={{ fontSize: '0.75rem' }}>Durée initiale (secondes)</Label>
+            <Input
+              type="number"
+              value={item.config?.duree_secondes || 60}
+              onChange={(e) => updateItem(sectionIndex, itemIndex, 'config', { ...item.config, duree_secondes: parseInt(e.target.value) })}
+              placeholder="Ex: 60 pour 1 minute"
+              style={{ marginTop: '0.25rem' }}
+            />
+          </div>
+        )}
+
+        {/* Configuration spécifique pour calcul_auto */}
+        {item.type === 'calcul_auto' && (
+          <div style={{ marginLeft: '1rem', padding: '0.5rem', backgroundColor: '#f0f9ff', borderRadius: '6px', border: '1px solid #bae6fd' }}>
+            <Label style={{ fontSize: '0.75rem' }}>Formule de calcul</Label>
+            <Input
+              value={item.config?.formule || ''}
+              onChange={(e) => updateItem(sectionIndex, itemIndex, 'config', { ...item.config, formule: e.target.value })}
+              placeholder="Ex: {champ1} + {champ2}"
+              style={{ marginTop: '0.25rem' }}
+            />
+            <div style={{ fontSize: '0.65rem', color: '#6b7280', marginTop: '0.25rem' }}>
+              💡 Utilisez les noms de champs entre accolades. Ex: {'{'}nombre_extincteurs{'}'} * 2
+            </div>
+          </div>
+        )}
+
+        {/* Configuration des alertes et anomalies */}
+        {(['conforme_non_conforme', 'oui_non', 'etat', 'radio', 'checkbox'].includes(item.type)) && (
+          <div style={{ 
+            marginLeft: '1rem', 
+            padding: '0.75rem', 
+            backgroundColor: '#fef3c7', 
+            borderRadius: '6px',
+            border: '1px solid #f59e0b',
+            marginTop: '0.5rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <input
+                type="checkbox"
+                id={`alerte-${sectionIndex}-${itemIndex}`}
+                checked={!!item.alerte?.actif}
+                onChange={(e) => {
+                  const newAlerte = e.target.checked 
+                    ? { actif: true, declencheur: '', creer_anomalie: true, article_ref: null }
+                    : null;
+                  updateItem(sectionIndex, itemIndex, 'alerte', newAlerte);
+                }}
+              />
+              <Label htmlFor={`alerte-${sectionIndex}-${itemIndex}`} style={{ margin: 0, cursor: 'pointer', fontWeight: '600' }}>
+                ⚠️ Déclencher une alerte si...
+              </Label>
+            </div>
+
+            {item.alerte?.actif && (
+              <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div>
+                  <Label style={{ fontSize: '0.75rem' }}>Condition de déclenchement</Label>
+                  <select
+                    value={item.alerte?.declencheur || ''}
+                    onChange={(e) => updateItem(sectionIndex, itemIndex, 'alerte', { ...item.alerte, declencheur: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '0.5rem',
+                      borderRadius: '6px',
+                      border: '1px solid #d1d5db',
+                      fontSize: '0.875rem',
+                      marginTop: '0.25rem'
+                    }}
+                  >
+                    <option value="">-- Sélectionner --</option>
+                    {item.type === 'conforme_non_conforme' && (
+                      <>
+                        <option value="non_conforme">Non conforme</option>
+                        <option value="conforme">Conforme</option>
+                      </>
+                    )}
+                    {item.type === 'oui_non' && (
+                      <>
+                        <option value="non">Non</option>
+                        <option value="oui">Oui</option>
+                      </>
+                    )}
+                    {item.type === 'etat' && (
+                      <>
+                        <option value="mauvais">Mauvais</option>
+                        <option value="moyen">Moyen</option>
+                        <option value="bon">Bon</option>
+                      </>
+                    )}
+                    {(item.type === 'radio' || item.type === 'checkbox') && (item.options || []).map((opt, idx) => (
+                      <option key={idx} value={opt.toLowerCase().replace(/\s+/g, '_')}>{opt}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {item.alerte?.declencheur && (
+                  <div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+                      <input
+                        type="checkbox"
+                        checked={item.alerte?.creer_anomalie !== false}
+                        onChange={(e) => updateItem(sectionIndex, itemIndex, 'alerte', { ...item.alerte, creer_anomalie: e.target.checked })}
+                      />
+                      Créer automatiquement une anomalie (non-conformité)
+                    </label>
+
+                    {item.alerte?.creer_anomalie !== false && (
+                      <ReferentielSearch
+                        value={item.alerte?.article_ref}
+                        onChange={(ref) => updateItem(sectionIndex, itemIndex, 'alerte', { ...item.alerte, article_ref: ref })}
+                        questionType={item.type}
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 

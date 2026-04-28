@@ -11,6 +11,17 @@ import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import { Calendar } from './ui/calendar';
 import { fr } from 'date-fns/locale';
 import CameraCapture from './CameraCapture';
+import {
+  NombreUniteField,
+  CurseurField,
+  ChronometreField,
+  CompteReboursField,
+  QRCodeField,
+  CalculAutoField,
+  InspecteurAutoField,
+  LieuAutoField,
+  MeteoAutoField
+} from './InspectionFieldTypes';
 
 // Fonction utilitaire pour obtenir la date locale au format YYYY-MM-DD (sans décalage timezone)
 const getLocalDateString = () => {
@@ -644,6 +655,208 @@ const RealiserInspection = ({ setCurrentView }) => {
     }));
   };
 
+  // Fonction de rendu dynamique des champs selon le type
+  const renderFieldInput = (item, sectionIdx, itemIdx) => {
+    const fieldKey = `section_${sectionIdx}_item_${itemIdx}`;
+    const value = resultats[fieldKey];
+    const handleChange = (val) => handleReponse(sectionIdx, itemIdx, val);
+
+    // Si l'item est un ancien format (string), utiliser le mode conforme/non-conforme par défaut
+    if (typeof item === 'string') {
+      return (
+        <div className="question-reponses">
+          <label className="radio-label">
+            <input
+              type="radio"
+              name={fieldKey}
+              value="conforme"
+              checked={value === 'conforme'}
+              onChange={(e) => handleChange(e.target.value)}
+            />
+            <span>✅ Conforme</span>
+          </label>
+          <label className="radio-label">
+            <input
+              type="radio"
+              name={fieldKey}
+              value="non_conforme"
+              checked={value === 'non_conforme'}
+              onChange={(e) => handleChange(e.target.value)}
+            />
+            <span>⚠️ Non-conforme</span>
+          </label>
+          <label className="radio-label">
+            <input
+              type="radio"
+              name={fieldKey}
+              value="na"
+              checked={value === 'na'}
+              onChange={(e) => handleChange(e.target.value)}
+            />
+            <span>⊘ N/A</span>
+          </label>
+        </div>
+      );
+    }
+
+    // Nouveaux types de champs
+    switch (item.type) {
+      case 'conforme_non_conforme':
+        return (
+          <div className="question-reponses">
+            <label className="radio-label">
+              <input type="radio" name={fieldKey} value="conforme" checked={value === 'conforme'} onChange={(e) => handleChange(e.target.value)} />
+              <span>✅ Conforme</span>
+            </label>
+            <label className="radio-label">
+              <input type="radio" name={fieldKey} value="non_conforme" checked={value === 'non_conforme'} onChange={(e) => handleChange(e.target.value)} />
+              <span>⚠️ Non-conforme</span>
+            </label>
+            <label className="radio-label">
+              <input type="radio" name={fieldKey} value="na" checked={value === 'na'} onChange={(e) => handleChange(e.target.value)} />
+              <span>⊘ N/A</span>
+            </label>
+          </div>
+        );
+
+      case 'oui_non':
+        return (
+          <div className="question-reponses">
+            <label className="radio-label">
+              <input type="radio" name={fieldKey} value="oui" checked={value === 'oui'} onChange={(e) => handleChange(e.target.value)} />
+              <span>✅ Oui</span>
+            </label>
+            <label className="radio-label">
+              <input type="radio" name={fieldKey} value="non" checked={value === 'non'} onChange={(e) => handleChange(e.target.value)} />
+              <span>❌ Non</span>
+            </label>
+          </div>
+        );
+
+      case 'etat':
+        return (
+          <div className="question-reponses">
+            <label className="radio-label">
+              <input type="radio" name={fieldKey} value="bon" checked={value === 'bon'} onChange={(e) => handleChange(e.target.value)} />
+              <span>🟢 Bon</span>
+            </label>
+            <label className="radio-label">
+              <input type="radio" name={fieldKey} value="moyen" checked={value === 'moyen'} onChange={(e) => handleChange(e.target.value)} />
+              <span>🟡 Moyen</span>
+            </label>
+            <label className="radio-label">
+              <input type="radio" name={fieldKey} value="mauvais" checked={value === 'mauvais'} onChange={(e) => handleChange(e.target.value)} />
+              <span>🔴 Mauvais</span>
+            </label>
+          </div>
+        );
+
+      case 'radio':
+        return (
+          <div className="question-reponses">
+            {(item.options || []).map((option, idx) => (
+              <label key={idx} className="radio-label">
+                <input type="radio" name={fieldKey} value={option} checked={value === option} onChange={(e) => handleChange(e.target.value)} />
+                <span>{option}</span>
+              </label>
+            ))}
+          </div>
+        );
+
+      case 'checkbox':
+        return (
+          <div className="question-reponses">
+            {(item.options || []).map((option, idx) => (
+              <label key={idx} className="radio-label">
+                <input
+                  type="checkbox"
+                  checked={(value || []).includes(option)}
+                  onChange={(e) => {
+                    const currentValues = value || [];
+                    const newValues = e.target.checked
+                      ? [...currentValues, option]
+                      : currentValues.filter(v => v !== option);
+                    handleChange(newValues);
+                  }}
+                />
+                <span>{option}</span>
+              </label>
+            ))}
+          </div>
+        );
+
+      case 'texte':
+        return <Input value={value || ''} onChange={(e) => handleChange(e.target.value)} placeholder="Votre réponse..." />;
+
+      case 'nombre':
+        return <Input type="number" value={value || ''} onChange={(e) => handleChange(e.target.value)} placeholder="Nombre" />;
+
+      case 'nombre_unite':
+        return <NombreUniteField value={value} onChange={handleChange} config={item.config} />;
+
+      case 'date':
+        return <Input type="date" value={value || ''} onChange={(e) => handleChange(e.target.value)} />;
+
+      case 'liste':
+        return (
+          <select value={value || ''} onChange={(e) => handleChange(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #d1d5db' }}>
+            <option value="">-- Sélectionner --</option>
+            {(item.options || []).map((option, idx) => (
+              <option key={idx} value={option}>{option}</option>
+            ))}
+          </select>
+        );
+
+      case 'curseur':
+        return <CurseurField value={value} onChange={handleChange} config={item.config} />;
+
+      case 'chronometre':
+        return <ChronometreField value={value} onChange={handleChange} />;
+
+      case 'compte_rebours':
+        return <CompteReboursField value={value} onChange={handleChange} config={item.config} />;
+
+      case 'qr_code':
+        return <QRCodeField value={value} onChange={handleChange} />;
+
+      case 'calcul_auto':
+        return <CalculAutoField value={value} onChange={handleChange} config={item.config} allValues={resultats} />;
+
+      case 'inspecteur_auto':
+        return <InspecteurAutoField value={value} onChange={handleChange} />;
+
+      case 'lieu_auto':
+        return <LieuAutoField value={value} onChange={handleChange} batiment={batiment} />;
+
+      case 'meteo_auto':
+        return <MeteoAutoField value={value} onChange={handleChange} location={batiment} />;
+
+      case 'photo':
+        return (
+          <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+            📷 Utilisez la section "Photos de l'inspection" ci-dessous
+          </div>
+        );
+
+      case 'signature':
+        return (
+          <div style={{ padding: '0.5rem', border: '1px dashed #d1d5db', borderRadius: '6px', backgroundColor: '#f9fafb', textAlign: 'center', color: '#6b7280' }}>
+            ✍️ Zone de signature (fonctionnalité à venir)
+          </div>
+        );
+
+      case 'note_audio':
+        return (
+          <div style={{ padding: '0.5rem', border: '1px dashed #d1d5db', borderRadius: '6px', backgroundColor: '#f9fafb', textAlign: 'center', color: '#6b7280' }}>
+            🎤 Enregistrement audio (fonctionnalité à venir)
+          </div>
+        );
+
+      default:
+        return <Input value={value || ''} onChange={(e) => handleChange(e.target.value)} placeholder="Réponse" />;
+    }
+  };
+
   const handleSaveInspection = async (statut = 'brouillon') => {
     try {
       // Calculer le score de conformité
@@ -726,65 +939,70 @@ const RealiserInspection = ({ setCurrentView }) => {
       </div>
 
       <div className="grille-inspection-content">
-        {grille.sections.map((section, sectionIdx) => (
-          <div key={sectionIdx} className="grille-section">
-            <h3>{section.titre}</h3>
-            
-            <div className="questions-list">
-              {section.questions.map((question, questionIdx) => (
-                <div key={questionIdx} className="question-item">
-                  <label className="question-text">{question}</label>
+        {grille.sections.map((section, sectionIdx) => {
+          // Support du nouveau format (items) et ancien format (questions)
+          const items = section.items || section.questions || [];
+          
+          return (
+            <div key={sectionIdx} className="grille-section">
+              <h3>{section.titre}</h3>
+              {section.description && (
+                <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1rem' }}>
+                  {section.description}
+                </p>
+              )}
+              
+              <div className="questions-list">
+                {items.map((item, itemIdx) => {
+                  const fieldKey = `section_${sectionIdx}_item_${itemIdx}`;
+                  const itemLabel = typeof item === 'string' ? item : item.label;
+                  const currentValue = resultats[fieldKey];
                   
-                  <div className="question-reponses">
-                    <label className="radio-label">
-                      <input
-                        type="radio"
-                        name={`section_${sectionIdx}_question_${questionIdx}`}
-                        value="conforme"
-                        checked={resultats[`section_${sectionIdx}_question_${questionIdx}`] === 'conforme'}
-                        onChange={(e) => handleReponse(sectionIdx, questionIdx, e.target.value)}
-                      />
-                      <span>✅ Conforme</span>
-                    </label>
-                    
-                    <label className="radio-label">
-                      <input
-                        type="radio"
-                        name={`section_${sectionIdx}_question_${questionIdx}`}
-                        value="non_conforme"
-                        checked={resultats[`section_${sectionIdx}_question_${questionIdx}`] === 'non_conforme'}
-                        onChange={(e) => handleReponse(sectionIdx, questionIdx, e.target.value)}
-                      />
-                      <span>⚠️ Non-conforme</span>
-                    </label>
-                    
-                    <label className="radio-label">
-                      <input
-                        type="radio"
-                        name={`section_${sectionIdx}_question_${questionIdx}`}
-                        value="na"
-                        checked={resultats[`section_${sectionIdx}_question_${questionIdx}`] === 'na'}
-                        onChange={(e) => handleReponse(sectionIdx, questionIdx, e.target.value)}
-                      />
-                      <span>⊘ N/A</span>
-                    </label>
-                  </div>
+                  // Déterminer si on doit déclencher une alerte
+                  const shouldTriggerAlert = item.alerte?.actif && 
+                    item.alerte?.declencheur && 
+                    currentValue === item.alerte.declencheur;
 
-                  {resultats[`section_${sectionIdx}_question_${questionIdx}`] === 'non_conforme' && (
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={() => ajouterNonConformite(sectionIdx, questionIdx, question)}
-                      className="add-nc-btn"
-                    >
-                      ➕ Ajouter non-conformité
-                    </Button>
-                  )}
-                </div>
-              ))}
+                  return (
+                    <div key={itemIdx} className="question-item">
+                      <label className="question-text">
+                        {itemLabel}
+                        {item.obligatoire && <span style={{ color: '#ef4444', marginLeft: '0.25rem' }}>*</span>}
+                      </label>
+                      {item.description && (
+                        <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.25rem' }}>
+                          {item.description}
+                        </p>
+                      )}
+                      
+                      {renderFieldInput(item, sectionIdx, itemIdx)}
+
+                      {/* Alerte visuelle si déclenchement */}
+                      {shouldTriggerAlert && item.alerte?.creer_anomalie && (
+                        <div style={{
+                          marginTop: '0.5rem',
+                          padding: '0.75rem',
+                          backgroundColor: '#fef2f2',
+                          border: '1px solid #fecaca',
+                          borderRadius: '6px'
+                        }}>
+                          <div style={{ fontWeight: '600', color: '#dc2626', fontSize: '0.875rem' }}>
+                            ⚠️ Une anomalie sera créée automatiquement
+                          </div>
+                          {item.alerte.article_ref && (
+                            <div style={{ fontSize: '0.75rem', color: '#991b1b', marginTop: '0.25rem' }}>
+                              Article: {item.alerte.article_ref.article} - {item.alerte.article_ref.titre}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {nonConformites.length > 0 && (

@@ -26,7 +26,7 @@ import time
 from datetime import datetime, timedelta
 
 # Get backend URL from environment
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://employee-access-ui.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://romantic-moser-2.preview.emergentagent.com').rstrip('/')
 TENANT = "demo"
 
 # Test credentials

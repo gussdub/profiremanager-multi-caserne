@@ -9,7 +9,7 @@ import os
 import pytest
 import requests
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://employee-access-ui.preview.emergentagent.com").rstrip("/")
+BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://romantic-moser-2.preview.emergentagent.com").rstrip("/")
 TENANT = "demo"  # shefford has no user gussdub@gmail.com currently seeded; use demo
 EMAIL = "gussdub@gmail.com"
 PASSWORD = "230685Juin+"
