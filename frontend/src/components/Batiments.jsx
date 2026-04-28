@@ -28,7 +28,9 @@ import {
   Home,
   ArrowUp,
   ArrowDown,
-  ArrowUpDown
+  ArrowUpDown,
+  Settings,
+  GripVertical
 } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 
@@ -74,6 +76,29 @@ const Batiments = () => {
     const saved = localStorage.getItem(`batiments_sort_${tenantSlug}_${user?.id}`);
     return saved ? JSON.parse(saved) : [];
   });
+  
+  // État pour la personnalisation des colonnes
+  const [showColumnModal, setShowColumnModal] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState(() => {
+    const saved = localStorage.getItem(`batiments_columns_${tenantSlug}_${user?.id}`);
+    return saved ? JSON.parse(saved) : ['photo', 'adresse', 'ville', 'contact'];
+  });
+  
+  // Configuration de toutes les colonnes disponibles
+  const availableColumns = [
+    { id: 'photo', label: 'Photo', required: true, sortable: false },
+    { id: 'adresse', label: 'Adresse', required: true, sortable: true, sortKey: 'adresse_civique' },
+    { id: 'ville', label: 'Ville', required: true, sortable: true, sortKey: 'ville' },
+    { id: 'contact', label: 'Contact', required: false, sortable: true, sortKey: 'contact_nom' },
+    { id: 'matricule', label: 'Cadastre / Matricule', required: false, sortable: true, sortKey: 'cadastre_matricule' },
+    { id: 'risque', label: 'Niveau de Risque', required: false, sortable: true, sortKey: 'niveau_risque' },
+    { id: 'categorie', label: 'Catégorie', required: false, sortable: true, sortKey: 'groupe_occupation' },
+    { id: 'etages', label: 'Nb. Étages', required: false, sortable: true, sortKey: 'nombre_etages' },
+    { id: 'logements', label: 'Nb. Logements', required: false, sortable: true, sortKey: 'nombre_logements' },
+    { id: 'superficie', label: 'Superficie (m²)', required: false, sortable: true, sortKey: 'superficie' },
+    { id: 'annee', label: 'Année Construction', required: false, sortable: true, sortKey: 'annee_construction' },
+    { id: 'code_postal', label: 'Code Postal', required: false, sortable: true, sortKey: 'code_postal' },
+  ];
   
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -351,6 +376,102 @@ const Batiments = () => {
   };
   
   // ==================== FIN SYSTÈME DE TRI ====================
+  
+  // ==================== RENDU DYNAMIQUE DES COLONNES ====================
+  
+  /**
+   * Rendu du contenu d'une cellule selon le type de colonne
+   */
+  const renderCellContent = (batiment, columnId) => {
+    switch(columnId) {
+      case 'photo':
+        return batiment.photo_url ? (
+          <img 
+            src={batiment.photo_url} 
+            alt="Bâtiment" 
+            className="w-16 h-12 object-cover rounded border"
+          />
+        ) : (
+          <div className="w-16 h-12 bg-gray-100 rounded border flex items-center justify-center">
+            <Building2 className="w-6 h-6 text-gray-400" />
+          </div>
+        );
+        
+      case 'adresse':
+        return (
+          <div>
+            <div className="font-medium">{batiment.nom_etablissement || batiment.adresse_civique}</div>
+            {batiment.nom_etablissement && (
+              <div className="text-sm text-gray-500">{batiment.adresse_civique}</div>
+            )}
+          </div>
+        );
+        
+      case 'ville':
+        return (
+          <div>
+            {batiment.ville}
+            {batiment.code_postal && (
+              <div className="text-sm text-gray-400">{batiment.code_postal}</div>
+            )}
+          </div>
+        );
+        
+      case 'contact':
+        return (
+          <div>
+            {batiment.contact_nom && (
+              <div className="text-sm">{batiment.contact_nom}</div>
+            )}
+            {batiment.contact_telephone && (
+              <a href={`tel:${batiment.contact_telephone}`} className="text-sm text-blue-600" onClick={(e) => e.stopPropagation()}>
+                {batiment.contact_telephone}
+              </a>
+            )}
+          </div>
+        );
+        
+      case 'matricule':
+        return batiment.cadastre_matricule || '-';
+        
+      case 'risque':
+        const risqueColors = {
+          'Faible': 'bg-green-100 text-green-800',
+          'Moyen': 'bg-yellow-100 text-yellow-800',
+          'Élevé': 'bg-orange-100 text-orange-800',
+          'Très élevé': 'bg-red-100 text-red-800'
+        };
+        const risque = batiment.niveau_risque || 'Faible';
+        return (
+          <span className={`px-2 py-1 rounded text-xs font-medium ${risqueColors[risque] || 'bg-gray-100'}`}>
+            {risque}
+          </span>
+        );
+        
+      case 'categorie':
+        return batiment.groupe_occupation || '-';
+        
+      case 'etages':
+        return batiment.nombre_etages || '-';
+        
+      case 'logements':
+        return batiment.nombre_logements || '-';
+        
+      case 'superficie':
+        return batiment.superficie ? `${batiment.superficie} m²` : '-';
+        
+      case 'annee':
+        return batiment.annee_construction || '-';
+        
+      case 'code_postal':
+        return batiment.code_postal || '-';
+        
+      default:
+        return '-';
+    }
+  };
+  
+  // ==================== FIN RENDU DYNAMIQUE ====================
 
   const filteredBatiments = getFilteredBatiments();
   const sortedBatiments = getSortedBatiments(filteredBatiments);
@@ -405,6 +526,16 @@ const Batiments = () => {
               <Map size={16} /> Carte
             </button>
           </div>
+          
+          {/* Bouton Paramètres (Personnalisation des colonnes) */}
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setShowColumnModal(true)}
+            title="Personnaliser les colonnes"
+          >
+            <Settings size={16} />
+          </Button>
           
           {canExport && (
             <Button variant="outline" onClick={handleExport} disabled={exporting}>
@@ -553,46 +684,30 @@ const Batiments = () => {
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 border-b">
-                  <th className="px-4 py-3 text-left font-semibold text-sm">
-                    Photo
-                  </th>
-                  <th 
-                    className="px-4 py-3 text-left font-semibold text-sm cursor-pointer hover:bg-gray-100 select-none"
-                    onClick={(e) => handleSort('adresse_civique', e)}
-                    title="Cliquer pour trier • Shift+Clic pour tri multi-colonnes"
-                  >
-                    <div className="flex items-center">
-                      Adresse
-                      {renderSortIcon('adresse_civique')}
-                    </div>
-                  </th>
-                  <th 
-                    className="px-4 py-3 text-left font-semibold text-sm cursor-pointer hover:bg-gray-100 select-none"
-                    onClick={(e) => handleSort('ville', e)}
-                    title="Cliquer pour trier • Shift+Clic pour tri multi-colonnes"
-                  >
-                    <div className="flex items-center">
-                      Ville
-                      {renderSortIcon('ville')}
-                    </div>
-                  </th>
-                  <th 
-                    className="px-4 py-3 text-left font-semibold text-sm cursor-pointer hover:bg-gray-100 select-none"
-                    onClick={(e) => handleSort('contact_nom', e)}
-                    title="Cliquer pour trier • Shift+Clic pour tri multi-colonnes"
-                  >
-                    <div className="flex items-center">
-                      Contact
-                      {renderSortIcon('contact_nom')}
-                    </div>
-                  </th>
+                  {availableColumns
+                    .filter(col => visibleColumns.includes(col.id))
+                    .map(column => (
+                      <th 
+                        key={column.id}
+                        className={`px-4 py-3 text-left font-semibold text-sm ${
+                          column.sortable ? 'cursor-pointer hover:bg-gray-100 select-none' : ''
+                        }`}
+                        onClick={column.sortable ? (e) => handleSort(column.sortKey, e) : undefined}
+                        title={column.sortable ? "Cliquer pour trier • Shift+Clic pour tri multi-colonnes" : undefined}
+                      >
+                        <div className="flex items-center">
+                          {column.label}
+                          {column.sortable && renderSortIcon(column.sortKey)}
+                        </div>
+                      </th>
+                    ))}
                   <th className="px-4 py-3 text-center font-semibold text-sm">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {sortedBatiments.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                    <td colSpan={visibleColumns.length + 1} className="px-4 py-8 text-center text-gray-500">
                       {searchQuery ? 'Aucun bâtiment ne correspond à la recherche' : 'Aucun bâtiment enregistré'}
                     </td>
                   </tr>
@@ -604,41 +719,13 @@ const Batiments = () => {
                       onClick={() => openModal(batiment, 'view')}
                       style={{ cursor: 'pointer' }}
                     >
-                      <td className="px-4 py-3">
-                        {batiment.photo_url ? (
-                          <img 
-                            src={batiment.photo_url} 
-                            alt="Bâtiment" 
-                            className="w-16 h-12 object-cover rounded border"
-                          />
-                        ) : (
-                          <div className="w-16 h-12 bg-gray-100 rounded border flex items-center justify-center">
-                            <Building2 className="w-6 h-6 text-gray-400" />
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium">{batiment.nom_etablissement || batiment.adresse_civique}</div>
-                        {batiment.nom_etablissement && (
-                          <div className="text-sm text-gray-500">{batiment.adresse_civique}</div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {batiment.ville}
-                        {batiment.code_postal && (
-                          <div className="text-sm text-gray-400">{batiment.code_postal}</div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {batiment.contact_nom && (
-                          <div className="text-sm">{batiment.contact_nom}</div>
-                        )}
-                        {batiment.contact_telephone && (
-                          <a href={`tel:${batiment.contact_telephone}`} className="text-sm text-blue-600" onClick={(e) => e.stopPropagation()}>
-                            {batiment.contact_telephone}
-                          </a>
-                        )}
-                      </td>
+                      {availableColumns
+                        .filter(col => visibleColumns.includes(col.id))
+                        .map(column => (
+                          <td key={column.id} className="px-4 py-3">
+                            {renderCellContent(batiment, column.id)}
+                          </td>
+                        ))}
                       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-center gap-1">
                           {canEdit && (
@@ -773,6 +860,106 @@ const Batiments = () => {
             tenantSlug={tenantSlug}
           />
         </Suspense>
+      )}
+      
+      {/* Modal de Personnalisation des Colonnes */}
+      {showColumnModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            {/* En-tête */}
+            <div className="px-6 py-4 border-b flex justify-between items-center">
+              <h2 className="text-xl font-bold">Personnaliser l'affichage du tableau</h2>
+              <button 
+                onClick={() => setShowColumnModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            {/* Contenu */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <p className="text-sm text-gray-600 mb-4">
+                Sélectionnez les colonnes à afficher dans le tableau. Les colonnes obligatoires ne peuvent pas être désactivées.
+              </p>
+              
+              <div className="space-y-2">
+                {availableColumns.map((column) => {
+                  const isVisible = visibleColumns.includes(column.id);
+                  const isRequired = column.required;
+                  
+                  return (
+                    <div
+                      key={column.id}
+                      className={`flex items-center gap-3 p-3 rounded-lg border ${
+                        isRequired ? 'bg-gray-50 border-gray-200' : 'hover:bg-gray-50 border-gray-200'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isVisible}
+                        disabled={isRequired}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setVisibleColumns([...visibleColumns, column.id]);
+                          } else {
+                            setVisibleColumns(visibleColumns.filter(id => id !== column.id));
+                          }
+                        }}
+                        className="w-4 h-4"
+                      />
+                      <label className={`flex-1 cursor-pointer ${isRequired ? 'text-gray-500' : ''}`}>
+                        {column.label}
+                        {isRequired && <span className="text-xs text-gray-400 ml-2">(Obligatoire)</span>}
+                      </label>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm text-blue-800">
+                💡 <strong>Astuce :</strong> Les colonnes obligatoires (Photo, Adresse, Ville) sont toujours affichées pour faciliter l'identification des bâtiments.
+              </div>
+            </div>
+            
+            {/* Footer */}
+            <div className="px-6 py-4 border-t flex justify-between gap-3">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setVisibleColumns(['photo', 'adresse', 'ville', 'contact']);
+                  toast({ title: "Réinitialisé", description: "Colonnes par défaut restaurées" });
+                }}
+              >
+                Réinitialiser
+              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowColumnModal(false)}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  onClick={() => {
+                    // Sauvegarder dans localStorage
+                    localStorage.setItem(
+                      `batiments_columns_${tenantSlug}_${user?.id}`,
+                      JSON.stringify(visibleColumns)
+                    );
+                    setShowColumnModal(false);
+                    toast({ 
+                      title: "Enregistré", 
+                      description: `${visibleColumns.length} colonnes affichées` 
+                    });
+                  }}
+                >
+                  Enregistrer
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
