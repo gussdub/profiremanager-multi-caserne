@@ -32,8 +32,6 @@ export const usePermissions = (tenantSlug, user) => {
       }
 
       try {
-        console.log('🔍 [usePermissions] Fetching for user:', user.id, 'role:', user.role, 'tenant:', tenantSlug);
-        
         // Pour admin, accès complet
         if (user.role === 'admin') {
           const fullAccess = { is_full_access: true };
@@ -41,24 +39,18 @@ export const usePermissions = (tenantSlug, user) => {
           cacheUserId = user.id;
           setPermissions(fullAccess);
           setLoading(false);
-          console.log('🔍 [usePermissions] Admin detected - Full access granted');
           return;
         }
 
         // Récupérer les permissions du type d'accès de l'utilisateur
-        console.log('🔍 [usePermissions] Calling API:', `/users/${user.id}/permissions`);
         const response = await apiGet(tenantSlug, `/users/${user.id}/permissions`);
-        console.log('🔍 [usePermissions] API Response:', response);
         permissionsCache = response.permissions || {};
         cacheUserId = user.id;
         setPermissions(permissionsCache);
-        console.log('🔍 [usePermissions] Permissions set:', permissionsCache);
       } catch (error) {
-        console.error('❌ [usePermissions] Erreur chargement permissions:', error);
-        console.error('❌ [usePermissions] Error details:', error.response || error.message);
+        console.error('Erreur chargement permissions:', error);
         // Fallback sur les permissions par défaut du rôle
         const fallback = getDefaultPermissionsForRole(user.role);
-        console.log('🔍 [usePermissions] Using fallback permissions:', fallback);
         setPermissions(fallback);
       } finally {
         setLoading(false);
@@ -92,27 +84,11 @@ export const usePermissions = (tenantSlug, user) => {
    * Vérifie si l'utilisateur a accès à un onglet
    */
   const hasTabAccess = useCallback((moduleId, tabId) => {
-    console.log('🔍 [hasTabAccess] Called with:', { moduleId, tabId });
-    console.log('🔍 [hasTabAccess] Permissions:', permissions);
-    
-    if (!permissions) {
-      console.log('🔍 [hasTabAccess] No permissions loaded yet');
-      return false;
-    }
-    if (permissions.is_full_access) {
-      console.log('🔍 [hasTabAccess] Full access granted');
-      return true;
-    }
+    if (!permissions) return false;
+    if (permissions.is_full_access) return true;
     const modulePerms = permissions.modules?.[moduleId];
-    console.log('🔍 [hasTabAccess] Module perms:', modulePerms);
-    
-    if (!modulePerms?.access) {
-      console.log('🔍 [hasTabAccess] No module access');
-      return false;
-    }
-    const result = modulePerms.tabs?.[tabId]?.access === true;
-    console.log('🔍 [hasTabAccess] Result:', result, 'Tab data:', modulePerms.tabs?.[tabId]);
-    return result;
+    if (!modulePerms?.access) return false;
+    return modulePerms.tabs?.[tabId]?.access === true;
   }, [permissions]);
 
   /**
