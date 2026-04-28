@@ -519,10 +519,19 @@ async def update_inspection(
                             
                             # Incrémenter la fréquence d'utilisation du référentiel
                             if article_ref and article_ref.get("id"):
-                                await db.referentiels_violation.update_one(
-                                    {"id": article_ref["id"], "tenant_id": tenant.id},
-                                    {"$inc": {"frequence_utilisation": 1}}
-                                )
+                                # Vérifier si c'est un référentiel global ou custom
+                                if article_ref.get("source") == "global":
+                                    # Incrémenter dans tenant_referentiels
+                                    await db.tenant_referentiels.update_one(
+                                        {"tenant_id": tenant.id, "referentiel_global_id": article_ref["id"]},
+                                        {"$inc": {"frequence_utilisation": 1}}
+                                    )
+                                else:
+                                    # Incrémenter dans referentiels_violation (custom)
+                                    await db.referentiels_violation.update_one(
+                                        {"id": article_ref["id"], "tenant_id": tenant.id},
+                                        {"$inc": {"frequence_utilisation": 1}}
+                                    )
     
     updated = await db.inspections.find_one({"id": inspection_id, "tenant_id": tenant.id}, {"_id": 0})
     return updated
@@ -1672,6 +1681,7 @@ async def search_referentiels_violation(
 ):
     """
     Recherche intelligente dans les référentiels de violation
+    Inclut: Référentiels globaux activés + Référentiels custom du tenant
     Tri par pertinence + fréquence d'utilisation
     """
     tenant = await get_tenant_from_slug(tenant_slug)
@@ -1679,23 +1689,232 @@ async def search_referentiels_violation(
     if not tenant.parametres.get('module_prevention_active', False):
         raise HTTPException(status_code=403, detail="Module prévention non activé")
     
-    query = {"tenant_id": tenant.id}
+    results = []
+    
+    # 1. Récupérer les référentiels GLOBAUX activés pour ce tenant
+    # Trouver les IDs des référentiels activés
+    activated_refs = await db.tenant_referentiels.find(
+        {"tenant_id": tenant.id, "actif": True},
+        {"_id": 0, "referentiel_global_id": 1, "frequence_utilisation": 1}
+    ).to_list(1000)
+    
+    activated_ids = [ref["referentiel_global_id"] for ref in activated_refs]
+    freq_map = {ref["referentiel_global_id"]: ref.get("frequence_utilisation", 0) for ref in activated_refs}
+    
+    if activated_ids:
+        query = {"id": {"$in": activated_ids}}
+        
+        if search:
+            query["$or"] = [
+                {"article": {"$regex": search, "$options": "i"}},
+                {"titre": {"$regex": search, "$options": "i"}},
+                {"description": {"$regex": search, "$options": "i"}},
+                {"code_source": {"$regex": search, "$options": "i"}},
+                {"categorie": {"$regex": search, "$options": "i"}}
+            ]
+        
+        global_refs = await db.referentiels_globaux.find(query, {"_id": 0}).to_list(1000)
+        
+        # Ajouter la fréquence d'utilisation du tenant
+        for ref in global_refs:
+            ref["frequence_utilisation"] = freq_map.get(ref["id"], 0)
+            ref["source"] = "global"
+        
+        results.extend(global_refs)
+    
+    # 2. Récupérer les référentiels CUSTOM du tenant
+    custom_query = {"tenant_id": tenant.id}
     
     if search:
-        # Recherche full-text sur article, titre, description
-        query["$or"] = [
+        custom_query["$or"] = [
             {"article": {"$regex": search, "$options": "i"}},
             {"titre": {"$regex": search, "$options": "i"}},
             {"description": {"$regex": search, "$options": "i"}}
         ]
     
-    # Récupérer les référentiels triés par fréquence d'utilisation (les plus utilisés en premier)
-    referentiels = await db.referentiels_violation.find(
-        query,
+    custom_refs = await db.referentiels_violation.find(
+        custom_query,
         {"_id": 0}
-    ).sort("frequence_utilisation", -1).to_list(100)
+    ).to_list(100)
     
-    return referentiels
+    for ref in custom_refs:
+        ref["source"] = "custom"
+    
+    results.extend(custom_refs)
+    
+    # 3. Trier par fréquence d'utilisation décroissante
+    results.sort(key=lambda x: x.get("frequence_utilisation", 0), reverse=True)
+    
+    return results
+
+
+@router.get("/{tenant_slug}/prevention/referentiels-globaux")
+async def get_referentiels_globaux(
+    tenant_slug: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Liste tous les référentiels globaux avec leur statut d'activation pour ce tenant
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Récupérer tous les référentiels globaux
+    all_globals = await db.referentiels_globaux.find({}, {"_id": 0}).to_list(1000)
+    
+    # Récupérer les activations du tenant
+    tenant_activations = await db.tenant_referentiels.find(
+        {"tenant_id": tenant.id},
+        {"_id": 0, "referentiel_global_id": 1, "actif": 1, "frequence_utilisation": 1}
+    ).to_list(1000)
+    
+    activation_map = {
+        ta["referentiel_global_id"]: {
+            "actif": ta["actif"],
+            "frequence_utilisation": ta.get("frequence_utilisation", 0)
+        }
+        for ta in tenant_activations
+    }
+    
+    # Enrichir avec le statut d'activation
+    for ref in all_globals:
+        ref_id = ref["id"]
+        if ref_id in activation_map:
+            ref["actif"] = activation_map[ref_id]["actif"]
+            ref["frequence_utilisation"] = activation_map[ref_id]["frequence_utilisation"]
+        else:
+            # Par défaut, les référentiels globaux sont activés pour tous les tenants
+            ref["actif"] = True
+            ref["frequence_utilisation"] = 0
+    
+    # Grouper par code_source pour faciliter l'affichage
+    grouped = {}
+    for ref in all_globals:
+        code = ref["code_source"]
+        if code not in grouped:
+            grouped[code] = []
+        grouped[code].append(ref)
+    
+    return {
+        "total": len(all_globals),
+        "by_code": grouped,
+        "all": all_globals
+    }
+
+
+@router.post("/{tenant_slug}/prevention/referentiels-globaux/{referentiel_id}/toggle")
+async def toggle_referentiel_global(
+    tenant_slug: str,
+    referentiel_id: str,
+    actif: bool = Body(..., embed=True),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Activer ou désactiver un référentiel global pour ce tenant
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Vérifier que le référentiel global existe
+    global_ref = await db.referentiels_globaux.find_one({"id": referentiel_id})
+    if not global_ref:
+        raise HTTPException(status_code=404, detail="Référentiel global non trouvé")
+    
+    # Vérifier si une entrée existe déjà pour ce tenant
+    existing = await db.tenant_referentiels.find_one({
+        "tenant_id": tenant.id,
+        "referentiel_global_id": referentiel_id
+    })
+    
+    if existing:
+        # Mettre à jour
+        await db.tenant_referentiels.update_one(
+            {"tenant_id": tenant.id, "referentiel_global_id": referentiel_id},
+            {"$set": {"actif": actif, "updated_at": datetime.now(timezone.utc)}}
+        )
+    else:
+        # Créer
+        tenant_ref = {
+            "id": str(uuid.uuid4()),
+            "tenant_id": tenant.id,
+            "referentiel_global_id": referentiel_id,
+            "actif": actif,
+            "frequence_utilisation": 0,
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc)
+        }
+        await db.tenant_referentiels.insert_one(tenant_ref)
+    
+    return {"success": True, "referentiel_id": referentiel_id, "actif": actif}
+
+
+@router.post("/{tenant_slug}/prevention/referentiels-globaux/toggle-all")
+async def toggle_all_referentiels_by_code(
+    tenant_slug: str,
+    code_source: str = Body(...),
+    actif: bool = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Activer/désactiver tous les référentiels d'un code source spécifique
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Récupérer tous les référentiels de ce code source
+    refs = await db.referentiels_globaux.find(
+        {"code_source": code_source},
+        {"_id": 0, "id": 1}
+    ).to_list(1000)
+    
+    if not refs:
+        raise HTTPException(status_code=404, detail=f"Aucun référentiel trouvé pour {code_source}")
+    
+    ref_ids = [ref["id"] for ref in refs]
+    
+    # Mettre à jour ou créer les entrées
+    updated_count = 0
+    created_count = 0
+    
+    for ref_id in ref_ids:
+        existing = await db.tenant_referentiels.find_one({
+            "tenant_id": tenant.id,
+            "referentiel_global_id": ref_id
+        })
+        
+        if existing:
+            await db.tenant_referentiels.update_one(
+                {"tenant_id": tenant.id, "referentiel_global_id": ref_id},
+                {"$set": {"actif": actif, "updated_at": datetime.now(timezone.utc)}}
+            )
+            updated_count += 1
+        else:
+            tenant_ref = {
+                "id": str(uuid.uuid4()),
+                "tenant_id": tenant.id,
+                "referentiel_global_id": ref_id,
+                "actif": actif,
+                "frequence_utilisation": 0,
+                "created_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc)
+            }
+            await db.tenant_referentiels.insert_one(tenant_ref)
+            created_count += 1
+    
+    return {
+        "success": True,
+        "code_source": code_source,
+        "actif": actif,
+        "updated": updated_count,
+        "created": created_count,
+        "total": len(ref_ids)
+    }
 
 
 # ==================== SECTEURS GÉOGRAPHIQUES ====================
