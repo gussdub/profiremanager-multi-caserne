@@ -15,7 +15,7 @@ import {
   Edit2, 
   Trash2, 
   Eye,
-  Download,
+  Upload,
   Map,
   List,
   AlertTriangle,
@@ -539,7 +539,7 @@ const Batiments = () => {
           
           {canExport && (
             <Button variant="outline" onClick={handleExport} disabled={exporting}>
-              <Download size={16} className="mr-1" />
+              <Upload size={16} className="mr-1" />
               {exporting ? 'Export...' : 'Exporter'}
             </Button>
           )}
