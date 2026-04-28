@@ -177,6 +177,48 @@ const Prevention = () => {
     fetchDependancesCounts();
   }, [tenantSlug]);
 
+  // Gestion des query params (?action=inspecter&batiment=ID, ?action=plan&batiment=ID, ?action=rapport&batiment=ID)
+  useEffect(() => {
+    if (!batiments || batiments.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+    const batimentId = params.get('batiment');
+    if (!action || !batimentId) return;
+
+    const targetBatiment = batiments.find(b => b.id === batimentId);
+    if (!targetBatiment) {
+      toast({
+        title: "Bâtiment introuvable",
+        description: "Le bâtiment demandé n'a pas été trouvé.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSelectedBatiment(targetBatiment);
+
+    switch (action) {
+      case 'inspecter':
+        setCurrentView('nouvelle-inspection');
+        break;
+      case 'plan':
+        setSelectedPlanId(null);
+        setCurrentView('plans-intervention');
+        setFilteredBatimentId(batimentId);
+        break;
+      case 'rapport':
+        setFilteredBatimentId(batimentId);
+        setCurrentView('rapports');
+        break;
+      default:
+        break;
+    }
+
+    // Nettoyer l'URL pour éviter de rejouer l'action au refresh
+    const cleanUrl = window.location.pathname;
+    window.history.replaceState({}, document.title, cleanUrl);
+  }, [batiments]);
+
   const fetchPreventionnistes = async () => {
     try {
       const data = await apiGet(tenantSlug, '/users');
