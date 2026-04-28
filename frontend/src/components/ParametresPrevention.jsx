@@ -10,6 +10,7 @@ import {
 // Lazy load des composants
 const ParametresRefViolations = lazy(() => import('./ParametresRefViolations'));
 const GrillesInspection = lazy(() => import('./GrillesInspectionComponents'));
+const BibliothequeReferentiels = lazy(() => import('./BibliothequeReferentiels'));
 
 /**
  * ParametresPrevention - Paramètres du module prévention
@@ -47,7 +48,8 @@ const ParametresPrevention = ({ tenantSlug, currentUser, toast: toastProp }) => 
   // Onglets disponibles
   const TABS = [
     { id: 'general', label: 'Paramètres généraux', icon: Settings, description: 'Configuration de base' },
-    { id: 'referentiel', label: 'Référentiel Violations', icon: BookOpen, description: 'Articles de loi CNPI' },
+    { id: 'bibliotheque', label: 'Bibliothèque de Référentiels', icon: BookOpen, description: 'Codes et règlements' },
+    { id: 'referentiel', label: 'Référentiels Custom', icon: FileText, description: 'Vos articles personnalisés' },
     { id: 'grilles', label: 'Grilles d\'inspection', icon: ClipboardList, description: 'Modèles de formulaires' },
   ];
 
@@ -254,6 +256,18 @@ const ParametresPrevention = ({ tenantSlug, currentUser, toast: toastProp }) => 
             </div>
           </div>
           </>
+        );
+
+      case 'bibliotheque':
+        return (
+          <Suspense fallback={
+            <div className="flex items-center justify-center p-8">
+              <RefreshCw className="w-6 h-6 animate-spin mr-2" />
+              <span>Chargement de la bibliothèque...</span>
+            </div>
+          }>
+            <BibliothequeReferentiels />
+          </Suspense>
         );
 
       case 'referentiel':
