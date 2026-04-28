@@ -18,8 +18,18 @@ const BibliothequeReferentiels = () => {
   const [referentiels, setReferentiels] = useState({ by_code: {}, all: [] });
   const [selectedRef, setSelectedRef] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [filterCategory, setFilterCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [newReglementForm, setNewReglementForm] = useState({
+    code_source: '',
+    article: '',
+    titre: '',
+    description: '',
+    gravite: 'Majeure',
+    delai_correction: 30,
+    categorie: 'Municipal'
+  });
   
   // Charger les référentiels
   useEffect(() => {
@@ -122,8 +132,81 @@ const BibliothequeReferentiels = () => {
     setShowModal(true);
   };
   
+  // Créer un nouveau règlement municipal (custom)
+  const handleCreateReglement = async () => {
+    if (!newReglementForm.code_source || !newReglementForm.article || !newReglementForm.titre) {
+      toast({
+        title: "Validation",
+        description: "Veuillez remplir tous les champs obligatoires",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      // Pour l'instant, créer en tant que référentiel custom du tenant
+      // (Plus tard, on pourra ajouter l'option de créer un global partagé)
+      const payload = {
+        ...newReglementForm,
+        global: false
+      };
+      
+      await apiPost(tenantSlug, '/prevention/referentiels-custom', payload);
+      
+      toast({
+        title: "✅ Règlement créé",
+        description: "Votre règlement municipal a été ajouté avec succès"
+      });
+      
+      setShowCreateModal(false);
+      setNewReglementForm({
+        code_source: '',
+        article: '',
+        titre: '',
+        description: '',
+        gravite: 'Majeure',
+        delai_correction: 30,
+        categorie: 'Municipal'
+      });
+      
+      // Recharger les référentiels
+      loadReferentiels();
+    } catch (error) {
+      console.error('Erreur création règlement:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer le règlement",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Obtenir les codes sources uniques
   const codeSources = Object.keys(referentiels.by_code).sort();
+  
+  // Descriptions des abréviations
+  const codeDescriptions = {
+    'CNB-2005': 'Code National du Bâtiment - Canada 2005',
+    'CNB-1995': 'Code National du Bâtiment - Canada 1995',
+    'CNB-1990': 'Code National du Bâtiment - Canada 1990',
+    'CNB-1985': 'Code National du Bâtiment - Canada 1985',
+    'CNPI-2005': 'Code National de Prévention des Incendies - Canada 2005',
+    'CNPI-1995': 'Code National de Prévention des Incendies - Canada 1995',
+    'CEQ-2024': 'Code de l\'Électricité du Québec 2024 (Édition 2024)',
+    'NFPA-10': 'NFPA 10 - Norme sur les extincteurs portatifs',
+    'NFPA-13': 'NFPA 13 - Norme sur l\'installation des systèmes de gicleurs',
+    'NFPA-25': 'NFPA 25 - Norme sur l\'inspection, l\'essai et l\'entretien des systèmes de protection incendie à base d\'eau',
+    'NFPA-72': 'NFPA 72 - Code national des alarmes incendie et de signalisation',
+    'NFPA-96': 'NFPA 96 - Norme sur le contrôle de la ventilation et la protection contre les incendies des opérations de cuisson commerciale',
+    'NFPA-101': 'NFPA 101 - Code de sécurité humaine (Life Safety Code)',
+    'NFPA-1': 'NFPA 1 - Code uniforme de prévention des incendies',
+    'NFPA-30': 'NFPA 30 - Code des liquides inflammables et combustibles',
+    'NFPA-54': 'NFPA 54 - Code national du gaz combustible',
+    'NFPA-58': 'NFPA 58 - Code du gaz de pétrole liquéfié',
+    'NFPA-110': 'NFPA 110 - Norme pour les systèmes d\'alimentation électrique de secours et de réserve',
+    'S3-R4': 'Règlement sur la sécurité dans les édifices publics (Loi sur la sécurité dans les édifices publics - Québec)',
+    'RVQ-2241': 'Règlement de la Ville de Québec R.V.Q. 2241 sur la prévention des incendies dans les maisons de chambres'
+  };
   
   // Filtrer les codes selon la catégorie sélectionnée
   const getFilteredCodes = () => {
@@ -292,16 +375,54 @@ const BibliothequeReferentiels = () => {
                 paddingBottom: '1rem',
                 borderBottom: '2px solid #f3f4f6'
               }}>
-                <div>
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '0.25rem' }}>
-                    {getCodeIcon(codeSource)} {codeSource}
-                  </h3>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: '600', margin: 0 }}>
+                      {getCodeIcon(codeSource)} {codeSource}
+                    </h3>
+                    {codeDescriptions[codeSource] && (
+                      <span 
+                        title={codeDescriptions[codeSource]}
+                        style={{ 
+                          cursor: 'help',
+                          fontSize: '0.875rem',
+                          color: '#6b7280',
+                          backgroundColor: '#f3f4f6',
+                          padding: '2px 6px',
+                          borderRadius: '4px'
+                        }}
+                      >
+                        ℹ️
+                      </span>
+                    )}
+                  </div>
+                  {codeDescriptions[codeSource] && (
+                    <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginBottom: '0.25rem' }}>
+                      {codeDescriptions[codeSource]}
+                    </p>
+                  )}
                   <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>
                     {activeCount} / {refs.length} articles activés
                   </p>
                 </div>
                 
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+                  {(codeSource === 'S3-R4' || codeSource === 'RVQ-2241' || codeSource.startsWith('MUNICIPAL-')) && (
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={() => {
+                        setNewReglementForm({
+                          ...newReglementForm,
+                          code_source: codeSource === 'S3-R4' || codeSource === 'RVQ-2241' ? codeSource : 'MUNICIPAL-CUSTOM'
+                        });
+                        setShowCreateModal(true);
+                      }}
+                      style={{ backgroundColor: '#10b981', color: 'white' }}
+                    >
+                      ➕ Ajouter règlement
+                    </Button>
+                  )}
                   {!allActive && (
                     <Button
                       size="sm"
@@ -578,6 +699,161 @@ const BibliothequeReferentiels = () => {
                 }}
               >
                 {selectedRef.actif ? 'Désactiver' : 'Activer'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal de création de règlement municipal */}
+      {showCreateModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '1rem'
+          }}
+          onClick={() => setShowCreateModal(false)}
+        >
+          <div
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              maxWidth: '700px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: '2rem'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1.5rem' }}>
+              ➕ Ajouter un Règlement Municipal
+            </h2>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {/* Code source */}
+              <div>
+                <Label>Code source *</Label>
+                <Input
+                  value={newReglementForm.code_source}
+                  onChange={(e) => setNewReglementForm({...newReglementForm, code_source: e.target.value})}
+                  placeholder="Ex: MUNICIPAL-MONTRÉAL, MUNICIPAL-GATINEAU"
+                  style={{ marginTop: '0.25rem' }}
+                />
+                <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                  💡 Format recommandé: MUNICIPAL-[NOM_VILLE]
+                </div>
+              </div>
+              
+              {/* Article */}
+              <div>
+                <Label>Article / Numéro *</Label>
+                <Input
+                  value={newReglementForm.article}
+                  onChange={(e) => setNewReglementForm({...newReglementForm, article: e.target.value})}
+                  placeholder="Ex: Art. 42, Règl. 2024-15"
+                  style={{ marginTop: '0.25rem' }}
+                />
+              </div>
+              
+              {/* Titre */}
+              <div>
+                <Label>Titre *</Label>
+                <Input
+                  value={newReglementForm.titre}
+                  onChange={(e) => setNewReglementForm({...newReglementForm, titre: e.target.value})}
+                  placeholder="Ex: Détecteurs de fumée obligatoires"
+                  style={{ marginTop: '0.25rem' }}
+                />
+              </div>
+              
+              {/* Description */}
+              <div>
+                <Label>Description</Label>
+                <textarea
+                  value={newReglementForm.description}
+                  onChange={(e) => setNewReglementForm({...newReglementForm, description: e.target.value})}
+                  placeholder="Description complète du règlement..."
+                  rows={4}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    borderRadius: '6px',
+                    border: '1px solid #d1d5db',
+                    fontSize: '0.875rem',
+                    marginTop: '0.25rem',
+                    fontFamily: 'inherit'
+                  }}
+                />
+              </div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                {/* Gravité */}
+                <div>
+                  <Label>Gravité</Label>
+                  <select
+                    value={newReglementForm.gravite}
+                    onChange={(e) => setNewReglementForm({...newReglementForm, gravite: e.target.value})}
+                    style={{
+                      width: '100%',
+                      padding: '0.5rem',
+                      borderRadius: '6px',
+                      border: '1px solid #d1d5db',
+                      fontSize: '0.875rem',
+                      marginTop: '0.25rem'
+                    }}
+                  >
+                    <option value="Majeure">Majeure</option>
+                    <option value="Mineure">Mineure</option>
+                  </select>
+                </div>
+                
+                {/* Délai correction */}
+                <div>
+                  <Label>Délai de correction (jours)</Label>
+                  <Input
+                    type="number"
+                    value={newReglementForm.delai_correction}
+                    onChange={(e) => setNewReglementForm({...newReglementForm, delai_correction: parseInt(e.target.value) || 0})}
+                    style={{ marginTop: '0.25rem' }}
+                  />
+                </div>
+              </div>
+              
+              {/* Info */}
+              <div style={{
+                padding: '1rem',
+                backgroundColor: '#eff6ff',
+                borderRadius: '8px',
+                fontSize: '0.875rem',
+                color: '#1e40af'
+              }}>
+                <strong>ℹ️ Note:</strong> Ce règlement sera spécifique à votre organisation et n'apparaîtra pas dans les autres villes/municipalités.
+              </div>
+            </div>
+            
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '2rem' }}>
+              <Button
+                variant="outline"
+                onClick={() => setShowCreateModal(false)}
+              >
+                Annuler
+              </Button>
+              <Button
+                onClick={handleCreateReglement}
+                style={{ backgroundColor: '#10b981', color: 'white' }}
+              >
+                ✅ Créer le règlement
               </Button>
             </div>
           </div>

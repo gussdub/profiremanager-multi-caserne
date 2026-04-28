@@ -1917,6 +1917,46 @@ async def toggle_all_referentiels_by_code(
     }
 
 
+@router.post("/{tenant_slug}/prevention/referentiels-custom")
+async def create_referentiel_custom(
+    tenant_slug: str,
+    referentiel_data: dict = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Créer un référentiel custom (règlement municipal personnalisé)
+    """
+    tenant = await get_tenant_from_slug(tenant_slug)
+    
+    if not tenant.parametres.get('module_prevention_active', False):
+        raise HTTPException(status_code=403, detail="Module prévention non activé")
+    
+    # Validation
+    if not referentiel_data.get('code_source') or not referentiel_data.get('article') or not referentiel_data.get('titre'):
+        raise HTTPException(status_code=400, detail="Champs obligatoires manquants: code_source, article, titre")
+    
+    # Créer le référentiel custom
+    ref = {
+        "id": str(uuid.uuid4()),
+        "tenant_id": tenant.id,
+        "code_source": referentiel_data.get('code_source'),
+        "article": referentiel_data.get('article'),
+        "titre": referentiel_data.get('titre'),
+        "description": referentiel_data.get('description', ''),
+        "gravite": referentiel_data.get('gravite', 'Majeure'),
+        "delai_correction": referentiel_data.get('delai_correction', 30),
+        "categorie": referentiel_data.get('categorie', 'Municipal'),
+        "global": False,  # Custom, pas global
+        "frequence_utilisation": 0,
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc)
+    }
+    
+    await db.referentiels_violation.insert_one(ref)
+    
+    return {"success": True, "referentiel": ref}
+
+
 # ==================== SECTEURS GÉOGRAPHIQUES ====================
 
 
